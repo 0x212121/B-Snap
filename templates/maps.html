@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% block title %}Maps{% endblock %}
+{% block content %}
+
+<!-- <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mt-4 mb-4">📍 Camera Locations Map</h2> -->
+<div id="map" class="h-[960px] mb-6 rounded shadow"></div>
+
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js'></script>
+<link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css' rel='stylesheet' />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<style>
+  /* Trik untuk memusatkan kontrol Leaflet di posisi atas */
+  .leaflet-top.leaflet-left {
+      width: 100%;
+      display: flex;
+      justify-content: left; /* Ini akan memusatkan semua item di dalamnya */
+      pointer-events: none;    /* Agar container tidak menghalangi klik pada peta */
+      margin-top: 10px;
+  }
+
+  .leaflet-control-map-title {
+      pointer-events: auto; /* Mengaktifkan kembali interaksi untuk judul */
+      margin-top: 10px;     /* Memberi jarak dari tepi atas browser */
+  }
+
+.custom-title-bar {
+    display: flex; 
+    align-items: center;
+    /* Menambahkan position: relative agar posisi logo absolut mengacu pada bar ini */
+    position: relative; 
+    background-color: #E60000;
+    color: white;
+    /* Padding diubah: Kiri (65px) diberi ruang lebih banyak untuk logo */
+    padding: 8px 15px 8px 65px; 
+    border-radius: 30px;
+    font-weight: bold;
+    font-size: 1.3em;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    /* border: 2px solid rgba(255, 255, 255, 0.7); */
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    animation: fadeInUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.title-logo {
+    /* Menggunakan positioning absolut untuk 'mengeluarkan' logo */
+    position: absolute;
+    /* Posisikan 15px ke atas dari batas kontainer */
+    /* top: -15px;  */
+    /* Posisikan 10px dari sisi kiri kontainer */
+    left: 0px;
+
+    /* Buat logo lebih besar agar terlihat menonjol */
+    width: 60px;
+    height: 60px;
+    
+    border-radius: 50%;
+    background-color: #fff; /* Memberi background putih solid */
+    border: 5px solid #E60000; Garis tepi putih agar terlihat rapi
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Bayangan agar terlihat 'mengambang' */
+    padding: 2px;
+    /* Hapus margin-right karena sudah tidak diperlukan */
+    margin-right: 0; 
+}
+
+  .title-text {
+      white-space: nowrap; /* Mencegah teks turun baris */
+  }
+
+  @keyframes fadeInUp {
+      from {
+          opacity: 0;
+          transform: translateY(-20px);
+      }
+      to {
+          opacity: 1;
+          transform: translateY(0);
+      }
+  }
+
+  .leaflet-bar {
+    border: none !important;
+    border-radius: 10px;
+    opacity: 95%;
+  }
+
+  .leaflet-popup-content {
+    width: 15rem !important;
+  }
+
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const map = L.map('map', {
+      zoomDelta: 0.25,
+      zoomSnap: 0,
+      zoomControl: false,
+      fullscreenControl: false 
+    }).setView([0.544447, 117.510262], 12);
+
+    map.attributionControl.setPrefix('');
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // --- BAGIAN UNTUK JUDUL MAP (SUDAH DIPERBARUI) ---
+    L.Control.MapTitle = L.Control.extend({
+      onAdd: function (map) {
+        const div = L.DomUtil.create('div', 'leaflet-control-map-title');
+        // --- PERUBAHAN DI SINI: MENAMBAHKAN IKON SVG ---
+        div.innerHTML = `
+        <div class="custom-title-bar">
+          <img src="/static/images/logo.png" alt="Logo KPC" class="title-logo">
+            <span class="title-text">KPC CCTV Location Map</span>
+          </div>
+        `;
+        L.DomEvent.disableClickPropagation(div); // Mencegah klik pada judul mengganggu peta
+        return div;
+      },
+    });
+
+    L.control.zoom({ position: 'topright' }).addTo(map);
+    L.control.fullscreen({ position: 'topright' }).addTo(map);
+
+    L.control.mapTitle = function (opts) {
+      return new L.Control.MapTitle(opts);
+    };
+    L.control.mapTitle({ position: "topleft" }).addTo(map); // CSS akan menangani pemusatan
+    
+    // --- Camera statistics on map (moved to bottom right) ---
+    L.Control.cameraStats = L.Control.extend({
+        onAdd: function(map) {
+            const container = L.DomUtil.create("div", "leaflet-bar camera-stats p-2 text-sm bg-white/85 dark:bg-gray-800 rounded-[5px] shadow-[0_0_15px_rgba(0,0,0,0.2)] leading-[1.2em]");
+            container.innerHTML = `
+            <div id="camera-stats">
+              <div class="text-gray-800 dark:text-gray-100 mb-2 font-semibold text-center"><span id="user-group">-</span> Camera Stats</div>
+              <div class="text-green-600 dark:text-green-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-green-500"></span>Online: <span id="stat-online">-</span></div>
+              <div class="text-red-600 dark:text-red-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-red-500"></span>Offline: <span id="stat-offline">-</span></div>
+              <div class="text-red-600 dark:text-yellow-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-yellow-500"></span>High Latency (>50 ms): <span id="stat-highlatency">-</span></div>
+              <div class="text-gray-700 dark:text-gray-300 mb-1">Total: <span id="stat-total">-</span></div>
+            </div>
+          `;
+            L.DomEvent.disableClickPropagation(container);
+            return container;
+        },
+        onRemove: function(map) {}
+    });
+    L.control.cameraStats = function(opts) {
+        return new L.Control.cameraStats(opts);
+    };
+    L.control.cameraStats({ position: "bottomright" }).addTo(map);
+
+    // --- Kode yang membuat tag <style> TELAH DIHAPUS dari sini ---
+
+    // --- Sisa kode Anda tetap sama ---
+    let markerClusterGroup = L.markerClusterGroup();
+    markerClusterGroup.addTo(map);
+    
+    function refreshMapData() {
+      markerClusterGroup.clearLayers();
+    fetch("/camera-locations")
+      .then(res => res.json())
+      .then(data => {
+        let onlineCount = 0;
+        let offlineCount = 0;
+        let highLatencyCount = 0;
+        let user_group = '';
+        
+        data.forEach(cam => {
+          cam.status === "Online"
+          ? onlineCount++
+          : cam.status === "High Latency"
+          ? highLatencyCount++
+          : offlineCount++;
+          
+          if (
+            cam.lat && cam.lng &&
+            cam.restricted !== "Restricted" &&
+            (cam.cam_group === cam.user_group_id || cam.user_group === "ALL")
+          ) {
+            const color =
+            cam.status === "Online" ? "green" :
+            cam.status === "High Latency" ? "orange" :
+            "red";
+            
+            const marker = L.circleMarker([cam.lat, cam.lng], {
+              radius: 8,
+              color,
+              fillColor: color,
+              fillOpacity: 0.8,
+            });
+            
+            const popupContent = L.DomUtil.create('div');
+            popupContent.innerHTML = `
+              <strong>${cam.hostname}</strong><br><br>
+              IP: ${cam.ip}<br>
+              Asset No: ${cam.asset_no}<br>
+              Status: ${cam.status === "Online" ? "🟢 Online" : cam.status === "High Latency" ? "🟡 High Latency" : "🔴 Offline"}<br>
+              Uptime: ${cam.uptime}<br>
+              <div id="snapshot-container-${cam.id}" class="mt-2 text-center text-gray-500 dark:text-gray-400">
+                  Loading snapshot...
+              </div>`;
+            
+            marker.bindPopup(popupContent, { maxWidth: 1500 });
+            
+            marker.on('popupopen', async function () {
+              const snapshotContainer = document.getElementById(`snapshot-container-${cam.id}`);
+              if (snapshotContainer) {
+                snapshotContainer.innerHTML = `<p class="loading-text text-gray-500 dark:text-gray-400 mt-1">Loading snapshot info...</p>`;
+                
+                try {
+                  const infoResponse = await fetch(`/snapshot/latest/${encodeURIComponent(cam.hostname)}/info`);
+                  
+                  if (!infoResponse.ok) {
+                    let errorMessage = `Failed to fetch snapshot info: ${infoResponse.status}`;
+                    try {
+                      const errorData = await infoResponse.json();
+                      errorMessage = errorData.detail || errorMessage;
+                    } catch (e) {
+                      errorMessage = `Failed to fetch snapshot info: ${infoResponse.statusText}`;
+                    }
+                    throw new Error(errorMessage);
+                  }
+                  
+                  const snapshotInfo = await infoResponse.json();
+                  const imageUrl = snapshotInfo.url;
+                  
+                  snapshotContainer.innerHTML = `
+                    <img src="${imageUrl}" class="w-full h-auto rounded-md shadow-md mt-1 camera-snapshot-img" alt="Camera Snapshot"
+                      onerror="this.onerror=null; this.src='/static/placeholder.svg'; this.parentElement.querySelector('.error-message').classList.remove('hidden');"
+                      onload="this.parentElement.querySelector('.loading-text').classList.add('hidden');">
+                    <p class="loading-text text-gray-500 dark:text-gray-400 mt-1">Loading image...</p>
+                    <p class="error-message text-red-500 text-xs mt-1 hidden">Image failed to load or is unavailable. (Check camera/network)</p>
+                  `;
+                } catch (error) {
+                  console.error("Error loading snapshot for popup:", error);
+                  snapshotContainer.innerHTML = `
+                    <div class="placeholder-content p-4 bg-gray-200 dark:bg-gray-700 rounded text-center">
+                        <p class="text-gray-600 dark:text-gray-300">❌ Image Not Available</p>
+                        <p class="text-red-500 text-xs mt-1">Error: ${error.message}</p>
+                    </div>
+                  `;
+                }
+              }
+            });
+            
+            marker.on('popupclose', function () {
+              const snapshotContainer = document.getElementById(`snapshot-container-${cam.id}`);
+              if (snapshotContainer) {
+                snapshotContainer.innerHTML = `Loading snapshot...`;
+              }
+            });
+            
+            markerClusterGroup.addLayer(marker);
+          }
+          user_group = cam.user_group
+        });
+        
+        document.getElementById("user-group").textContent = user_group;
+        document.getElementById("stat-total").textContent = data.length;
+        document.getElementById("stat-online").textContent = onlineCount;
+        document.getElementById("stat-offline").textContent = offlineCount;
+        document.getElementById("stat-highlatency").textContent = highLatencyCount;
+      })
+      .catch(error => {
+        console.error('Error fetching camera locations:', error);
+      });
+    }
+
+    refreshMapData();
+    setInterval(refreshMapData, 600000);
+  });
+</script>
+{% endblock %}

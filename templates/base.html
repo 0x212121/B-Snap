@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <!-- Default favicon -->
+    <link rel="icon" type="image/x-icon" href="{{url_for('static',path='/icons/favicon.ico')}}" id="favicon-link">
+  
+    <script>
+      const theme = localStorage.getItem("theme");
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const isDark = theme === "dark" || (!theme && prefersDark);
+  
+      if (isDark) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    </script>
+  
+    <link href="{{url_for('static', path='/css/app.css')}}" rel="stylesheet" />
+    <title>{% block title %}Stats{% endblock %}</title>
+  </head>
+  
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white transition-colors" data-timezone="{{ timezone | default('Asia/Jakarta') }}">
+  <!-- Notification Container -->
+  <div id="notification-container" class="fixed top-4 right-4 z-50"></div>
+  
+  <!-- Toggle Button untuk Mobile -->
+  <button id="sidebar-toggle" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-blue-500 text-white sm:hidden">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  </button>
+  
+  
+  <!-- Sidebar -->
+  <aside id="sidebar" class="bg-white dark:bg-gray-800 shadow-md flex flex-col justify-between p-2 z-40 transition-all
+  sm:fixed sm:top-0 sm:left-0 sm:h-full sm:w-16
+  md:w-16
+  lg:w-64">
+  <div>
+    <h2 class="text-xl font-bold mb-6 text-center text-blue-600 dark:text-blue-300 logo-app mt-4">
+      <div class="hidden lg:flex items-center justify-center gap-2">
+        <!-- <img src="/static/icons/favicon.ico" alt="Logo" class="w-6 h-6 dark:hidden">
+        <img src="/static/icons/favicon-white.ico" alt="Logo" class="w-6 h-6 hidden dark:block"> -->
+        <img src="/static/icons/b-snap.png" class="h-10">
+      </div>
+    </h2>
+    
+    
+    <nav class="space-y-2 text-sm">
+      {% if request.session["user_role"] == "admin" %}
+      <a href="/stats" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/stats' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
+        <span>📊</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">Stats</span>
+      </a>
+      {% endif %}
+      <a href="/maps" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/maps' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
+        <span>🗺️</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">Camera Map</span>
+      </a>
+      <a href="/snap_gallery" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/snap_gallery' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
+        <span>🖼️</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">Snapshot Gallery</span>
+      </a>
+      {% if request.session["user_role"] == "admin" %} 
+      <a href="/videos" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/videos' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
+        <span>🎞️</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">Video Gallery</span>
+      </a>     
+      <a href="/cameras" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/cameras' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
+        <span>🛠️</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">Cameras</span>
+      </a>
+      <a href="/nvrs" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/nvrs' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
+        <span>📹</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">NVRs</span>
+      </a>
+      <a href="/users" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/users' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
+        <span>👥</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">Users</span>
+      </a>
+      <a href="/health" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/health' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
+        <span>🟢</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">Device Status</span>
+      </a>
+      <a href="/config" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/config' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
+        <span>⚙️</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">Settings</span>
+      </a>
+      <a href="/logs" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/logs' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
+        <span>📄</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">Logs</span>
+      </a>
+      <a href="/audit-logs" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/audit-logs' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
+        <span>🕵🏼‍♂️</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">Audit Logs</span>
+      </a>
+      <a href="/developer/docs" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/developer/docs' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
+        <span>📄</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">API Docs</span>
+      </a>
+      {% endif %}
+      
+      <!-- MOBILE ONLY: Dark Mode + Logout in top row -->
+      <button onclick="toggleDark()" class="flex sm:hidden items-center px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 w-full">
+        <span class="dark:hidden">🌙</span>
+        <span class="hidden dark:inline">☀️</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">Toggle Theme</span>
+      </button>
+      <a href="/logout" class="flex sm:hidden items-center px-4 py-2 rounded text-sm text-red-600 hover:bg-red-100 dark:hover:bg-red-800 w-full">
+        <span>🚪</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">Logout</span>
+      </a>
+    </nav>
+  </div>
+  
+  <!-- DESKTOP ONLY: Dark Mode + Logout at bottom -->
+  <div class="hidden sm:flex flex-col space-y-3 mt-auto">
+    <button onclick="toggleDark()" class="flex items-center px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 w-full">
+      <span class="dark:hidden">🌙</span>
+      <span class="hidden dark:inline">☀️</span>
+      <span class="ml-2 menu-text hidden md:hidden lg:inline">Toggle Theme</span>
+    </button>
+    <a href="/logout" class="flex items-center px-4 py-2 rounded text-sm text-red-600 hover:bg-red-100 dark:hover:bg-red-800">
+      <span>🚪</span>
+      <span class="ml-2 menu-text hidden md:hidden lg:inline">Logout</span>
+    </a>
+  </div>
+</aside>
+
+<!-- Main content -->
+<main id="main-content" class="min-h-screen p-8 transition-all
+sm:ml-16 
+md:ml-16
+lg:ml-64">
+{% block content %}{% endblock %}
+</main>
+
+<script>
+  // Dark Mode Toggle
+// Dark Mode Toggle
+const html = document.documentElement;
+
+function toggleDark() {
+  html.classList.toggle("dark");
+  localStorage.setItem("theme", html.classList.contains("dark") ? "dark" : "light");
+
+  // Update favicon based on theme
+  const favicon = document.querySelector('link[rel="icon"]');
+  if (favicon) {
+    favicon.href = html.classList.contains("dark")
+      ? '/static/icons/favicon-white.ico'
+      : '/static/icons/favicon.ico';
+  }
+}
+
+// Apply correct favicon on initial load
+(function applyFaviconOnLoad() {
+  const isDark = html.classList.contains("dark");
+  const favicon = document.querySelector('link[rel="icon"]');
+  if (favicon) {
+    favicon.href = isDark
+      ? '/static/icons/favicon-white.ico'
+      : '/static/icons/favicon.ico';
+  }
+})();
+
+  
+  // Sidebar Toggle for Mobile
+  const sidebarToggle = document.getElementById("sidebar-toggle");
+  const sidebar = document.getElementById("sidebar");
+  const mainContent = document.getElementById("main-content");
+  
+  // Check if mobile view on load
+  function checkMobileView() {
+    if (window.innerWidth <= 639) {
+      sidebar.classList.add("hidden");
+      mainContent.classList.remove("sm:ml-16", "md:ml-16", "lg:ml-64");
+      mainContent.classList.add("ml-0");
+    } else {
+      sidebar.classList.remove("hidden");
+      updateSidebarWidth();
+    }
+  }
+  
+  // Update sidebar width based on screen size
+  function updateSidebarWidth() {
+    if (window.innerWidth >= 1024) {
+      // Large screens
+      sidebar.classList.remove("w-16");
+      sidebar.classList.add("w-64");
+      mainContent.classList.remove("sm:ml-16", "md:ml-16");
+      mainContent.classList.add("lg:ml-64");
+    } else if (window.innerWidth >= 640) {
+      // Medium and small screens
+      sidebar.classList.remove("w-64");
+      sidebar.classList.add("w-16");
+      mainContent.classList.remove("lg:ml-64");
+      mainContent.classList.add("sm:ml-16", "md:ml-16");
+    }
+  }
+  
+  // Toggle sidebar on mobile
+  sidebarToggle.addEventListener("click", () => {
+    sidebar.classList.toggle("show");
+  });
+  
+  // Initial check on load
+  checkMobileView();
+  
+  // Update on resize
+  window.addEventListener("resize", () => {
+    checkMobileView();
+    updateSidebarWidth();
+  });
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

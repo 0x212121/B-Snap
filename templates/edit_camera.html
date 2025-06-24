@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Camera</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Force enable class-based dark mode
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+  <div class="container mx-auto px-4 py-8 max-w-xl">
+    <h1 class="text-3xl font-bold mb-6 text-center text-blue-800 dark:text-blue-300">✏️ Edit Camera - {{ Camera.hostname }}</h1>
+    
+    <form method="post" action="/edit/{{ camera.id }}" id="editCameraForm" class="bg-white dark:bg-gray-800 shadow rounded p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Camera Name</label>
+        <input name="name" value="{{ Camera.hostname }}" required class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Previous Name</label>
+        <p class="w-full border p-2 rounded bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white min-h-[42px]">
+          {{ camera.previous_name if camera.previous_name is not none else '' }}
+        </p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">IP Camera</label>
+        <input name="ip" value="{{ camera.ip }}" required class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Port</label>
+        <input name="port" type="number" value="{{ camera.port }}" class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Latitude</label>
+        <input name="latitude" type="number" value="{{ camera.latitude if camera.latitude is not none else '' }}" step="any" min="-90" max="180" class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Longitude</label>
+        <input name="longitude" type="number" value="{{ camera.longitude if camera.longitude is not none else '' }}" step="any" min="-90" max="180" class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Previous Latitude</label>
+        <p class="w-full border p-2 rounded bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white min-h-[42px]">
+          {{ camera.previous_latitude if camera.previous_latitude is not none else '' }}
+        </p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Previous Longitude</label>
+        <p class="w-full border p-2 rounded bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white min-h-[42px]">
+          {{ camera.previous_longitude if camera.previous_longitude is not none else '' }}
+        </p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Username</label>
+        <input name="username" value="{{ camera.username }}" class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Password</label>
+        <div class="relative">
+          <input name="password" type="password" value="{{ camera.password }}" id="cctvPass" class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-10" />
+          <span class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer" onclick="togglePasswordVisibility()">
+            <i id="passwordToggleIcon" class="fas fa-eye"></i>
+          </span>
+        </div>
+      </div>
+
+      <!-- Group Name -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Group Name</label>
+        <input name="group_name" value="{{ camera.group.name if camera.group else '' }}" class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Status</label>
+        <input name="status" value="{{ camera.status if camera.status else '' }}" class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+      </div>
+
+      
+      <div class="flex justify-between mt-6">
+        <a href="/manage" class="text-sm text-gray-500 dark:text-gray-400 hover:underline">← Kembali</a>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">💾 Simpan</button>
+      </div>
+    </form>
+  </div>
+  
+  <script>
+    const html = document.documentElement;
+    
+    // Saat halaman dimuat, ambil dari localStorag
+    if (localStorage.getItem('theme') === 'dark') {
+      html.classList.add('dark');
+    } else {
+      html.classList.remove('dark');
+    }
+    
+    function toggleDark() {
+      const isDark = html.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    }
+    
+    function togglePasswordVisibility() {
+      var passwordField = document.getElementById("cctvPass");
+      var passwordToggleIcon = document.getElementById("passwordToggleIcon");
+      if (passwordField.type === "password") {
+        passwordField.type = "text";
+        passwordToggleIcon.classList.remove("fa-eye");
+        passwordToggleIcon.classList.add("fa-eye-slash");
+      } else {
+        passwordField.type = "password";
+        passwordToggleIcon.classList.remove("fa-eye-slash");
+        passwordToggleIcon.classList.add("fa-eye");
+      }
+    }
+    
+    document.getElementById('editCameraForm').addEventListener('submit', function(event) {
+      const latitudeInput = document.querySelector('input[name="latitude"]');
+      const longitudeInput = document.querySelector('input[name="longitude"]');
+      
+      // Delete trailing space from input
+      if (latitudeInput) {
+        latitudeInput.value = latitudeInput.value.trim();
+      }
+      if (longitudeInput) {
+        longitudeInput.value = longitudeInput.value.trim();
+      }
+    });
+  </script>
+</body>
+</html>

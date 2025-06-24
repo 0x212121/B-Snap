@@ -1,0 +1,86 @@
+/* General override */
+.swagger-ui {
+    color: #e5e7eb !important; /* text-gray-200 */
+    background-color: #111827 !important; /* bg-gray-900 */
+  }
+  
+  /* Remove top bar */
+  .swagger-ui .topbar {
+    display: none !important;
+  }
+  
+  /* Section backgrounds */
+  .swagger-ui .opblock,
+  .swagger-ui .scheme-container,
+  .swagger-ui .info,
+  .swagger-ui .model-title,
+  .swagger-ui .parameter__name,
+  .swagger-ui .parameter__in,
+  .swagger-ui .parameter__type,
+  .swagger-ui .response-col_status,
+  .swagger-ui .response-col_description,
+  .swagger-ui table thead tr th,
+  .swagger-ui table tbody tr td {
+    background-color: #1f2937 !important; /* bg-gray-800 */
+    color: #e5e7eb !important; /* text-gray-200 */
+    border-color: #374151 !important; /* border-gray-700 */
+  }
+  
+  /* Request/Response section */
+  .swagger-ui .opblock-summary {
+    background-color: #1f2937 !important; /* bg-gray-800 */
+    color: #e5e7eb !important;
+    border: 1px solid #374151 !important;
+  }
+  
+  .swagger-ui .opblock-section-header {
+    background-color: #111827 !important;
+    color: #f9fafb !important; /* text-white-ish */
+  }
+  
+  /* Status Code colors */
+  .swagger-ui .response-col_status {
+    font-weight: 500 !important;
+    color: #34d399 !important; /* green-400 */
+  }
+  
+  .swagger-ui .responses-inner h4,
+  .swagger-ui .responses-inner h5 {
+    color: #f3f4f6 !important; /* text-gray-100 */
+  }
+  
+  /* Dropdown, inputs */
+  .swagger-ui select,
+  .swagger-ui input {
+    background-color: #1f2937 !important; /* bg-gray-800 */
+    color: #e5e7eb !important;
+    border: 1px solid #374151 !important;
+  }
+  
+  .swagger-ui button {
+    background-color: #2563eb !important; /* blue-600 */
+    color: #f9fafb !important; /* text-white */
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    font-weight: 500;
+  }
+  
+  .swagger-ui button:hover {
+    background-color: #1d4ed8 !important; /* blue-700 */
+  }
+  
+  /* Model schema fix */
+  .swagger-ui .model-box,
+  .swagger-ui .property-row,
+  .swagger-ui .model {
+    background-color: #1f2937 !important;
+    color: #e5e7eb !important;
+    border-color: #374151 !important;
+  }
+  
+  /* Fix description text */
+  .swagger-ui .markdown p,
+  .swagger-ui .markdown h4 {
+    color: #d1d5db !important; /* text-gray-300 */
+  }
+  

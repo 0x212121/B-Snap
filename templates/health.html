@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+{% block title %}Devices Status{% endblock %}
+{% block content %}
+<h1 class="text-3xl font-semibold mb-4 text-blue-800 dark:text-blue-300">Devices Status</h1>
+
+<div class="mb-4 flex flex-col md:flex-row md:space-x-8">
+  <p class="text-lg">
+    Camera Online: <strong id="camera-online-count">0</strong>
+    | Camera Offline: <strong id="camera-offline-count">0</strong>
+  </p>
+  <p class="text-lg">
+    NVR Online: <strong id="nvr-online-count">0</strong>
+    | NVR Offline: <strong id="nvr-offline-count">0</strong>
+  </p>
+</div>
+
+<div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+  <div class="flex items-center gap-2">
+    <input type="text" id="searchInput" onkeyup="filterAndRenderTable()" placeholder="Search by Name or IP..."
+    class="p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full sm:w-auto dark:bg-gray-700 dark:text-white">
+    <select id="typeFilter" onchange="filterAndRenderTable()" class="p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
+      <option value="All">All Types</option>
+      <option value="Camera">Camera</option>
+      <option value="NVR">NVR</option>
+    </select>
+    <select id="statusFilter" onchange="filterAndRenderTable()" class="p-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
+      <option value="All">All Statuses</option>
+      <option value="Online">Online</option>
+      <option value="Offline">Offline</option>
+      <option value="High Latency">High Latency</option>
+      <option value="Unknown">Unknown</option>
+    </select>
+  </div>
+  <div class="flex gap-2">
+    <button onclick="triggerAllHealthcheck()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">🔄 Ping All Devices</button>
+    <button onclick="refreshTable()" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Refresh Table</button>
+    <a href="/health/history" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm flex items-center">📊 Historical Data</a>
+  </div>
+</div>
+
+<div id="healthCheckStatus" class="mb-4 p-3 border rounded-md hidden">
+  <p>Health check is running...</p>
+  <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+    <div id="progressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+  </div>
+  <p id="progressText" class="text-sm mt-1">0/0 devices completed</p>
+</div>
+
+<div class="overflow-x-auto bg-white dark:bg-gray-800 shadow-md rounded-lg">
+  <table id="healthCheckTable" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+    <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-200">
+      <tr>
+        <th class="p-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer" onclick="sortAndRenderTable('hostname')">Hostname <span id="hostname-arrow" class="text-xs"></span></th>
+        <th class="p-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer" onclick="sortAndRenderTable('ip')">IP <span id="ip-arrow" class="text-xs"></span></th>
+        <th class="p-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer" onclick="sortAndRenderTable('type')">Type <span id="type-arrow" class="text-xs"></span></th>
+        <th class="p-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer" onclick="sortAndRenderTable('dev_status')">Device Status <span id="dev-status-arrow" class="text-xs"></span></th>
+        <th class="p-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer" onclick="sortAndRenderTable('latency')">Latency (ms) <span id="latency-arrow" class="text-xs"></span></th>
+        <th class="p-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer" onclick="sortAndRenderTable('checked')">Last Checked (WITA) <span id="checked-arrow" class="text-xs"></span></th>
+        <th class="p-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer" onclick="sortAndRenderTable('status')">Status / Since <span id="status-duration-arrow" class="text-xs"></span></th>
+        <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="healthTableBody">
+    </tbody>
+  </table>
+</div>
+
+<div id="snapshotModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
+  <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl max-h-[80vh]">
+    <div class="relative">
+      <img id="snapshotImg" src="" class="rounded w-full object-contain max-h-[70vh]" />
+      <div id="snapshotInfo" class="absolute top-0 right-0 bg-black bg-opacity-60 text-white text-sm px-3 py-1 rounded shadow">
+      </div>
+    </div>
+    <div class="flex justify-end mt-2 space-x-4">
+      <a id="download-btn" href="#" download class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">⬇️ Download</a>
+      <button onclick="hideSnapshotModal()" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded">✖ Close</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  // --- REFAKTORISASI JAVASCRIPT TOTAL ---
+  
+  let fullDataset = []; // Satu-satunya sumber data mentah dari server
+  let sortState = {
+    column: 'hostname', // Kolom default untuk diurutkan
+    direction: 'asc'
+  };
+
+  let healthCheckInterval;
+  
+  /**
+  * Mengonversi string tanggal ISO (UTC) menjadi format tanggal & waktu WITA (GMT+8).
+  * @param {string | null} isoString - String tanggal dalam format ISO 8601, e.g., "2025-06-24T10:30:00Z".
+  * @returns {string} - Tanggal dan waktu yang diformat, e.g., "2025-06-24 18:30:00".
+  */
+  function formatToWITA(isoString) {
+    // 1. Jika input tidak ada, kembalikan strip.
+    if (!isoString) return "-";
+    
+    // Untuk debugging: tampilkan apa yang diterima dari server
+    console.log("Menerima ISO String:", isoString);
+    
+    try {
+      const date = new Date(isoString + 'Z');
+      
+      // 2. Periksa apakah tanggal valid setelah parsing.
+      if (isNaN(date.getTime())) {
+        // console.error("Format tanggal tidak valid:", isoString);
+        return "Invalid Date";
+      }
+      
+      // 3. Opsi untuk format Intl.DateTimeFormat
+      const options = {
+        timeZone: 'Asia/Makassar', // Zona Waktu Indonesia Tengah (WITA)
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hourCycle: 'h23', // Gunakan format 24 jam (00-23)
+      };
+      
+      // 4. Gunakan locale 'sv-SE' (Swedish) yang secara native menghasilkan format YYYY-MM-DD HH:MM:SS
+      // Ini lebih andal daripada trik 'en-CA' dan replace.
+      const formattedDate = new Intl.DateTimeFormat('sv-SE', options).format(date);
+      
+      // Untuk debugging: tampilkan hasilnya
+      console.log("Diformat ke WITA:", formattedDate);
+      
+      return formattedDate;
+    } catch (e) {
+      // console.error("Error saat memformat tanggal:", e);
+      return "-";
+    }
+  }
+  
+  function formatDuration(isoString) {
+    if (!isoString) return "No Duration Data";
+    const now = new Date();
+    const past = new Date(isoString);
+    let seconds = Math.floor((now - past) / 1000);
+    if (seconds < 0) seconds = 0;
+    
+    if (seconds < 60) return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+    
+    let interval = seconds / 31536000;
+    if (interval > 1) return `${Math.floor(interval)} year${Math.floor(interval) > 1 ? 's' : ''} ago`;
+    interval = seconds / 2592000;
+    if (interval > 1) return `${Math.floor(interval)} month${Math.floor(interval) > 1 ? 's' : ''} ago`;
+    interval = seconds / 86400;
+    if (interval > 1) return `${Math.floor(interval)} day${Math.floor(interval) > 1 ? 's' : ''} ago`;
+    interval = seconds / 3600;
+    if (interval > 1) return `${Math.floor(interval)} hour${Math.floor(interval) > 1 ? 's' : ''} ago`;
+    interval = seconds / 60;
+    if (interval > 1) return `${Math.floor(interval)} minute${Math.floor(interval) > 1 ? 's' : ''} ago`;
+    return `${Math.floor(seconds)} second${Math.floor(seconds) > 1 ? 's' : ''} ago`;
+  }
+  
+  
+  // --- Core Rendering and Logic Functions ---
+  
+  function renderTable(data) {
+    const tableBody = document.getElementById('healthTableBody');
+    tableBody.innerHTML = ''; 
+    
+    // ... (kode pengecekan data kosong) ...
+    
+    const rowsHtml = data.map(device => {
+      // PANGGILAN FUNGSI YANG KRUSIAL ADA DI SINI:
+      const checkedAt = formatToWITA(device.checked);
+      
+      // Pembuatan status display juga menggunakan formatDuration
+      let statusDisplay = device.status || 'Unknown';
+      if (device.status_changed_at) {
+        statusDisplay = `${device.status} since ${formatDuration(formatToWITA(device.status_changed_at))}`;
+      } else {
+        statusDisplay = `${device.status} since ${formatDuration(formatToWITA(device.last_online))}`;
+      }
+      
+      // ... sisa kode untuk membuat HTML baris ...
+      const latency = device.latency !== null ? `<span class="${device.latency <= 50 ? 'text-green-500' : 'text-yellow-500'}">${device.latency} ms</span>` : '-';
+      const statusClass = device.status?.includes('Online') ? 'bg-green-100 text-green-800' :
+      device.status?.includes('Offline') ? 'bg-red-100 text-red-800' :
+      device.status?.includes('High Latency') ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800';
+      
+      const pingButton = `<button onclick='triggerHealth(this, "${device.id}", "${device.type.toLowerCase()}")' class="bg-gray-600 text-white px-2 py-1 rounded text-xs hover:bg-gray-700">♻️ Ping</button>`;
+      const viewButton = device.type === 'Camera' ? `<button class='bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600' onclick='viewSnapshot(${JSON.stringify(device.hostname)})'>📸 View</button>` : '';
+      const realtimeButton = device.type === 'Camera' && device.status !== 'Offline' ? `<button class='bg-teal-500 text-white px-2 py-1 rounded text-sm hover:bg-teal-600' onclick='viewRealtimeSnapshot(this, ${JSON.stringify(device.hostname)})'>📸 Realtime</button>` : '';
+      
+      
+      return `
+      <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+        <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${device.hostname}</td>
+        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${device.ip}</td>
+        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${device.type}</td>
+        <td class="px-3 py-4 whitespace-nowrap text-sm ${device.dev_status === 'Active' ? 'text-green-600' : 'text-red-600'} dark:text-white">${device.dev_status}</td>
+        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${latency}</td>
+        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${checkedAt}</td>
+        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${statusDisplay}</span>
+        </td>
+        <td class="px-3 py-4 whitespace-nowrap text-left text-sm font-medium flex gap-1">
+          ${pingButton} ${viewButton} ${realtimeButton}
+        </td>
+      </tr>
+    `;
+    }).join('');
+    
+    tableBody.innerHTML = rowsHtml;
+  }
+  
+  
+  
+  function applyFilters() {
+    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+    const typeFilter = document.getElementById('typeFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    return fullDataset.filter(device => {
+      const matchesSearch = device.hostname.toLowerCase().includes(searchInput) || device.ip.toLowerCase().includes(searchInput);
+      const matchesType = typeFilter === 'All' || device.type === typeFilter;
+      const matchesStatus = statusFilter === 'All' || device.status === statusFilter;
+      return matchesSearch && matchesType && matchesStatus;
+    });
+  }
+  
+  function applySort(data) {
+    const { column, direction } = sortState;
+    const modifier = direction === 'asc' ? 1 : -1;
+    
+    // Gunakan slice() untuk membuat salinan agar tidak mengubah array asli
+    return data.slice().sort((a, b) => {
+      const valA = a[column] === null ? -Infinity : a[column]; // Handle null values
+      const valB = b[column] === null ? -Infinity : b[column];
+      
+      if (valA < valB) return -1 * modifier;
+      if (valA > valB) return 1 * modifier;
+      return 0;
+    });
+  }
+  
+  function updateSortArrows() {
+    document.querySelectorAll('th[onclick] span').forEach(span => span.textContent = '');
+    const arrowSpan = document.getElementById(`${sortState.column}-arrow`);
+    if (arrowSpan) {
+      arrowSpan.textContent = sortState.direction === 'asc' ? ' ↑' : ' ↓';
+    }
+  }
+  
+  function sortAndRenderTable(column) {
+    if (sortState.column === column) {
+      sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortState.column = column;
+      sortState.direction = 'asc';
+    }
+    filterAndRenderTable();
+  }
+  
+  function filterAndRenderTable() {
+    let filteredData = applyFilters();
+    let sortedData = applySort(filteredData);
+    renderTable(sortedData);
+    updateSortArrows();
+  }
+  
+  async function refreshTable() {
+    console.log("Refreshing table data...");
+    try {
+      const response = await fetch('/health/status');
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const data = await response.json();
+      
+      // Update data utama
+      fullDataset = data.statuses;
+      
+      // Update counts langsung dari data API
+      document.getElementById('camera-online-count').textContent = data.camera_online_count;
+      document.getElementById('camera-offline-count').textContent = data.camera_offline_count;
+      document.getElementById('nvr-online-count').textContent = data.nvr_online_count;
+      document.getElementById('nvr-offline-count').textContent = data.nvr_offline_count;
+      
+      // Terapkan filter dan sort yang ada ke data baru
+      filterAndRenderTable();
+      
+    } catch (error) {
+      console.error('Failed to refresh table:', error);
+      alert('Failed to refresh device status.');
+    }
+  }
+  
+  // Event Listeners dan Inisialisasi
+  document.addEventListener('DOMContentLoaded', () => {
+    refreshTable(); // Muat data pertama kali
+    checkHealthCheckProgress(); // Cek jika ada proses yang sedang berjalan
+  });
+  
+  
+  // ... (Fungsi triggerHealth, checkHealthCheckProgress, viewSnapshot, dll. sebagian besar tetap sama)
+  // Pastikan URL dan method POST sesuai.
+  function triggerHealth(button, deviceId, type) {
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '♻️ Checking...';
+    
+    fetch(`/health/trigger/${deviceId}?type=${type}`, { method: 'POST' })
+    .then(res => res.json())
+    .then(data => {
+      console.log(data.status);
+      // Refresh table setelah 1.5 detik untuk memberi waktu server memproses
+      setTimeout(refreshTable, 1500); 
+    })
+    .catch(err => {
+      console.error("Error triggering healthcheck:", err);
+      alert("Error triggering healthcheck: " + err.message);
+    })
+    .finally(() => {
+      setTimeout(() => {
+        button.disabled = false;
+        button.innerHTML = originalText;
+      }, 2000);
+    });
+  }
+  
+  // Fungsi lainnya (triggerAllHealthcheck, checkHealthCheckProgress, viewRealtimeSnapshot, viewSnapshot, hideSnapshotModal)
+  // bisa digunakan dari kode lama Anda karena logikanya sudah cukup baik.
+  function triggerAllHealthcheck() {
+    if (!confirm("Are you sure want to ping all devices?")) return;
+    const button = document.querySelector('button[onclick="triggerAllHealthcheck()"]');
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '🔄 Processing...';
+    
+    // Show the progress bar div
+    document.getElementById('healthCheckStatus').classList.remove('hidden');
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('progressText').textContent = '0/0 devices completed';
+    
+    fetch(`/health/trigger_all`, { method: 'POST' })
+    .then(res => {
+      if (!res.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return res.json();
+    })
+    .then(data => {
+      console.log(data.status);
+      setTimeout(checkHealthCheckProgress, 1000); // Start polling after triggering
+    })
+    .catch(error => {
+      console.error('Error triggering health check:', error);
+      alert('Failed to trigger health check: ' + error.message);
+      button.disabled = false;
+      button.innerHTML = originalText;
+      document.getElementById('healthCheckStatus').classList.add('hidden'); // Hide progress bar on error
+    });
+  }
+  function checkHealthCheckProgress() {
+    // Clear any existing interval to prevent multiple intervals running
+    if (healthCheckInterval) {
+      clearInterval(healthCheckInterval);
+    }
+    
+    healthCheckInterval = setInterval(() => {
+      fetch('/health/status/check')
+      .then(response => response.json())
+      .then(data => {
+        if (data.is_complete) {
+          clearInterval(healthCheckInterval);
+          document.getElementById('healthCheckStatus').classList.add('hidden');
+          console.log("Health check completed. Refreshing table...");
+          refreshTable(); // Refresh table once health check is truly complete
+        } else {
+          document.getElementById('healthCheckStatus').classList.remove('hidden');
+          const total = data.progress.total;
+          const completed = data.progress.completed;
+          const percentage = total > 0 ? (completed / total) * 100 : 0;
+          document.getElementById('progressBar').style.width = percentage + '%';
+          document.getElementById('progressText').textContent = `${completed}/${total} devices completed`;
+        }
+      })
+      .catch(error => {
+        console.error('Error checking health check status:', error);
+        clearInterval(healthCheckInterval);
+        document.getElementById('healthCheckStatus').classList.add('hidden');
+      });
+    }, 2000); // Check every 2 seconds
+  }
+  
+  function viewRealtimeSnapshot(button, cameraName) {
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '📸 Loading...';
+    
+    fetch(`/snap/${encodeURIComponent(cameraName)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => {
+      if (!res.ok) {
+        return res.json().then(err => { throw new Error(err.detail || 'Network response was not ok'); });
+      }
+      return res.json();
+    })
+    .then(data => {
+      if (data.status === 'success' && data.file_path) {
+        console.log('Realtime snapshot created. Now fetching its info to display.');
+        viewSnapshot(cameraName);
+      } else {
+        alert('Failed to take snapshot: ' + (data.detail || 'Unknown error from server'));
+      }
+    })
+    .catch(error => {
+      console.error('Error taking realtime snapshot:', error);
+      alert('An error occurred: ' + error.message);
+    })
+    .finally(() => {
+      button.disabled = false;
+      button.innerHTML = originalText;
+    });
+  }
+  
+  function viewSnapshot(cameraName) { 
+    fetch(`/snapshot/latest/${encodeURIComponent(cameraName)}/info`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.url) {
+        const snapshotImg = document.getElementById('snapshotImg');
+        const snapshotInfo = document.getElementById('snapshotInfo');
+        const downloadBtn = document.getElementById("download-btn");
+        
+        snapshotImg.src = data.url;
+        snapshotInfo.textContent = `${data.camera} • ${data.timestamp}`;
+        document.getElementById('snapshotModal').classList.remove('hidden');
+        
+        const filename = `snapshot_${data.camera}_${data.timestamp.replace(/[\s:]/g, '-')}.jpg`;
+        downloadBtn.setAttribute('download', filename); 
+        
+        downloadBtn.onclick = (event) => {
+          event.preventDefault();
+          const canvas = document.createElement('canvas');
+          const img = new Image();
+          img.crossOrigin = "anonymous"; 
+          img.src = data.url; 
+          img.onload = function () {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            ctx.font = '24px sans-serif';
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.textAlign = 'right';
+            ctx.strokeText(data.camera, canvas.width - 20, 40);
+            ctx.fillText(data.camera, canvas.width - 20, 40);
+            ctx.strokeText(data.timestamp, canvas.width - 20, 70);
+            ctx.fillText(data.timestamp, canvas.width - 20, 70);
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL("image/jpeg");
+            link.download = filename; 
+            link.click();
+          };
+          img.onerror = () => alert("Failed to load image for download.");
+        };
+      } else {
+        alert(data.detail || "No snapshot found");
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Failed to load snapshot info.");
+    });
+  }
+  
+  function hideSnapshotModal() {
+    document.getElementById('snapshotModal').classList.add('hidden');
+  }
+  
+</script>
+
+{% endblock %}

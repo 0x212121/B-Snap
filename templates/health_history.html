@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Historical Device Stats{% endblock %}
+{% block content %}
+<h1 class="text-3xl font-semibold mb-4 text-blue-800 dark:text-blue-300">Historical Uptime/Downtime (Last 30 Days)</h1>
+
+<div class="mb-4">
+    <a href="/health" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm inline-flex items-center">
+        &larr; Back to Current Status
+    </a>
+</div>
+
+{% if historical_data %}
+  {% for camera_data in historical_data %}
+    <div class="mb-6 bg-white dark:bg-gray-800 p-4 rounded shadow">
+      <h3 class="text-xl font-medium mb-3 text-gray-700 dark:text-gray-200">{{ camera_data.hostname }}</h3>
+      {% if camera_data.stats %}
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Uptime (Seconds)</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Downtime (Seconds)</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Uptime (%)</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {% for stat in camera_data.stats %}
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ stat.date }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ stat.uptime_seconds }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ stat.downtime_seconds }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ "%.2f" | format(stat.uptime_percentage) }}%</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-gray-500 dark:text-gray-400">No historical data available for this camera in the last 30 days.</p>
+      {% endif %}
+    </div>
+  {% endfor %}
+{% else %}
+  <p class="text-gray-500 dark:text-gray-400">No historical uptime/downtime data available for any camera.</p>
+{% endif %}
+
+{% endblock %}

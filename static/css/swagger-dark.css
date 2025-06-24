@@ -1,0 +1,115 @@
+/* == Base dark background == */
+html, body {
+    background-color: #0f172a !important; /* slate-900 */
+    color: #e2e8f0 !important;            /* slate-200 */
+  }
+  
+  /* == Topbar / Header == */
+  .swagger-ui .topbar {
+    background-color: #1e293b !important; /* slate-800 */
+    border-bottom: 1px solid #334155;
+  }
+  
+  /* == Text Improvements == */
+  .swagger-ui,
+  .swagger-ui .info,
+  .swagger-ui .opblock,
+  .swagger-ui .parameter__name,
+  .swagger-ui .model-title,
+  .swagger-ui .tab li,
+  .swagger-ui .response-col_description,
+  .swagger-ui .response-col_status,
+  .swagger-ui label,
+  .swagger-ui .prop-format,
+  .swagger-ui .parameter__type,
+  .swagger-ui .opblock-description-wrapper,
+  .swagger-ui .markdown,
+  .swagger-ui .parameter__in {
+    color: #f1f5f9 !important; /* slate-100 */
+  }
+  
+  /* == Panel & Card Backgrounds == */
+  .swagger-ui .info,
+  .swagger-ui .scheme-container,
+  .swagger-ui .opblock,
+  .swagger-ui .parameters-col_description,
+  .swagger-ui .opblock-body,
+  .swagger-ui .tab-content,
+  .swagger-ui .model-box,
+  .swagger-ui .model,
+  .swagger-ui .highlight-code {
+    background-color: #1e293b !important; /* slate-800 */
+    border-color: #334155 !important;     /* slate-700 */
+  }
+  
+  /* == Dropdowns and Inputs == */
+  .swagger-ui select,
+  .swagger-ui input,
+  .swagger-ui textarea {
+    background-color: #0f172a !important;
+    color: #f1f5f9 !important;
+    border: 1px solid #475569 !important;
+  }
+  
+  /* == Code box & pre == */
+  .swagger-ui .highlight-code,
+  .swagger-ui code,
+  .swagger-ui pre {
+    background-color: #0f172a !important;
+    color: #38bdf8 !important; /* sky-400 */
+    font-family: 'Fira Code', monospace;
+  }
+  
+  /* == Buttons == */
+  .swagger-ui .btn {
+    background-color: #334155 !important;
+    color: #f1f5f9 !important;
+    border: none !important;
+  }
+  .swagger-ui .btn:hover {
+    background-color: #475569 !important;
+  }
+  
+  /* == Tag colors == */
+  .swagger-ui .opblock.opblock-post {
+    border-left-color: #10b981 !important; /* green-500 */
+  }
+  .swagger-ui .opblock.opblock-get {
+    border-left-color: #3b82f6 !important; /* blue-500 */
+  }
+  .swagger-ui .opblock.opblock-put {
+    border-left-color: #f59e0b !important; /* amber-500 */
+  }
+  .swagger-ui .opblock.opblock-delete {
+    border-left-color: #ef4444 !important; /* red-500 */
+  }
+  
+  /* == Media type dropdown fix == */
+  .swagger-ui .response-col_description select {
+    background-color: #1e293b !important;
+    color: #f1f5f9 !important;
+  }
+  
+  /* Tambahan: Bikin teks yang sebelumnya terlalu gelap jadi terang */
+.swagger-ui .opblock-tag,
+.swagger-ui .opblock-summary-path,
+.swagger-ui .opblock-summary-description,
+.swagger-ui .response-col_status,
+.swagger-ui .response-col_description,
+.swagger-ui .parameter__name,
+.swagger-ui .parameter__type,
+.swagger-ui .parameter__in,
+.swagger-ui .model-title,
+.swagger-ui .tab li,
+.swagger-ui .info,
+.swagger-ui .markdown,
+.swagger-ui table thead tr th,
+.swagger-ui table tbody tr td,
+.swagger-ui label,
+.swagger-ui .opblock-section-header h4,
+.swagger-ui h4,
+.swagger-ui h3,
+.swagger-ui .response-control-media-type__accept-message,
+.swagger-ui .response-control-media-type__title {
+  color: #e2e8f0 !important; /* slate-200 */
+}

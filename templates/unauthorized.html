@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Access Denied{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center px-4 py-12">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg text-center max-w-lg">
+    <h1 class="text-3xl font-bold text-red-600 dark:text-red-400 mb-4">🚫 Access Denied</h1>
+    <p class="text-gray-700 dark:text-gray-300 text-sm">
+      You do not have permission to view this page.<br>
+      This page is restricted to <span class="font-semibold">admin</span> users only.
+    </p>
+    <div class="mt-6">
+      <a href="/" class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">🔙 Back to Dashboard</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+  <!-- Header buttons for adding and managing NVRs -->
+  <div class="flex flex-wrap gap-4 mb-6">
+    <button onclick="showAddNVRModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 shadow-sm">
+      <span>➕</span> Add NVR
+    </button>
+    
+    <form method="post" enctype="multipart/form-data" action="/nvrs/upload_csv" class="flex items-center gap-2">
+      <input type="file" name="file" accept=".csv" class="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 rounded-md border text-sm">
+      <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-green-700 flex items-center gap-2 shadow-sm">
+        <span>📤</span> Upload CSV
+      </button>
+    </form>
+    <a href="/nvrs/export_csv" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2">
+      <span>⬇️</span> Export CSV
+    </a>
+  </div>
+  
+  <!-- Main content area for listing NVRs -->
+  <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+      <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-300">📋 NVR Management</h2>
+      <form id="searchForm" class="flex gap-2 w-full md:w-auto">
+        <input name="search" id="searchInput" type="text" placeholder="Search by Name, IP, Location..." value="{{ search or '' }}" class="flex-grow px-4 py-2 rounded-md border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm font-semibold flex items-center gap-2 shadow-sm">
+          <span>🔍</span> Search
+        </button>
+      </form>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table id="camera-table" class="min-w-full bg-white dark:bg-gray-800 rounded shadow overflow-hidden">
+        <thead class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200">
+          <tr>
+            <th class="p-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wider cursor-pointer" onclick="sortTable(0)">Hostname <span id="id-arrow" class="text-xs"></span></th>
+            <th class="p-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wider cursor-pointer" onclick="sortTable(1)">IP <span id="ip-arrow" class="text-xs"></span></th>
+            <th class="p-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wider cursor-pointer" onclick="sortTable(2)">Username <span id="port-arrow" class="text-xs"></span></th>
+            <th class="p-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wider">Location</th>
+            <th class="p-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wider">Division</th>
+            <th class="p-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wider">Status</th>
+            <th class="p-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="camera-body">
+        </tbody>
+      </table>
+      
+      <div id="pagination-controls" class="flex justify-center gap-2 mt-4 text-sm">
+      </div>
+    </div>
+  </div>
+</div>  
+
+<!-- ====================================================== -->
+<!-- ================ MODAL ADD/EDIT NVR =============== -->
+<!-- ====================================================== -->
+<div id="nvrModal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-50 p-4">
+  <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-2xl w-full max-w-md mx-auto max-h-[90vh] flex flex-col transform transition-all opacity-0 -translate-y-4">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+      <h2 id="modalTitle" class="text-xl font-bold text-gray-800 dark:text-gray-200">Camera</h2>
+      <button onclick="hideNVRmodal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">✕</button>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 dark:border-gray-700 mb-4">
+      <nav id="modalTabs" class="-mb-px flex space-x-6" aria-label="Tabs">
+        <button type="button" class="tab-button group inline-flex items-center py-3 px-1 border-b-2 font-semibold text-sm" data-tab="basic">
+          <span class="text-blue-600 border-blue-600">Basic Info</span>
+        </button>
+        <button type="button" class="tab-button group inline-flex items-center py-3 px-1 border-b-2 font-semibold text-sm" data-tab="location">
+          <span class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">Location & Asset</span>
+        </button>
+      </nav>
+    </div>
+    
+    <!-- Form -->
+    <form id="cameraForm" class="space-y-4 overflow-y-auto flex-grow px-1">
+      <input type="hidden" id="cameraId" name="id">
+      
+      <!-- Basic Info Tab -->
+      <div id="tab-basic" class="tab-content space-y-4">
+        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="name">Hostname</label><input type="text" id="name" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" pattern="[A-Za-z0-9_\-#\s]+$" title="Only letters, numbers, underscore, hash and hyphen allowed"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Hanya huruf, angka, garis bawah, dan tanda hubung.</p></div>
+        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="ip">IP Address</label><input type="text" id="ip" name="ip" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$" title="Please enter a valid IP address"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Format: xxx.xxx.xxx.xxx</p></div>
+        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="username">Username</label><input type="text" id="username" name="username" required class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></div>
+        <div class="relative">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="password">Password</label>
+          <input type="password" id="password" name="password"
+            class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"
+            placeholder="Password">
+        
+          <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" onclick="
+            const p = document.getElementById('password');
+            const eye = this.querySelector('svg');
+            if (p.type === 'password') {
+              p.type = 'text';
+              eye.innerHTML = '<path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M2.25 12c1.5-5.25 6-9 9.75-9s8.25 3.75 9.75 9c-1.5 5.25-6 9-9.75 9s-8.25-3.75-9.75-9z\'/><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M15 12a3 3 0 11-6 0 3 3 0 016 0z\' />';
+            } else {
+              p.type = 'password';
+              eye.innerHTML = '<path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M3.98 8.223A10.477 10.477 0 002.25 12c1.5 5.25 6 9 9.75 9 2.36 0 4.49-.84 6.2-2.234M6.32 6.328A9.978 9.978 0 0112 3c3.75 0 8.25 3.75 9.75 9a10.448 10.448 0 01-4.084 5.174M3 3l18 18\' />';
+            }
+          ">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M3.98 8.223A10.477 10.477 0 002.25 12c1.5 5.25 6 9 9.75 9 2.36 0 4.49-.84 6.2-2.234M6.32 6.328A9.978 9.978 0 0112 3c3.75 0 8.25 3.75 9.75 9a10.448 10.448 0 01-4.084 5.174M3 3l18 18" />
+            </svg>
+          </button>
+          <p id="password-help" class="text-xs text-gray-500 dark:text-gray-400 mt-1"></p>
+        </div>
+        
+      </div>
+      
+      <!-- Location Tab -->
+      <div id="tab-location" class="tab-content space-y-4 hidden">
+        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="latitude">Latitude</label><input type="number" step="0.000001" id="latitude" name="latitude" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: -7.252</p></div>
+        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">Longitude</label><input type="number" step="0.000001" id="longitude" name="longitude" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: 112.753</p></div>
+        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="asset_no">Asset No.</label><input type="text" id="asset_no" name="asset_no" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></div>
+        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="location">Location</label><input type="text" id="location" name="location" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></div>
+        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="group_name">Division</label><select id="group_name" name="group_name" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="">-- Select Division --</option></select><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Grouping camera to filter in maps</p></div>
+        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="status">Status</label><select id="status" name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="Active">Active</option><option value="Deactivated">Deactivated</option><option value="Restricted">Restricted</option></select></div>
+      </div>
+    </form>
+    
+    <!-- Footer -->
+    <div class="flex justify-end space-x-3 pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
+      <button type="button" onclick="hideNVRmodal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200 rounded-md font-semibold text-sm">Cancel</button>
+      <button type="submit" form="cameraForm" id="modalSubmitButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold text-sm shadow-sm">Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notifikasi -->
+<div id="notification-container" class="fixed top-5 right-5 z-[100] w-full max-w-sm"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  
+  // ======================================================
+  // =================== GLOBAL STATE =====================
+  // ======================================================
+  let cameraGroups = [];
+  let cameraGroupsLoaded = false;
+  
+  const modalElement = document.getElementById('nvrModal');
+  const modalForm = document.getElementById('cameraForm');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalSubmitButton = document.getElementById('modalSubmitButton');
+  const modalTabs = document.getElementById('modalTabs');
+  
+  // ======================================================
+  // =================== UTILITIES ========================
+  // ======================================================
+  async function apiPost(url, body) {
+      try {
+          const response = await fetch(url, {
+              method: 'POST',
+              body: body
+          });
+          const data = await response.json();
+          showNotification({
+              status: response.ok ? 'success' : 'error',
+              message: data.detail || data.message || 'An error occurred.'
+          });
+          return { ok: response.ok, data: data };
+      } catch (error) {
+          console.error('API POST Error:', error);
+          showNotification({ status: 'error', message: 'Network or server error.' });
+          return { ok: false, data: null };
+      }
+  }
+
+  function showNotification({ status, message }) {
+    const container = document.getElementById('notification-container');
+    const notif = document.createElement('div');
+    const statusClass = status === 'success' ? 'bg-green-500' : 'bg-red-500';
+    const icon = status === 'success' ? '✅' : '❌';
+    notif.className = `flex items-center p-4 mb-4 rounded-lg shadow-lg text-white transform transition-all duration-300 ease-in-out opacity-0 translate-y-[-20px] ${statusClass}`;
+    notif.innerHTML = `<span class="mr-3 text-lg">${icon}</span> <span class="font-medium">${message}</span>`;
+    container.appendChild(notif);
+    requestAnimationFrame(() => notif.classList.remove('opacity-0', 'translate-y-[-20px]'));
+    setTimeout(() => {
+      notif.classList.add('opacity-0');
+      notif.addEventListener('transitionend', () => notif.remove());
+    }, 3500);
+  }
+
+  // ======================================================
+  // ================== DATA LOADING ======================
+  // ======================================================
+  window.loadPage = async function(page = 1) {
+    const search = document.getElementById("searchInput").value;
+    const tbody = document.getElementById('camera-body');
+    const paginationContainer = document.getElementById('pagination-controls');
+    
+    try {
+        tbody.style.opacity = "0.5";
+        const res = await fetch(`/nvrs/data?page=${page}&search=${encodeURIComponent(search || '')}`);
+        
+        // --- PERBAIKAN DI SINI ---
+        // Jika status adalah 404 (Not Found), anggap saja tidak ada data, bukan error.
+        if (res.status === 404) {
+            tbody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-gray-500">No NVRs found.</td></tr>`;
+            paginationContainer.innerHTML = ''; // Kosongkan juga kontrol paginasi
+            return; // Hentikan eksekusi fungsi di sini
+        }
+        
+        // Untuk error lainnya (misal: 500, 401, dll), tetap tampilkan sebagai error
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const [rowsHtml, paginationHtml] = (await res.text()).split('|||');
+        
+        tbody.innerHTML = rowsHtml || `<tr><td colspan="11" class="p-6 text-center text-gray-500">No NVRs found.</td></tr>`;
+        paginationContainer.innerHTML = paginationHtml || '';
+        
+        const url = new URL(window.location);
+        url.searchParams.set('page', page);
+        if (search) {
+            url.searchParams.set('search', search);
+        } else {
+            url.searchParams.delete('search');
+        }
+        window.history.pushState({ page }, '', url);
+        
+    } catch (err) {
+        console.error("Failed to load page:", err);
+        // Notifikasi error hanya akan muncul untuk error selain 404
+        showNotification({ status: 'error', message: 'Failed to load camera data.' });
+    } finally {
+        tbody.style.opacity = "1";
+    }
+}
+
+  async function loadCameraGroups() {
+    if (cameraGroupsLoaded) return;
+    try {
+      const response = await fetch('/api/camera_groups');
+      cameraGroups = await response.json();
+      cameraGroupsLoaded = true;
+    } catch (error) {
+      console.error("Failed to load groups:", error);
+    }
+  }
+
+  function populateGroupSelect(selectedValue = "") {
+    const select = document.getElementById('group_name');
+    select.innerHTML = '<option value="">-- Select Division --</option>';
+    cameraGroups.forEach(group => {
+      const option = document.createElement('option');
+      option.value = group.name;
+      option.textContent = group.name;
+      option.selected = (group.name === selectedValue);
+      select.appendChild(option);
+    });
+  }
+
+  // ======================================================
+  // =============== MODAL HANDLING =====================
+  // ======================================================
+  function setupTabs() {
+    modalTabs.addEventListener('click', (e) => {
+      const button = e.target.closest('.tab-button');
+      if (!button) return;
+      
+      const targetTab = button.dataset.tab;
+      
+      modalElement.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+      modalElement.querySelectorAll('.tab-button span').forEach(s => {
+        s.classList.remove('text-blue-600', 'border-blue-600');
+        s.classList.add('border-transparent', 'text-gray-500');
+      });
+      
+      modalElement.querySelector(`#tab-${targetTab}`).classList.remove('hidden');
+      button.querySelector('span').classList.add('text-blue-600', 'border-blue-600');
+    });
+  }
+
+  function showModal() {
+    modalElement.classList.remove('hidden');
+    requestAnimationFrame(() => {
+      const modalContent = modalElement.querySelector('.transform');
+      modalContent.classList.remove('opacity-0', '-translate-y-4');
+    });
+  }
+  
+  function hideNVRmodal() {
+    const modalContent = modalElement.querySelector('.transform');
+    modalContent.classList.add('opacity-0', '-translate-y-4');
+    modalContent.addEventListener('transitionend', () => {
+      modalElement.classList.add('hidden');
+    }, { once: true });
+  }
+
+  window.showAddNVRModal = async () => {
+    modalForm.reset();
+    modalTitle.textContent = 'Add New NVR';
+    modalSubmitButton.textContent = 'Add NVR';
+    document.getElementById('password-help').textContent = 'Password is required.';
+    document.getElementById('password').required = true;
+    // document.getElementById('previous-name').hidden = true;
+    // document.querySelectorAll('#tab-basic > div')[1].classList.add('hidden');
+
+    modalForm.onsubmit = handleAddCamera;
+
+    await loadCameraGroups();
+    populateGroupSelect();
+    
+    modalTabs.querySelector('.tab-button[data-tab="basic"]').click();
+    showModal();
+  };
+
+window.showEditNVRModal = async (nvr_id) => {
+    modalForm.reset();
+    modalTitle.textContent = 'Edit NVR'; // Judul diubah agar sesuai
+    modalSubmitButton.textContent = 'Save Changes';
+    document.getElementById('password-help').textContent = 'Leave blank to keep current password.';
+    document.getElementById('password').required = false;
+    modalForm.onsubmit = handleEditCamera;
+    
+    // Baris ini sebelumnya menyembunyikan field IP, kita pastikan terlihat saat edit
+    document.querySelectorAll('#tab-basic > div')[1].classList.remove('hidden');
+
+    try {
+        // 1. Ambil data group/divisi dan data NVR secara bersamaan
+        await loadCameraGroups(); 
+        const response = await fetch(`/api/nvr/${nvr_id}`);
+        if (!response.ok) throw new Error('NVR not found');
+        const nvr = await response.json();
+        
+        // --- BAGIAN UTAMA PERBAIKAN ADA DI SINI ---
+        
+        // PERBAIKAN: ID input yang benar adalah 'cameraId' (huruf 'c' kecil)
+        document.getElementById('cameraId').value = nvr.id;
+        
+        // Mengisi Tab "Basic Info"
+        document.getElementById('name').value = nvr.hostname || '';
+        document.getElementById('ip').value = nvr.ip || '';
+        document.getElementById('username').value = nvr.username || '';
+        document.getElementById('password').value = nvr.password || ''; // Selalu kosongkan password saat edit
+
+        // Mengisi Tab "Location & Asset"
+        document.getElementById('latitude').value = nvr.latitude || '';
+        document.getElementById('longitude').value = nvr.longitude || '';
+        document.getElementById('asset_no').value = nvr.asset_no || '';
+        document.getElementById('location').value = nvr.location || '';
+        
+        // PERBAIKAN: ID select yang benar adalah 'group_name'
+        // Fungsi ini akan mengisi dropdown dan memilih value yang sesuai
+        populateGroupSelect(nvr.group ? nvr.group.name : "");
+
+        // TAMBAHAN: Mengisi status NVR
+        document.getElementById('status').value = nvr.status || 'Active';
+
+        // Tampilkan modal setelah semua data terisi
+        modalTabs.querySelector('.tab-button[data-tab="basic"]').click();
+        showModal();
+
+    } catch(error) {
+        console.error('Error fetching NVR for edit:', error);
+        showNotification({ status: 'error', message: 'Failed to load NVR data.' });
+    }
+};
+  
+  window.hideNVRmodal = hideNVRmodal;
+
+  // ======================================================
+  // ================= FORM SUBMISSION ====================
+  // ======================================================
+  async function handleAddCamera(event) {
+    event.preventDefault();
+    const result = await apiPost('/nvrs/create', new FormData(modalForm));
+    if (result.ok) {
+        hideNVRmodal();
+        loadPage(1);
+    }
+  }
+
+  async function handleEditCamera(event) {
+    event.preventDefault();
+    const cameraId = document.getElementById('cameraId').value;
+    // --- PERBAIKAN URL DI SINI ---
+    const result = await apiPost(`/nvrs/edit/${cameraId}`, new FormData(modalForm));
+    if (result.ok) {
+      hideNVRmodal();
+      const currentPage = new URLSearchParams(window.location.search).get('page') || 1;
+      loadPage(currentPage);
+    }
+  }
+
+  // ======================================================
+  // ============== EVENT LISTENERS =======================
+  // ======================================================
+  document.getElementById('searchForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    loadPage(1);
+  });
+  
+  modalElement.addEventListener('click', (e) => {
+    if (e.target === modalElement) hideNVRmodal();
+  });
+
+  // Init
+  loadPage(new URLSearchParams(window.location.search).get('page') || 1);
+  setupTabs();
+});
+
+// Expose functions to global scope for inline onclick handlers
+window.confirmDelete = (camId) => {
+    if (confirm('Are you sure you want to delete this camera? This action cannot be undone.')) {
+        fetch(`/nvrs/delete/${camId}`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                const notifContainer = document.getElementById('notification-container');
+                const notif = document.createElement('div');
+                notif.textContent = data.message;
+                notif.className = (data.status === 'success' ? 'bg-green-500' : 'bg-red-500') + ' text-white p-3 rounded';
+                notifContainer.appendChild(notif);
+                setTimeout(() => notif.remove(), 3000);
+
+                if (data.status === 'success') {
+                    const currentPage = new URLSearchParams(window.location.search).get('page') || 1;
+                    loadPage(currentPage);
+                }
+            })
+            .catch(err => alert('Failed to delete camera.'));
+    }
+};
+
+let currentSort = { column: null, direction: 'asc' };
+  function sortTable(columnIndex) {
+    const tbody = document.getElementById("camera-body");
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    currentSort.direction = (currentSort.column === columnIndex && currentSort.direction === 'asc') ? 'desc' : 'asc';
+    currentSort.column = columnIndex;
+    
+    clearArrows();
+    updateArrow(columnIndex, currentSort.direction);
+    
+    rows.sort((a, b) => {
+      const aValue = a.cells[columnIndex].innerText.trim();
+      const bValue = b.cells[columnIndex].innerText.trim();
+      return currentSort.direction === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+    });
+    
+    tbody.innerHTML = ""; // Clear existing rows
+    rows.forEach(row => tbody.appendChild(row)); // Append sorted rows
+  }
+  function clearArrows() {
+    document.querySelectorAll('th span').forEach(arrow => arrow.textContent = '');
+  }
+  function updateArrow(index, dir) {
+    const ids = ['id-arrow', 'ip-arrow', 'port-arrow']; // Add more if needed
+    if(ids[index]) document.getElementById(ids[index]).textContent = dir === 'asc' ? '↑' : '↓';
+  }
+</script>
+{% endblock %}

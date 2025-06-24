@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Configuration{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-3xl font-bold text-blue-700 dark:text-blue-300 mb-6">⚙️ Settings</h1>
+
+  <!-- Tambahkan id="configForm" -->
+  <form id="configForm" class="space-y-6">
+    <div>
+      <label class="block mb-2 text-sm font-medium">Snapshot Interval (minutes)</label>
+      <input type="number" name="snapshot_interval_minutes" value="{{ configs.get('snapshot_interval_minutes', 600) }}" required
+        class="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+    </div>
+    
+    <div>
+      <label class="block mb-2 text-sm font-medium">Healthcheck Interval (minutes)</label>
+      <input type="number" name="healthcheck_interval_minutes" value="{{ configs.get('healthcheck_interval_minutes', 60) }}" required
+        class="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+    </div>
+    
+    <div>
+      <label class="block mb-2 text-sm font-medium">Snapshot Concurrent Workers</label>
+      <input type="number" name="snapshot_concurrent_workers" value="{{ configs.get('snapshot_concurrent_workers', 5) }}" required
+        class="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+    </div>
+
+    <div>
+      <label class="block mb-2 text-sm font-medium">Items per Page</label>
+      <input type="number" name="pagination_per_page" value="{{ configs.get('pagination_per_page', 10) }}" required
+        class="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+    </div>
+
+    <div>
+      <label class="block mb-2 text-sm font-medium">Max. Snapshots per Camera</label>
+      <input type="number" name="max_screenshot_per_camera" value="{{ configs.get('max_screenshot_per_camera', 3) }}" required
+        class="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+    </div>
+
+    <div>
+      <label class="block mb-2 text-sm font-medium">Snapshot Watermark Text</label>
+      <input type="text" name="watermark_text" value="{{ configs.get('watermark_text', '') }}" required
+        class="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+    </div>
+
+    <div class="mt-6">
+      <button type="button" onclick="saveConfigAndReload()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        💾 Save and Reload
+      </button>  
+    </div>
+  </form>
+</div>
+
+<script>
+  async function saveConfigAndReload() {
+    const form = document.getElementById('configForm');
+    const formData = new FormData(form);
+  
+    // Submit perubahan config
+    await fetch('/config/save', {
+      method: 'POST',
+      body: formData
+    });
+  
+    // Setelah config disimpan, trigger reload scheduler
+    await fetch('/reload-config', {
+      method: 'POST'
+    });
+  
+    // Munculkan notifikasi sukses
+    showToast("✅ Configuration updated and scheduler reloaded!");
+
+    // Optional: Reload page (kalau mau langsung refresh)
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000); // 2 detik setelah toast muncul
+  }
+
+  function showToast(message) {
+    // Cek kalau sudah ada toast sebelumnya, hapus dulu
+    const existing = document.getElementById('toast-notification');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'toast-notification';
+    toast.className = 'fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded shadow-lg z-50 animate-bounce';
+    toast.innerText = message;
+    
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.remove();
+    }, 3000); // Hilang setelah 3 detik
+  }
+</script>
+
+{% endblock %}

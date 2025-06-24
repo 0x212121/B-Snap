@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Camera Statistics{% endblock %}
+
+{% block content %}
+
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-3xl font-bold text-blue-700 dark:text-blue-300 mb-6">📈 Camera Snapshot Stats</h1>
+
+  <div class="flex items-center gap-4 mb-6">
+    <select id="cameraDropdown" class="border p-2 rounded dark:bg-gray-800 dark:text-white">
+      <option value="">All Cameras</option>
+      {% for name in camera_names %}
+      <option value="{{ name | urlencode }}" {% if selected_camera == name %}selected{% endif %}>{{ name }}</option>
+      {% endfor %}
+    </select>
+    <select id="periodDropdown" class="border p-2 rounded dark:bg-gray-800 dark:text-white">
+      <option value="7" selected>Last 7 Days</option>
+      <option value="14">Last 14 Days</option>
+      <option value="30">Last 30 Days</option>
+      <option value="90">Last 90 Days</option>
+      <option value="365">Last Year</option>
+    </select>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 p-6 rounded shadow mb-6">
+    <canvas id="snapshotChart" height="100"></canvas>
+  </div>
+
+  <!-- <div class="bg-white dark:bg-gray-800 p-6 rounded shadow mb-6">
+    <h2 class="text-xl font-semibold text-blue-700 dark:text-blue-300 mb-4">🔥 Snapshot Heatmap</h2>
+    <canvas id="heatmapCanvas" height="100"></canvas>
+  </div> -->
+
+  <div id="noDataCamerasSection" class="bg-red-100 dark:bg-red-900 p-4 rounded shadow {% if not no_data_cameras %}hidden{% endif %}">
+    <h2 class="text-xl font-bold mb-2 text-red-700 dark:text-red-300">
+      📛 Cameras Without Snapshots (<span id="totalNoDataCamerasCount">0</span>)
+    </h2>
+    <ul id="noDataCamerasList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-red-800 dark:text-red-100 list-disc list-inside">
+    </ul>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  let chartInstance;
+  let heatmapChartInstance;
+
+  async function fetchStats(camera = "", days = 7) {
+    const res = await fetch(`/stats/data?camera=${camera}&days=${days}`);
+    const data = await res.json();
+
+    updateChart(data.chart_labels, data.chart_data);
+    updateNoDataCameras(data.no_data_cameras);
+  }
+
+  async function fetchHeatmap(camera = "", days = 7) {
+    const res = await fetch(`/stats/heatmap?camera=${camera}&days=${days}`);
+    const data = await res.json();
+
+    updateHeatmap(data.labels, data.datasets);
+  }
+
+  function updateChart(labels, values) {
+    const ctx = document.getElementById('snapshotChart').getContext('2d');
+    if (chartInstance) chartInstance.destroy();
+
+    chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Snapshots',
+          data: values,
+          backgroundColor: 'rgba(59, 130, 246, 0.7)',
+          borderColor: 'rgba(59, 130, 246, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  function updateHeatmap(labels, datasets) {
+    const ctx = document.getElementById('heatmapCanvas').getContext('2d');
+    if (heatmapChartInstance) heatmapChartInstance.destroy();
+
+    heatmapChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: datasets.map((d, idx) => ({
+          label: d.label,
+          data: d.data,
+          backgroundColor: `rgba(234, 88, 12, ${0.3 + 0.1 * (idx % 5)})`
+        }))
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } }
+        }
+      }
+    });
+  }
+
+  function updateNoDataCameras(cameras) {
+    const ul = document.getElementById('noDataCamerasList');
+    const totalCountSpan = document.getElementById('totalNoDataCamerasCount');
+    const noDataSection = document.getElementById('noDataCamerasSection');
+
+    totalCountSpan.textContent = cameras.length;
+    noDataSection.classList.toggle('hidden', cameras.length === 0);
+
+    ul.innerHTML = "";
+    cameras.forEach(cam => {
+      const li = document.createElement("li");
+      const statusColor = cam.status === "Online" ? "text-green-600 dark:text-green-400"
+        : cam.status === "Offline" ? "text-red-600 dark:text-red-400"
+        : "text-yellow-600 dark:text-yellow-300";
+
+      li.innerHTML = `<span class="${statusColor} font-semibold">${cam.hostname}</span> - <span class="italic">${cam.status}</span>`;
+      ul.appendChild(li);
+    });
+  }
+
+  document.getElementById("cameraDropdown").addEventListener("change", (e) => {
+    const selectedPeriod = document.getElementById("periodDropdown").value;
+    fetchStats(e.target.value, selectedPeriod);
+    fetchHeatmap(e.target.value, selectedPeriod);
+  });
+
+  document.getElementById("periodDropdown").addEventListener("change", (e) => {
+    const selectedCamera = document.getElementById("cameraDropdown").value;
+    fetchStats(selectedCamera, e.target.value);
+    fetchHeatmap(selectedCamera, e.target.value);
+  });
+
+  fetchStats();
+  fetchHeatmap();
+</script>
+
+{% endblock %}

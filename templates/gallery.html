@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Gallery{% endblock %}
+
+{% block content %}
+<style>
+  .lazy-img {
+    filter: blur(10px);
+    transition: filter 0.3s ease-out;
+  }
+  .lazy-img.loaded {
+    filter: blur(0);
+  }
+</style>
+
+<div class="container mx-auto px-4 py-8">
+  
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed top-5 right-5 z-50 hidden bg-green-500 text-white px-4 py-2 rounded shadow-md transition-all duration-300"></div>
+  
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-blue-700 dark:text-blue-300">📷 CCTV Snapshot Gallery</h1>
+  </div>
+  
+  <!-- Filter Form -->
+  <form id="filterForm" class="flex flex-wrap justify-center items-center gap-4 mb-6">
+    <input id="searchInput" type="text" placeholder="Search Camera Name..."
+    class="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-64 focus:outline-none focus:ring focus:ring-blue-200" />
+    
+    <select id="cameraSelect" name="camera"
+    class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-[20rem] sm:w-[24rem] focus:outline-none">
+    <option value="">🎥 All Camera</option>
+    {% for cname in camera_names | sort %}
+    <option value="{{ cname }}" {% if selected_camera == cname %}selected{% endif %}>{{ cname }}</option>
+    {% endfor %}
+  </select>
+  
+  <button type="button" id="clearSearchInput"
+  class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear Search</button>
+  
+  {% if selected_camera %}
+  <button type="button" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+  data-action="snapshot" data-camera="{{ selected_camera }}">📸 Snapshot</button>
+  <button type="button" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
+  data-action="delete-all" data-camera="{{ selected_camera }}">🗑️ Delete All</button>
+  {% endif %}
+</form>
+
+<!-- Snapshot Grid -->
+<div id="snapshotGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+  {% for image in images %}
+  <div class="snapshot-card relative bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden group transform transition duration-300 hover:scale-105" data-camera="{{ image.camera }}">
+    <img src="{{ image.url | urlencode }}" alt="Snapshot"
+    onclick="showModal('{{ image.url | urlencode }}', '{{ image.camera }}', '{{ image.time }}')"
+    class="w-full h-48 object-cover cursor-pointer"
+    loading="lazy" />
+    <div class="p-4 text-center">
+      <p class="font-semibold text-base truncate">{{ image.camera }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">{{ image.ip }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">{{ image.time }}</p>
+    </div>
+    <button onclick="event.stopPropagation(); deleteSnapshot('{{ image.url.split('/')[-1] | urlencode }}')"
+    class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded hover:bg-red-700 opacity-0 group-hover:opacity-100 transition">
+    🗑️
+  </button>
+</div>
+{% endfor %}
+</div>
+
+<!-- Modal Viewer -->
+<div id="modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
+  <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl max-h-[80vh]">
+    <div class="relative">
+      <img id="modal-img" src="" class="rounded w-full object-contain max-h-[70vh]" />
+      <div id="modal-info" class="absolute top-0 right-0 bg-black bg-opacity-60 text-white text-sm px-3 py-1 rounded shadow">
+      </div>
+    </div>
+    <div class="flex justify-end mt-2 space-x-4">
+      <a id="download-btn" href="#" download class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">⬇️ Download</a>
+      <button onclick="hideModal()" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded">✖ Close</button>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Tom Select -->
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+<script>
+  let tom;
+  
+  // Inisialisasi ulang TomSelect
+  function initTomSelect() {
+    if (tom) tom.destroy();
+    tom = new TomSelect("#cameraSelect", {
+      maxOptions: 500,
+      allowEmptyOption: true,
+      placeholder: 'Select Camera...',
+      sortField: { field: "text", direction: "asc" },
+      create: false,
+      highlight: true,
+      onChange: () => document.getElementById("filterForm").submit()
+    });
+  }
+  
+  initTomSelect();
+  
+  // Notifikasi toast
+  function showToast(msg, isError = false) {
+    const toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.className = `fixed top-5 right-5 z-50 px-4 py-2 rounded shadow-md transition-all duration-300 ${isError ? "bg-red-500" : "bg-green-500"} text-white`;
+    toast.classList.remove("hidden");
+    setTimeout(() => toast.classList.add("hidden"), 3000);
+  }
+  
+  // Delegasi aksi tombol
+  document.addEventListener("click", async (e) => {
+    const target = e.target.closest("[data-action]");
+    if (!target) return;
+    
+    const action = target.dataset.action;
+    const camera = target.dataset.camera;
+    
+    if (action === "snapshot") {
+      const res = await fetch(`/snapshot/trigger/${encodeURIComponent(camera)}`, { method: "POST" });
+      const data = await res.json();
+      showToast(data.message, data.status !== "success");
+      if (data.status === "success") setTimeout(() => location.reload(), 1000);
+    }
+    
+    if (action === "delete-all") {
+      if (!confirm("Delete all snapshots for this camera?")) return;
+      const res = await fetch(`/snapshot/delete/${encodeURIComponent(camera)}`, { method: "DELETE" });
+      const data = await res.json();
+      showToast(`🗑️ Deleted ${data.deleted?.length || 0} snapshots`);
+      setTimeout(() => location.reload(), 1000);
+    }
+  });
+  
+  // Hapus snapshot tunggal
+  function deleteSnapshot(filename) {
+    if (!confirm("Delete this snapshot?")) return;
+    fetch(`/snapshot/delete_one/${filename}`, { method: 'DELETE' })
+    .then(res => res.json())
+    .then(data => {
+      showToast(data.status || "Snapshot deleted");
+      setTimeout(() => location.reload(), 1000);
+    });
+  }
+  
+  // Modal
+  function showModal(src, cameraName = '', timestamp = '') {
+    const modal = document.getElementById("modal");
+    const img = document.getElementById("modal-img");
+    const info = document.getElementById("modal-info");
+    const downloadBtn = document.getElementById("download-btn");
+    
+    img.src = src;
+    info.textContent = `${cameraName} • ${timestamp}`;
+    modal.classList.remove("hidden");
+    
+    downloadBtn.onclick = () => {
+      const canvas = document.createElement('canvas');
+      const i = new Image();
+      i.crossOrigin = "anonymous";
+      i.src = src;
+      i.onload = function () {
+        canvas.width = i.width;
+        canvas.height = i.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(i, 0, 0);
+        ctx.font = '24px sans-serif';
+        ctx.fillStyle = 'white';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'right';
+        ctx.strokeText(cameraName, canvas.width - 20, 40);
+        ctx.fillText(cameraName, canvas.width - 20, 40);
+        ctx.strokeText(timestamp, canvas.width - 20, 70);
+        ctx.fillText(timestamp, canvas.width - 20, 70);
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL("image/jpeg");
+        link.download = `snapshot_${cameraName}_${timestamp.replace(/[\s:]/g, '-')}.jpg`;
+        link.click();
+      };
+    };
+  }
+  
+  function hideModal() {
+    document.getElementById("modal").classList.add("hidden");
+  }
+  
+  // Filter pencarian manual
+  document.getElementById("searchInput")?.addEventListener("input", e => {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll(".snapshot-card").forEach(card => {
+      card.style.display = card.dataset.camera.toLowerCase().includes(q) ? "" : "none";
+    });
+  });
+  
+  document.getElementById("clearSearchInput")?.addEventListener("click", () => {
+    document.getElementById("searchInput").value = '';
+    tom.clear();
+    document.querySelectorAll(".snapshot-card").forEach(card => card.style.display = "");
+  });
+  
+  // Fallback lazy load jika browser tidak support loading="lazy"
+  document.addEventListener("DOMContentLoaded", () => {
+    if ('loading' in HTMLImageElement.prototype) {
+      // Native supported, just add loaded effect
+      document.querySelectorAll('img[loading="lazy"]').forEach(img => {
+        img.addEventListener('load', () => {
+          img.classList.add('loaded');
+        });
+      });
+    } else {
+      // Fallback: manual intersection observer
+      const lazyImages = document.querySelectorAll('img.lazy-img');
+      const observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            img.src = img.dataset.src;
+            img.addEventListener('load', () => img.classList.add('loaded'));
+            obs.unobserve(img);
+          }
+        });
+      });
+      lazyImages.forEach(img => observer.observe(img));
+    }
+  });
+  
+</script>
+{% endblock %}

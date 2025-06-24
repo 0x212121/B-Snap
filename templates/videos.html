@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Video Gallery{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-3xl font-bold text-blue-700 dark:text-blue-300 mb-6">🎞️ Video Gallery</h1>
+  
+  {% if videos %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+    {% for video in videos %}
+    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-opacity duration-500 ease-in-out" data-filename="{{ video.filename }}">
+    <!-- Delete button -->
+    <button onclick="deleteVideo('{{ video.filename }}')" class="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700">
+      🗑️
+    </button>
+    
+    <!-- Video player -->
+    <video 
+    src="{{ video.url | urlencode }}" 
+    controls preload="none"
+    class="w-full h-48 object-cover rounded">
+    </video>
+  <!-- Caption -->
+  <div class="mt-2 text-center">
+    <p class="font-semibold text-base">{{ video.camera }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">{{ video.time }}</p>
+  </div>
+</div>
+{% endfor %}
+</div>
+{% else %}
+<p class="text-center text-gray-500 dark:text-gray-400">No videos found.</p>
+{% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Toast Notification -->
+<div id="toast" class="fixed top-5 right-5 z-50 hidden bg-green-500 text-white px-4 py-2 rounded shadow-md transition-all duration-300"></div>
+
+<script>
+  function showToast(message, isError = false) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.remove('hidden');
+    toast.classList.remove('bg-green-500', 'bg-red-500');
+    toast.classList.add(isError ? 'bg-red-500' : 'bg-green-500');
+    
+    setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 3000);
+  }
+  
+  async function deleteVideo(filename) {
+    if (!confirm(`Are you sure you want to delete ${filename}?`)) return;
+    
+    try {
+      const res = await fetch(`/videos/${encodeURIComponent(filename)}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        // Smooth fade-out animation
+        const card = document.querySelector(`[data-filename="${filename}"]`);
+        if (card) {
+          card.style.opacity = '0';
+          setTimeout(() => card.remove(), 500); // Wait for transition
+        }
+        showToast(data.message);
+      } else {
+        showToast(data.detail || data.message || "Failed to delete video", true);
+      }
+    } catch (err) {
+      showToast("❌ Network error", true);
+    }
+  }
+</script>
+{% endblock %}

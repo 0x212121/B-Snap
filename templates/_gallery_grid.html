@@ -1,0 +1,36 @@
+<!-- 
+  This template contains only the grid items.
+  It's rendered by the /gallery-data endpoint and injected into the main page.
+-->
+{% for image in images %}
+<div class="snapshot-card relative bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden group transform transition duration-300 hover:scale-105" data-camera="{{ image.camera }}">
+  <!-- Image -->
+  <img src="{{ image.url }}" alt="Snapshot for {{ image.camera }}"
+    onclick="showModal('{{ image.url }}', '{{ image.camera }}', '{{ image.time }}')"
+    class="w-full h-48 object-cover cursor-pointer rounded-t-xl lazy-img"
+    loading="lazy" />
+  
+  <!-- Card Content -->
+  <div class="p-4 text-center">
+    <h2 class="font-semibold text-lg text-gray-800 dark:text-white truncate">{{ image.camera }}</h2>
+    <div class="text-sm text-gray-500 dark:text-gray-400 mt-2 space-y-1 text-left">
+      <p><span class="font-medium text-gray-600 dark:text-gray-300">📍 IP:</span> {{ image.ip }}</p>
+      <p><span class="font-medium text-gray-600 dark:text-gray-300">🕒 Time:</span> {{ image.time }}</p>
+      <p><span class="font-medium text-gray-600 dark:text-gray-300">🏷️ Group:</span> {{ image.group }}</p>
+      <p><span class="font-medium text-gray-600 dark:text-gray-300">📁 Size:</span> {{ image.file_size }} kB</p>
+      <p><span class="font-medium text-gray-600 dark:text-gray-300">🖼️ Res:</span> {{ image.resolution }}</p>
+    </div>
+  </div>
+
+  <!-- Delete Button -->
+  <button onclick="event.stopPropagation(); deleteSnapshot('{{ image.id }}', this)"
+    class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded hover:bg-red-700 opacity-0 group-hover:opacity-100 transition">
+    🗑️
+  </button>
+</div>
+{% else %}
+<div class="col-span-1 sm:col-span-2 md:col-span-3 text-center py-12">
+    <p class="text-gray-500 dark:text-gray-400 text-lg">No snapshots found for the selected criteria.</p>
+</div>
+{% endfor %}
+
