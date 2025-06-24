@@ -19,7 +19,6 @@ from app.models_sql import Camera, Snapshot
 
 # BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 STATIC_DIR = os.path.join("static", "snapshots")
-WATERMARK_TEXT = get_config("watermark_text")
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +71,7 @@ def take_snapshot(camera: Camera, db: Session) -> dict:
 
 
 def try_http_snapshot(camera: Camera, db: Session) -> dict:
+    WATERMARK_TEXT = get_config("watermark_text", default="Property of Company")
     try:
         cam = ONVIFCamera(camera.ip, camera.port, camera.username, camera.password)
         media = cam.create_media_service()
@@ -105,6 +105,7 @@ def try_http_snapshot(camera: Camera, db: Session) -> dict:
 
 def try_rtsp_snapshot(camera: Camera, db: Session) -> dict:
     cap = None
+    WATERMARK_TEXT = get_config("watermark_text", default="Property of Company")
     try:
         rtsp_uri = get_rtsp_url(camera)
         if not rtsp_uri:

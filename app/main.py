@@ -77,6 +77,8 @@ app = FastAPI(
     docs_url=None,  # default
     redoc_url=None  # optional)
 )
+# Mount static folder (for images)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # ====================================================================
 # "OTAK" PENERJEMAH ERROR (EXCEPTION HANDLER)
@@ -128,8 +130,6 @@ app.include_router(dev_docs.router)
 
 app.add_middleware(SessionMiddleware, secret_key="secret123!@#")
 app.add_middleware(GZipMiddleware, minimum_size=1000)
-# Mount static folder (for images)
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Setup templates
 templates = Jinja2Templates(directory="templates")
@@ -141,11 +141,18 @@ async def redirect_to_setup_if_no_users(request: Request, call_next):
     has_user = db.query(User).first()
     db.close()
 
-    if not has_user and not request.url.path.startswith("/setup"):
-        return RedirectResponse(url="/setup")
-    
-    response = await call_next(request)
-    return response
+    path = request.url.path
+
+    # Bypass static files and setup route
+    if (
+        has_user
+        or path.startswith("/setup")
+        or path.startswith("/static")
+        # or path.startswith("/static/icons/favicon-white.ico")
+    ):
+        return await call_next(request)
+
+    return RedirectResponse(url="/setup")
 
 
 @app.get("/logout")
