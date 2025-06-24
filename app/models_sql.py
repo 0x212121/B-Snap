@@ -83,6 +83,7 @@ class Camera(Base):
     health = relationship("CameraHealth", back_populates="camera", uselist=False, cascade="all, delete-orphan")
     daily_stats = relationship("CameraDailyStats", back_populates="camera", cascade="all, delete-orphan")
     snapshots = relationship("Snapshot", back_populates="camera", cascade="all, delete-orphan")
+    videos = relationship("Video", back_populates="camera", cascade="all, delete-orphan")
 
 
 class CameraHealth(Base):
@@ -174,6 +175,24 @@ class Snapshot(Base):
     resolution = Column(String)
 
     camera = relationship("Camera", back_populates="snapshots")
+
+
+class Video(Base):
+    __tablename__ = "videos"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    camera_id = Column(String(36), ForeignKey("cameras.id"), nullable=True) # Can be nullable if camera is deleted
+
+    camera_name = Column(String, nullable=False)
+    camera_ip = Column(String, nullable=True)
+    camera_group = Column(String, nullable=True)
+
+    timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    file_path = Column(String, nullable=False, unique=True)
+    file_size = Column(Integer)
+    duration = Column(Integer) # in seconds
+
+    camera = relationship("Camera", back_populates="videos")
 
 
 class SnapshotLog(Base):

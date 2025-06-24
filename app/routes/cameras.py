@@ -19,7 +19,7 @@ from app.core.config import get_config
 from app.routes.auth import admin_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.health_check import ping_camera_by_id
-from app.utils.video import record_video_clip
+from app.utils.video import record_video_and_save_db
 from app.utils.decorators import admin_required
 from sqlalchemy.orm import Session, joinedload
 from fastapi.responses import StreamingResponse
@@ -209,7 +209,7 @@ async def capture_video(request: Request, camera_id: str, current_admin: User = 
         if not camera:
             return {"status": "error", "message": "Camera not found"}
         
-        asyncio.create_task(record_video_clip(camera_id))
+        asyncio.create_task(record_video_and_save_db(camera_id, 5))
         return {"status": "success", "message": f"🎥 Recording 5s video from {camera.hostname}..."}
     finally:
         db.close()

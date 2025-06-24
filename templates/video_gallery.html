@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Video Gallery{% endblock %}
+
+{% block content %}
+<style>
+  #videoGrid {
+    transition: opacity 0.3s ease-in-out;
+  }
+</style>
+
+<div class="container mx-auto px-4 py-8">
+  <div id="toast" class="fixed top-5 right-5 z-50 hidden bg-green-500 text-white px-4 py-2 rounded shadow-md transition-all duration-300"></div>
+  
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-blue-700 dark:text-blue-300">🎞️ Video Gallery</h1>
+  </div>
+  
+  <form id="filterForm" class="flex flex-wrap justify-center items-center gap-4 mb-6" onsubmit="return false;">
+    <input id="searchInput" type="text" placeholder="Search Camera Name..."
+      class="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-64 focus:outline-none focus:ring focus:ring-blue-200" />
+
+    <select id="cameraSelect" name="camera"
+      class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-[20rem] sm:w-[24rem] focus:outline-none">
+      <option value="">🎥 All Cameras</option>
+      {% for cname in camera_names | sort %}
+      <option value="{{ cname }}" {% if cname == selected_camera %}selected{% endif %}>{{ cname }}</option>
+      {% endfor %}
+    </select>
+
+    <button type="button" id="clearFilterBtn"
+      class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Delete Filter</button>
+  </form>
+
+  <div id="videoGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    {% include '_video_grid.html' %}
+  </div>
+
+  <!-- Modal for video playback -->
+  <div id="modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50 p-4" onclick="hideModal()">
+    <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl w-full" onclick="event.stopPropagation()">
+        <video id="modal-video" src="" class="rounded w-full max-h-[75vh]" controls autoplay></video>
+        <div id="modal-info" class="text-center mt-2 text-gray-800 dark:text-white"></div>
+        <div class="flex justify-center md:justify-end mt-4 space-x-4">
+            <a id="download-btn" href="#" download class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+              Unduh
+            </a>
+            <button onclick="hideModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded inline-flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+              Tutup
+            </button>
+        </div>
+    </div>
+</div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script>
+  let tom;
+  let debounceTimer;
+
+  async function fetchAndUpdateGallery(params = {}) {
+    const grid = document.getElementById("videoGrid");
+    grid.style.opacity = '0.5';
+
+    const urlParams = new URLSearchParams();
+    if (params.camera) urlParams.set('camera', params.camera);
+    if (params.q) urlParams.set('q', params.q);
+    
+    try {
+      const response = await fetch(`/video-gallery-data?${urlParams}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      grid.innerHTML = data.html;
+    } catch (error) {
+      console.error("Gagal memperbarui galeri video:", error);
+      showToast("Error memperbarui galeri.", true);
+    } finally {
+      grid.style.opacity = '1';
+    }
+  }
+
+  function initTomSelect() {
+    if (tom) tom.destroy();
+    tom = new TomSelect("#cameraSelect", {
+      maxOptions: 100,
+      allowEmptyOption: true,
+      placeholder: 'Pilih kamera...',
+      onChange: (value) => {
+        const searchQuery = document.getElementById("searchInput").value;
+        fetchAndUpdateGallery({ camera: value, q: searchQuery });
+      }
+    });
+  }
+
+  function deleteVideo(videoId, element) {
+    if (!confirm("Apakah Anda yakin ingin menghapus video ini?")) return;
+
+    const card = element.closest('.video-card');
+    card.style.opacity = '0.5';
+
+    fetch(`/videos/${videoId}`, { method: 'DELETE' })
+      .then(async res => {
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.status === "success") {
+          showToast(data.message || "Video berhasil dihapus");
+          card.remove();
+        } else {
+          showToast(data.detail || data.message || "Gagal menghapus video.", true);
+          card.style.opacity = '1';
+        }
+      })
+      .catch(err => {
+        console.error("Error hapus video:", err);
+        showToast("Error saat menghapus.", true);
+        card.style.opacity = '1';
+      });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    initTomSelect();
+
+    document.getElementById("searchInput")?.addEventListener("input", (e) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const selectedCamera = tom.getValue();
+        fetchAndUpdateGallery({ camera: selectedCamera, q: e.target.value });
+      }, 350);
+    });
+
+    document.getElementById("clearFilterBtn")?.addEventListener("click", () => {
+      document.getElementById("searchInput").value = '';
+      tom.clear();
+    });
+  });
+
+  function showToast(msg, isError = false) {
+    const toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.className = `fixed top-5 right-5 z-50 px-4 py-2 rounded shadow-md transition-all duration-300 ${isError ? "bg-red-500" : "bg-green-500"} text-white`;
+    toast.classList.remove("hidden");
+    setTimeout(() => toast.classList.add("hidden"), 3000);
+  }
+
+  function showModal(videoUrl, cameraName, timestamp) {
+    const modal = document.getElementById("modal");
+    const video = document.getElementById("modal-video");
+    const info = document.getElementById("modal-info");
+    const downloadBtn = document.getElementById("download-btn");
+
+    video.src = videoUrl;
+    info.textContent = `${cameraName} • ${timestamp}`;
+    downloadBtn.href = videoUrl;
+    downloadBtn.download = `video_${cameraName}_${timestamp.replace(/[\s:]/g, '-')}.mp4`;
+    modal.classList.remove("hidden");
+    document.body.style.overflow = 'hidden'; // Mencegah scroll di background
+  }
+
+  function hideModal() {
+    const modal = document.getElementById("modal");
+    const video = document.getElementById("modal-video");
+    video.pause();
+    video.src = ""; // Menghentikan loading video
+    modal.classList.add("hidden");
+    document.body.style.overflow = 'auto'; // Mengembalikan scroll
+  }
+</script>
+{% endblock %}

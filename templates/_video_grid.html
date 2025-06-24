@@ -1,0 +1,37 @@
+{% for video in videos %}
+<div class="video-card relative bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden group transform transition duration-300 hover:scale-105" 
+     data-camera="{{ video.camera }}">
+    
+    <div class="relative">
+        <video preload="metadata" class="w-full h-48 object-cover cursor-pointer rounded-t-xl" 
+               onclick="showModal('{{ video.url | urlencode }}', '{{ video.camera }}', '{{ video.time }}')">
+            <source src="{{ video.url | urlencode }}#t=0.5" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+            ▶
+        </div>
+    </div>
+
+    <div class="p-4 text-center">
+        <h2 class="font-semibold text-lg text-gray-800 dark:text-white truncate">{{ video.camera }}</h2>
+        <div class="text-sm text-gray-500 dark:text-gray-400 mt-2 space-y-1 text-left">
+          <p><span class="font-medium text-gray-600 dark:text-gray-300">🕒 Time:</span> {{ video.time }}</p>
+          <p><span class="font-medium text-gray-600 dark:text-gray-300">🏷️ Group:</span> {{ video.group or 'N/A' }}</p>
+          <p><span class="font-medium text-gray-600 dark:text-gray-300">📁 Size:</span> {{ video.file_size }} kB</p>
+          <p><span class="font-medium text-gray-600 dark:text-gray-300">⏱️ Duration:</span> {{ video.duration or 'N/A' }}s</p>
+        </div>
+    </div>
+    
+    {% if request.session.get('user_role') in ['admin', 'operator'] %}
+    <button onclick="event.stopPropagation(); deleteVideo('{{ video.id }}', this)"
+        class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded hover:bg-red-700 opacity-0 group-hover:opacity-100 transition">
+        🗑️
+    </button>
+    {% endif %}
+</div>
+{% endfor %}
+
+{% if not videos %}
+<p class="text-center text-gray-500 dark:text-gray-400 col-span-full">No videos found for the selected criteria.</p>
+{% endif %}

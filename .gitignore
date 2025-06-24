@@ -1,9 +1,6 @@
 /venv
 /app/static/images
-/app/__pycache__
-/app/routes/__pycache__
-/app/utils/__pycache__
-/app/core/__pycache__
+__pycache__/
 /app/logs
 /app/data.db
 /app/static/videos
@@ -19,4 +16,5 @@ data.db
 public/build/
 dist/
 ffmpeg.exe
+ffprobe.exe
 .venv
