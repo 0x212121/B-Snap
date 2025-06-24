@@ -66,6 +66,7 @@
   - [x] Show uptime for each camera.
 - [x] Changed threshold for High Latency from 200ms to 50ms at healthcheck function.
 - [x] Refactor Access Control Decorator
+- [x] Refactor Video Endpoint
 
 ⏳ Ongoing:
 

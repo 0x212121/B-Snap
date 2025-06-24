@@ -1,4 +1,5 @@
 from fastapi.templating import Jinja2Templates
+from app.core.config import get_config
 from app.db.database import get_db
 from fastapi import APIRouter, Depends, Request
 from app.models_sql import Camera as DBCamera, User
@@ -6,6 +7,7 @@ from sqlalchemy.orm import joinedload, Session
 from app.routes.auth import get_current_user
 from datetime import datetime, timedelta
 import pytz # Import pytz for timezone handling
+
 
 router = APIRouter()
 
@@ -19,7 +21,8 @@ GMT8_TIMEZONE = pytz.timezone('Etc/GMT-8')
 
 @router.get("/maps")
 async def maps(request: Request, current_user: User = Depends(get_current_user)):
-    return templates.TemplateResponse("maps.html", {"request": request})
+    map_title = get_config("map_title", default="Property of Company")
+    return templates.TemplateResponse("maps.html", {"request": request, "map_title": map_title})
 
 
 @router.get("/camera-locations")

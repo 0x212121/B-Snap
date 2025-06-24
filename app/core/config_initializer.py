@@ -9,6 +9,7 @@ DEFAULT_CONFIG = {
     "pagination_per_page": "15",
     "max_screenshot_per_camera": "20",
     "watermark_text": "Property of ...",
+    "map_title": "CCTV Maps"
 }
 
 def seed_config(db: Session):

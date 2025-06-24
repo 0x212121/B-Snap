@@ -43,6 +43,12 @@
         class="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
     </div>
 
+    <div>
+      <label class="block mb-2 text-sm font-medium">Maps Title</label>
+      <input type="text" name="map_title" value="{{ configs.get('map_title', '') }}" required
+        class="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+    </div>
+
     <div class="mt-6">
       <button type="button" onclick="saveConfigAndReload()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
         💾 Save and Reload

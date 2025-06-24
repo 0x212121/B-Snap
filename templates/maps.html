@@ -97,6 +97,7 @@ integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""><
 </style>
 
 <script>
+  const MAP_TITLE = "{{ map_title }}";
   document.addEventListener('DOMContentLoaded', function() {
     const map = L.map('map', {
       zoomDelta: 0.25,
@@ -119,7 +120,7 @@ integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""><
         div.innerHTML = `
         <div class="custom-title-bar">
           <img src="/static/images/logo.png" alt="Logo KPC" class="title-logo">
-            <span class="title-text">KPC CCTV Location Map</span>
+            <span class="title-text">${MAP_TITLE}</span>
           </div>
         `;
         L.DomEvent.disableClickPropagation(div); // Mencegah klik pada judul mengganggu peta
