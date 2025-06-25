@@ -1,6 +1,8 @@
+from datetime import datetime
 import logging
 import os
 from typing import Optional, List, Dict, Any
+from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -21,6 +23,49 @@ VIDEO_URL_BASE = "static/videos"
 VIDEO_FILESYSTEM_BASE = os.path.join("app", "static", "videos")
 
 logger = logging.getLogger(__name__)
+
+# Define Makassar Timezone for reuse
+SG_TZ = ZoneInfo("Asia/Makassar")
+UTC_TZ = ZoneInfo("UTC")
+
+def format_datetime_sgt(dt, tz_name="Asia/Makassar"):
+    """
+    Convert a datetime object or a string timestamp to the Makassar local timezone.
+    """
+    if not dt:  # Handle None or empty strings
+        return ""
+
+    dt_obj = None
+    # Step 1: If the input is a string, parse it into a datetime object.
+    if isinstance(dt, str):
+        try:
+            # fromisoformat() is a modern and fast way to parse "YYYY-MM-DD HH:MM:SS"
+            dt_obj = datetime.fromisoformat(dt)
+        except ValueError:
+            # Fallback for slightly different formats (e.g., without microseconds)
+            try:
+                dt_obj = datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                # If parsing fails, return the original string to avoid errors.
+                return dt
+    elif isinstance(dt, datetime):
+        # If it's already a datetime object, use it directly.
+        dt_obj = dt
+    else:
+        # If the data type is unrecognized, return its string representation.
+        return str(dt)
+
+    # Step 2: Handle timezone conversion.
+    if dt_obj.tzinfo is None:
+        # Assume a "naive" timestamp from the DB is in UTC.
+        dt_obj = dt_obj.replace(tzinfo=UTC_TZ)
+    
+    local_tz = ZoneInfo(tz_name)
+    # Convert to the local timezone and format it, indicating Makassar Time (WITA).
+    return dt_obj.astimezone(local_tz).strftime("%d %B %Y, %H:%M:%S WITA")
+
+# Register the filter so it can be used in Jinja2 templates.
+templates.env.filters["format_datetime"] = format_datetime_sgt
 
 
 def _get_filtered_videos(db: Session, group_id: int, camera_filter: Optional[str] = None, search_query: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -47,10 +92,11 @@ def _get_filtered_videos(db: Session, group_id: int, camera_filter: Optional[str
     return [
         {
             "id": v.id,
-            # CHANGE: Ensure the path always uses forward slashes for URLs
+            # Ensure the path always uses forward slashes for URLs
             "url": f"/{VIDEO_URL_BASE}/{v.file_path.replace('\\', '/')}",
             "camera": v.camera_name,
-            "time": v.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            # Convert timestamp to Makassar timezone for display
+            "time": v.timestamp.astimezone(SG_TZ).strftime("%Y-%m-%d %H:%M:%S"),
             "group": v.camera_group,
             "file_size": int(v.file_size / 1024) if v.file_size else 0,
             "duration": v.duration,
@@ -121,7 +167,7 @@ def delete_video(
         logger.warning(f"Video not found in DB: {video_id}")
         raise HTTPException(status_code=404, detail="Video not found")
     
-    # CHANGE: Safely reconstruct the filesystem path from the POSIX path stored in the DB
+    # Safely reconstruct the filesystem path from the POSIX path stored in the DB
     path_parts = video.file_path.replace('\\', '/').split('/')
     full_file_path = os.path.join(VIDEO_FILESYSTEM_BASE, *path_parts)
 

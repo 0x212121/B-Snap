@@ -31,9 +31,9 @@
   Camera shows “online” status even when ping is 0 ms.
 
 ## 💡 Idea (For Later)
-- [ ] **Master camera/switch IP feature**  
-- [ ] **Engineer photo on check‑in/out**  
-- [ ] **WA notification on snapshot failure**  
+- [ ] **Master camera/switch IP feature**
+- [ ] **Engineer photo on check‑in/out**
+- [ ] **WA notification on snapshot failure**
 - [ ] **Downtime Accumulation**
 
 

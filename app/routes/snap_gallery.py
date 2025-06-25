@@ -54,7 +54,7 @@ def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[
             "url": f"/{SNAPSHOT_BASE_DIR}/snapshots/{s.file_path}",
             "camera": s.camera_name,
             "ip": s.camera_ip,
-            "time": s.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            "time": s.timestamp.strftime("%Y-%m-%d %H:%M:%S WITA"),
             "group": s.camera_group,
             "id": s.id,
             "file_size": int(s.file_size / 1024),
@@ -209,7 +209,7 @@ def show_snapshots(request: Request, db: Session = Depends(get_db), camera: str 
             "url": f"/static/snapshots/{s.file_path}",
             "camera": s.camera_name,
             "ip": s.camera_ip,
-            "time": s.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            "time": s.timestamp.strftime("%Y-%m-%d %H:%M:%S WITA"),
             "group": s.camera_group,
             "id": s.id,
             "file_size": int(s.file_size / 1024) if s.file_size else 0, # Menambahkan pengecekan jika file_size null
