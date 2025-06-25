@@ -67,18 +67,31 @@ def scheduled_snapshot():
                 logger.error(f"[EXCEPTION] Unhandled error for {cam.hostname}: {e}")
 
 
+# Global state untuk menyimpan konfigurasi terakhir
+last_config = {
+    "snapshot_interval": None,
+    "healthcheck_interval": None
+}
+
+
 def start_scheduler():
     snapshot_interval = get_config("snapshot_interval_minutes", 600)
     healthcheck_interval = get_config("healthcheck_interval_minutes", 60)
     workers = get_config("snapshot_concurrent_workers", 5)
 
-    scheduler.add_job(scheduled_snapshot, 
-                      trigger=IntervalTrigger(minutes=snapshot_interval), 
-                      id='scheduled_snapshot', 
-                      max_instances=workers,
-                      coalesce=True,
-                      misfire_grace_time=60)
-    
+    # Simpan konfigurasi awal ke global state
+    last_config["snapshot_interval"] = snapshot_interval
+    last_config["healthcheck_interval"] = healthcheck_interval
+
+    scheduler.add_job(
+        scheduled_snapshot,
+        trigger=IntervalTrigger(minutes=snapshot_interval),
+        id='scheduled_snapshot',
+        max_instances=workers,
+        coalesce=True,
+        misfire_grace_time=60
+    )
+
     scheduler.add_job(
         ping_all_devices,
         trigger=IntervalTrigger(minutes=healthcheck_interval),
@@ -95,31 +108,34 @@ def start_scheduler():
 
 
 def update_scheduler_config():
-    print(f"Scheduler: {scheduler.print_jobs}")
-
     try:
-        snapshot_interval = get_config("snapshot_interval_minutes", 600)
-        healthcheck_interval = get_config("healthcheck_interval_minutes", 60)
+        new_snapshot_interval = get_config("snapshot_interval_minutes", 600)
+        new_healthcheck_interval = get_config("healthcheck_interval_minutes", 60)
 
-        scheduler.reschedule_job("scheduled_snapshot", trigger=IntervalTrigger(minutes=snapshot_interval))
-        scheduler.reschedule_job("health_check", trigger=IntervalTrigger(minutes=healthcheck_interval))
-        print("[Scheduler] ✅ Scheduler config reloaded.")
-        print(f"""Snapshot interval : {snapshot_interval} min
-Healthcheck interval: {healthcheck_interval} min""")
+        changed = False
 
-        jobs = scheduler.get_jobs()
-        if not jobs:
-            print("⚠️ No active jobs found.")
+        if new_snapshot_interval != last_config["snapshot_interval"]:
+            scheduler.reschedule_job("scheduled_snapshot", trigger=IntervalTrigger(minutes=new_snapshot_interval))
+            last_config["snapshot_interval"] = new_snapshot_interval
+            print(f"[Scheduler] 🔁 Snapshot interval updated to {new_snapshot_interval} minutes.")
+            changed = True
+
+        if new_healthcheck_interval != last_config["healthcheck_interval"]:
+            scheduler.reschedule_job("health_check", trigger=IntervalTrigger(minutes=new_healthcheck_interval))
+            last_config["healthcheck_interval"] = new_healthcheck_interval
+            print(f"[Scheduler] 🔁 Health check interval updated to {new_healthcheck_interval} minutes.")
+            changed = True
+
+        if changed:
+            print("[Scheduler] ✅ Scheduler config updated and jobs rescheduled.")
         else:
-            print("✅ Active Jobs:")
-            for job in jobs:
-                print(f" - ID: {job.id}, Next Run: {job.next_run_time}")
+            print("[Scheduler] ⏸ No config changes detected. Scheduler not updated.")
 
-        # Run scheduler every app start
-        page_item = get_config("pagination_per_page", 10)
-        return page_item
+        return get_config("pagination_per_page", 10)
+
     except Exception as e:
-        logger.info(f"[Scheduler] ⚠️ Failed to reload scheduler config: {e}")
+        logger.warning(f"[Scheduler] ⚠️ Failed to reload scheduler config: {e}")
+
 
 
 def delete_old_audit_logs():
