@@ -13,7 +13,7 @@ import logging
 setup_logging()
 logger = logging.getLogger("healthcheck")
 
-# Global variable untuk tracking status
+# Global variable for tracking status
 healthcheck_status = {
     "is_running": False,
     "start_time": None,
@@ -26,36 +26,34 @@ PING_ATTEMPTS = 3
 
 def update_camera_daily_stats(db: Session, camera_id: str, camera_name: str, status: str, start_time: datetime, end_time: datetime):
     """
-    Menghitung durasi status sebelumnya dan memperbarui statistik harian kamera.
-    Fungsi ini sekarang menangani datetime naive dan aware untuk mencegah TypeError.
+    Calculates the duration of the previous status and updates the daily camera statistics.
+    This function now handles both naive and aware datetimes to prevent TypeErrors.
     """
     if not start_time or not end_time:
-        logger.warning(f"Waktu mulai atau selesai tidak valid untuk camera_id: {camera_id}. Kalkulasi dilewati.")
+        logger.warning(f"Invalid start or end time for camera_id: {camera_id}. Skipping calculation.")
         return
 
-    # --- PERBAIKAN DIMULAI DI SINI ---
-    # Pastikan kedua datetime bersifat offset-aware sebelum melakukan pengurangan.
-    # Ini untuk menangani kasus di mana data lama di DB mungkin bersifat offset-naive.
+    # Ensure both datetimes are offset-aware before subtraction.
+    # This handles legacy data in the DB that might be offset-naive.
     if start_time.tzinfo is None:
         start_time = start_time.replace(tzinfo=timezone.utc)
     
     if end_time.tzinfo is None:
         end_time = end_time.replace(tzinfo=timezone.utc)
-    # --- PERBAIKAN SELESAI ---
 
     duration_seconds = (end_time - start_time).total_seconds()
     if duration_seconds <= 0:
-        return  # Durasi tidak valid atau negatif
+        return  # Invalid or negative duration
 
     current_day = start_time.date()
     end_day = end_time.date()
 
-    # Iterasi untuk setiap hari jika durasi melewati tengah malam
+    # Iterate for each day if the duration crosses midnight
     while current_day <= end_day:
         day_start_dt = datetime.combine(current_day, datetime.min.time(), tzinfo=timezone.utc)
         next_day_start_dt = datetime.combine(current_day + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc)
 
-        # Tentukan rentang waktu yang relevan untuk hari ini
+        # Determine the relevant time range for the current day
         effective_start = max(start_time, day_start_dt)
         effective_end = min(end_time, next_day_start_dt)
 
@@ -64,7 +62,7 @@ def update_camera_daily_stats(db: Session, camera_id: str, camera_name: str, sta
             current_day += timedelta(days=1)
             continue
 
-        # Cari atau buat record statistik harian
+        # Find or create the daily stats record
         daily_stat = db.query(CameraDailyStats).filter(
             CameraDailyStats.camera_id == camera_id,
             CameraDailyStats.date == current_day
@@ -79,15 +77,15 @@ def update_camera_daily_stats(db: Session, camera_id: str, camera_name: str, sta
                 total_downtime_seconds=0
             )
             db.add(daily_stat)
-            db.flush()  # flush untuk memastikan objek ada di sesi sebelum diupdate
+            db.flush()  # flush to ensure the object exists in the session before update
 
-        # Update durasi uptime atau downtime
+        # Update uptime or downtime duration
         if status in ["Online", "High Latency"]:
             daily_stat.total_uptime_seconds += int(daily_duration)
         elif status == "Offline":
             daily_stat.total_downtime_seconds += int(daily_duration)
 
-        # Hitung ulang persentase uptime
+        # Recalculate uptime percentage
         total_tracked_duration = daily_stat.total_uptime_seconds + daily_stat.total_downtime_seconds
         if total_tracked_duration > 0:
             daily_stat.uptime_percentage = (daily_stat.total_uptime_seconds / total_tracked_duration) * 100
@@ -98,36 +96,51 @@ def update_camera_daily_stats(db: Session, camera_id: str, camera_name: str, sta
 
 
 def ping_device(ip: str) -> tuple[bool, int | None]:
+    """
+    Pings a device multiple times and returns its status and average latency.
+    A device is considered 'Online' if at least one ping attempt is successful.
+    """
     latencies = []
     try:
         for _ in range(PING_ATTEMPTS):
             latency = ping(ip, timeout=PING_TIMEOUT, unit='s')
-            if isinstance(latency, (float, int)) and latency is not None:
+            
+            # --- BUG FIX ---
+            # The original check `isinstance(latency, (float, int))` was flawed because `isinstance(False, int)` is True.
+            # This incorrectly treated a timeout (which returns False) as a successful ping with 0 latency.
+            # The corrected check ensures that only successful pings (which return a float) are recorded.
+            # Pings that result in False (timeout) or None (error) are now correctly ignored,
+            # leading to an "Offline" status if no pings succeed.
+            if isinstance(latency, float):
                 latencies.append(latency)
+        
+        # If after all attempts there are no successful pings, the device is offline.
         if not latencies:
             return False, None
+            
     except errors.DestinationHostUnreachable:
+        # This error means the host is definitively unreachable.
         return False, None
     except Exception as e:
-        logger.error(f"Error pinging {ip}: {e}")
+        logger.error(f"An unexpected error occurred while pinging {ip}: {e}")
         return False, None
     
-    if not latencies:
-        return False, None
-    
+    # If we get here, at least one ping was successful.
     avg_latency = sum(latencies) / len(latencies)
-    return True, int(avg_latency * 1000) if avg_latency < PING_TIMEOUT else (True, int(avg_latency * 1000))
+    # Calculate average latency in milliseconds and return online status.
+    return True, int(avg_latency * 1000)
 
 
 def ping_all_devices():
+    """Performs a health check on all active Cameras and NVRs."""
     process_start_time = time.perf_counter()
     db = SessionLocal()
-    status = None
+    status_tracker = None
     try:
-        status = db.query(HealthCheckStatus).get(1)
-        if not status:
-            status = HealthCheckStatus(id=1)
-            db.add(status)
+        status_tracker = db.query(HealthCheckStatus).get(1)
+        if not status_tracker:
+            status_tracker = HealthCheckStatus(id=1)
+            db.add(status_tracker)
             db.commit()
 
         cameras = db.query(DBCamera).filter(and_(DBCamera.status != "Deactivated", DBCamera.status != "Standalone")).all()
@@ -135,10 +148,10 @@ def ping_all_devices():
         devices = [{"id": cam.id, "name": cam.hostname, "ip": cam.ip, "type": "Camera"} for cam in cameras] + \
                   [{"id": nvr.id, "name": nvr.hostname, "ip": nvr.ip, "type": "NVR"} for nvr in nvrs]
 
-        status.is_running = True
-        status.start_time = datetime.now(timezone.utc)
-        status.total_cameras = len(devices)
-        status.completed_cameras = 0
+        status_tracker.is_running = True
+        status_tracker.start_time = datetime.now(timezone.utc)
+        status_tracker.total_cameras = len(devices)
+        status_tracker.completed_cameras = 0
         db.commit()
 
         logger.info(f"🔍 Starting health check for {len(devices)} devices...")
@@ -168,6 +181,7 @@ def ping_all_devices():
 
             new_status = "Offline"
             if is_online:
+                # Latency check for devices that are online
                 new_status = "High Latency" if latency_ms > 50 else "Online"
 
             if current_status != new_status:
@@ -180,22 +194,22 @@ def ping_all_devices():
                     entry.last_online = now
             
             entry.status = new_status
-            entry.latency = latency_ms if is_online else None
+            entry.latency = latency_ms
             entry.checked = now
             entry.type = device["type"]
             
-            status.completed_cameras = i
+            status_tracker.completed_cameras = i
             db.commit()
 
         logger.info("✅ Health check for all devices completed.")
-        status.is_running = False
-        status.start_time = None
+        status_tracker.is_running = False
+        status_tracker.start_time = None
         db.commit()
 
     except Exception as e:
         logger.critical(f"❌ Critical error in ping_all_devices: {e}", exc_info=True)
-        if status:
-            status.is_running = False
+        if status_tracker:
+            status_tracker.is_running = False
             db.commit()
     finally:
         db.close()
@@ -205,6 +219,7 @@ def ping_all_devices():
 
 def _update_single_device_health(db: Session, device, device_type: str):
     """Helper function to update health for a single device (Camera or NVR)."""
+    
     is_online, latency_ms = ping_device(device.ip)
     now = datetime.now(timezone.utc)
 
@@ -241,7 +256,7 @@ def _update_single_device_health(db: Session, device, device_type: str):
             entry.last_online = now
 
     entry.status = new_status
-    entry.latency = latency_ms if is_online else None
+    entry.latency = latency_ms
     entry.checked = now
     entry.type = device_type
     
@@ -249,6 +264,7 @@ def _update_single_device_health(db: Session, device, device_type: str):
     return entry.status, entry.latency
 
 def ping_camera_by_id(camera_id: str):
+    """Triggers a health check for a specific camera by its ID."""
     db = SessionLocal()
     try:
         camera = db.query(DBCamera).filter(DBCamera.id == camera_id).first()
@@ -263,6 +279,7 @@ def ping_camera_by_id(camera_id: str):
         db.close()
 
 def ping_nvr_by_id(nvr_id: str):
+    """Triggers a health check for a specific NVR by its ID."""
     db = SessionLocal()
     try:
         nvr = db.query(NVR).filter(NVR.id == nvr_id).first()
@@ -286,3 +303,4 @@ def run_healthcheck_for_camera(camera_id):
 
 def run_healthcheck_for_nvr(nvr_id):
     ping_nvr_by_id(nvr_id)
+

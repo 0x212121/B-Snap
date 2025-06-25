@@ -50,7 +50,7 @@ def format_datetime_local(dt, tz_name="Asia/Singapore"):
         dt_obj = dt_obj.replace(tzinfo=timezone.utc)
     
     local_tz = ZoneInfo(tz_name)
-    return dt_obj.astimezone(local_tz).strftime("%d %B %Y, %H:%M:%S WIB")
+    return dt_obj.astimezone(local_tz).strftime("%d %B %Y, %H:%M:%S WITA")
 
 
 # Daftarkan filter agar bisa digunakan di template
