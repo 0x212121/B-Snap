@@ -17,19 +17,19 @@ integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""><
 <style>
   /* Trik untuk memusatkan kontrol Leaflet di posisi atas */
   .leaflet-top.leaflet-left {
-      width: 100%;
-      display: flex;
-      justify-content: left; /* Ini akan memusatkan semua item di dalamnya */
-      pointer-events: none;    /* Agar container tidak menghalangi klik pada peta */
-      margin-top: 10px;
+    width: 100%;
+    display: flex;
+    justify-content: left; /* Ini akan memusatkan semua item di dalamnya */
+    pointer-events: none;    /* Agar container tidak menghalangi klik pada peta */
+    margin-top: 10px;
   }
-
+  
   .leaflet-control-map-title {
-      pointer-events: auto; /* Mengaktifkan kembali interaksi untuk judul */
-      margin-top: 10px;     /* Memberi jarak dari tepi atas browser */
+    pointer-events: auto; /* Mengaktifkan kembali interaksi untuk judul */
+    margin-top: 10px;     /* Memberi jarak dari tepi atas browser */
   }
-
-.custom-title-bar {
+  
+  .custom-title-bar {
     display: flex; 
     align-items: center;
     /* Menambahkan position: relative agar posisi logo absolut mengacu pada bar ini */
@@ -46,16 +46,16 @@ integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""><
     /* border: 2px solid rgba(255, 255, 255, 0.7); */
     text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
     animation: fadeInUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.title-logo {
+  }
+  
+  .title-logo {
     /* Menggunakan positioning absolut untuk 'mengeluarkan' logo */
     position: absolute;
     /* Posisikan 15px ke atas dari batas kontainer */
     /* top: -15px;  */
     /* Posisikan 10px dari sisi kiri kontainer */
     left: 0px;
-
+    
     /* Buat logo lebih besar agar terlihat menonjol */
     width: 60px;
     height: 60px;
@@ -67,33 +67,37 @@ integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""><
     padding: 2px;
     /* Hapus margin-right karena sudah tidak diperlukan */
     margin-right: 0; 
-}
-
+  }
+  
   .title-text {
-      white-space: nowrap; /* Mencegah teks turun baris */
+    white-space: nowrap; /* Mencegah teks turun baris */
   }
-
+  
   @keyframes fadeInUp {
-      from {
-          opacity: 0;
-          transform: translateY(-20px);
-      }
-      to {
-          opacity: 1;
-          transform: translateY(0);
-      }
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
-
+  
   .leaflet-bar {
     border: none !important;
     border-radius: 10px;
     opacity: 95%;
   }
-
+  
   .leaflet-popup-content {
     width: 15rem !important;
   }
-
+  
+  .leaflet-popup-content p {
+    margin: 0 !important;
+  }
+  
 </style>
 
 <script>
@@ -105,7 +109,7 @@ integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""><
       zoomControl: false,
       fullscreenControl: false 
     }).setView([0.544447, 117.510262], 12);
-
+    
     map.attributionControl.setPrefix('');
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -127,10 +131,10 @@ integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""><
         return div;
       },
     });
-
+    
     L.control.zoom({ position: 'topright' }).addTo(map);
     L.control.fullscreen({ position: 'topright' }).addTo(map);
-
+    
     L.control.mapTitle = function (opts) {
       return new L.Control.MapTitle(opts);
     };
@@ -138,9 +142,9 @@ integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""><
     
     // --- Camera statistics on map (moved to bottom right) ---
     L.Control.cameraStats = L.Control.extend({
-        onAdd: function(map) {
-            const container = L.DomUtil.create("div", "leaflet-bar camera-stats p-2 text-sm bg-white/85 dark:bg-gray-800 rounded-[5px] shadow-[0_0_15px_rgba(0,0,0,0.2)] leading-[1.2em]");
-            container.innerHTML = `
+      onAdd: function(map) {
+        const container = L.DomUtil.create("div", "leaflet-bar camera-stats p-2 text-sm bg-white/85 dark:bg-gray-800 rounded-[5px] shadow-[0_0_15px_rgba(0,0,0,0.2)] leading-[1.2em]");
+        container.innerHTML = `
             <div id="camera-stats">
               <div class="text-gray-800 dark:text-gray-100 mb-2 font-semibold text-center"><span id="user-group">-</span> Camera Stats</div>
               <div class="text-green-600 dark:text-green-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-green-500"></span>Online: <span id="stat-online">-</span></div>
@@ -149,135 +153,140 @@ integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""><
               <div class="text-gray-700 dark:text-gray-300 mb-1">Total: <span id="stat-total">-</span></div>
             </div>
           `;
-            L.DomEvent.disableClickPropagation(container);
-            return container;
-        },
-        onRemove: function(map) {}
+        L.DomEvent.disableClickPropagation(container);
+        return container;
+      },
+      onRemove: function(map) {}
     });
     L.control.cameraStats = function(opts) {
-        return new L.Control.cameraStats(opts);
+      return new L.Control.cameraStats(opts);
     };
     L.control.cameraStats({ position: "bottomright" }).addTo(map);
-
-    // --- Kode yang membuat tag <style> TELAH DIHAPUS dari sini ---
-
-    // --- Sisa kode Anda tetap sama ---
-    let markerClusterGroup = L.markerClusterGroup();
-    markerClusterGroup.addTo(map);
     
-    function refreshMapData() {
-      markerClusterGroup.clearLayers();
-    fetch("/camera-locations")
-      .then(res => res.json())
-      .then(data => {
-        let onlineCount = 0;
-        let offlineCount = 0;
-        let highLatencyCount = 0;
-        let user_group = '';
-        
-        data.forEach(cam => {
-          cam.status === "Online"
-          ? onlineCount++
-          : cam.status === "High Latency"
-          ? highLatencyCount++
-          : offlineCount++;
+    // --- Kode yang membuat tag <style> TELAH DIHAPUS dari sini ---
+      
+      // --- Sisa kode Anda tetap sama ---
+      let markerClusterGroup = L.markerClusterGroup();
+      markerClusterGroup.addTo(map);
+      
+      function refreshMapData() {
+        markerClusterGroup.clearLayers();
+        fetch("/camera-locations")
+        .then(res => res.json())
+        .then(data => {
+          let onlineCount = 0;
+          let offlineCount = 0;
+          let highLatencyCount = 0;
+          let user_group = '';
           
-          if (
+          data.forEach(cam => {
+            cam.status === "Online"
+            ? onlineCount++
+            : cam.status === "High Latency"
+            ? highLatencyCount++
+            : offlineCount++;
+            
+            if (
             cam.lat && cam.lng &&
             cam.restricted !== "Restricted" &&
             (cam.cam_group === cam.user_group_id || cam.user_group === "ALL")
-          ) {
-            const color =
-            cam.status === "Online" ? "green" :
-            cam.status === "High Latency" ? "orange" :
-            "red";
-            
-            const marker = L.circleMarker([cam.lat, cam.lng], {
-              radius: 8,
-              color,
-              fillColor: color,
-              fillOpacity: 0.8,
-            });
-            
-            const popupContent = L.DomUtil.create('div');
-            popupContent.innerHTML = `
-              <strong>${cam.hostname}</strong><br><br>
-              IP: ${cam.ip}<br>
-              Asset No: ${cam.asset_no}<br>
-              Status: ${cam.status === "Online" ? "🟢 Online" : cam.status === "High Latency" ? "🟡 High Latency" : "🔴 Offline"}<br>
-              Uptime: ${cam.uptime}<br>
-              <div id="snapshot-container-${cam.id}" class="mt-2 text-center text-gray-500 dark:text-gray-400">
+            ) {
+              const color =
+              cam.status === "Online" ? "green" :
+              cam.status === "High Latency" ? "orange" :
+              "red";
+              
+              const marker = L.circleMarker([cam.lat, cam.lng], {
+                radius: 8,
+                color,
+                fillColor: color,
+                fillOpacity: 0.8,
+              });
+              
+              const popupContent = L.DomUtil.create('div');
+              popupContent.innerHTML = `
+                <strong style="font-size: 18px;">${cam.hostname}</strong><br><br>
+                <table style="font-size: 14px;">
+                  <tr><td>IP</td><td>: ${cam.ip}</td></tr>
+                  <tr><td>Asset No</td><td>: ${cam.asset_no}</td></tr>
+                  <tr><td>Status</td><td>: ${cam.status === "Online" ? "🟢 Online" : cam.status === "High Latency" ? "🟡 High Latency" : "🔴 Offline"}</td></tr>
+                  <tr><td>Uptime</td><td>: ${cam.uptime}</td></tr>
+                </table>
+                <div id="snapshot-container-${cam.id}" class="mt-0 text-center text-gray-500 dark:text-gray-400">
                   Loading snapshot...
-              </div>`;
-            
-            marker.bindPopup(popupContent, { maxWidth: 1500 });
-            
-            marker.on('popupopen', async function () {
-              const snapshotContainer = document.getElementById(`snapshot-container-${cam.id}`);
-              if (snapshotContainer) {
-                snapshotContainer.innerHTML = `<p class="loading-text text-gray-500 dark:text-gray-400 mt-1">Loading snapshot info...</p>`;
-                
-                try {
-                  const infoResponse = await fetch(`/snapshot/latest/${encodeURIComponent(cam.hostname)}/info`);
+                </div>
+              `;
+              
+              marker.bindPopup(popupContent, { maxWidth: 1500 });
+              
+              marker.on('popupopen', async function () {
+                const snapshotContainer = document.getElementById(`snapshot-container-${cam.id}`);
+                if (snapshotContainer) {
+                  snapshotContainer.innerHTML = `<p class="loading-text text-gray-500 dark:text-gray-400 mt-1">Loading snapshot info...</p>`;
                   
-                  if (!infoResponse.ok) {
-                    let errorMessage = `Failed to fetch snapshot info: ${infoResponse.status}`;
-                    try {
-                      const errorData = await infoResponse.json();
-                      errorMessage = errorData.detail || errorMessage;
-                    } catch (e) {
-                      errorMessage = `Failed to fetch snapshot info: ${infoResponse.statusText}`;
+                  try {
+                    const infoResponse = await fetch(`/snapshot/latest/${encodeURIComponent(cam.hostname)}/info`);
+                    
+                    if (!infoResponse.ok) {
+                      let errorMessage = `Failed to fetch snapshot info: ${infoResponse.status}`;
+                      try {
+                        const errorData = await infoResponse.json();
+                        errorMessage = errorData.detail || errorMessage;
+                      } catch (e) {
+                        errorMessage = `Failed to fetch snapshot info: ${infoResponse.statusText}`;
+                      }
+                      throw new Error(errorMessage);
                     }
-                    throw new Error(errorMessage);
-                  }
-                  
-                  const snapshotInfo = await infoResponse.json();
-                  const imageUrl = snapshotInfo.url;
-                  
-                  snapshotContainer.innerHTML = `
+                    
+                    const snapshotInfo = await infoResponse.json();
+                    const imageUrl = snapshotInfo.url;
+                    const imageDate = snapshotInfo.timestamp;
+                    
+                    snapshotContainer.innerHTML = `
+                    <p class="text-left text-gray-800">Snapshot time : ${imageDate} WITA </p>
                     <img src="${imageUrl}" class="w-full h-auto rounded-md shadow-md mt-1 camera-snapshot-img" alt="Camera Snapshot"
                       onerror="this.onerror=null; this.src='/static/placeholder.svg'; this.parentElement.querySelector('.error-message').classList.remove('hidden');"
                       onload="this.parentElement.querySelector('.loading-text').classList.add('hidden');">
                     <p class="loading-text text-gray-500 dark:text-gray-400 mt-1">Loading image...</p>
                     <p class="error-message text-red-500 text-xs mt-1 hidden">Image failed to load or is unavailable. (Check camera/network)</p>
                   `;
-                } catch (error) {
-                  console.error("Error loading snapshot for popup:", error);
-                  snapshotContainer.innerHTML = `
+                  } catch (error) {
+                    console.error("Error loading snapshot for popup:", error);
+                    snapshotContainer.innerHTML = `
                     <div class="placeholder-content p-4 bg-gray-200 dark:bg-gray-700 rounded text-center">
                         <p class="text-gray-600 dark:text-gray-300">❌ Image Not Available</p>
                         <p class="text-red-500 text-xs mt-1">Error: ${error.message}</p>
                     </div>
                   `;
+                  }
                 }
-              }
-            });
-            
-            marker.on('popupclose', function () {
-              const snapshotContainer = document.getElementById(`snapshot-container-${cam.id}`);
-              if (snapshotContainer) {
-                snapshotContainer.innerHTML = `Loading snapshot...`;
-              }
-            });
-            
-            markerClusterGroup.addLayer(marker);
-          }
-          user_group = cam.user_group
+              });
+              
+              marker.on('popupclose', function () {
+                const snapshotContainer = document.getElementById(`snapshot-container-${cam.id}`);
+                if (snapshotContainer) {
+                  snapshotContainer.innerHTML = `Loading snapshot...`;
+                }
+              });
+              
+              markerClusterGroup.addLayer(marker);
+            }
+            user_group = cam.user_group
+          });
+          
+          document.getElementById("user-group").textContent = user_group;
+          document.getElementById("stat-total").textContent = data.length;
+          document.getElementById("stat-online").textContent = onlineCount;
+          document.getElementById("stat-offline").textContent = offlineCount;
+          document.getElementById("stat-highlatency").textContent = highLatencyCount;
+        })
+        .catch(error => {
+          console.error('Error fetching camera locations:', error);
         });
-        
-        document.getElementById("user-group").textContent = user_group;
-        document.getElementById("stat-total").textContent = data.length;
-        document.getElementById("stat-online").textContent = onlineCount;
-        document.getElementById("stat-offline").textContent = offlineCount;
-        document.getElementById("stat-highlatency").textContent = highLatencyCount;
-      })
-      .catch(error => {
-        console.error('Error fetching camera locations:', error);
-      });
-    }
-
-    refreshMapData();
-    setInterval(refreshMapData, 600000);
-  });
-</script>
-{% endblock %}
+      }
+      
+      refreshMapData();
+      setInterval(refreshMapData, 600000);
+    });
+  </script>
+  {% endblock %}

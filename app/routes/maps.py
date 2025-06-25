@@ -21,7 +21,7 @@ GMT8_TIMEZONE = pytz.timezone('Etc/GMT-8')
 
 @router.get("/maps")
 async def maps(request: Request, current_user: User = Depends(get_current_user)):
-    map_title = get_config("map_title", default="Property of Company")
+    map_title = get_config("map_title", default="CCTV Maps")
     return templates.TemplateResponse("maps.html", {"request": request, "map_title": map_title})
 
 
