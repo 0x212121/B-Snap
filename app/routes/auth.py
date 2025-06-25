@@ -170,3 +170,35 @@ async def admin_access_required(current_user: User = Depends(get_current_user)) 
         # Lempar "sinyal" untuk menampilkan halaman akses ditolak.
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Akses ini khusus untuk Admin.")
     return current_user
+
+
+@router.get("/change-password")
+async def change_password_page(request: Request, current_user: User = Depends(get_current_user)):
+    return templates.TemplateResponse("change_password.html", {"request": request})
+
+
+@router.post("/change-password")
+async def change_password(
+    request: Request,
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not verify_password(current_password, current_user.password):
+        return templates.TemplateResponse("change_password.html", {
+            "request": request,
+            "error": "Incorrect current password"
+        })
+
+    if new_password != confirm_password:
+        return templates.TemplateResponse("change_password.html", {
+            "request": request,
+            "error": "New passwords do not match"
+        })
+
+    current_user.password = get_password_hash(new_password)
+    db.commit()
+
+    return RedirectResponse(url="/", status_code=302)

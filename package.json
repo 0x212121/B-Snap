@@ -11,5 +11,4 @@
     "dev": "tailwindcss -i ./assets/css/tailwind.css -o ./static/css/output.css --watch",
     "build": "tailwindcss -i ./assets/css/tailwind.css -o ./static/css/output.css"
   }
-  
 }

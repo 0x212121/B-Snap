@@ -69,6 +69,8 @@
 - [x] Refactor Video Endpoint
 
 ⏳ Ongoing:
-
+- [ ] **Enhanced Security Login**
+- [ ] **Endpoint API protect**
+  - API request using token
 
 🆕 Added:

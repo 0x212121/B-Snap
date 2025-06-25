@@ -18,3 +18,4 @@ dist/
 ffmpeg.exe
 ffprobe.exe
 .venv
+.env

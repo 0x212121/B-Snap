@@ -1,0 +1,9 @@
+LOAD DATABASE
+     FROM sqlite:///data/sqlite.db
+     INTO postgresql://bsnap_user:bsnap_pass@localhost/bsnap_db
+
+WITH include no drop, create tables, create indexes, reset sequences
+
+CAST type datetime to timestamptz using zero-dates-to-null
+
+ALTER SCHEMA 'main' RENAME TO 'public';
