@@ -125,7 +125,7 @@ def present_mfa_setup_page(request: Request, db: Session = Depends(get_db)):
     # Generate QR code URI
     uri = pyotp.totp.TOTP(user.otp_secret).provisioning_uri(
         name=user.username, 
-        issuer_name="b-snap Apps"
+        issuer_name="B-Snap Apps"
     )
     
     # Create QR code image and encode it as a Base64 string for the template
@@ -161,7 +161,7 @@ def verify_and_complete_forced_setup(
     else:
         # Failed verification, show the setup page again with an error
         # (We need to regenerate the QR for the template)
-        uri = pyotp.totp.TOTP(user.otp_secret).provisioning_uri(name=user.username, issuer_name="b-snap Apps")
+        uri = pyotp.totp.TOTP(user.otp_secret).provisioning_uri(name=user.username, issuer_name="B-Snap Apps")
         img = qrcode.make(uri)
         buf = io.BytesIO()
         img.save(buf, "PNG")
