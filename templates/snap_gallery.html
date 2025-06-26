@@ -48,7 +48,7 @@
     </div>
   </form>
 
-  <div id="snapshotGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+  <div id="snapshotGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
     {% for image in images %}
     <div class="snapshot-card relative bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden group transform transition duration-300 hover:scale-105" data-camera="{{ image.camera }}">
       <img src="{{ image.url | urlencode }}" alt="Snapshot"

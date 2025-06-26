@@ -17,13 +17,13 @@
 <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
   <div class="flex items-center gap-2">
     <input type="text" id="searchInput" onkeyup="filterAndRenderTable()" placeholder="Search by Name or IP..."
-    class="p-5 border border-gray-300 dark:border-gray-600 rounded-md w-full sm:w-auto dark:bg-gray-700 dark:text-white">
-    <select id="typeFilter" onchange="filterAndRenderTable()" class="p-5 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
+    class="py-2 pl-3 pr-6 border border-gray-300 dark:border-gray-600 rounded-md w-full sm:w-auto dark:bg-gray-700 dark:text-white">
+    <select id="typeFilter" onchange="filterAndRenderTable()" class="py-2 pl-3 pr-6 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white mr-10">
       <option value="All">All Types</option>
       <option value="Camera">Camera</option>
       <option value="NVR">NVR</option>
     </select>
-    <select id="statusFilter" onchange="filterAndRenderTable()" class="p-5 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
+    <select id="statusFilter" onchange="filterAndRenderTable()" class="py-2 pl-3 pr-6 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
       <option value="All">All Statuses</option>
       <option value="Online">Online</option>
       <option value="Offline">Offline</option>
@@ -33,7 +33,7 @@
   </div>
   <div class="flex gap-2">
     <button onclick="triggerAllHealthcheck()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">🔄 Ping All Devices</button>
-    <button onclick="refreshTable()" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Refresh Table</button>
+    <button onclick="refreshTable()" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">🔃 Refresh Table</button>
     <a href="/health/history" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm flex items-center">📊 Historical Data</a>
   </div>
 </div>
@@ -88,7 +88,7 @@
     column: 'hostname', // Kolom default untuk diurutkan
     direction: 'asc'
   };
-
+  
   let healthCheckInterval;
   
   /**
@@ -187,7 +187,7 @@
       device.status?.includes('Offline') ? 'bg-red-100 text-red-800' :
       device.status?.includes('High Latency') ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800';
       
-      const pingButton = `<button onclick='triggerHealth(this, "${device.id}", "${device.type.toLowerCase()}")' class="bg-gray-600 text-white px-2 py-1 rounded text-xs hover:bg-gray-700">♻️ Ping</button>`;
+      const pingButton = `<button onclick='triggerHealth(this, "${device.id}", "${device.type.toLowerCase()}")' class="bg-gray-600 text-white px-2 py-1 rounded text-xs hover:bg-gray-700">🔄 Ping</button>`;
       const viewButton = device.type === 'Camera' ? `<button class='bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600' onclick='viewSnapshot(${JSON.stringify(device.hostname)})'>📸 View</button>` : '';
       const realtimeButton = device.type === 'Camera' && device.status !== 'Offline' ? `<button class='bg-teal-500 text-white px-2 py-1 rounded text-sm hover:bg-teal-600' onclick='viewRealtimeSnapshot(this, ${JSON.stringify(device.hostname)})'>📸 Realtime</button>` : '';
       
