@@ -101,7 +101,7 @@
     if (!isoString) return "-";
     
     // Untuk debugging: tampilkan apa yang diterima dari server
-    console.log("Menerima ISO String:", isoString);
+    // console.log("Menerima ISO String:", isoString);
     
     try {
       const date = new Date(isoString + 'Z');
@@ -129,7 +129,7 @@
       const formattedDate = new Intl.DateTimeFormat('sv-SE', options).format(date);
       
       // Untuk debugging: tampilkan hasilnya
-      console.log("Diformat ke WITA:", formattedDate);
+      // console.log("Diformat ke WITA:", formattedDate);
       
       return formattedDate;
     } catch (e) {
