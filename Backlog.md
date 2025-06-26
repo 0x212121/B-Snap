@@ -22,8 +22,8 @@
   - Test in dev environment
 - [ ] **Dockerize B-Snap** - *Priority: Medium*
 - [ ] **B-Snap Assistant: Error handling core feature** - *Priority: High*
-- [ ] **Enhanced Security Login**
-- [ ] **Endpoint API protect**
+- [x] **Enhanced Security Login** [MFA]
+- [x] **Endpoint API protect**
   - API request using token
 
 ## 🐞 Bug
@@ -70,8 +70,12 @@
 - [x] Refactor Video Endpoint
 - [x] **Endpoint API protect**
   - [x] API request using token
+- [x] **Enhanced Security Login**
+  - [x] Implement 2FA
 
 ⏳ Ongoing:
-- [ ] **Enhanced Security Login**
 
 🆕 Added:
+- [ ] HTTPS using nginx proxy
+  - [ ] Install nginx proxy manager
+  - [ ] don't expose B-Snap port to outside

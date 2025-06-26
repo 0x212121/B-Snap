@@ -104,6 +104,7 @@
                         <th class="p-4 font-semibold">Group</th>
                         <th class="p-4 font-semibold">API Token</th>
                         <th class="p-4 font-semibold">Token Expiry Date</th>
+                        <th class="p-4 font-semibold">Last Logon</th>
                         <th class="p-4 font-semibold text-center">Actions</th>
                     </tr>
                 </thead>
@@ -141,6 +142,17 @@
                             {% if user.token %}
                                 {% if user.token_expires_at %}
                                     {{ user.token_expires_at.strftime("%d/%m/%Y - %H:%M:%S") }}
+                                {% else %}
+                                    Never
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td id="last-logon-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
+                            {% if user.last_login %}
+                                {% if user.last_login %}
+                                    {{ user.last_login.strftime("%d/%m/%Y - %H:%M:%S") }}
                                 {% else %}
                                     Never
                                 {% endif %}

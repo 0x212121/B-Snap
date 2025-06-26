@@ -4,7 +4,7 @@
 
 ## 🚀 Features
 
-- 🔐 Admin authentication
+- 🔐 Built-in 2FA
 - 📸 One-click snapshot from dashboard or gallery
 - 🗂️ Organized gallery with camera filter and search
 - 🧾 API documentation (OpenAPI-style)
