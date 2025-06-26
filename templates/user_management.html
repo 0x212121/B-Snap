@@ -1,219 +1,430 @@
 {% extends "base.html" %}
-{% block title %}User Management{% endblock %}
+{% block title %}User Management Dashboard{% endblock %}
 
 {% block content %}
-<div class="container mx-auto max-w-3xl px-4 py-8">
-  <h2 class="text-2xl font-bold text-blue-700 dark:text-blue-300 mb-6">👥 User Management</h2>
+<div class="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
 
-  {% if request.query_params.get('status') and request.query_params.get('message') %}
-  <div id="statusModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-opacity duration-300 animate-fadeIn">
-    <div id="modalContent" class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl text-center transform scale-95 opacity-0 animate-zoomIn max-w-sm w-full">
-      {% if request.query_params.get('status') == 'success' %}
-      <h3 class="text-lg font-bold text-green-600 dark:text-green-400 mb-2">✅ Success</h3>
-      {% else %}
-      <h3 class="text-lg font-bold text-red-600 dark:text-red-400 mb-2">❌ Error</h3>
-      {% endif %}
-      <p class="text-gray-800 dark:text-gray-100">{{ request.query_params.get('message') }}</p>
-      <button onclick="closeModal()" class="mt-4 px-4 py-2 rounded 
-        {% if request.query_params.get('status') == 'success' %}
-          bg-green-600 hover:bg-green-700
-        {% else %}
-          bg-red-600 hover:bg-red-700
-        {% endif %}
-        text-white transition">
-        Close
-      </button>
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">User Management</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage users, roles, and permissions.</p>
+        </div>
+        <div class="flex-shrink-0">
+            <button id="showFormBtn" onclick="toggleUserForm(true)" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                New User
+            </button>
+        </div>
     </div>
-  </div>
-  {% endif %}
 
-  <form id="userForm" method="post" action="/users/create" class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md space-y-4 mb-8">
-    <h3 id="formTitle" class="text-lg font-semibold text-gray-800 dark:text-white transition-colors duration-300">Add New User</h3>
-    <div>
-      <label for="usernameInput" class="block text-sm font-medium mb-1">Username</label>
-      <input id="usernameInput" name="username" required class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:text-white transition-all duration-300 focus:ring-2 focus:ring-blue-500" />
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Users</h4>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ users|length }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Admins</h4>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ users|selectattr('role', 'equalto', 'admin')|list|length }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Operators</h4>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ users|selectattr('role', 'equalto', 'operator')|list|length }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Viewers</h4>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ users|selectattr('role', 'equalto', 'viewer')|list|length }}</p>
+        </div>
     </div>
-    <div>
-      <label id="passwordLabel" for="passwordInput" class="block text-sm font-medium mb-1">Password</label>
-      <input id="passwordInput" type="password" name="password" required class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:text-white transition-all duration-300 focus:ring-2 focus:ring-blue-500" />
-    </div>
-    <div>
-      <label for="roleSelect" class="block text-sm font-medium mb-1">Role</label>
-      <select id="roleSelect" name="role" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:text-white">
-        <option value="viewer">Viewer</option>
-        <option value="operator">Operator</option>
-        <option value="admin">Admin</option>
-      </select>
-    </div>
-    <div>
-      <label for="groupSelect" class="block text-sm font-medium mb-1">Group</label>
-      <select id="groupSelect" name="group_name" required class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:text-white">
-        <!-- {% for group in groups %}
-        <option value="{{ group.id }}">{{ group.name }}</option>
-        {% endfor %} -->
-        <option value="ALL">ALL</option>
-        <option value="CMD">CMD</option>
-        <option value="CPHD">CPHD</option>
-        <option value="ESD">ESD</option>
-        <option value="HR">HR</option>
-        <option value="HSES">HSES</option>
-        <option value="IT">IT</option>
-        <option value="MDD">MDD</option>
-        <option value="MOD">MOD</option>
-        <option value="MSD">MSD</option>
-        <option value="SCD">SCD</option>
-      </select>
-    </div>
-    <div id="formButtons" class="text-right space-x-2">
-      <button type="button" id="cancelEditBtn" onclick="resetForm()" class="hidden bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded-md dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">Cancel</button>
-      <button id="submitBtn" type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors duration-300">➕ Add User</button>
-    </div>
-  </form>
 
-  <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
-    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">📋 Existing Users</h3>
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm text-left border-collapse">
-        <thead class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-white">
-          <tr>
-            <th class="p-2 rounded-tl-lg">Username</th>
-            <th class="p-2">Role</th>
-            <th class="p-2">Group</th>
-            <th class="p-2">Token</th>
-            <th class="p-2 rounded-tr-lg">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for user in users %}
-          <tr class="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-            <td class="p-2">{{ user.username }}</td>
-            <td class="p-2">{{ user.role }}</td>
-            <td class="p-2">{{ user.group.name if user.group else '-' }}</td>
-            <td class="p-2 font-mono text-xs break-all text-green-700 dark:text-green-300">{{ user.token or '-' }}</td>
-            <td class="p-2 space-x-2 flex items-center">
-              
-              <button onclick="editUser({{ user.id }}, '{{ user.username }}', '{{ user.role }}', {{ user.group.id if user.group else 'null' }})" class="text-yellow-600 hover:underline text-sm font-medium">✏️ Edit</button>
-
-              <form id="deleteForm{{ user.id }}" method="post" action="/users/delete/{{ user.id }}" class="hidden"></form>
-              {% if request.session["user_id"] != user.id %}
-                <button onclick="confirmAction('Delete user {{ user.username }}?', () => document.getElementById('deleteForm{{ user.id }}').submit())" class="text-red-600 hover:underline text-sm font-medium">🗑 Delete</button>
-              {% endif %}
-              
-              <form id="tokenForm{{ user.id }}" method="get" action="/users/token/{{ user.id }}" class="hidden"></form>
-              <button onclick="confirmAction('Generate token for {{ user.username }}?', () => document.getElementById('tokenForm{{ user.id }}').submit())" class="text-blue-600 hover:underline text-sm font-medium">🔐 Token</button>
-
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div id="userFormContainer" class="hidden mb-8 transition-all duration-500">
+         <form id="userForm" method="post" action="/users/create" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 space-y-6">
+            <div class="flex justify-between items-center">
+                <h3 id="formTitle" class="text-xl font-semibold text-gray-900 dark:text-white transition-colors duration-300">Add New User</h3>
+                <button type="button" onclick="toggleUserForm(false)" aria-label="Close form" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="usernameInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                    <input id="usernameInput" name="username" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                </div>
+                <div>
+                    <label id="passwordLabel" for="passwordInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                    <input id="passwordInput" type="password" name="password" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                </div>
+                <div>
+                    <label for="roleSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+                    <select id="roleSelect" name="role" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="viewer">Viewer</option>
+                        <option value="operator">Operator</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="groupSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Group</label>
+                    <select id="groupSelect" name="group_name" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="ALL">ALL</option><option value="CMD">CMD</option><option value="CPHD">CPHD</option><option value="ESD">ESD</option><option value="HR">HR</option><option value="HSES">HSES</option><option value="IT">IT</option><option value="MDD">MDD</option><option value="MOD">MOD</option><option value="MSD">MSD</option><option value="SCD">SCD</option>
+                    </select>
+                </div>
+            </div>
+            <div id="formButtons" class="text-right space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button type="button" id="cancelEditBtn" onclick="toggleUserForm(false)" class="hidden bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500 font-semibold px-4 py-2 rounded-lg transition-colors">Cancel</button>
+                <button id="submitBtn" type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg transition-colors shadow-sm">➕ Add User</button>
+            </div>
+        </form>
     </div>
-  </div>
+
+    <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+            <div class="flex items-center gap-2 w-full md:w-auto">
+                <div class="relative w-full md:w-auto">
+                     <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+                    </span>
+                    <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search users..." class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div id="bulkActionContainer" class="hidden w-full md:w-auto flex-shrink-0">
+                <button onclick="confirmBulkDelete()" class="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                    Delete Selected (<span id="selectedCount">0</span>)
+                </button>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table id="userTable" class="w-full text-sm text-left border-collapse">
+                <thead class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                    <tr>
+                        <th class="p-4 w-4">
+                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleAllCheckboxes(this.checked)" class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:bg-gray-900 dark:ring-offset-gray-800">
+                        </th>
+                        <th class="p-4 font-semibold">User Details</th>
+                        <th class="p-4 font-semibold">Role</th>
+                        <th class="p-4 font-semibold">Group</th>
+                        <th class="p-4 font-semibold">API Token</th>
+                        <th class="p-4 font-semibold text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for user in users %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td class="p-4 w-4">
+                            {% if request.session['user_id'] == user.id %}
+                                <input type="checkbox" disabled class="cursor-not-allowed rounded border-gray-300 dark:border-gray-600 text-gray-400 dark:bg-gray-700">
+                            {% else %}
+                                <input type="checkbox" name="userIds" value="{{ user.id }}" onchange="updateSelectionState()" class="user-checkbox rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:bg-gray-900 dark:ring-offset-gray-800">
+                            {% endif %}
+                        </td>
+                        <td class="p-4 whitespace-nowrap">
+                            <div class="font-medium text-gray-900 dark:text-white">{{ user.username }}</div>
+                        </td>
+                        <td class="p-4 whitespace-nowrap">
+                             {% if user.role == 'admin' %}
+                                <span class="px-2 py-1 text-xs font-semibold leading-5 text-red-800 bg-red-100 dark:text-red-100 dark:bg-red-800/50 rounded-full">{{ user.role }}</span>
+                            {% elif user.role == 'operator' %}
+                                <span class="px-2 py-1 text-xs font-semibold leading-5 text-yellow-800 bg-yellow-100 dark:text-yellow-100 dark:bg-yellow-800/50 rounded-full">{{ user.role }}</span>
+                            {% else %}
+                                <span class="px-2 py-1 text-xs font-semibold leading-5 text-green-800 bg-green-100 dark:text-green-100 dark:bg-green-800/50 rounded-full">{{ user.role }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{{ user.group.name if user.group else '-' }}</td>
+                        <td class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
+                            {% if user.token %}
+                                {{ user.token[:8] }}...{{ user.token[-4:] }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="p-4 whitespace-nowrap text-center space-x-2">
+                            <button onclick="editUser({{ user.id }}, '{{ user.username }}', '{{ user.role }}', '{{ user.group.name if user.group else 'ALL' }}')" aria-label="Edit user {{ user.username }}" class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 p-2 rounded-full transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                            </button>
+                             <button onclick="openGenerateTokenModal({{ user.id }}, '{{ user.username }}')" aria-label="Generate token for {{ user.username }}" class="text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 p-2 rounded-full transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v-2l1-1 1-1 .257-.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd" /></svg>
+                            </button>
+                            {% if request.session['user_id'] != user.id %}
+                                <button onclick="confirmDelete({{ user.id }}, '{{ user.username }}')" aria-label="Delete user {{ user.username }}" class="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 p-2 rounded-full transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                                </button>
+                                <form id="deleteForm{{ user.id }}" method="post" action="/users/delete/{{ user.id }}" class="hidden"></form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-<div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-opacity duration-300 animate-fadeIn">
-  <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl text-center max-w-sm w-full animate-zoomIn">
-    <h3 class="text-lg font-bold text-red-600 dark:text-red-400 mb-2">⚠️ Confirm Action</h3>
-    <p id="confirmMessage" class="text-gray-800 dark:text-gray-100 mb-4">Are you sure?</p>
-    <div class="flex justify-center space-x-4">
-      <button id="confirmYes" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md">Yes</button>
-      <button onclick="closeConfirmModal()" class="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded-md dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">Cancel</button>
+<div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl w-full max-w-sm">
+        <h3 class="text-lg font-bold text-red-600 dark:text-red-400 mb-2">⚠️ Confirm Action</h3>
+        <p id="confirmMessage" class="text-gray-800 dark:text-gray-100 mb-6">Are you sure?</p>
+        <div class="flex justify-end space-x-4">
+            <button id="confirmCancel" class="bg-gray-200 hover:bg-gray-300 text-black dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500 px-4 py-2 rounded-lg font-semibold">Cancel</button>
+            <button id="confirmYes" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold">Yes, Proceed</button>
+        </div>
     </div>
-  </div>
 </div>
-
-<style>
-@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-@keyframes zoomIn { 0% { opacity: 0; transform: scale(0.95) } 100% { opacity: 1; transform: scale(1) } }
-.animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
-.animate-zoomIn { animation: zoomIn 0.3s ease-out forwards; }
-</style>
+<div id="generateTokenModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl w-full max-w-sm">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Generate Token</h3>
+        <p class="text-gray-600 dark:text-gray-300 mb-4">Select an expiration duration for the new token for <strong id="tokenUsername" class="text-blue-600 dark:text-blue-400"></strong>.</p>
+        <div>
+            <label for="expirySelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Token Expires In:</label>
+            <select id="expirySelect" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                <option value="7">7 Days</option>
+                <option value="30" selected>30 Days</option>
+                <option value="90">90 Days</option>
+                <option value="365">1 Year</option>
+                <option value="0">Never</option>
+            </select>
+        </div>
+        <p id="generateTokenError" class="text-red-500 text-sm mt-2 hidden"></p>
+        <div class="flex justify-end space-x-4 mt-6">
+            <button onclick="closeModal('generateTokenModal')" class="bg-gray-200 hover:bg-gray-300 text-black dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500 px-4 py-2 rounded-lg font-semibold">Cancel</button>
+            <button id="generateTokenBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2">
+                <span id="generateSpinner" class="hidden w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Generate
+            </button>
+        </div>
+    </div>
+</div>
+<div id="showTokenModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl w-full max-w-md">
+        <h3 class="text-lg font-bold text-green-600 dark:text-green-400 mb-2">✅ Token Generated Successfully</h3>
+        <p class="text-gray-600 dark:text-gray-300 mb-4">Please copy this token now. You will not be able to see it again.</p>
+        <div class="relative">
+            <input id="generatedTokenInput" type="text" readonly class="w-full pl-4 pr-12 py-3 bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-600 rounded-lg font-mono text-sm">
+            <button id="copyTokenBtn" class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+                <svg id="copyIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                <svg id="checkIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-500 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+            </button>
+        </div>
+        <div class="text-right mt-6">
+            <button onclick="closeModal('showTokenModal')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold">Done</button>
+        </div>
+    </div>
+</div>
 
 <script>
-  // --- Logika untuk Modal ---
-  function closeModal() {
-    const modal = document.getElementById("statusModal");
-    if (!modal) return;
-    modal.classList.remove("animate-fadeIn");
-    modal.classList.add("transition-opacity", "duration-300");
-    modal.style.opacity = "0";
-    setTimeout(() => modal.remove(), 300);
-  }
-  
-  let pendingAction = null;
-  
-  function confirmAction(message, onConfirm) {
-    document.getElementById("confirmMessage").innerText = message;
-    document.getElementById("confirmModal").classList.remove("hidden");
-    pendingAction = onConfirm;
-  }
-  
-  document.getElementById("confirmYes").onclick = function () {
-    if (pendingAction) pendingAction();
-    closeConfirmModal();
-  };
-  
-  function closeConfirmModal() {
-    document.getElementById("confirmModal").classList.add("hidden");
-  }
+// --- MODAL & ACTION LOGIC ---
+let activeUserId = null;
+let pendingAction = null;
 
-  // --- Logika untuk Edit Form ---
-  const userForm = document.getElementById('userForm');
-  const formTitle = document.getElementById('formTitle');
-  const usernameInput = document.getElementById('usernameInput');
-  const passwordInput = document.getElementById('passwordInput');
-  const passwordLabel = document.getElementById('passwordLabel');
-  const roleSelect = document.getElementById('roleSelect');
-  const groupSelect = document.getElementById('groupSelect');
-  const submitBtn = document.getElementById('submitBtn');
-  const cancelEditBtn = document.getElementById('cancelEditBtn');
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+}
 
-  /**
-   * Mengisi form dengan data user yang ada untuk di-edit.
-   */
-  function editUser(id, username, role, groupId) {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+// --- DELETE LOGIC ---
+function confirmDelete(userId, username, callback, bulkMessage) {
+    const message = bulkMessage || `Are you sure you want to permanently delete user '${username}'?`;
+    document.getElementById('confirmMessage').textContent = message;
+    const modal = document.getElementById('confirmModal');
+    modal.classList.remove('hidden');
 
+    const confirmBtn = document.getElementById('confirmYes');
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+    newConfirmBtn.onclick = () => {
+        if (callback) {
+            callback();
+        } else {
+            document.getElementById(`deleteForm${userId}`).submit();
+        }
+        closeModal('confirmModal');
+    };
+
+    document.getElementById('confirmCancel').onclick = () => closeModal('confirmModal');
+}
+
+// --- NEW TOKEN GENERATION LOGIC ---
+function openGenerateTokenModal(userId, username) {
+    activeUserId = userId;
+    document.getElementById('tokenUsername').textContent = username;
+    document.getElementById('generateTokenError').classList.add('hidden');
+    const modal = document.getElementById('generateTokenModal');
+    modal.classList.remove('hidden');
+    document.getElementById('generateTokenBtn').onclick = handleTokenGeneration;
+}
+
+async function handleTokenGeneration() {
+    const expiryDays = document.getElementById('expirySelect').value;
+    const errorP = document.getElementById('generateTokenError');
+    const spinner = document.getElementById('generateSpinner');
+    const btn = document.getElementById('generateTokenBtn');
+
+    spinner.classList.remove('hidden');
+    btn.disabled = true;
+    errorP.classList.add('hidden');
+
+    try {
+        const response = await fetch('/api/users/generate-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: activeUserId,
+                expires_in_days: parseInt(expiryDays)
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to generate token.');
+        }
+
+        const data = await response.json();
+        closeModal('generateTokenModal');
+        showGeneratedToken(data.token);
+
+    } catch (error) {
+        errorP.textContent = `Error: ${error.message}`;
+        errorP.classList.remove('hidden');
+    } finally {
+        spinner.classList.add('hidden');
+        btn.disabled = false;
+    }
+}
+
+function showGeneratedToken(token) {
+    const modal = document.getElementById('showTokenModal');
+    const tokenInput = document.getElementById('generatedTokenInput');
+    const copyBtn = document.getElementById('copyTokenBtn');
+    
+    tokenInput.value = token;
+    modal.classList.remove('hidden');
+
+    document.getElementById('copyIcon').classList.remove('hidden');
+    document.getElementById('checkIcon').classList.add('hidden');
+
+    copyBtn.onclick = () => {
+        navigator.clipboard.writeText(token).then(() => {
+            document.getElementById('copyIcon').classList.add('hidden');
+            document.getElementById('checkIcon').classList.remove('hidden');
+            setTimeout(() => {
+                 document.getElementById('copyIcon').classList.remove('hidden');
+                 document.getElementById('checkIcon').classList.add('hidden');
+            }, 2000);
+        });
+    };
+}
+
+// --- COMPLETE FORM AND TABLE LOGIC ---
+const userFormContainer = document.getElementById('userFormContainer');
+const showFormBtn = document.getElementById('showFormBtn');
+const bulkActionContainer = document.getElementById('bulkActionContainer');
+const selectedCountSpan = document.getElementById('selectedCount');
+const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+const userCheckboxes = document.querySelectorAll('.user-checkbox');
+
+const userForm = document.getElementById('userForm');
+const formTitle = document.getElementById('formTitle');
+const usernameInput = document.getElementById('usernameInput');
+const passwordInput = document.getElementById('passwordInput');
+const passwordLabel = document.getElementById('passwordLabel');
+const roleSelect = document.getElementById('roleSelect');
+const groupSelect = document.getElementById('groupSelect');
+const submitBtn = document.getElementById('submitBtn');
+const cancelEditBtn = document.getElementById('cancelEditBtn');
+
+function toggleUserForm(show) {
+    if (show) {
+        userFormContainer.classList.remove('hidden');
+        showFormBtn.classList.add('hidden');
+        resetForm();
+        window.scrollTo({ top: userFormContainer.offsetTop - 20, behavior: 'smooth' });
+    } else {
+        userFormContainer.classList.add('hidden');
+        showFormBtn.classList.remove('hidden');
+    }
+}
+
+function filterTable() {
+    const filter = document.getElementById('searchInput').value.toUpperCase();
+    const table = document.getElementById('userTable');
+    const tr = table.getElementsByTagName('tr');
+    for (let i = 1; i < tr.length; i++) {
+        const tds = tr[i].getElementsByTagName('td');
+        let textValue = "";
+        if (tds.length > 1) {
+            textValue = (tds[1]?.textContent || "") + (tds[2]?.textContent || "") + (tds[3]?.textContent || "");
+        }
+        tr[i].style.display = textValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+    }
+}
+
+function updateSelectionState() {
+    const selectedCheckboxes = document.querySelectorAll('.user-checkbox:checked');
+    const count = selectedCheckboxes.length;
+    selectedCountSpan.textContent = count;
+    bulkActionContainer.classList.toggle('hidden', count === 0);
+    selectAllCheckbox.checked = userCheckboxes.length > 0 && count === userCheckboxes.length;
+    selectAllCheckbox.indeterminate = count > 0 && count < userCheckboxes.length;
+}
+
+function toggleAllCheckboxes(checked) {
+    document.querySelectorAll('.user-checkbox').forEach(checkbox => checkbox.checked = checked);
+    updateSelectionState();
+}
+
+userCheckboxes.forEach(checkbox => checkbox.addEventListener('change', updateSelectionState));
+
+function confirmBulkDelete() {
+    const selectedCheckboxes = document.querySelectorAll('.user-checkbox:checked');
+    if (selectedCheckboxes.length === 0) return;
+    const userIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+    const message = `Are you sure you want to delete ${userIds.length} selected users? This action cannot be undone.`;
+    confirmDelete(null, null, () => {
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = '/users/delete/bulk';
+        userIds.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'user_ids';
+            input.value = id;
+            form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
+    }, message);
+}
+
+function editUser(id, username, role, groupName) {
+    toggleUserForm(true);
     formTitle.innerText = `Edit User: ${username}`;
     userForm.action = `/users/update/${id}`;
-    
     submitBtn.innerHTML = '💾 Update User';
     submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
     submitBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
     cancelEditBtn.classList.remove('hidden');
-
     usernameInput.value = username;
-    usernameInput.readOnly = true; // Username tidak boleh diubah
-    usernameInput.classList.add('bg-gray-200', 'dark:bg-gray-600', 'cursor-not-allowed');
-    
+    usernameInput.readOnly = true;
+    usernameInput.classList.add('bg-gray-100', 'dark:bg-gray-600', 'cursor-not-allowed');
     passwordLabel.innerText = 'New Password (leave blank to keep current)';
     passwordInput.required = false;
     passwordInput.value = '';
-
     roleSelect.value = role;
-    if (groupId) {
-      groupSelect.value = groupId;
+    if (groupName) {
+        groupSelect.value = groupName;
     }
-  }
+}
 
-  /**
-   * Mengembalikan form ke kondisi awal (mode "Add User").
-   */
-  function resetForm() {
+function resetForm() {
     formTitle.innerText = 'Add New User';
     userForm.action = '/users/create';
     userForm.reset();
-    
     submitBtn.innerHTML = '➕ Add User';
     submitBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
     submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
     cancelEditBtn.classList.add('hidden');
-
     usernameInput.readOnly = false;
-    usernameInput.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'cursor-not-allowed');
-    
+    usernameInput.classList.remove('bg-gray-100', 'dark:bg-gray-600', 'cursor-not-allowed');
     passwordLabel.innerText = 'Password';
     passwordInput.required = true;
-  }
+}
 </script>
 {% endblock %}

@@ -160,7 +160,7 @@ def delete_snapshot(
             db=db,
             user=request.session["user_name"],
             action="delete_snapshot",
-            target=snapshot.camera_name,
+            target=f"{snapshot.camera_name} | {snapshot.timestamp.strftime("%d %B %Y, %H:%M:%S WITA")}",
             ip=request.client.host,
             extra="via dashboard"
         )

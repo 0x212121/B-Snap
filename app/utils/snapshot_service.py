@@ -123,7 +123,10 @@ def try_http_snapshot(camera: Camera, db: Session) -> dict:
 
     except Exception as e:
         # This block now catches both HTTP errors and our new image validation errors.
-        logger.warning(f"⚠️ HTTP snapshot failed for {camera.hostname}: {str(e)}")
+        logger.warning(
+            f"⚠️ HTTP snapshot failed for {camera.hostname}. Falling back to RTSP.",
+            exc_info=True
+        )
         return error_response(camera.hostname, str(e))
 
 
@@ -169,7 +172,7 @@ def try_rtsp_snapshot(camera: Camera, db: Session) -> dict:
         }
 
     except Exception as e:
-        logger.error(f"❌ [{camera.hostname}] RTSP snapshot failed: {str(e)}")
+        logger.exception(f"❌ [{camera.hostname}] RTSP snapshot failed definitively.")
         return error_response(camera.hostname, f"RTSP snapshot failed: {str(e)}")
 
     finally:

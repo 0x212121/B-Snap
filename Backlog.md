@@ -35,6 +35,7 @@
 - [ ] **Engineer photo on check‑in/out**
 - [ ] **WA notification on snapshot failure**
 - [ ] **Downtime Accumulation**
+- [ ] **Check if snapshot is blur**
 
 
 ---
