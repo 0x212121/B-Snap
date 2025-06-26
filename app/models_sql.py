@@ -22,6 +22,8 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     token = Column(String, nullable=True)
     token_expires_at = Column(DateTime(timezone=True), nullable=True)
+    otp_secret = Column(String, nullable=True)  # This will store the secret key
+    is_2fa_enabled = Column(Boolean, default=False, nullable=False)
 
     group_id = Column(Integer, ForeignKey('camera_groups.id'), nullable=True)
     group = relationship("CameraGroup", back_populates="users")

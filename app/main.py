@@ -3,10 +3,9 @@ from fastapi import Depends, FastAPI, HTTPException, Response, status
 from app.core.config_initializer import seed_config
 from app.scheduler import start_scheduler
 from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.openapi.utils import get_openapi
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi import Request
 from app.db.database import Base, engine, get_db
@@ -37,6 +36,7 @@ from app.routes import nvrs
 from app.utils.audit_logger import log_audit
 from sqlalchemy.orm import Session
 from fastapi.middleware.gzip import GZipMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 # Setup logging
 setup_logging()
@@ -108,6 +108,46 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
         status_code=exc.status_code
     )
 
+ALLOWED_PATHS_DURING_SETUP = [
+    "/mfa/force-setup",
+    "/mfa/force-verify",
+    "/logout",
+    "/static",  # Allow access to CSS/JS files
+]
+
+class MFAEnforcementMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
+        # Allow access to a few specific paths
+        if any(request.url.path.startswith(path) for path in ALLOWED_PATHS_DURING_SETUP):
+            return await call_next(request)
+
+        user_id = request.session.get("user_id")
+
+        # If user is not logged in at all, do nothing.
+        if not user_id:
+            return await call_next(request)
+        
+        # We need a database session to check the user's status
+        # This is a simple way to get a session within middleware
+        db_session_generator = get_db()
+        db: Session = next(db_session_generator)
+        
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+        finally:
+            # Ensure the session is closed
+            next(db_session_generator, None)
+            
+        # If user is logged in but has NOT enabled MFA, redirect them to the setup page.
+        if user and not user.is_2fa_enabled:
+            return RedirectResponse(url="/mfa/force-setup")
+
+        # Otherwise, proceed to the requested page.
+        response = await call_next(request)
+        return response
+
+# Add the middleware to your FastAPI app
+app.add_middleware(MFAEnforcementMiddleware)
 
 app.include_router(cameras.router)
 app.include_router(videos.router)

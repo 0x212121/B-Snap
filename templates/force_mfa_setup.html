@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFA Setup Required</title>
+    <link href="/static/css/output.css" rel="stylesheet">
+    
+    <script>
+        // Check for a saved theme in localStorage and apply it
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+    </script>
+
+</head>
+<body class="h-full flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+
+    <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-lg p-8 space-y-6">
+
+        <div class="absolute top-4 right-4">
+            <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5">
+                <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+            </button>
+        </div>
+        
+        <div class="text-center pt-6">
+            <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+                Security Upgrade Required
+            </h2>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                To protect your account, please enable Two-Factor Authentication (2FA).
+            </p>
+        </div>
+
+        <div class="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <p class="font-semibold mb-2 text-gray-800 dark:text-gray-200">Follow these steps:</p>
+            <ol class="list-decimal list-inside space-y-1">
+                <li>Install an authenticator app (e.g., Google Authenticator, Authy).</li>
+                <li>Scan the QR code below with your app.</li>
+                <li>Enter the 6-digit code from the app to complete the setup.</li>
+            </ol>
+        </div>
+
+        <div class="flex justify-center">
+            <div class="p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-200 inline-block">
+                <img src="{{ qr_code_data_uri }}" alt="MFA QR Code" class="w-48 h-48 md:w-56 md:h-56">
+            </div>
+        </div>
+
+        {% if error %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md text-sm" role="alert">
+            <strong class="font-bold">Error:</strong>
+            <span class="block sm:inline">{{ error }}</span>
+        </div>
+        {% endif %}
+
+        <form class="space-y-6" action="/mfa/force-verify" method="post">
+            <div>
+                <label for="otp" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200">
+                    6-Digit Verification Code
+                </label>
+                <div class="mt-2">
+                    <input id="otp" name="otp" type="text" inputmode="numeric" pattern="[0-9]{6}"
+                           autocomplete="one-time-code" required autofocus
+                           class="block w-full rounded-md border-0 py-2.5 px-3 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:focus:ring-blue-500 sm:text-sm sm:leading-6 tracking-widest text-center text-lg">
+                </div>
+            </div>
+            <div>
+                <button type="submit" class="flex w-full justify-center rounded-md bg-blue-600 px-3 py-2.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+                    Activate & Continue
+                </button>
+            </div>
+        </form>
+        
+        <p class="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+            Not ready? 
+            <a href="/logout" class="font-semibold leading-6 text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">
+                Logout
+            </a>
+        </p>
+    </div>
+
+    <script>
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+        // Function to set the icon visibility
+        function setToggleIcon() {
+            if (document.documentElement.classList.contains('dark')) {
+                themeToggleLightIcon.classList.remove('hidden');
+                themeToggleDarkIcon.classList.add('hidden');
+            } else {
+                themeToggleLightIcon.classList.add('hidden');
+                themeToggleDarkIcon.classList.remove('hidden');
+            }
+        }
+
+        // Set the initial icon state
+        setToggleIcon();
+
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        themeToggleBtn.addEventListener('click', function() {
+            // toggle the class on the html element
+            document.documentElement.classList.toggle('dark');
+
+            // update localStorage
+            if (document.documentElement.classList.contains('dark')) {
+                localStorage.theme = 'dark';
+            } else {
+                localStorage.theme = 'light';
+            }
+
+            // update the icon
+            setToggleIcon();
+        });
+    </script>
+</body>
+</html>

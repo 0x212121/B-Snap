@@ -68,10 +68,10 @@
 - [x] Changed threshold for High Latency from 200ms to 50ms at healthcheck function.
 - [x] Refactor Access Control Decorator
 - [x] Refactor Video Endpoint
+- [x] **Endpoint API protect**
+  - [x] API request using token
 
 ⏳ Ongoing:
 - [ ] **Enhanced Security Login**
-- [ ] **Endpoint API protect**
-  - API request using token
 
 🆕 Added:
