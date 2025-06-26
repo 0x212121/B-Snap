@@ -1,5 +1,6 @@
+from typing import Optional
 from passlib.hash import bcrypt
-from fastapi import APIRouter, HTTPException, Request, Form, Depends, Response
+from fastapi import APIRouter, HTTPException, Header, Request, Form, Depends, Response
 from fastapi.responses import RedirectResponse
 from starlette import status
 from starlette.status import HTTP_303_SEE_OTHER
@@ -113,26 +114,45 @@ def login_user(
     return RedirectResponse(url="/maps", status_code=HTTP_303_SEE_OTHER)
 
 
-async def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
-    """
-    Dependency Otentikasi yang Baru.
-    - Bertugas HANYA untuk mendapatkan user yang login.
-    - MELEMPAR HTTPException jika user tidak login atau tidak valid.
-    - TIDAK LAGI mengembalikan RedirectResponse.
-    """
+async def get_current_user(
+    request: Request,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None)
+) -> User:
+    # 1. Try session
     user_id = request.session.get("user_id")
-    if not user_id:
-        # Lempar "sinyal" untuk redirect. Handler akan menangkap ini.
-        raise HTTPException(status_code=status.HTTP_307_TEMPORARY_REDIRECT, detail="/login")
+    if user_id:
+        user = db.query(User).options(joinedload(User.group)).filter(User.id == user_id).first()
+        if user:
+            return user
 
-    user = db.query(User).options(joinedload(User.group)).filter(User.id == user_id).first()
-    
-    if not user:
-        # Jika session ada tapi user sudah dihapus dari DB
-        request.session.clear()
-        raise HTTPException(status_code=status.HTTP_307_TEMPORARY_REDIRECT, detail="/login")
+    # 2. Try Bearer token
+    if authorization:
+        try:
+            scheme, token = authorization.strip().split(" ", 1)
+        except ValueError:
+            raise HTTPException(status_code=401, detail="Malformed Authorization header")
         
-    return user
+        if scheme.lower() != "bearer":
+            raise HTTPException(status_code=401, detail="Authorization header must use Bearer scheme")
+
+        user = (
+            db.query(User)
+            .options(joinedload(User.group))
+            .filter(User.token == token)
+            .first()
+        )
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        if user.token_expires_at and user.token_expires_at < datetime.datetime.utcnow():
+            raise HTTPException(status_code=401, detail="Token expired")
+
+        return user
+
+    # 3. No session or token
+    raise HTTPException(status_code=status.HTTP_307_TEMPORARY_REDIRECT, detail="/login")
 
 
 async def user_access_required(current_user: User = Depends(get_current_user)) -> User:

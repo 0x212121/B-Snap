@@ -59,4 +59,4 @@ URL: http://localhost:8000
 ## Build Tailwind CSS
 - Install npm
 - Install tailwindcss: `npm install -D tailwindcss@3.4.1 postcss autoprefixer`
-- run `npm run dev` when you change CSS code.
+- run `npm run dev` when you update Tailwind CSS code.
