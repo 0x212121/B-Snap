@@ -54,3 +54,9 @@ URL: http://localhost:8000
 | 10  | Logs              | admin, operator            | Application Logs                     | [x]
 | 11  | Audit Logs        | admin                      | Auditing Logs                        | [x]
 | 12  | API Docs          | admin                      | API Documentation                    | [x]
+
+
+## Build Tailwind CSS
+- Install npm
+- Install tailwindcss: `npm install -D tailwindcss@3.4.1 postcss autoprefixer`
+- run `npm run dev` when you change CSS code.

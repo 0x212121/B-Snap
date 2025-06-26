@@ -21,7 +21,7 @@ class User(Base):
     last_login = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     token = Column(String, nullable=True)
-    token_expires_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    token_expires_at = Column(DateTime(timezone=True), nullable=True)
 
     group_id = Column(Integer, ForeignKey('camera_groups.id'), nullable=True)
     group = relationship("CameraGroup", back_populates="users")

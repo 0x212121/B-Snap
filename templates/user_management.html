@@ -103,6 +103,7 @@
                         <th class="p-4 font-semibold">Role</th>
                         <th class="p-4 font-semibold">Group</th>
                         <th class="p-4 font-semibold">API Token</th>
+                        <th class="p-4 font-semibold">Token Expiry Date</th>
                         <th class="p-4 font-semibold text-center">Actions</th>
                     </tr>
                 </thead>
@@ -129,9 +130,20 @@
                             {% endif %}
                         </td>
                         <td class="p-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{{ user.group.name if user.group else '-' }}</td>
-                        <td class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
+                        <td id="token-cell-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
                             {% if user.token %}
                                 {{ user.token[:8] }}...{{ user.token[-4:] }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td id="token-expiry-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
+                            {% if user.token %}
+                                {% if user.token_expires_at %}
+                                    {{ user.token_expires_at.strftime("%d/%m/%Y - %H:%M:%S") }}
+                                {% else %}
+                                    Never
+                                {% endif %}
                             {% else %}
                                 -
                             {% endif %}
@@ -278,7 +290,7 @@ async function handleTokenGeneration() {
 
         const data = await response.json();
         closeModal('generateTokenModal');
-        showGeneratedToken(data.token);
+        showGeneratedToken(data.token, data.token_expires_at);
 
     } catch (error) {
         errorP.textContent = `Error: ${error.message}`;
@@ -289,13 +301,24 @@ async function handleTokenGeneration() {
     }
 }
 
-function showGeneratedToken(token) {
+function showGeneratedToken(token, expires) {
     const modal = document.getElementById('showTokenModal');
     const tokenInput = document.getElementById('generatedTokenInput');
     const copyBtn = document.getElementById('copyTokenBtn');
     
     tokenInput.value = token;
     modal.classList.remove('hidden');
+
+    // Update the table cells with the new obscured token and expiry date
+    const tokenCell = document.getElementById(`token-cell-${activeUserId}`);
+    const tokenExpiryCell = document.getElementById(`token-expiry-${activeUserId}`);
+
+    if (tokenCell) {
+        tokenCell.textContent = `${token.substring(0, 8)}...${token.slice(-4)}`;
+    }
+    if (tokenExpiryCell) {
+        tokenExpiryCell.textContent = expires || 'Never';
+    }
 
     document.getElementById('copyIcon').classList.remove('hidden');
     document.getElementById('checkIcon').classList.add('hidden');

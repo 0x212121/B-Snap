@@ -291,7 +291,7 @@ async def update_user(
     return RedirectResponse(url=f"/users?status={status}&message={msg}", status_code=303)
 
 
-@router.post("/api/users/generate-token", response_model=dict)
+@router.post("/api/users/generate-token")
 async def api_generate_token(
     token_request: TokenRequest,
     request: Request,
@@ -300,40 +300,39 @@ async def api_generate_token(
 ):
     """
     Generates a new token for a user asynchronously and returns it as JSON.
+    Access is restricted by the `current_admin` dependency.
     """
     user = db.query(User).filter(User.id == token_request.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
 
-    # Generate a new secure token
+    username_for_log = user.username
     token = secrets.token_hex(32)
     user.token = token
 
-    # Calculate and set the expiration date
+    expires_at_str = "Never"
     if token_request.expires_in_days > 0:
         expires_at = datetime.utcnow() + timedelta(days=token_request.expires_in_days)
         user.token_expires_at = expires_at
+        expires_at_str = expires_at.strftime("%d/%m/%Y - %H:%M:%S")
         expiry_log_message = f"Token expires on {expires_at.strftime('%Y-%m-%d %H:%M:%S')} UTC."
     else:
-        user.token_expires_at = None # Never expires
+        user.token_expires_at = None
         expiry_log_message = "Token does not expire."
-
+        
     try:
         db.commit()
-
-        # Log the token generation to the audit trail
         log_audit(
             db=db,
             user=request.session.get("user_name"),
             action="generate_api_token",
-            target=user.username,
+            target=username_for_log,
             ip=request.client.host,
             extra=expiry_log_message
         )
 
-        return JSONResponse(status_code=200, content={"token": token})
+        return JSONResponse(status_code=200, content={"token": token, "token_expires_at": expires_at_str})
 
     except Exception as e:
         db.rollback()
-        # In a real app, log the exception `e`
         raise HTTPException(status_code=500, detail="Could not generate token due to a server error.")
