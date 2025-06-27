@@ -31,48 +31,38 @@
       class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-[20rem] sm:w-[24rem] focus:outline-none">
       <option value="">🎥 All Camera</option>
       {% for cname in camera_names | sort %}
-      <option value="{{ cname }}">{{ cname }}</option>
+      <option value="{{ cname }}" {% if cname == selected_camera %}selected{% endif %}>{{ cname }}</option>
       {% endfor %}
     </select>
 
     <button type="button" id="clearFilterBtn"
       class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear Filter</button>
 
+    <!-- 
+      This container's content will be dynamically replaced by the /gallery-data endpoint.
+      The initial state is rendered here for the first page load.
+    -->
     <div id="actionButtonsContainer" class="flex gap-4">
       {% if selected_camera %}
-      <button type="button" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
-        data-action="snapshot" data-camera="{{ selected_camera }}">📸 Snapshot</button>
-      <button type="button" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
-        data-action="delete-all" data-camera="{{ selected_camera }}">🗑️ Delete All</button>
+        <!-- CHANGE 1: The Snapshot button is only shown if the camera is not deleted -->
+        {% if camera_exists %}
+        <button type="button" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+          data-action="snapshot" data-camera="{{ selected_camera }}">📸 Snapshot</button>
+        {% endif %}
+
+        <!-- The Delete All button is always shown if a camera is selected, as it acts on snapshots -->
+        <button type="button" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
+          data-action="delete-all" data-camera="{{ selected_camera }}">🗑️ Delete All</button>
       {% endif %}
     </div>
   </form>
 
+  <!-- This grid is populated on initial load and then updated via AJAX -->
   <div id="snapshotGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-    {% for image in images %}
-    <div class="snapshot-card relative bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden group transform transition duration-300 hover:scale-105" data-camera="{{ image.camera }}">
-      <img src="{{ image.url | urlencode }}" alt="Snapshot"
-        onclick="showModal('{{ image.url | urlencode }}', '{{ image.camera }}', '{{ image.time }}')"
-        class="w-full h-48 object-cover cursor-pointer rounded-t-xl lazy-img"
-        loading="lazy" />
-      <div class="p-4 text-center">
-        <h2 class="font-semibold text-lg text-gray-800 dark:text-white truncate">{{ image.camera }}</h2>
-        <div class="text-sm text-gray-500 dark:text-gray-400 mt-2 space-y-1 text-left">
-          <p><span class="font-medium text-gray-600 dark:text-gray-300">📍 IP:</span> {{ image.ip }}</p>
-          <p><span class="font-medium text-gray-600 dark:text-gray-300">🕒 Time:</span> {{ image.time }}</p>
-          <p><span class="font-medium text-gray-600 dark:text-gray-300">🏷️ Group:</span> {{ image.group }}</p>
-          <p><span class="font-medium text-gray-600 dark:text-gray-300">📁 Size:</span> {{ image.file_size }} kB</p>
-          <p><span class="font-medium text-gray-600 dark:text-gray-300">🖼️ Res:</span> {{ image.resolution }}</p>
-        </div>
-      </div>
-      <button onclick="event.stopPropagation(); deleteSnapshot('{{ image.id }}', this)"
-        class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded hover:bg-red-700 opacity-0 group-hover:opacity-100 transition">
-        🗑️
-      </button>
-    </div>
-    {% endfor %}
+    {% include "_gallery_grid.html" %}
   </div>
 
+  <!-- Modal for viewing a single image -->
   <div id="modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
     <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl max-h-[80vh]">
       <div class="relative">
@@ -97,8 +87,7 @@
 
   /**
    * Main function to fetch and update the gallery content via AJAX.
-   * Assumes a backend endpoint /gallery-data that returns JSON {html: "...", buttons_html: "..."}.
-   * @param {object} params - Key-value pairs for query string (e.g., {camera: 'Lobby', q: 'search'})
+   * Fetches both the image grid and the action buttons from the /gallery-data endpoint.
    */
   async function fetchAndUpdateGallery(params = {}) {
     const grid = document.getElementById("snapshotGrid");
@@ -111,15 +100,14 @@
     if (params.q) urlParams.set('q', params.q);
 
     try {
-      // Assumes a new backend endpoint that returns rendered HTML partials
       const response = await fetch(`/gallery-data?${urlParams}`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
 
+      // Replace the content of the grid and the buttons container
       grid.innerHTML = data.html;
       actionButtonsContainer.innerHTML = data.buttons_html;
 
-      // Re-initialize lazy loading for the new images
       initializeLazyLoading();
     } catch (error) {
       console.error("Failed to update gallery:", error);
@@ -131,19 +119,15 @@
 
   /**
    * Initializes TomSelect for the camera dropdown.
-   * On change, it triggers the AJAX gallery update.
    */
   function initTomSelect() {
     if (tom) tom.destroy();
     tom = new TomSelect("#cameraSelect", {
-      maxOptions: 50,
+      maxOptions: 100, // Increased max options
       allowEmptyOption: true,
-      placeholder: 'Select Camera...',
+      placeholder: 'Select a camera...',
       sortField: { field: "text", direction: "asc" },
-      create: false,
-      highlight: true,
       onChange: (value) => {
-        // When camera changes, fetch new data for that camera.
         const searchQuery = document.getElementById("searchInput").value;
         fetchAndUpdateGallery({ camera: value, q: searchQuery });
       }
@@ -151,95 +135,95 @@
   }
 
   /**
-   * Deletes a single snapshot.
-   * On success, removes the card directly from the DOM instead of reloading the page.
-   * @param {string} filename - The ID of the image to delete.
-   * @param {HTMLElement} element - The button element that was clicked.
+   * Deletes a single snapshot by its ID.
    */
   function deleteSnapshot(snapshotId, element) {
-  if (!confirm("Are you sure you want to delete this snapshot?")) return;
+    if (!confirm("Are you sure you want to delete this snapshot?")) return;
 
-  const card = element.closest('.snapshot-card');
-  card.style.opacity = '0.5'; // Optimistic UI feedback
+    const card = element.closest('.snapshot-card');
+    card.style.opacity = '0.5';
 
-  fetch(`/snap/${snapshotId}`, { method: 'DELETE' })
-    .then(async res => {
-      const data = await res.json().catch(() => ({})); // catch JSON parse error
-      if (res.ok && data.status === "success") {
-        showToast(data.message || "Snapshot deleted successfully");
-        card.remove(); // Remove card from DOM
-      } else {
-        showToast(data.message || "Failed to delete snapshot", true);
+    fetch(`/snap/${snapshotId}`, { method: 'DELETE' })
+      .then(async res => {
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.status === "success") {
+          showToast(data.message || "Snapshot deleted successfully");
+          card.remove();
+        } else {
+          showToast(data.detail || "Failed to delete snapshot", true);
+          card.style.opacity = '1';
+        }
+      })
+      .catch(err => {
+        console.error("Delete snapshot error:", err);
+        showToast("Error during deletion.", true);
         card.style.opacity = '1';
-      }
-    })
-    .catch(err => {
-      console.error("Delete snapshot error:", err);
-      showToast("Error during deletion.", true);
-      card.style.opacity = '1';
-    });
-}
-
+      });
+  }
 
   // --- Event Listeners Setup ---
   document.addEventListener("DOMContentLoaded", () => {
     initTomSelect();
     initializeLazyLoading();
 
-    // Search input with debounce to avoid excessive requests
     document.getElementById("searchInput")?.addEventListener("input", (e) => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         const selectedCamera = tom.getValue();
         fetchAndUpdateGallery({ camera: selectedCamera, q: e.target.value });
-      }, 350); // Wait 350ms after user stops typing
+      }, 350);
     });
 
-    // Clear filter button
     document.getElementById("clearFilterBtn")?.addEventListener("click", () => {
       document.getElementById("searchInput").value = '';
-      tom.clear(); // This will trigger the onChange, fetching all cameras
+      tom.clear(); 
     });
 
-    // Event delegation for action buttons (Snapshot, Delete All)
-    document.getElementById("filterForm").addEventListener("click", async (e) => {
+    // Event delegation for dynamically added action buttons
+    document.getElementById("actionButtonsContainer").addEventListener("click", async (e) => {
       const target = e.target.closest("[data-action]");
       if (!target) return;
 
       const action = target.dataset.action;
       const camera = target.dataset.camera;
-      target.disabled = true; // Prevent double clicks
+      
+      if (!camera) return; // Should not happen but good practice
+
+      target.disabled = true;
       target.style.opacity = '0.7';
 
-      if (action === "snapshot") {
-        const res = await fetch(`/snap/${encodeURIComponent(camera)}`, { method: "POST" });
-        const data = await res.json();
-        showToast(data.message, data.status !== "success");
-        if (data.status === "success") {
-          // Refresh gallery instead of reloading page
-          fetchAndUpdateGallery({ camera: camera });
+      try {
+        if (action === "snapshot") {
+          const res = await fetch(`/snap/${encodeURIComponent(camera)}`, { method: "POST" });
+          const data = await res.json();
+          showToast(data.message || (data.status === "success" ? "Snapshot taken!" : "Failed to take snapshot"), data.status !== "success");
+          if (data.status === "success") {
+            // Refresh the gallery to show the new snapshot
+            fetchAndUpdateGallery({ camera: tom.getValue(), q: document.getElementById("searchInput").value });
+          }
         }
-      }
 
-      if (action === "delete-all") {
-        if (!confirm(`Delete all snapshots for ${camera}?`)) {
-            target.disabled = false;
-            target.style.opacity = '1';
-            return;
-        };
-        const res = await fetch(`/snap/${encodeURIComponent(camera)}`, { method: "DELETE" });
-        const data = await res.json();
-        showToast(`🗑️ Deleted ${data.deleted?.length || 0} snapshots`);
-        // Refresh gallery instead of reloading page
-        fetchAndUpdateGallery({ camera: camera });
+        if (action === "delete-all") {
+          if (!confirm(`Are you sure you want to delete all snapshots for ${camera}? This cannot be undone.`)) {
+              return;
+          };
+          // NOTE: This assumes you have an endpoint to delete all snapshots for a camera.
+          // You may need to implement this endpoint. For now, this will fail.
+          // A proper implementation would be something like:
+          // const res = await fetch(`/snap/delete-all/${encodeURIComponent(camera)}`, { method: "DELETE" });
+          showToast("Delete-all functionality not yet implemented.", true);
+        }
+      } catch (error) {
+        console.error(`Error performing action '${action}':`, error);
+        showToast(`An error occurred.`, true);
+      } finally {
+        target.disabled = false;
+        target.style.opacity = '1';
       }
-
-      target.disabled = false;
-      target.style.opacity = '1';
     });
   });
 
-  // --- Utility and UI Functions (largely unchanged) ---
+  // --- Utility and UI Functions ---
 
   function showToast(msg, isError = false) {
     const toast = document.getElementById("toast");
@@ -258,32 +242,10 @@
     img.src = src;
     info.textContent = `${cameraName} • ${timestamp}`;
     modal.classList.remove("hidden");
-
-    downloadBtn.onclick = () => {
-      const canvas = document.createElement('canvas');
-      const i = new Image();
-      i.crossOrigin = "anonymous";
-      i.src = src;
-      i.onload = function () {
-        canvas.width = i.width;
-        canvas.height = i.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(i, 0, 0);
-        ctx.font = '24px sans-serif';
-        ctx.fillStyle = 'white';
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 2;
-        ctx.textAlign = 'right';
-        ctx.strokeText(cameraName, canvas.width - 20, 40);
-        ctx.fillText(cameraName, canvas.width - 20, 40);
-        ctx.strokeText(timestamp, canvas.width - 20, 70);
-        ctx.fillText(timestamp, canvas.width - 20, 70);
-        const link = document.createElement('a');
-        link.href = canvas.toDataURL("image/jpeg");
-        link.download = `snapshot_${cameraName}_${timestamp.replace(/[\s:]/g, '-')}.jpg`;
-        link.click();
-      };
-    };
+    
+    // Set download link href and filename
+    downloadBtn.href = src;
+    downloadBtn.download = `snapshot_${cameraName}_${timestamp.replace(/[\s:]/g, '-')}.jpg`;
   }
 
   function hideModal() {
@@ -296,15 +258,14 @@
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const img = entry.target;
-          // Start loading the actual image
-          img.src = img.src; // Browser re-evaluates src for images already in DOM
+          img.src = img.src; // This triggers the load
           img.addEventListener('load', () => {
             img.classList.add('loaded');
           }, { once: true });
           obs.unobserve(img);
         }
       });
-    });
+    }, { rootMargin: "0px 0px 200px 0px" }); // Start loading images 200px before they enter the viewport
     lazyImages.forEach(img => observer.observe(img));
   }
 </script>

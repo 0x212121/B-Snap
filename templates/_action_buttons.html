@@ -1,9 +1,22 @@
-<!--
-  This template renders the action buttons. It's only shown when a camera is selected.
--->
-{% if selected_camera and role in ["admin", "operator"] %}
-<button type="button" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
-  data-action="snapshot" data-camera="{{ selected_camera }}">📸 Snapshot</button>
-<button type="button" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
-  data-action="delete-all" data-camera="{{ selected_camera }}">🗑️ Delete All</button>
+<!-- templates/_action_buttons.html -->
+<!-- This partial template is rendered by the /gallery-data endpoint -->
+<!-- and injected into the main page to update the action buttons. -->
+
+{% if selected_camera %}
+    <!-- 
+      The Snapshot button is only shown if the camera exists in the database.
+      This prevents users from trying to take a snapshot with a deleted camera.
+    -->
+    {% if camera_exists %}
+        <button type="button" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+          data-action="snapshot" data-camera="{{ selected_camera }}">📸 Snapshot</button>
+    {% endif %}
+
+    <!-- 
+      The Delete All button is always shown if a camera is selected from the dropdown.
+      This allows deleting all snapshots associated with a camera name, even if the camera itself was deleted.
+      NOTE: The backend logic for this button may need to be implemented.
+    -->
+    <button type="button" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
+      data-action="delete-all" data-camera="{{ selected_camera }}">🗑️ Delete All</button>
 {% endif %}

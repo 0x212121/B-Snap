@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import distinct
 from app.core.logging_config import setup_logging
 from app.db.database import get_db
 from app.models_sql import CameraGroup, Camera, Snapshot, SnapshotLog, User
@@ -27,19 +28,19 @@ logger = logging.getLogger("snapshot")
 def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[str] = None, search_query: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     Helper function to query and filter snapshots from the database.
-    This avoids code duplication between the full page load and the AJAX endpoint.
+    This function now correctly fetches all snapshots, even if the camera has been deleted.
     """
     user_group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
     if not user_group:
         raise HTTPException(status_code=403, detail="User group not found")
 
-    # Base query
+    # Base query on the Snapshot table. This ensures all snapshots are retrieved.
     if user_group.name != 'ALL':
         snapshot_query = db.query(Snapshot).filter(Snapshot.camera_group == user_group.name)
     else:
         snapshot_query = db.query(Snapshot)
 
-    # Apply filters
+    # Apply filters if provided
     if camera_filter:
         snapshot_query = snapshot_query.filter(Snapshot.camera_name == camera_filter)
     
@@ -57,7 +58,7 @@ def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[
             "time": s.timestamp.strftime("%Y-%m-%d %H:%M:%S WITA"),
             "group": s.camera_group,
             "id": s.id,
-            "file_size": int(s.file_size / 1024),
+            "file_size": int(s.file_size / 1024) if s.file_size else 0,
             "resolution": s.resolution
         }
         for s in snapshots
@@ -79,6 +80,7 @@ def snapshot_handler(
     db: Session = Depends(get_db),
     user_phone: str = Query(default=None)
 ):
+    # This function remains the same. It requires an existing camera to take a snapshot.
     if is_ip_address(camera_id_or_ip):
         camera = db.query(Camera).filter(Camera.ip == camera_id_or_ip).first()
     else:
@@ -90,19 +92,13 @@ def snapshot_handler(
     result = take_snapshot(camera, db)
 
     if result["status"] == "success":
-        # Catat log snapshot
         snapshot_log = SnapshotLog(
             id=str(uuid4()),
             camera_name=camera.hostname
         )
         db.add(snapshot_log)
 
-        # simpan metadata snapshot ke DB
         path = result["file_path"]
-        full_path = os.path.join("static", "snapshots", path)
-        print("Checking if snapshot exists at:", full_path)
-        print("Exists?", os.path.exists(full_path))
-
         snapshot = record_snapshot_metadata(
             db=db,
             camera_id=camera.id,
@@ -110,8 +106,6 @@ def snapshot_handler(
             resolution=result.get("resolution", "N/A"),
         )
         result["snapshot_id"] = snapshot.id
-
-    # Check if user request is from whatsapp bot or web
     
     user_from_param = user_phone if user_phone else None
     if user_from_param:
@@ -135,14 +129,14 @@ def delete_snapshot(
     request: Request,
     snapshot_id: str,
     db: Session = Depends(get_db)
-    # current_operator: User = Depends(operator_access_required)
 ):
+    # This function remains the same.
     snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
     if not snapshot:
         logger.warning(f"Snapshot not found: {snapshot_id}")
         raise HTTPException(status_code=404, detail="Snapshot not found")
 
-    file_path = os.path.join(SNAPSHOT_BASE_DIR, snapshot.file_path)
+    file_path = os.path.join(SNAPSHOT_BASE_DIR, "snapshots", snapshot.file_path)
 
     if os.path.isfile(file_path):
         try:
@@ -160,12 +154,13 @@ def delete_snapshot(
             db=db,
             user=request.session["user_name"],
             action="delete_snapshot",
-            target=f"{snapshot.camera_name} | {snapshot.timestamp.strftime("%d %B %Y, %H:%M:%S WITA")}",
+            target=f"{snapshot.camera_name} | {snapshot.timestamp.strftime('%d %B %Y, %H:%M:%S WITA')}",
             ip=request.client.host,
             extra="via dashboard"
         )
     except Exception as e:
         logger.error(f"Failed to delete DB record for snapshot {snapshot_id}: {e}")
+        db.rollback()
         raise HTTPException(status_code=500, detail="Failed to delete snapshot record")
 
     return JSONResponse(status_code=200, content={"status": "success", "message": "Snapshot deleted"})
@@ -181,48 +176,32 @@ def show_snapshots(request: Request, db: Session = Depends(get_db), camera: str 
     if not user_group:
         raise HTTPException(status_code=403, detail="User group not found")
 
-    # --- PERUBAHAN DITERAPKAN DI SINI ---
-    # Mengambil nama kamera berdasarkan grup pengguna yang login
-    if user_group.name == 'ALL':
-        # Jika grup adalah 'ALL', ambil semua nama kamera
-        all_cameras_query = db.query(Camera.hostname)
-    else:
-        # Jika tidak, hanya ambil kamera yang cocok dengan group_id pengguna
-        all_cameras_query = db.query(Camera.hostname).filter(Camera.group_id == group_id)
-    
-    all_camera_names = sorted([row[0] for row in all_cameras_query.all()])
-    # --- AKHIR DARI PERUBAHAN ---
-
-    # Ambil snapshot berdasarkan kamera (logika ini sudah benar)
+    # --- CHANGE 1: Get camera list for dropdown from snapshots ---
+    # This query gets the names of only those cameras that have snapshots.
     if user_group.name != 'ALL':
-        snapshot_query = db.query(Snapshot).filter(Snapshot.camera_group == user_group.name)
+        cameras_with_snapshots_query = db.query(Snapshot.camera_name).filter(Snapshot.camera_group == user_group.name)
     else:
-        snapshot_query = db.query(Snapshot)
+        cameras_with_snapshots_query = db.query(Snapshot.camera_name)
     
+    # Get distinct names and sort them
+    camera_name_tuples = cameras_with_snapshots_query.distinct().all()
+    all_camera_names = sorted([name[0] for name in camera_name_tuples])
+    
+    # --- CHANGE 2: Check if selected camera exists for initial load ---
+    camera_exists = False
     if camera:
-        snapshot_query = snapshot_query.filter(Snapshot.camera_name == camera)
+        if db.query(Camera).filter(Camera.hostname == camera).first():
+            camera_exists = True
 
-    snapshots = snapshot_query.order_by(Snapshot.timestamp.desc()).all()
-
-    images = [
-        {
-            "url": f"/static/snapshots/{s.file_path}",
-            "camera": s.camera_name,
-            "ip": s.camera_ip,
-            "time": s.timestamp.strftime("%Y-%m-%d %H:%M:%S WITA"),
-            "group": s.camera_group,
-            "id": s.id,
-            "file_size": int(s.file_size / 1024) if s.file_size else 0, # Menambahkan pengecekan jika file_size null
-            "resolution": s.resolution
-        }
-        for s in snapshots
-    ]
+    # Get all snapshots for the initial view using the helper
+    images = _get_filtered_snapshots(db, group_id, camera_filter=camera)
 
     return templates.TemplateResponse("snap_gallery.html", {
         "request": request,
         "images": images,
-        "camera_names": all_camera_names, # Variabel ini sekarang berisi daftar kamera yang sudah difilter
+        "camera_names": all_camera_names, # Use the new list of names
         "selected_camera": camera,
+        "camera_exists": camera_exists, # Pass existence flag to template
     })
 
 
@@ -234,10 +213,6 @@ async def get_gallery_data(
     q: Optional[str] = Query(None),
     current_operator: User = Depends(operator_access_required)
 ):
-    """
-    This is the new AJAX endpoint.
-    It filters data based on query parameters and returns rendered HTML partials.
-    """
     group_id = request.session.get("user_groupid")
     if not group_id:
         return JSONResponse(status_code=403, content={"detail": "Authentication required."})
@@ -245,9 +220,20 @@ async def get_gallery_data(
     # Use the helper function to get the filtered snapshot data
     filtered_images = _get_filtered_snapshots(db, group_id, camera_filter=camera, search_query=q)
 
+    # --- CHANGE 3: Check if camera exists before rendering action buttons ---
+    camera_exists = False
+    if camera:
+        # Check if the camera exists in the Camera table to enable the snapshot button
+        if db.query(Camera).filter(Camera.hostname == camera).first():
+            camera_exists = True
+
     # Render the HTML partials with the filtered data
     gallery_html = templates.get_template("_gallery_grid.html").render({"images": filtered_images})
-    buttons_html = templates.get_template("_action_buttons.html").render({"selected_camera": camera, 'role': request.session.get("user_role")})
+    buttons_html = templates.get_template("_action_buttons.html").render({
+        "selected_camera": camera, 
+        "camera_exists": camera_exists, # Pass the flag to the buttons template
+        'role': request.session.get("user_role")
+    })
     
     return JSONResponse({
         'html': gallery_html,
