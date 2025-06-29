@@ -1,11 +1,19 @@
+import os
 from sqlalchemy import Sequence, create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
+from dotenv import load_dotenv
 
 from app import models
+load_dotenv()  # <<< load .env into os.environ
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-DATABASE_URL = "sqlite:///./app/data.db"
+# DATABASE_URL = "sqlite:///./app/data.db"
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    engine = create_engine(DATABASE_URL)
+
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 Base = declarative_base()

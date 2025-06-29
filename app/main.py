@@ -1,4 +1,5 @@
 import logging
+import os
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from app.core.config_initializer import seed_config
 from app.scheduler import start_scheduler
@@ -168,7 +169,9 @@ app.include_router(snap_gallery.router)
 app.include_router(audit.router)
 app.include_router(dev_docs.router)
 
-app.add_middleware(SessionMiddleware, secret_key="secret123!@#")
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Setup templates

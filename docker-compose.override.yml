@@ -1,0 +1,11 @@
+services:
+  pgloader:
+    image: dimitri/pgloader:latest
+    volumes:
+      - ./app:/app:ro
+    entrypoint: >
+      pgloader
+      sqlite:///app/data.db
+      postgresql://bsnap_user:bsnap_pass@postgres:5432/bsnap_db
+    depends_on:
+      - postgres

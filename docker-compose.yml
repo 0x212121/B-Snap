@@ -5,13 +5,14 @@ services:
     build: .
     container_name: bsnap-app
     ports:
-      - "8000:8000"
+      - "8888:8888"
     env_file:
       - .env
     depends_on:
       - postgres
     volumes:
-      - ./app:/app
+      - .:/app
+    restart: unless-stopped
 
   postgres:
     image: postgres:16
@@ -24,17 +25,32 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
 
   pgadmin:
     image: dpage/pgadmin4
     container_name: bsnap-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@bsnap.local
+      PGADMIN_DEFAULT_EMAIL: wijaya.indra2196@gmail.com
       PGADMIN_DEFAULT_PASSWORD: admin123
     ports:
       - "5050:80"
     depends_on:
       - postgres
+    restart: unless-stopped
+
+  pgloader:
+    image: dimitri/pgloader:latest
+    profiles: ["migrate"]  # <--- hanya jalan kalau kamu minta
+    volumes:
+      - ./app:/app:ro
+    entrypoint: >
+      pgloader
+      sqlite:///app/sqlite.db
+      postgresql://bsnap_user:bsnap_pass@postgres:5432/bsnap_db
+    depends_on:
+      - postgres
+    restart: "no"
 
 volumes:
   postgres_data:
