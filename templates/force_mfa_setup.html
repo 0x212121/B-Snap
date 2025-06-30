@@ -9,9 +9,9 @@
     <script>
         // Check for a saved theme in localStorage and apply it
         if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-          document.documentElement.classList.add('dark');
+            document.documentElement.classList.add('dark');
         } else {
-          document.documentElement.classList.remove('dark');
+            document.documentElement.classList.remove('dark');
         }
     </script>
 
@@ -47,7 +47,7 @@
 
         <div class="flex justify-center">
             <div class="p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-200 inline-block">
-                <img src="{{ qr_code_data_uri }}" alt="MFA QR Code" class="w-48 h-48 md:w-56 md:h-56">
+                <img src="{{ qr_code }}" alt="MFA QR Code" class="w-48 h-48 md:w-56 md:h-56">
             </div>
         </div>
 
@@ -58,7 +58,7 @@
         </div>
         {% endif %}
 
-        <form class="space-y-6" action="/mfa/force-verify" method="post">
+        <form class="space-y-6" action="{{ url_for('mfa_setup_post') }}" method="post">
             <div>
                 <label for="otp" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200">
                     6-Digit Verification Code
@@ -78,7 +78,7 @@
         
         <p class="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
             Not ready? 
-            <a href="/logout" class="font-semibold leading-6 text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">
+            <a href="{{ url_for('logout') }}" class="font-semibold leading-6 text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">
                 Logout
             </a>
         </p>

@@ -173,7 +173,7 @@ def mfa_setup_form(request: Request, db: Session = Depends(get_db)):
 
     # Generate QR code URI.
     uri = pyotp.totp.TOTP(user.otp_secret).provisioning_uri(
-        name=user.username, issuer_name="YourAppName" # <-- Change this to your app's name
+        name=user.username, issuer_name="B-Snap App" # <-- Change this to your app's name
     )
 
     # Create QR code image for the template.
@@ -323,7 +323,7 @@ async def user_access_required(current_user: User = Depends(get_current_user)) -
     - Depends on get_current_user.
     - Throw error 403 if role not equal.
     """
-    print(f"Your role: {current_user.role}")
+    #  print(f"Your role: {current_user.role}")
     if current_user.role not in ["viewer", "operator", "admin"]:
         # Lempar "sinyal" untuk menampilkan halaman akses ditolak.
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Akses memerlukan peran User atau Admin.")

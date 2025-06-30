@@ -136,13 +136,17 @@
   md:w-16
   lg:w-64">
   <div>
-    <h2 class="text-xl font-bold mb-6 text-center text-blue-600 dark:text-blue-300 logo-app mt-4">
+    <h2 class="text-xl font-bold mb text-center text-blue-600 dark:text-blue-300 logo-app mt-4">
       <div class="hidden lg:flex items-center justify-center gap-2">
         <!-- <img src="/static/icons/favicon.ico" alt="Logo" class="w-6 h-6 dark:hidden">
         <img src="/static/icons/favicon-white.ico" alt="Logo" class="w-6 h-6 hidden dark:block"> -->
         <img src="/static/icons/b-snap.png" class="h-10">
       </div>
     </h2>
+    <h4 class="text-md font-bold mb-6 text-center text-blue-600 dark:text-blue-300 logo-app">
+      <p>v1.0.0</p>
+    </h4>
+
     
     
     <nav class="space-y-2 text-sm">
@@ -167,15 +171,15 @@
       {% if request.session["user_role"] == "admin" %}     
       <a href="/cameras" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/cameras' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
         <span>🛠️</span>
-        <span class="ml-2 menu-text hidden md:hidden lg:inline">Manage Cameras</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">Cameras</span>
       </a>
       <a href="/nvrs" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/nvrs' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
         <span>📹</span>
-        <span class="ml-2 menu-text hidden md:hidden lg:inline">Manage NVR</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">NVR</span>
       </a>
       <a href="/users" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/users' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
         <span>👥</span>
-        <span class="ml-2 menu-text hidden md:hidden lg:inline">Manage Users</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">Users</span>
       </a>
       <a href="/health" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/health' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
         <span>🟢</span>
@@ -183,7 +187,7 @@
       </a>
       <a href="/config" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/config' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
         <span>⚙️</span>
-        <span class="ml-2 menu-text hidden md:hidden lg:inline">Config</span>
+        <span class="ml-2 menu-text hidden md:hidden lg:inline">Settings</span>
       </a>
       <a href="/logs" class="flex items-center px-4 py-2 rounded hover:bg-blue-100 dark:hover:bg-gray-700 {% if request.path == '/logs' %}bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-300 pointer-events-none{% endif %}">
         <span>📄</span>
