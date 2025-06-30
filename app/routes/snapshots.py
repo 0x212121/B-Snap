@@ -144,6 +144,7 @@ def search_snapshots(
 
     return list(latest_snapshot_per_camera.values())
 
+
 # --- Metadata Only (Latest Snapshot by IP or Name) ---
 @router.get("/snapshot/latest/{identifier}/info", response_model=SnapshotResponse)
 def get_latest_snapshot_info(identifier: str, db: Session = Depends(get_db)):

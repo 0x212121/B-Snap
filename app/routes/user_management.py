@@ -1,4 +1,10 @@
 from datetime import datetime, timedelta
+# Use the built-in zoneinfo for timezone-aware datetimes (standard in Python 3.9+)
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    # For Python < 3.9, you would need to install backports.zoneinfo
+    from backports.zoneinfo import ZoneInfo
 from typing import List
 from fastapi import APIRouter, HTTPException, Request, Form, Depends
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -18,6 +24,27 @@ templates = Jinja2Templates(directory="templates")
 
 router = APIRouter()
 
+# --- NEW: Custom Jinja2 filter for GMT+8 timezone conversion ---
+def format_datetime_gmt8(dt: datetime | None, default_val: str = "Never") -> str:
+    """
+    Converts a naive UTC datetime object to a formatted GMT+8 string.
+    """
+    if not dt:
+        return default_val
+    
+    # Assume the datetime from the database is naive and represents UTC.
+    # 1. Make the datetime "aware" of its UTC timezone.
+    utc_dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+    
+    # 2. Convert to the GMT+8 timezone (Asia/Singapore is a reliable choice).
+    gmt8_dt = utc_dt.astimezone(ZoneInfo("Asia/Singapore"))
+    
+    # 3. Format into the desired string format.
+    return gmt8_dt.strftime("%d/%m/%Y - %H:%M:%S")
+
+# --- NEW: Register the custom filter with the Jinja2 environment ---
+templates.env.filters['to_gmt8'] = format_datetime_gmt8
+
 
 # Pydantic model for the token generation request body
 class TokenRequest(BaseModel):
@@ -29,6 +56,7 @@ class TokenRequest(BaseModel):
 async def manage_users(request: Request, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
     """
     Renders the user management page with a list of all users and groups.
+    The `to_gmt8` filter is now available to the template.
     """
     users = db.query(User).options(joinedload(User.group)).all()
     groups = db.query(CameraGroup).order_by(CameraGroup.name).all()
@@ -309,12 +337,15 @@ async def api_generate_token(
     username_for_log = user.username
     token = secrets.token_hex(32)
     user.token = token
-
-    expires_at_str = "Never"
+    
+    # MODIFIED: This endpoint now returns the GMT+8 formatted string for consistency.
+    expires_at_gmt8_str = "Never" 
+    
     if token_request.expires_in_days > 0:
         expires_at = datetime.utcnow() + timedelta(days=token_request.expires_in_days)
         user.token_expires_at = expires_at
-        expires_at_str = expires_at.strftime("%d/%m/%Y - %H:%M:%S")
+        # Use the custom formatter here as well
+        expires_at_gmt8_str = format_datetime_gmt8(expires_at)
         expiry_log_message = f"Token expires on {expires_at.strftime('%Y-%m-%d %H:%M:%S')} UTC."
     else:
         user.token_expires_at = None
@@ -331,8 +362,64 @@ async def api_generate_token(
             extra=expiry_log_message
         )
 
-        return JSONResponse(status_code=200, content={"token": token, "token_expires_at": expires_at_str})
+        # MODIFIED: The key is now 'token_expires_at' and it contains the GMT+8 string.
+        return JSONResponse(status_code=200, content={"token": token, "token_expires_at": expires_at_gmt8_str})
 
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Could not generate token due to a server error.")
+    
+
+# In your users endpoint file (e.g., app/routes/users.py)
+# Add this new endpoint alongside your other user management routes.
+
+@router.post("/users/reset-mfa/{user_id}")
+async def reset_user_mfa(
+    request: Request,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    Handles resetting a user's MFA configuration.
+    This action clears their MFA secret, forcing them to re-register.
+    """
+    # 1. Find the user in the database.
+    user_to_update = db.query(User).filter(User.id == user_id).first()
+
+    # 2. Handle cases where the user doesn't exist or doesn't have MFA enabled.
+    if not user_to_update:
+        msg = quote("User not found.")
+        return RedirectResponse(url=f"/users?status=error&message={msg}", status_code=303)
+
+    if not user_to_update.mfa_enabled:
+        msg = quote("MFA is not enabled for this user, so it cannot be reset.")
+        return RedirectResponse(url=f"/users?status=warning&message={msg}", status_code=303)
+
+    # 3. Perform the MFA Reset.
+    username_for_log = user_to_update.username
+    user_to_update.otp_secret = None
+    user_to_update.is_2fa_enabled = False
+    
+    try:
+        db.commit()
+
+        # 4. Log this critical security event.
+        log_audit(
+            db=db,
+            user=request.session.get("user_name"),
+            action="reset_mfa",
+            target=username_for_log,
+            ip=request.client.host,
+            extra="User's MFA secret was cleared and disabled."
+        )
+
+        msg = quote(f"MFA has been successfully reset for {username_for_log}.")
+        status = "success"
+    except Exception as e:
+        db.rollback()
+        msg = quote("An error occurred while resetting MFA.")
+        status = "error"
+
+    # 5. Redirect back to the user management page.
+    return RedirectResponse(url=f"/users?status={status}&message={msg}", status_code=303)
