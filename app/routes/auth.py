@@ -5,7 +5,7 @@ from typing import Optional
 
 import pyotp
 import qrcode
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, Form, HTTPException, Header, Request, Response
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from passlib.hash import bcrypt
@@ -257,33 +257,64 @@ def logout(request: Request):
 
 
 def get_current_user(
-    request: Request, db: Session = Depends(get_db)
+    request: Request,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None)
 ) -> User:
     """
-    Dependency to get the current authenticated user from the session.
-    If the user is not logged in, it raises an exception that triggers
-    a redirect to the login page.
+    Dependency untuk mendapatkan pengguna yang saat ini diautentikasi.
+    Fungsi ini menangani DUA kasus:
+    1. Autentikasi berbasis Sesi untuk pengguna browser interaktif.
+    2. Autentikasi berbasis Bearer Token untuk klien API.
     """
-    user_id = request.session.get("user_id")
-    if not user_id:
-        # Redirect to login page if user is not authenticated.
-        raise HTTPException(
-            status_code=status.HTTP_303_SEE_OTHER,
-            detail="Not authenticated",
-            headers={"Location": "/login"},
-        )
     
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        # This can happen if the user was deleted but the session persists.
-        # Clear session and redirect.
-        request.session.clear()
-        raise HTTPException(
-            status_code=status.HTTP_303_SEE_OTHER,
-            detail="User not found",
-            headers={"Location": "/login"},
+    # --- 1. Coba autentikasi via Sesi (untuk pengguna browser) ---
+    user_id_session = request.session.get("user_id")
+    if user_id_session:
+        user = db.query(User).options(joinedload(User.group)).filter(User.id == user_id_session).first()
+        if user:
+            # Sesi valid dan pengguna ditemukan.
+            return user
+        else:
+            # Sesi ada tetapi pengguna tidak ada (misalnya, dihapus). Hapus sesi.
+            request.session.clear()
+
+    # --- 2. Jika Sesi gagal, coba autentikasi via Bearer Token (untuk klien API) ---
+    if authorization:
+        try:
+            scheme, token = authorization.strip().split(" ", 1)
+        except ValueError:
+            # Format header salah, harus "Bearer <token>"
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Malformed Authorization header")
+        
+        if scheme.lower() != "bearer":
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header must use Bearer scheme")
+
+        user = (
+            db.query(User)
+            .options(joinedload(User.group))
+            .filter(User.token == token)
+            .first()
         )
-    return user
+
+        if not user:
+            # Token tidak valid atau tidak ditemukan.
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+        # Periksa apakah token telah kedaluwarsa (jika Anda mengimplementasikan token_expires_at)
+        if hasattr(user, 'token_expires_at') and user.token_expires_at and user.token_expires_at < datetime.datetime.now(datetime.timezone.utc):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+
+        # Token valid dan pengguna ditemukan.
+        return user
+
+    # --- 3. Jika Sesi dan Token gagal: asumsikan pengguna browser yang belum login ---
+    # Alihkan ke halaman login. Ini adalah perilaku default untuk browser.
+    raise HTTPException(
+        status_code=status.HTTP_303_SEE_OTHER,
+        detail="Not authenticated",
+        headers={"Location": request.url_for("login_form")}, # Menggunakan url_for lebih baik
+    )
 
 
 async def user_access_required(current_user: User = Depends(get_current_user)) -> User:

@@ -10,7 +10,7 @@ from sqlalchemy import distinct
 from app.core.logging_config import setup_logging
 from app.db.database import get_db
 from app.models_sql import CameraGroup, Camera, Snapshot, SnapshotLog, User
-from app.routes.auth import operator_access_required
+from app.routes.auth import admin_access_required, operator_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_service import take_snapshot
 from app.utils.snapshot_utils import record_snapshot_metadata
@@ -78,7 +78,8 @@ def snapshot_handler(
     request: Request,
     camera_id_or_ip: str,
     db: Session = Depends(get_db),
-    user_phone: str = Query(default=None)
+    user_phone: str = Query(default=None),
+    current_admin: User = Depends(admin_access_required)
 ):
     # This function remains the same. It requires an existing camera to take a snapshot.
     if is_ip_address(camera_id_or_ip):
@@ -128,7 +129,8 @@ def snapshot_handler(
 def delete_snapshot(
     request: Request,
     snapshot_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
 ):
     # This function remains the same.
     snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()

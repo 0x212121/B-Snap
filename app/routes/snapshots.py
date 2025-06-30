@@ -8,10 +8,11 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel # Import BaseModel from pydantic
 import re
 from app.db.database import SessionLocal
-from app.models_sql import Camera as DBCamera, Snapshot
+from app.models_sql import Camera as DBCamera, Snapshot, User
 
 router = APIRouter()
 
+from app.routes.auth import admin_access_required, user_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_utils import SNAPSHOT_BASE_DIR  # points to app/static/snapshots
 
@@ -90,7 +91,8 @@ def get_snapshot_directory() -> str:
 @router.get("/snapshots/search", response_model=List[SnapshotResponse])
 def search_snapshots(
     identifier: Optional[str] = Query(None, description="Camera name prefix or IP address"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
 ):
     query = db.query(DBCamera)
 
@@ -179,7 +181,8 @@ def get_snapshot_file_raw(
     file_path: str,
     db: Session = Depends(get_db),
     user_phone: str = Query(default=None),
-    group: str = Query(default=None)
+    group: str = Query(default=None),
+    current_user: User = Depends(user_access_required)
 ):
     """
     Always return raw snapshot image file (image/jpeg).
