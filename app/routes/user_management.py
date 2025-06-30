@@ -392,7 +392,7 @@ async def reset_user_mfa(
         msg = quote("User not found.")
         return RedirectResponse(url=f"/users?status=error&message={msg}", status_code=303)
 
-    if not user_to_update.mfa_enabled:
+    if not user_to_update.is_2fa_enabled:
         msg = quote("MFA is not enabled for this user, so it cannot be reset.")
         return RedirectResponse(url=f"/users?status=warning&message={msg}", status_code=303)
 
