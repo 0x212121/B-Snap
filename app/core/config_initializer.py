@@ -12,6 +12,7 @@ DEFAULT_CONFIG = {
     "map_title": "CCTV Maps"
 }
 
+
 def seed_config(db: Session):
     try:
         for key, value in DEFAULT_CONFIG.items():

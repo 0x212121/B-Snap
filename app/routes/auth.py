@@ -1,25 +1,28 @@
 import io
+import base64
+import datetime
 from typing import Optional
-from passlib.hash import bcrypt
-from fastapi import APIRouter, HTTPException, Header, Request, Form, Depends, Response
-from fastapi.responses import RedirectResponse
+
 import pyotp
 import qrcode
-from starlette import status
-from starlette.status import HTTP_303_SEE_OTHER
-from sqlalchemy.orm import Session, joinedload
-from app.db.database import SessionLocal
-from app.models_sql import User, CameraGroup 
-from app.utils.audit_logger import log_audit
-from app.utils.auth import get_password_hash, verify_password
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
-import datetime
-import base64
+from passlib.hash import bcrypt
+from sqlalchemy.orm import Session, joinedload
+from starlette import status
 
+# --- Assumed Project Structure ---
+# You will need to adjust these imports based on your actual project layout.
+from app.db.database import SessionLocal
+from app.models_sql import User  # Assuming User model has: id, username, password, role, group_id, is_2fa_enabled, otp_secret, last_login
+from app.utils.auth import get_password_hash, verify_password # Your password hashing utilities
+
+# --- Router and Template Setup ---
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
-
+# --- Dependency for Database Session ---
 def get_db():
     db = SessionLocal()
     try:
@@ -28,264 +31,259 @@ def get_db():
         db.close()
 
 
-@router.get("/setup")
-def setup_form(request: Request, db: Session = Depends(get_db)):
-    user_exists = db.query(User).first()
-    if user_exists:
-        return RedirectResponse(url="/login", status_code=307)
-    return templates.TemplateResponse("setup.html", {"request": request})
+# ==============================================================================
+# 1. CORE AUTHENTICATION AND LOGIN FLOW
+# ==============================================================================
 
-
-@router.post("/setup")
-def setup_admin(
-    request: Request,
-    username: str = Form(...),
-    password: str = Form(...),
-    db: Session = Depends(get_db)
-):
-    group = db.query(CameraGroup).filter(CameraGroup.name == "ALL").first()
-
-    if not group:
-        raise HTTPException(status_code=404, detail="Default group 'ALL' not found")
-
-    print(f"Group ID: {group.id}")
-
-    if db.query(User).first():
-        return RedirectResponse(url="/", status_code=302)
-
-    hashed = bcrypt.hash(password)
-    user = User(username=username, password=hashed, role="admin", group_id=group.id)
-
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    print("User group_id after commit:", user.group_id)
-
-    return RedirectResponse(url="/login", status_code=302)
-
-
-@router.get("/login")
+@router.get("/login", name="login_form")
 def login_form(request: Request):
+    """
+    Displays the login page. If the user is already logged in,
+    redirects them to the main dashboard.
+    """
     if request.session.get("user_id"):
-        return RedirectResponse(url="/", status_code=302)
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse("login.html", {"request": request})
 
 
-import base64 # <-- ADD THIS IMPORT
-
-# --- MODIFIED /login ENDPOINT ---
-@router.post("/login")
-def login_user(
+@router.post("/login", name="login_post")
+def login_post(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    # ... (the user and password validation logic remains the same) ...
-    user = db.query(User).options(joinedload(User.group)).filter(User.username == username).first()
-    if not user or not verify_password(password, user.password):
-        # ... (error handling logic remains the same) ...
-        return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
+    """
+    Handles the first step of login: username and password verification.
+    """
+    user = db.query(User).filter(User.username == username).first()
 
-    # --- THIS IS THE KEY CHANGE ---
-    # After validating the password, ALWAYS set the session.
-    # The middleware will handle the redirection.
+    # Use a generic error message to avoid revealing whether a username exists.
+    error_message = "Invalid username or password."
+
+    if not user or not verify_password(password, user.password):
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "error": error_message},
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    # --- BEST PRACTICE: Password is valid, now check 2FA status ---
+
+    if user.is_2fa_enabled:
+        # User has 2FA. DO NOT create the full session yet.
+        # Store a temporary key indicating a 2FA verification is pending.
+        request.session["_2fa_pending_user_id"] = user.id
+        # Redirect to the OTP input page.
+        return RedirectResponse(url="/login/otp", status_code=status.HTTP_303_SEE_OTHER)
+    else:
+        # User does not have 2FA. Force them to set it up.
+        # Store a temporary key for the setup process.
+        request.session["_mfa_setup_pending_user_id"] = user.id
+        return RedirectResponse(url="/mfa/setup", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/login/otp", name="otp_form")
+def otp_form(request: Request):
+    """
+    Displays the OTP (2FA code) input form.
+    """
+    # This page should only be accessible if the password step was completed.
+    if not request.session.get("_2fa_pending_user_id"):
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    # Note we are passing 'url_for' which is available on the request object
+    return templates.TemplateResponse("login_2fa.html", {"request": request})
+
+
+@router.post("/login/otp", name="otp_post")
+def otp_post(
+    request: Request, otp: str = Form(...), db: Session = Depends(get_db)
+):
+    """
+    Verifies the submitted OTP code and completes the login process.
+    """
+    user_id = request.session.get("_2fa_pending_user_id")
+    if not user_id:
+        # If the temporary key is missing, the user should not be here.
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    user = db.query(User).options(joinedload(User.group)).filter(User.id == user_id).first()
+
+    if not user or not user.is_2fa_enabled or not user.otp_secret:
+        # This is an unlikely edge case, but handle it by clearing the session.
+        request.session.clear()
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    # --- BEST PRACTICE: Verify the OTP ---
+    # The 'user' variable is the specific user INSTANCE, so user.otp_secret is the correct string value.
+    # This resolves the `InstrumentedAttribute` error.
+    totp = pyotp.TOTP(user.otp_secret)
+    
+    # Allow a 1-period window (30s before or after) to account for clock drift.
+    if not totp.verify(otp, valid_window=1):
+        # OTP is incorrect, show the form again with an error.
+        return templates.TemplateResponse(
+            "login_2fa.html",
+            {"request": request, "error": "Invalid 2FA code. Please try again."},
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    # --- SUCCESS: OTP is valid. Now, create the real authenticated session. ---
+    request.session.pop("_2fa_pending_user_id")  # Clear the temporary key.
+
+    # Create the final, authenticated session.
     request.session["user_id"] = user.id
     request.session["user_name"] = user.username
     request.session["user_role"] = user.role
-    request.session["user_group"] = user.group.name
-    request.session["user_groupid"] = user.group_id
-    user.last_login = datetime.datetime.now()
+    if user.group:
+        request.session["user_group"] = user.group.name
+        request.session["user_groupid"] = user.group_id
+
+    # Update last login timestamp and commit.
+    user.last_login = datetime.datetime.now(datetime.timezone.utc)
     db.commit()
 
-    # If 2FA is already enabled, redirect to the verification step
-    if user.is_2fa_enabled:
-        request.session["2fa_user_id"] = user.id # Keep this for the verify step
-        return templates.TemplateResponse("login_2fa.html", {"request": request})
+    return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
-    # If 2FA is NOT enabled, the middleware will catch the next request 
-    # and redirect to /mfa/force-setup. We can also redirect explicitly here.
-    return RedirectResponse(url="/mfa/force-setup", status_code=HTTP_303_SEE_OTHER)
 
-# --- NEW ENDPOINTS FOR FORCED SETUP ---
+# ==============================================================================
+# 2. MANDATORY MFA/2FA SETUP FLOW
+# ==============================================================================
 
-@router.get("/mfa/force-setup")
-def present_mfa_setup_page(request: Request, db: Session = Depends(get_db)):
-    user_id = request.session.get("user_id")
+@router.get("/mfa/setup", name="mfa_setup_form")
+def mfa_setup_form(request: Request, db: Session = Depends(get_db)):
+    """
+    Displays the QR code and form for the user to set up their 2FA.
+    """
+    user_id = request.session.get("_mfa_setup_pending_user_id")
     if not user_id:
-        return RedirectResponse(url="/login")
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     
     user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        request.session.clear()
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
 
-    # Generate a secret if the user doesn't have one yet
+    # Generate a secret if the user doesn't have one yet.
     if not user.otp_secret:
         user.otp_secret = pyotp.random_base32()
         db.commit()
-    
-    # Generate QR code URI
+        db.refresh(user)
+
+    # Generate QR code URI.
     uri = pyotp.totp.TOTP(user.otp_secret).provisioning_uri(
-        name=user.username, 
-        issuer_name="B-Snap Apps"
+        name=user.username, issuer_name="YourAppName" # <-- Change this to your app's name
     )
-    
-    # Create QR code image and encode it as a Base64 string for the template
+
+    # Create QR code image for the template.
     img = qrcode.make(uri)
     buf = io.BytesIO()
     img.save(buf, "PNG")
     qr_code_data = base64.b64encode(buf.getvalue()).decode("utf-8")
-    qr_code_data_uri = f"data:image/png;base64,{qr_code_data}"
 
     return templates.TemplateResponse(
-        "force_mfa_setup.html", 
-        {"request": request, "qr_code_data_uri": qr_code_data_uri}
+        "force_mfa_setup.html",
+        {"request": request, "qr_code": f"data:image/png;base64,{qr_code_data}"},
     )
 
-@router.post("/mfa/force-verify")
-def verify_and_complete_forced_setup(
-    request: Request,
-    otp: str = Form(...),
-    db: Session = Depends(get_db)
-):
-    user_id = request.session.get("user_id")
-    if not user_id:
-        return RedirectResponse(url="/login")
 
-    user = db.query(User).filter(User.id == user_id).first()
-    
-    # Verify the OTP
-    if pyotp.TOTP(user.otp_secret).verify(otp):
-        # Success! Activate MFA and redirect to the dashboard.
-        user.is_2fa_enabled = True
-        db.commit()
-        return RedirectResponse(url="/maps", status_code=HTTP_303_SEE_OTHER)
-    else:
-        # Failed verification, show the setup page again with an error
-        # (We need to regenerate the QR for the template)
-        uri = pyotp.totp.TOTP(user.otp_secret).provisioning_uri(name=user.username, issuer_name="B-Snap Apps")
+@router.post("/mfa/setup", name="mfa_setup_post")
+def mfa_setup_post(
+    request: Request, otp: str = Form(...), db: Session = Depends(get_db)
+):
+    """
+    Verifies the first OTP code to confirm successful setup.
+    """
+    user_id = request.session.get("_mfa_setup_pending_user_id")
+    if not user_id:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    user = db.query(User).options(joinedload(User.group)).filter(User.id == user_id).first()
+
+    if not user or not user.otp_secret:
+        request.session.clear()
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    totp = pyotp.TOTP(user.otp_secret)
+    if not totp.verify(otp):
+        # OTP was incorrect. Re-show the setup page with an error.
+        # We need to regenerate the QR code for the template.
+        uri = totp.provisioning_uri(name=user.username, issuer_name="YourAppName")
         img = qrcode.make(uri)
         buf = io.BytesIO()
         img.save(buf, "PNG")
         qr_code_data = base64.b64encode(buf.getvalue()).decode("utf-8")
-        qr_code_data_uri = f"data:image/png;base64,{qr_code_data}"
-
         return templates.TemplateResponse(
-            "force_mfa_setup.html", 
+            "force_mfa_setup.html",
             {
                 "request": request,
-                "qr_code_data_uri": qr_code_data_uri,
-                "error": "Invalid code. Please try again."
-            }
+                "qr_code": f"data:image/png;base64,{qr_code_data}",
+                "error": "Invalid code. Please scan the QR code and try again.",
+            },
+            status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
-
-# --- NEW /login/2fa-verify ENDPOINT ---
-@router.post("/login/2fa-verify")
-def verify_2fa_login(
-    request: Request,
-    otp: str = Form(...),
-    db: Session = Depends(get_db)
-):
-    # Get the user ID we stored temporarily in the session.
-    user_id = request.session.get("2fa_user_id")
-
-    if not user_id:
-        # If there's no ID, they shouldn't be here. Send them back to login.
-        return RedirectResponse(url="/login", status_code=HTTP_303_SEE_OTHER)
+    # --- SUCCESS: Setup is verified. Activate 2FA and log the user in. ---
+    user.is_2fa_enabled = True
     
-    user = (
-        db.query(User)
-        .options(joinedload(User.group))
-        .filter(User.id == user_id)
-        .first()
-    )
+    # Now, perform the final login steps.
+    request.session.pop("_mfa_setup_pending_user_id")
 
-    if not user or not user.otp_secret:
-        # Should not happen, but as a safeguard.
-        return templates.TemplateResponse("login.html", {
-            "request": request,
-            "error": "An error occurred. Please try logging in again."
-        })
-
-    # Verify the OTP code
-    totp = pyotp.TOTP(user.otp_secret)
-    if not totp.verify(otp):
-        log_audit(
-            db=db,
-            user=user.username,
-            action="login_2fa_invalid",
-            target=user.username,
-            ip=request.client.host,
-            extra="Invalid 2FA code provided."
-        )
-        # If the code is wrong, show the 2FA page again with an error.
-        return templates.TemplateResponse("login_2fa.html", {
-            "request": request,
-            "error": "Invalid 2FA code. Please try again."
-        })
-
-    # --- Successful 2FA Verification ---
-    # The code is correct! Now we can complete the login process.
-    request.session.pop("2fa_user_id", None) # Clear the temporary session key
-    
-    # Set the final session variables
     request.session["user_id"] = user.id
     request.session["user_name"] = user.username
     request.session["user_role"] = user.role
-    request.session["user_group"] = user.group.name
-    request.session["user_groupid"] = user.group_id
-    user.last_login = datetime.datetime.now()
-
-    log_audit(
-        db=db,
-        user=request.session.get("user_name", "unknown"),
-        action="login",
-        target="",
-        ip=request.client.host,
-        extra="Login successful with 2FA."
-    )
+    if user.group:
+        request.session["user_group"] = user.group.name
+        request.session["user_groupid"] = user.group_id
+    
+    user.last_login = datetime.datetime.now(datetime.timezone.utc)
     db.commit()
-    return RedirectResponse(url="/maps", status_code=HTTP_303_SEE_OTHER)
+
+    return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
 
-async def get_current_user(
-    request: Request,
-    db: Session = Depends(get_db),
-    authorization: Optional[str] = Header(default=None)
+# ==============================================================================
+# 3. LOGOUT AND USER DEPENDENCIES
+# ==============================================================================
+
+@router.get("/logout", name="logout")
+def logout(request: Request):
+    """
+    Clears the user session and redirects to the login page.
+    """
+    request.session.clear()
+    return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+
+def get_current_user(
+    request: Request, db: Session = Depends(get_db)
 ) -> User:
-    # 1. Try session
+    """
+    Dependency to get the current authenticated user from the session.
+    If the user is not logged in, it raises an exception that triggers
+    a redirect to the login page.
+    """
     user_id = request.session.get("user_id")
-    if user_id:
-        user = db.query(User).options(joinedload(User.group)).filter(User.id == user_id).first()
-        if user:
-            return user
-
-    # 2. Try Bearer token
-    if authorization:
-        try:
-            scheme, token = authorization.strip().split(" ", 1)
-        except ValueError:
-            raise HTTPException(status_code=401, detail="Malformed Authorization header")
-        
-        if scheme.lower() != "bearer":
-            raise HTTPException(status_code=401, detail="Authorization header must use Bearer scheme")
-
-        user = (
-            db.query(User)
-            .options(joinedload(User.group))
-            .filter(User.token == token)
-            .first()
+    if not user_id:
+        # Redirect to login page if user is not authenticated.
+        raise HTTPException(
+            status_code=status.HTTP_303_SEE_OTHER,
+            detail="Not authenticated",
+            headers={"Location": "/login"},
         )
-
-        if not user:
-            raise HTTPException(status_code=401, detail="Invalid token")
-
-        if user.token_expires_at and user.token_expires_at < datetime.datetime.utcnow():
-            raise HTTPException(status_code=401, detail="Token expired")
-
-        return user
-
-    # 3. No session or token
-    raise HTTPException(status_code=status.HTTP_307_TEMPORARY_REDIRECT, detail="/login")
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        # This can happen if the user was deleted but the session persists.
+        # Clear session and redirect.
+        request.session.clear()
+        raise HTTPException(
+            status_code=status.HTTP_303_SEE_OTHER,
+            detail="User not found",
+            headers={"Location": "/login"},
+        )
+    return user
 
 
 async def user_access_required(current_user: User = Depends(get_current_user)) -> User:
@@ -313,15 +311,17 @@ async def operator_access_required(current_user: User = Depends(get_current_user
     return current_user
 
 
-async def admin_access_required(current_user: User = Depends(get_current_user)) -> User:
+async def admin_access_required(
+    current_user: User = Depends(get_current_user)
+) -> User:
     """
-    Memastikan user memiliki peran 'admin'.
-    - Bergantung pada get_current_user.
-    - Melempar error 403 jika peran bukan admin.
+    Dependency that ensures the current user has the 'admin' role.
     """
     if current_user.role != "admin":
-        # Lempar "sinyal" untuk menampilkan halaman akses ditolak.
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Akses ini khusus untuk Admin.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required.",
+        )
     return current_user
 
 
