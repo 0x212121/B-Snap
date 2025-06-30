@@ -161,14 +161,25 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
                             </button>
                              <button onclick="openGenerateTokenModal({{ user.id }}, '{{ user.username }}')" aria-label="Generate token for {{ user.username }}" class="text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 p-2 rounded-full transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v-2l1-1 1-1 .257-.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd" /></svg>
+                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M16 5.5C16 8.53757 13.5376 11 10.5 11H7V13H5V15L4 16H0V12L5.16351 6.83649C5.0567 6.40863 5 5.96094 5 5.5C5 2.46243 7.46243 0 10.5 0C13.5376 0 16 2.46243 16 5.5ZM13 4C13 4.55228 12.5523 5 12 5C11.4477 5 11 4.55228 11 4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z"/>
+                                </svg>
                             </button>
                             {% if user.is_2fa_enabled %}
                             <button onclick="confirmResetMfa({{ user.id }}, '{{ user.username }}')" aria-label="Reset MFA for {{ user.username }}" class="text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 p-2 rounded-full transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 0122 12c0 5.523-4.477 10-10 10S2 17.523 2 12a11.954 11.954 0 0110-10.056zM10 4a8 8 0 100 16 8 8 0 000-16z" clip-rule="evenodd" />
-                                    <path d="M13.414 7.586a1 1 0 00-1.414-1.414l-2.5 2.5a1 1 0 000 1.414l2.5 2.5a1 1 0 001.414-1.414L11.414 10l2-2.414zM8.5 10a1 1 0 11-2 0 1 1 0 012 0z" />
-                                </svg>
+                                <svg fill="currentColor" class="h-5 w-5" viewBox="0 0 32 32" id="icon" xmlns="http://www.w3.org/2000/svg">
+                                    <defs>
+                                      <style>
+                                        .cls-1 {
+                                          fill: none;
+                                        }
+                                      </style>
+                                    </defs>
+                                    <polygon points="11 23.18 9 21.179 7.589 22.589 11 26 17 20 15.59 18.59 11 23.18"/>
+                                    <path d="M28,30H24V28h4V16H24V8a4.0045,4.0045,0,0,0-4-4V2a6.0067,6.0067,0,0,1,6,6v6h2a2.0021,2.0021,0,0,1,2,2V28A2.0021,2.0021,0,0,1,28,30Z" transform="translate(0 0)"/>
+                                    <path d="M20,14H18V8A6,6,0,0,0,6,8v6H4a2,2,0,0,0-2,2V28a2,2,0,0,0,2,2H20a2,2,0,0,0,2-2V16A2,2,0,0,0,20,14ZM8,8a4,4,0,0,1,8,0v6H8ZM20,28H4V16H20Z" transform="translate(0 0)"/>
+                                    <rect id="_Transparent_Rectangle_" data-name="&lt;Transparent Rectangle&gt;" class="cls-1" width="32" height="32"/>
+                                  </svg>
                             </button>
                             {% endif %}
                             {% if request.session['user_id'] != user.id %}
