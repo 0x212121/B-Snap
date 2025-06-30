@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -8,12 +8,11 @@ from app.onvif_client import load_cameras
 from app.utils.snapshot_service import take_snapshot
 from app.utils.health_check import ping_all_devices
 from app.core.config import get_config
-from app.models_sql import AuditLog, CameraDailyStats, SnapshotLog, Camera as DBCamera
+from app.models_sql import AuditLog, SnapshotLog
 from app.utils.snapshot_utils import record_snapshot_metadata
 from sqlalchemy.orm import Session
 import concurrent.futures
 import logging
-import os
 
 scheduler = BackgroundScheduler()
 setup_logging()
@@ -36,10 +35,14 @@ def run_snapshot(camera):
 
             db.add(snapshot_log)
             logger.info(f"[SUCCESS] Scheduled snapshot for {camera}, saved with ID {snapshot.id}")
+            
+            return {"status": "success"}  # ✅ Tambahkan return jika sukses
         else:
             logger.warning(f"[FAIL] Snapshot failed for {camera}: {result}")
+            return {"status": "error", "details": result}  # ✅ Tambahkan return jika gagal
     except Exception as e:
         logger.error(f"[ERROR] Snapshot failed for {camera.hostname}: {e}")
+        return {"status": "error", "details": str(e)}  # ✅ Tambahkan return jika exception
     finally:
         db.close()
 
