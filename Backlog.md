@@ -73,6 +73,7 @@
   - [x] API request using token
 - [x] **Enhanced Security Login**
   - [x] Implement 2FA (completed 30/06/2025)
+- [x] Protect snapshot image URL with token (signed URL)
 
 ⏳ Ongoing:
 - [ ] **B-Snap Assistant: Error handling core feature** - *Priority: High*
