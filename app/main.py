@@ -2,6 +2,7 @@ import logging
 import os
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from app.core.config_initializer import seed_config
+from app.middleware.redirect_unauthenticated import RedirectUnauthenticatedMiddleware
 from app.scheduler import start_scheduler
 from fastapi.openapi.docs import get_swagger_ui_html
 from starlette.middleware.sessions import SessionMiddleware
@@ -173,6 +174,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_middleware(RedirectUnauthenticatedMiddleware)
 
 # Setup templates
 templates = Jinja2Templates(directory="templates")
@@ -196,20 +198,6 @@ async def redirect_to_setup_if_no_users(request: Request, call_next):
         return await call_next(request)
 
     return RedirectResponse(url="/setup")
-
-
-@app.get("/logout")
-def logout(request: Request, db: Session = Depends(get_db)):
-    log_audit(
-        db=db,
-        user=request.session.get("user_name", "unknown"),
-        action="logout",
-        target="",
-        ip=request.client.host,
-        extra=""
-    )
-    request.session.clear()
-    return RedirectResponse(url="/login", status_code=302)
 
 
 @app.get("/")

@@ -1,6 +1,7 @@
 from datetime import datetime
 import io
 import os
+import time
 import cv2
 from io import BytesIO
 from PIL import Image
@@ -80,12 +81,16 @@ def try_http_snapshot(camera: Camera, db: Session) -> dict:
         media = cam.create_media_service()
         profile = media.GetProfiles()[0]
         uri = media.GetSnapshotUri({"ProfileToken": profile.token}).Uri
+
+        time.sleep(1)
         response = try_auth(uri, camera.username, camera.password)
 
         if response.status_code != 200:
             raise RuntimeError(f"HTTP {response.status_code}")
 
         image_bytes = response.content
+
+        time.sleep(0.5)
 
         # --- VALIDATE THE RECEIVED IMAGE ---
         if not image_bytes:

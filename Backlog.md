@@ -2,6 +2,7 @@
 
 ## 📋 Feature & Enhancement
 - [ ] ~~**Reboot camera button** – *Priority: Medium*~~ [Dropped: some camera doesn't have API]
+  - [ ] ACti z317, z911, z97, z38, z41, z41
 - [x] **Audit log** - *Priority: High*
 - [x] **NVR menu** – *Priority: High*  
   - [x] Display recordings per camera, filtered by date.
@@ -71,11 +72,15 @@
 - [x] **Endpoint API protect**
   - [x] API request using token
 - [x] **Enhanced Security Login**
-  - [x] Implement 2FA
+  - [x] Implement 2FA (completed 30/06/2025)
 
 ⏳ Ongoing:
+- [ ] **B-Snap Assistant: Error handling core feature** - *Priority: High*
+- [ ] **Dockerize B-Snap** - *Priority: Medium*
 
 🆕 Added:
 - [ ] HTTPS using nginx proxy
   - [ ] Install nginx proxy manager
   - [ ] don't expose B-Snap port to outside
+- [ ] Limit session login
+  - [ ] 

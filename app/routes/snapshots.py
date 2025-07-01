@@ -1,20 +1,22 @@
+import hashlib
+import hmac
 import os
 from datetime import datetime
+import time
 from typing import Optional, List
-from urllib.parse import quote # Import quote for URL encoding
-from fastapi import APIRouter, Query, Depends, HTTPException, Request
+from urllib.parse import quote, unquote # Import quote for URL encoding
+from fastapi import APIRouter, Body, Query, Depends, HTTPException, Request
 from fastapi.responses import FileResponse # Import FileResponse!
 from sqlalchemy.orm import Session
 from pydantic import BaseModel # Import BaseModel from pydantic
 import re
 from app.db.database import SessionLocal
 from app.models_sql import Camera as DBCamera, Snapshot, User
-
-router = APIRouter()
-
-from app.routes.auth import admin_access_required, user_access_required
+from app.routes.auth import admin_access_required, user_access_required_optional
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_utils import SNAPSHOT_BASE_DIR  # points to app/static/snapshots
+
+router = APIRouter()
 
 # --- Pydantic Models for API Responses ---
 class SnapshotResponse(BaseModel):
@@ -85,6 +87,31 @@ def get_snapshot_directory() -> str:
     snapshot_path = os.path.join(current_dir, "..", "static", "snapshots")
     return os.path.normpath(snapshot_path)
 
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+
+def generate_signed_token(file_path: str, expires_in: int = 300) -> str:
+    """
+    Generate a signed token that expires in `expires_in` seconds.
+    """
+    expires_at = int(time.time()) + expires_in
+    payload = f"{file_path}|{expires_at}"
+    signature = hmac.new(SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{expires_at}.{signature}"
+
+
+def is_valid_signed_token(file_path: str, token: str) -> bool:
+    try:
+        expires_at_str, signature = token.split(".")
+        expires_at = int(expires_at_str)
+        if time.time() > expires_at:
+            return False
+        payload = f"{file_path}|{expires_at}"
+        expected_signature = hmac.new(SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
+        return hmac.compare_digest(signature, expected_signature)
+    except Exception:
+        return False
+    
 
 # Refactored code
 # --- Search Latest Snapshot per Matching Camera ---
@@ -138,6 +165,7 @@ def search_snapshots(
                 ip=snap.camera_ip,
                 timestamp=snap.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
                 url=f"/snapshot/file/{quote(snap.file_path)}",
+                img_path=f"{quote(snap.file_path)}",
                 lat=cam_info.get("lat", None),
                 long=cam_info.get("long", None)
             )
@@ -171,6 +199,7 @@ def get_latest_snapshot_info(identifier: str, db: Session = Depends(get_db)):
         ip=snapshot.camera_ip,
         timestamp=snapshot.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
         url=f"/snapshot/file/{quote(snapshot.file_path)}",
+        img_path=f"{quote(snapshot.file_path)}",
         lat=latitude,
         long=longitude
     )
@@ -181,34 +210,48 @@ def get_snapshot_file_raw(
     request: Request,
     file_path: str,
     db: Session = Depends(get_db),
+    token: Optional[str] = Query(default=None),
     user_phone: str = Query(default=None),
-    group: str = Query(default=None),
-    current_user: User = Depends(user_access_required)
+    group: str = Query(default=None)
 ):
+    # current_user: Optional[User] = Depends(user_access_required_optional)  # gunakan versi opsional
     """
-    Always return raw snapshot image file (image/jpeg).
+    Return raw snapshot image file.
+    Bisa diakses oleh user login, atau signed token.
     """
-    snapshot = db.query(Snapshot).filter(Snapshot.file_path == file_path).first()
+    # file_path = unquote(file_path)
 
+    # Anti path traversal
+    if ".." in file_path or file_path.startswith("/"):
+        raise HTTPException(status_code=400, detail="Invalid file path")
+    
+    # Cek apakah user login atau punya signed token
+    # if not current_user and not token:
+    #     raise HTTPException(status_code=401, detail="Authentication required")
+
+    # if token and not is_valid_signed_token(file_path, token):
+    #     raise HTTPException(status_code=403, detail="Invalid or expired token")
+
+    snapshot = db.query(Snapshot).filter(Snapshot.file_path == file_path).first()
     if not snapshot:
-        raise HTTPException(status_code=404, detail=f"No snapshot found with file path: {file_path}")
+        raise HTTPException(status_code=404, detail="No snapshot found")
 
     full_path = os.path.join(SNAPSHOT_BASE_DIR, snapshot.file_path)
-
     if not os.path.exists(full_path):
-        raise HTTPException(status_code=404, detail="Snapshot file not found on disk.")
-    
-    extra = "via dashboard"
+        raise HTTPException(status_code=404, detail="Snapshot file not found")
+
+    # Logging
     user_from_param = user_phone if user_phone else None
     if user_from_param:
         group_id = group
         final_user_name, extra = user_from_param, f"via Whatsapp Bot [group ID: {group_id}]"
-    else: 
-        final_user_name = request.session.get("user_name")
-    
+    else:
+        final_user_name = request.session.get("user_name") or "token_user"
+        extra = "via token" if token else "via dashboard"
+
     log_audit(
         db=db,
-        user=final_user_name if final_user_name else 'unknown',
+        user=final_user_name,
         action="retrieve_snapshot",
         target=snapshot.camera_name,
         ip=request.client.host,
@@ -216,3 +259,30 @@ def get_snapshot_file_raw(
     )
 
     return FileResponse(path=full_path, media_type="image/jpeg")
+
+
+@router.get("/snapshot/token/{file_path:path}")
+def get_signed_token(file_path: str, expires_in: int = 600):
+    try:
+        print("ORIGINAL ENCODED:", file_path)
+        file_path = unquote(file_path)
+        print("DECODED:", file_path)
+
+        token = generate_signed_token(file_path, expires_in=expires_in)
+        return {"token": token}
+    except Exception as e:
+        print("ERROR SAAT GENERATE TOKEN:", e)
+        raise HTTPException(status_code=500, detail="Token generation failed")
+    
+
+@router.post("/snapshot/token/batch")
+def generate_tokens_batch(
+    request: Request,
+    files: List[str] = Body(...),
+    expires_in: int = 300
+):
+    result = {}
+    for file_path in files:
+        token = generate_signed_token(file_path, expires_in)
+        result[file_path] = token
+    return result

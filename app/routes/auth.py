@@ -3,12 +3,12 @@ import base64
 import datetime
 from typing import Optional
 
+from app.utils.audit_logger import log_audit
 import pyotp
 import qrcode
-from fastapi import APIRouter, Depends, Form, HTTPException, Header, Request, Response
+from fastapi import APIRouter, Depends, Form, HTTPException, Header, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
-from passlib.hash import bcrypt
 from sqlalchemy.orm import Session, joinedload
 from starlette import status
 
@@ -221,7 +221,7 @@ def mfa_setup_post(
                 "qr_code": f"data:image/png;base64,{qr_code_data}",
                 "error": "Invalid code. Please scan the QR code and try again.",
             },
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_400_BAD_REQUEST,  # <-- Sudah diubah
         )
 
     # --- SUCCESS: Setup is verified. Activate 2FA and log the user in. ---
@@ -248,10 +248,15 @@ def mfa_setup_post(
 # ==============================================================================
 
 @router.get("/logout", name="logout")
-def logout(request: Request):
-    """
-    Clears the user session and redirects to the login page.
-    """
+def logout(request: Request, db: Session = Depends(get_db)):
+    log_audit(
+        db=db,
+        user=request.session.get("user_name", "unknown"),
+        action="logout",
+        target="",
+        ip=request.client.host,
+        extra=""
+    )
     request.session.clear()
     return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -310,11 +315,8 @@ def get_current_user(
 
     # --- 3. Jika Sesi dan Token gagal: asumsikan pengguna browser yang belum login ---
     # Alihkan ke halaman login. Ini adalah perilaku default untuk browser.
-    raise HTTPException(
-        status_code=status.HTTP_303_SEE_OTHER,
-        detail="Not authenticated",
-        headers={"Location": request.url_for("login_form")}, # Menggunakan url_for lebih baik
-    )
+    
+    raise HTTPException(status_code=401, detail="Not authenticated")
 
 
 async def user_access_required(current_user: User = Depends(get_current_user)) -> User:
@@ -386,3 +388,30 @@ async def change_password(
     db.commit()
 
     return RedirectResponse(url="/", status_code=302)
+
+
+def user_access_required_optional(
+    request: Request,
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    token = request.headers.get("Authorization")
+
+    # Coba autentikasi via Bearer Token
+    if token:
+        token = token.replace("Bearer ", "")
+        user = db.query(User).filter(
+            User.token == token,
+            User.token_expires_at > datetime.utcnow()
+        ).first()
+        if user:
+            return user
+
+    # Coba autentikasi via session login
+    user_id = request.session.get("user_id")
+    if user_id:
+        user = db.query(User).filter(User.id == user_id).first()
+        if user:
+            return user
+
+    # Tidak ada user yang valid → None
+    return None
