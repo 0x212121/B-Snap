@@ -26,6 +26,7 @@ class SnapshotResponse(BaseModel):
     ip: str
     timestamp: str # Time string format
     url: str
+    img_path: str
     lat: str
     long: str
 
@@ -212,25 +213,22 @@ def get_snapshot_file_raw(
     db: Session = Depends(get_db),
     token: Optional[str] = Query(default=None),
     user_phone: str = Query(default=None),
-    group: str = Query(default=None)
+    group: str = Query(default=None),
+    current_user: Optional[User] = Depends(user_access_required_optional)
 ):
-    # current_user: Optional[User] = Depends(user_access_required_optional)  # gunakan versi opsional
-    """
-    Return raw snapshot image file.
-    Bisa diakses oleh user login, atau signed token.
-    """
-    # file_path = unquote(file_path)
+
+    file_path = unquote(file_path)
 
     # Anti path traversal
     if ".." in file_path or file_path.startswith("/"):
         raise HTTPException(status_code=400, detail="Invalid file path")
     
     # Cek apakah user login atau punya signed token
-    # if not current_user and not token:
-    #     raise HTTPException(status_code=401, detail="Authentication required")
+    if not current_user and not token:
+        raise HTTPException(status_code=401, detail="Authentication required")
 
-    # if token and not is_valid_signed_token(file_path, token):
-    #     raise HTTPException(status_code=403, detail="Invalid or expired token")
+    if token and not is_valid_signed_token(file_path, token):
+        raise HTTPException(status_code=403, detail="Invalid or expired token")
 
     snapshot = db.query(Snapshot).filter(Snapshot.file_path == file_path).first()
     if not snapshot:
