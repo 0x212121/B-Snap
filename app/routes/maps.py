@@ -65,7 +65,10 @@ class CameraLocation(BaseModel):
     user_group_id: int | None
 
     class Config:
-        orm_mode = True # Memungkinkan model untuk membaca data dari objek ORM
+        # orm_mode = True # Memungkinkan model untuk membaca data dari objek ORM
+        model_config = {
+            "from_attributes": True
+        }
 
 
 @router.get("/")

@@ -36,6 +36,7 @@ def login_form(request: Request):
     Display the login page. If the user is already logged in,
     they will be redirected to the dashboard.
     """
+    print(f"logout status: ")
     if request.session.get("user_id"):
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse("login.html", {"request": request})
@@ -271,20 +272,24 @@ def logout(
     Handles logout: removes token from DB and clears browser session.
     """
     user_id = request.session.get("user_id")
+    user_logged_out = False
     if user_id and session_token:
         user = db.query(User).filter(User.id == user_id).first()
         if user and user.web_tokens:
             user.web_tokens = [t for t in user.web_tokens if t.get("token") != session_token]
             db.commit()
+            user_logged_out = True
     
-    log_audit(
-        db=db,
-        user=request.session.get("user_name", "unknown"),
-        action="logout",
-        target="",
-        ip=request.client.host if request.client else "unknown",
-        extra=""
-    )
+    print(f"logout status: {user_logged_out}")
+    if user_logged_out:
+        log_audit(
+            db=db,
+            user=request.session.get("user_name", "unknown"),
+            action="logout",
+            target="",
+            ip=request.client.host if request.client else "unknown",
+            extra=""
+        )
 
     request.session.clear()
     response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
@@ -304,6 +309,8 @@ def get_current_user(
     # === 1. Authentication via browser session ===
     user_id_session = request.session.get("user_id")
     session_token = request.cookies.get("session_token")
+
+    print(f"🧠 DEBUG get_current_user()", flush=True)
 
     print(f"🧠 DEBUG get_current_user()")
     print(f"📦 user_id_session: {user_id_session}")
