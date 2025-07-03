@@ -1,115 +1,137 @@
+# app/routes/maps.py
+
+# PERUBAHAN 1: Menggunakan zoneinfo dari pustaka standar Python (lebih modern dari pytz)
+from zoneinfo import ZoneInfo
+from datetime import datetime, timedelta
+
+# Impor Pydantic untuk membuat model respons
+from pydantic import BaseModel
+from typing import List
+
+from fastapi import APIRouter, Depends, Request
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import joinedload, Session
+
 from app.core.config import get_config
 from app.db.database import get_db
-from fastapi import APIRouter, Depends, Request
 from app.models_sql import Camera as DBCamera, User
-from sqlalchemy.orm import joinedload, Session
 from app.routes.auth import get_current_user
-from datetime import datetime, timedelta
-import pytz # Import pytz for timezone handling
 
+router = APIRouter(
+    prefix="/maps",  # Menambahkan prefix untuk semua rute di file ini
+    tags=["Maps & Cameras"] # Mengelompokkan API di dokumentasi
+)
 
-router = APIRouter()
-
-# Setup templates
 templates = Jinja2Templates(directory="templates")
 
-# Define the GMT+8 timezone using a standard IANA name
-# Note: 'Etc/GMT-8' corresponds to GMT+8. The sign is inverted in the 'Etc/GMT' convention.
-GMT8_TIMEZONE = pytz.timezone('Etc/GMT-8')
+# Menggunakan nama zona waktu IANA yang lebih deskriptif untuk GMT+8 (WITA)
+# Ini lebih mudah dibaca daripada 'Etc/GMT-8'
+WITA_TIMEZONE = ZoneInfo("Asia/Makassar")
+
+# --- Helper Function untuk kebersihan kode ---
+def format_uptime(start_time: datetime, end_time: datetime) -> str:
+    """Menghitung dan memformat durasi uptime dari waktu mulai hingga sekarang."""
+    if not start_time or not end_time:
+        return "N/A"
+    
+    time_difference = end_time - start_time
+    
+    days = time_difference.days
+    seconds = time_difference.seconds
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+
+    if days > 0:
+        return f"{days}d {hours}h {minutes}m"
+    if hours > 0:
+        return f"{hours}h {minutes}m"
+    return f"{minutes}m"
+
+# PERUBAHAN 2: Mendefinisikan Response Model menggunakan Pydantic
+# Ini memastikan output API selalu konsisten dan terdokumentasi dengan baik.
+class CameraLocation(BaseModel):
+    id: int
+    hostname: str
+    ip: str
+    lat: float
+    lng: float
+    asset_no: str | None = None
+    status: str
+    last_online: str
+    uptime: str
+    restricted: str
+    cam_group: int | None
+    user_group: str
+    user_group_id: int | None
+
+    class Config:
+        orm_mode = True # Memungkinkan model untuk membaca data dari objek ORM
 
 
-@router.get("/maps")
-async def maps(request: Request, current_user: User = Depends(get_current_user)):
+@router.get("/")
+async def maps_page(request: Request, current_user: User = Depends(get_current_user)):
     map_title = get_config("map_title", default="CCTV Maps")
     return templates.TemplateResponse("maps.html", {"request": request, "map_title": map_title})
 
 
-@router.get("/camera-locations")
+# Menggunakan response_model untuk memastikan output sesuai dengan model CameraLocation
+@router.get("/camera-locations", response_model=List[CameraLocation])
 async def get_camera_locations(
-    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     group_name = current_user.group.name if current_user.group else "N/A"
-    group_id = current_user.group_id if current_user.group else "N/A"
+    group_id = current_user.group_id if current_user.group else None
 
-    try:
-        if group_name == "ALL":
-            cameras = db.query(DBCamera).filter(DBCamera.status == "Active").options(joinedload(DBCamera.health)).all()
-        else:
-            cameras = db.query(DBCamera)\
-                .filter(
-                    (DBCamera.group_id == group_id) & (DBCamera.status == "Active")
-                )\
-                .options(joinedload(DBCamera.health))\
-                .all()
+    query = db.query(DBCamera).filter(DBCamera.status == "Active").options(joinedload(DBCamera.health))
+    
+    if group_name != "ALL" and group_id is not None:
+        query = query.filter(DBCamera.group_id == group_id)
         
-        result = []
-        # Get the current time in GMT+8
-        current_time_gmt8 = datetime.now(GMT8_TIMEZONE) 
+    cameras = query.all()
+    
+    result = []
+    current_time_wita = datetime.now(WITA_TIMEZONE)
+    online_statuses = ["Online", "High Latency", "Optimal Latency"]
 
-        for cam in cameras:
-            if not cam.health:
-                print(f"❌ No health record for camera {cam.hostname} ({cam.id})")
+    for cam in cameras:
+        health = cam.health
+        status_str = "Unknown"
+        uptime_str = "N/A"
+        formatted_last_online = "Unknown"
 
-            health = cam.health
-            
-            uptime_str = "N/A"
-            
-            online_statuses = ["Online", "High Latency", "Optimal Latency"]
-
-            if health and health.last_online:
-                # --- CORE LOGIC CHANGE ---
-                # 1. Take the naive datetime from DB and make it UTC-aware.
-                last_online_utc = pytz.utc.localize(health.last_online)
+        if health:
+            status_str = health.status
+            if health.last_online:
+                # Asumsi: health.last_online disimpan di DB sebagai naive datetime dalam UTC
+                # 1. Buat datetime menjadi aware dengan zona waktu aslinya (UTC)
+                last_online_utc = health.last_online.replace(tzinfo=ZoneInfo("UTC"))
+                # 2. Konversi ke zona waktu target (WITA)
+                last_online_wita = last_online_utc.astimezone(WITA_TIMEZONE)
                 
-                # 2. Convert the UTC-aware datetime to our target GMT+8 timezone.
-                localized_last_online = last_online_utc.astimezone(GMT8_TIMEZONE)
+                formatted_last_online = last_online_wita.strftime("%Y-%m-%d %H:%M:%S %Z")
 
                 if health.status in online_statuses:
-                    time_difference: timedelta = current_time_gmt8 - localized_last_online
-                    
-                    days = time_difference.days
-                    seconds = time_difference.seconds
-                    hours = seconds // 3600
-                    minutes = (seconds % 3600) // 60
-                    
-                    if days > 0:
-                        uptime_str = f"{days}d {hours}h {minutes}m"
-                    elif hours > 0:
-                        uptime_str = f"{hours}h {minutes}m"
-                    else:
-                        uptime_str = f"{minutes}m"
+                    # PERUBAHAN 3: Menggunakan helper function
+                    uptime_str = format_uptime(last_online_wita, current_time_wita)
                 else:
-                    uptime_str = "Offline" 
-            elif health and not health.last_online:
-                uptime_str = "Unknown"
+                    uptime_str = "Offline"
 
-            # Format last_online to show in GMT+8 if it exists
-            formatted_last_online = "Unknown"
-            if health and health.last_online:
-                # Apply the same conversion logic for displaying the timestamp
-                last_online_utc_for_display = pytz.utc.localize(health.last_online)
-                localized_last_online_for_display = last_online_utc_for_display.astimezone(GMT8_TIMEZONE)
-                formatted_last_online = localized_last_online_for_display.strftime("%Y-%m-%d %H:%M:%S %Z%z")
-
-            result.append({
-                "id": cam.id,
-                "hostname": cam.hostname,
-                "ip": cam.ip,
-                "lat": cam.latitude,
-                "lng": cam.longitude,
-                "asset_no": cam.asset_no,
-                "status": health.status if health else "Unknown",
-                "last_online": formatted_last_online, # Use the timezone-aware formatted string
-                "uptime": uptime_str,
-                "restricted": cam.status,
-                "cam_group": cam.group_id,
-                "user_group": group_name,
-                "user_group_id": group_id,
-            })
-        return result
-
-    finally:
-        db.close()
+        camera_data = {
+            "id": cam.id,
+            "hostname": cam.hostname,
+            "ip": cam.ip,
+            "lat": cam.latitude,
+            "lng": cam.longitude,
+            "asset_no": cam.asset_no,
+            "status": status_str,
+            "last_online": formatted_last_online,
+            "uptime": uptime_str,
+            "restricted": cam.status,
+            "cam_group": cam.group_id,
+            "user_group": group_name,
+            "user_group_id": group_id,
+        }
+        result.append(camera_data)
+        
+    return result

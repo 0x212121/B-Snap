@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, date, timezone
 from sqlalchemy import (
-    Column, Date, Float, String, Integer, DateTime, ForeignKey, Boolean, event
+    Column, Date, Float, String, Integer, DateTime, ForeignKey, Boolean, event, JSON
 )
 from sqlalchemy.orm import relationship
 from app.db.database import Base
@@ -25,6 +25,9 @@ class User(Base):
     otp_secret = Column(String, nullable=True)
     is_2fa_enabled = Column(Boolean, default=False, nullable=False)
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
+
+    web_tokens = Column(JSON, default=[])
+    api_tokens = Column(JSON, default=[])
 
     group_id = Column(Integer, ForeignKey('camera_groups.id'), nullable=True)
     group = relationship("CameraGroup", back_populates="users")

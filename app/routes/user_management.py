@@ -25,22 +25,31 @@ templates = Jinja2Templates(directory="templates")
 router = APIRouter()
 
 # --- NEW: Custom Jinja2 filter for GMT+8 timezone conversion ---
-def format_datetime_gmt8(dt: datetime | None, default_val: str = "Never") -> str:
+from datetime import datetime
+from typing import Union
+
+def format_datetime_gmt8(dt: Union[datetime, str, None], default_val: str = "Never") -> str:
     """
-    Converts a naive UTC datetime object to a formatted GMT+8 string.
+    Converts a UTC datetime (string or datetime object) to GMT+8 string format.
     """
     if not dt:
         return default_val
-    
-    # Assume the datetime from the database is naive and represents UTC.
-    # 1. Make the datetime "aware" of its UTC timezone.
-    utc_dt = dt.replace(tzinfo=ZoneInfo("UTC"))
-    
-    # 2. Convert to the GMT+8 timezone (Asia/Singapore is a reliable choice).
-    gmt8_dt = utc_dt.astimezone(ZoneInfo("Asia/Singapore"))
-    
-    # 3. Format into the desired string format.
+
+    # Step 1: Parse string if needed
+    if isinstance(dt, str):
+        try:
+            dt = datetime.fromisoformat(dt)
+        except ValueError:
+            return default_val
+
+    # Step 2: Make it timezone-aware
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+
+    # Step 3: Convert to GMT+8
+    gmt8_dt = dt.astimezone(ZoneInfo("Asia/Singapore"))
     return gmt8_dt.strftime("%d/%m/%Y - %H:%M:%S")
+
 
 # --- NEW: Register the custom filter with the Jinja2 environment ---
 templates.env.filters['to_gmt8'] = format_datetime_gmt8
@@ -213,27 +222,6 @@ async def delete_user(request: Request, user_id: int, db: Session = Depends(get_
     return RedirectResponse(url=f"/users?status=error&message={msg}", status_code=303)
 
 
-@router.get("/users/token/{user_id}")
-async def generate_token(request: Request, user_id: int, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
-    """
-    Generates and saves a new API token for a user.
-    Note: This is designed for a simple page reload. For the new async flow,
-    a separate API endpoint (`/api/users/generate-token`) should be used.
-    """
-    try:
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        # Generate a new secure token.
-        token = secrets.token_hex(32)
-        user.token = token
-        db.commit()
-        return RedirectResponse(url="/users", status_code=302)
-    finally:
-        db.close()
-
-
 @router.post("/users/update/{user_id}")
 async def update_user(
     request: Request,
@@ -327,48 +315,64 @@ async def api_generate_token(
     current_admin: User = Depends(admin_access_required)
 ):
     """
-    Generates a new token for a user asynchronously and returns it as JSON.
-    Access is restricted by the `current_admin` dependency.
+    Generates a new API token for a user and appends it to their api_tokens list.
+    Supports optional expiration and returns the new token with formatted expiration.
     """
     user = db.query(User).filter(User.id == token_request.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
 
-    username_for_log = user.username
+    # Generate a secure token
     token = secrets.token_hex(32)
-    user.token = token
-    
-    # MODIFIED: This endpoint now returns the GMT+8 formatted string for consistency.
-    expires_at_gmt8_str = "Never" 
-    
+    now = datetime.utcnow()
+    expires_at = None
+
+    # Optional expiration
     if token_request.expires_in_days > 0:
-        expires_at = datetime.utcnow() + timedelta(days=token_request.expires_in_days)
-        user.token_expires_at = expires_at
-        # Use the custom formatter here as well
-        expires_at_gmt8_str = format_datetime_gmt8(expires_at)
-        expiry_log_message = f"Token expires on {expires_at.strftime('%Y-%m-%d %H:%M:%S')} UTC."
-    else:
-        user.token_expires_at = None
-        expiry_log_message = "Token does not expire."
-        
+        expires_at = now + timedelta(days=token_request.expires_in_days)
+
+    # Append to user's token list
+    new_entry = {
+        "token": token,
+        "created_at": now.isoformat(),
+        "expires_at": expires_at.isoformat() if expires_at else None
+    }
+
+    user.api_tokens = user.api_tokens or []
+    user.api_tokens.append(new_entry)
+
+    # Optional: Keep only the last 5 active tokens
+    user.api_tokens = sorted(user.api_tokens, key=lambda t: t["created_at"], reverse=True)[:5]
+
     try:
         db.commit()
+
+        # Audit logging
         log_audit(
             db=db,
             user=request.session.get("user_name"),
             action="generate_api_token",
-            target=username_for_log,
+            target=user.username,
             ip=request.client.host,
-            extra=expiry_log_message
+            extra=f"Token expires at {expires_at or 'Never'}"
         )
 
-        # MODIFIED: The key is now 'token_expires_at' and it contains the GMT+8 string.
-        return JSONResponse(status_code=200, content={"token": token, "token_expires_at": expires_at_gmt8_str})
+        # Return response
+        expires_str = format_datetime_gmt8(expires_at) if expires_at else "Never"
+        return JSONResponse(status_code=200, content={
+            "token": token,
+            "token_expires_at": expires_str,
+            "api_tokens": [
+                {
+                    "token": t["token"],
+                    "expires_at_gmt8": format_datetime_gmt8(t["expires_at"])
+                } for t in user.api_tokens
+            ]
+        })
 
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Could not generate token due to a server error.")
-    
+        raise HTTPException(status_code=500, detail="Failed to generate token.")    
 
 # In your users endpoint file (e.g., app/routes/users.py)
 # Add this new endpoint alongside your other user management routes.
@@ -423,3 +427,84 @@ async def reset_user_mfa(
 
     # 5. Redirect back to the user management page.
     return RedirectResponse(url=f"/users?status={status}&message={msg}", status_code=303)
+
+@router.get("/api/users/tokens", response_class=JSONResponse)
+async def get_api_tokens(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    Returns the list of API tokens for the specified user.
+    Admin only.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    tokens = user.api_tokens or []
+
+    return [
+        {
+            "token": t["token"],
+            "created_at": format_datetime_gmt8(datetime.fromisoformat(t["created_at"])) if t.get("created_at") else "Unknown",
+            "expires_at": format_datetime_gmt8(datetime.fromisoformat(t["expires_at"])) if t.get("expires_at") else "Never"
+        }
+        for t in tokens
+    ]
+
+@router.delete("/api/users/tokens/{token}")
+async def delete_api_token(
+    token: str,
+    user_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    Deletes a specific API token from the user's token list.
+    Admin only.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    original_count = len(user.api_tokens or [])
+    updated_tokens = [t for t in (user.api_tokens or []) if t.get("token") != token]
+
+    if len(updated_tokens) == original_count:
+        raise HTTPException(status_code=404, detail="Token not found.")
+
+    user.api_tokens = updated_tokens
+    db.commit()
+
+    log_audit(
+        db=db,
+        user=request.session.get("user_name"),
+        action="delete_api_token",
+        target=user.username,
+        ip=request.client.host,
+        extra=f"Deleted token: {token}"
+    )
+
+    return {"detail": "Token deleted successfully."}
+
+
+@router.post("/users/{user_id}/revoke-token")
+def revoke_token(user_id: int, token_data: dict, db: Session = Depends(get_db), current_user: User = Depends(admin_access_required)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    token_to_revoke = token_data.get("token")
+    if not token_to_revoke:
+        raise HTTPException(status_code=400, detail="Missing token")
+
+    original_count = len(user.api_tokens)
+    user.api_tokens = [t for t in user.api_tokens if t["token"] != token_to_revoke]
+    
+    if len(user.api_tokens) == original_count:
+        raise HTTPException(status_code=404, detail="Token not found")
+
+    db.commit()
+    return {"message": "Token revoked successfully"}

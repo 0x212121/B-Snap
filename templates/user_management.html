@@ -4,6 +4,7 @@
 {% block content %}
 <div class="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
 
+    <!-- Header and Stats Cards -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
             <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">User Management</h2>
@@ -36,6 +37,7 @@
         </div>
     </div>
 
+    <!-- Add/Edit User Form -->
     <div id="userFormContainer" class="hidden mb-8 transition-all duration-500">
          <form id="userForm" method="post" action="/users/create" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 space-y-6">
             <div class="flex justify-between items-center">
@@ -75,6 +77,7 @@
         </form>
     </div>
 
+    <!-- User Table -->
     <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
         <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
             <div class="flex items-center gap-2 w-full md:w-auto">
@@ -123,7 +126,7 @@
                             <div class="font-medium text-gray-900 dark:text-white">{{ user.username }}</div>
                         </td>
                         <td class="p-4 whitespace-nowrap">
-                             {% if user.role == 'admin' %}
+                            {% if user.role == 'admin' %}
                                 <span class="px-2 py-1 text-xs font-semibold leading-5 text-red-800 bg-red-100 dark:text-red-100 dark:bg-red-800/50 rounded-full">{{ user.role }}</span>
                             {% elif user.role == 'operator' %}
                                 <span class="px-2 py-1 text-xs font-semibold leading-5 text-yellow-800 bg-yellow-100 dark:text-yellow-100 dark:bg-yellow-800/50 rounded-full">{{ user.role }}</span>
@@ -132,20 +135,36 @@
                             {% endif %}
                         </td>
                         <td class="p-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{{ user.group.name if user.group else '-' }}</td>
+                        
+                        <!-- PERUBAHAN 1: Menambahkan ID unik ke sel token -->
                         <td id="token-cell-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
-                            {% if user.token %}
-                                {{ user.token[:8] }}...{{ user.token[-4:] }}
+                            {% if user.api_tokens %}
+                                <ul class="space-y-1">
+                                {% for token in user.api_tokens %}
+                                    <li class="flex items-center justify-between gap-2">
+                                    <span>{{ token.token[:8] }}...{{ token.token[-4:] }}</span>
+                                    <button onclick="revokeToken('{{ user.id }}', '{{ token.token }}')" class="text-red-500 hover:text-red-700 text-xs font-semibold">Revoke</button>
+                                    </li>
+                                {% endfor %}
+                                </ul>
                             {% else %}
-                                -
+                                <span>-</span>
                             {% endif %}
                         </td>
-                        <td id="token-expiry-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
-                            {% if user.token %}
-                                {{ user.token_expires_at | to_gmt8 }}
+                        
+                        <!-- PERUBAHAN 2: Menambahkan ID unik ke sel expiry date -->
+                        <td id="token-expiry-cell-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
+                            {% if user.api_tokens %}
+                                <ul class="space-y-1">
+                                {% for token in user.api_tokens %}
+                                    <li>{{ token.expires_at | to_gmt8 }}</li>
+                                {% endfor %}
+                                </ul>
                             {% else %}
-                                -
+                                <span>-</span>
                             {% endif %}
                         </td>
+                        
                         <td class="p-4 whitespace-nowrap">
                             {% if user.is_2fa_enabled %}
                                 <span class="px-2 py-1 text-xs font-semibold leading-5 text-green-800 bg-green-100 dark:text-green-100 dark:bg-green-800/50 rounded-full">Enabled</span>
@@ -154,32 +173,26 @@
                             {% endif %}
                         </td>
                         <td id="last-logon-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
-                           {{ user.last_login | to_gmt8 }}
+                            {{ user.last_login | to_gmt8 }}
                         </td>
                         <td class="p-4 whitespace-nowrap text-center space-x-2">
                             <button onclick="editUser({{ user.id }}, '{{ user.username }}', '{{ user.role }}', '{{ user.group.name if user.group else 'ALL' }}')" aria-label="Edit user {{ user.username }}" class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 p-2 rounded-full transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
                             </button>
                              <button onclick="openGenerateTokenModal({{ user.id }}, '{{ user.username }}')" aria-label="Generate token for {{ user.username }}" class="text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 p-2 rounded-full transition-colors">
-                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M16 5.5C16 8.53757 13.5376 11 10.5 11H7V13H5V15L4 16H0V12L5.16351 6.83649C5.0567 6.40863 5 5.96094 5 5.5C5 2.46243 7.46243 0 10.5 0C13.5376 0 16 2.46243 16 5.5ZM13 4C13 4.55228 12.5523 5 12 5C11.4477 5 11 4.55228 11 4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z"/>
-                                </svg>
+                                 <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                     <path fill-rule="evenodd" clip-rule="evenodd" d="M16 5.5C16 8.53757 13.5376 11 10.5 11H7V13H5V15L4 16H0V12L5.16351 6.83649C5.0567 6.40863 5 5.96094 5 5.5C5 2.46243 7.46243 0 10.5 0C13.5376 0 16 2.46243 16 5.5ZM13 4C13 4.55228 12.5523 5 12 5C11.4477 5 11 4.55228 11 4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z"/>
+                                 </svg>
                             </button>
                             {% if user.is_2fa_enabled %}
                             <button onclick="confirmResetMfa({{ user.id }}, '{{ user.username }}')" aria-label="Reset MFA for {{ user.username }}" class="text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 p-2 rounded-full transition-colors">
                                 <svg fill="currentColor" class="h-5 w-5" viewBox="0 0 32 32" id="icon" xmlns="http://www.w3.org/2000/svg">
-                                    <defs>
-                                      <style>
-                                        .cls-1 {
-                                          fill: none;
-                                        }
-                                      </style>
-                                    </defs>
+                                    <defs><style>.cls-1{fill:none;}</style></defs>
                                     <polygon points="11 23.18 9 21.179 7.589 22.589 11 26 17 20 15.59 18.59 11 23.18"/>
                                     <path d="M28,30H24V28h4V16H24V8a4.0045,4.0045,0,0,0-4-4V2a6.0067,6.0067,0,0,1,6,6v6h2a2.0021,2.0021,0,0,1,2,2V28A2.0021,2.0021,0,0,1,28,30Z" transform="translate(0 0)"/>
                                     <path d="M20,14H18V8A6,6,0,0,0,6,8v6H4a2,2,0,0,0-2,2V28a2,2,0,0,0,2,2H20a2,2,0,0,0,2-2V16A2,2,0,0,0,20,14ZM8,8a4,4,0,0,1,8,0v6H8ZM20,28H4V16H20Z" transform="translate(0 0)"/>
                                     <rect id="_Transparent_Rectangle_" data-name="&lt;Transparent Rectangle&gt;" class="cls-1" width="32" height="32"/>
-                                  </svg>
+                                </svg>
                             </button>
                             {% endif %}
                             {% if request.session['user_id'] != user.id %}
@@ -198,6 +211,7 @@
     </div>
 </div>
 
+<!-- Modals: Confirmation, Generate Token, Show Token -->
 <div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
     <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl w-full max-w-sm">
         <h3 id="confirmTitle" class="text-lg font-bold text-red-600 dark:text-red-400 mb-2">⚠️ Confirm Action</h3>
@@ -244,7 +258,7 @@
             </button>
         </div>
         <div class="text-right mt-6">
-            <button onclick="closeModal('showTokenModal')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold">Done</button>
+            <button onclick="closeModal('showTokenModal');" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold">Done</button>
         </div>
     </div>
 </div>
@@ -252,7 +266,6 @@
 <script>
 // --- MODAL & ACTION LOGIC ---
 let activeUserId = null;
-let pendingAction = null;
 
 function closeModal(modalId) {
     document.getElementById(modalId).classList.add('hidden');
@@ -281,7 +294,7 @@ function confirmDelete(userId, username, callback, bulkMessage) {
     document.getElementById('confirmCancel').onclick = () => closeModal('confirmModal');
 }
 
-// --- NEW TOKEN GENERATION LOGIC ---
+// --- TOKEN GENERATION LOGIC ---
 function openGenerateTokenModal(userId, username) {
     activeUserId = userId;
     document.getElementById('tokenUsername').textContent = username;
@@ -318,8 +331,7 @@ async function handleTokenGeneration() {
 
         const data = await response.json();
         closeModal('generateTokenModal');
-        // MODIFIED: Pass the pre-formatted string from the API directly
-        showGeneratedToken(data.token, data.token_expires_at);
+        showGeneratedToken(activeUserId, data.token, data.token_expires_at, data.api_tokens);
 
     } catch (error) {
         errorP.textContent = `Error: ${error.message}`;
@@ -330,27 +342,35 @@ async function handleTokenGeneration() {
     }
 }
 
-// MODIFIED: This function is now simpler. It just displays the text from the API.
-function showGeneratedToken(token, expires_gmt8_str) {
+function showGeneratedToken(userId, token, expiresGmt8Str, apiTokens) {
     const modal = document.getElementById('showTokenModal');
     const tokenInput = document.getElementById('generatedTokenInput');
     const copyBtn = document.getElementById('copyTokenBtn');
-    
+
     tokenInput.value = token;
     modal.classList.remove('hidden');
 
-    // Update the table cells with the new obscured token and expiry date
-    const tokenCell = document.getElementById(`token-cell-${activeUserId}`);
-    const tokenExpiryCell = document.getElementById(`token-expiry-${activeUserId}`);
+    const tokenCell = document.getElementById(`token-cell-${userId}`);
+    const expiryCell = document.getElementById(`token-expiry-cell-${userId}`);
 
-    if (tokenCell) {
-        tokenCell.textContent = `${token.substring(0, 8)}...${token.slice(-4)}`;
-    }
-    if (tokenExpiryCell) {
-        // No client-side formatting needed. Just set the text content.
-        tokenExpiryCell.textContent = expires_gmt8_str;
+    if (tokenCell && expiryCell && Array.isArray(apiTokens)) {
+        const tokenListHTML = apiTokens.map(t => `
+            <li class="flex items-center justify-between gap-2">
+                <span>${t.token.substring(0, 8)}...${t.token.slice(-4)}</span>
+                <button onclick="revokeToken('${userId}', '${t.token}')" class="text-red-500 hover:text-red-700 text-xs font-semibold">Revoke</button>
+            </li>
+        `).join('');
+
+        tokenCell.innerHTML = `<ul class="space-y-1">${tokenListHTML}</ul>`;
+
+        const expiryListHTML = apiTokens.map(t => `
+            <li>${t.expires_at_gmt8 || 'Never'}</li>
+        `).join('');
+
+        expiryCell.innerHTML = `<ul class="space-y-1">${expiryListHTML}</ul>`;
     }
 
+    // Reset copy icon
     document.getElementById('copyIcon').classList.remove('hidden');
     document.getElementById('checkIcon').classList.add('hidden');
 
@@ -359,12 +379,13 @@ function showGeneratedToken(token, expires_gmt8_str) {
             document.getElementById('copyIcon').classList.add('hidden');
             document.getElementById('checkIcon').classList.remove('hidden');
             setTimeout(() => {
-                 document.getElementById('copyIcon').classList.remove('hidden');
-                 document.getElementById('checkIcon').classList.add('hidden');
+                document.getElementById('copyIcon').classList.remove('hidden');
+                document.getElementById('checkIcon').classList.add('hidden');
             }, 2000);
         });
     };
 }
+
 
 // --- COMPLETE FORM AND TABLE LOGIC ---
 const userFormContainer = document.getElementById('userFormContainer');
@@ -372,7 +393,6 @@ const showFormBtn = document.getElementById('showFormBtn');
 const bulkActionContainer = document.getElementById('bulkActionContainer');
 const selectedCountSpan = document.getElementById('selectedCount');
 const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-const userCheckboxes = document.querySelectorAll('.user-checkbox');
 
 const userForm = document.getElementById('userForm');
 const formTitle = document.getElementById('formTitle');
@@ -487,18 +507,15 @@ function resetForm() {
 
 function confirmResetMfa(userId, username) {
     const modal = document.getElementById('confirmModal');
-    // You can customize the title and button color if you want, but reusing is simplest
     document.getElementById('confirmTitle').textContent = '⚠️ Confirm MFA Reset';
     document.getElementById('confirmMessage').textContent = `Are you sure you want to reset MFA for '${username}'? They will be required to set it up again on their next login.`;
     
     modal.classList.remove('hidden');
 
     const confirmBtn = document.getElementById('confirmYes');
-    // Clone the button to remove old event listeners
     const newConfirmBtn = confirmBtn.cloneNode(true);
     confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
-    // Wire the confirmation button to submit the MFA reset form
     newConfirmBtn.onclick = () => {
         document.getElementById(`resetMfaForm${userId}`).submit();
         closeModal('confirmModal');
@@ -507,5 +524,28 @@ function confirmResetMfa(userId, username) {
     document.getElementById('confirmCancel').onclick = () => closeModal('confirmModal');
 }
 
+function revokeToken(userId, token) {
+    if (!confirm("Revoke this token?")) return;
+
+    fetch(`/users/${userId}/revoke-token`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ token })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Failed to revoke token.");
+        return res.json();
+    })
+    .then(data => {
+        alert("Token revoked.");
+        location.reload();
+    })
+    .catch(err => {
+        alert("Error revoking token.");
+        console.error(err);
+    });
+}
 </script>
 {% endblock %}

@@ -14,9 +14,31 @@
             <p class="text-gray-400">Sign in to manage your account.</p>
         </div>
 
+        <!-- ==================================================================== -->
+        <!-- BLOK NOTIFIKASI YANG TELAH DIPERBAIKI -->
+        <!-- ==================================================================== -->
+        {% if request.query_params.get('reason') == 'session_expired' %}
+        <div class="bg-blue-500/10 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg mb-6 flex items-center text-sm" role="alert">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+            <span>Session ended. Please login again.</span>
+        </div>
+        {% endif %}
+
+        {% if request.query_params.get('reason') == 'invalid_session' %}
+        <div class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 px-4 py-3 rounded-lg mb-6 flex items-center text-sm" role="alert">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M8.257 3.099c.636-1.21 2.852-1.21 3.488 0l6.293 12.001A2 2 0 0116.293 18H3.707a2 2 0 01-1.745-2.899l6.293-12.001zM10 14a1 1 0 11-2 0 1 1 0 012 0zm-1-7a1 1 0 00-1 1v3a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+            <span>Session invalid or logged out. Please login again.</span>
+        </div>
+        {% endif %}
+        <!-- ==================================================================== -->
+
         <form id="loginForm" method="post" action="/login" class="bg-gray-800 p-8 rounded-xl shadow-2xl">
             {% if error %}
-            <div class="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg mb-6 flex items-center text-sm">
+            <div class="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg mb-6 flex items-center text-sm" role="alert">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                 </svg>
@@ -67,9 +89,6 @@
                     <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500 rounded">
                     <label for="remember-me" class="ml-2 block text-sm text-gray-400">Remember me</label>
                 </div>
-                <!-- <div class="text-sm">
-                    <a href="#" class="font-medium text-blue-500 hover:text-blue-400">Forgot your password?</a>
-                </div> -->
             </div>
 
             <button id="submitButton" type="submit" 
