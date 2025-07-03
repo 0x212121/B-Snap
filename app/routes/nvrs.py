@@ -386,6 +386,14 @@ async def export_csv(request: Request, db: Session = Depends(get_db), current_ad
         ])
 
     output.seek(0)
+    log_audit(
+        db=db,
+        user=request.session["user_name"],
+        action="export_nvr_csv",
+        target="NVRs Export",
+        ip=request.client.host,
+        extra="via NVR Management"
+    )
     return StreamingResponse(
         output,
         media_type="text/csv",
@@ -445,14 +453,28 @@ async def upload_nvr_csv(request: Request, db: Session = Depends(get_db), file: 
                         setattr(existing_nvr, key, value)
                     db.add(existing_nvr)
                     success_ids.append(existing_nvr.id)
-                    print(f"[Update] NVR '{hostname}' updated.")
+                    log_audit(
+                        db=db,
+                        user=request.session["user_name"],
+                        action="update_nvr",
+                        target=hostname,
+                        ip=request.client.host,
+                        extra="via CSV Upload"
+                    )
                 else:
                     # Create a new NVR instance
                     new_nvr = NVR(hostname=hostname, **nvr_data)
                     db.add(new_nvr)
                     db.flush()
                     success_ids.append(new_nvr.id)
-                    print(f"[Insert] NVR '{hostname}' added. ID: {new_nvr.id}")
+                    log_audit(
+                        db=db,
+                        user=request.session["user_name"],
+                        action="create_camera",
+                        target=hostname,
+                        ip=request.client.host,
+                        extra="via CSV Upload"
+                    )
 
             except Exception as e:
                 db.rollback() # Rollback changes for the failed row
@@ -479,12 +501,12 @@ async def upload_nvr_csv(request: Request, db: Session = Depends(get_db), file: 
 def detect_csv_delimiter(csv_content: str):
     """Mendeteksi delimiter (koma atau titik koma) dalam string CSV."""
     if not csv_content:
-        return ',' # Default jika kosong
+        return ',' # Default if content is empty
 
-    # Ambil baris pertama (header) untuk analisis
+    # Get the first line of the CSV content
     first_line = csv_content.splitlines()[0]
 
-    # Hitung kemunculan koma dan titik koma
+    # COunt the occurrences of commas and semicolons
     comma_count = first_line.count(',')
     semicolon_count = first_line.count(';')
 
@@ -493,10 +515,8 @@ def detect_csv_delimiter(csv_content: str):
     elif semicolon_count > 0 and comma_count == 0:
         return ';'
     elif comma_count > 0 and semicolon_count > 0:
-        # Jika keduanya ada, coba tebak mana yang lebih dominan
-        # Atau Anda bisa menetapkan prioritas, misalnya koma
         if comma_count > semicolon_count:
             return ','
         else:
             return ';'
-    return ',' # Default jika tidak ada delimiter yang jelas atau keduanya 0
+    return ',' # Default if no delimiter found

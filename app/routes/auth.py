@@ -1,6 +1,7 @@
 import io
 import base64
 import datetime
+import os
 import secrets
 from typing import Optional
 
@@ -12,27 +13,28 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
 from starlette import status
 
-# --- Sesuaikan dengan struktur proyek Anda ---
+# --- Adjust according to your project structure ---
 from app.db.database import get_db
 from app.models_sql import User
 from app.utils.auth import get_password_hash, verify_password
 from app.utils.audit_logger import log_audit
 
-# --- Setup Router dan Template ---
+# --- Setup Router and Template ---
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
-MAX_WEB_SESSIONS = 1  # Maximum logins per user
+# MAX_WEB_SESSIONS = 1  # Maximum logins per user
+MAX_WEB_SESSIONS= int(os.getenv("MAX_WEB_SESSIONS", 1))  # Override from environment if needed
 
-# ==============================================================================
-# 1. ALUR AUTENTIKASI INTI
-# ==============================================================================
+# ============================================================================== 
+# 1. CORE AUTHENTICATION FLOW
+# ============================================================================== 
 
 @router.get("/login", name="login_form")
 def login_form(request: Request):
     """
-    Menampilkan halaman login. Jika pengguna sudah login,
-    akan diarahkan ke dashboard.
+    Display the login page. If the user is already logged in,
+    they will be redirected to the dashboard.
     """
     if request.session.get("user_id"):
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
@@ -47,10 +49,10 @@ def login_post(
     db: Session = Depends(get_db),
 ):
     """
-    Menangani langkah pertama login: verifikasi username dan password.
+    Handles the first login step: verifies username and password.
     """
     user = db.query(User).filter(User.username == username).first()
-    error_message = "Username atau password salah."
+    error_message = "Incorrect username or password."
 
     if not user or not verify_password(password, user.password):
         return templates.TemplateResponse(
@@ -59,15 +61,15 @@ def login_post(
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
-    # --- PERBAIKAN: Jangan buat token atau sesi final di sini. ---
-    # Cukup simpan ID user sementara untuk langkah selanjutnya.
+    # --- FIX: Do not create the final token or session here. ---
+    # Just store the temporary user ID for the next step.
 
     if user.is_2fa_enabled:
-        # Pengguna punya 2FA. Simpan kunci sementara untuk verifikasi OTP.
+        # User has 2FA. Store a temporary key for OTP verification.
         request.session["_2fa_pending_user_id"] = user.id
         return RedirectResponse(url="/login/otp", status_code=status.HTTP_303_SEE_OTHER)
     else:
-        # Pengguna belum punya 2FA. Paksa untuk setup.
+        # User does not have 2FA. Force setup.
         request.session["_mfa_setup_pending_user_id"] = user.id
         return RedirectResponse(url="/mfa/setup", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -75,7 +77,7 @@ def login_post(
 @router.get("/login/otp", name="otp_form")
 def otp_form(request: Request):
     """
-    Menampilkan form input OTP (kode 2FA).
+    Display the OTP (2FA code) input form.
     """
     if not request.session.get("_2fa_pending_user_id"):
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
@@ -87,7 +89,7 @@ def otp_post(
     request: Request, otp: str = Form(...), db: Session = Depends(get_db)
 ):
     """
-    Memverifikasi kode OTP dan menyelesaikan proses login.
+    Verify the OTP code and complete the login process.
     """
     user_id = request.session.get("_2fa_pending_user_id")
     if not user_id:
@@ -103,14 +105,14 @@ def otp_post(
     if not totp.verify(otp, valid_window=1):
         return templates.TemplateResponse(
             "login_2fa.html",
-            {"request": request, "error": "Kode 2FA salah. Silakan coba lagi."},
+            {"request": request, "error": "Incorrect 2FA code. Please try again."},
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
-    # --- SUKSES: OTP valid. Buat sesi dan token yang sebenarnya di sini. ---
-    request.session.pop("_2fa_pending_user_id")  # Hapus kunci sementara.
+    # --- SUCCESS: OTP is valid. Create the actual session and token here. ---
+    request.session.pop("_2fa_pending_user_id")  # Remove temporary key.
 
-    # Buat sesi final yang diautentikasi.
+    # Create the final authenticated session.
     request.session["user_id"] = user.id
     request.session["user_name"] = user.username
     request.session["user_role"] = user.role
@@ -118,7 +120,7 @@ def otp_post(
         request.session["user_group"] = user.group.name
         request.session["user_groupid"] = user.group_id
 
-    # Buat dan lampirkan token sesi ke DB.
+    # Create and attach the session token to the DB.
     token = secrets.token_urlsafe(32)
     expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
     
@@ -134,7 +136,7 @@ def otp_post(
     user.last_login = datetime.datetime.now(datetime.timezone.utc)
     db.commit()
 
-    # Buat respons redirect dan atur cookie.
+    # Create redirect response and set cookie.
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(
         "session_token",
@@ -146,14 +148,14 @@ def otp_post(
     )
     return response
 
-# ==============================================================================
-# 2. ALUR SETUP MFA/2FA WAJIB
-# ==============================================================================
+# ============================================================================== 
+# 2. MANDATORY MFA/2FA SETUP FLOW
+# ============================================================================== 
 
 @router.get("/mfa/setup", name="mfa_setup_form")
 def mfa_setup_form(request: Request, db: Session = Depends(get_db)):
     """
-    Menampilkan QR code untuk setup 2FA.
+    Display QR code for 2FA setup.
     """
     user_id = request.session.get("_mfa_setup_pending_user_id")
     if not user_id:
@@ -170,7 +172,7 @@ def mfa_setup_form(request: Request, db: Session = Depends(get_db)):
         db.refresh(user)
 
     uri = pyotp.totp.TOTP(user.otp_secret).provisioning_uri(
-        name=user.username, issuer_name="Aplikasi Anda"
+        name=user.username, issuer_name="Your Application"
     )
     img = qrcode.make(uri)
     buf = io.BytesIO()
@@ -190,7 +192,7 @@ def mfa_setup_post(
     db: Session = Depends(get_db)
 ):
     """
-    Memverifikasi kode OTP pertama untuk konfirmasi setup.
+    Verify the first OTP code to confirm setup.
     """
     user_id = request.session.get("_mfa_setup_pending_user_id")
     if not user_id:
@@ -203,7 +205,7 @@ def mfa_setup_post(
 
     totp = pyotp.TOTP(user.otp_secret)
     if not totp.verify(otp, valid_window=1):
-        uri = totp.provisioning_uri(name=user.username, issuer_name="Aplikasi Anda")
+        uri = totp.provisioning_uri(name=user.username, issuer_name="Your Application")
         img = qrcode.make(uri)
         buf = io.BytesIO()
         img.save(buf, "PNG")
@@ -213,12 +215,12 @@ def mfa_setup_post(
             {
                 "request": request,
                 "qr_code": f"data:image/png;base64,{qr_code_data}",
-                "error": "Kode salah. Silakan pindai ulang QR code dan coba lagi.",
+                "error": "Incorrect code. Please rescan the QR code and try again.",
             },
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    # ✅ OTP valid, aktifkan 2FA dan buat sesi login.
+    # ✅ OTP valid, enable 2FA and create login session.
     user.is_2fa_enabled = True
     request.session.pop("_mfa_setup_pending_user_id", None)
 
@@ -231,7 +233,7 @@ def mfa_setup_post(
 
     user.last_login = datetime.datetime.now(datetime.timezone.utc)
 
-    # Tambahkan token sesi ke DB dan cookie.
+    # Add session token to DB and cookie.
     token = secrets.token_urlsafe(32)
     expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
     
@@ -255,9 +257,9 @@ def mfa_setup_post(
     )
     return response
 
-# ==============================================================================
-# 3. LOGOUT DAN DEPENDENCY PENGGUNA
-# ==============================================================================
+# ============================================================================== 
+# 3. LOGOUT AND USER DEPENDENCY
+# ============================================================================== 
 
 @router.get("/logout", name="logout")
 def logout(
@@ -266,7 +268,7 @@ def logout(
     session_token: Optional[str] = Cookie(default=None)
 ):
     """
-    Menangani logout: menghapus token dari DB dan membersihkan sesi browser.
+    Handles logout: removes token from DB and clears browser session.
     """
     user_id = request.session.get("user_id")
     if user_id and session_token:
@@ -296,10 +298,10 @@ def get_current_user(
     authorization: Optional[str] = Header(default=None),
 ) -> User:
     """
-    Dependency untuk mendapatkan pengguna yang terautentikasi.
-    Menangani autentikasi via sesi browser dan Bearer Token (API).
+    Dependency to get the authenticated user.
+    Handles authentication via browser session and Bearer Token (API).
     """
-    # === 1. Autentikasi via sesi browser ===
+    # === 1. Authentication via browser session ===
     user_id_session = request.session.get("user_id")
     session_token = request.cookies.get("session_token")
 
@@ -317,32 +319,32 @@ def get_current_user(
                     expires_at = datetime.datetime.fromisoformat(t.get("expires_at"))
                     if expires_at > datetime.datetime.now(datetime.timezone.utc):
                         is_token_valid = True
-                        return user # ✅ Autentikasi berhasil
+                        return user # ✅ Authentication successful
 
-            # --- PERBAIKAN DIMULAI DI SINI ---
-            # Jika token tidak valid (is_token_valid masih False), artinya sesi ini
-            # sudah terdepak atau tidak sah.
+            # --- FIX STARTS HERE ---
+            # If the token is not valid (is_token_valid is still False), it means this session
+            # has been evicted or is invalid.
             if not is_token_valid:
-                # Hapus sisa sesi yang tidak valid di server.
+                # Remove any remaining invalid session on the server.
                 request.session.clear()
-                # Lempar exception dengan detail khusus sebagai sinyal.
+                # Raise exception with special detail as a signal.
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="SESSION_INVALIDATED" # Ini adalah sinyal kita
+                    detail="SESSION_INVALIDATED" # This is our signal
                 )
 
-    # === 2. Autentikasi via Bearer token (API) ===
+    # === 2. Authentication via Bearer token (API) ===
     if authorization:
         try:
             scheme, token = authorization.strip().split(" ", 1)
         except ValueError:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Header Authorization tidak valid")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Authorization header")
 
         if scheme.lower() != "bearer":
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Skema Authorization harus Bearer")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization scheme must be Bearer")
 
-        # Logika validasi API token (asumsi ada field api_tokens)
-        # Implementasi ini perlu disesuaikan dengan model User Anda
+        # API token validation logic (assume there is an api_tokens field)
+        # This implementation needs to be adjusted to your User model
         users_with_tokens = db.query(User).filter(User.api_tokens != None).all()
         for user in users_with_tokens:
             for t in user.api_tokens:
@@ -351,35 +353,35 @@ def get_current_user(
                      if not expires_at_str or datetime.datetime.fromisoformat(expires_at_str) > datetime.datetime.now(datetime.timezone.utc):
                         return user
 
-    # === 3. Tidak ada metode autentikasi yang valid ===
+    # === 3. No valid authentication method ===
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Tidak terautentikasi",
+        detail="Not Authenticated",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
 async def user_access_required(current_user: User = Depends(get_current_user)) -> User:
     """
-    Make sure user have role 'viewer' or 'admin' or 'operator'
+    Make sure user has role 'viewer' or 'admin' or 'operator'
     - Depends on get_current_user.
-    - Throw error 403 if role not equal.
+    - Throw error 403 if role does not match.
     """
     #  print(f"Your role: {current_user.role}")
     if current_user.role not in ["viewer", "operator", "admin"]:
-        # Lempar "sinyal" untuk menampilkan halaman akses ditolak.
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Akses memerlukan peran User atau Admin.")
+        # Raise a "signal" to display the access denied page.
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access requires User or Admin role.")
     return current_user
 
 
 async def operator_access_required(current_user: User = Depends(get_current_user)) -> User:
     """
-    Memastikan user memiliki peran 'admin'.
-    - Bergantung pada get_current_user.
-    - Melempar error 403 jika peran bukan admin.
+    Ensure the user has the 'admin' role.
+    - Depends on get_current_user.
+    - Raise error 403 if role is not admin.
     """
     if current_user.role not in ["operator", "admin"]:
-        # Lempar "sinyal" untuk menampilkan halaman akses ditolak.
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Akses ini khusus untuk Admin.")
+        # Raise a "signal" to display the access denied page.
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This access is for Admin only.")
     return current_user
 
 
@@ -435,7 +437,7 @@ def user_access_required_optional(
 ) -> Optional[User]:
     token = request.headers.get("Authorization")
 
-    # Coba autentikasi via Bearer Token
+    # Try authentication via Bearer Token
     if token:
         token = token.replace("Bearer ", "")
         user = db.query(User).filter(
@@ -445,12 +447,12 @@ def user_access_required_optional(
         if user:
             return user
 
-    # Coba autentikasi via session login
+    # Try authentication via session login
     user_id = request.session.get("user_id")
     if user_id:
         user = db.query(User).filter(User.id == user_id).first()
         if user:
             return user
 
-    # Tidak ada user yang valid → None
+    # No valid user → None
     return None

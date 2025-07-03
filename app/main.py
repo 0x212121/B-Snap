@@ -27,7 +27,7 @@ from app.core.logging_config import setup_logging
 from app.db.database import Base, engine, SessionLocal
 from app.models_sql import User
 from app.scheduler import start_scheduler
-# Impor router disatukan agar lebih rapi
+# Combined router imports for cleaner organization
 from app.routes import (
     auth, audit, cameras, config, dev_docs, docs, health, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
@@ -41,7 +41,7 @@ from app.routes.auth import get_current_user
 setup_logging()
 logger = logging.getLogger("main")
 
-# Pastikan SECRET_KEY ada, jika tidak gunakan nilai default yang aman untuk pengembangan
+# Ensure SECRET_KEY exists, if not use a safe default value for development
 SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key-for-dev")
 if SECRET_KEY == "your-default-secret-key-for-dev":
     logger.warning("Using default SECRET_KEY. This is not secure for production.")
@@ -49,7 +49,7 @@ if SECRET_KEY == "your-default-secret-key-for-dev":
 templates = Jinja2Templates(directory="templates")
 websocket_connections = set()
 
-# Daftar path yang boleh diakses tanpa login.
+# List of paths that can be accessed without login
 ALLOWED_PUBLIC_PATHS = [
     "/login",
     "/logout",
@@ -66,25 +66,25 @@ ALLOWED_PUBLIC_PATHS = [
 # ====================================================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Menangani event saat aplikasi mulai dan berhenti."""
-    logger.info("Aplikasi mulai berjalan...")
+    """Handles events when the application starts and stops."""
+    logger.info("application is starting up...")
     Base.metadata.create_all(bind=engine)
 
     db = SessionLocal()
     try:
         seed_config(db)
-        logger.info("Konfigurasi default telah di-seed.")
+        logger.info("Database seeded with initial configuration.")
     finally:
         db.close()
 
     scheduler = start_scheduler()
-    logger.info("Scheduler latar belakang dimulai.")
+    logger.info("Scheduler started in the background.")
 
-    yield  # --- Aplikasi sedang berjalan ---
+    yield  # --- Application is running ---
 
-    logger.info("Aplikasi mulai berhenti...")
+    logger.info("Application is shutting down...")
     scheduler.shutdown(wait=False)
-    logger.info("Scheduler latar belakang berhenti.")
+    logger.info("Scheduler has been shut down.")
 
 # ====================================================================
 # 4. FASTAPI APP INSTANCE & MIDDLEWARE
@@ -92,20 +92,20 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     lifespan=lifespan,
     title="B-Snap API",
-    description="Dokumentasi API untuk proyek B-Snap",
+    description="B-Snap Documentation API",
     version="1.0.0",
-    docs_url=None,  # Dinonaktifkan untuk menggunakan docs kustom
+    docs_url=None,  # Disabled to use custom docs
     redoc_url=None,
 )
 
-# --- Middleware Utama (Digabung) ---
+# --- Main Middleware (Combined) ---
 class AuthAndSetupMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
         db = SessionLocal()
         try:
             current_path = request.url.path
 
-            # Langkah 1 & 2: Cek Setup Awal dan Path Publik
+            # Step 1 & 2: Check Initial Setup and Public Paths
             if not db.query(User).first():
                 if not any(current_path.startswith(p) for p in ["/setup", "/static"]):
                     return RedirectResponse(url="/setup", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
@@ -114,32 +114,32 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
             if any(current_path.startswith(p) for p in ALLOWED_PUBLIC_PATHS):
                 return await call_next(request)
 
-            # Logika ini sekarang menjadi satu-satunya sumber kebenaran untuk sesi yang tidak valid.
+            # This logic is now the single source of truth for invalid sessions
             user_id = request.session.get("user_id")
             
-            # KASUS 1: Tidak ada user_id di sesi (cookie tidak ada atau expired)
+            # CASE 1: No user_id in session (cookie doesn't exist or expired)
             if not user_id:
                 return RedirectResponse(
                     url="/login", 
                     status_code=status.HTTP_303_SEE_OTHER
                 )
 
-            # KASUS 2: Ada user_id, tapi user tidak ditemukan di DB (sesi basi/stale)
+            # CASE 2: User_id exists but user not found in DB (stale session)
             user = db.query(User).filter(User.id == user_id).first()
             if not user:
-                request.session.clear() # Bersihkan sesi yang tidak valid
+                request.session.clear()  # Clear invalid session
                 response = RedirectResponse(
                     url="/login?reason=invalid_session", 
                     status_code=status.HTTP_303_SEE_OTHER
                 )
-                response.delete_cookie("session_token") # Hapus juga cookie lama
+                response.delete_cookie("session_token")  # Also delete old cookie
                 return response
             
-            # Langkah 4: Cek MFA
+            # Step 4: Check MFA
             if not user.is_2fa_enabled:
                 return RedirectResponse(url="/mfa/setup", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
-            # Jika semua valid, lanjutkan ke endpoint yang dituju.
+            # If all valid, continue to the intended endpoint
             return await call_next(request)
         
         except Exception as e:
@@ -148,8 +148,8 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
         finally:
             db.close()
 
-# Urutan Middleware PENTING: Diproses dari bawah ke atas saat request masuk.
-# Yang ditambahkan terakhir, akan dieksekusi pertama.
+# Middleware order is IMPORTANT: Processed from bottom to top when request comes in.
+# Last added will be executed first.
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(AuthAndSetupMiddleware)
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
@@ -160,7 +160,7 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 # ====================================================================
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Mengelompokkan router agar lebih terorganisir
+# Organize routers for better organization
 app.include_router(auth.router)
 app.include_router(setup.router)
 app.include_router(cameras.router)
@@ -190,14 +190,14 @@ def root_redirect(user: User = Depends(get_current_user)):
 
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
-    # BARU: Tangani sinyal "SESSION_INVALIDATED" secara khusus untuk redirect
+    # NEW: Handle "SESSION_INVALIDATED" signal specifically for redirect
     if exc.detail == "SESSION_INVALIDATED":
-        # Buat respons redirect ke halaman login
+        # Create redirect response to login page
         response = RedirectResponse(
             url="/login?reason=invalid_session",
             status_code=status.HTTP_303_SEE_OTHER
         )
-        # Hapus cookie sesi yang mungkin masih tersisa di browser
+        # Delete any remaining session cookies in the browser
         response.delete_cookie("session")
         response.delete_cookie("session_token")
         return response
@@ -208,9 +208,9 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
             {"request": request, "detail": exc.detail},
             status_code=exc.status_code
         )
-    # Untuk semua error lainnya, tampilkan pesan default
+    # For all other errors, display default message
     return Response(
-        content=f"Terjadi error: {exc.detail}",
+        content=f"An error occurred: {exc.detail}",
         status_code=exc.status_code
     )
 

@@ -445,6 +445,14 @@ async def upload_csv(request: Request, file: UploadFile = File(...), current_adm
                         setattr(existing_cam, key, value)
                     db.add(existing_cam)
                     success_ids.append(existing_cam.id)
+                    log_audit(
+                        db=db,
+                        user=request.session["user_name"],
+                        action="update_camera",
+                        target=hostname,
+                        ip=request.client.host,
+                        extra="via CSV Upload"
+                    )
                 else:
                     # Create a new camera
                     camera_data['hostname'] = hostname
@@ -453,6 +461,14 @@ async def upload_csv(request: Request, file: UploadFile = File(...), current_adm
                     db.add(new_cam)
                     db.flush() # Flush to get the new camera's ID
                     success_ids.append(new_cam.id)
+                    log_audit(
+                        db=db,
+                        user=request.session["user_name"],
+                        action="create_camera",
+                        target=hostname,
+                        ip=request.client.host,
+                        extra="via CSV Upload"
+                    )
 
             except Exception as e:
                 failed_rows.append(row.get("hostname", "N/A"))
@@ -511,6 +527,14 @@ async def export_csv(request: Request, current_admin: User = Depends(admin_acces
         ])
 
     output.seek(0)
+    log_audit(
+        db=db,
+        user=request.session["user_name"],
+        action="export_camera_csv",
+        target="Cameras Export",
+        ip=request.client.host,
+        extra="via Camera Management"
+    )
     return StreamingResponse(
         output,
         media_type="text/csv",

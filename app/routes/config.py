@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Form, Request
+import os
+import shutil
+from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app.models_sql import Configuration
@@ -35,7 +37,8 @@ async def config_save(
     pagination_per_page: int = Form(...),
     max_screenshot_per_camera: int = Form(...),
     watermark_text: str = Form(...),
-    map_title: str = Form(...)
+    map_title: str = Form(...),
+    app_logo: UploadFile = File(None)  # Optional logo file
 ):
     db = SessionLocal()
     keys = {
@@ -55,6 +58,19 @@ async def config_save(
         else:
             config = Configuration(key=key, value=str(value))
             db.add(config)
+
+    # Save the application logo if provided
+    if app_logo and app_logo.filename:
+        ext = os.path.splitext(app_logo.filename)[-1].lower()
+        if ext not in [".png", ".ico"]:
+            db.close()
+            return RedirectResponse(url="/config?error=InvalidLogoFormat", status_code=303)
+
+        save_path = os.path.join("static", "icons", f"logo{ext}")
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        with open(save_path, "wb") as buffer:
+            shutil.copyfileobj(app_logo.file, buffer)
+
     db.commit()
     db.close()
 
