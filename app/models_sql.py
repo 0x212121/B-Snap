@@ -24,26 +24,12 @@ class User(Base):
     token_expires_at = Column(DateTime(timezone=True), nullable=True)
     otp_secret = Column(String, nullable=True)
     is_2fa_enabled = Column(Boolean, default=False, nullable=False)
-    sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
 
     web_tokens = Column(JSON, default=[])
     api_tokens = Column(JSON, default=[])
 
     group_id = Column(Integer, ForeignKey('camera_groups.id'), nullable=True)
     group = relationship("CameraGroup", back_populates="users")
-
-
-class UserSession(Base):
-    __tablename__ = "user_sessions"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    token = Column(String, unique=True, nullable=False)
-    user_agent = Column(String)
-    ip_address = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_seen = Column(DateTime, default=datetime.utcnow)
-    
-    user = relationship("User", back_populates="sessions")
 
 
 class CameraGroup(Base):
