@@ -83,6 +83,5 @@
 - [ ] HTTPS using nginx proxy
   - [ ] Install nginx proxy manager
   - [ ] don't expose B-Snap port to outside
-- [ ] Limit session login
-  - [ ] 
+- [x] Limit session login
 - [ ] Downtime history
