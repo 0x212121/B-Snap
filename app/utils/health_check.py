@@ -188,16 +188,51 @@ def ping_all_devices():
                 logger.info(f"Status change: {device['name']} from {current_status} to {new_status}.")
                 if current_status != "Unknown" and device['type'] == 'Camera':
                     update_camera_daily_stats(db, device["id"], device["name"], current_status, last_change_time, now)
-                
                 entry.status_changed_at = now
                 if current_status == "Offline" and new_status in ["Online", "High Latency"]:
                     entry.last_online = now
-            
+
             entry.status = new_status
             entry.latency = latency_ms
             entry.checked = now
             entry.type = device["type"]
-            
+
+            # --- NEW: Ensure CameraDailyStats exists and increment uptime/downtime by delta ---
+            if device["type"] == "Camera":
+                today = now.date()
+                daily_stat = db.query(CameraDailyStats).filter(
+                    CameraDailyStats.camera_id == device["id"],
+                    CameraDailyStats.date == today
+                ).first()
+                if not daily_stat:
+                    daily_stat = CameraDailyStats(
+                        camera_id=device["id"],
+                        camera_name=device["name"],
+                        date=today,
+                        total_uptime_seconds=0,
+                        total_downtime_seconds=0
+                    )
+                    db.add(daily_stat)
+                    db.flush()
+                # Calculate delta from last check to now
+                last_checked = entry.checked if entry.checked else now
+                # Make sure last_checked is not in the future
+                if last_checked > now:
+                    last_checked = now
+                delta = (now - last_checked).total_seconds()
+                if delta <= 0:
+                    delta = 1  # fallback to 1 second if negative or zero
+                if new_status in ["Online", "High Latency"]:
+                    daily_stat.total_uptime_seconds += int(delta)
+                elif new_status == "Offline":
+                    daily_stat.total_downtime_seconds += int(delta)
+                # Recalculate uptime percentage
+                total_tracked = daily_stat.total_uptime_seconds + daily_stat.total_downtime_seconds
+                if total_tracked > 0:
+                    daily_stat.uptime_percentage = (daily_stat.total_uptime_seconds / total_tracked) * 100
+                else:
+                    daily_stat.uptime_percentage = 0
+
             status_tracker.completed_cameras = i
             db.commit()
 

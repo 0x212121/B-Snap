@@ -181,6 +181,8 @@ async def check_healthcheck_status(db: Session = Depends(get_db), current_operat
     }
 
 
+from sqlalchemy.orm import contains_eager
+
 # --- REFAKTORISASI 4: Optimasi Query pada Endpoint History ---
 @router.get("/health/history", response_class=HTMLResponse)
 async def health_history(
@@ -188,7 +190,6 @@ async def health_history(
     db: Session = Depends(get_db),
     current_operator: User = Depends(operator_access_required)
 ):
-    from sqlalchemy.orm import contains_eager
     
     thirty_days_ago = date.today() - timedelta(days=30)
 
@@ -206,8 +207,13 @@ async def health_history(
         if cam.daily_stats:
             # Data sudah terfilter, tinggal diurutkan jika perlu
             sorted_stats = sorted(cam.daily_stats, key=lambda x: x.date, reverse=True)
+            # Jumlahkan uptime dan downtime untuk periode tersebut (semua ping yang berhasil/gagal)
+            total_uptime = sum(stat.total_uptime_seconds for stat in sorted_stats)
+            total_downtime = sum(stat.total_downtime_seconds for stat in sorted_stats)
             historical_data.append({
                 "hostname": cam.hostname,
+                "total_uptime_seconds": total_uptime,
+                "total_downtime_seconds": total_downtime,
                 "stats": [{
                     "date": stat.date.strftime("%Y-%m-%d"),
                     "uptime_seconds": stat.total_uptime_seconds,

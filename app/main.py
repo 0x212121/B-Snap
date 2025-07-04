@@ -95,7 +95,7 @@ app = FastAPI(
     description="B-Snap Documentation API",
     version="1.0.0",
     docs_url=None,  # Disabled to use custom docs
-    redoc_url=None,
+    redoc_url=None
 )
 
 # --- Main Middleware (Combined) ---

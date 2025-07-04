@@ -85,3 +85,4 @@
   - [ ] don't expose B-Snap port to outside
 - [ ] Limit session login
   - [ ] 
+- [ ] Downtime history

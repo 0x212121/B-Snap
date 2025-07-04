@@ -7,6 +7,12 @@ from app.models_sql import Configuration
 from app.db.database import SessionLocal
 from app.scheduler import update_scheduler_config
 from app.utils.decorators import admin_required
+from fastapi import UploadFile, File, Form, Request
+from fastapi.responses import RedirectResponse
+from sqlalchemy.orm import Session
+from PIL import Image
+import os
+import shutil
 
 router = APIRouter()
 
@@ -27,6 +33,10 @@ async def config_page(request: Request):
     })
 
 
+MAX_LOGO_SIZE = 512 * 1024  # 512 KB
+ALLOWED_EXTENSIONS = {".png", ".ico"}
+ALLOWED_MIME_TYPES = {"image/png", "image/x-icon"}
+
 @router.post("/config/save")
 @admin_required
 async def config_save(
@@ -38,7 +48,7 @@ async def config_save(
     max_screenshot_per_camera: int = Form(...),
     watermark_text: str = Form(...),
     map_title: str = Form(...),
-    app_logo: UploadFile = File(None)  # Optional logo file
+    app_logo: UploadFile = File(None)
 ):
     db = SessionLocal()
     keys = {
@@ -59,21 +69,39 @@ async def config_save(
             config = Configuration(key=key, value=str(value))
             db.add(config)
 
-    # Save the application logo if provided
+    # Hardened logo upload
     if app_logo and app_logo.filename:
         ext = os.path.splitext(app_logo.filename)[-1].lower()
-        if ext not in [".png", ".ico"]:
+        content_type = app_logo.content_type
+
+        # Validate extension & MIME type
+        if ext not in ALLOWED_EXTENSIONS or content_type not in ALLOWED_MIME_TYPES:
             db.close()
             return RedirectResponse(url="/config?error=InvalidLogoFormat", status_code=303)
 
+        # Read file content
+        contents = await app_logo.read()
+        if len(contents) > MAX_LOGO_SIZE:
+            db.close()
+            return RedirectResponse(url="/config?error=FileTooLarge", status_code=303)
+
+        # Validate image integrity with Pillow
+        try:
+            from io import BytesIO
+            image = Image.open(BytesIO(contents))
+            image.verify()  # This checks for integrity
+        except Exception:
+            db.close()
+            return RedirectResponse(url="/config?error=CorruptImage", status_code=303)
+
+        # Save file securely
         save_path = os.path.join("static", "icons", f"logo{ext}")
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         with open(save_path, "wb") as buffer:
-            shutil.copyfileobj(app_logo.file, buffer)
+            buffer.write(contents)
 
     db.commit()
     db.close()
-
     return RedirectResponse(url="/config", status_code=303)
 
 
