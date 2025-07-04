@@ -42,13 +42,13 @@ class HealthStatusResponse(BaseModel):
     camera_offline_count: int
     nvr_offline_count: int
 
-# --- REFAKTORISASI 2: Fungsi Helper Terpusat untuk Query ---
-# Prinsip DRY (Don't Repeat Yourself). Satu fungsi untuk mengambil data kesehatan
-# dari NVR dan Kamera, digunakan oleh kedua endpoint.
+# --- REFACTORING 2: Centralized Helper Function for Query ---
+# DRY Principle (Don't Repeat Yourself). One function to fetch health data
+# from NVR and Camera, used by both endpoints.
 def _get_all_devices_health_data(db: Session) -> list:
     """
-    Mengambil dan menggabungkan data kesehatan dari Camera dan NVR menggunakan satu query UNION.
-    Ini adalah cara paling efisien untuk mendapatkan data gabungan dari dua tabel serupa.
+    Fetch and combine health data from Camera and NVR using a single UNION query.
+    This is the most efficient way to get combined data from two similar tables.
     """
     # Query untuk Camera
     camera_q = select(
@@ -68,15 +68,15 @@ def _get_all_devices_health_data(db: Session) -> list:
         Health.last_online, Health.status_changed_at
     ).join(Health, NVR.id == Health.nvr_id)
 
-    # Gabungkan dengan UNION ALL untuk performa terbaik
+    # Combine both queries into a single unified query
     unified_construct = union_all(camera_q, nvr_q).alias("unified_health")
     
-    # Query final untuk select dan order
+    # Final query for select and order
     final_query = select(unified_construct).order_by(asc(unified_construct.c.hostname))
     
     return db.execute(final_query).all()
 
-# --- Endpoint Utama (Render Halaman Awal) ---
+# --- Main Endpoint (Render Initial Page) ---
 @router.get("/health", response_class=HTMLResponse)
 async def health_monitor_page(
     request: Request,
@@ -84,35 +84,35 @@ async def health_monitor_page(
     current_operator: User = Depends(operator_access_required)
 ):
     """
-    Endpoint ini hanya merender halaman HTML dasar.
-    Data akan dimuat secara dinamis oleh JavaScript saat halaman terbuka.
-    Ini mempercepat waktu pemuatan awal halaman (First Contentful Paint).
+    This endpoint only renders the base HTML page.
+    Data will be loaded dynamically by JavaScript when the page opens.
+    This speeds up the initial page load time (First Contentful Paint).
     """
     return templates.TemplateResponse("health.html", {
         "request": request,
-        # Data awal bisa dikosongkan, JS akan memanggil /health/status
+        # Initial data is empty, JS will call /health/status
         "initial_data": HealthStatusResponse(
             statuses=[], camera_online_count=0, nvr_online_count=0,
             camera_offline_count=0, nvr_offline_count=0
         ).json()
     })
 
-# --- REFAKTORISASI 3: Endpoint API yang Dioptimalkan ---
+# --- REFACTORING 3: Optimized API Endpoint ---
 @router.get("/health/status", response_model=HealthStatusResponse)
 async def get_health_status_api(db: Session = Depends(get_db), current_operator: User = Depends(operator_access_required)):
     """
-    API endpoint yang cepat dan efisien, hanya mengembalikan data JSON mentah.
-    Semua formatting dan kalkulasi durasi dipindahkan ke klien (JavaScript).
+    Fast and efficient API endpoint, only returns raw JSON data.
+    All formatting and duration calculations are moved to the client (JavaScript).
     """
     try:
         all_devices = _get_all_devices_health_data(db)
 
-        # Kalkulasi count dilakukan di backend secara efisien
+        # Count calculation is done efficiently in the backend
         counts = Counter((dev.type, dev.status) for dev in all_devices)
-        camera_online = counts[('Camera', 'Online')] + counts[('Camera', 'High Latency')]
-        nvr_online = counts[('NVR', 'Online')] + counts[('NVR', 'High Latency')]
-        camera_offline = counts[('Camera', 'Offline')]
-        nvr_offline = counts[('NVR', 'Offline')]
+        camera_online = counts[("Camera", "Online")] + counts[("Camera", "High Latency")]
+        nvr_online = counts[("NVR", "Online")] + counts[("NVR", "High Latency")]
+        camera_offline = counts[("Camera", "Offline")]
+        nvr_offline = counts[("NVR", "Offline")]
 
         return HealthStatusResponse(
             statuses=all_devices,
@@ -122,12 +122,10 @@ async def get_health_status_api(db: Session = Depends(get_db), current_operator:
             nvr_offline_count=nvr_offline,
         )
     except Exception as e:
-        print(f"Error in get_health_status_api: {e}")
-        # Mengembalikan error yang sesuai
+        print("Error in get_health_status_api: %s" % e)
+        # Return appropriate error
         return JSONResponse(status_code=500, content={"message": "An internal error occurred."})
 
-# ... (Endpoint lainnya seperti trigger_healthcheck, check_health_status tidak perlu banyak perubahan) ...
-# Cukup pastikan mereka bekerja dengan baik dan menutup sesi DB.
 
 @router.post("/health/trigger/{entity_id}")
 async def trigger_healthcheck(
@@ -144,17 +142,17 @@ async def trigger_healthcheck(
 
 @router.post("/health/trigger_all")
 async def trigger_healthcheck_all(background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_operator: User = Depends(operator_access_required)):
-    # Kode ini sudah cukup baik menggunakan background task
+    # This code is already good using background task
     status = db.query(HealthCheckStatus).get(1)
     if not status:
         status = HealthCheckStatus(id=1)
         db.add(status)
 
-    total_devices = db.query(DBCamera).count() + db.query(NVR).count() # Asumsi trigger semua
+    total_devices = db.query(DBCamera).count() + db.query(NVR).count() # Assumes triggering all
     
     status.is_running = True
     status.start_time = datetime.now(timezone.utc)
-    status.total_cameras = total_devices # Mungkin perlu diubah nama kolomnya
+    status.total_cameras = total_devices # You may want to rename this column
     status.completed_cameras = 0
     db.commit()
 
@@ -164,7 +162,7 @@ async def trigger_healthcheck_all(background_tasks: BackgroundTasks, db: Session
 
 @router.get("/health/status/check")
 async def check_healthcheck_status(db: Session = Depends(get_db), current_operator: User = Depends(operator_access_required)):
-    # Kode ini sudah OK
+    # This code is already OK
     status = db.query(HealthCheckStatus).get(1)
     if not status or not status.is_running or status.completed_cameras >= status.total_cameras:
         if status and status.is_running:
@@ -183,7 +181,7 @@ async def check_healthcheck_status(db: Session = Depends(get_db), current_operat
 
 from sqlalchemy.orm import contains_eager
 
-# --- REFAKTORISASI 4: Optimasi Query pada Endpoint History ---
+# --- REFACTORING 4: Query Optimization on History Endpoint ---
 @router.get("/health/history", response_class=HTMLResponse)
 async def health_history(
     request: Request,
@@ -193,8 +191,8 @@ async def health_history(
     
     thirty_days_ago = date.today() - timedelta(days=30)
 
-    # Optimasi: Filter data history di level database, bukan di Python.
-    # Ini akan secara signifikan mengurangi memori dan waktu proses jika history-nya besar.
+    # Optimization: Filter history data at the database level, not in Python.
+    # This will significantly reduce memory and processing time if the history is large.
     cameras_with_history = db.query(DBCamera).outerjoin(
         CameraDailyStats, 
         (DBCamera.id == CameraDailyStats.camera_id) & (CameraDailyStats.date >= thirty_days_ago)
@@ -205,9 +203,9 @@ async def health_history(
     historical_data = []
     for cam in cameras_with_history:
         if cam.daily_stats:
-            # Data sudah terfilter, tinggal diurutkan jika perlu
+            # Data is already filtered, just sort if needed
             sorted_stats = sorted(cam.daily_stats, key=lambda x: x.date, reverse=True)
-            # Jumlahkan uptime dan downtime untuk periode tersebut (semua ping yang berhasil/gagal)
+            # Sum uptime and downtime for the period (all successful/failed pings)
             total_uptime = sum(stat.total_uptime_seconds for stat in sorted_stats)
             total_downtime = sum(stat.total_downtime_seconds for stat in sorted_stats)
             historical_data.append({

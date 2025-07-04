@@ -139,6 +139,7 @@ class CameraDailyStats(Base):
     snapshot_count = Column(Integer, default=0)
     total_uptime_seconds = Column(Integer, default=0)
     total_downtime_seconds = Column(Integer, default=0)
+    checked = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     camera = relationship("Camera", back_populates="daily_stats")
 

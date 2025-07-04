@@ -124,29 +124,29 @@ async def get_nvrs_data(
     pagination_html = ""
     if total_pages > 1:
         links = []
-        window = 2  # Jumlah halaman di sekitar halaman saat ini
+        window = 2  # Number of pages around the current page
         
-        # Link 'First' dan 'Prev'
+        # 'First' and 'Prev' links
         if page > 1:
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage(1)" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">First</a>')
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({page - 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">«</a>')
 
-        # Tampilkan ellipsis jika perlu
+        # Show ellipsis if needed
         if page > window + 2:
             links.append('<span class="px-3 py-1">...</span>')
 
-        # Tampilkan nomor halaman
+        # Show page numbers
         for i in range(max(1, page - window), min(total_pages, page + window) + 1):
             if i == page:
                 links.append(f'<span class="px-3 py-1 bg-blue-600 text-white rounded font-bold">{i}</span>')
             else:
                 links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({i})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">{i}</a>')
         
-        # Tampilkan ellipsis jika perlu
+        # Show ellipsis if needed
         if page < total_pages - window - 1:
              links.append('<span class="px-3 py-1">...</span>')
 
-        # Link 'Next' dan 'Last'
+        # 'Next' and 'Last' links
         if page < total_pages:
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({page + 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">»</a>')
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({total_pages})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">Last</a>')
@@ -478,7 +478,7 @@ async def upload_nvr_csv(request: Request, db: Session = Depends(get_db), file: 
 
             except Exception as e:
                 db.rollback() # Rollback changes for the failed row
-                print(f"[Row Error] Hostname: {row.get('hostname')} => {e}")
+                logger.error("[Row Error] Hostname: %s => %s", row.get('hostname'), e)
                 failed_rows.append(row.get("hostname"))
 
         db.commit()
@@ -486,27 +486,27 @@ async def upload_nvr_csv(request: Request, db: Session = Depends(get_db), file: 
 
     except Exception as e:
         db.rollback() # Rollback all changes if a major error occurs
-        logger.error(f"CSV upload error: {e}")
+        logger.error("CSV upload error: %s", e)
 
     finally:
         db.close()
 
-    logger.info(f"[UPLOAD SUMMARY] Success: {len(success_ids)}, Failed: {len(failed_rows)}")
+    logger.info("[UPLOAD SUMMARY] Success: %d, Failed: %d", len(success_ids), len(failed_rows))
     if failed_rows:
-        logger.warning(f"[FAILED HOSTNAMES]: {failed_rows}")
+        logger.warning("[FAILED HOSTNAMES]: %s", failed_rows)
 
     return RedirectResponse(url="/nvrs", status_code=302)
 
 
 def detect_csv_delimiter(csv_content: str):
-    """Mendeteksi delimiter (koma atau titik koma) dalam string CSV."""
+    """Detects the delimiter (comma or semicolon) in a CSV string."""
     if not csv_content:
         return ',' # Default if content is empty
 
     # Get the first line of the CSV content
     first_line = csv_content.splitlines()[0]
 
-    # COunt the occurrences of commas and semicolons
+    # Count the occurrences of commas and semicolons
     comma_count = first_line.count(',')
     semicolon_count = first_line.count(';')
 

@@ -1,4 +1,7 @@
 from datetime import datetime, timedelta
+import logging
+
+from app.core.logging_config import setup_logging
 # Use the built-in zoneinfo for timezone-aware datetimes (standard in Python 3.9+)
 try:
     from zoneinfo import ZoneInfo
@@ -23,6 +26,9 @@ import json
 templates = Jinja2Templates(directory="templates")
 
 router = APIRouter()
+
+setup_logging()
+logger = logging.getLogger("management")
 
 # --- NEW: Custom Jinja2 filter for GMT+8 timezone conversion ---
 from datetime import datetime
@@ -299,7 +305,7 @@ async def update_user(
     except Exception as e:
         db.rollback()
         # It's good practice to log this error for debugging.
-        # logger.error(f"Failed to update user {user_id}: {e}")
+        logger.error(f"Failed to update user {user_id}: {e}")
         msg = quote(f"An error occurred. Please try again.")
         status = "error"
 

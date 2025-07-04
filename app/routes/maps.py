@@ -1,10 +1,10 @@
 # app/routes/maps.py
 
-# PERUBAHAN 1: Menggunakan zoneinfo dari pustaka standar Python (lebih modern dari pytz)
+# CHANGE 1: Use zoneinfo from Python standard library (more modern than pytz)
 from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
-# Impor Pydantic untuk membuat model respons
+# Import Pydantic to create response models
 from pydantic import BaseModel
 from typing import List
 
@@ -18,19 +18,19 @@ from app.models_sql import Camera as DBCamera, User
 from app.routes.auth import get_current_user
 
 router = APIRouter(
-    prefix="/maps",  # Menambahkan prefix untuk semua rute di file ini
-    tags=["Maps & Cameras"] # Mengelompokkan API di dokumentasi
+    prefix="/maps",  # Add prefix for all routes in this file
+    tags=["Maps & Cameras"] # Group API in documentation
 )
 
 templates = Jinja2Templates(directory="templates")
 
-# Menggunakan nama zona waktu IANA yang lebih deskriptif untuk GMT+8 (WITA)
-# Ini lebih mudah dibaca daripada 'Etc/GMT-8'
+# Use a more descriptive IANA timezone name for GMT+8 (WITA)
+# This is easier to read than 'Etc/GMT-8'
 WITA_TIMEZONE = ZoneInfo("Asia/Makassar")
 
-# --- Helper Function untuk kebersihan kode ---
+# --- Helper Function for code cleanliness ---
 def format_uptime(start_time: datetime, end_time: datetime) -> str:
-    """Menghitung dan memformat durasi uptime dari waktu mulai hingga sekarang."""
+    """Calculate and format uptime duration from start time to now."""
     if not start_time or not end_time:
         return "N/A"
     
@@ -47,8 +47,8 @@ def format_uptime(start_time: datetime, end_time: datetime) -> str:
         return f"{hours}h {minutes}m"
     return f"{minutes}m"
 
-# PERUBAHAN 2: Mendefinisikan Response Model menggunakan Pydantic
-# Ini memastikan output API selalu konsisten dan terdokumentasi dengan baik.
+# CHANGE 2: Define Response Model using Pydantic
+# This ensures API output is always consistent and well-documented.
 class CameraLocation(BaseModel):
     id: int
     hostname: str
@@ -65,7 +65,7 @@ class CameraLocation(BaseModel):
     user_group_id: int | None
 
     class Config:
-        # orm_mode = True # Memungkinkan model untuk membaca data dari objek ORM
+        # orm_mode = True # Allows model to read data from ORM objects
         model_config = {
             "from_attributes": True
         }
@@ -77,7 +77,7 @@ async def maps_page(request: Request, current_user: User = Depends(get_current_u
     return templates.TemplateResponse("maps.html", {"request": request, "map_title": map_title})
 
 
-# Menggunakan response_model untuk memastikan output sesuai dengan model CameraLocation
+# Use response_model to ensure output matches the CameraLocation model
 @router.get("/camera-locations", response_model=List[CameraLocation])
 async def get_camera_locations(
     db: Session = Depends(get_db),
@@ -106,16 +106,16 @@ async def get_camera_locations(
         if health:
             status_str = health.status
             if health.last_online:
-                # Asumsi: health.last_online disimpan di DB sebagai naive datetime dalam UTC
-                # 1. Buat datetime menjadi aware dengan zona waktu aslinya (UTC)
+                # Assumption: health.last_online is stored in DB as naive datetime in UTC
+                # 1. Make datetime aware with its original timezone (UTC)
                 last_online_utc = health.last_online.replace(tzinfo=ZoneInfo("UTC"))
-                # 2. Konversi ke zona waktu target (WITA)
+                # 2. Convert to target timezone (WITA)
                 last_online_wita = last_online_utc.astimezone(WITA_TIMEZONE)
                 
                 formatted_last_online = last_online_wita.strftime("%Y-%m-%d %H:%M:%S %Z")
 
                 if health.status in online_statuses:
-                    # PERUBAHAN 3: Menggunakan helper function
+                    # CHANGE 3: Use helper function
                     uptime_str = format_uptime(last_online_wita, current_time_wita)
                 else:
                     uptime_str = "Offline"

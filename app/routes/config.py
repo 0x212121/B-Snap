@@ -1,5 +1,4 @@
 import os
-import shutil
 from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -9,7 +8,6 @@ from app.scheduler import update_scheduler_config
 from app.utils.decorators import admin_required
 from fastapi import UploadFile, File, Form, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
 from PIL import Image
 import os
 import shutil

@@ -28,8 +28,6 @@ def setup_create(username: str = Form(...), password: str = Form(...)):
         if not group:
             raise HTTPException(status_code=404, detail="Default group 'ALL' not found")
 
-        print(f"Group ID: {group.id}")
-
         if db.query(User).first():
             return RedirectResponse(url="/login", status_code=302)
 
@@ -39,7 +37,6 @@ def setup_create(username: str = Form(...), password: str = Form(...)):
         db.add(user)
         db.commit()
         db.refresh(user)
-        print("User group_id after commit:", user.group_id)
 
         return RedirectResponse(url="/login", status_code=302)
 
