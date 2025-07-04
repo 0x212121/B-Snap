@@ -4,7 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from app.core.logging_config import setup_logging
 from app.db.database import SessionLocal
-from app.onvif_client import load_cameras
+from app.onvif_client import load_active_cameras, load_cameras
 from app.utils.snapshot_service import take_snapshot
 from app.utils.health_check import ping_all_devices
 from app.core.config import get_config
@@ -49,7 +49,7 @@ def run_snapshot(camera):
 
 def scheduled_snapshot():
     workers = get_config("snapshot_concurrent_workers", 5)
-    cameras = load_cameras()
+    cameras = load_active_cameras()
 
     logger.info(f"[SCHEDULED] Running snapshot for {len(cameras)} cameras with {workers} workers.")
 

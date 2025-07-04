@@ -68,11 +68,11 @@ def stream_exists_opencv(rtsp_url: str, timeout: float = 5.0) -> bool:
     return True
 
 
-def load_cameras():
-    """Get all cameras from DB"""
+def load_active_cameras():
+    """Get all cameras with status 'Active' from DB"""
     db = SessionLocal()
     try:
-        cameras = db.query(Camera).all()
+        cameras = db.query(Camera).filter(Camera.status == "Active").all()
         return cameras
     finally:
         db.close()
