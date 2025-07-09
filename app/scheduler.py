@@ -137,7 +137,7 @@ def update_scheduler_config():
         else:
             print("[Scheduler] ⏸ No config changes detected. Scheduler not updated.")
 
-        return get_config("pagination_per_page", 10)
+        return get_config("items_per_page", 10)
 
     except Exception as e:
         logger.warning(f"[Scheduler] ⚠️ Failed to reload scheduler config: {e}")

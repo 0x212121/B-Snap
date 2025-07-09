@@ -42,7 +42,7 @@ async def config_save(
     snapshot_interval_minutes: int = Form(...),
     healthcheck_interval_minutes: int = Form(...),
     snapshot_concurrent_workers: int = Form(...),
-    pagination_per_page: int = Form(...),
+    items_per_page: int = Form(...),
     max_screenshot_per_camera: int = Form(...),
     watermark_text: str = Form(...),
     map_title: str = Form(...),
@@ -53,7 +53,7 @@ async def config_save(
         "snapshot_interval_minutes": snapshot_interval_minutes,
         "healthcheck_interval_minutes": healthcheck_interval_minutes,
         "snapshot_concurrent_workers": snapshot_concurrent_workers,
-        "pagination_per_page": pagination_per_page,
+        "items_per_page": items_per_page,
         "max_screenshot_per_camera": max_screenshot_per_camera,
         "watermark_text": watermark_text,
         "map_title": map_title

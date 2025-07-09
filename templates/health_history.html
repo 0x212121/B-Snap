@@ -1,48 +1,178 @@
 {% extends "base.html" %}
+
+{% block head %}
+{{ super() }}
+<style>
+    [x-cloak] { display: none !important; }
+    .alpine-collapse {
+        transition: max-height 0.3s ease-out;
+    }
+</style>
+{% endblock %}
+
 {% block title %}Historical Device Stats{% endblock %}
+
 {% block content %}
-<h1 class="text-3xl font-semibold mb-4 text-blue-800 dark:text-blue-300">Historical Uptime/Downtime (Last 30 Days)</h1>
+<div class="container mx-auto px-4 py-8">
 
-<div class="mb-4">
-    <a href="/health" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm inline-flex items-center">
-        &larr; Back to Current Status
-    </a>
-</div>
+    <h1 class="text-3xl font-bold mb-4 text-gray-800 dark:text-gray-200">Historical Uptime/Downtime</h1>
 
-{% if historical_data %}
-  {% for camera_data in historical_data %}
-    <div class="mb-6 bg-white dark:bg-gray-800 p-4 rounded shadow">
-      <h3 class="text-xl font-medium mb-3 text-gray-700 dark:text-gray-200">{{ camera_data.hostname }}</h3>
-      {% if camera_data.stats %}
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Uptime (Seconds)</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Downtime (Seconds)</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Uptime (%)</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {% for stat in camera_data.stats %}
-                <tr>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ stat.date }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ stat.uptime_seconds }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ stat.downtime_seconds }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ "%.2f" | format(stat.uptime_percentage) }}%</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <p class="text-gray-500 dark:text-gray-400">No historical data available for this camera in the last 30 days.</p>
-      {% endif %}
+    <div class="mb-6">
+        <a href="/health" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Current Status
+        </a>
     </div>
-  {% endfor %}
-{% else %}
-  <p class="text-gray-500 dark:text-gray-400">No historical uptime/downtime data available for any camera.</p>
+
+    <div class="mb-8 p-4 bg-gray-100 dark:bg-gray-900/50 rounded-xl">
+        <form method="GET" action="{{ url_for('health_history') }}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
+            
+            <div class="sm:col-span-2 md:col-span-2">
+                <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search Device</label>
+                <input type="search" name="q" id="search" placeholder="Example: CCTV-Lobby..."
+                       value="{{ search_query or '' }}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500 transition">
+            </div>
+
+            <div>
+                <label for="sort" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sort By</label>
+                <select name="sort" id="sort" onchange="this.form.submit()"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500 transition">
+                    <option value="name_asc" {% if current_sort == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
+                    <option value="name_desc" {% if current_sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
+                    <option value="uptime_desc" {% if current_sort == 'uptime_desc' %}selected{% endif %}>Highest Uptime</option>
+                    <option value="uptime_asc" {% if current_sort == 'uptime_asc' %}selected{% endif %}>Lowest Uptime</option>
+                </select>
+            </div>
+
+            <div class="flex items-end">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors">
+                    Search
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+    <div class="space-y-3">
+    {% if historical_data %}
+        {% for camera_data in historical_data %}
+        <div x-data="{ isOpen: false }" x-init="$nextTick(() => isOpen = false)" x-cloak
+             class="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+            
+            <div @click="isOpen = !isOpen" class="p-4 cursor-pointer flex justify-between items-center">
+                <h3 class="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-200">{{ camera_data.hostname }}</h3>
+                <div class="flex items-center gap-4">
+    {% if camera_data.average_uptime is defined and camera_data.average_uptime is not none %}
+        <span class="text-sm font-bold 
+            {% if camera_data.average_uptime >= 99.9 %} text-green-500
+            {% elif camera_data.average_uptime >= 99.0 %} text-yellow-500
+            {% else %} text-red-500 {% endif %}">
+            Avg: {{ "%.2f"|format(camera_data.average_uptime) }}%
+        </span>
+    {% else %}
+        <span class="text-sm text-gray-400 italic">No data</span>
+    {% endif %}
+</div>
+            </div>
+
+            <div x-show="isOpen" x-transition x-cloak class="overflow-hidden">
+                <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                    {% if camera_data.stats %}
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Uptime (%)</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Uptime (Seconds)</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Downtime (Seconds)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                                    {% for stat in camera_data.stats %}
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-100">{{ stat.date }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium
+                                            {% if stat.uptime_percentage >= 99.9 %} text-green-500
+                                            {% elif stat.uptime_percentage >= 99.0 %} text-yellow-500
+                                            {% else %} text-red-500 {% endif %}">
+                                            {{ "%.2f" | format(stat.uptime_percentage) }}%
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ stat.uptime_seconds }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ stat.downtime_seconds }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-gray-500 dark:text-gray-400 text-center py-4">No historical data available for this device.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No data</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">No data matches your search criteria.</p>
+        </div>
+    {% endif %}
+    </div>
+
+    {% if pagination and pagination.total > pagination.per_page %}
+<nav class="mt-8 flex items-center justify-between" aria-label="Pagination">
+    <div class="hidden sm:block">
+        <p class="text-sm text-gray-700 dark:text-gray-400">
+            Showing <span class="font-medium">{{ pagination.start_item }}</span>
+            to <span class="font-medium">{{ pagination.end_item }}</span>
+            of <span class="font-medium">{{ pagination.total }}</span> results
+        </p>
+    </div>
+    <div class="flex-1 flex justify-between sm:justify-end gap-1 flex-wrap">
+
+        {% set max_pages = pagination.total_pages %}
+        {% set current_page = pagination.page %}
+
+        {# Show Previous button #}
+        {% if pagination.has_prev %}
+            <a href="{{ request.url_for('health_history') }}?page={{ pagination.prev_num }}&q={{ search_query }}&sort={{ current_sort }}"
+               class="px-3 py-2 rounded-md text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                Prev
+            </a>
+        {% endif %}
+
+        {# Page numbers with ellipsis #}
+        {% for p in range(1, max_pages + 1) %}
+            {% if p == 1 or p == max_pages or (p >= current_page - 1 and p <= current_page + 1) %}
+                <a href="{{ request.url_for('health_history') }}?page={{ p }}&q={{ search_query }}&sort={{ current_sort }}"
+                   class="px-3 py-2 rounded-md text-sm font-medium border 
+                          {% if p == current_page %}
+                              bg-blue-600 text-white
+                          {% else %}
+                              bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700
+                          {% endif %}">
+                    {{ p }}
+                </a>
+            {% elif p == current_page - 2 or p == current_page + 2 %}
+                <span class="px-2 py-2 text-sm text-gray-400">…</span>
+            {% endif %}
+        {% endfor %}
+
+        {# Show Next button #}
+        {% if pagination.has_next %}
+            <a href="{{ request.url_for('health_history') }}?page={{ pagination.next_num }}&q={{ search_query }}&sort={{ current_sort }}"
+               class="px-3 py-2 rounded-md text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                Next
+            </a>
+        {% endif %}
+    </div>
+</nav>
 {% endif %}
 
+</div>
 {% endblock %}

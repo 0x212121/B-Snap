@@ -28,7 +28,7 @@ logger = logging.getLogger("management")
 
 @router.get("/nvrs")
 async def list_nvrs(request: Request, db: Session = Depends(get_db), page: int = Query(1, ge=1), search: str = Query(None), current_admin: User = Depends(admin_access_required)):
-    per_page = get_config('pagination_per_page', 10)
+    per_page = get_config('items_per_page', 10)
 
     query = db.query(NVR)  # Include group relation
 
@@ -66,7 +66,7 @@ async def get_nvrs_data(
     without reloading the entire page. It returns only the HTML for the table rows
     and the pagination controls.
     """
-    per_page = get_config('pagination_per_page', 10)
+    per_page = get_config('items_per_page', 10)
     query = db.query(NVR)
 
     # Apply the same search logic as the main endpoint

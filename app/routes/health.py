@@ -1,10 +1,13 @@
 from collections import Counter
 from datetime import datetime, timedelta, date, timezone
+import math
+from typing import Optional
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
-from sqlalchemy import asc, union_all, literal_column, select
+from sqlalchemy import asc, desc, func, union_all, literal_column, select
 from sqlalchemy.orm import Session
+from app.core.config import get_config
 from app.db.database import get_db
 from app.routes.auth import operator_access_required
 from app.utils.health_check import run_healthcheck_for_all, run_healthcheck_for_camera, run_healthcheck_for_nvr
@@ -182,45 +185,98 @@ async def check_healthcheck_status(db: Session = Depends(get_db), current_operat
 from sqlalchemy.orm import contains_eager
 
 # --- REFACTORING 4: Query Optimization on History Endpoint ---
-@router.get("/health/history", response_class=HTMLResponse)
+@router.get("/health/history", response_class=HTMLResponse, name="health_history")
 async def health_history(
     request: Request,
     db: Session = Depends(get_db),
-    current_operator: User = Depends(operator_access_required)
+    current_operator: User = Depends(operator_access_required),
+    q: Optional[str] = "",
+    sort: str = "name_asc",
+    page: int = Query(1, ge=1)
 ):
-    
+    ITEMS_PER_PAGE = get_config("items_per_page", default=25)  # Use config for items per page
     thirty_days_ago = date.today() - timedelta(days=30)
 
-    # Optimization: Filter history data at the database level, not in Python.
-    # This will significantly reduce memory and processing time if the history is large.
-    cameras_with_history = db.query(DBCamera).outerjoin(
-        CameraDailyStats, 
+    # LANGKAH 1: Query Dasar untuk Agregasi, Penyaringan, dan Pengurutan
+    base_query = db.query(
+        DBCamera.id,
+        DBCamera.hostname,
+        func.avg(CameraDailyStats.uptime_percentage).label("average_uptime")
+    ).outerjoin(
+        CameraDailyStats,
         (DBCamera.id == CameraDailyStats.camera_id) & (CameraDailyStats.date >= thirty_days_ago)
-    ).options(
-        contains_eager(DBCamera.daily_stats)
-    ).order_by(asc(DBCamera.hostname)).all()
+    ).group_by(DBCamera.id, DBCamera.hostname)
 
+    if q:
+        base_query = base_query.filter(DBCamera.hostname.ilike(f"%{q}%"))
+
+    # Logika pengurutan tidak berubah
+    if sort == "name_asc":
+        base_query = base_query.order_by(asc(DBCamera.hostname))
+    elif sort == "name_desc":
+        base_query = base_query.order_by(desc(DBCamera.hostname))
+    elif sort == "uptime_asc":
+        base_query = base_query.order_by(asc("average_uptime").nulls_last())
+    elif sort == "uptime_desc":
+        base_query = base_query.order_by(desc("average_uptime").nulls_last())
+    else:
+        base_query = base_query.order_by(asc(DBCamera.hostname))
+
+    # LANGKAH 2: Lakukan Paginasi
+    total_items = base_query.count()
+    total_pages = math.ceil(total_items / ITEMS_PER_PAGE)
+    offset = (page - 1) * ITEMS_PER_PAGE
+    
+    # Hasil query ini sudah dalam urutan yang benar
+    paginated_results = base_query.limit(ITEMS_PER_PAGE).offset(offset).all()
+    camera_ids_on_page = [item.id for item in paginated_results]
+    
+    # LANGKAH 3: Ambil Detail Lengkap (Tanpa order_by)
+    full_camera_details = {}
+    if camera_ids_on_page:
+        # Hapus .order_by() dari query ini. Urutan tidak lagi penting di sini.
+        query_details = db.query(DBCamera).options(
+            contains_eager(DBCamera.daily_stats)
+        ).filter(
+            DBCamera.id.in_(camera_ids_on_page)
+        ).outerjoin(
+            CameraDailyStats, 
+            (DBCamera.id == CameraDailyStats.camera_id) & (CameraDailyStats.date >= thirty_days_ago)
+        ).all()
+        # Ubah list hasil query menjadi dictionary untuk lookup yang cepat
+        full_camera_details = {cam.id: cam for cam in query_details}
+
+    # LANGKAH 4: Siapkan Konteks dengan Urutan yang Benar
     historical_data = []
-    for cam in cameras_with_history:
-        if cam.daily_stats:
-            # Data is already filtered, just sort if needed
-            sorted_stats = sorted(cam.daily_stats, key=lambda x: x.date, reverse=True)
-            # Sum uptime and downtime for the period (all successful/failed pings)
-            total_uptime = sum(stat.total_uptime_seconds for stat in sorted_stats)
-            total_downtime = sum(stat.total_downtime_seconds for stat in sorted_stats)
-            historical_data.append({
-                "hostname": cam.hostname,
-                "total_uptime_seconds": total_uptime,
-                "total_downtime_seconds": total_downtime,
-                "stats": [{
-                    "date": stat.date.strftime("%Y-%m-%d"),
-                    "uptime_seconds": stat.total_uptime_seconds,
-                    "downtime_seconds": stat.total_downtime_seconds,
-                    "uptime_percentage": stat.uptime_percentage
-                } for stat in sorted_stats]
-            })
+    # Iterasi melalui 'paginated_results' yang sudah terurut dengan benar
+    for item in paginated_results:
+        cam = full_camera_details.get(item.id)
+        if not cam:
+            continue # Lompati jika karena suatu hal detail tidak ditemukan
+
+        sorted_stats = sorted(cam.daily_stats, key=lambda x: x.date, reverse=True) if cam.daily_stats else []
+        historical_data.append({
+            "hostname": cam.hostname,
+            "average_uptime": item.average_uptime,
+            "stats": [{
+                "date": stat.date.strftime("%Y-%m-%d"),
+                "uptime_seconds": stat.total_uptime_seconds,
+                "downtime_seconds": stat.total_downtime_seconds,
+                "uptime_percentage": stat.uptime_percentage
+            } for stat in sorted_stats]
+        })
+
+    # Pembuatan objek paginasi (tidak berubah)
+    start_item = offset + 1
+    end_item = min(offset + ITEMS_PER_PAGE, total_items)
+    pagination_data = {
+        "page": page, "per_page": ITEMS_PER_PAGE, "total": total_items,
+        "total_pages": total_pages, "has_prev": page > 1, "prev_num": page - 1,
+        "has_next": page < total_pages, "next_num": page + 1,
+        "start_item": start_item, "end_item": end_item,
+    }
 
     return templates.TemplateResponse("health_history.html", {
-        "request": request,
-        "historical_data": historical_data
+        "request": request, "historical_data": historical_data,
+        "pagination": pagination_data, "search_query": q, "current_sort": sort
     })

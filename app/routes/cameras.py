@@ -45,7 +45,7 @@ async def manage_data(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    per_page = get_config('pagination_per_page', 10)
+    per_page = get_config('items_per_page', 10)
     
     query = db.query(DBCamera).options(joinedload(DBCamera.group))
 
