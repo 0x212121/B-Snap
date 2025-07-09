@@ -1,20 +1,19 @@
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta, date, timezone
 import math
 from typing import Optional
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy import asc, desc, func, union_all, literal_column, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, contains_eager
 from app.core.config import get_config
 from app.db.database import get_db
 from app.routes.auth import operator_access_required
 from app.utils.health_check import run_healthcheck_for_all, run_healthcheck_for_camera, run_healthcheck_for_nvr
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
-from app.models_sql import NVR, CameraDailyStats, CameraHealth as Health, Camera as DBCamera, HealthCheckStatus, User
+from app.models_sql import NVR, CameraDailyStats, CameraHealth as Health, Camera as DBCamera, HealthCheckStatus, User, CameraStatusChangeLog
 import pytz
-from pydantic import BaseModel, Field, ConfigDict # Import ConfigDict
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -32,10 +31,9 @@ class DeviceHealthStatus(BaseModel):
     last_online_at: datetime | None = Field(None, alias="last_online")
     status_changed_at: datetime | None
 
-    # REFAKTORISASI: Gunakan ConfigDict dan 'from_attributes' untuk Pydantic v2+
     model_config = ConfigDict(
-        from_attributes=True,  # Ini adalah pengganti 'orm_mode'
-        populate_by_name=True, # Mengizinkan alias seperti 'checked' digunakan
+        from_attributes=True,
+        populate_by_name=True,
     )
 
 class HealthStatusResponse(BaseModel):
@@ -45,15 +43,7 @@ class HealthStatusResponse(BaseModel):
     camera_offline_count: int
     nvr_offline_count: int
 
-# --- REFACTORING 2: Centralized Helper Function for Query ---
-# DRY Principle (Don't Repeat Yourself). One function to fetch health data
-# from NVR and Camera, used by both endpoints.
 def _get_all_devices_health_data(db: Session) -> list:
-    """
-    Fetch and combine health data from Camera and NVR using a single UNION query.
-    This is the most efficient way to get combined data from two similar tables.
-    """
-    # Query untuk Camera
     camera_q = select(
         DBCamera.id, DBCamera.hostname, DBCamera.ip,
         DBCamera.status.label("dev_status"),
@@ -62,7 +52,6 @@ def _get_all_devices_health_data(db: Session) -> list:
         Health.last_online, Health.status_changed_at
     ).join(Health, DBCamera.id == Health.camera_id)
 
-    # Query untuk NVR
     nvr_q = select(
         NVR.id, NVR.hostname, NVR.ip,
         NVR.status.label("dev_status"),
@@ -71,46 +60,28 @@ def _get_all_devices_health_data(db: Session) -> list:
         Health.last_online, Health.status_changed_at
     ).join(Health, NVR.id == Health.nvr_id)
 
-    # Combine both queries into a single unified query
     unified_construct = union_all(camera_q, nvr_q).alias("unified_health")
-    
-    # Final query for select and order
     final_query = select(unified_construct).order_by(asc(unified_construct.c.hostname))
-    
     return db.execute(final_query).all()
 
-# --- Main Endpoint (Render Initial Page) ---
 @router.get("/health", response_class=HTMLResponse)
 async def health_monitor_page(
     request: Request,
     db: Session = Depends(get_db),
     current_operator: User = Depends(operator_access_required)
 ):
-    """
-    This endpoint only renders the base HTML page.
-    Data will be loaded dynamically by JavaScript when the page opens.
-    This speeds up the initial page load time (First Contentful Paint).
-    """
     return templates.TemplateResponse("health.html", {
         "request": request,
-        # Initial data is empty, JS will call /health/status
         "initial_data": HealthStatusResponse(
             statuses=[], camera_online_count=0, nvr_online_count=0,
             camera_offline_count=0, nvr_offline_count=0
         ).json()
     })
 
-# --- REFACTORING 3: Optimized API Endpoint ---
 @router.get("/health/status", response_model=HealthStatusResponse)
 async def get_health_status_api(db: Session = Depends(get_db), current_operator: User = Depends(operator_access_required)):
-    """
-    Fast and efficient API endpoint, only returns raw JSON data.
-    All formatting and duration calculations are moved to the client (JavaScript).
-    """
     try:
         all_devices = _get_all_devices_health_data(db)
-
-        # Count calculation is done efficiently in the backend
         counts = Counter((dev.type, dev.status) for dev in all_devices)
         camera_online = counts[("Camera", "Online")] + counts[("Camera", "High Latency")]
         nvr_online = counts[("NVR", "Online")] + counts[("NVR", "High Latency")]
@@ -126,9 +97,7 @@ async def get_health_status_api(db: Session = Depends(get_db), current_operator:
         )
     except Exception as e:
         print("Error in get_health_status_api: %s" % e)
-        # Return appropriate error
         return JSONResponse(status_code=500, content={"message": "An internal error occurred."})
-
 
 @router.post("/health/trigger/{entity_id}")
 async def trigger_healthcheck(
@@ -142,30 +111,25 @@ async def trigger_healthcheck(
         background_tasks.add_task(run_healthcheck_for_nvr, entity_id)
     return {"status": f"Healthcheck triggered for {type.upper()} ID {entity_id}"}
 
-
 @router.post("/health/trigger_all")
 async def trigger_healthcheck_all(background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_operator: User = Depends(operator_access_required)):
-    # This code is already good using background task
     status = db.query(HealthCheckStatus).get(1)
     if not status:
         status = HealthCheckStatus(id=1)
         db.add(status)
 
-    total_devices = db.query(DBCamera).count() + db.query(NVR).count() # Assumes triggering all
-    
+    total_devices = db.query(DBCamera).count() + db.query(NVR).count()
     status.is_running = True
     status.start_time = datetime.now(timezone.utc)
-    status.total_cameras = total_devices # You may want to rename this column
+    status.total_cameras = total_devices
     status.completed_cameras = 0
     db.commit()
 
     background_tasks.add_task(run_healthcheck_for_all)
     return {"status": "Healthcheck triggered for all devices"}
 
-
 @router.get("/health/status/check")
 async def check_healthcheck_status(db: Session = Depends(get_db), current_operator: User = Depends(operator_access_required)):
-    # This code is already OK
     status = db.query(HealthCheckStatus).get(1)
     if not status or not status.is_running or status.completed_cameras >= status.total_cameras:
         if status and status.is_running:
@@ -182,9 +146,17 @@ async def check_healthcheck_status(db: Session = Depends(get_db), current_operat
     }
 
 
-from sqlalchemy.orm import contains_eager
+def format_duration(seconds: int) -> str:
+    if seconds >= 3600:
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        return f"{hours}h {minutes}m" if minutes else f"{hours}h"
+    elif seconds >= 60:
+        return f"{seconds // 60}m"
+    else:
+        return f"{seconds}s"
+    
 
-# --- REFACTORING 4: Query Optimization on History Endpoint ---
 @router.get("/health/history", response_class=HTMLResponse, name="health_history")
 async def health_history(
     request: Request,
@@ -194,10 +166,9 @@ async def health_history(
     sort: str = "name_asc",
     page: int = Query(1, ge=1)
 ):
-    ITEMS_PER_PAGE = get_config("items_per_page", default=25)  # Use config for items per page
+    ITEMS_PER_PAGE = get_config("items_per_page", default=25)
     thirty_days_ago = date.today() - timedelta(days=30)
 
-    # LANGKAH 1: Query Dasar untuk Agregasi, Penyaringan, dan Pengurutan
     base_query = db.query(
         DBCamera.id,
         DBCamera.hostname,
@@ -210,7 +181,6 @@ async def health_history(
     if q:
         base_query = base_query.filter(DBCamera.hostname.ilike(f"%{q}%"))
 
-    # Logika pengurutan tidak berubah
     if sort == "name_asc":
         base_query = base_query.order_by(asc(DBCamera.hostname))
     elif sort == "name_desc":
@@ -222,19 +192,14 @@ async def health_history(
     else:
         base_query = base_query.order_by(asc(DBCamera.hostname))
 
-    # LANGKAH 2: Lakukan Paginasi
     total_items = base_query.count()
     total_pages = math.ceil(total_items / ITEMS_PER_PAGE)
     offset = (page - 1) * ITEMS_PER_PAGE
-    
-    # Hasil query ini sudah dalam urutan yang benar
     paginated_results = base_query.limit(ITEMS_PER_PAGE).offset(offset).all()
     camera_ids_on_page = [item.id for item in paginated_results]
-    
-    # LANGKAH 3: Ambil Detail Lengkap (Tanpa order_by)
+
     full_camera_details = {}
     if camera_ids_on_page:
-        # Hapus .order_by() dari query ini. Urutan tidak lagi penting di sini.
         query_details = db.query(DBCamera).options(
             contains_eager(DBCamera.daily_stats)
         ).filter(
@@ -243,18 +208,44 @@ async def health_history(
             CameraDailyStats, 
             (DBCamera.id == CameraDailyStats.camera_id) & (CameraDailyStats.date >= thirty_days_ago)
         ).all()
-        # Ubah list hasil query menjadi dictionary untuk lookup yang cepat
         full_camera_details = {cam.id: cam for cam in query_details}
 
-    # LANGKAH 4: Siapkan Konteks dengan Urutan yang Benar
     historical_data = []
-    # Iterasi melalui 'paginated_results' yang sudah terurut dengan benar
     for item in paginated_results:
         cam = full_camera_details.get(item.id)
         if not cam:
-            continue # Lompati jika karena suatu hal detail tidak ditemukan
+            continue
 
         sorted_stats = sorted(cam.daily_stats, key=lambda x: x.date, reverse=True) if cam.daily_stats else []
+
+        offline_map = defaultdict(list)
+        offline_logs = db.query(CameraStatusChangeLog).filter(
+            CameraStatusChangeLog.camera_id == cam.id,
+            CameraStatusChangeLog.previous_status == "Offline",
+            CameraStatusChangeLog.changed_at >= thirty_days_ago
+        ).order_by(CameraStatusChangeLog.changed_at).all()
+
+        for log in offline_logs:
+            duration_secs = log.duration_since_last_change
+            utc_dt = log.changed_at.replace(tzinfo=timezone.utc) if log.changed_at.tzinfo is None else log.changed_at.astimezone(timezone.utc)
+            local_dt = utc_dt.astimezone(wita_tz)
+
+            date_str = local_dt.date().isoformat()
+            time_str = local_dt.strftime("%H:%M")
+
+            if duration_secs:
+                duration_str = format_duration(duration_secs)
+                duration_text = f"({duration_str})"
+            else:
+                duration_text = ""
+
+            # Simpan informasi waktu dan durasi sejak event sebelumnya
+            offline_map[(cam.id, date_str)].append({
+                "time": time_str,
+                "duration_since_last_change": duration_secs,
+                "duration_text": f"({duration_str})" if duration_str else ""
+            })
+
         historical_data.append({
             "hostname": cam.hostname,
             "average_uptime": item.average_uptime,
@@ -262,21 +253,23 @@ async def health_history(
                 "date": stat.date.strftime("%Y-%m-%d"),
                 "uptime_seconds": stat.total_uptime_seconds,
                 "downtime_seconds": stat.total_downtime_seconds,
-                "uptime_percentage": stat.uptime_percentage
+                "uptime_percentage": stat.uptime_percentage,
+                "offline_times": offline_map.get((cam.id, stat.date.isoformat()), []),
+                
             } for stat in sorted_stats]
         })
 
-    # Pembuatan objek paginasi (tidak berubah)
-    start_item = offset + 1
-    end_item = min(offset + ITEMS_PER_PAGE, total_items)
     pagination_data = {
         "page": page, "per_page": ITEMS_PER_PAGE, "total": total_items,
         "total_pages": total_pages, "has_prev": page > 1, "prev_num": page - 1,
         "has_next": page < total_pages, "next_num": page + 1,
-        "start_item": start_item, "end_item": end_item,
+        "start_item": offset + 1, "end_item": min(offset + ITEMS_PER_PAGE, total_items),
     }
 
     return templates.TemplateResponse("health_history.html", {
-        "request": request, "historical_data": historical_data,
-        "pagination": pagination_data, "search_query": q, "current_sort": sort
+        "request": request,
+        "historical_data": historical_data,
+        "pagination": pagination_data,
+        "search_query": q,
+        "current_sort": sort
     })

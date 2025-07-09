@@ -29,7 +29,7 @@
             
             <div class="sm:col-span-2 md:col-span-2">
                 <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search Device</label>
-                <input type="search" name="q" id="search" placeholder="Example: CCTV-Lobby..."
+                <input type="search" name="q" id="search" placeholder="e.g. CCTV-Lobby..."
                        value="{{ search_query or '' }}"
                        class="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500 transition">
             </div>
@@ -87,6 +87,7 @@
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Uptime (%)</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Uptime (Seconds)</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Downtime (Seconds)</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Offline Times (WITA)</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
@@ -101,6 +102,17 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ stat.uptime_seconds }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ stat.downtime_seconds }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                            {% if stat.offline_times %}
+                                                <ul class="space-y-1">
+                                                {% for offline in stat.offline_times %}
+                                                    <li>{{ offline.time }} {% if offline.duration_text %}<span class="text-xs text-gray-400">{{ offline.duration_text }}</span>{% endif %}</li>
+                                                {% endfor %}
+                                                </ul>
+                                            {% else %}
+                                                <span class="italic text-gray-400">-</span>
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -118,61 +130,36 @@
             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2z" />
             </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No data</h3>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">No data matches your search criteria.</p>
+            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No Data</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">No data matched your search criteria.</p>
         </div>
     {% endif %}
     </div>
 
     {% if pagination and pagination.total > pagination.per_page %}
-<nav class="mt-8 flex items-center justify-between" aria-label="Pagination">
-    <div class="hidden sm:block">
-        <p class="text-sm text-gray-700 dark:text-gray-400">
-            Showing <span class="font-medium">{{ pagination.start_item }}</span>
-            to <span class="font-medium">{{ pagination.end_item }}</span>
-            of <span class="font-medium">{{ pagination.total }}</span> results
-        </p>
-    </div>
-    <div class="flex-1 flex justify-between sm:justify-end gap-1 flex-wrap">
-
-        {% set max_pages = pagination.total_pages %}
-        {% set current_page = pagination.page %}
-
-        {# Show Previous button #}
-        {% if pagination.has_prev %}
-            <a href="{{ request.url_for('health_history') }}?page={{ pagination.prev_num }}&q={{ search_query }}&sort={{ current_sort }}"
-               class="px-3 py-2 rounded-md text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
-                Prev
-            </a>
-        {% endif %}
-
-        {# Page numbers with ellipsis #}
-        {% for p in range(1, max_pages + 1) %}
-            {% if p == 1 or p == max_pages or (p >= current_page - 1 and p <= current_page + 1) %}
-                <a href="{{ request.url_for('health_history') }}?page={{ p }}&q={{ search_query }}&sort={{ current_sort }}"
-                   class="px-3 py-2 rounded-md text-sm font-medium border 
-                          {% if p == current_page %}
-                              bg-blue-600 text-white
-                          {% else %}
-                              bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700
-                          {% endif %}">
-                    {{ p }}
+    <nav class="mt-8 flex items-center justify-between" aria-label="Pagination">
+        <div class="hidden sm:block">
+            <p class="text-sm text-gray-700 dark:text-gray-400">
+                Showing <span class="font-medium">{{ pagination.start_item }}</span>
+                to <span class="font-medium">{{ pagination.end_item }}</span>
+                of <span class="font-medium">{{ pagination.total }}</span> results
+            </p>
+        </div>
+        <div class="flex-1 flex justify-between sm:justify-end gap-3">
+            {% if pagination.has_prev %}
+                <a href="{{ request.url_for('health_history') }}?page={{ pagination.prev_num }}&q={{ search_query }}&sort={{ current_sort }}"
+                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Previous
                 </a>
-            {% elif p == current_page - 2 or p == current_page + 2 %}
-                <span class="px-2 py-2 text-sm text-gray-400">…</span>
             {% endif %}
-        {% endfor %}
-
-        {# Show Next button #}
-        {% if pagination.has_next %}
-            <a href="{{ request.url_for('health_history') }}?page={{ pagination.next_num }}&q={{ search_query }}&sort={{ current_sort }}"
-               class="px-3 py-2 rounded-md text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
-                Next
-            </a>
-        {% endif %}
-    </div>
-</nav>
-{% endif %}
-
+            {% if pagination.has_next %}
+                <a href="{{ request.url_for('health_history') }}?page={{ pagination.next_num }}&q={{ search_query }}&sort={{ current_sort }}"
+                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Next
+                </a>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
 </div>
 {% endblock %}

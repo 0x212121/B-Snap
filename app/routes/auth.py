@@ -310,9 +310,9 @@ def get_current_user(
     user_id_session = request.session.get("user_id")
     session_token = request.cookies.get("session_token")
 
-    print(f"🧠 DEBUG get_current_user()")
-    print(f"📦 user_id_session: {user_id_session}")
-    print(f"🍪 session_token from cookie: {session_token}")
+    # print(f"🧠 DEBUG get_current_user()")
+    # print(f"📦 user_id_session: {user_id_session}")
+    # print(f"🍪 session_token from cookie: {session_token}")
 
 
     if user_id_session and session_token:

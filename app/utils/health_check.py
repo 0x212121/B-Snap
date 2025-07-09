@@ -43,6 +43,35 @@ def ping_device(ip: str) -> tuple[bool, int | None]:
 # ==============================================================================
 # 💡 NEW INTEGRATED FUNCTION
 # ==============================================================================
+from app.models_sql import CameraStatusChangeLog  # pastikan kamu punya model ini
+
+def log_status_change(db: Session, camera_id: str, prev_status: str, new_status: str, changed_at: datetime):
+    if prev_status == new_status:
+        return
+
+    last_log = db.query(CameraStatusChangeLog)\
+        .filter(CameraStatusChangeLog.camera_id == camera_id)\
+        .order_by(CameraStatusChangeLog.changed_at.desc())\
+        .first()
+
+    duration = None
+    if last_log.changed_at.tzinfo is None:
+        last_log_time = last_log.changed_at.replace(tzinfo=timezone.utc)
+    else:
+        last_log_time = last_log.changed_at
+
+    duration = int((changed_at - last_log_time).total_seconds())
+
+    new_log = CameraStatusChangeLog(
+        camera_id=camera_id,
+        previous_status=prev_status,
+        new_status=new_status,
+        changed_at=changed_at,
+        duration_since_last_change=duration
+    )
+    db.add(new_log)
+
+
 def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[str, int | None]:
     """
     Perform a health check on a single device, update its status, and accurately calculate
@@ -106,6 +135,10 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
     # Status update logic
     if current_status != new_status:
         logger.info("Status change: %s from %s to %s.", device_name, current_status, new_status)
+
+        if device_type == "Camera":
+            log_status_change(db, device_id, current_status, new_status, now)
+
         entry.status_changed_at = now
         if current_status == "Offline" and new_status in ["Online", "High Latency"]:
             entry.last_online = now

@@ -227,3 +227,16 @@ class AuditLog(Base):
     target = Column(String, nullable=False)
     ip = Column(String)
     extra = Column(String)
+
+
+class CameraStatusChangeLog(Base):
+    __tablename__ = "camera_status_change_log"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, unique=True)
+    camera_id = Column(String(36), ForeignKey("cameras.id", ondelete="CASCADE"), nullable=False)
+    previous_status = Column(String, nullable=False)
+    new_status = Column(String, nullable=False)
+    changed_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    duration_since_last_change = Column(Integer, nullable=True)  # dalam detik
+
+    camera = relationship("Camera", backref="status_change_logs")
