@@ -1,12 +1,10 @@
 # app/routes/maps.py
 
-# CHANGE 1: Use zoneinfo from Python standard library (more modern than pytz)
 from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
-# Import Pydantic to create response models
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.templating import Jinja2Templates
@@ -18,17 +16,13 @@ from app.models_sql import Camera as DBCamera, User
 from app.routes.auth import get_current_user
 
 router = APIRouter(
-    prefix="/maps",  # Add prefix for all routes in this file
-    tags=["Maps & Cameras"] # Group API in documentation
+    tags=["Maps & Cameras"]
 )
 
 templates = Jinja2Templates(directory="templates")
 
-# Use a more descriptive IANA timezone name for GMT+8 (WITA)
-# This is easier to read than 'Etc/GMT-8'
 WITA_TIMEZONE = ZoneInfo("Asia/Makassar")
 
-# --- Helper Function for code cleanliness ---
 def format_uptime(start_time: datetime, end_time: datetime) -> str:
     """Calculate and format uptime duration from start time to now."""
     if not start_time or not end_time:
@@ -47,37 +41,31 @@ def format_uptime(start_time: datetime, end_time: datetime) -> str:
         return f"{hours}h {minutes}m"
     return f"{minutes}m"
 
-# CHANGE 2: Define Response Model using Pydantic
-# This ensures API output is always consistent and well-documented.
 class CameraLocation(BaseModel):
-    id: int
+    id: str
     hostname: str
     ip: str
-    lat: float
-    lng: float
+    lat: Optional[float] = None
+    lng: Optional[float] = None
     asset_no: str | None = None
     status: str
     last_online: str
     uptime: str
-    restricted: str
+    restricted: str | None # PERBAIKAN: Diubah agar bisa menerima None jika tidak ada status restriksi
     cam_group: int | None
     user_group: str
     user_group_id: int | None
 
     class Config:
-        # orm_mode = True # Allows model to read data from ORM objects
-        model_config = {
-            "from_attributes": True
-        }
+        from_attributes = True
 
 
-@router.get("/")
+@router.get("/maps")
 async def maps_page(request: Request, current_user: User = Depends(get_current_user)):
     map_title = get_config("map_title", default="CCTV Maps")
     return templates.TemplateResponse("maps.html", {"request": request, "map_title": map_title})
 
 
-# Use response_model to ensure output matches the CameraLocation model
 @router.get("/camera-locations", response_model=List[CameraLocation])
 async def get_camera_locations(
     db: Session = Depends(get_db),
@@ -103,22 +91,32 @@ async def get_camera_locations(
         uptime_str = "N/A"
         formatted_last_online = "Unknown"
 
-        if health:
+        if health and health.last_online:
             status_str = health.status
-            if health.last_online:
-                # Assumption: health.last_online is stored in DB as naive datetime in UTC
-                # 1. Make datetime aware with its original timezone (UTC)
-                last_online_utc = health.last_online.replace(tzinfo=ZoneInfo("UTC"))
-                # 2. Convert to target timezone (WITA)
-                last_online_wita = last_online_utc.astimezone(WITA_TIMEZONE)
-                
-                formatted_last_online = last_online_wita.strftime("%Y-%m-%d %H:%M:%S %Z")
+            
+            # --- PERBAIKAN KRUSIAL UNTUK TIMEZONE ---
+            # Cek dulu apakah datetime dari DB 'naive' (tanpa tz) atau 'aware' (dengan tz)
+            last_online_db = health.last_online
+            if last_online_db.tzinfo is None:
+                # Jika naive, anggap sebagai UTC lalu konversi ke WITA
+                last_online_wita = last_online_db.replace(tzinfo=ZoneInfo("UTC")).astimezone(WITA_TIMEZONE)
+            else:
+                # Jika sudah aware, langsung konversi ke WITA
+                last_online_wita = last_online_db.astimezone(WITA_TIMEZONE)
 
-                if health.status in online_statuses:
-                    # CHANGE 3: Use helper function
-                    uptime_str = format_uptime(last_online_wita, current_time_wita)
-                else:
-                    uptime_str = "Offline"
+            formatted_last_online = last_online_wita.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+            if health.status in online_statuses:
+                uptime_str = format_uptime(last_online_wita, current_time_wita)
+            else:
+                uptime_str = "Offline"
+        
+        # --- PERBAIKAN LOGIKA UNTUK 'restricted' ---
+        # Ganti 'cam.status' dengan field yang benar untuk status restriksi.
+        # Jika tidak ada field khusus, Anda bisa gunakan logika lain atau set ke None.
+        # Contoh: `cam.restriction_status` atau `cam.access_level`
+        # Untuk sementara, kita set sebagai None jika tidak ada fieldnya.
+        restriction_status = getattr(cam, 'restriction_status', None)
 
         camera_data = {
             "id": cam.id,
@@ -130,7 +128,7 @@ async def get_camera_locations(
             "status": status_str,
             "last_online": formatted_last_online,
             "uptime": uptime_str,
-            "restricted": cam.status,
+            "restricted": restriction_status,
             "cam_group": cam.group_id,
             "user_group": group_name,
             "user_group_id": group_id,
