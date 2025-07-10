@@ -109,7 +109,13 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
 
     # Accurate uptime/downtime calculation logic based on delta
     if device_type == "Camera" and last_check_time:
-        delta_seconds = (now - last_check_time).total_seconds()
+        if last_check_time.date() != now.date():
+            # Jika last_check_time bukan hari ini, pakai sisa hari sebelumnya
+            delta_seconds = (datetime.combine(now.date(), datetime.min.time(), tzinfo=timezone.utc) - last_check_time).total_seconds()
+        else:
+            delta_seconds = (now - last_check_time).total_seconds()
+        
+        delta_seconds = max(0, delta_seconds)
         if delta_seconds > 0:
             today = now.date()
             daily_stat = db.query(CameraDailyStats).filter(
@@ -131,6 +137,25 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
 
             total_tracked = daily_stat.total_uptime_seconds + daily_stat.total_downtime_seconds
             daily_stat.uptime_percentage = (daily_stat.total_uptime_seconds / total_tracked) * 100 if total_tracked > 0 else 0
+
+            if total_tracked > 86400:
+                excess = total_tracked - 86400
+                # Default: cut downtime
+                
+                if daily_stat.total_downtime_seconds >= excess:
+                    daily_stat.total_downtime_seconds -= excess
+                else:
+                    # Potong dari uptime kalau downtime gak cukup
+                    remainder = excess - daily_stat.total_downtime_seconds
+                    daily_stat.total_downtime_seconds = 0
+                    daily_stat.total_uptime_seconds = max(0, daily_stat.total_uptime_seconds - remainder)
+
+                logger.warning(f"[{device_name}] ⚠️ Auto-fixed uptime overflow. Trimmed {excess} seconds to fit 86400s.")
+                
+                # Update ulang persentase
+                total_tracked = daily_stat.total_uptime_seconds + daily_stat.total_downtime_seconds
+                daily_stat.uptime_percentage = (daily_stat.total_uptime_seconds / total_tracked) * 100 if total_tracked > 0 else 0
+
 
     # Status update logic
     if current_status != new_status:

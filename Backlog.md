@@ -74,14 +74,14 @@
 - [x] **Enhanced Security Login**
   - [x] Implement 2FA (completed 30/06/2025)
 - [x] Protect snapshot image URL with token (signed URL)
+- [x] **B-Snap Assistant: Error handling core feature** - *Priority: High*
+- [x] Limit session login
+- [x] Downtime history
 
 ⏳ Ongoing:
-- [ ] **B-Snap Assistant: Error handling core feature** - *Priority: High*
 - [ ] **Dockerize B-Snap** - *Priority: Medium*
 
 🆕 Added:
 - [ ] HTTPS using nginx proxy
   - [ ] Install nginx proxy manager
   - [ ] don't expose B-Snap port to outside
-- [x] Limit session login
-- [ ] Downtime history
