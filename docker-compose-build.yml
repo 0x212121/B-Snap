@@ -1,16 +1,17 @@
+version: "3.8"
+
 services:
-  b-snap:
-    image: b-snap:v1.0.0
+  fastapi:
+    build: .
     container_name: bsnap-app
     ports:
-      - "8080:8080"
+      - "8888:8888"
     env_file:
       - .env
     depends_on:
       - postgres
     volumes:
-      - ./static/snapshots:/app/static/snapshots
-      - ./app/data.db:/app/app/data.db
+      - .:/app
     restart: unless-stopped
 
   postgres:

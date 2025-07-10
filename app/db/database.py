@@ -7,6 +7,7 @@ from app import models
 load_dotenv()  # <<< load .env into os.environ
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+print(f"Database URL: {DATABASE_URL}")
 # DATABASE_URL = "sqlite:///./app/data.db"
 
 if DATABASE_URL.startswith("sqlite"):
