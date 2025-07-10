@@ -45,7 +45,7 @@ async def manage_data(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    per_page = get_config('pagination_per_page', 10)
+    per_page = get_config('items_per_page', 10)
     
     query = db.query(DBCamera).options(joinedload(DBCamera.group))
 
@@ -196,7 +196,7 @@ async def add_camera_submit(
 
     except Exception as e:
         db.rollback()
-        logger.warning(f"Error adding camera: {e}")
+        logger.warning("Error adding camera: %s", e)
         return JSONResponse(status_code=500, content={"status": "error", "message": "An internal server error occurred."})
 
 
@@ -252,7 +252,7 @@ async def edit_camera_submit(
     }
 
     try:
-        # Konversi manual dan validasi
+        # Manual conversion and validation
         lat = float(latitude) if latitude and latitude.strip() else None
         lon = float(longitude) if longitude and longitude.strip() else None
 
@@ -325,9 +325,9 @@ async def edit_camera_submit(
                 )
                 db.merge(new_health)
                 db.commit()
-                logger.info(f"✅ Health record created for {cam.hostname}")
+                logger.info("✅ Health record created for %s", cam.hostname)
             else:
-                logger.info(f"ℹ️ Health record already exists for {cam.hostname}")
+                logger.info("ℹ️ Health record already exists for %s", cam.hostname)
 
         return {"status": "success", "message": "Camera updated successfully"}
 
@@ -335,7 +335,7 @@ async def edit_camera_submit(
         raise HTTPException(status_code=400, detail="Invalid format for latitude or longitude.")
     except Exception as e:
         db.rollback()
-        logger.warning(f"Error updating camera: {e}")
+        logger.warning("Error updating camera: %s", e)
         raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 
@@ -445,6 +445,14 @@ async def upload_csv(request: Request, file: UploadFile = File(...), current_adm
                         setattr(existing_cam, key, value)
                     db.add(existing_cam)
                     success_ids.append(existing_cam.id)
+                    log_audit(
+                        db=db,
+                        user=request.session["user_name"],
+                        action="update_camera",
+                        target=hostname,
+                        ip=request.client.host,
+                        extra="via CSV Upload"
+                    )
                 else:
                     # Create a new camera
                     camera_data['hostname'] = hostname
@@ -453,6 +461,14 @@ async def upload_csv(request: Request, file: UploadFile = File(...), current_adm
                     db.add(new_cam)
                     db.flush() # Flush to get the new camera's ID
                     success_ids.append(new_cam.id)
+                    log_audit(
+                        db=db,
+                        user=request.session["user_name"],
+                        action="create_camera",
+                        target=hostname,
+                        ip=request.client.host,
+                        extra="via CSV Upload"
+                    )
 
             except Exception as e:
                 failed_rows.append(row.get("hostname", "N/A"))
@@ -462,7 +478,7 @@ async def upload_csv(request: Request, file: UploadFile = File(...), current_adm
 
     except Exception as e:
         db.rollback()
-        logger.error(f"Error during CSV upload process: {e}")
+        logger.error("Error during CSV upload process: %s", e)
     finally:
         db.close()
 
@@ -511,6 +527,14 @@ async def export_csv(request: Request, current_admin: User = Depends(admin_acces
         ])
 
     output.seek(0)
+    log_audit(
+        db=db,
+        user=request.session["user_name"],
+        action="export_camera_csv",
+        target="Cameras Export",
+        ip=request.client.host,
+        extra="via Camera Management"
+    )
     return StreamingResponse(
         output,
         media_type="text/csv",
@@ -519,14 +543,14 @@ async def export_csv(request: Request, current_admin: User = Depends(admin_acces
 
 
 def detect_csv_delimiter(csv_content: str):
-    """Mendeteksi delimiter (koma atau titik koma) dalam string CSV."""
+    """Detects the delimiter (comma or semicolon) in a CSV string."""
     if not csv_content:
-        return ',' # Default jika kosong
+        return ',' # Default if empty
 
-    # Ambil baris pertama (header) untuk analisis
+    # Take the first line (header) for analysis
     first_line = csv_content.splitlines()[0]
 
-    # Hitung kemunculan koma dan titik koma
+    # Count the occurrences of comma and semicolon
     comma_count = first_line.count(',')
     semicolon_count = first_line.count(';')
 
@@ -535,10 +559,10 @@ def detect_csv_delimiter(csv_content: str):
     elif semicolon_count > 0 and comma_count == 0:
         return ';'
     elif comma_count > 0 and semicolon_count > 0:
-        # Jika keduanya ada, coba tebak mana yang lebih dominan
-        # Atau Anda bisa menetapkan prioritas, misalnya koma
+        # If both exist, try to guess which is more dominant
+        # Or you can set a priority, e.g. comma
         if comma_count > semicolon_count:
             return ','
         else:
             return ';'
-    return ',' # Default jika tidak ada delimiter yang jelas atau keduanya 0
+    return ',' # Default if no clear delimiter or both are 0

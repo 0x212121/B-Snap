@@ -28,7 +28,7 @@ logger = logging.getLogger("management")
 
 @router.get("/nvrs")
 async def list_nvrs(request: Request, db: Session = Depends(get_db), page: int = Query(1, ge=1), search: str = Query(None), current_admin: User = Depends(admin_access_required)):
-    per_page = get_config('pagination_per_page', 10)
+    per_page = get_config('items_per_page', 10)
 
     query = db.query(NVR)  # Include group relation
 
@@ -66,7 +66,7 @@ async def get_nvrs_data(
     without reloading the entire page. It returns only the HTML for the table rows
     and the pagination controls.
     """
-    per_page = get_config('pagination_per_page', 10)
+    per_page = get_config('items_per_page', 10)
     query = db.query(NVR)
 
     # Apply the same search logic as the main endpoint
@@ -124,29 +124,29 @@ async def get_nvrs_data(
     pagination_html = ""
     if total_pages > 1:
         links = []
-        window = 2  # Jumlah halaman di sekitar halaman saat ini
+        window = 2  # Number of pages around the current page
         
-        # Link 'First' dan 'Prev'
+        # 'First' and 'Prev' links
         if page > 1:
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage(1)" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">First</a>')
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({page - 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">«</a>')
 
-        # Tampilkan ellipsis jika perlu
+        # Show ellipsis if needed
         if page > window + 2:
             links.append('<span class="px-3 py-1">...</span>')
 
-        # Tampilkan nomor halaman
+        # Show page numbers
         for i in range(max(1, page - window), min(total_pages, page + window) + 1):
             if i == page:
                 links.append(f'<span class="px-3 py-1 bg-blue-600 text-white rounded font-bold">{i}</span>')
             else:
                 links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({i})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">{i}</a>')
         
-        # Tampilkan ellipsis jika perlu
+        # Show ellipsis if needed
         if page < total_pages - window - 1:
              links.append('<span class="px-3 py-1">...</span>')
 
-        # Link 'Next' dan 'Last'
+        # 'Next' and 'Last' links
         if page < total_pages:
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({page + 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">»</a>')
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({total_pages})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">Last</a>')
@@ -386,6 +386,14 @@ async def export_csv(request: Request, db: Session = Depends(get_db), current_ad
         ])
 
     output.seek(0)
+    log_audit(
+        db=db,
+        user=request.session["user_name"],
+        action="export_nvr_csv",
+        target="NVRs Export",
+        ip=request.client.host,
+        extra="via NVR Management"
+    )
     return StreamingResponse(
         output,
         media_type="text/csv",
@@ -445,18 +453,32 @@ async def upload_nvr_csv(request: Request, db: Session = Depends(get_db), file: 
                         setattr(existing_nvr, key, value)
                     db.add(existing_nvr)
                     success_ids.append(existing_nvr.id)
-                    print(f"[Update] NVR '{hostname}' updated.")
+                    log_audit(
+                        db=db,
+                        user=request.session["user_name"],
+                        action="update_nvr",
+                        target=hostname,
+                        ip=request.client.host,
+                        extra="via CSV Upload"
+                    )
                 else:
                     # Create a new NVR instance
                     new_nvr = NVR(hostname=hostname, **nvr_data)
                     db.add(new_nvr)
                     db.flush()
                     success_ids.append(new_nvr.id)
-                    print(f"[Insert] NVR '{hostname}' added. ID: {new_nvr.id}")
+                    log_audit(
+                        db=db,
+                        user=request.session["user_name"],
+                        action="create_camera",
+                        target=hostname,
+                        ip=request.client.host,
+                        extra="via CSV Upload"
+                    )
 
             except Exception as e:
                 db.rollback() # Rollback changes for the failed row
-                print(f"[Row Error] Hostname: {row.get('hostname')} => {e}")
+                logger.error("[Row Error] Hostname: %s => %s", row.get('hostname'), e)
                 failed_rows.append(row.get("hostname"))
 
         db.commit()
@@ -464,27 +486,27 @@ async def upload_nvr_csv(request: Request, db: Session = Depends(get_db), file: 
 
     except Exception as e:
         db.rollback() # Rollback all changes if a major error occurs
-        logger.error(f"CSV upload error: {e}")
+        logger.error("CSV upload error: %s", e)
 
     finally:
         db.close()
 
-    logger.info(f"[UPLOAD SUMMARY] Success: {len(success_ids)}, Failed: {len(failed_rows)}")
+    logger.info("[UPLOAD SUMMARY] Success: %d, Failed: %d", len(success_ids), len(failed_rows))
     if failed_rows:
-        logger.warning(f"[FAILED HOSTNAMES]: {failed_rows}")
+        logger.warning("[FAILED HOSTNAMES]: %s", failed_rows)
 
     return RedirectResponse(url="/nvrs", status_code=302)
 
 
 def detect_csv_delimiter(csv_content: str):
-    """Mendeteksi delimiter (koma atau titik koma) dalam string CSV."""
+    """Detects the delimiter (comma or semicolon) in a CSV string."""
     if not csv_content:
-        return ',' # Default jika kosong
+        return ',' # Default if content is empty
 
-    # Ambil baris pertama (header) untuk analisis
+    # Get the first line of the CSV content
     first_line = csv_content.splitlines()[0]
 
-    # Hitung kemunculan koma dan titik koma
+    # Count the occurrences of commas and semicolons
     comma_count = first_line.count(',')
     semicolon_count = first_line.count(';')
 
@@ -493,10 +515,8 @@ def detect_csv_delimiter(csv_content: str):
     elif semicolon_count > 0 and comma_count == 0:
         return ';'
     elif comma_count > 0 and semicolon_count > 0:
-        # Jika keduanya ada, coba tebak mana yang lebih dominan
-        # Atau Anda bisa menetapkan prioritas, misalnya koma
         if comma_count > semicolon_count:
             return ','
         else:
             return ';'
-    return ',' # Default jika tidak ada delimiter yang jelas atau keduanya 0
+    return ',' # Default if no delimiter found

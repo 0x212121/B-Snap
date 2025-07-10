@@ -28,9 +28,10 @@
     🗑️
   </button>
 </div>
-{% else %}
-<div class="col-span-1 sm:col-span-2 md:col-span-3 text-center py-12">
-    <p class="text-gray-500 dark:text-gray-400 text-lg">No snapshots found for the selected criteria.</p>
-</div>
-{% endfor %}
 
+
+{% endfor %}
+  {% if not images %} 
+    <p class="text-center text-gray-500 dark:text-gray-400 col-span-full">No snapshots found for the selected criteria.</p>
+  {% endif %}
+</div>

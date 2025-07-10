@@ -1,14 +1,16 @@
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from uuid import uuid4
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from fastapi import Depends
 from app.core.logging_config import setup_logging
 from app.db.database import SessionLocal
-from app.onvif_client import load_cameras
+from app.onvif_client import load_active_cameras
+from app.db.database import get_db
 from app.utils.snapshot_service import take_snapshot
 from app.utils.health_check import ping_all_devices
 from app.core.config import get_config
-from app.models_sql import AuditLog, SnapshotLog
+from app.models_sql import AuditLog, CameraDailyStats, SnapshotLog
 from app.utils.snapshot_utils import record_snapshot_metadata
 from sqlalchemy.orm import Session
 import concurrent.futures
@@ -49,7 +51,7 @@ def run_snapshot(camera):
 
 def scheduled_snapshot():
     workers = get_config("snapshot_concurrent_workers", 5)
-    cameras = load_cameras()
+    cameras = load_active_cameras()
 
     logger.info(f"[SCHEDULED] Running snapshot for {len(cameras)} cameras with {workers} workers.")
 
@@ -105,6 +107,7 @@ def start_scheduler():
     )
 
     scheduler.add_job(delete_old_audit_logs, 'interval', days=1)
+    scheduler.add_job(delete_old_camera_stats, 'interval', days=1)
 
     scheduler.start()
     return scheduler
@@ -117,15 +120,15 @@ def update_scheduler_config():
 
         changed = False
 
-        if new_snapshot_interval != last_config["snapshot_interval"]:
+        if new_snapshot_interval != last_config["snapshot_interval"]: # type: ignore
             scheduler.reschedule_job("scheduled_snapshot", trigger=IntervalTrigger(minutes=new_snapshot_interval))
-            last_config["snapshot_interval"] = new_snapshot_interval
+            last_config["snapshot_interval"] = new_snapshot_interval # type: ignore
             print(f"[Scheduler] 🔁 Snapshot interval updated to {new_snapshot_interval} minutes.")
             changed = True
 
-        if new_healthcheck_interval != last_config["healthcheck_interval"]:
-            scheduler.reschedule_job("health_check", trigger=IntervalTrigger(minutes=new_healthcheck_interval))
-            last_config["healthcheck_interval"] = new_healthcheck_interval
+        if new_healthcheck_interval != last_config["healthcheck_interval"]: # type: ignore
+            scheduler.reschedule_job("health_check", trigger=IntervalTrigger(minutes=new_healthcheck_interval)) # type: ignore
+            last_config["healthcheck_interval"] = new_healthcheck_interval # type: ignore
             print(f"[Scheduler] 🔁 Health check interval updated to {new_healthcheck_interval} minutes.")
             changed = True
 
@@ -134,11 +137,10 @@ def update_scheduler_config():
         else:
             print("[Scheduler] ⏸ No config changes detected. Scheduler not updated.")
 
-        return get_config("pagination_per_page", 10)
+        return get_config("items_per_page", 10)
 
     except Exception as e:
         logger.warning(f"[Scheduler] ⚠️ Failed to reload scheduler config: {e}")
-
 
 
 def delete_old_audit_logs():
@@ -147,3 +149,11 @@ def delete_old_audit_logs():
     deleted_count = db.query(AuditLog).filter(AuditLog.timestamp < cutoff).delete()
     db.commit()
     logger.info(f"Deleted {deleted_count} old audit logs")
+
+
+def delete_old_camera_stats(db: Session = Depends(get_db)):
+    """Delete camera_daily_stats records older than 90 days."""
+    cutoff_date = date.today() - timedelta(days=90)
+    deleted_rows = db.query(CameraDailyStats).filter(CameraDailyStats.date < cutoff_date).delete()
+    db.commit()
+    return deleted_rows

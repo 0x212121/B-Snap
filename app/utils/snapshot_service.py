@@ -62,7 +62,7 @@ def save_snapshot_file(camera_id: str, image_bytes: bytes) -> tuple[str, str]:
 
 def take_snapshot(camera: Camera, db: Session) -> dict:
     if not is_reachable(camera.ip):
-        msg = f"⚠️ [{camera.hostname}] unreachable (ping failed)"
+        msg = "\u26a0\ufe0f [%s] unreachable (ping failed)" % camera.hostname
         logger.warning(msg)
         return error_response(camera.hostname, "Camera offline")
 
@@ -70,7 +70,7 @@ def take_snapshot(camera: Camera, db: Session) -> dict:
     if result["status"] == "success":
         return result
 
-    logger.warning(f"Falling back to RTSP for {camera.hostname}")
+    logger.warning("Falling back to RTSP for %s", camera.hostname)
     return try_rtsp_snapshot(camera, db)
 
 
@@ -86,7 +86,7 @@ def try_http_snapshot(camera: Camera, db: Session) -> dict:
         response = try_auth(uri, camera.username, camera.password)
 
         if response.status_code != 200:
-            raise RuntimeError(f"HTTP {response.status_code}")
+            raise RuntimeError("HTTP %d" % response.status_code)
 
         image_bytes = response.content
 
@@ -129,7 +129,8 @@ def try_http_snapshot(camera: Camera, db: Session) -> dict:
     except Exception as e:
         # This block now catches both HTTP errors and our new image validation errors.
         logger.warning(
-            f"⚠️ HTTP snapshot failed for {camera.hostname}. Falling back to RTSP.",
+            "\u26a0\ufe0f HTTP snapshot failed for %s. Falling back to RTSP.",
+            camera.hostname,
             exc_info=True
         )
         return error_response(camera.hostname, str(e))
@@ -166,7 +167,7 @@ def try_rtsp_snapshot(camera: Camera, db: Session) -> dict:
         clean_old_snapshots(camera.hostname, db)
         check_stats.check_stats(camera)
 
-        logger.info(f"✅ [{camera.hostname}] RTSP snapshot → {relative_path}")
+        logger.info("\u2705 [%s] RTSP snapshot \u2192 %s", camera.hostname, relative_path)
         return {
             "status": "success",
             "message": f"Snapshot successfully taken from {camera.hostname} (via RTSP)",
@@ -177,7 +178,7 @@ def try_rtsp_snapshot(camera: Camera, db: Session) -> dict:
         }
 
     except Exception as e:
-        logger.exception(f"❌ [{camera.hostname}] RTSP snapshot failed definitively.")
+        logger.exception("\u274c [%s] RTSP snapshot failed definitively.", camera.hostname)
         return error_response(camera.hostname, f"RTSP snapshot failed: {str(e)}")
 
     finally:
@@ -194,7 +195,7 @@ def error_response(camera_name: str, error: str) -> dict:
 
 
 def clean_old_snapshots(camera_name: str, db: Session):
-    max_screenshots = int(get_config("max_screenshot_per_camera"))
+    max_screenshots = int(get_config("max_screenshot_per_camera", default=3))
     if max_screenshots <= 0:
         return
         
@@ -213,19 +214,18 @@ def clean_old_snapshots(camera_name: str, db: Session):
         try:
             if os.path.exists(path):
                 os.remove(path)
-                logger.info(f"Deleted old snapshot file: {snap.file_path}")
+                logger.info("Deleted old snapshot file: %s", snap.file_path)
             else:
-                logger.warning(f"Old snapshot file not found, skipping: {path}")
+                logger.warning("Old snapshot file not found, skipping: %s", path)
         except Exception as e:
-            logger.error(f"Failed to delete {snap.file_path}: {e}")
+            logger.error("Failed to delete %s: %s", snap.file_path, e)
         
         try:
             db.delete(snap)
         except Exception as e:
-            logger.error(f"Failed to delete snapshot DB entry: {e}")
-
+            logger.error("Failed to delete snapshot DB entry: %s", e)
     try:
         db.commit()
-        logger.info(f"Deleted {len(to_delete)} old snapshots from DB")
+        logger.info("Deleted %d old snapshots from DB", len(to_delete))
     except Exception as e:
-        logger.error(f"Failed to commit snapshot deletion: {e}")
+        logger.error("Failed to commit snapshot deletion: %s", e)

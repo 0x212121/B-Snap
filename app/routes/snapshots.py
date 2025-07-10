@@ -64,10 +64,12 @@ def parse_snapshot_filename(filename: str) -> (Optional[str], Optional[datetime]
             return camera_name, dt
         except ValueError:
             # In a production environment, use proper logging system
-            print(f"Warning: Could not parse timestamp from filename: {filename}")
+            import logging
+            logging.warning("Could not parse timestamp from filename: %s", filename)
             return None, None
     else:
-        print(f"Warning: Unexpected filename format: {filename}")
+        import logging
+        logging.warning("Unexpected filename format: %s", filename)
         return None, None
 
 def get_snapshot_directory() -> str:
@@ -262,14 +264,11 @@ def get_snapshot_file_raw(
 @router.get("/snapshot/token/{file_path:path}")
 def get_signed_token(file_path: str, expires_in: int = 600):
     try:
-        print("ORIGINAL ENCODED:", file_path)
         file_path = unquote(file_path)
-        print("DECODED:", file_path)
 
         token = generate_signed_token(file_path, expires_in=expires_in)
         return {"token": token}
     except Exception as e:
-        print("ERROR SAAT GENERATE TOKEN:", e)
         raise HTTPException(status_code=500, detail="Token generation failed")
     
 

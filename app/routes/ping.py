@@ -1,8 +1,11 @@
 import subprocess
 from fastapi import APIRouter, Query
 from fastapi.responses import PlainTextResponse
+import logging
 
 router = APIRouter()
+
+logger = logging.getLogger("ping")
 
 @router.get("/ping", response_class=PlainTextResponse)
 def ping_ip(ip: str = Query(..., description="Target IP address to ping")):
@@ -18,8 +21,11 @@ def ping_ip(ip: str = Query(..., description="Target IP address to ping")):
         if result.returncode == 0:
             return result.stdout
         else:
-            return f"Ping failed for {ip}:\n{result.stdout or result.stderr}"
+            logger.warning("Ping failed for %s: %s", ip, result.stdout or result.stderr)
+            return "Ping failed for %s:\n%s" % (ip, result.stdout or result.stderr)
     except subprocess.TimeoutExpired:
-        return f"Ping to {ip} timed out."
+        logger.error("Ping to %s timed out.", ip)
+        return "Ping to %s timed out." % ip
     except Exception as e:
-        return f"Error during ping: {str(e)}"
+        logger.error("Error during ping: %s", e)
+        return "Error during ping: %s" % str(e)

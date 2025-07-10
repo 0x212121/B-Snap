@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, date, timezone
 from sqlalchemy import (
-    Column, Date, Float, String, Integer, DateTime, ForeignKey, Boolean, event
+    Column, Date, Float, String, Integer, DateTime, ForeignKey, Boolean, event, JSON
 )
 from sqlalchemy.orm import relationship
 from app.db.database import Base
@@ -24,23 +24,12 @@ class User(Base):
     token_expires_at = Column(DateTime(timezone=True), nullable=True)
     otp_secret = Column(String, nullable=True)
     is_2fa_enabled = Column(Boolean, default=False, nullable=False)
-    sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
+
+    web_tokens = Column(JSON, default=[])
+    api_tokens = Column(JSON, default=[])
 
     group_id = Column(Integer, ForeignKey('camera_groups.id'), nullable=True)
     group = relationship("CameraGroup", back_populates="users")
-
-
-class UserSession(Base):
-    __tablename__ = "user_sessions"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    token = Column(String, unique=True, nullable=False)
-    user_agent = Column(String)
-    ip_address = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_seen = Column(DateTime, default=datetime.utcnow)
-    
-    user = relationship("User", back_populates="sessions")
 
 
 class CameraGroup(Base):
@@ -150,6 +139,7 @@ class CameraDailyStats(Base):
     snapshot_count = Column(Integer, default=0)
     total_uptime_seconds = Column(Integer, default=0)
     total_downtime_seconds = Column(Integer, default=0)
+    checked = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     camera = relationship("Camera", back_populates="daily_stats")
 
@@ -237,3 +227,16 @@ class AuditLog(Base):
     target = Column(String, nullable=False)
     ip = Column(String)
     extra = Column(String)
+
+
+class CameraStatusChangeLog(Base):
+    __tablename__ = "camera_status_change_log"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, unique=True)
+    camera_id = Column(String(36), ForeignKey("cameras.id", ondelete="CASCADE"), nullable=False)
+    previous_status = Column(String, nullable=False)
+    new_status = Column(String, nullable=False)
+    changed_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    duration_since_last_change = Column(Integer, nullable=True)  # dalam detik
+
+    camera = relationship("Camera", backref="status_change_logs")

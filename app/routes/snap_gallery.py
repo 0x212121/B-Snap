@@ -16,6 +16,7 @@ from app.utils.snapshot_utils import record_snapshot_metadata
 import os
 
 router = APIRouter()
+
 templates = Jinja2Templates(directory="templates")
 
 SNAPSHOT_BASE_DIR = "static"
@@ -134,7 +135,7 @@ def delete_snapshot(
     # This function remains the same.
     snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
     if not snapshot:
-        logger.warning(f"Snapshot not found: {snapshot_id}")
+        logger.warning("Snapshot not found: %s", snapshot_id)
         raise HTTPException(status_code=404, detail="Snapshot not found")
 
     file_path = os.path.join(SNAPSHOT_BASE_DIR, "snapshots", snapshot.file_path)
@@ -142,25 +143,25 @@ def delete_snapshot(
     if os.path.isfile(file_path):
         try:
             os.remove(file_path)
-            logger.info(f"Snapshot file deleted: {file_path}")
+            logger.info("Snapshot file deleted: %s", file_path)
         except Exception as e:
-            logger.error(f"Failed to delete snapshot file: {e}")
+            logger.error("Failed to delete snapshot file: %s", e)
 
     try:
         db.delete(snapshot)
         db.commit()
-        logger.info(f"Snapshot record deleted from DB: {snapshot_id}")
+        logger.info("Snapshot record deleted from DB: %s", snapshot_id)
 
         log_audit(
             db=db,
             user=request.session["user_name"],
             action="delete_snapshot",
-            target=f"{snapshot.camera_name} | {snapshot.timestamp.strftime('%d %B %Y, %H:%M:%S WITA')}",
+            target="%s | %s" % (snapshot.camera_name, snapshot.timestamp.strftime('%d %B %Y, %H:%M:%S WITA')),
             ip=request.client.host,
             extra="via dashboard"
         )
     except Exception as e:
-        logger.error(f"Failed to delete DB record for snapshot {snapshot_id}: {e}")
+        logger.error("Failed to delete DB record for snapshot %s: %s", snapshot_id, e)
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to delete snapshot record")
 

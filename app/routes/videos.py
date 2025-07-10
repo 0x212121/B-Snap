@@ -3,6 +3,7 @@ import logging
 import os
 from typing import Optional, List, Dict, Any
 from zoneinfo import ZoneInfo
+from app.core.logging_config import setup_logging
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -22,7 +23,9 @@ VIDEO_URL_BASE = "static/videos"
 # Base filesystem path to the videos folder, assuming execution from the project root.
 VIDEO_FILESYSTEM_BASE = os.path.join("app", "static", "videos")
 
-logger = logging.getLogger(__name__)
+
+setup_logging()
+logger = logging.getLogger("snapshot")
 
 # Define Makassar Timezone for reuse
 SG_TZ = ZoneInfo("Asia/Makassar")
@@ -164,7 +167,7 @@ def delete_video(
     """Deletes a video by its ID."""
     video = db.query(Video).filter(Video.id == video_id).first()
     if not video:
-        logger.warning(f"Video not found in DB: {video_id}")
+        logger.warning("Video not found in DB: %s", video_id)
         raise HTTPException(status_code=404, detail="Video not found")
     
     # Safely reconstruct the filesystem path from the POSIX path stored in the DB
@@ -174,17 +177,17 @@ def delete_video(
     if os.path.isfile(full_file_path):
         try:
             os.remove(full_file_path)
-            logger.info(f"Video file deleted: {full_file_path}")
+            logger.info("Video file deleted: %s", full_file_path)
         except Exception as e:
-            logger.error(f"Failed to delete video file {full_file_path}: {e}")
+            logger.error("Failed to delete video file %s: %s", full_file_path, e)
     else:
-        logger.warning(f"Video file not found on disk: {full_file_path}")
+        logger.warning("Video file not found on disk: %s", full_file_path)
     
     try:
         camera_name = video.camera_name
         db.delete(video)
         db.commit()
-        logger.info(f"Video record deleted from DB: {video_id}")
+        logger.info("Video record deleted from DB: %s", video_id)
 
         log_audit(
             db=db,
@@ -192,10 +195,10 @@ def delete_video(
             action="delete_video",
             target=camera_name,
             ip=request.client.host,
-            extra=f"Video ID: {video_id}"
+            extra="Video ID: %s" % video_id
         )
     except Exception as e:
-        logger.error(f"Failed to delete DB record for video {video_id}: {e}")
+        logger.error("Failed to delete DB record for video %s: %s", video_id, e)
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to delete video record from database")
 
