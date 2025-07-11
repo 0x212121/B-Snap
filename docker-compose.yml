@@ -13,7 +13,7 @@ services:
       - postgres
     volumes:
       - ./static/snapshots:/app/static/snapshots
-      # - ./app/data.db:/app/app/data.db
+      - ./app/data.db:/app/app/data.db
     restart: unless-stopped
 
   postgres:

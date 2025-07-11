@@ -12,6 +12,7 @@ from app.db.database import SessionLocal
 from urllib.parse import urlparse, urlunparse
 from PIL import Image, ImageDraw, ImageFont
 from app.core.logging_config import setup_logging
+from ping3 import ping
 
 # Setup logging
 setup_logging()
@@ -24,15 +25,13 @@ STATIC_DIR = os.path.join(BASE_DIR, "static", "images")
 def is_reachable(ip: str, timeout: int = 1000) -> bool:
     """
     Ping the given IP once. Return True if reachable.
-    timeout is in milliseconds.
+    Timeout is in milliseconds.
     """
-    # Windows vs Unix ping syntax
-    param = "-n" if platform.system().lower() == "windows" else "-c"
-    # timeout flag differs: '-w' on Windows (ms), '-W' on Unix (sec)
-    to_flag = "-w" if platform.system().lower() == "windows" else "-W"
-    cmd = ["ping", param, "1", to_flag, str(timeout // (1000 if to_flag == "-W" else 1)), ip]
     try:
-        return subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+        # ping3 expects timeout in seconds
+        timeout_seconds = timeout / 1000
+        response = ping(ip, timeout=timeout_seconds)
+        return response is not None
     except Exception:
         return False
 
