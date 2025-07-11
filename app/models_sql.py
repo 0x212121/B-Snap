@@ -5,6 +5,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from app.db.database import Base
+from sqlalchemy.ext.mutable import MutableList
+from sqlalchemy.dialects.postgresql import JSONB
+
 
 
 def generate_uuid():
@@ -25,8 +28,9 @@ class User(Base):
     otp_secret = Column(String, nullable=True)
     is_2fa_enabled = Column(Boolean, default=False, nullable=False)
 
-    web_tokens = Column(JSON, default=[])
-    api_tokens = Column(JSON, default=[])
+    web_tokens = Column(MutableList.as_mutable(JSONB), default=list)
+    api_tokens = Column(MutableList.as_mutable(JSONB), default=list)
+
 
     group_id = Column(Integer, ForeignKey('camera_groups.id'), nullable=True)
     group = relationship("CameraGroup", back_populates="users")
@@ -66,7 +70,7 @@ class Camera(Base):
     __tablename__ = "cameras"
 
     id = Column(String(36), primary_key=True, default=generate_uuid, unique=True)
-    hostname = Column(String, unique=True, nullable=False)
+    hostname = Column(String, unique=True, index=True, nullable=False)
     previous_name = Column(String)
     ip = Column(String)
     port = Column(Integer, default=80)
@@ -104,10 +108,10 @@ class CameraHealth(Base):
     last_online = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     type = Column(String, default="Camera", nullable=False)
 
-    camera_id = Column(String(36), ForeignKey("cameras.id", ondelete="CASCADE"))
+    camera_id = Column(String(36), ForeignKey("cameras.id", ondelete="CASCADE"), nullable=True)
     camera = relationship("Camera", back_populates="health")
 
-    nvr_id = Column(String(36), ForeignKey("nvr.id", ondelete="CASCADE"))
+    nvr_id = Column(String(36), ForeignKey("nvr.id", ondelete="CASCADE"), nullable=True)
     nvr = relationship("NVR", back_populates="health")
 
 
@@ -121,7 +125,7 @@ class Configuration(Base):
 class HealthCheckStatus(Base):
     __tablename__ = "health_check_status"
 
-    id = Column(Integer, primary_key=True, default=1)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     is_running = Column(Boolean, default=False)
     start_time = Column(DateTime(timezone=True))
     total_cameras = Column(Integer, default=0)
@@ -132,7 +136,7 @@ class CameraDailyStats(Base):
     __tablename__ = "camera_daily_stats"
 
     id = Column(Integer, primary_key=True)
-    camera_id = Column(String(36), ForeignKey("cameras.id", ondelete="CASCADE"), nullable=False)
+    camera_id = Column(String(36), ForeignKey("cameras.id", ondelete="CASCADE"), nullable=True)
     camera_name = Column(String(60), nullable=False)
     date = Column(Date, nullable=False, default=date.today)
     uptime_percentage = Column(Float, default=0.0)
@@ -148,7 +152,7 @@ class NVR(Base):
     __tablename__ = "nvr"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    hostname = Column(String(100), nullable=False)
+    hostname = Column(String(100), unique=True, index=True, nullable=False)
     ip = Column(String(45), nullable=False)
     username = Column(String(100))
     password = Column(String(100))
@@ -224,7 +228,7 @@ class AuditLog(Base):
     timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     user = Column(String, nullable=False)
     action = Column(String, nullable=False)
-    target = Column(String, nullable=False)
+    target = Column(String, nullable=True)
     ip = Column(String)
     extra = Column(String)
 
@@ -233,7 +237,7 @@ class CameraStatusChangeLog(Base):
     __tablename__ = "camera_status_change_log"
 
     id = Column(String(36), primary_key=True, default=generate_uuid, unique=True)
-    camera_id = Column(String(36), ForeignKey("cameras.id", ondelete="CASCADE"), nullable=False)
+    camera_id = Column(String(36), ForeignKey("cameras.id", ondelete="CASCADE"), nullable=True)
     previous_status = Column(String, nullable=False)
     new_status = Column(String, nullable=False)
     changed_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
