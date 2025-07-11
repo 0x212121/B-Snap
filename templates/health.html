@@ -104,7 +104,7 @@
     // console.log("Menerima ISO String:", isoString);
     
     try {
-      const date = new Date(isoString + 'Z');
+      const date = new Date(isoString);
       
       // 2. Periksa apakah tanggal valid setelah parsing.
       if (isNaN(date.getTime())) {

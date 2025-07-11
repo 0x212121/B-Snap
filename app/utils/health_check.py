@@ -55,12 +55,13 @@ def log_status_change(db: Session, camera_id: str, prev_status: str, new_status:
         .first()
 
     duration = None
-    if last_log.changed_at.tzinfo is None:
-        last_log_time = last_log.changed_at.replace(tzinfo=timezone.utc)
-    else:
-        last_log_time = last_log.changed_at
 
-    duration = int((changed_at - last_log_time).total_seconds())
+    if last_log is not None:
+        if last_log.changed_at.tzinfo is None:
+            last_log_time = last_log.changed_at.replace(tzinfo=timezone.utc)
+        else:
+            last_log_time = last_log.changed_at
+        duration = int((changed_at - last_log_time).total_seconds())
 
     new_log = CameraStatusChangeLog(
         camera_id=camera_id,
@@ -70,7 +71,6 @@ def log_status_change(db: Session, camera_id: str, prev_status: str, new_status:
         duration_since_last_change=duration
     )
     db.add(new_log)
-
 
 def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[str, int | None]:
     """

@@ -1,20 +1,23 @@
 services:
   b-snap:
-    image: b-snap:v1.0.0
+    image: wijayaindra21/b-snap:v1.0.0-multi
     container_name: bsnap-app
     ports:
       - "8080:8080"
+    privileged: true
+    cap_add:
+      - NET_RAW
     env_file:
       - .env
     depends_on:
       - postgres
     volumes:
       - ./static/snapshots:/app/static/snapshots
-      - ./app/data.db:/app/app/data.db
+      # - ./app/data.db:/app/app/data.db
     restart: unless-stopped
 
   postgres:
-    image: postgres:16
+    image: postgres:17.5
     container_name: bsnap-postgres
     environment:
       POSTGRES_DB: bsnap_db

@@ -90,7 +90,6 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
     if not reachable:
         msg = f"⚠️ [{camera.hostname}] unreachable (ping failed), skipping"
         logger.warning(msg)
-        log_camera_error(camera.hostname, msg)
         return {"status": "error", "message": "Camera Offline"}
 
     group_name = camera.group.name
@@ -128,7 +127,7 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
         )
         code, _, err = await asyncio.to_thread(_run_ffmpeg_sync, cmd_reencode)
         if code != 0:
-            log_camera_error(camera.hostname, f"FFMPEG Re-encode Failed: {err}")
+            logger.error(camera.hostname, f"FFMPEG Re-encode Failed: {err}")
             return {"status": "error", "message": "FFMPEG process failed"}
 
     logger.info(f"Video recorded successfully: {output_path}")
