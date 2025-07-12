@@ -58,6 +58,7 @@ ALLOWED_PUBLIC_PATHS = [
     "/openapi.json",
     "/mfa/setup",
     "/mfa/force-verify",
+    "/cctv/resolve-ip",
 ]
 
 # ====================================================================
@@ -103,44 +104,45 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
         db = SessionLocal()
         try:
             current_path = request.url.path
+            auth_header = request.headers.get("authorization")
 
-            # Step 1 & 2: Check Initial Setup and Public Paths
+            # Step 1: Setup check
             if not db.query(User).first():
                 if not any(current_path.startswith(p) for p in ["/setup", "/static"]):
                     return RedirectResponse(url="/setup", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
                 return await call_next(request)
 
+            # Step 2: Allow public paths
             if any(current_path.startswith(p) for p in ALLOWED_PUBLIC_PATHS):
                 return await call_next(request)
 
-            # This logic is now the single source of truth for invalid sessions
+            # Step 3: If Bearer token is present, skip session check
+            if auth_header and auth_header.lower().startswith("bearer "):
+                return await call_next(request)
+
+            # Step 4: Session-based auth fallback
             user_id = request.session.get("user_id")
-            
-            # CASE 1: No user_id in session (cookie doesn't exist or expired)
             if not user_id:
                 return RedirectResponse(
-                    url="/login", 
+                    url="/login",
                     status_code=status.HTTP_303_SEE_OTHER
                 )
 
-            # CASE 2: User_id exists but user not found in DB (stale session)
             user = db.query(User).filter(User.id == user_id).first()
             if not user:
-                request.session.clear()  # Clear invalid session
+                request.session.clear()
                 response = RedirectResponse(
-                    url="/login?reason=invalid_session", 
+                    url="/login?reason=invalid_session",
                     status_code=status.HTTP_303_SEE_OTHER
                 )
-                response.delete_cookie("session_token")  # Also delete old cookie
+                response.delete_cookie("session_token")
                 return response
-            
-            # Step 4: Check MFA
+
             if not user.is_2fa_enabled:
                 return RedirectResponse(url="/mfa/setup", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
-            # If all valid, continue to the intended endpoint
             return await call_next(request)
-        
+
         except Exception as e:
             logger.error(f"Error in AuthAndSetupMiddleware: {e}", exc_info=True)
             return Response("Internal Server Error", status_code=500)

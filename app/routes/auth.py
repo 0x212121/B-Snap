@@ -352,11 +352,32 @@ def get_current_user(
         # This implementation needs to be adjusted to your User model
         users_with_tokens = db.query(User).filter(User.api_tokens != None).all()
         for user in users_with_tokens:
+            if not user.api_tokens or not isinstance(user.api_tokens, list):
+                pass
+                print(f"User {user.username} has no api_tokens")
+            elif not isinstance(user.api_tokens, list):
+                print(f"User {user.username} api_tokens is not a list: {type(user.api_tokens)}")
+
             for t in user.api_tokens:
                 if t.get("token") == token:
-                     expires_at_str = t.get("expires_at")
-                     if not expires_at_str or datetime.datetime.fromisoformat(expires_at_str) > datetime.datetime.now(datetime.timezone.utc):
-                        return user
+                    expires_at_str = t.get("expires_at")
+
+                    if not expires_at_str:
+                        return user  # No expiry = dianggap valid
+
+                    try:
+                        expires_at = datetime.datetime.fromisoformat(expires_at_str)
+                        if expires_at.tzinfo is None:
+                            # Force as UTC if no timezone info
+                            expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
+
+                        now_utc = datetime.datetime.now(datetime.timezone.utc)
+
+                        if expires_at > now_utc:
+                            return user
+                    except Exception as e:
+                        print(f"⚠️ Error parsing token datetime: {e}")
+                        continue  # skip token yang rusak
 
     # === 3. No valid authentication method ===
     raise HTTPException(
