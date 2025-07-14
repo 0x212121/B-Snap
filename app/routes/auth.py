@@ -137,6 +137,15 @@ def otp_post(
     user.last_login = datetime.datetime.now(datetime.timezone.utc)
     db.commit()
 
+    log_audit(
+        db=db,
+        user=request.session.get("user_name", "unknown"),
+        action="login",
+        target="",
+        ip=request.client.host if request.client else "unknown",
+        extra=""
+    )
+
     # Create redirect response and set cookie.
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(
@@ -279,8 +288,7 @@ def logout(
             user.web_tokens = [t for t in user.web_tokens if t.get("token") != session_token]
             db.commit()
             user_logged_out = True
-    
-    print(f"logout status: {user_logged_out}")
+
     if user_logged_out:
         log_audit(
             db=db,
