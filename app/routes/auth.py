@@ -36,7 +36,6 @@ def login_form(request: Request):
     Display the login page. If the user is already logged in,
     they will be redirected to the dashboard.
     """
-    print(f"logout status: ")
     if request.session.get("user_id"):
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse("login.html", {"request": request})
