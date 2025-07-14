@@ -6,7 +6,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from app.db.database import Base
 from sqlalchemy.ext.mutable import MutableList
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSON
 
 
 
@@ -28,8 +28,8 @@ class User(Base):
     otp_secret = Column(String, nullable=True)
     is_2fa_enabled = Column(Boolean, default=False, nullable=False)
 
-    web_tokens = Column(MutableList.as_mutable(JSONB), default=list)
-    api_tokens = Column(MutableList.as_mutable(JSONB), default=list)
+    web_tokens = Column(MutableList.as_mutable(JSON), default=list)
+    api_tokens = Column(MutableList.as_mutable(JSON), default=list)
 
 
     group_id = Column(Integer, ForeignKey('camera_groups.id'), nullable=True)
