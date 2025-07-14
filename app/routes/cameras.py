@@ -3,6 +3,7 @@ import csv
 from datetime import datetime
 import json
 import logging
+import traceback
 from typing import Optional, Union
 import uuid
 from fastapi import Depends, File, HTTPException, Path, UploadFile, APIRouter
@@ -369,11 +370,10 @@ async def get_camera_groups(request: Request, db: Session = Depends(get_db), cur
 
 
 @router.post("/cameras/{camera_id}/delete", response_class=JSONResponse)
-@admin_required
 async def delete_camera(request: Request, camera_id: str, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
     cam = db.query(DBCamera).filter(DBCamera.id == camera_id).first()
     if not cam:
-        return JSONResponse(status_code=404, content={"status":"error", "message": "Camera not found"})
+        return JSONResponse(status_code=404, content={"status": "error", "message": "Camera not found"})
 
     try:
         db.delete(cam)
@@ -381,16 +381,18 @@ async def delete_camera(request: Request, camera_id: str, db: Session = Depends(
 
         log_audit(
             db=db,
-            user=request.session["user_name"],
+            user=request.session.get("user_name", "unknown"),
             action="delete_camera",
             target=cam.hostname,
             ip=request.client.host,
             extra=f"via Camera Management\nIP: {cam.ip}"
         )
-        return JSONResponse(status_code=200, content={"status":"success", "message": f"Camera '{cam.hostname}' deleted."})
+        return JSONResponse(status_code=200, content={"status": "success", "message": f"Camera '{cam.hostname}' deleted."})
     except Exception as e:
         db.rollback()
-        return JSONResponse(status_code=500, content={"status":"error", "message": "Failed to delete camera."})
+        print(f"❌ Delete error: {e}")
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Failed to delete camera."})
 
 
 @router.post("/cameras/upload_csv")
