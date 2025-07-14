@@ -340,44 +340,30 @@ def get_current_user(
 
     # === 2. Authentication via Bearer token (API) ===
     if authorization:
-        try:
-            scheme, token = authorization.strip().split(" ", 1)
-        except ValueError:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Authorization header")
-
+        scheme, token = authorization.strip().split(" ", 1)
         if scheme.lower() != "bearer":
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization scheme must be Bearer")
+            raise HTTPException(status_code=401, detail="Authorization scheme must be Bearer")
 
-        # API token validation logic (assume there is an api_tokens field)
-        # This implementation needs to be adjusted to your User model
-        users_with_tokens = db.query(User).filter(User.api_tokens != None).all()
-        for user in users_with_tokens:
-            if not user.api_tokens or not isinstance(user.api_tokens, list):
-                pass
-                print(f"User {user.username} has no api_tokens")
-            elif not isinstance(user.api_tokens, list):
-                print(f"User {user.username} api_tokens is not a list: {type(user.api_tokens)}")
+        users = db.query(User).filter(User.api_tokens != None).all()
 
-            for t in user.api_tokens:
+        for user in users:
+            tokens = user.api_tokens or []
+            for t in tokens:
                 if t.get("token") == token:
                     expires_at_str = t.get("expires_at")
-
                     if not expires_at_str:
-                        return user  # No expiry = dianggap valid
+                        return user
 
                     try:
                         expires_at = datetime.datetime.fromisoformat(expires_at_str)
                         if expires_at.tzinfo is None:
-                            # Force as UTC if no timezone info
                             expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
 
-                        now_utc = datetime.datetime.now(datetime.timezone.utc)
-
-                        if expires_at > now_utc:
+                        if expires_at > datetime.datetime.now(datetime.timezone.utc):
                             return user
                     except Exception as e:
-                        print(f"⚠️ Error parsing token datetime: {e}")
-                        continue  # skip token yang rusak
+                        print(f"⚠️ Token parse error: {e}")
+                        continue
 
     # === 3. No valid authentication method ===
     raise HTTPException(
