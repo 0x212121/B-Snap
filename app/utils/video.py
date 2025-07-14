@@ -12,6 +12,7 @@ from typing import Tuple, Dict, Any
 import json
 from app.db.database import SessionLocal
 from pathlib import Path
+from app.ws_manager import get_ws_connections
 
 # --- Basic Configuration ---
 # Using pathlib for more modern and robust path handling.
@@ -164,8 +165,25 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
     success = await asyncio.to_thread(save_video_record_sync, video_data)
 
     if success:
+        # Kirim notifikasi via WebSocket
+        connections = get_ws_connections()
+        message = {
+            "type": "record_complete",
+            "camera_name": camera.hostname,
+            "group": group_name,
+            "duration": metadata.get("duration"),
+            "file_size": metadata.get("size"),
+            "file_path": db_file_path
+        }
+        for ws in connections.copy():
+            try:
+                await ws.send_text(json.dumps(message))
+            except Exception as e:
+                connections.remove(ws)
+                logger.warning(f"WebSocket error: {e}")
+
         return {
-            "status": "success", 
+            "status": "success",
             "message": f"Video from {camera.hostname} was recorded and saved successfully.",
         }
     else:

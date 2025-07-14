@@ -12,6 +12,7 @@ from fastapi import (
     Depends, FastAPI, HTTPException, Request, Response, status,
     WebSocket, WebSocketDisconnect
 )
+from app.ws_manager import websocket_connections
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -46,7 +47,6 @@ if SECRET_KEY == "your-default-secret-key-for-dev":
     logger.warning("Using default SECRET_KEY. This is not secure for production.")
 
 templates = Jinja2Templates(directory="templates")
-websocket_connections = set()
 
 # List of paths that can be accessed without login
 ALLOWED_PUBLIC_PATHS = [
@@ -215,6 +215,7 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
         status_code=exc.status_code
     )
 
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -226,6 +227,7 @@ async def websocket_endpoint(websocket: WebSocket):
         pass
     finally:
         websocket_connections.remove(websocket)
+
 
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui():
