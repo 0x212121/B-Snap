@@ -100,7 +100,7 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
     video_directory = STATIC_VIDEO_DIR / group_name / camera_name
     os.makedirs(video_directory, exist_ok=True)
     
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     filename = f"{camera_name}_{timestamp}.mp4"
     
     # Full path to save the file
@@ -128,7 +128,7 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
         )
         code, _, err = await asyncio.to_thread(_run_ffmpeg_sync, cmd_reencode)
         if code != 0:
-            logger.error(camera.hostname, f"FFMPEG Re-encode Failed: {err}")
+            logger.error("%s - FFMPEG Re-encode Failed: %s", camera.hostname, err)
             return {"status": "error", "message": "FFMPEG process failed"}
 
     logger.info(f"Video recorded successfully: {output_path}")

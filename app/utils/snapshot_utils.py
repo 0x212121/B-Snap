@@ -1,6 +1,7 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
+from zoneinfo import ZoneInfo
 from PIL import Image
 from sqlalchemy.orm import Session
 from app.models_sql import Snapshot
@@ -41,10 +42,13 @@ def record_snapshot_metadata(
         file_path=file_path,
         file_size=file_size,
         resolution=resolution,
-        timestamp=datetime.now()
+        timestamp=datetime.now(timezone.utc)
     )
 
     db.add(snapshot)
     db.commit()
     db.refresh(snapshot)
     return snapshot
+
+def format_wita(dt: datetime) -> str:
+    return dt.astimezone(ZoneInfo("Asia/Makassar")).strftime("%Y-%m-%d %H:%M:%S WITA")
