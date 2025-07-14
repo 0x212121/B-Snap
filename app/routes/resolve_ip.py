@@ -1,14 +1,16 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 from app.db.database import SessionLocal
-from app.models_sql import Camera as DBCamera
+from app.models_sql import Camera as DBCamera, User
 from fastapi.responses import JSONResponse
+
+from app.routes.auth import admin_access_required
 
 router = APIRouter()
 
 @router.get("/cctv/resolve-ip", response_class=JSONResponse)
-def resolve_ip_by_name(keyword: str = Query(..., description="Part of camera name to search")):
+def resolve_ip_by_name(keyword: str = Query(..., description="Part of camera name to search"), current_admin: User = Depends(admin_access_required)):
     db: Session = SessionLocal()
     try:
         # Ambil semua kamera dari database

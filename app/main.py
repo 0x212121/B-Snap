@@ -57,8 +57,7 @@ ALLOWED_PUBLIC_PATHS = [
     "/docs",
     "/openapi.json",
     "/mfa/setup",
-    "/mfa/force-verify",
-    "/cctv/resolve-ip",
+    "/mfa/force-verify"
 ]
 
 # ====================================================================
@@ -105,6 +104,7 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
         try:
             current_path = request.url.path
             auth_header = request.headers.get("authorization")
+            token_query = request.query_params.get("token")  # ✅ ambil token dari query param
 
             # Step 1: Setup check
             if not db.query(User).first():
@@ -114,6 +114,10 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
 
             # Step 2: Allow public paths
             if any(current_path.startswith(p) for p in ALLOWED_PUBLIC_PATHS):
+                return await call_next(request)
+
+            # ✅ Step 2.5: Allow access if signed token is provided (e.g. /snapshot/file/... or /snapshot/token/...)
+            if token_query:
                 return await call_next(request)
 
             # Step 3: If Bearer token is present, skip session check
