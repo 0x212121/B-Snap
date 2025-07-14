@@ -173,7 +173,7 @@ def mfa_setup_form(request: Request, db: Session = Depends(get_db)):
         db.refresh(user)
 
     uri = pyotp.totp.TOTP(user.otp_secret).provisioning_uri(
-        name=user.username, issuer_name="Your Application"
+        name=user.username, issuer_name="B-Snap Apps"
     )
     img = qrcode.make(uri)
     buf = io.BytesIO()
@@ -206,7 +206,7 @@ def mfa_setup_post(
 
     totp = pyotp.TOTP(user.otp_secret)
     if not totp.verify(otp, valid_window=1):
-        uri = totp.provisioning_uri(name=user.username, issuer_name="Your Application")
+        uri = totp.provisioning_uri(name=user.username, issuer_name="B-Snap Apps")
         img = qrcode.make(uri)
         buf = io.BytesIO()
         img.save(buf, "PNG")
