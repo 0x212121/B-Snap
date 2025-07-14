@@ -17,3 +17,4 @@ README.md
 app/data.db
 docker-compose*
 logs
+app/*.exe
