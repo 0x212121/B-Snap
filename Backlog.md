@@ -1,7 +1,7 @@
 # 🚀 B-Snap Product Backlog
 
 ## 📋 Feature & Enhancement
-- [ ] ~~**Reboot camera button** – *Priority: Medium*~~ [Dropped: some camera doesn't have API]
+- [ ] **Reboot camera button** – *Priority: Medium*
   - [ ] ACti z317, z911, z97, z38, z41, z41
 - [x] **Audit log** - *Priority: High*
 - [x] **NVR menu** – *Priority: High*  
@@ -18,11 +18,11 @@
   - Logs for command in chatbot.
 - [x] **Maps legend display total camera by division only** - *Priority: Medium*
 - [x] **Camera uptime** – *Priority: High*
-- [ ] **Migrate SQLite to PostgreSQL** - *Priority: High*
+- [x] **Migrate SQLite to PostgreSQL** - *Priority: High*
   - Create migration script
   - Test in dev environment
-- [ ] **Dockerize B-Snap** - *Priority: Medium*
-- [ ] **B-Snap Assistant: Error handling core feature** - *Priority: High*
+- [x] **Dockerize B-Snap** - *Priority: Medium*
+- [x] **B-Snap Assistant: Error handling core feature** - *Priority: High*
 - [x] **Enhanced Security Login** [MFA]
 - [x] **Endpoint API protect**
   - API request using token
@@ -41,8 +41,6 @@
 
 ---
 ## 📅 Review Log
-
-### Week 24 - 26
 
 ✅ Completed:
 - [x] Logging for apps, snapshot and healthcheck
@@ -75,13 +73,13 @@
   - [x] Implement 2FA (completed 30/06/2025)
 - [x] Protect snapshot image URL with token (signed URL)
 - [x] **B-Snap Assistant: Error handling core feature** - *Priority: High*
-- [x] Limit session login
+- [x] Limit session login (1 user per session)
 - [x] Downtime history
+- [x] **Dockerize B-Snap** - *Priority: Medium*
+- [x] HTTPS using nginx proxy
+  - [x] don't expose B-Snap port to outside
 
 ⏳ Ongoing:
-- [ ] **Dockerize B-Snap** - *Priority: Medium*
+- [] Bug fixing
 
 🆕 Added:
-- [ ] HTTPS using nginx proxy
-  - [ ] Install nginx proxy manager
-  - [ ] don't expose B-Snap port to outside

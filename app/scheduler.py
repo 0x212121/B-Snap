@@ -7,6 +7,7 @@ from app.core.logging_config import setup_logging
 from app.db.database import SessionLocal
 from app.onvif_client import load_active_cameras
 from app.db.database import get_db
+from app.utils.snapshot_locker import get_camera_lock
 from app.utils.snapshot_service import take_snapshot
 from app.utils.health_check import ping_all_devices
 from app.core.config import get_config
@@ -23,8 +24,11 @@ logger = logging.getLogger("scheduler")
 
 def run_snapshot(camera):
     db: Session = SessionLocal()
+    lock = get_camera_lock(str(camera.id))
+    
     try:
-        result = take_snapshot(camera, db)
+        with lock:
+            result = take_snapshot(camera, db)
         if result["status"] == "success":
             path = result["file_path"]
             snapshot = record_snapshot_metadata(
