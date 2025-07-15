@@ -132,6 +132,7 @@ async def get_no_data_cameras(
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=days)
 
+
     # Ambil semua nama kamera + status
     all_cameras = (
         db.query(DBCamera.hostname, CameraHealth.status)
@@ -147,6 +148,10 @@ async def get_no_data_cameras(
         .all()
     )
     snapshot_camera_names = {c[0] for c in snapshot_cameras}
+
+    print(f"Start date: {start_date}, End date: {end_date}")
+    print(f"Snapshot cameras: {snapshot_camera_names}")
+    print("🎥 Total cameras found:", len(all_cameras))
 
     # Ambil kamera yang tidak muncul di snapshot data
     no_data_cameras = []
