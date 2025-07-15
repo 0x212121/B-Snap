@@ -15,6 +15,9 @@ from app.models_sql import Camera as DBCamera, Snapshot, User
 from app.routes.auth import admin_access_required, user_access_required_optional
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_utils import SNAPSHOT_BASE_DIR  # points to app/static/snapshots
+from zoneinfo import ZoneInfo
+
+WITA = ZoneInfo("Asia/Makassar")
 
 router = APIRouter()
 
@@ -175,8 +178,6 @@ def search_snapshots(
 
     return list(latest_snapshot_per_camera.values())
 
-
-# --- Metadata Only (Latest Snapshot by IP or Name) ---
 @router.get("/snapshot/latest/{identifier}/info", response_model=SnapshotResponse)
 def get_latest_snapshot_info(identifier: str, db: Session = Depends(get_db)):
     if len(identifier) < 2:
@@ -193,6 +194,13 @@ def get_latest_snapshot_info(identifier: str, db: Session = Depends(get_db)):
     if not snapshot:
         raise HTTPException(status_code=404, detail=f"No snapshot found for '{identifier}'.")
 
+    # --- Perbaikan Timezone WITA ---
+    timestamp = snapshot.timestamp
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=ZoneInfo("UTC"))  # Anggap waktu dari DB = UTC
+    timestamp_wita = timestamp.astimezone(WITA)
+    formatted_timestamp = timestamp_wita.strftime("%Y-%m-%d %H:%M:%S")
+
     latitude = str(snapshot.camera.latitude) if snapshot.camera and snapshot.camera.latitude else ""
     longitude = str(snapshot.camera.longitude) if snapshot.camera and snapshot.camera.longitude else ""
 
@@ -200,7 +208,7 @@ def get_latest_snapshot_info(identifier: str, db: Session = Depends(get_db)):
         filename=os.path.basename(snapshot.file_path),
         camera=snapshot.camera_name,
         ip=snapshot.camera_ip,
-        timestamp=snapshot.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+        timestamp=formatted_timestamp,  # ⬅️ Sudah dalam WITA
         url=f"/snapshot/file/{quote(snapshot.file_path)}",
         img_path=f"{quote(snapshot.file_path)}",
         lat=latitude,
