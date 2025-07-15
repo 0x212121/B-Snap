@@ -80,9 +80,10 @@
   - [x] don't expose B-Snap port to outside
 
 ⏳ Ongoing:
-- [] Bug fixing
-- [] Timestamp delete snapshot, snapshot in maps converted
-- [] Double snapshot
-  - [] Pisah scheduler dari web server
+- [ ] Bug fixing
+  - [ ] Timestamp di maps
+- [ ] Double snapshot
+- [ ] Timestamp delete snapshot, snapshot in maps converted
+  - [x] Pisah scheduler dari web server
 
 🆕 Added:

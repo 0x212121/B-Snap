@@ -135,7 +135,7 @@ async def get_no_data_cameras(
     # Ambil semua nama kamera + status
     all_cameras = (
         db.query(DBCamera.hostname, CameraHealth.status)
-        .join(CameraHealth, DBCamera.health)
+        .join(CameraHealth, DBCamera.id == CameraHealth.camera_id)
         .all()
     )
 

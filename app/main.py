@@ -85,8 +85,6 @@ async def lifespan(app: FastAPI):
     yield  # --- Application is running ---
 
     logger.info("Application is shutting down...")
-    scheduler.shutdown(wait=False)
-    logger.info("Scheduler has been shut down.")
 
 # ====================================================================
 # 4. FASTAPI APP INSTANCE & MIDDLEWARE
