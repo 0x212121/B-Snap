@@ -115,9 +115,9 @@ async def get_camera_stats_data(
         )
 
         cameras_without_data = [
-            {"hostname": name, "status": status}
-            for name, status in all_cameras
-            if name not in cameras_with_data
+            {"hostname": hostname, "status": status}
+            for hostname, status in all_cameras
+            if hostname not in cameras_with_data
         ]
 
     return JSONResponse({
@@ -165,7 +165,7 @@ async def get_no_data_cameras(
 
     # Cari kamera yang tidak ada datanya
     no_data_cameras = [
-        {"name": hostname, "status": status}
+        {"hostname": hostname, "status": status}
         for hostname, status in all_cameras
         if hostname not in snapshot_camera_names
     ]

@@ -94,7 +94,7 @@
           : cam.status === "Offline" ? "text-red-600 dark:text-red-400"
           : "text-yellow-600 dark:text-yellow-300";
 
-        li.innerHTML = `<span class="${statusColor} font-semibold">${cam.name}</span> - <span class="italic">${cam.status}</span>`;
+        li.innerHTML = `<span class="${statusColor} font-semibold">${cam.hostname}</span> - <span class="italic">${cam.status}</span>`;
         ul.appendChild(li);
       });
     } else {
