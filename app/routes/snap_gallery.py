@@ -25,7 +25,8 @@ setup_logging()
 logger = logging.getLogger("snapshot")
 
 
-def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[str] = None, search_query: Optional[str] = None) -> List[Dict[str, Any]]:
+def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[str] = None, search_query: Optional[str] = None,
+                            offset: int = 0, limit: int = 15) -> List[Dict[str, Any]]:
     """
     Helper function to query and filter snapshots from the database.
     This function now correctly fetches all snapshots, even if the camera has been deleted.
@@ -47,7 +48,10 @@ def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[
     if search_query:
         snapshot_query = snapshot_query.filter(Snapshot.camera_name.ilike(f"%{search_query}%"))
 
-    snapshots = snapshot_query.order_by(Snapshot.timestamp.desc()).all()
+    # snapshots = snapshot_query.order_by(Snapshot.timestamp.desc()).all()
+    # Lazy load snapshots
+    snapshots = snapshot_query.order_by(Snapshot.timestamp.desc()).offset(offset).limit(limit).all()
+
 
     # Format data for the template
     return [
@@ -213,14 +217,16 @@ async def get_gallery_data(
     db: Session = Depends(get_db),
     camera: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
-    current_operator: User = Depends(operator_access_required)
+    current_operator: User = Depends(operator_access_required),
+    offset: int = Query(0),
+    limit: int = Query(15),
 ):
     group_id = request.session.get("user_groupid")
     if not group_id:
         return JSONResponse(status_code=403, content={"detail": "Authentication required."})
 
     # Use the helper function to get the filtered snapshot data
-    filtered_images = _get_filtered_snapshots(db, group_id, camera_filter=camera, search_query=q)
+    filtered_images = _get_filtered_snapshots(db, group_id, camera_filter=camera, search_query=q, offset=offset, limit=limit)
 
     # --- CHANGE 3: Check if camera exists before rendering action buttons ---
     camera_exists = False

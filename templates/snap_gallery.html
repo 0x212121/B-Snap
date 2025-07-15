@@ -112,33 +112,72 @@
    * Main function to fetch and update the gallery content via AJAX.
    * Fetches both the image grid and the action buttons from the /gallery-data endpoint.
    */
-  async function fetchAndUpdateGallery(params = {}) {
-    const grid = document.getElementById("snapshotGrid");
-    const actionButtonsContainer = document.getElementById("actionButtonsContainer");
+  const pageLimit = 15;
+  let pageOffset = pageLimit;
+  let isLoading = false;
+  let hasMore = true;
 
-    grid.style.opacity = '0.5'; // Visual feedback for loading
+async function fetchAndUpdateGallery(params = {}, append = false) {
+  if (isLoading || !hasMore) return;
 
-    const urlParams = new URLSearchParams();
-    if (params.camera) urlParams.set('camera', params.camera);
-    if (params.q) urlParams.set('q', params.q);
+  isLoading = true;
+  const grid = document.getElementById("snapshotGrid");
+  const actionButtonsContainer = document.getElementById("actionButtonsContainer");
+  if (!append) {
+    grid.style.opacity = '0.5';
+    pageOffset = 0; // reset offset hanya jika bukan append
+    hasMore = true;
+  }
 
-    try {
-      const response = await fetch(`/gallery-data?${urlParams}`);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+  const urlParams = new URLSearchParams();
+  if (params.camera) urlParams.set('camera', params.camera);
+  if (params.q) urlParams.set('q', params.q);
+  urlParams.set('offset', pageOffset);
+  urlParams.set('limit', pageLimit);
 
-      // Replace the content of the grid and the buttons container
+  try {
+    const response = await fetch(`/gallery-data?${urlParams}`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+
+    if (append) {
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = data.html;
+      [...tempDiv.children].forEach(child => grid.appendChild(child));
+    } else {
       grid.innerHTML = data.html;
       actionButtonsContainer.innerHTML = data.buttons_html;
-
-      initializeLazyLoading();
-    } catch (error) {
-      console.error("Failed to update gallery:", error);
-      showToast("Error updating gallery.", true);
-    } finally {
-      grid.style.opacity = '1';
     }
+
+    initializeLazyLoading();
+
+    const numItems = (data.html.match(/snapshot-card/g) || []).length;
+    if (data.html.trim() === "" || numItems < pageLimit) {
+      hasMore = false;
+    } else {
+      pageOffset += pageLimit;
+    }
+
+  } catch (error) {
+    console.error("Failed to update gallery:", error);
+    showToast("Error updating gallery.", true);
+  } finally {
+    grid.style.opacity = '1';
+    isLoading = false;
   }
+}
+
+let scrollTimer;
+window.addEventListener('scroll', () => {
+  if (scrollTimer) clearTimeout(scrollTimer);
+  scrollTimer = setTimeout(() => {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+      const selectedCamera = tom?.getValue() || "";
+      const searchQuery = document.getElementById("searchInput")?.value || "";
+      fetchAndUpdateGallery({ camera: selectedCamera, q: searchQuery }, true);
+    }
+  }, 200); // delay 200ms
+});
 
   /**
    * Initializes TomSelect for the camera dropdown.
@@ -193,7 +232,9 @@
     document.getElementById("searchInput")?.addEventListener("input", (e) => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        const selectedCamera = tom.getValue();
+        const selectedCamera = tom?.getValue() || "";
+        pageOffset = 0;
+        hasMore = true;
         fetchAndUpdateGallery({ camera: selectedCamera, q: e.target.value });
       }, 350);
     });
@@ -292,5 +333,6 @@
     }, { rootMargin: "0px 0px 200px 0px" }); // Start loading images 200px before they enter the viewport
     lazyImages.forEach(img => observer.observe(img));
   }
+  
 </script>
 {% endblock %}

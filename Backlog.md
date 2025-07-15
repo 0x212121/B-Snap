@@ -88,3 +88,5 @@
 - [x] Change font in docker
 
 🆕 Added:
+- [x] Lazy load backend
+- [ ] Tamper detection (snapshot blur / dark)
