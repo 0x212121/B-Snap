@@ -12,9 +12,9 @@ from app.models_sql import CameraGroup, Camera, Snapshot, SnapshotLog, User
 from app.routes.auth import operator_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_service import take_snapshot
-from app.utils.snapshot_utils import format_wita, record_snapshot_metadata
+from app.utils.timezone import format_wita
+from app.utils.snapshot_utils import record_snapshot_metadata
 import os
-
 router = APIRouter()
 
 templates = Jinja2Templates(directory="templates")

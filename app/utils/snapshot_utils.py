@@ -49,6 +49,3 @@ def record_snapshot_metadata(
     db.commit()
     db.refresh(snapshot)
     return snapshot
-
-def format_wita(dt: datetime) -> str:
-    return dt.astimezone(ZoneInfo("Asia/Makassar")).strftime("%Y-%m-%d %H:%M:%S WITA")

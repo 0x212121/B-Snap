@@ -15,6 +15,8 @@ from app.models_sql import Camera, CameraGroup, User, Video
 from app.routes.auth import operator_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.video import record_video_and_save_db
+from app.utils.timezone import format_wita
+
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -35,16 +37,6 @@ UTC_TZ = ZoneInfo("UTC")
 # =============================
 # Helper Functions
 # =============================
-
-def _convert_utc_to_wita(dt: datetime) -> str:
-    """Convert datetime to WITA timezone string"""
-    if not isinstance(dt, datetime):
-        return str(dt)
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=UTC_TZ)
-    return dt.astimezone(SG_TZ).strftime("%Y-%m-%d %H:%M:%S WITA")
-
-templates.env.filters["format_datetime"] = _convert_utc_to_wita
 
 
 def _get_filtered_videos(db: Session, group_id: int, camera_filter: Optional[str] = None, search_query: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -70,7 +62,7 @@ def _get_filtered_videos(db: Session, group_id: int, camera_filter: Optional[str
 
     formatted_videos = []
     for v in videos:
-        formatted_time = _convert_utc_to_wita(v.timestamp)
+        formatted_time = format_wita(v.timestamp)
 
         formatted_videos.append({
             "id": v.id,
