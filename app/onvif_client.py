@@ -87,43 +87,49 @@ def add_watermark(image_path, text, opacity=0.5, color=(128, 128, 128), outline_
         draw = ImageDraw.Draw(temp_image)
 
         try:
-            # Try loading the default font or a better font if available.
-            font = ImageFont.truetype("arial.ttf", 50) # Adjust the font size as needed
+            # Use Liberation Sans (installed via fonts-liberation in Docker)
+            font_path = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+            font_size = int(min(base_image.size) * 0.05)  # Font size ~5% of smallest dimension
+            font = ImageFont.truetype(font_path, font_size)
         except IOError:
-            logger.warning("Arial font not found, falling back to default font.")
-            font = ImageFont.load_default() # Fallback to default font
+            logger.warning("Liberation Sans font not found, falling back to default font.")
+            font = ImageFont.load_default()
 
         # Calculate text position in center using textbox
         bbox = draw.textbbox((0, 0), text, font=font)
-        text_width = bbox[-2] - bbox[-4] # right - left
-        text_height = bbox[-1] - bbox[-3] # bottom - top
+        text_width = bbox[-2] - bbox[-4]  # right - left
+        text_height = bbox[-1] - bbox[-3]  # bottom - top
 
         x = (base_image.width - text_width) / 2
         y = (base_image.height - text_height) / 2
 
         # Colored text with opacity
-        text_color = (color + (int(255 * opacity),)) # RGBA
-        outline_fill = (outline_color + (int(255 * opacity),)) # RGBA for outline
+        text_color = color + (int(255 * opacity),)  # RGBA
+        outline_fill = outline_color + (int(255 * opacity),)  # RGBA for outline
 
-        # Outline image (slightly offset in all directions)
+        # Draw outline by drawing text slightly offset in all directions
         for dx in range(-outline_width, outline_width + 1):
             for dy in range(-outline_width, outline_width + 1):
                 if dx == 0 and dy == 0:
                     continue
                 draw.text((x + dx, y + dy), text, font=font, fill=outline_fill)
 
-        # Main text image above outline
+        # Draw main text
         draw.text((x, y), text, font=font, fill=text_color)
 
-        # Merge base image with watermark image
+        # Merge base image with watermark layer
         watermarked_image = Image.alpha_composite(base_image, temp_image)
 
-        # Resave the image (convert to RGB if the original format is not RGBA)
+        # Save result as RGB (JPEG-friendly)
         watermarked_image.convert("RGB").save(image_path)
-        logger.info(f"Watermark added to {image_path} with color {color}, outline {outline_color} (width {outline_width}), and opacity {opacity}")
+
+        logger.info(
+            "Watermark added to %s with color %s, outline %s (width %s), and opacity %s",
+            image_path, color, outline_color, outline_width, opacity
+        )
 
     except Exception as e:
-        logger.error(f"Failed to add watermark to {image_path}: {e}")
+        logger.error("Failed to add watermark to %s: %s", image_path, e)
 
 
 def get_rtsp_url(camera: Camera):
