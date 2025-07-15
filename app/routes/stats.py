@@ -152,6 +152,7 @@ async def get_no_data_cameras(
     print(f"Start date: {start_date}, End date: {end_date}")
     print(f"Snapshot cameras: {snapshot_camera_names}")
     print("🎥 Total cameras found:", len(all_cameras))
+    print("🎥 ALL cameras:", all_cameras)
 
     # Ambil kamera yang tidak muncul di snapshot data
     no_data_cameras = []

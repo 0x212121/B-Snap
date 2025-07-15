@@ -46,11 +46,11 @@
     updateChart(data.chart_labels, data.chart_data);
   }
 
-  async function fetchNoDataCameras(days = 7) {
+  async function fetchNoDataCameras(days = 7, selectedCamera = "") {
     const res = await fetch(`/stats/no-data-cameras?days=${days}`);
     const data = await res.json();
 
-    updateNoDataCameras(data.cameras);
+    updateNoDataCameras(data.cameras, selectedCamera);
   }
 
   function updateChart(labels, values) {
@@ -79,41 +79,48 @@
     });
   }
 
-  function updateNoDataCameras(cameras) {
+  function updateNoDataCameras(cameras, selectedCamera) {
     const ul = document.getElementById('noDataCamerasList');
     const totalCountSpan = document.getElementById('totalNoDataCamerasCount');
     const noDataSection = document.getElementById('noDataCamerasSection');
 
-    totalCountSpan.textContent = cameras.length;
-    noDataSection.classList.toggle('hidden', cameras.length === 0);
+    if (selectedCamera === "" && cameras.length > 0) {
+      totalCountSpan.textContent = cameras.length;
+      noDataSection.classList.remove('hidden');
+      ul.innerHTML = "";
+      cameras.forEach(cam => {
+        const li = document.createElement("li");
+        const statusColor = cam.status === "Online" ? "text-green-600 dark:text-green-400"
+          : cam.status === "Offline" ? "text-red-600 dark:text-red-400"
+          : "text-yellow-600 dark:text-yellow-300";
 
-    ul.innerHTML = "";
-    cameras.forEach(cam => {
-      const li = document.createElement("li");
-      const statusColor = cam.status === "Online" ? "text-green-600 dark:text-green-400"
-        : cam.status === "Offline" ? "text-red-600 dark:text-red-400"
-        : "text-yellow-600 dark:text-yellow-300";
-
-      li.innerHTML = `<span class="${statusColor} font-semibold">${cam.name}</span> - <span class="italic">${cam.status}</span>`;
-      ul.appendChild(li);
-    });
+        li.innerHTML = `<span class="${statusColor} font-semibold">${cam.name}</span> - <span class="italic">${cam.status}</span>`;
+        ul.appendChild(li);
+      });
+    } else {
+      noDataSection.classList.add('hidden');
+      ul.innerHTML = "";
+    }
   }
 
   document.getElementById("cameraDropdown").addEventListener("change", (e) => {
+    const selectedCamera = e.target.value;
     const selectedPeriod = document.getElementById("periodDropdown").value;
-    fetchStats(e.target.value, selectedPeriod);
-    fetchNoDataCameras(selectedPeriod);
+    fetchStats(selectedCamera, selectedPeriod);
+    fetchNoDataCameras(selectedPeriod, selectedCamera);
   });
 
   document.getElementById("periodDropdown").addEventListener("change", (e) => {
     const selectedCamera = document.getElementById("cameraDropdown").value;
     fetchStats(selectedCamera, e.target.value);
-    fetchNoDataCameras(e.target.value);
+    fetchNoDataCameras(e.target.value, selectedCamera);
   });
 
   // Initial load
-  fetchStats();
-  fetchNoDataCameras();
+  const initialSelectedCamera = document.getElementById("cameraDropdown").value;
+  const initialSelectedPeriod = document.getElementById("periodDropdown").value;
+  fetchStats(initialSelectedCamera, initialSelectedPeriod);
+  fetchNoDataCameras(initialSelectedPeriod, initialSelectedCamera);
 </script>
 
 {% endblock %}
