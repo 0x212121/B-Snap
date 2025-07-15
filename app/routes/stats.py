@@ -1,6 +1,5 @@
 from collections import defaultdict
-from datetime import datetime, timedelta
-from pytz import timezone
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Query, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -75,17 +74,22 @@ async def get_camera_stats_data(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    end_date = datetime.now().date()
+    # Gunakan timezone-aware date
+    now = datetime.now(timezone.utc).astimezone()
+    end_date = now.date()
     start_date = end_date - timedelta(days=days)
 
     query = db.query(CameraDailyStats).filter(CameraDailyStats.date >= start_date)
+
     if camera:
-        query = query.filter(CameraDailyStats.camera_name == camera)
+        # ilike = case-insensitive (kompatibel PostgreSQL)
+        query = query.filter(CameraDailyStats.camera_name.ilike(camera))
 
     stats = query.order_by(CameraDailyStats.date).all()
+
     stats_grouped = defaultdict(list)
-    snapshot_count_by_date = { 
-        (start_date + timedelta(days=i)).strftime('%Y-%m-%d'): 0 
+    snapshot_count_by_date = {
+        (start_date + timedelta(days=i)).strftime('%Y-%m-%d'): 0
         for i in range((end_date - start_date).days + 1)
     }
 
@@ -99,15 +103,17 @@ async def get_camera_stats_data(
         for d in sorted(snapshot_count_by_date)
     ]
 
+    # Kamera yang punya data
     cameras_with_data = {s.camera_name for s in stats}
 
     cameras_without_data = []
     if not camera:
         all_cameras = (
             db.query(DBCamera.hostname, CameraHealth.status)
-            .join(CameraHealth, DBCamera.health)
+            .join(CameraHealth, DBCamera.id == CameraHealth.id)
             .all()
         )
+
         cameras_without_data = [
             {"hostname": name, "status": status}
             for name, status in all_cameras
@@ -129,46 +135,48 @@ async def get_no_data_cameras(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    end_date = datetime.now().date()
+    # Timezone-aware datetime
+    now = datetime.now(timezone.utc).astimezone()
+    end_date = now.date()
     start_date = end_date - timedelta(days=days)
 
-
-    # Ambil semua nama kamera + status
+    # Ambil semua kamera dan statusnya
     all_cameras = (
         db.query(DBCamera.hostname, CameraHealth.status)
-        .join(CameraHealth, DBCamera.id == CameraHealth.camera_id)
+        .join(CameraHealth, DBCamera.id == CameraHealth.id)
         .all()
     )
 
-    # Kamera yang punya data snapshot di range tanggal
+    print(f"📅 Checking cameras with no data from {start_date} to {end_date}")
+    print(f"🎥 Total cameras: {len(all_cameras)}")
+
+    # Kamera yang punya data snapshot di rentang tanggal
     snapshot_cameras = (
         db.query(CameraDailyStats.camera_name)
         .filter(CameraDailyStats.date >= start_date)
         .distinct()
         .all()
     )
+
+    # Ubah hasil ke set of camera names
     snapshot_camera_names = {c[0] for c in snapshot_cameras}
 
-    print(f"Start date: {start_date}, End date: {end_date}")
-    print(f"Snapshot cameras: {snapshot_camera_names}")
-    print("🎥 Total cameras found:", len(all_cameras))
-    print("🎥 ALL cameras:", all_cameras)
+    print(f"🎞️ Cameras with snapshot data: {snapshot_camera_names}")
 
-    # Ambil kamera yang tidak muncul di snapshot data
-    no_data_cameras = []
-    for hostname, status in all_cameras:
-        if hostname not in snapshot_camera_names:
-            no_data_cameras.append({
-                "name": hostname,
-                "status": status
-            })
+    # Cari kamera yang tidak ada datanya
+    no_data_cameras = [
+        {"name": hostname, "status": status}
+        for hostname, status in all_cameras
+        if hostname not in snapshot_camera_names
+    ]
+
+    print(f"❌ Cameras with no data: {len(no_data_cameras)}")
 
     return {
         "days_range": days,
         "total": len(no_data_cameras),
         "cameras": no_data_cameras
     }
-
 
 @router.get("/stats/heatmap", response_class=JSONResponse)
 async def get_snapshot_heatmap(
