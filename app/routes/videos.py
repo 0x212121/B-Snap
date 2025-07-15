@@ -3,12 +3,13 @@ import logging
 import os
 from typing import Optional, List, Dict, Any
 from zoneinfo import ZoneInfo
-from app.core.logging_config import setup_logging
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.core.logging_config import setup_logging
 from app.db.database import get_db
 from app.models_sql import Camera, CameraGroup, User, Video
 from app.routes.auth import operator_access_required
@@ -23,52 +24,27 @@ VIDEO_URL_BASE = "static/videos"
 # Base filesystem path to the videos folder, assuming execution from the project root.
 VIDEO_FILESYSTEM_BASE = os.path.join("app", "static", "videos")
 
-
 setup_logging()
 logger = logging.getLogger("snapshot")
 
-# Define Makassar Timezone for reuse
+# Timezones
 SG_TZ = ZoneInfo("Asia/Makassar")
 UTC_TZ = ZoneInfo("UTC")
 
-def format_datetime_sgt(dt, tz_name="Asia/Makassar"):
-    """
-    Convert a datetime object or a string timestamp to the Makassar local timezone.
-    """
-    if not dt:  # Handle None or empty strings
-        return ""
 
-    dt_obj = None
-    # Step 1: If the input is a string, parse it into a datetime object.
-    if isinstance(dt, str):
-        try:
-            # fromisoformat() is a modern and fast way to parse "YYYY-MM-DD HH:MM:SS"
-            dt_obj = datetime.fromisoformat(dt)
-        except ValueError:
-            # Fallback for slightly different formats (e.g., without microseconds)
-            try:
-                dt_obj = datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
-            except ValueError:
-                # If parsing fails, return the original string to avoid errors.
-                return dt
-    elif isinstance(dt, datetime):
-        # If it's already a datetime object, use it directly.
-        dt_obj = dt
-    else:
-        # If the data type is unrecognized, return its string representation.
+# =============================
+# Helper Functions
+# =============================
+
+def _convert_utc_to_wita(dt: datetime) -> str:
+    """Convert datetime to WITA timezone string"""
+    if not isinstance(dt, datetime):
         return str(dt)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC_TZ)
+    return dt.astimezone(SG_TZ).strftime("%Y-%m-%d %H:%M:%S WITA")
 
-    # Step 2: Handle timezone conversion.
-    if dt_obj.tzinfo is None:
-        # Assume a "naive" timestamp from the DB is in UTC.
-        dt_obj = dt_obj.replace(tzinfo=UTC_TZ)
-    
-    local_tz = ZoneInfo(tz_name)
-    # Convert to the local timezone and format it, indicating Makassar Time (WITA).
-    return dt_obj.astimezone(local_tz).strftime("%d %B %Y, %H:%M:%S WITA")
-
-# Register the filter so it can be used in Jinja2 templates.
-templates.env.filters["format_datetime"] = format_datetime_sgt
+templates.env.filters["format_datetime"] = _convert_utc_to_wita
 
 
 def _get_filtered_videos(db: Session, group_id: int, camera_filter: Optional[str] = None, search_query: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -86,35 +62,40 @@ def _get_filtered_videos(db: Session, group_id: int, camera_filter: Optional[str
 
     if camera_filter:
         video_query = video_query.filter(Video.camera_name == camera_filter)
-    
+
     if search_query:
         video_query = video_query.filter(Video.camera_name.ilike(f"%{search_query}%"))
 
     videos = video_query.order_by(Video.timestamp.desc()).all()
 
-    return [
-        {
+    formatted_videos = []
+    for v in videos:
+        formatted_time = _convert_utc_to_wita(v.timestamp)
+
+        formatted_videos.append({
             "id": v.id,
-            # Ensure the path always uses forward slashes for URLs
             "url": f"/{VIDEO_URL_BASE}/{v.file_path.replace('\\', '/')}",
             "camera": v.camera_name,
-            # Convert timestamp to Makassar timezone for display
-            "time": v.timestamp.astimezone(SG_TZ).strftime("%Y-%m-%d %H:%M:%S"),
+            "time": formatted_time,
             "group": v.camera_group,
             "file_size": int(v.file_size / 1024) if v.file_size else 0,
             "duration": v.duration,
-        }
-        for v in videos
-    ]
+        })
+
+    return formatted_videos
+
+
+# =============================
+# Routes
+# =============================
 
 @router.get("/videos", response_class=JSONResponse)
 def show_videos(
-    request: Request, 
-    db: Session = Depends(get_db), 
-    camera: str = "", 
+    request: Request,
+    db: Session = Depends(get_db),
+    camera: str = "",
     current_operator: User = Depends(operator_access_required)
 ):
-    """Displays the main video gallery page."""
     group_id = request.session.get("user_groupid")
     if not group_id:
         return RedirectResponse(url="/login")
@@ -127,9 +108,9 @@ def show_videos(
         all_cameras_query = db.query(Camera.hostname)
     else:
         all_cameras_query = db.query(Camera.hostname).join(Camera.group).filter(CameraGroup.id == group_id)
-    
+
     all_camera_names = sorted([row[0] for row in all_cameras_query.all()])
-    
+
     videos_data = _get_filtered_videos(db, group_id, camera_filter=camera)
 
     return templates.TemplateResponse("video_gallery.html", {
@@ -139,6 +120,7 @@ def show_videos(
         "selected_camera": camera,
     })
 
+
 @router.get("/video-gallery-data", response_class=JSONResponse)
 async def get_video_gallery_data(
     request: Request,
@@ -147,7 +129,6 @@ async def get_video_gallery_data(
     q: Optional[str] = Query(None),
     current_operator: User = Depends(operator_access_required)
 ):
-    """AJAX endpoint to dynamically load video gallery data."""
     group_id = request.session.get("user_groupid")
     if not group_id:
         return JSONResponse(status_code=403, content={"detail": "Authentication required."})
@@ -157,20 +138,18 @@ async def get_video_gallery_data(
 
     return JSONResponse({'html': gallery_html})
 
+
 @router.delete("/videos/{video_id}", response_class=JSONResponse)
 def delete_video(
     request: Request,
     video_id: str,
     db: Session = Depends(get_db)
-    # current_operator: User = Depends(operator_access_required) # Uncomment if authorization is required
 ):
-    """Deletes a video by its ID."""
     video = db.query(Video).filter(Video.id == video_id).first()
     if not video:
         logger.warning("Video not found in DB: %s", video_id)
         raise HTTPException(status_code=404, detail="Video not found")
-    
-    # Safely reconstruct the filesystem path from the POSIX path stored in the DB
+
     path_parts = video.file_path.replace('\\', '/').split('/')
     full_file_path = os.path.join(VIDEO_FILESYSTEM_BASE, *path_parts)
 
@@ -182,7 +161,7 @@ def delete_video(
             logger.error("Failed to delete video file %s: %s", full_file_path, e)
     else:
         logger.warning("Video file not found on disk: %s", full_file_path)
-    
+
     try:
         camera_name = video.camera_name
         db.delete(video)
@@ -204,6 +183,7 @@ def delete_video(
 
     return JSONResponse(status_code=200, content={"status": "success", "message": "Video deleted successfully"})
 
+
 @router.post("/videos/record/{camera_id}", response_class=JSONResponse)
 async def start_recording_video(
     request: Request,
@@ -213,13 +193,12 @@ async def start_recording_video(
     db: Session = Depends(get_db),
     current_operator: User = Depends(operator_access_required)
 ):
-    """Endpoint to start video recording as a background task."""
     camera = db.query(Camera).filter(Camera.id == camera_id).first()
     if not camera:
         raise HTTPException(status_code=404, detail="Camera not found")
 
     background_tasks.add_task(record_video_and_save_db, camera_id=camera_id, duration=duration)
-    
+
     log_audit(
         db=db,
         user=request.session.get("user_name", "Unknown"),
@@ -230,6 +209,6 @@ async def start_recording_video(
     )
 
     return JSONResponse(
-        status_code=202, 
+        status_code=202,
         content={"message": f"Recording for {duration} seconds for camera {camera.hostname} has started."}
     )

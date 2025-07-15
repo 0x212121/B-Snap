@@ -20,6 +20,8 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.gzip import GZipMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+
 
 # Application-specific Imports
 from app.core.config_initializer import seed_config
@@ -46,6 +48,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key-for-dev")
 if SECRET_KEY == "your-default-secret-key-for-dev":
     logger.warning("Using default SECRET_KEY. This is not secure for production.")
 
+TRUSTED_HOSTS = os.getenv("TRUSTED_HOSTS", "*")
+
 templates = Jinja2Templates(directory="templates")
 
 # List of paths that can be accessed without login
@@ -53,7 +57,9 @@ ALLOWED_PUBLIC_PATHS = [
     "/login",
     "/logout",
     "/setup",
-    "/static",
+    "/static/css",
+    "/static/icons",
+    "/static/swagger-ui-tailwind.css",
     "/docs",
     "/openapi.json",
     "/mfa/setup",
@@ -155,6 +161,7 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
 
 # Middleware order is IMPORTANT: Processed from bottom to top when request comes in.
 # Last added will be executed first.
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=TRUSTED_HOSTS)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(AuthAndSetupMiddleware)
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)

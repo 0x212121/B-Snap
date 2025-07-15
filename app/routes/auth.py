@@ -36,7 +36,6 @@ def login_form(request: Request):
     Display the login page. If the user is already logged in,
     they will be redirected to the dashboard.
     """
-    print(f"logout status: ")
     if request.session.get("user_id"):
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse("login.html", {"request": request})
@@ -137,6 +136,15 @@ def otp_post(
     user.last_login = datetime.datetime.now(datetime.timezone.utc)
     db.commit()
 
+    log_audit(
+        db=db,
+        user=request.session.get("user_name", "unknown"),
+        action="login",
+        target="",
+        ip=request.client.host if request.client else "unknown",
+        extra=""
+    )
+
     # Create redirect response and set cookie.
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(
@@ -173,7 +181,7 @@ def mfa_setup_form(request: Request, db: Session = Depends(get_db)):
         db.refresh(user)
 
     uri = pyotp.totp.TOTP(user.otp_secret).provisioning_uri(
-        name=user.username, issuer_name="Your Application"
+        name=user.username, issuer_name="B-Snap Apps"
     )
     img = qrcode.make(uri)
     buf = io.BytesIO()
@@ -206,7 +214,7 @@ def mfa_setup_post(
 
     totp = pyotp.TOTP(user.otp_secret)
     if not totp.verify(otp, valid_window=1):
-        uri = totp.provisioning_uri(name=user.username, issuer_name="Your Application")
+        uri = totp.provisioning_uri(name=user.username, issuer_name="B-Snap Apps")
         img = qrcode.make(uri)
         buf = io.BytesIO()
         img.save(buf, "PNG")
@@ -279,8 +287,7 @@ def logout(
             user.web_tokens = [t for t in user.web_tokens if t.get("token") != session_token]
             db.commit()
             user_logged_out = True
-    
-    print(f"logout status: {user_logged_out}")
+
     if user_logged_out:
         log_audit(
             db=db,

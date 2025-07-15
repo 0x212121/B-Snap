@@ -17,6 +17,7 @@ public/build/
 dist/
 ffmpeg.exe
 ffprobe.exe
+ffplay.exe
 .venv
 .env
 *.pyc

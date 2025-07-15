@@ -12,7 +12,7 @@ from app.models_sql import CameraGroup, Camera, Snapshot, SnapshotLog, User
 from app.routes.auth import operator_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_service import take_snapshot
-from app.utils.snapshot_utils import record_snapshot_metadata
+from app.utils.snapshot_utils import format_wita, record_snapshot_metadata
 import os
 
 router = APIRouter()
@@ -55,7 +55,7 @@ def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[
             "url": f"/{SNAPSHOT_BASE_DIR}/snapshots/{s.file_path}",
             "camera": s.camera_name,
             "ip": s.camera_ip,
-            "time": s.timestamp.strftime("%Y-%m-%d %H:%M:%S WITA"),
+            "time": format_wita(s.timestamp),
             "group": s.camera_group,
             "id": s.id,
             "file_size": int(s.file_size / 1024) if s.file_size else 0,
