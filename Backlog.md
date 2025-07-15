@@ -82,9 +82,9 @@
 ⏳ Ongoing:
 - [x] Bug fixing
   - [x] Timestamp di maps
-- [ ] Double snapshot
-- [ ] Timestamp delete snapshot, snapshot in maps converted
+- [x] Timestamp delete snapshot, snapshot in maps converted
+- [ ] Double snapshot 
   - [x] Pisah scheduler dari web server
-- [ ] Font belum ada
+- [x] Change font in docker
 
 🆕 Added:

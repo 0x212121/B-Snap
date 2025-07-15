@@ -16,6 +16,7 @@ from app.routes.auth import admin_access_required, user_access_required_optional
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_utils import SNAPSHOT_BASE_DIR  # points to app/static/snapshots
 from zoneinfo import ZoneInfo
+from app.utils.timezone import format_wita, to_wita
 
 WITA = ZoneInfo("Asia/Makassar")
 
@@ -161,15 +162,17 @@ def search_snapshots(
         .all()
     )
 
+
     latest_snapshot_per_camera = {}
     for snap in snapshots:
         if snap.camera_id not in latest_snapshot_per_camera:
             cam_info = camera_id_to_info.get(snap.camera_id, {})
+            timestamp_converted = to_wita(snap.timestamp) if snap.timestamp else None
             latest_snapshot_per_camera[snap.camera_id] = SnapshotResponse(
                 filename=os.path.basename(snap.file_path),
                 camera=snap.camera_name,
                 ip=snap.camera_ip,
-                timestamp=snap.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                timestamp=format_wita(timestamp_converted),  # ⬅️ Sudah dalam WITA
                 url=f"/snapshot/file/{quote(snap.file_path)}",
                 img_path=f"{quote(snap.file_path)}",
                 lat=cam_info.get("lat", None),
