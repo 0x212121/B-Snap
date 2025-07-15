@@ -28,7 +28,7 @@ import io
 
 router = APIRouter()
 
-templates = Jinja2Templates(directory="templates")
+from app.utils.template_helper import templates
 
 setup_logging()
 logger = logging.getLogger("management")

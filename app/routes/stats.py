@@ -2,7 +2,6 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Query, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy import String, cast
 from sqlalchemy.orm import Session
 from app.db.database import get_db
@@ -10,7 +9,7 @@ from app.models_sql import CameraDailyStats, Camera as DBCamera, CameraHealth, S
 from app.routes.auth import admin_access_required
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+from app.utils.template_helper import templates
 
 
 @router.get("/stats", response_class=HTMLResponse)

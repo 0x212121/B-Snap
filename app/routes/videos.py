@@ -19,7 +19,7 @@ from app.utils.timezone import format_wita
 
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+from app.utils.template_helper import templates
 
 # Base URL path for videos.
 VIDEO_URL_BASE = "static/videos"

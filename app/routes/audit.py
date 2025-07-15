@@ -13,7 +13,7 @@ import csv
 from pytz import UTC, timezone
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+from app.utils.template_helper import templates
 
 
 def format_datetime_local(dt, tz_name="Asia/Singapore"):

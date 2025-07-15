@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from app.utils.decorators import admin_required
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+from app.utils.template_helper import templates
 
 
 @router.get("/developer/docs", response_class=HTMLResponse)

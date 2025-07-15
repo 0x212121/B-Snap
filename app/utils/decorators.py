@@ -2,7 +2,7 @@ from fastapi import Request
 from functools import wraps
 from fastapi.templating import Jinja2Templates
 
-templates = Jinja2Templates(directory="templates")
+from app.utils.template_helper import templates
 
 
 def admin_required(func):

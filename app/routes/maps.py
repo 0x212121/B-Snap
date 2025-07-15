@@ -13,7 +13,7 @@ from app.routes.auth import get_current_user
 from app.utils.timezone import format_wita, to_wita  # 🆕 centralized import
 
 router = APIRouter(tags=["Maps & Cameras"])
-templates = Jinja2Templates(directory="templates")
+from app.utils.template_helper import templates
 
 
 def format_uptime(start_time: datetime, end_time: datetime) -> str:

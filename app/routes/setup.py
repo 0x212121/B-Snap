@@ -8,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 router = APIRouter()
 
 # Setup templates
-templates = Jinja2Templates(directory="templates")
+from app.utils.template_helper import templates
 
 @router.get("/setup", response_class=HTMLResponse)
 def setup_form(request: Request):

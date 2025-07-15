@@ -12,15 +12,13 @@ from app.core.logging_config import setup_logging
 from app.models_sql import NVR, CameraGroup, User
 from app.db.database import get_db
 from starlette.templating import Jinja2Templates
-from urllib.parse import quote
 from app.routes.auth import admin_access_required
 from app.routes.cameras import detect_csv_delimiter
 from app.utils.audit_logger import log_audit
-from app.utils.decorators import admin_required
 from app.utils.health_check import ping_nvr_by_id
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+from app.utils.template_helper import templates
 
 setup_logging()
 logger = logging.getLogger("management")

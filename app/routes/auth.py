@@ -21,7 +21,7 @@ from app.utils.audit_logger import log_audit
 
 # --- Setup Router and Template ---
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+from app.utils.template_helper import templates
 
 # MAX_WEB_SESSIONS = 1  # Maximum logins per user
 MAX_WEB_SESSIONS= int(os.getenv("MAX_WEB_SESSIONS", 1))  # Override from environment if needed

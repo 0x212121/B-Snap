@@ -14,9 +14,9 @@ from app.utils.health_check import run_healthcheck_for_all, run_healthcheck_for_
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 from app.models_sql import NVR, CameraDailyStats, CameraHealth as Health, Camera as DBCamera, HealthCheckStatus, User, CameraStatusChangeLog
 import pytz
+from app.utils.template_helper import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 wita_tz = pytz.timezone('Asia/Makassar')
 
 class DeviceHealthStatus(BaseModel):

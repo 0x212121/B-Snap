@@ -23,7 +23,7 @@ from urllib.parse import quote
 from sqlalchemy.orm import joinedload, Session
 import json
 
-templates = Jinja2Templates(directory="templates")
+from app.utils.template_helper import templates
 
 router = APIRouter()
 

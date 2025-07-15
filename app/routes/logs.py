@@ -7,7 +7,7 @@ import os
 
 router = APIRouter()
 
-templates = Jinja2Templates(directory="templates")
+from app.utils.template_helper import templates
 LOG_DIR = "logs"
 
 

@@ -50,7 +50,11 @@ if SECRET_KEY == "your-default-secret-key-for-dev":
 
 TRUSTED_HOSTS = os.getenv("TRUSTED_HOSTS", "*")
 
-templates = Jinja2Templates(directory="templates")
+from app.utils.template_helper import templates
+
+# B-snap version
+from app.version import __version__
+templates.env.globals["version"] = __version__
 
 # List of paths that can be accessed without login
 ALLOWED_PUBLIC_PATHS = [
@@ -243,3 +247,8 @@ async def custom_swagger_ui():
         swagger_js_url="/static/swagger-ui-bundle.js",
         swagger_css_url="/static/swagger-ui-tailwind.css"
     )
+
+@app.get("/version")
+async def get_version():
+    from app.version import __version__
+    return {"version": __version__}

@@ -17,7 +17,7 @@ from app.utils.snapshot_utils import record_snapshot_metadata
 import os
 router = APIRouter()
 
-templates = Jinja2Templates(directory="templates")
+from app.utils.template_helper import templates
 
 SNAPSHOT_BASE_DIR = "static"
 

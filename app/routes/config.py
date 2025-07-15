@@ -14,7 +14,7 @@ import shutil
 
 router = APIRouter()
 
-templates = Jinja2Templates(directory="templates")
+from app.utils.template_helper import templates
 
 
 @router.get("/config", response_class=HTMLResponse)
