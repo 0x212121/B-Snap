@@ -28,7 +28,7 @@ from app.core.config_initializer import seed_config
 from app.core.logging_config import setup_logging
 from app.db.database import Base, engine, SessionLocal
 from app.models_sql import User
-from app.scheduler import start_scheduler
+from app.jobs.scheduler import start_scheduler
 # Combined router imports for cleaner organization
 from app.routes import (
     auth, audit, cameras, config, dev_docs, docs, health, logs, maps,
@@ -81,9 +81,6 @@ async def lifespan(app: FastAPI):
         logger.info("Database seeded with initial configuration.")
     finally:
         db.close()
-
-    scheduler = start_scheduler()
-    logger.info("Scheduler started in the background.")
 
     yield  # --- Application is running ---
 

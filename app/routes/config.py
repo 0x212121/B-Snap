@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app.models_sql import Configuration
 from app.db.database import SessionLocal
-from app.scheduler import update_scheduler_config
+from app.jobs.scheduler import update_scheduler_config
 from app.utils.decorators import admin_required
 from fastapi import UploadFile, File, Form, Request
 from fastapi.responses import RedirectResponse

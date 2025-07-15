@@ -83,5 +83,6 @@
 - [] Bug fixing
 - [] Timestamp delete snapshot, snapshot in maps converted
 - [] Double snapshot
+  - [] Pisah scheduler dari web server
 
 🆕 Added:

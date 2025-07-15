@@ -156,7 +156,7 @@ class NVR(Base):
     ip = Column(String(45), nullable=False)
     username = Column(String(100))
     password = Column(String(100))
-    location = Column(String(25))
+    location = Column(String(100))
     status = Column(String(15))
     asset_no = Column(String)
     latitude = Column(Float)
