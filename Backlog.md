@@ -81,5 +81,7 @@
 
 ⏳ Ongoing:
 - [] Bug fixing
+- [] Timestamp delete snapshot, snapshot in maps converted
+- [] Double snapshot
 
 🆕 Added:

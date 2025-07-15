@@ -164,7 +164,7 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=TRUSTED_HOSTS)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(AuthAndSetupMiddleware)
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=3600)
 
 
 # ====================================================================
