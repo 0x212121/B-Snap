@@ -25,56 +25,56 @@
   
   <form id="filterForm" class="flex flex-wrap justify-center items-center gap-4 mb-6" onsubmit="return false;">
     <input id="searchInput" type="text" placeholder="Search Camera Name..."
-      class="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-64 focus:outline-none focus:ring focus:ring-blue-200" />
-
+    class="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-64 focus:outline-none focus:ring focus:ring-blue-200" />
+    
     <select id="cameraSelect" name="camera"
-      class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-[20rem] sm:w-[24rem] focus:outline-none">
-      <option value="">🎥 All Cameras</option>
-      {% for cname in camera_names | sort %}
-      <option value="{{ cname }}" {% if cname == selected_camera %}selected{% endif %}>{{ cname }}</option>
-      {% endfor %}
-    </select>
-
-    <button type="button" id="clearFilterBtn"
-      class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear Filter</button>
-
-    <!-- 
-      This container's content will be dynamically replaced by the /gallery-data endpoint.
-      The initial state is rendered here for the first page load.
-    -->
-    <div id="actionButtonsContainer" class="flex gap-4">
-      {% if selected_camera %}
-        <!-- CHANGE 1: The Snapshot button is only shown if the camera is not deleted -->
-        {% if camera_exists %}
-        <button type="button" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
-          data-action="snapshot" data-camera="{{ selected_camera }}">📸 Snapshot</button>
-        {% endif %}
-
-        <!-- The Delete All button is always shown if a camera is selected, as it acts on snapshots -->
-        <button type="button" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
-          data-action="delete-all" data-camera="{{ selected_camera }}">🗑️ Delete All</button>
-      {% endif %}
-    </div>
-  </form>
-
-  <!-- This grid is populated on initial load and then updated via AJAX -->
-  <div id="snapshotGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
-    {% include "_gallery_grid.html" %}
+    class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-[20rem] sm:w-[24rem] focus:outline-none">
+    <option value="">🎥 All Cameras</option>
+    {% for cname in camera_names | sort %}
+    <option value="{{ cname }}" {% if cname == selected_camera %}selected{% endif %}>{{ cname }}</option>
+    {% endfor %}
+  </select>
+  
+  <button type="button" id="clearFilterBtn"
+  class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear Filter</button>
+  
+  <!-- 
+  This container's content will be dynamically replaced by the /gallery-data endpoint.
+  The initial state is rendered here for the first page load.
+  -->
+  <div id="actionButtonsContainer" class="flex gap-4">
+    {% if selected_camera %}
+    <!-- CHANGE 1: The Snapshot button is only shown if the camera is not deleted -->
+    {% if camera_exists %}
+    <button type="button" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+    data-action="snapshot" data-camera="{{ selected_camera }}">📸 Snapshot</button>
+    {% endif %}
+    
+    <!-- The Delete All button is always shown if a camera is selected, as it acts on snapshots -->
+    <button type="button" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
+    data-action="delete-all" data-camera="{{ selected_camera }}">🗑️ Delete All</button>
+    {% endif %}
   </div>
+</form>
 
-  <!-- Modal for viewing a single image -->
-  <div id="modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
-    <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl max-h-[80vh]">
-      <div class="relative">
-        <img id="modal-img" src="" class="rounded w-full object-contain max-h-[70vh]" />
-        <div id="modal-info" class="absolute top-0 right-0 bg-black bg-opacity-60 text-white text-sm px-3 py-1 rounded shadow"></div>
-      </div>
-      <div class="flex justify-end mt-2 space-x-4">
-        <a id="download-btn" href="#" download class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">⬇️ Download</a>
-        <button onclick="hideModal()" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded">✖ Close</button>
-      </div>
+<!-- This grid is populated on initial load and then updated via AJAX -->
+<div id="snapshotGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
+  {% include "_gallery_grid.html" %}
+</div>
+
+<!-- Modal for viewing a single image -->
+<div id="modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
+  <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl max-h-[80vh]">
+    <div class="relative">
+      <img id="modal-img" src="" class="rounded w-full object-contain max-h-[70vh]" />
+      <div id="modal-info" class="absolute top-0 right-0 bg-black bg-opacity-60 text-white text-sm px-3 py-1 rounded shadow"></div>
+    </div>
+    <div class="flex justify-end mt-2 space-x-4">
+      <a id="download-btn" href="#" download class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">⬇️ Download</a>
+      <button onclick="hideModal()" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded">✖ Close</button>
     </div>
   </div>
+</div>
 </div>
 {% endblock %}
 
@@ -84,21 +84,21 @@
 <script>
   let tom;
   let debounceTimer;
-
+  
   function showCustomConfirm(message, onConfirm) {
     const confirmModal = document.createElement('div');
     confirmModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]';
     confirmModal.innerHTML = `
-      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg text-center">
-        <p class="text-gray-800 dark:text-gray-200 mb-4">${message}</p>
-        <div class="flex justify-center gap-4">
-          <button id="confirm-yes" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Yes</button>
-          <button id="confirm-no" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-400">No</button>
-        </div>
-      </div>
-    `;
+   <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg text-center">
+    <p class="text-gray-800 dark:text-gray-200 mb-4">${message}</p>
+    <div class="flex justify-center gap-4">
+     <button id="confirm-yes" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Yes</button>
+     <button id="confirm-no" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-400">No</button>
+    </div>
+   </div>
+  `;
     document.body.appendChild(confirmModal);
-
+    
     document.getElementById('confirm-yes').onclick = () => {
       onConfirm();
       document.body.removeChild(confirmModal);
@@ -107,81 +107,81 @@
       document.body.removeChild(confirmModal);
     };
   }
-
+  
   /**
-   * Main function to fetch and update the gallery content via AJAX.
-   * Fetches both the image grid and the action buttons from the /gallery-data endpoint.
-   */
+  * Main function to fetch and update the gallery content via AJAX.
+  * Fetches both the image grid and the action buttons from the /gallery-data endpoint.
+  */
   const pageLimit = 15;
   let pageOffset = pageLimit;
   let isLoading = false;
   let hasMore = true;
-
-async function fetchAndUpdateGallery(params = {}, append = false) {
-  if (isLoading || !hasMore) return;
-
-  isLoading = true;
-  const grid = document.getElementById("snapshotGrid");
-  const actionButtonsContainer = document.getElementById("actionButtonsContainer");
-  if (!append) {
-    grid.style.opacity = '0.5';
-    pageOffset = 0; // reset offset hanya jika bukan append
-    hasMore = true;
+  
+  async function fetchAndUpdateGallery(params = {}, append = false) {
+    if (isLoading || !hasMore) return;
+    
+    isLoading = true;
+    const grid = document.getElementById("snapshotGrid");
+    const actionButtonsContainer = document.getElementById("actionButtonsContainer");
+    if (!append) {
+      grid.style.opacity = '0.5';
+      pageOffset = 0; // reset offset only if not append
+      hasMore = true;
+    }
+    
+    const urlParams = new URLSearchParams();
+    if (params.camera) urlParams.set('camera', params.camera);
+    if (params.q) urlParams.set('q', params.q);
+    urlParams.set('offset', pageOffset);
+    urlParams.set('limit', pageLimit);
+    
+    try {
+      const response = await fetch(`/gallery-data?${urlParams}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      
+      if (append) {
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = data.html;
+        [...tempDiv.children].forEach(child => grid.appendChild(child));
+      } else {
+        grid.innerHTML = data.html;
+        actionButtonsContainer.innerHTML = data.buttons_html;
+      }
+      
+      initializeLazyLoading();
+      
+      const numItems = (data.html.match(/snapshot-card/g) || []).length;
+      if (data.html.trim() === "" || numItems < pageLimit) {
+        hasMore = false;
+      } else {
+        pageOffset += pageLimit;
+      }
+      
+    } catch (error) {
+      console.error("Failed to update gallery:", error);
+      showToast("Error updating gallery.", true);
+    } finally {
+      grid.style.opacity = '1';
+      isLoading = false;
+    }
   }
-
-  const urlParams = new URLSearchParams();
-  if (params.camera) urlParams.set('camera', params.camera);
-  if (params.q) urlParams.set('q', params.q);
-  urlParams.set('offset', pageOffset);
-  urlParams.set('limit', pageLimit);
-
-  try {
-    const response = await fetch(`/gallery-data?${urlParams}`);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const data = await response.json();
-
-    if (append) {
-      const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = data.html;
-      [...tempDiv.children].forEach(child => grid.appendChild(child));
-    } else {
-      grid.innerHTML = data.html;
-      actionButtonsContainer.innerHTML = data.buttons_html;
-    }
-
-    initializeLazyLoading();
-
-    const numItems = (data.html.match(/snapshot-card/g) || []).length;
-    if (data.html.trim() === "" || numItems < pageLimit) {
-      hasMore = false;
-    } else {
-      pageOffset += pageLimit;
-    }
-
-  } catch (error) {
-    console.error("Failed to update gallery:", error);
-    showToast("Error updating gallery.", true);
-  } finally {
-    grid.style.opacity = '1';
-    isLoading = false;
-  }
-}
-
-let scrollTimer;
-window.addEventListener('scroll', () => {
-  if (scrollTimer) clearTimeout(scrollTimer);
-  scrollTimer = setTimeout(() => {
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
-      const selectedCamera = tom?.getValue() || "";
-      const searchQuery = document.getElementById("searchInput")?.value || "";
-      fetchAndUpdateGallery({ camera: selectedCamera, q: searchQuery }, true);
-    }
-  }, 200); // delay 200ms
-});
-
+  
+  let scrollTimer;
+  window.addEventListener('scroll', () => {
+    if (scrollTimer) clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+        const selectedCamera = tom?.getValue() || "";
+        const searchQuery = document.getElementById("searchInput")?.value || "";
+        fetchAndUpdateGallery({ camera: selectedCamera, q: searchQuery }, true);
+      }
+    }, 200); // delay 200ms
+  });
+  
   /**
-   * Initializes TomSelect for the camera dropdown.
-   */
+  * Initializes TomSelect for the camera dropdown.
+  */
   function initTomSelect() {
     if (tom) tom.destroy();
     tom = new TomSelect("#cameraSelect", {
@@ -195,17 +195,17 @@ window.addEventListener('scroll', () => {
       }
     });
   }
-
+  
   /**
-   * Deletes a single snapshot by its ID.
-   */
+  * Deletes a single snapshot by its ID.
+  */
   function deleteSnapshot(snapshotId, element) {
     showCustomConfirm("Are you sure you want to delete this snapshot?", () => {
-
-    const card = element.closest('.snapshot-card');
-    card.style.opacity = '0.5';
-
-    fetch(`/snap/${snapshotId}`, { method: 'DELETE' })
+      
+      const card = element.closest('.snapshot-card');
+      card.style.opacity = '0.5';
+      
+      fetch(`/snap/${snapshotId}`, { method: 'DELETE' })
       .then(async res => {
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.status === "success") {
@@ -223,12 +223,12 @@ window.addEventListener('scroll', () => {
       });
     });
   }
-
+  
   // --- Event Listeners Setup ---
   document.addEventListener("DOMContentLoaded", () => {
     initTomSelect();
     initializeLazyLoading();
-
+    
     document.getElementById("searchInput")?.addEventListener("input", (e) => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
@@ -238,25 +238,25 @@ window.addEventListener('scroll', () => {
         fetchAndUpdateGallery({ camera: selectedCamera, q: e.target.value });
       }, 350);
     });
-
+    
     document.getElementById("clearFilterBtn")?.addEventListener("click", () => {
       document.getElementById("searchInput").value = '';
       tom.clear(); 
     });
-
+    
     // Event delegation for dynamically added action buttons
     document.getElementById("actionButtonsContainer").addEventListener("click", async (e) => {
       const target = e.target.closest("[data-action]");
       if (!target) return;
-
+      
       const action = target.dataset.action;
       const camera = target.dataset.camera;
       
       if (!camera) return; // Should not happen but good practice
-
+      
       target.disabled = true;
       target.style.opacity = '0.7';
-
+      
       try {
         if (action === "snapshot") {
           const res = await fetch(`/snap/${encodeURIComponent(camera)}`, { method: "POST" });
@@ -264,13 +264,17 @@ window.addEventListener('scroll', () => {
           showToast(data.message || (data.status === "success" ? "Snapshot taken!" : "Failed to take snapshot"), data.status !== "success");
           if (data.status === "success") {
             // Refresh the gallery to show the new snapshot
-            fetchAndUpdateGallery({ camera: tom.getValue(), q: document.getElementById("searchInput").value });
+            pageOffset = 0;
+            hasMore = true;
+            
+            // Refresh the gallery to show the new snapshot
+            fetchAndUpdateGallery({ camera: tom.getValue(), q: document.getElementById("searchInput").value }, false);
           }
         }
-
+        
         if (action === "delete-all") {
           if (!confirm(`Are you sure you want to delete all snapshots for ${camera}? This cannot be undone.`)) {
-              return;
+            return;
           };
           // NOTE: This assumes you have an endpoint to delete all snapshots for a camera.
           // You may need to implement this endpoint. For now, this will fail.
@@ -287,9 +291,9 @@ window.addEventListener('scroll', () => {
       }
     });
   });
-
+  
   // --- Utility and UI Functions ---
-
+  
   function showToast(msg, isError = false) {
     const toast = document.getElementById("toast");
     toast.textContent = msg;
@@ -303,20 +307,22 @@ window.addEventListener('scroll', () => {
     const img = document.getElementById("modal-img");
     const info = document.getElementById("modal-info");
     const downloadBtn = document.getElementById("download-btn");
-
+    
     img.src = src;
     info.textContent = `${cameraName} • ${timestamp}`;
     modal.classList.remove("hidden");
     
-    // Set download link href and filename
+    // Set download link href and filename dynamically
     downloadBtn.href = src;
-    downloadBtn.download = `snapshot_${cameraName}_${timestamp.replace(/[\s:]/g, '-')}.jpg`;
+    // Extract file extension from the src path
+    const fileExtension = src.split('.').pop() || 'webp';
+    downloadBtn.download = `snapshot_${cameraName}_${timestamp.replace(/[\s:]/g, '-')}.${fileExtension}`;
   }
-
+  
   function hideModal() {
     document.getElementById("modal").classList.add("hidden");
   }
-
+  
   function initializeLazyLoading() {
     const lazyImages = document.querySelectorAll('img.lazy-img:not(.loaded)');
     const observer = new IntersectionObserver((entries, obs) => {
