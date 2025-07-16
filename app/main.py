@@ -67,7 +67,8 @@ ALLOWED_PUBLIC_PATHS = [
     "/docs",
     "/openapi.json",
     "/mfa/setup",
-    "/mfa/force-verify"
+    "/mfa/force-verify",
+    "/favicon.ico",
 ]
 
 # ====================================================================
@@ -145,6 +146,18 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                     status_code=status.HTTP_303_SEE_OTHER
                 )
                 response.delete_cookie("session_token")
+                response.delete_cookie("session")
+                return response
+            
+            # Check if session is expired
+            if datetime.utcnow() > user.session_expires_at:
+                request.session.clear()
+                response = RedirectResponse(
+                    url="/login?reason=session_expired",
+                    status_code=status.HTTP_303_SEE_OTHER
+                )
+                response.delete_cookie("session_token")
+                response.delete_cookie("session")
                 return response
 
             if not user.is_2fa_enabled:
@@ -196,8 +209,9 @@ app.include_router(dev_docs.router)
 # 7. CORE APP ROUTES & HANDLERS
 # ====================================================================
 @app.get("/", include_in_schema=False)
-def root_redirect(user: User = Depends(get_current_user)):
+def root_redirect():
     return RedirectResponse(url="/maps")
+
 
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):

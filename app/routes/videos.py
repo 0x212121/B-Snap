@@ -1,12 +1,9 @@
-from datetime import datetime
 import logging
 import os
 from typing import Optional, List, Dict, Any
-from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks
 from fastapi.responses import JSONResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.core.logging_config import setup_logging
@@ -24,20 +21,15 @@ from app.utils.template_helper import templates
 # Base URL path for videos.
 VIDEO_URL_BASE = "static/videos"
 # Base filesystem path to the videos folder, assuming execution from the project root.
-VIDEO_FILESYSTEM_BASE = os.path.join("app", "static", "videos")
+VIDEO_FILESYSTEM_BASE = os.path.join("static", "videos")
 
 setup_logging()
 logger = logging.getLogger("snapshot")
 
-# Timezones
-SG_TZ = ZoneInfo("Asia/Makassar")
-UTC_TZ = ZoneInfo("UTC")
-
 
 # =============================
-# Helper Functions
+# Helpers
 # =============================
-
 
 def _get_filtered_videos(db: Session, group_id: int, camera_filter: Optional[str] = None, search_query: Optional[str] = None) -> List[Dict[str, Any]]:
     """
