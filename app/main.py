@@ -5,7 +5,7 @@
 import logging
 import os
 from contextlib import asynccontextmanager
-import datetime
+from datetime import datetime, timezone
 
 # Third-party Libraries
 from fastapi import (
@@ -150,7 +150,7 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                 return response
             
             # Check if session is expired
-            if datetime.utcnow() > user.session_expires_at:
+            if datetime.now(timezone.utc) > user.session_expires_at:
                 request.session.clear()
                 response = RedirectResponse(
                     url="/login?reason=session_expired",
