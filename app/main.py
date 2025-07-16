@@ -2,6 +2,7 @@
 # 1. IMPORTS
 # ====================================================================
 # Python Standard Library
+import json
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -104,66 +105,69 @@ app = FastAPI(
 )
 
 # --- Main Middleware (Combined) ---
+
 class AuthAndSetupMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
+    async def dispatch(self, request: Request, call_next):
         db = SessionLocal()
         try:
             current_path = request.url.path
             auth_header = request.headers.get("authorization")
-            token_query = request.query_params.get("token")  # ✅ ambil token dari query param
+            token_query = request.query_params.get("token")
+            session_user_id = request.session.get("user_id")
+            session_token = request.cookies.get("session_token")
 
-            # Step 1: Setup check
+            # 1. Setup check
             if not db.query(User).first():
                 if not any(current_path.startswith(p) for p in ["/setup", "/static"]):
-                    return RedirectResponse(url="/setup", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+                    return RedirectResponse(url="/setup", status_code=307)
                 return await call_next(request)
 
-            # Step 2: Allow public paths
+            # 2. Public path allowed
             if any(current_path.startswith(p) for p in ALLOWED_PUBLIC_PATHS):
                 return await call_next(request)
 
-            # ✅ Step 2.5: Allow access if signed token is provided (e.g. /snapshot/file/... or /snapshot/token/...)
+            # 2.5 Snapshot token access via ?token=... di URL
             if token_query:
                 return await call_next(request)
 
-            # Step 3: If Bearer token is present, skip session check
+            # 3. Bearer token via API
             if auth_header and auth_header.lower().startswith("bearer "):
                 return await call_next(request)
 
-            # Step 4: Session-based auth fallback
-            user_id = request.session.get("user_id")
-            if not user_id:
-                return RedirectResponse(
-                    url="/login",
-                    status_code=status.HTTP_303_SEE_OTHER
-                )
+            # 4. Try session-based login
+            if session_user_id:
+                user = db.query(User).filter(User.id == session_user_id).first()
+                if user:
+                    return await call_next(request)
+                else:
+                    request.session.clear()
 
-            user = db.query(User).filter(User.id == user_id).first()
-            if not user:
-                request.session.clear()
-                response = RedirectResponse(
-                    url="/login?reason=invalid_session",
-                    status_code=status.HTTP_303_SEE_OTHER
-                )
-                response.delete_cookie("session_token")
-                response.delete_cookie("session")
-                return response
-            
-            # Check if session is expired
-            if datetime.now(timezone.utc) > user.session_expires_at:
-                request.session.clear()
-                response = RedirectResponse(
-                    url="/login?reason=session_expired",
-                    status_code=status.HTTP_303_SEE_OTHER
-                )
-                response.delete_cookie("session_token")
-                response.delete_cookie("session")
-                return response
+            # 5. Fallback to long-lived session_token + web_tokens
+            if session_token:
+                user = db.query(User).filter(User.web_tokens != None).first()
+                if user:
+                    try:
+                        tokens = user.web_tokens
+                        if isinstance(tokens, str):
+                            tokens = json.loads(tokens)
 
-            if not user.is_2fa_enabled:
-                return RedirectResponse(url="/mfa/setup", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+                        now = datetime.now(timezone.utc)
+                        for t in tokens:
+                            if t["token"] == session_token:
+                                expires_at = datetime.fromisoformat(t["expires_at"])
+                                if expires_at > now:
+                                    # ✅ Token masih valid → perpanjang session
+                                    request.session["user_id"] = user.id
+                                    return await call_next(request)
+                    except Exception as e:
+                        logger.warning(f"Token fallback failed: {e}")
 
-            return await call_next(request)
+            # 6. Gagal semua → redirect login
+            request.session.clear()
+            response = RedirectResponse(url="/login?reason=session_expired", status_code=303)
+            response.delete_cookie("session_token")
+            response.delete_cookie("session")
+            return response
 
         except Exception as e:
             logger.error(f"Error in AuthAndSetupMiddleware: {e}", exc_info=True)
