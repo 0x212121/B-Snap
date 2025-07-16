@@ -2,6 +2,7 @@
 # 1. IMPORTS
 # ====================================================================
 # Python Standard Library
+import asyncio
 import json
 import logging
 import os
@@ -15,7 +16,7 @@ from fastapi import (
     WebSocket, WebSocketDisconnect
 )
 from app.utils.auth_token import is_valid_web_token
-from app.ws_manager import websocket_connections
+from app.ws.manager import websocket_connections
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -39,6 +40,7 @@ from app.routes import (
     user_management, videos
 )
 from app.routes.auth import get_current_user
+from app.ws.notifier import pg_listen_and_broadcast
 
 # ====================================================================
 # 2. INITIAL SETUP & CONFIGURATION
@@ -87,6 +89,7 @@ async def lifespan(app: FastAPI):
     try:
         seed_config(db)
         logger.info("Database seeded with initial configuration.")
+        asyncio.create_task(pg_listen_and_broadcast(os.getenv("DATABASE_URL")))
     finally:
         db.close()
 

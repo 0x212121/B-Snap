@@ -12,7 +12,7 @@ from typing import Tuple, Dict, Any
 import json
 from app.db.database import SessionLocal
 from pathlib import Path
-from app.ws_manager import get_ws_connections
+from app.ws.manager import get_ws_connections
 
 # --- Basic Configuration ---
 # Using pathlib for more modern and robust path handling.
