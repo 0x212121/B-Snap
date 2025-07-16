@@ -106,58 +106,63 @@ app = FastAPI(
     redoc_url=None
 )
 
-# --- Main Middleware (Combined) ---
 
 class AuthAndSetupMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
         db = SessionLocal()
         try:
             current_path = request.url.path
-            auth_header = request.headers.get("authorization")
-            token_query = request.query_params.get("token")
-            session_user_id = request.session.get("user_id")
-            session_token = request.cookies.get("session_token")
 
-            # 1. Setup check
+            # ===============================================================
+            # 1. Pengecekan Setup Awal
+            # Jika belum ada user, paksa ke halaman setup.
+            # ===============================================================
             if not db.query(User).first():
                 if not any(current_path.startswith(p) for p in ["/setup", "/static"]):
                     return RedirectResponse(url="/setup", status_code=307)
                 return await call_next(request)
 
-            # 2. Public path allowed
+            # ===============================================================
+            # 2. Akses Jalur Publik (Tanpa Login)
+            # Izinkan akses ke halaman seperti login, docs, static, dll.
+            # ===============================================================
             if any(current_path.startswith(p) for p in ALLOWED_PUBLIC_PATHS):
                 return await call_next(request)
 
-            # 2.5 Snapshot token access via ?token=... di URL
-            if token_query:
-                return await call_next(request)
+            # ===============================================================
+            # 3. Urutan Pengecekan Autentikasi (Authentication Waterfall)
+            # ===============================================================
 
-            # 3. Bearer token via API
+            # --- Metode 3a: API Bearer Token (untuk klien non-browser)
+            auth_header = request.headers.get("authorization")
             if auth_header and auth_header.lower().startswith("bearer "):
+                # Validasi akan ditangani oleh dependency di level rute (cth: get_current_user)
                 return await call_next(request)
 
-            # 4. Try session-based login
+            # --- Metode 3b: Sesi Aktif (Login Normal)
+            session_user_id = request.session.get("user_id")
             if session_user_id:
-                user = db.query(User).filter(User.id == session_user_id).first()
-                if user:
+                if db.query(User).filter(User.id == session_user_id).first():
                     return await call_next(request)
                 else:
+                    # User ID di sesi tidak valid, hapus sesi
                     request.session.clear()
-
-            # 5. Fallback to long-lived session_token + web_tokens
+            
+            # --- Metode 3c: Rolling Session Cookie (untuk "Ingat Saya")
+            session_token = request.cookies.get("session_token")
             if session_token:
-                user = db.query(User).filter(User.web_tokens != None).first()
+                # ⬇️ KRITICAL SECURITY FIX ⬇️
+                # Cari user yang memiliki web_token yang cocok.
+                # Menggunakan 'like' untuk kompatibilitas DB, native JSON query lebih baik jika didukung.
+                user = db.query(User).filter(User.web_tokens.like(f'%"{session_token}"%')).first()
+                # ⬆️ KRITICAL SECURITY FIX ⬆️
+                
                 if user:
                     try:
-                        tokens = user.web_tokens
-                        if isinstance(tokens, str):
-                            tokens = json.loads(tokens)
-
+                        tokens = json.loads(user.web_tokens) if isinstance(user.web_tokens, str) else user.web_tokens
                         if is_valid_web_token(session_token, tokens):
-                            # 🔁 Hapus token lama
+                            # Token valid, lakukan rotasi (buat baru, hapus lama)
                             tokens = [t for t in tokens if t["token"] != session_token]
-
-                            # 🔁 Buat token baru
                             new_token = token_urlsafe(32)
                             expires_at = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
                             tokens.append({
@@ -165,30 +170,43 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                                 "created_at": datetime.now(timezone.utc).isoformat(),
                                 "expires_at": expires_at
                             })
-
                             user.web_tokens = tokens
                             db.commit()
 
-                            # 🔁 Update cookie
-                            response = await call_next(request)
-                            response.set_cookie("session_token", new_token, httponly=True, max_age=60*60*24*7)
-                            
-                            # ✅ Perpanjang session
+                            # Buat sesi baru untuk request ini
                             request.session["user_id"] = user.id
+                            response = await call_next(request)
+                            
+                            # Kirim cookie baru ke browser
+                            response.set_cookie(
+                                "session_token",
+                                new_token,
+                                httponly=True,
+                                max_age=60 * 60 * 24 * 7, # 7 hari
+                                samesite='lax',
+                                secure=request.url.scheme == 'https'
+                            )
                             return response
+                    except (json.JSONDecodeError, TypeError) as e:
+                        logger.warning(f"Error decoding web_tokens for user {user.id}: {e}")
 
-            # 6. Gagal semua → redirect login
-            request.session.clear()
+            # ===============================================================
+            # 4. Gagal Autentikasi
+            # Jika semua metode gagal, alihkan ke halaman login.
+            # ===============================================================
             response = RedirectResponse(url="/login?reason=session_expired", status_code=303)
+            # Hapus cookie yang mungkin tersisa
             response.delete_cookie("session_token")
             response.delete_cookie("session")
+            request.session.clear()
             return response
 
         except Exception as e:
-            logger.error(f"Error in AuthAndSetupMiddleware: {e}", exc_info=True)
+            logger.error(f"Critical error in AuthAndSetupMiddleware: {e}", exc_info=True)
             return Response("Internal Server Error", status_code=500)
         finally:
             db.close()
+
 
 # Middleware order is IMPORTANT: Processed from bottom to top when request comes in.
 # Last added will be executed first.
