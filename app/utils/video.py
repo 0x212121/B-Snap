@@ -4,6 +4,7 @@ import asyncio
 import subprocess
 import uuid
 from datetime import datetime, timezone
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from app.core.logging_config import setup_logging
 from app.models_sql import Camera, Video
@@ -21,15 +22,13 @@ from app.ws.manager import get_ws_connections
 STATIC_VIDEO_DIR = Path("static/videos")
 os.makedirs(STATIC_VIDEO_DIR, exist_ok=True)
 
+# ... [imports tetap sama seperti sebelumnya] ...
+
 # --- Logger Setup ---
 setup_logging()
 logger = logging.getLogger("snapshot")
 
 def _run_ffmpeg_sync(cmd: str) -> Tuple[int, str, str]:
-    """
-    Runs an FFMPEG shell command synchronously.
-    This is safe to run in a separate thread to avoid blocking.
-    """
     logger.info(f"Running FFMPEG command: {cmd}")
     proc = subprocess.run(
         cmd,
@@ -45,9 +44,6 @@ def _run_ffmpeg_sync(cmd: str) -> Tuple[int, str, str]:
 
 
 def get_video_metadata(file_path: str) -> Dict[str, Any]:
-    """
-    Gets video metadata (duration, file size, and resolution) using ffprobe.
-    """
     if not os.path.exists(file_path):
         return {"duration": 0, "size": 0, "width": 0, "height": 0}
         
@@ -60,7 +56,6 @@ def get_video_metadata(file_path: str) -> Dict[str, Any]:
 
         duration = float(data.get('format', {}).get('duration', 0))
 
-        # Ambil stream dengan codec_type "video"
         width = height = 0
         for stream in data.get('streams', []):
             if stream.get("codec_type") == "video":
@@ -86,11 +81,6 @@ def get_video_metadata(file_path: str) -> Dict[str, Any]:
 
 
 async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[str, Any]:
-    """
-    Records a video clip, saves the file, and logs its metadata to the database.
-    Folder structure: videos/GroupName/CameraName/filename.mp4
-    Path in DB is stored in POSIX format.
-    """
     def get_camera_sync() -> Camera:
         db = SessionLocal()
         try:
@@ -119,19 +109,19 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
 
     group_name = camera.group.name
     camera_name = camera.hostname
-    
-    # Create storage directory based on Group and Camera Name
+
     video_directory = STATIC_VIDEO_DIR / group_name / camera_name
     os.makedirs(video_directory, exist_ok=True)
-    
+
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     filename = f"{camera_name}_{timestamp}.mp4"
-    
-    # Full path to save the file
     output_path = video_directory / filename
-    
-    # Create a relative path with POSIX format (/) to be stored in the DB
     db_file_path = (Path(group_name) / camera_name / filename).as_posix()
+
+    # 🧹 Clean leftover file if exists
+    if output_path.exists():
+        logger.warning(f"Deleting leftover file before recording: {output_path}")
+        output_path.unlink()
 
     rtsp_url = get_rtsp_url(camera)
     if not rtsp_url:
@@ -143,7 +133,7 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
         f'-t {duration} -c:v copy -an "{str(output_path)}"'
     )
     code, _, err = await asyncio.to_thread(_run_ffmpeg_sync, cmd_copy)
-    
+
     if code != 0:
         logger.warning(f"Remux failed for {camera.hostname}, falling back to re-encode...")
         cmd_reencode = (
@@ -158,7 +148,9 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
     logger.info(f"Video recorded successfully: {output_path}")
 
     metadata = get_video_metadata(str(output_path))
-    
+    if metadata.get("duration", 0) == 0:
+        logger.warning(f"⚠️ Video from {camera.hostname} may be corrupted or too short (duration=0)")
+
     video_data = {
         "id": str(uuid.uuid4()),
         "camera_id": camera.id,
@@ -166,19 +158,31 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
         "camera_ip": camera.ip,
         "camera_group": group_name,
         "timestamp": datetime.now(timezone.utc),
-        "file_path": db_file_path,  # Storing the POSIX format path
+        "file_path": db_file_path,
         "file_size": metadata.get("size"),
         "duration": metadata.get("duration"),
         "resolution": f"{metadata.get('width')}x{metadata.get('height')}"
     }
-    
-    def save_video_record_sync(data: Dict) -> bool:
+
+    def save_video_record_sync(data: Dict[str, Any]) -> bool:
         db = SessionLocal()
         try:
             new_video_record = Video(**data)
             db.add(new_video_record)
-            db.commit()
-            logger.info(f"Video metadata for {data['camera_name']} saved to DB successfully.")
+
+            payload = json.dumps({
+                "type": "record_complete",
+                "camera_name": data["camera_name"],
+                "group": data["camera_group"],
+                "duration": data["duration"],
+                "file_size": data["file_size"],
+                "file_path": data["file_path"],
+                "source": "db_trigger"
+            })
+            db.execute(text("NOTIFY camera_notifications, :payload"), {"payload": payload})
+            db.commit()  # ✅ satu kali commit untuk add + notify
+
+            logger.info(f"📢 PostgreSQL NOTIFY sent: {payload}")
             return True
         except Exception as e:
             db.rollback()
@@ -190,7 +194,7 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
     success = await asyncio.to_thread(save_video_record_sync, video_data)
 
     if success:
-        # Kirim notifikasi via WebSocket
+        # ✅ Broadcast ke WebSocket dengan asyncio.gather()
         connections = get_ws_connections()
         message = {
             "type": "record_complete",
@@ -200,12 +204,10 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
             "file_size": metadata.get("size"),
             "file_path": db_file_path
         }
-        for ws in connections.copy():
-            try:
-                await ws.send_text(json.dumps(message))
-            except Exception as e:
-                connections.remove(ws)
-                logger.warning(f"WebSocket error: {e}")
+
+        await asyncio.gather(*[
+            ws.send_text(json.dumps(message)) for ws in connections.copy()
+        ], return_exceptions=True)
 
         return {
             "status": "success",

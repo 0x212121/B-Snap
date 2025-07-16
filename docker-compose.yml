@@ -1,6 +1,6 @@
 services:
   b-snap:
-    image: wijayaindra21/b-snap:v1.0.0
+    image: wijayaindra21/b-snap:v1.0.2
     container_name: bsnap-app
     ports:
       - "8080:8080"
@@ -13,13 +13,13 @@ services:
       - postgres
     volumes:
       - ./static/snapshots:/app/static/snapshots
-      - ./app/data.db:/app/app/data.db
+      # - ./app/data.db:/app/app/data.db
       - ./logs:/app/logs
     restart: unless-stopped
-    command: gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8080 --workers 2
+    command: gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8080 --workers 5
 
   scheduler:
-    image: wijayaindra21/b-snap:v1.0.0
+    image: wijayaindra21/b-snap:v1.0.1
     container_name: bsnap-scheduler
     env_file:
       - .env
@@ -27,10 +27,20 @@ services:
       - postgres
     volumes:
       - ./static/snapshots:/app/static/snapshots
-      - ./app/data.db:/app/app/data.db
+      # - ./app/data.db:/app/app/data.db
       - ./logs:/app/logs
     restart: unless-stopped
     command: python -m app.jobs.scheduler_main
+  
+  notifier:
+    image: wijayaindra21/b-snap:v1.0.2
+    container_name: bsnap-notifier
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    command: python -m app.ws.notifier
 
   postgres:
     image: postgres:17.5

@@ -40,7 +40,9 @@ from app.routes import (
     user_management, videos
 )
 from app.routes.auth import get_current_user
-from app.ws.notifier import pg_listen_and_broadcast
+from app.ws.routes import router as ws_router
+
+# from app.ws.notifier import pg_listen_and_broadcast
 
 # ====================================================================
 # 2. INITIAL SETUP & CONFIGURATION
@@ -81,7 +83,6 @@ ALLOWED_PUBLIC_PATHS = [
 # ====================================================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Handles events when the application starts and stops."""
     logger.info("application is starting up...")
     Base.metadata.create_all(bind=engine)
 
@@ -89,12 +90,18 @@ async def lifespan(app: FastAPI):
     try:
         seed_config(db)
         logger.info("Database seeded with initial configuration.")
-        asyncio.create_task(pg_listen_and_broadcast(os.getenv("DATABASE_URL")))
     finally:
         db.close()
 
-    yield  # --- Application is running ---
+    # # 🚀 Run listener after task sync completed
+    # raw_dsn = os.getenv("DATABASE_URL")
+    # dsn = raw_dsn.replace("postgresql+psycopg2", "postgresql")  # type: ignore # ✅ ini penting
+    # if dsn:
+    #     asyncio.create_task(pg_listen_and_broadcast(dsn))
+    # else:
+    #     logger.warning("No DATABASE_URL found. Skipping pg_listen_and_broadcast...")
 
+    yield  # --- Application is running ---
     logger.info("Application is shutting down...")
 
 # ====================================================================
@@ -115,10 +122,13 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
         db = SessionLocal()
         try:
             current_path = request.url.path
+            auth_header = request.headers.get("authorization")
+            token_query = request.query_params.get("token")
+            session_user_id = request.session.get("user_id")
+            session_token = request.cookies.get("session_token")
 
             # ===============================================================
-            # 1. Pengecekan Setup Awal
-            # Jika belum ada user, paksa ke halaman setup.
+            # 1. Setup check
             # ===============================================================
             if not db.query(User).first():
                 if not any(current_path.startswith(p) for p in ["/setup", "/static"]):
@@ -126,46 +136,43 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                 return await call_next(request)
 
             # ===============================================================
-            # 2. Akses Jalur Publik (Tanpa Login)
-            # Izinkan akses ke halaman seperti login, docs, static, dll.
+            # 2. Public paths (no login required)
             # ===============================================================
             if any(current_path.startswith(p) for p in ALLOWED_PUBLIC_PATHS):
                 return await call_next(request)
 
             # ===============================================================
-            # 3. Urutan Pengecekan Autentikasi (Authentication Waterfall)
+            # 2.5 Snapshot token via ?token=...
             # ===============================================================
-
-            # --- Metode 3a: API Bearer Token (untuk klien non-browser)
-            auth_header = request.headers.get("authorization")
-            if auth_header and auth_header.lower().startswith("bearer "):
-                # Validasi akan ditangani oleh dependency di level rute (cth: get_current_user)
+            if token_query:
                 return await call_next(request)
 
-            # --- Metode 3b: Sesi Aktif (Login Normal)
-            session_user_id = request.session.get("user_id")
+            # ===============================================================
+            # 3. Bearer token for API access
+            # ===============================================================
+            if auth_header and auth_header.lower().startswith("bearer "):
+                return await call_next(request)
+
+            # ===============================================================
+            # 4. Session-based login
+            # ===============================================================
             if session_user_id:
-                if db.query(User).filter(User.id == session_user_id).first():
+                user = db.query(User).filter(User.id == session_user_id).first()
+                if user:
                     return await call_next(request)
                 else:
-                    # User ID di sesi tidak valid, hapus sesi
                     request.session.clear()
-            
-            # --- Metode 3c: Rolling Session Cookie (untuk "Ingat Saya")
-            session_token = request.cookies.get("session_token")
+
+            # ===============================================================
+            # 5. Rolling session_token from cookie
+            # ===============================================================
             if session_token:
-                # ⬇️ KRITICAL SECURITY FIX ⬇️
-                # Cari user yang memiliki web_token yang cocok.
-                # Menggunakan 'like' untuk kompatibilitas DB, native JSON query lebih baik jika didukung.
                 user = db.query(User).filter(User.web_tokens.like(f'%"{session_token}"%')).first()
-                # ⬆️ KRITICAL SECURITY FIX ⬆️
-                
                 if user:
                     try:
                         tokens = json.loads(user.web_tokens) if isinstance(user.web_tokens, str) else user.web_tokens
                         if is_valid_web_token(session_token, tokens):
-                            # Token valid, lakukan rotasi (buat baru, hapus lama)
-                            tokens = [t for t in tokens if t["token"] != session_token]
+                            # Append new token (keep old)
                             new_token = token_urlsafe(32)
                             expires_at = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
                             tokens.append({
@@ -176,16 +183,16 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                             user.web_tokens = tokens
                             db.commit()
 
-                            # Buat sesi baru untuk request ini
+                            # Optional: restore session if needed
                             request.session["user_id"] = user.id
+                            request.state.user_id = user.id  # for manual access if needed
+
                             response = await call_next(request)
-                            
-                            # Kirim cookie baru ke browser
                             response.set_cookie(
                                 "session_token",
                                 new_token,
                                 httponly=True,
-                                max_age=60 * 60 * 24 * 7, # 7 hari
+                                max_age=60 * 60 * 24 * 7,
                                 samesite='lax',
                                 secure=request.url.scheme == 'https'
                             )
@@ -194,11 +201,9 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                         logger.warning(f"Error decoding web_tokens for user {user.id}: {e}")
 
             # ===============================================================
-            # 4. Gagal Autentikasi
-            # Jika semua metode gagal, alihkan ke halaman login.
+            # 6. Authentication failed
             # ===============================================================
             response = RedirectResponse(url="/login?reason=session_expired", status_code=303)
-            # Hapus cookie yang mungkin tersisa
             response.delete_cookie("session_token")
             response.delete_cookie("session")
             request.session.clear()
@@ -243,6 +248,7 @@ app.include_router(nvrs.router)
 app.include_router(snap_gallery.router)
 app.include_router(audit.router)
 app.include_router(dev_docs.router)
+app.include_router(ws_router)
 
 
 # ====================================================================
@@ -278,19 +284,6 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
         content=f"An error occurred: {exc.detail}",
         status_code=exc.status_code
     )
-
-
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    websocket_connections.add(websocket)
-    try:
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        pass
-    finally:
-        websocket_connections.remove(websocket)
 
 
 @app.get("/docs", include_in_schema=False)

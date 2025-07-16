@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, date, timezone
 from sqlalchemy import (
-    Column, Date, Float, String, Integer, DateTime, ForeignKey, Boolean, event, JSON
+    Column, Date, Float, String, Integer, DateTime, ForeignKey, Boolean, event, JSON, func
 )
 from sqlalchemy.orm import relationship
 from app.db.database import Base
@@ -245,3 +245,35 @@ class CameraStatusChangeLog(Base):
     duration_since_last_change = Column(Integer, nullable=True)  # dalam detik
 
     camera = relationship("Camera", backref="status_change_logs")
+
+
+class NotificationQueue(Base):
+    """
+    Model ORM untuk tabel notification_queue.
+    
+    Tabel ini berfungsi sebagai antrean pesan untuk notifikasi
+    yang akan dikirim ke klien WebSocket.
+    """
+    __tablename__ = 'notification_queue'
+
+    # Kolom id: Primary key integer yang akan bertambah otomatis.
+    # Sesuai dengan 'id SERIAL PRIMARY KEY' di SQL.
+    id = Column(Integer, primary_key=True)
+
+    # Kolom payload: Menyimpan data notifikasi dalam format JSONB.
+    # Tidak boleh kosong (NOT NULL).
+    # Sesuai dengan 'payload JSONB NOT NULL' di SQL.
+    payload = Column(JSONB, nullable=False)
+
+    # Kolom created_at: Timestamp dengan zona waktu kapan pesan dibuat.
+    # Nilai default diatur di sisi database menggunakan fungsi NOW().
+    # Sesuai dengan 'created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()' di SQL.
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        server_default=func.now(), 
+        nullable=False
+    )
+
+    def __repr__(self):
+        return f"<NotificationQueue(id={self.id}, created_at='{self.created_at}')>"
