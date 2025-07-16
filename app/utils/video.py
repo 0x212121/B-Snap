@@ -43,23 +43,47 @@ def _run_ffmpeg_sync(cmd: str) -> Tuple[int, str, str]:
         logger.error(f"FFMPEG Error (return code {proc.returncode}):\nSTDERR: {proc.stderr}")
     return proc.returncode, proc.stdout, proc.stderr
 
+
 def get_video_metadata(file_path: str) -> Dict[str, Any]:
     """
-    Gets video metadata (duration and file size) using ffprobe.
+    Gets video metadata (duration, file size, and resolution) using ffprobe.
     """
     if not os.path.exists(file_path):
-        return {"duration": 0, "size": 0}
+        return {"duration": 0, "size": 0, "width": 0, "height": 0}
         
     size = os.path.getsize(file_path)
-    cmd = f'ffprobe -v quiet -print_format json -show_format "{file_path}"'
+    cmd = f'ffprobe -v quiet -print_format json -show_format -show_streams "{file_path}"'
+
     try:
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
         data = json.loads(result.stdout)
+
         duration = float(data.get('format', {}).get('duration', 0))
-        return {"duration": int(duration), "size": size}
+
+        # Ambil stream dengan codec_type "video"
+        width = height = 0
+        for stream in data.get('streams', []):
+            if stream.get("codec_type") == "video":
+                width = stream.get("width", 0)
+                height = stream.get("height", 0)
+                break
+
+        return {
+            "duration": int(duration),
+            "size": size,
+            "width": width,
+            "height": height
+        }
+
     except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError) as e:
         logger.error(f"Failed to get metadata for {file_path}: {e}")
-        return {"duration": 0, "size": size}
+        return {
+            "duration": 0,
+            "size": size,
+            "width": 0,
+            "height": 0
+        }
+
 
 async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[str, Any]:
     """
@@ -144,7 +168,8 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
         "timestamp": datetime.now(timezone.utc),
         "file_path": db_file_path,  # Storing the POSIX format path
         "file_size": metadata.get("size"),
-        "duration": metadata.get("duration")
+        "duration": metadata.get("duration"),
+        "resolution": f"{metadata.get('width')}x{metadata.get('height')}"
     }
     
     def save_video_record_sync(data: Dict) -> bool:

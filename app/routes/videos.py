@@ -72,6 +72,7 @@ def _get_filtered_videos(db: Session, group_id: int, camera_filter: Optional[str
             "group": v.camera_group,
             "file_size": int(v.file_size / 1024) if v.file_size else 0,
             "duration": v.duration,
+            "resolution": v.resolution,
         })
 
     return formatted_videos

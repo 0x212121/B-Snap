@@ -81,11 +81,13 @@
 
 ⏳ Ongoing:
 - [x] Bug fixing
-  - [x] Timestamp di maps
+  - [x] Timestamp di maps tidak sync
+  - [ ] Logs terhapus ketika restart container
 - [x] Timestamp delete snapshot, snapshot in maps converted
 - [ ] Double snapshot 
   - [x] Pisah scheduler dari web server
-- [x] Change font in docker
+- [x] Change font in docker (Liberation font)
+- [x] Add resolution column to videos table
 
 🆕 Added:
 - [x] Lazy load backend

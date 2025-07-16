@@ -206,6 +206,7 @@ class Video(Base):
     file_path = Column(String, nullable=False, unique=True)
     file_size = Column(Integer)
     duration = Column(Integer)
+    resolution = Column(String(12), default="Unknown")
 
     camera = relationship("Camera", back_populates="videos")
 
