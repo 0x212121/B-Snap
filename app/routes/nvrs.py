@@ -166,50 +166,66 @@ async def create_nvr(
     longitude: Optional[str] = Form(None),
     asset_no: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
-    group_name: str = Form(None),
+    group_name: str = Form(None),  # ini dikirim dari form
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    
+    # Convert lat/lon jika ada
     lat = float(latitude) if latitude and latitude.strip() else None
     lon = float(longitude) if longitude and longitude.strip() else None
+
+    # Resolve group_name → group_id
+    group_id = None
+    if group_name and group_name.strip():
+        group = db.query(CameraGroup).filter(CameraGroup.name == group_name.strip()).first()
+        if not group:
+            group = CameraGroup(name=group_name.strip())
+            db.add(group)
+            db.flush()  # Supaya dapat group.id tanpa commit
+        group_id = group.id
+
+    # Cek duplikat
+    existing_nvr = db.query(NVR).filter(NVR.hostname == name).first()
+    if existing_nvr:
+        return JSONResponse(status_code=409, content={"status": "error", "message": f"NVR '{name}' already exists."})
+
+    # Buat objek NVR
     nvr = NVR(
         hostname=name,
         ip=ip,
         username=username,
         password=password,
         location=location,
-        group_id=group_name,
+        group_id=group_id,
         latitude=lat,
         longitude=lon,
         asset_no=asset_no
     )
 
-    existing_NVR = db.query(NVR).filter(NVR.hostname == name).first()
-    if existing_NVR:
-        return JSONResponse(status_code=409, content={"status": "error", "message": f"NVR '{name}' already exists."})
-
     db.add(nvr)
+    db.flush()  # flush dulu supaya dapat ID-nya buat ping
 
+    # Logging audit
     log_audit(
         db=db,
-        user=request.session["user_name"],
+        user=request.session.get("user_name", "unknown"),
         action="create_nvr",
         target=nvr.hostname,
         ip=request.client.host,
         extra="via NVR Management"
     )
-    new_NVR = db.query(NVR).filter(NVR.hostname == name).first()
-    
-    # Ping NVR after created
-    ping_nvr_by_id(new_NVR.id)
+
+    # Ping NVR setelah dibuat (pakai ID)
+    ping_nvr_by_id(nvr.id)
+
+    db.commit()  # Commit terakhir setelah semua oke
     return JSONResponse(status_code=201, content={"status": "success", "message": "NVR created successfully!"})
 
 
 @router.post("/nvrs/edit/{nvr_id}")
 async def edit_nvr(
     request: Request,
-    nvr_id: str = Path(...), # The ID now comes from the URL path
+    nvr_id: str = Path(...),  # ID dari URL
     db: Session = Depends(get_db),
     name: str = Form(...),
     ip: str = Form(...),
@@ -223,10 +239,9 @@ async def edit_nvr(
     status: str = Form(...),
     current_admin: User = Depends(admin_access_required)
 ):
-    """
-    Handles updates to an existing NVR via an AJAX request from the edit modal.
-    """
     nvr = db.query(NVR).filter(NVR.id == nvr_id).first()
+    if not nvr:
+        return JSONResponse(status_code=404, content={"detail": "NVR not found"})
 
     before = {
         "hostname": nvr.hostname,
@@ -240,35 +255,33 @@ async def edit_nvr(
         "status": nvr.status
     }
 
-    if not nvr:
-        return JSONResponse(status_code=404, content={"detail": "NVR not found"})
-    
+    # Parse float fields safely
     lat = float(latitude) if latitude and latitude.strip() else None
     lon = float(longitude) if longitude and longitude.strip() else None
 
-    # Update the NVR's attributes
+    # Resolve group_name to group_id
+    group_id = None
+    if group_name and group_name.strip():
+        group = db.query(CameraGroup).filter(CameraGroup.name == group_name.strip()).first()
+        if not group:
+            group = CameraGroup(name=group_name.strip())
+            db.add(group)
+            db.flush()
+        group_id = group.id
+
+    # Update fields
     nvr.hostname = name
     nvr.ip = ip
     nvr.username = username
     nvr.location = location
-    # nvr.division = division
     nvr.asset_no = asset_no
     nvr.latitude = lat
     nvr.longitude = lon
     nvr.status = status
-    # Only update the password if a new one was provided
-    if password:
-        nvr.password = password # Remember to hash passwords in a real application!
+    nvr.group_id = group_id  # safe: will be None or int/UUID
 
-    if group_name:
-        group = db.query(CameraGroup).filter(CameraGroup.name == group_name).first()
-        if not group:
-            group = CameraGroup(name=group_name)
-            db.add(group)
-            db.flush()
-        nvr.group_id = group.id
-    else:
-        nvr.group_id = None
+    if password:
+        nvr.password = password  # TODO: hash this in production!
 
     db.commit()
 
@@ -285,40 +298,15 @@ async def edit_nvr(
     }
 
     log_audit(
-            db=db,
-            user=request.session.get("user_name", "unknown"),
-            action="update_nvr",
-            target=nvr.hostname,
-            ip=request.client.host,
-            extra=json.dumps({
-                "before": before,
-                "after": after
-            }, indent=2)
-        )
-
-    # Return a JSON response for the AJAX call
-    return JSONResponse(content={"status": "success", "message": "NVR updated successfully"})
-
-
-# To delete NVR by ID, must using string type
-@router.post("/nvrs/delete/{nvr_id}")
-async def delete_nvr(request: Request, nvr_id: str, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
-    nvr = db.query(NVR).filter(NVR.id == nvr_id).first()
-    if nvr:
-        db.delete(nvr)
-        db.commit()
-    # On successful deletion, you might return a success JSON response
-    # because this is likely called from an AJAX request (confirmDelete JS function)
-    log_audit(
         db=db,
-        user=request.session["user_name"],
-        action="delete_nvr",
+        user=request.session.get("user_name", "unknown"),
+        action="update_nvr",
         target=nvr.hostname,
         ip=request.client.host,
-        extra="via NVR Management"
+        extra=json.dumps({"before": before, "after": after}, indent=2)
     )
-    return JSONResponse(content={"status": "success", "message": "NVR deleted successfully"})
-    # return RedirectResponse(url="/nvrs", status_code=303, status=status)
+
+    return JSONResponse(content={"status": "success", "message": "NVR updated successfully"})
 
 
 @router.get("/nvrs/json")
@@ -417,16 +405,14 @@ async def upload_nvr_csv(request: Request, db: Session = Depends(get_db), file: 
                     continue # Skip rows without a hostname
 
                 # --- Group Name Handling ---
-                group_name = row.get("group_name", "").strip() # Read group_name from CSV
+                group_name = row.get("group_name", "").strip()
                 group_id = None
                 if group_name:
-                    # Check if the group already exists
                     group = db.query(CameraGroup).filter(CameraGroup.name == group_name).first()
                     if not group:
-                        # If not, create a new group
                         group = CameraGroup(name=group_name)
                         db.add(group)
-                        db.flush() # Use flush to get the new group's ID before commit
+                        db.flush()
                     group_id = group.id
 
                 # Check for an existing NVR by hostname
@@ -442,7 +428,7 @@ async def upload_nvr_csv(request: Request, db: Session = Depends(get_db), file: 
                     "status": row.get("status", "Active").strip() or "Active",
                     "latitude": float(row["latitude"]) if row.get("latitude", "").strip() else None,
                     "longitude": float(row["longitude"]) if row.get("longitude", "").strip() else None,
-                    "group_id": group_id # Assign the resolved group_id
+                    "group_id": int(group_id) if group_id is not None else None,
                 }
 
                 if existing_nvr:
