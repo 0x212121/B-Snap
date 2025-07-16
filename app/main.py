@@ -6,13 +6,15 @@ import json
 import logging
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from secrets import token_urlsafe
 
 # Third-party Libraries
 from fastapi import (
     Depends, FastAPI, HTTPException, Request, Response, status,
     WebSocket, WebSocketDisconnect
 )
+from app.utils.auth_token import is_valid_web_token
 from app.ws_manager import websocket_connections
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -99,7 +101,7 @@ app = FastAPI(
     lifespan=lifespan,
     title="B-Snap API",
     description="B-Snap Documentation API",
-    version="1.0.0",
+    version="1.0.1",
     docs_url=None,  # Disabled to use custom docs
     redoc_url=None
 )
@@ -151,16 +153,29 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                         if isinstance(tokens, str):
                             tokens = json.loads(tokens)
 
-                        now = datetime.now(timezone.utc)
-                        for t in tokens:
-                            if t["token"] == session_token:
-                                expires_at = datetime.fromisoformat(t["expires_at"])
-                                if expires_at > now:
-                                    # ✅ Token masih valid → perpanjang session
-                                    request.session["user_id"] = user.id
-                                    return await call_next(request)
-                    except Exception as e:
-                        logger.warning(f"Token fallback failed: {e}")
+                        if is_valid_web_token(session_token, tokens):
+                            # 🔁 Hapus token lama
+                            tokens = [t for t in tokens if t["token"] != session_token]
+
+                            # 🔁 Buat token baru
+                            new_token = token_urlsafe(32)
+                            expires_at = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+                            tokens.append({
+                                "token": new_token,
+                                "created_at": datetime.now(timezone.utc).isoformat(),
+                                "expires_at": expires_at
+                            })
+
+                            user.web_tokens = tokens
+                            db.commit()
+
+                            # 🔁 Update cookie
+                            response = await call_next(request)
+                            response.set_cookie("session_token", new_token, httponly=True, max_age=60*60*24*7)
+                            
+                            # ✅ Perpanjang session
+                            request.session["user_id"] = user.id
+                            return response
 
             # 6. Gagal semua → redirect login
             request.session.clear()

@@ -151,7 +151,7 @@ def otp_post(
         "session_token",
         token,
         httponly=True,
-        max_age=3600,
+        max_age=60*60*24,
         samesite="lax",
         secure=False  # Ganti ke True jika menggunakan HTTPS
     )
@@ -260,7 +260,7 @@ def mfa_setup_post(
         key="session_token",
         value=token,
         httponly=True,
-        max_age=3600,
+        max_age=60*60*24,
         samesite="lax",
         secure=False
     )
