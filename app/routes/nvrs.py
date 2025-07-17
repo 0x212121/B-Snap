@@ -167,6 +167,7 @@ async def create_nvr(
     asset_no: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
     group_name: str = Form(None),  # ini dikirim dari form
+    status: str = Form(None),  # ini dikirim dari form
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
@@ -199,7 +200,8 @@ async def create_nvr(
         group_id=group_id,
         latitude=lat,
         longitude=lon,
-        asset_no=asset_no
+        asset_no=asset_no,
+        status=status or "Deactivated"
     )
 
     db.add(nvr)

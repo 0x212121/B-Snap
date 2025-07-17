@@ -1,5 +1,6 @@
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, date, timezone
+import logging
 import math
 from typing import Optional
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -8,6 +9,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy import asc, desc, func, union_all, literal_column, select
 from sqlalchemy.orm import Session, contains_eager
 from app.core.config import get_config
+from app.core.logging_config import setup_logging
 from app.db.database import get_db
 from app.routes.auth import operator_access_required
 from app.utils.health_check import run_healthcheck_for_all, run_healthcheck_for_camera, run_healthcheck_for_nvr
@@ -19,11 +21,14 @@ from app.utils.template_helper import templates
 router = APIRouter()
 wita_tz = pytz.timezone('Asia/Makassar')
 
+setup_logging()
+logger = logging.getLogger("healthcheck")
+
 class DeviceHealthStatus(BaseModel):
     id: str
     hostname: str
     ip: str
-    dev_status: str
+    dev_status: str | None
     type: str
     status: str | None
     latency: float | None
@@ -83,10 +88,16 @@ async def get_health_status_api(db: Session = Depends(get_db), current_operator:
     try:
         all_devices = _get_all_devices_health_data(db)
         counts = Counter((dev.type, dev.status) for dev in all_devices)
-        camera_online = counts[("Camera", "Online")] + counts[("Camera", "High Latency")]
-        nvr_online = counts[("NVR", "Online")] + counts[("NVR", "High Latency")]
-        camera_offline = counts[("Camera", "Offline")]
-        nvr_offline = counts[("NVR", "Offline")]
+        for dev in all_devices:
+            assert hasattr(dev, "type"), f"Device missing 'type': {dev}"
+            assert hasattr(dev, "status"), f"Device missing 'status': {dev}"
+
+        logger.debug("Device counts: %s", counts)
+
+        camera_online = counts.get(("Camera", "Online"), 0) + counts.get(("Camera", "High Latency"), 0)
+        nvr_online = counts.get(("NVR", "Online"), 0) + counts.get(("NVR", "High Latency"), 0)
+        camera_offline = counts.get(("Camera", "Offline"), 0)
+        nvr_offline = counts.get(("NVR", "Offline"), 0)
 
         return HealthStatusResponse(
             statuses=all_devices,
