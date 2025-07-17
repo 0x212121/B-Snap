@@ -3,7 +3,7 @@
      data-camera="{{ video.camera }}">
     
     <div class="relative">
-        <img src="{{ video.url.replace('.mp4', '.jpg') }}"
+        <img src="{{ video.url.replace('.mp4', '.jpg') | urlencode }}"
              onerror="this.src='/static/video-placeholder.jpg'"
              alt="Video thumbnail"
              class="w-full h-48 object-cover cursor-pointer rounded-t-xl"
