@@ -1,15 +1,16 @@
 # app/ws/routes.py
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from app.ws.manager import websocket_connections # Setiap worker punya set ini
+from app.ws.manager import websocket_connections
 import asyncpg
 import asyncio
 import json
 import os
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta # Import timedelta
 
 router = APIRouter()
-logger = logging.getLogger("websocket")
+# Pastikan logger dikonfigurasi dengan baik di aplikasi utama Anda
+logger = logging.getLogger("uvicorn.error") # Menggunakan logger uvicorn agar pasti muncul
 
 DATABASE_URL = os.getenv("DATABASE_URL").replace("postgresql+psycopg2", "postgresql")
 WAKE_UP_CHANNEL = "new_message_in_queue"
@@ -21,55 +22,62 @@ async def notification_listener(websockets: set):
     ke semua koneksi yang dikelola oleh worker ini.
     """
     conn = None
-    # Menyimpan timestamp pesan terakhir yang dikirim oleh worker ini
-    last_sent_timestamp = datetime.now(timezone.utc)
+    # Mulai dengan timestamp sedikit di masa lalu untuk menangkap pesan
+    # yang mungkin masuk tepat sebelum worker ini aktif.
+    last_sent_timestamp = datetime.now(timezone.utc) - timedelta(minutes=1)
+    logger.info(f"Worker starting. Initial timestamp set to: {last_sent_timestamp}")
 
     while True:
         try:
             conn = await asyncpg.connect(DATABASE_URL)
             
-            # Queue untuk menerima sinyal dari PostgreSQL
             signal_queue = asyncio.Queue()
             def signal_callback(*args):
                 signal_queue.put_nowait(True)
 
             await conn.add_listener(WAKE_UP_CHANNEL, signal_callback)
-            logger.info(f"Worker listening on channel <{WAKE_UP_CHANNEL}>")
+            logger.info(f"✅ Worker is now listening on PostgreSQL channel <{WAKE_UP_CHANNEL}>")
 
             while True:
-                await signal_queue.get() # Menunggu sinyal "ada pesan baru"
-                logger.info(f"Worker received wake-up signal on <{WAKE_UP_CHANNEL}>")
+                await signal_queue.get()
+                logger.info("Signal received! Waking up to check for new messages.")
 
-                # Ambil semua pesan baru dari tabel
                 new_messages = await conn.fetch(
                     "SELECT payload, created_at FROM notification_queue WHERE created_at > $1 ORDER BY created_at ASC",
                     last_sent_timestamp
                 )
 
                 if not new_messages:
+                    logger.warning("Woke up, but found no new messages. Timestamp might be off.")
                     continue
 
-                # Kirim pesan ke semua klien yang terhubung ke worker ini
+                logger.info(f"Found {len(new_messages)} new message(s) in the queue.")
+
+                # Penting: Cek apakah ada klien yang terhubung ke worker ini
+                if not websockets:
+                    logger.warning("No connected clients in this worker to send notifications to.")
+                    # Tetap update timestamp agar tidak mengambil pesan ini lagi
+                    last_sent_timestamp = new_messages[-1]['created_at']
+                    continue
+
+                logger.info(f"Broadcasting to {len(websockets)} client(s) connected to this worker.")
                 for record in new_messages:
                     payload_str = record['payload']
-                    for ws in list(websockets): # Salin agar aman jika ada perubahan
+                    for ws in list(websockets):
                         try:
                             await ws.send_text(payload_str)
-                        except Exception:
-                            # Abaikan error jika koneksi sudah ditutup
-                            pass
+                        except Exception as e:
+                            logger.error(f"Failed to send to a client: {e}")
                 
-                # Perbarui timestamp terakhir setelah berhasil mengirim
                 last_sent_timestamp = new_messages[-1]['created_at']
-                logger.info(f"Worker sent {len(new_messages)} messages. Last timestamp: {last_sent_timestamp}")
-
+                logger.info(f"Broadcast complete. New timestamp is: {last_sent_timestamp}")
 
         except (asyncpg.PostgresConnectionError, OSError) as e:
-            logger.error(f"Listener connection error: {e}. Retrying in 5s...")
+            logger.error(f"Listener connection error: {e}. Retrying...")
             if conn: await conn.close()
             await asyncio.sleep(5)
         except Exception as e:
-            logger.error(f"Unhandled listener error: {e}. Retrying in 10s...")
+            logger.error(f"Unhandled listener error: {e}. Retrying...")
             if conn: await conn.close()
             await asyncio.sleep(10)
 
@@ -77,6 +85,7 @@ async def notification_listener(websockets: set):
 # Jalankan satu listener di background saat aplikasi (worker) pertama kali start
 @router.on_event("startup")
 async def startup_event():
+    logger.info("🚀 Worker starting up, creating notification listener task...")
     asyncio.create_task(notification_listener(websocket_connections))
 
 @router.websocket("/ws")
