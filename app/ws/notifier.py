@@ -18,7 +18,7 @@ async def pg_listen_forever():
         log("❌ DATABASE_URL not found in environment")
         return
 
-    dsn = raw_dsn.replace("postgresql+psycopg2", "postgresql")
+    dsn = raw_dsn.replace("postgresql+psycopg2", "postgres")
     # await wait_for_postgres(dsn) # Pastikan DB siap
 
     while True:
