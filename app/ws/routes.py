@@ -14,72 +14,65 @@ logger = logging.getLogger("uvicorn.error") # Menggunakan logger uvicorn agar pa
 
 DATABASE_URL = os.getenv("DATABASE_URL").replace("postgresql+psycopg2", "postgresql")
 WAKE_UP_CHANNEL = "new_message_in_queue"
+POLLING_INTERVAL = 5  # Detik. Atur sesuai kebutuhan Anda.
 
-# Fungsi untuk listener di setiap worker
+
 async def notification_listener(websockets: set):
     """
-    Satu listener per worker, mendengarkan sinyal dan mengirim pesan
-    ke semua koneksi yang dikelola oleh worker ini.
+    Listener yang menggunakan metode polling untuk keandalan maksimal.
+    Mengecek database secara berkala untuk pesan baru.
     """
-    conn = None
-    # Mulai dengan timestamp sedikit di masa lalu untuk menangkap pesan
-    # yang mungkin masuk tepat sebelum worker ini aktif.
-    last_sent_timestamp = datetime.now(timezone.utc) - timedelta(minutes=1)
-    logger.info(f"Worker starting. Initial timestamp set to: {last_sent_timestamp}")
+    last_processed_id = 0
+    logger.info(f"🚀 Polling listener started. Checking for new messages every {POLLING_INTERVAL} seconds.")
+
+    # Inisialisasi dengan ID terakhir dari database saat startup
+    try:
+        conn = await asyncpg.connect(DATABASE_URL)
+        last_record = await conn.fetchrow("SELECT id FROM notification_queue ORDER BY id DESC LIMIT 1")
+        if last_record:
+            last_processed_id = last_record['id']
+            logger.info(f"Initial last_processed_id set to: {last_processed_id}")
+        await conn.close()
+    except Exception as e:
+        logger.error(f"Failed to initialize last_processed_id: {e}")
 
     while True:
         try:
+            # Tunggu sesuai interval polling
+            await asyncio.sleep(POLLING_INTERVAL)
+
+            # Jika tidak ada klien yang terhubung di worker ini, lewati pengecekan
+            if not websockets:
+                continue
+
             conn = await asyncpg.connect(DATABASE_URL)
-            
-            signal_queue = asyncio.Queue()
-            def signal_callback(*args):
-                signal_queue.put_nowait(True)
 
-            await conn.add_listener(WAKE_UP_CHANNEL, signal_callback)
-            logger.info(f"✅ Worker is now listening on PostgreSQL channel <{WAKE_UP_CHANNEL}>")
+            new_messages = await conn.fetch(
+                "SELECT id, payload FROM notification_queue WHERE id > $1 ORDER BY id ASC",
+                last_processed_id
+            )
 
-            while True:
-                await signal_queue.get()
-                logger.info("Signal received! Waking up to check for new messages.")
-
-                new_messages = await conn.fetch(
-                    "SELECT payload, created_at FROM notification_queue WHERE created_at > $1 ORDER BY created_at ASC",
-                    last_sent_timestamp
-                )
-
-                if not new_messages:
-                    logger.warning("Woke up, but found no new messages. Timestamp might be off.")
-                    continue
-
-                logger.info(f"Found {len(new_messages)} new message(s) in the queue.")
-
-                # Penting: Cek apakah ada klien yang terhubung ke worker ini
-                if not websockets:
-                    logger.warning("No connected clients in this worker to send notifications to.")
-                    # Tetap update timestamp agar tidak mengambil pesan ini lagi
-                    last_sent_timestamp = new_messages[-1]['created_at']
-                    continue
-
-                logger.info(f"Broadcasting to {len(websockets)} client(s) connected to this worker.")
+            if new_messages:
+                logger.info(f"Found {len(new_messages)} new message(s). Broadcasting...")
                 for record in new_messages:
-                    payload_str = record['payload']
+                    payload_data = json.loads(record['payload'])
+                    payload_data['notification_id'] = record['id']
+                    final_payload_str = json.dumps(payload_data)
+
                     for ws in list(websockets):
                         try:
-                            await ws.send_text(payload_str)
-                        except Exception as e:
-                            logger.error(f"Failed to send to a client: {e}")
+                            await ws.send_text(final_payload_str)
+                        except Exception:
+                            pass
                 
-                last_sent_timestamp = new_messages[-1]['created_at']
-                logger.info(f"Broadcast complete. New timestamp is: {last_sent_timestamp}")
+                last_processed_id = new_messages[-1]['id']
+                logger.info(f"Broadcast complete. New last_processed_id is: {last_processed_id}")
 
-        except (asyncpg.PostgresConnectionError, OSError) as e:
-            logger.error(f"Listener connection error: {e}. Retrying...")
-            if conn: await conn.close()
-            await asyncio.sleep(5)
         except Exception as e:
-            logger.error(f"Unhandled listener error: {e}. Retrying...")
-            if conn: await conn.close()
-            await asyncio.sleep(10)
+            logger.error(f"An error occurred in the polling loop: {e}")
+        finally:
+            if 'conn' in locals() and conn and not conn.is_closed():
+                await conn.close()
 
 
 @router.websocket("/ws")
