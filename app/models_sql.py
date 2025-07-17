@@ -246,7 +246,6 @@ class CameraStatusChangeLog(Base):
 
     camera = relationship("Camera", backref="status_change_logs")
 
-
 class NotificationQueue(Base):
     """
     Model ORM untuk tabel notification_queue.
@@ -269,9 +268,8 @@ class NotificationQueue(Base):
     # Nilai default diatur di sisi database menggunakan fungsi NOW().
     # Sesuai dengan 'created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()' di SQL.
     created_at = Column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        server_default=func.now(), 
+        DateTime(timezone=True), 
+        server_default=func.now(),
         nullable=False
     )
 
