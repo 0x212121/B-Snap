@@ -15,6 +15,7 @@ from fastapi import (
     Depends, FastAPI, HTTPException, Request, Response, status,
     WebSocket, WebSocketDisconnect
 )
+from sqlalchemy import text
 from app.utils.auth_token import is_valid_web_token
 from app.ws.manager import websocket_connections
 from fastapi.responses import RedirectResponse
@@ -167,8 +168,17 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
             # 5. Rolling session_token from cookie
             # ===============================================================
             if session_token:
-                user = db.query(User).filter(User.web_tokens.like(f'%"{session_token}"%')).first()
-                if user:
+                raw_query = text("""
+                    SELECT * FROM users
+                    WHERE EXISTS (
+                        SELECT 1 FROM jsonb_array_elements(web_tokens) AS elem
+                        WHERE elem->>'token' = :token
+                    )
+                    LIMIT 1
+                """)
+                result = db.execute(raw_query, {"token": session_token}).first()
+                if result:
+                    user = db.query(User).get(result.id)
                     try:
                         tokens = json.loads(user.web_tokens) if isinstance(user.web_tokens, str) else user.web_tokens
                         if is_valid_web_token(session_token, tokens):
