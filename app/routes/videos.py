@@ -31,7 +31,14 @@ logger = logging.getLogger("snapshot")
 # Helpers
 # =============================
 
-def _get_filtered_videos(db: Session, group_id: int, camera_filter: Optional[str] = None, search_query: Optional[str] = None) -> List[Dict[str, Any]]:
+def _get_filtered_videos(
+    db: Session,
+    group_id: int,
+    camera_filter: Optional[str] = None,
+    search_query: Optional[str] = None,
+    offset: int = 0,
+    limit: int = 12
+) -> List[Dict[str, Any]]:
     """
     Helper function to fetch and filter videos from the database.
     """
@@ -50,7 +57,7 @@ def _get_filtered_videos(db: Session, group_id: int, camera_filter: Optional[str
     if search_query:
         video_query = video_query.filter(Video.camera_name.ilike(f"%{search_query}%"))
 
-    videos = video_query.order_by(Video.timestamp.desc()).all()
+    videos = video_query.order_by(Video.timestamp.desc()).offset(offset).limit(limit).all()
 
     formatted_videos = []
     for v in videos:
@@ -106,21 +113,23 @@ def show_videos(
     })
 
 
-@router.get("/video-gallery-data", response_class=JSONResponse)
+@router.get("/video-gallery-data", response_class=JSONResponse)  
 async def get_video_gallery_data(
     request: Request,
-    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1),
     camera: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
     current_operator: User = Depends(operator_access_required)
 ):
     group_id = request.session.get("user_groupid")
     if not group_id:
         return JSONResponse(status_code=403, content={"detail": "Authentication required."})
 
-    filtered_videos = _get_filtered_videos(db, group_id, camera_filter=camera, search_query=q)
-    gallery_html = templates.get_template("_video_grid.html").render({"videos": filtered_videos, "request": request})
+    offset = (page - 1) * 12
+    videos = _get_filtered_videos(db, group_id, camera_filter=camera, search_query=q, offset=offset, limit=12)
 
+    gallery_html = templates.get_template("_video_grid.html").render({"videos": videos, "request": request})
     return JSONResponse({'html': gallery_html})
 
 

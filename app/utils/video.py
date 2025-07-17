@@ -22,14 +22,12 @@ from app.ws.manager import get_ws_connections
 STATIC_VIDEO_DIR = Path("static/videos")
 os.makedirs(STATIC_VIDEO_DIR, exist_ok=True)
 
-# ... [imports tetap sama seperti sebelumnya] ...
-
 # --- Logger Setup ---
 setup_logging()
 logger = logging.getLogger("snapshot")
 
 def _run_ffmpeg_sync(cmd: str) -> Tuple[int, str, str]:
-    logger.info(f"Running FFMPEG command: {cmd}")
+    logger.info("Running FFMPEG command: %s", cmd)
     proc = subprocess.run(
         cmd,
         shell=True,
@@ -39,7 +37,7 @@ def _run_ffmpeg_sync(cmd: str) -> Tuple[int, str, str]:
         errors='ignore'
     )
     if proc.returncode != 0:
-        logger.error(f"FFMPEG Error (return code {proc.returncode}):\nSTDERR: {proc.stderr}")
+        logger.error("FFMPEG Error (return code %d):\nSTDERR: %s", proc.returncode, proc.stderr)
     return proc.returncode, proc.stdout, proc.stderr
 
 
@@ -71,7 +69,7 @@ def get_video_metadata(file_path: str) -> Dict[str, Any]:
         }
 
     except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError) as e:
-        logger.error(f"Failed to get metadata for {file_path}: {e}")
+        logger.error("Failed to get metadata for %s: %s", file_path, e)
         return {
             "duration": 0,
             "size": size,
@@ -79,6 +77,21 @@ def get_video_metadata(file_path: str) -> Dict[str, Any]:
             "height": 0
         }
 
+def generate_thumbnail(video_path: str, output_thumb_path: str):
+    try:
+        subprocess.run([
+            "ffmpeg",
+            "-ss", "00:00:01",         # ambil frame ke 1 detik
+            "-i", video_path,
+            "-vframes", "1",
+            "-q:v", "2",               # kualitas bagus (1=terbaik, 31=terburuk)
+            output_thumb_path
+        ], check=True)
+        logger.info("🖼️ Thumbnail generated: %s", output_thumb_path)
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.warning("❌ Failed to generate thumbnail for %s: %s", video_path, e)
+        return False
 
 async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[str, Any]:
     def get_camera_sync() -> Camera:
@@ -94,17 +107,17 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
     camera = await asyncio.to_thread(get_camera_sync)
     
     if not camera:
-        logger.error(f"Camera with ID {camera_id} not found.")
+        logger.error("Camera with ID %s not found.", camera_id)
         return {"status": "error", "message": "Camera not found"}
         
     if not camera.group or not camera.group.name:
-        logger.error(f"Camera '{camera.hostname}' does not have a group. Cannot determine storage folder.")
+        logger.error("Camera '%s' does not have a group. Cannot determine storage folder.", camera.hostname)
         return {"status": "error", "message": "Camera has no group"}
 
     reachable = await asyncio.to_thread(is_reachable, camera.ip)
     if not reachable:
         msg = f"⚠️ [{camera.hostname}] unreachable (ping failed), skipping"
-        logger.warning(msg)
+        logger.warning("%s", msg)
         return {"status": "error", "message": "Camera Offline"}
 
     group_name = camera.group.name
@@ -120,12 +133,12 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
 
     # 🧹 Clean leftover file if exists
     if output_path.exists():
-        logger.warning(f"Deleting leftover file before recording: {output_path}")
+        logger.warning("Deleting leftover file before recording: %s", output_path)
         output_path.unlink()
 
     rtsp_url = get_rtsp_url(camera)
     if not rtsp_url:
-        logger.error(f"Failed to get RTSP URL for camera {camera.hostname}")
+        logger.error("Failed to get RTSP URL for camera %s", camera.hostname)
         return {"status": "error", "message": "Failed to get RTSP URL"}
 
     cmd_copy = (
@@ -135,7 +148,7 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
     code, _, err = await asyncio.to_thread(_run_ffmpeg_sync, cmd_copy)
 
     if code != 0:
-        logger.warning(f"Remux failed for {camera.hostname}, falling back to re-encode...")
+        logger.warning("Remux failed for %s, falling back to re-encode...", camera.hostname)
         cmd_reencode = (
             f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" '
             f'-t {duration} -c:v libx264 -preset veryfast -crf 23 -an "{str(output_path)}"'
@@ -145,11 +158,17 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
             logger.error("%s - FFMPEG Re-encode Failed: %s", camera.hostname, err)
             return {"status": "error", "message": "FFMPEG process failed"}
 
-    logger.info(f"Video recorded successfully: {output_path}")
+    logger.info("Video recorded successfully: %s", output_path)
 
     metadata = get_video_metadata(str(output_path))
     if metadata.get("duration", 0) == 0:
-        logger.warning(f"⚠️ Video from {camera.hostname} may be corrupted or too short (duration=0)")
+        logger.warning("⚠️ Video from %s may be corrupted or too short (duration=0)", camera.hostname)
+
+    if metadata.get("duration", 0) > 0:
+        thumb_path = output_path.with_suffix(".jpg")
+        success_thumb = await asyncio.to_thread(generate_thumbnail, str(output_path), str(thumb_path))
+        if not success_thumb:
+            logger.warning("⚠️ Thumbnail generation failed for %s", output_path)
 
     video_data = {
         "id": str(uuid.uuid4()),
@@ -182,16 +201,17 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
             db.execute(text("NOTIFY camera_notifications, :payload"), {"payload": payload})
             db.commit()  # ✅ satu kali commit untuk add + notify
 
-            logger.info(f"📢 PostgreSQL NOTIFY sent: {payload}")
+            logger.info("📢 PostgreSQL NOTIFY sent: %s", payload)
             return True
         except Exception as e:
             db.rollback()
-            logger.error(f"Failed to save video metadata to DB for {data['camera_name']}: {e}")
+            logger.error("Failed to save video metadata to DB for %s: %s", data['camera_name'], e)
             return False
         finally:
             db.close()
 
     success = await asyncio.to_thread(save_video_record_sync, video_data)
+
 
     if success:
         # ✅ Broadcast ke WebSocket dengan asyncio.gather()
@@ -211,7 +231,7 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
 
         return {
             "status": "success",
-            "message": f"Video from {camera.hostname} was recorded and saved successfully.",
+            "message": "Video from %s was recorded and saved successfully." % camera.hostname,
         }
     else:
         if os.path.exists(output_path):

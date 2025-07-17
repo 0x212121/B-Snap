@@ -17,43 +17,47 @@
   
   <form id="filterForm" class="flex flex-wrap justify-center items-center gap-4 mb-6" onsubmit="return false;">
     <input id="searchInput" type="text" placeholder="Search Camera Name..."
-      class="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-64 focus:outline-none focus:ring focus:ring-blue-200" />
-
+    class="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-64 focus:outline-none focus:ring focus:ring-blue-200" />
+    
     <select id="cameraSelect" name="camera"
-      class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-[20rem] sm:w-[24rem] focus:outline-none">
-      <option value="">🎥 All Cameras</option>
-      {% for cname in camera_names | sort %}
-      <option value="{{ cname }}" {% if cname == selected_camera %}selected{% endif %}>{{ cname }}</option>
-      {% endfor %}
-    </select>
+    class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-[20rem] sm:w-[24rem] focus:outline-none">
+    <option value="">🎥 All Cameras</option>
+    {% for cname in camera_names | sort %}
+    <option value="{{ cname }}" {% if cname == selected_camera %}selected{% endif %}>{{ cname }}</option>
+    {% endfor %}
+  </select>
+  
+  <button type="button" id="clearFilterBtn"
+  class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear Filter</button>
+</form>
 
-    <button type="button" id="clearFilterBtn"
-      class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear Filter</button>
-  </form>
-
-  <!-- The video grid will be loaded here -->
-  <div id="videoGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
-    {% include '_video_grid.html' %}
-  </div>
-
-  <!-- Modal for video playback -->
-  <div id="modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50 p-4" onclick="hideModal()">
-    <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl w-full" onclick="event.stopPropagation()">
-        <video id="modal-video" src="" class="rounded w-full max-h-[75vh]" controls autoplay></video>
-        <div id="modal-info" class="text-center mt-2 text-gray-800 dark:text-white"></div>
-        <div class="flex justify-center md:justify-end mt-4 space-x-4">
-            <a id="download-btn" href="#" download class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-              Download
-            </a>
-            <button onclick="hideModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded inline-flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-              Close
-            </button>
-        </div>
-    </div>
+<!-- The video grid will be loaded here -->
+<div id="videoGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+  {% include '_video_grid.html' %}
 </div>
 
+<!-- Modal for video playback -->
+<div id="modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50 p-4" onclick="hideModal()">
+  <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl w-full" onclick="event.stopPropagation()">
+    <video id="modal-video" src="" class="rounded w-full max-h-[75vh]" controls autoplay></video>
+    <div id="modal-info" class="text-center mt-2 text-gray-800 dark:text-white"></div>
+    <div class="flex justify-center md:justify-end mt-4 space-x-4">
+      <a id="download-btn" href="#" download class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+        Download
+      </a>
+      <button onclick="hideModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded inline-flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+<div class="flex justify-center mt-6">
+  <button id="loadMoreBtn"
+  class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm shadow"
+  onclick="loadMoreVideos()">⬇ Load More</button>
+</div>
 </div>
 {% endblock %}
 
@@ -63,7 +67,9 @@
 <script>
   let tom;
   let debounceTimer;
-
+  let currentPage = 1;
+  let isLoading = false;
+  
   // Custom confirmation modal
   function showCustomConfirm(message, onConfirm) {
     const confirmModal = document.createElement('div');
@@ -78,7 +84,7 @@
       </div>
     `;
     document.body.appendChild(confirmModal);
-
+    
     document.getElementById('confirm-yes').onclick = () => {
       onConfirm();
       document.body.removeChild(confirmModal);
@@ -87,12 +93,12 @@
       document.body.removeChild(confirmModal);
     };
   }
-
-
+  
+  
   async function fetchAndUpdateGallery(params = {}) {
     const grid = document.getElementById("videoGrid");
     grid.style.opacity = '0.5';
-
+    
     const urlParams = new URLSearchParams();
     if (params.camera) urlParams.set('camera', params.camera);
     if (params.q) urlParams.set('q', params.q);
@@ -109,7 +115,7 @@
       grid.style.opacity = '1';
     }
   }
-
+  
   function initTomSelect() {
     if (tom) tom.destroy();
     tom = new TomSelect("#cameraSelect", {
@@ -117,54 +123,56 @@
       allowEmptyOption: true,
       placeholder: 'Select a camera...',
       onChange: (value) => {
-        const searchQuery = document.getElementById("searchInput").value;
-        fetchAndUpdateGallery({ camera: value, q: searchQuery });
+        currentPage = 1;
+        fetchAndUpdateGallery({ camera: value, q: document.getElementById("searchInput").value });
       }
     });
   }
-
+  
   function deleteVideo(videoId, element) {
     showCustomConfirm("Are you sure you want to delete this video?", () => {
       const card = element.closest('.video-card');
       card.style.opacity = '0.5';
-
+      
       fetch(`/videos/${videoId}`, { method: 'DELETE' })
-        .then(async res => {
-          const data = await res.json().catch(() => ({}));
-          if (res.ok && data.status === "success") {
-            showToast(data.message || "Video deleted successfully");
-            card.remove();
-          } else {
-            showToast(data.detail || data.message || "Failed to delete video.", true);
-            card.style.opacity = '1';
-          }
-        })
-        .catch(err => {
-          console.error("Error deleting video:", err);
-          showToast("Error during deletion.", true);
+      .then(async res => {
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.status === "success") {
+          showToast(data.message || "Video deleted successfully");
+          card.remove();
+        } else {
+          showToast(data.detail || data.message || "Failed to delete video.", true);
           card.style.opacity = '1';
-        });
+        }
+      })
+      .catch(err => {
+        console.error("Error deleting video:", err);
+        showToast("Error during deletion.", true);
+        card.style.opacity = '1';
+      });
     });
   }
-
+  
   document.addEventListener("DOMContentLoaded", () => {
     initTomSelect();
-
+    
     document.getElementById("searchInput")?.addEventListener("input", (e) => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
+        currentPage = 1;
         const selectedCamera = tom.getValue();
         fetchAndUpdateGallery({ camera: selectedCamera, q: e.target.value });
       }, 350);
     });
-
+    
     document.getElementById("clearFilterBtn")?.addEventListener("click", () => {
+      currentPage = 1;
       document.getElementById("searchInput").value = '';
       tom.clear();
       fetchAndUpdateGallery(); // fetch all videos again
     });
   });
-
+  
   function showToast(msg, isError = false) {
     const toast = document.getElementById("toast");
     toast.textContent = msg;
@@ -172,28 +180,94 @@
     toast.classList.remove("hidden");
     setTimeout(() => toast.classList.add("hidden"), 3000);
   }
-
+  
   function showModal(videoUrl, cameraName, timestamp) {
     const modal = document.getElementById("modal");
     const video = document.getElementById("modal-video");
     const info = document.getElementById("modal-info");
     const downloadBtn = document.getElementById("download-btn");
-
-    video.src = videoUrl;
+    
+    // Clear previous state
+    video.pause();
+    video.innerHTML = ""; // remove previous <source>
+    video.removeAttribute("src");
+    
+    // Add new source
+    const source = document.createElement("source");
+    source.src = videoUrl;
+    source.type = "video/mp4";
+    video.appendChild(source);
+    video.load();
+    
+    // Autoplay when video is ready
+    video.onloadeddata = () => {
+      video.play().catch(err => {
+        console.error("Video play failed:", err);
+        showToast("⚠️ Failed to play video", true);
+      });
+    };
+    
     info.textContent = `${cameraName} • ${timestamp}`;
     downloadBtn.href = videoUrl;
     downloadBtn.download = `video_${cameraName}_${timestamp.replace(/[\s,:]/g, '-')}.mp4`;
+    
     modal.classList.remove("hidden");
-    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    document.body.style.overflow = 'hidden';
   }
-
+  
+  
+  
+  
   function hideModal() {
     const modal = document.getElementById("modal");
     const video = document.getElementById("modal-video");
     video.pause();
-    video.src = ""; // Stop video loading
+    video.removeAttribute("src");
+    video.innerHTML = "";
     modal.classList.add("hidden");
     document.body.style.overflow = 'auto'; // Restore scrolling
   }
+  
+  async function loadMoreVideos() {
+    if (isLoading) return;
+    isLoading = true;
+    currentPage++;
+    
+    const grid = document.getElementById("videoGrid");
+    const btn = document.getElementById("loadMoreBtn");
+    btn.textContent = "Loading...";
+    btn.disabled = true;
+    
+    const camera = tom.getValue();
+    const q = document.getElementById("searchInput").value;
+    const params = new URLSearchParams({ page: currentPage });
+    if (camera) params.set('camera', camera);
+    if (q) params.set('q', q);
+    
+    try {
+      const response = await fetch(`/video-gallery-data?${params}`);
+      const data = await response.json();
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = data.html;
+      const newCards = tempDiv.querySelectorAll(".video-card");
+      
+      if (newCards.length === 0) {
+        btn.textContent = "No more videos";
+        btn.disabled = true;
+      } else {
+        newCards.forEach(card => grid.appendChild(card));
+        btn.textContent = "⬇ Load More";
+        btn.disabled = false;
+      }
+    } catch (err) {
+      console.error("Error loading more videos:", err);
+      showToast("Failed to load more videos.", true);
+      btn.textContent = "Load More";
+      btn.disabled = false;
+    } finally {
+      isLoading = false;
+    }
+  }
+  
 </script>
 {% endblock %}

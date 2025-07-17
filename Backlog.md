@@ -78,17 +78,19 @@
 - [x] **Dockerize B-Snap** - *Priority: Medium*
 - [x] HTTPS using nginx proxy
   - [x] don't expose B-Snap port to outside
-
-⏳ Ongoing:
 - [x] Bug fixing
   - [x] Timestamp di maps tidak sync
-  - [ ] Logs terhapus ketika restart container
+  - [x] Logs terhapus ketika restart container
 - [x] Timestamp delete snapshot, snapshot in maps converted
-- [ ] Double snapshot 
-  - [x] Pisah scheduler dari web server
+- [x] Double snapshot 
+  - [x] Pisah scheduler dari web server (scheduler menggunakan docker container sendiri)
 - [x] Change font in docker (Liberation font)
 - [x] Add resolution column to videos table
 
+⏳ Ongoing:
+- [ ] Lazy load backend 
+  - [x] Snapshot Gallery menu
+  - [ ] Video gallery menu
+
 🆕 Added:
-- [x] Lazy load backend
 - [ ] Tamper detection (snapshot blur / dark)

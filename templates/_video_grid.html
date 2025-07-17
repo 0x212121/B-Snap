@@ -3,11 +3,13 @@
      data-camera="{{ video.camera }}">
     
     <div class="relative">
-        <video preload="metadata" class="w-full h-48 object-cover cursor-pointer rounded-t-xl" 
-               onclick="showModal('{{ video.url | urlencode }}', '{{ video.camera }}', '{{ video.time }}')">
-            <source src="{{ video.url | urlencode }}#t=0.5" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
+        <img src="{{ video.url.replace('.mp4', '.jpg') }}"
+             onerror="this.src='/static/video-placeholder.jpg'"
+             alt="Video thumbnail"
+             class="w-full h-48 object-cover cursor-pointer rounded-t-xl"
+             loading="lazy"
+             onclick='showModal({{ video.url | tojson }}, {{ video.camera | tojson }}, {{ video.time | tojson }})'>
+        
         <div class="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
             ▶
         </div>
@@ -36,4 +38,3 @@
 {% if not videos %}
 <p class="text-center text-gray-500 dark:text-gray-400 col-span-full">No videos found for the selected criteria.</p>
 {% endif %}
-</div>

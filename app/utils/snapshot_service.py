@@ -71,7 +71,12 @@ def take_snapshot(camera: Camera, db: Session) -> dict:
         return result
 
     logger.warning("Falling back to RTSP for %s", camera.hostname)
-    return try_rtsp_snapshot(camera, db)
+    result = try_rtsp_snapshot(camera, db)
+    if result["status"] == "success":
+        return result
+
+    logger.warning("Falling back to FFmpeg for %s", camera.hostname)
+    return try_ffmpeg_snapshot(camera, db)
 
 
 def try_http_snapshot(camera: Camera, db: Session) -> dict:
@@ -184,6 +189,64 @@ def try_rtsp_snapshot(camera: Camera, db: Session) -> dict:
     finally:
         if cap and cap.isOpened():  # Check if it was opened before releasing
             cap.release()
+
+
+def try_ffmpeg_snapshot(camera: Camera, db: Session) -> dict:
+    WATERMARK_TEXT = get_config("watermark_text", default="Property of Company")
+    try:
+        rtsp_url = get_rtsp_url(camera)
+        if not rtsp_url:
+            raise RuntimeError("RTSP URL not available")
+
+        now = datetime.now()
+        date_str = now.strftime("%Y-%m-%d")
+        time_str = now.strftime("%H-%M-%S")
+        dir_path = os.path.join(STATIC_DIR, str(camera.id), date_str)
+        os.makedirs(dir_path, exist_ok=True)
+
+        filename = f"{time_str}.jpg"
+        full_path = os.path.join(dir_path, filename)
+
+        # 🧠 Gunakan ffmpeg CLI langsung
+        cmd = [
+            "ffmpeg",
+            "-rtsp_transport", "tcp",
+            "-y",  # overwrite if exists
+            "-i", rtsp_url,
+            "-frames:v", "1",
+            "-q:v", "2",
+            "-timeout", "5000000",
+            full_path
+        ]
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+
+        if result.returncode != 0 or not os.path.exists(full_path):
+            raise RuntimeError(f"FFmpeg failed with return code {result.returncode}")
+
+        with open(full_path, "rb") as f:
+            image_bytes = f.read()
+
+        resolution = get_image_resolution(image_bytes)
+        relative_path = os.path.relpath(full_path, start=STATIC_DIR).replace("\\", "/")
+
+        add_watermark(full_path, text=WATERMARK_TEXT, opacity=0.5)
+        clean_old_snapshots(camera.hostname, db)
+        check_stats.check_stats(camera)
+
+        logger.info("📸 [%s] FFmpeg snapshot → %s", camera.hostname, relative_path)
+
+        return {
+            "status": "success",
+            "message": f"Snapshot taken from {camera.hostname} (via ffmpeg)",
+            "camera_name": camera.hostname,
+            "file_path": relative_path,
+            "resolution": resolution,
+            "camera_ip": camera.ip
+        }
+
+    except Exception as e:
+        logger.exception("❌ [%s] FFmpeg snapshot failed.", camera.hostname)
+        return error_response(camera.hostname, f"FFmpeg snapshot failed: {str(e)}")
 
 
 def error_response(camera_name: str, error: str) -> dict:
