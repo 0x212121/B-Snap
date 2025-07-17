@@ -3,27 +3,21 @@
 # ====================================================================
 # Python Standard Library
 import asyncio
-import json
 import logging
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
-from secrets import token_urlsafe
 
 # Third-party Libraries
 from fastapi import (
-    Depends, FastAPI, HTTPException, Request, Response, status,
-    WebSocket, WebSocketDisconnect
+    FastAPI, HTTPException, Request, Response, status
 )
-from sqlalchemy import text
-from app.utils.auth_token import is_valid_web_token
 from app.ws.manager import websocket_connections
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from fastapi.openapi.docs import get_swagger_ui_html
-from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from app.middleware.auth_and_setup import AuthAndSetupMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from app.middleware.session_restore import RestoreSessionMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
@@ -32,15 +26,12 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from app.core.config_initializer import seed_config
 from app.core.logging_config import setup_logging
 from app.db.database import Base, engine, SessionLocal
-from app.models_sql import User
-from app.jobs.scheduler import start_scheduler
 # Combined router imports for cleaner organization
 from app.routes import (
     auth, audit, cameras, config, dev_docs, docs, health, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
     user_management, videos
 )
-from app.routes.auth import get_current_user
 from app.ws.routes import notification_listener, router as ws_router
 
 # from app.ws.notifier import pg_listen_and_broadcast
@@ -63,21 +54,6 @@ from app.utils.template_helper import templates
 # B-snap version
 from app.version import __version__
 templates.env.globals["version"] = __version__
-
-# List of paths that can be accessed without login
-ALLOWED_PUBLIC_PATHS = [
-    "/login",
-    "/logout",
-    "/setup",
-    "/static/css",
-    "/static/icons",
-    "/static/swagger-ui-tailwind.css",
-    "/docs",
-    "/openapi.json",
-    "/mfa/setup",
-    "/mfa/force-verify",
-    "/favicon.ico",
-]
 
 # ====================================================================
 # 3. APPLICATION LIFESPAN (STARTUP & SHUTDOWN)
@@ -118,131 +94,25 @@ async def lifespan(app: FastAPI):
 # ====================================================================
 # 4. FASTAPI APP INSTANCE & MIDDLEWARE
 # ====================================================================
+from starlette.middleware import Middleware
+
+middleware = [
+    Middleware(ProxyHeadersMiddleware, trusted_hosts=TRUSTED_HOSTS),
+    Middleware(GZipMiddleware, minimum_size=1000),
+    Middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=3600),
+    Middleware(RestoreSessionMiddleware),
+    Middleware(AuthAndSetupMiddleware),
+]
+
 app = FastAPI(
     lifespan=lifespan,
     title="B-Snap API",
     description="B-Snap Documentation API",
     version="1.0.1",
     docs_url=None,  # Disabled to use custom docs
-    redoc_url=None
+    redoc_url=None,
+    middleware=middleware
 )
-
-
-
-class AuthAndSetupMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
-        db = SessionLocal()
-        try:
-            current_path = request.url.path
-            auth_header = request.headers.get("authorization")
-            token_query = request.query_params.get("token")
-            session_user_id = request.session.get("user_id")
-            session_token = request.cookies.get("session_token")
-
-            # ===============================================================
-            # 1. Setup check
-            # ===============================================================
-            if not db.query(User).first():
-                if not any(current_path.startswith(p) for p in ["/setup", "/static"]):
-                    return RedirectResponse(url="/setup", status_code=307)
-                return await call_next(request)
-
-            # ===============================================================
-            # 2. Public paths (no login required)
-            # ===============================================================
-            if any(current_path.startswith(p) for p in ALLOWED_PUBLIC_PATHS):
-                return await call_next(request)
-
-            # ===============================================================
-            # 2.5 Snapshot token via ?token=...
-            # ===============================================================
-            if token_query:
-                return await call_next(request)
-
-            # ===============================================================
-            # 3. Bearer token for API access
-            # ===============================================================
-            if auth_header and auth_header.lower().startswith("bearer "):
-                return await call_next(request)
-
-            # ===============================================================
-            # 4. Session-based login
-            # ===============================================================
-            if session_user_id:
-                user = db.query(User).filter(User.id == session_user_id).first()
-                if user:
-                    return await call_next(request)
-                else:
-                    request.session.clear()
-
-            # ===============================================================
-            # 5. Rolling session_token from cookie
-            # ===============================================================
-            if session_token:
-                raw_query = text("""
-                    SELECT * FROM users
-                    WHERE EXISTS (
-                        SELECT 1 FROM jsonb_array_elements(web_tokens) AS elem
-                        WHERE elem->>'token' = :token
-                    )
-                    LIMIT 1
-                """)
-                result = db.execute(raw_query, {"token": session_token}).first()
-                if result:
-                    user = db.query(User).get(result.id)
-                    try:
-                        tokens = json.loads(user.web_tokens) if isinstance(user.web_tokens, str) else user.web_tokens
-                        if is_valid_web_token(session_token, tokens):
-                            # Append new token (keep old)
-                            new_token = token_urlsafe(32)
-                            expires_at = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
-                            tokens.append({
-                                "token": new_token,
-                                "created_at": datetime.now(timezone.utc).isoformat(),
-                                "expires_at": expires_at
-                            })
-                            user.web_tokens = tokens
-                            db.commit()
-
-                            # Optional: restore session if needed
-                            request.session["user_id"] = user.id
-                            request.state.user_id = user.id  # for manual access if needed
-
-                            response = await call_next(request)
-                            response.set_cookie(
-                                "session_token",
-                                new_token,
-                                httponly=True,
-                                max_age=60 * 60 * 24 * 7,
-                                samesite='lax',
-                                secure=request.url.scheme == 'https'
-                            )
-                            return response
-                    except (json.JSONDecodeError, TypeError) as e:
-                        logger.warning(f"Error decoding web_tokens for user {user.id}: {e}")
-
-            # ===============================================================
-            # 6. Authentication failed
-            # ===============================================================
-            response = RedirectResponse(url="/login?reason=session_expired", status_code=303)
-            response.delete_cookie("session_token")
-            response.delete_cookie("session")
-            request.session.clear()
-            return response
-
-        except Exception as e:
-            logger.error(f"Critical error in AuthAndSetupMiddleware: {e}", exc_info=True)
-            return Response("Internal Server Error", status_code=500)
-        finally:
-            db.close()
-
-
-# Middleware order is IMPORTANT: Processed from bottom to top when request comes in.
-# Last added will be executed first.
-app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=TRUSTED_HOSTS)
-app.add_middleware(GZipMiddleware, minimum_size=1000)
-app.add_middleware(AuthAndSetupMiddleware)
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=3600)
 
 
 # ====================================================================
