@@ -210,7 +210,7 @@ async def capture_video(request: Request, camera_id: str, current_admin: User = 
         if not camera:
             return {"status": "error", "message": "Camera not found"}
         
-        asyncio.create_task(record_video_and_save_db(camera_id, 5))
+        asyncio.create_task(record_video_and_save_db(request, camera_id, 5))
         return {"status": "success", "message": f"🎥 Recording 5s video from {camera.hostname}..."}
     finally:
         db.close()

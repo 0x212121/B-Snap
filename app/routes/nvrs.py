@@ -340,6 +340,53 @@ async def get_camera_details(request: Request, nvr_id: str, db: Session = Depend
     }
 
 
+@router.post("/nvrs/delete/{nvr_id}", response_class=JSONResponse)
+async def delete_nvr(
+    request: Request,
+    nvr_id: str = Path(...),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    Deletes an NVR from the database.
+    This endpoint is called via AJAX from the frontend after user confirmation.
+    """
+    nvr = db.query(NVR).filter(NVR.id == nvr_id).first()
+    if not nvr:
+        return JSONResponse(
+            status_code=404,
+            content={"status": "error", "message": "NVR not found."}
+        )
+
+    try:
+        nvr_hostname = nvr.hostname  # Store hostname for logging before deletion
+        
+        # Log the audit trail before committing the deletion
+        log_audit(
+            db=db,
+            user=request.session.get("user_name", "unknown"),
+            action="delete_nvr",
+            target=str(nvr_hostname),
+            ip=request.client.host,
+            extra=f"NVR '{nvr_hostname}' (ID: {nvr_id}) deleted."
+        )
+
+        db.delete(nvr)
+        db.commit()
+
+        return JSONResponse(
+            status_code=200,
+            content={"status": "success", "message": f"NVR '{nvr_hostname}' has been deleted successfully."}
+        )
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to delete NVR {nvr_id}: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": "An internal server error occurred while deleting the NVR."}
+        )
+
+
 @router.get("/nvrs/export_csv")
 async def export_csv(request: Request, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
     

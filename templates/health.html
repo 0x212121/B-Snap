@@ -79,6 +79,18 @@
   </div>
 </div>
 
+<!-- Modal Alert -->
+<div id="alertModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
+    <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">⚠️ Alert</h2>
+    <p id="alertModalMessage" class="text-gray-700 dark:text-gray-300"></p>
+    <div class="flex justify-end mt-6">
+      <button onclick="hideAlertModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+        OK
+      </button>
+    </div>
+  </div>
+</div>
 
 <script>
   // --- REFAKTORISASI JAVASCRIPT TOTAL ---
@@ -290,7 +302,7 @@
       
     } catch (error) {
       console.error('Failed to refresh table:', error);
-      alert('Failed to refresh device status.');
+      showAlertModal('Failed to refresh device status.');
     }
   }
   
@@ -317,7 +329,7 @@
     })
     .catch(err => {
       console.error("Error triggering healthcheck:", err);
-      alert("Error triggering healthcheck: " + err.message);
+      showAlertModal("Error triggering healthcheck: " + err.message);
     })
     .finally(() => {
       setTimeout(() => {
@@ -353,7 +365,7 @@
     })
     .catch(error => {
       console.error('Error triggering health check:', error);
-      alert('Failed to trigger health check: ' + error.message);
+      showAlertModal('Failed to trigger health check: ' + error.message);
       
       // Reset tombol jika error
       button.disabled = false;
@@ -431,12 +443,12 @@
         console.log('Realtime snapshot created. Now fetching its info to display.');
         viewSnapshot(cameraName);
       } else {
-        alert('Failed to take snapshot: ' + (data.detail || 'Unknown error from server'));
+        showAlertModal('Failed to take snapshot: ' + (data.detail || 'Unknown error from server'));
       }
     })
     .catch(error => {
       console.error('Error taking realtime snapshot:', error);
-      alert('An error occurred: ' + error.message);
+      showAlertModal('An error occurred: ' + error.message);
     })
     .finally(() => {
       button.disabled = false;
@@ -485,21 +497,31 @@
             link.download = filename; 
             link.click();
           };
-          img.onerror = () => alert("Failed to load image for download.");
+          img.onerror = () => showAlertModal("Failed to load image for download.");
         };
       } else {
-        alert(data.detail || "No snapshot found");
+        showAlertModal(data.detail || "No snapshot found");
       }
     })
     .catch(err => {
       console.error(err);
-      alert("Failed to load snapshot info.");
+      showAlertModal("Failed to load snapshot info.");
     });
   }
   
   function hideSnapshotModal() {
     document.getElementById('snapshotModal').classList.add('hidden');
   }
+
+  function showAlertModal(message) {
+  document.getElementById('alertModalMessage').textContent = message;
+  document.getElementById('alertModal').classList.remove('hidden');
+}
+
+function hideAlertModal() {
+  document.getElementById('alertModal').classList.add('hidden');
+}
+
   
 </script>
 

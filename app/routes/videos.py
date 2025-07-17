@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 import os
 from typing import Optional, List, Dict, Any
@@ -158,6 +159,8 @@ def delete_video(
 
     try:
         camera_name = video.camera_name
+        v_timestamp = video.timestamp
+
         db.delete(video)
         db.commit()
         logger.info("Video record deleted from DB: %s", video_id)
@@ -168,7 +171,10 @@ def delete_video(
             action="delete_video",
             target=camera_name,
             ip=request.client.host,
-            extra="Video ID: %s" % video_id
+            extra=(f"Video timestamp: {format_wita(v_timestamp)}"
+                if isinstance(v_timestamp, datetime) else
+                "No timestamp available"
+             )
         )
     except Exception as e:
         logger.error("Failed to delete DB record for video %s: %s", video_id, e)
@@ -191,13 +197,13 @@ async def start_recording_video(
     if not camera:
         raise HTTPException(status_code=404, detail="Camera not found")
 
-    background_tasks.add_task(record_video_and_save_db, camera_id=camera_id, duration=duration)
+    background_tasks.add_task(record_video_and_save_db, request, camera_id=camera_id, duration=duration)
 
     log_audit(
         db=db,
         user=request.session.get("user_name", "Unknown"),
         action="start_record_video",
-        target=camera.hostname,
+        target=str(camera.hostname),
         ip=request.client.host,
         extra=f"Duration: {duration}s"
     )

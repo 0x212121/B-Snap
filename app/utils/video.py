@@ -4,6 +4,7 @@ import asyncio
 import subprocess
 import uuid
 from datetime import datetime, timezone
+from fastapi import Request
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from app.core.logging_config import setup_logging
@@ -13,6 +14,7 @@ from typing import Tuple, Dict, Any
 import json
 from app.db.database import SessionLocal
 from pathlib import Path
+from app.utils.audit_logger import log_audit
 from app.ws.manager import get_ws_connections
 
 # --- Basic Configuration ---
@@ -93,7 +95,11 @@ def generate_thumbnail(video_path: str, output_thumb_path: str):
         logger.warning("❌ Failed to generate thumbnail for %s: %s", video_path, e)
         return False
 
-async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[str, Any]:
+async def record_video_and_save_db(
+        request: Request,
+        camera_id: str,
+        duration: int = 10
+) -> Dict[str, Any]:
     def get_camera_sync() -> Camera:
         db = SessionLocal()
         try:
@@ -109,6 +115,9 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
     if not camera:
         logger.error("Camera with ID %s not found.", camera_id)
         return {"status": "error", "message": "Camera not found"}
+    
+    user_name = request.session.get("user_name", "unknown")
+    client_ip = request.client.host if request.client else "unknown"
         
     if not camera.group or not camera.group.name:
         logger.error("Camera '%s' does not have a group. Cannot determine storage folder.", camera.hostname)
@@ -183,7 +192,7 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
         "resolution": f"{metadata.get('width')}x{metadata.get('height')}"
     }
 
-    def save_video_record_sync(data: Dict[str, Any]) -> bool:
+    def save_video_record_sync(data: Dict[str, Any], user_name: str, ip: str) -> bool:
         db = SessionLocal()
         try:
             new_video_record = Video(**data)
@@ -201,6 +210,15 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
             db.execute(text("NOTIFY camera_notifications, :payload"), {"payload": payload})
             db.commit()  # ✅ satu kali commit untuk add + notify
 
+            log_audit(
+                db=db,
+                user=user_name,
+                action="create_video_record",
+                target=data['camera_name'],
+                ip=ip,
+                extra="via cameras menu"
+            )
+
             logger.info("📢 PostgreSQL NOTIFY sent: %s", payload)
             return True
         except Exception as e:
@@ -210,7 +228,7 @@ async def record_video_and_save_db(camera_id: str, duration: int = 10) -> Dict[s
         finally:
             db.close()
 
-    success = await asyncio.to_thread(save_video_record_sync, video_data)
+    success = await asyncio.to_thread(save_video_record_sync, video_data, user_name, client_ip)
 
 
     if success:
