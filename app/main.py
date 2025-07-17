@@ -41,7 +41,7 @@ from app.routes import (
     user_management, videos
 )
 from app.routes.auth import get_current_user
-from app.ws.routes import router as ws_router
+from app.ws.routes import notification_listener, router as ws_router
 
 # from app.ws.notifier import pg_listen_and_broadcast
 
@@ -84,7 +84,9 @@ ALLOWED_PUBLIC_PATHS = [
 # ====================================================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("application is starting up...")
+    # --- STARTUP ---
+    # Setup database
+    logger.info("Lifespan startup: Initializing database...")
     Base.metadata.create_all(bind=engine)
 
     db = SessionLocal()
@@ -94,15 +96,23 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
 
-    # # 🚀 Run listener after task sync completed
-    # raw_dsn = os.getenv("DATABASE_URL")
-    # dsn = raw_dsn.replace("postgresql+psycopg2", "postgresql")  # type: ignore # ✅ ini penting
-    # if dsn:
-    #     asyncio.create_task(pg_listen_and_broadcast(dsn))
-    # else:
-    #     logger.warning("No DATABASE_URL found. Skipping pg_listen_and_broadcast...")
-
-    yield  # --- Application is running ---
+    # Run listener notification
+    logger.info("Lifespan startup: Creating persistent notification listener task...")
+    task = asyncio.create_task(notification_listener(websocket_connections))
+    # Save in state to prevent task destroy by garbage collector
+    app.state.notification_listener_task = task
+    
+    yield  # Application run after this
+    
+    # --- SHUTDOWN ---
+    # Stop listener gracefully
+    logger.info("Lifespan shutdown: Cleaning up notification listener task...")
+    app.state.notification_listener_task.cancel()
+    try:
+        await app.state.notification_listener_task
+    except asyncio.CancelledError:
+        logger.info("Notification listener task successfully cancelled.")
+    
     logger.info("Application is shutting down...")
 
 # ====================================================================
@@ -116,6 +126,7 @@ app = FastAPI(
     docs_url=None,  # Disabled to use custom docs
     redoc_url=None
 )
+
 
 
 class AuthAndSetupMiddleware(BaseHTTPMiddleware):

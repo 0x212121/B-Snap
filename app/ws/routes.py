@@ -82,12 +82,6 @@ async def notification_listener(websockets: set):
             await asyncio.sleep(10)
 
 
-# Jalankan satu listener di background saat aplikasi (worker) pertama kali start
-@router.on_event("startup")
-async def startup_event():
-    logger.info("🚀 Worker starting up, creating notification listener task...")
-    asyncio.create_task(notification_listener(websocket_connections))
-
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
