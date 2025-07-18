@@ -18,9 +18,6 @@ from app.utils.audit_logger import log_audit
 from app.ws.manager import get_ws_connections
 
 # --- Basic Configuration ---
-# Using pathlib for more modern and robust path handling.
-# This assumes this file is in app/utils/, so Path(__file__).resolve().parents[1] is the 'app/' directory.
-# APP_DIR = Path(__file__).resolve().parents[1]
 STATIC_VIDEO_DIR = Path("static/videos")
 os.makedirs(STATIC_VIDEO_DIR, exist_ok=True)
 
@@ -42,11 +39,10 @@ def _run_ffmpeg_sync(cmd: str) -> Tuple[int, str, str]:
         logger.error("FFMPEG Error (return code %d):\nSTDERR: %s", proc.returncode, proc.stderr)
     return proc.returncode, proc.stdout, proc.stderr
 
-
 def get_video_metadata(file_path: str) -> Dict[str, Any]:
     if not os.path.exists(file_path):
         return {"duration": 0, "size": 0, "width": 0, "height": 0}
-        
+
     size = os.path.getsize(file_path)
     cmd = f'ffprobe -v quiet -print_format json -show_format -show_streams "{file_path}"'
 
@@ -83,10 +79,10 @@ def generate_thumbnail(video_path: str, output_thumb_path: str):
     try:
         subprocess.run([
             "ffmpeg",
-            "-ss", "00:00:01",         # ambil frame ke 1 detik
+            "-ss", "00:00:01",
             "-i", video_path,
             "-vframes", "1",
-            "-q:v", "2",               # kualitas bagus (1=terbaik, 31=terburuk)
+            "-q:v", "2",
             output_thumb_path
         ], check=True)
         logger.info("🖼️ Thumbnail generated: %s", output_thumb_path)
@@ -94,6 +90,26 @@ def generate_thumbnail(video_path: str, output_thumb_path: str):
     except subprocess.CalledProcessError as e:
         logger.warning("❌ Failed to generate thumbnail for %s: %s", video_path, e)
         return False
+
+def detect_codec(rtsp_url: str) -> str:
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe",
+                "-v", "error",
+                "-select_streams", "v:0",
+                "-show_entries", "stream=codec_name",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                rtsp_url
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        return result.stdout.strip()
+    except Exception as e:
+        logger.warning("Failed to detect codec for %s: %s", rtsp_url, e)
+        return "unknown"
 
 async def record_video_and_save_db(
         request: Request,
@@ -111,14 +127,14 @@ async def record_video_and_save_db(
             db.close()
 
     camera = await asyncio.to_thread(get_camera_sync)
-    
+
     if not camera:
         logger.error("Camera with ID %s not found.", camera_id)
         return {"status": "error", "message": "Camera not found"}
-    
+
     user_name = request.session.get("user_name", "unknown")
     client_ip = request.client.host if request.client else "unknown"
-        
+
     if not camera.group or not camera.group.name:
         logger.error("Camera '%s' does not have a group. Cannot determine storage folder.", camera.hostname)
         return {"status": "error", "message": "Camera has no group"}
@@ -140,7 +156,6 @@ async def record_video_and_save_db(
     output_path = video_directory / filename
     db_file_path = (Path(group_name) / camera_name / filename).as_posix()
 
-    # 🧹 Clean leftover file if exists
     if output_path.exists():
         logger.warning("Deleting leftover file before recording: %s", output_path)
         output_path.unlink()
@@ -150,22 +165,39 @@ async def record_video_and_save_db(
         logger.error("Failed to get RTSP URL for camera %s", camera.hostname)
         return {"status": "error", "message": "Failed to get RTSP URL"}
 
-    cmd_copy = (
-        f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" '
-        f'-t {duration} -c:v copy -an "{str(output_path)}"'
-    )
-    code, _, err = await asyncio.to_thread(_run_ffmpeg_sync, cmd_copy)
+    codec = await asyncio.to_thread(detect_codec, rtsp_url)
+
+    temp_output = output_path
+    if codec in ["hevc", "h265"]:
+        temp_output = output_path.with_suffix(".mkv")
+
+    if codec == "h264":
+        cmd = f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} -c:v copy -an "{temp_output}"'
+    elif codec in ["hevc", "h265"]:
+        cmd = f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} -c:v copy -an "{temp_output}"'
+    else:
+        cmd = f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} -c:v libx264 -preset veryfast -crf 23 -an "{temp_output}"'
+
+    code, _, err = await asyncio.to_thread(_run_ffmpeg_sync, cmd)
+
+    if code != 0 and codec in ["hevc", "h265"]:
+        logger.warning("Remux failed for %s, falling back to re-encode...", camera.hostname)
+        cmd_fallback = f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} -c:v libx265 -preset ultrafast -crf 28 -an "{output_path}"'
+        code, _, err = await asyncio.to_thread(_run_ffmpeg_sync, cmd_fallback)
+
+        # Clean up failed MKV if exists
+        if temp_output.exists():
+            logger.info("Removing failed MKV remux: %s", temp_output)
+            temp_output.unlink()
+    elif temp_output != output_path:
+        # Rename MKV to MP4 for consistency
+        if temp_output.exists():
+            temp_output.rename(output_path)
+            logger.info("Renamed %s to %s", temp_output.name, output_path.name)
 
     if code != 0:
-        logger.warning("Remux failed for %s, falling back to re-encode...", camera.hostname)
-        cmd_reencode = (
-            f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" '
-            f'-t {duration} -c:v libx264 -preset veryfast -crf 23 -an "{str(output_path)}"'
-        )
-        code, _, err = await asyncio.to_thread(_run_ffmpeg_sync, cmd_reencode)
-        if code != 0:
-            logger.error("%s - FFMPEG Re-encode Failed: %s", camera.hostname, err)
-            return {"status": "error", "message": "FFMPEG process failed"}
+        logger.error("%s - FFMPEG Failed: %s", camera.hostname, err)
+        return {"status": "error", "message": "FFMPEG process failed"}
 
     logger.info("Video recorded successfully: %s", output_path)
 
@@ -208,7 +240,7 @@ async def record_video_and_save_db(
                 "source": "db_trigger"
             })
             db.execute(text("NOTIFY camera_notifications, :payload"), {"payload": payload})
-            db.commit()  # ✅ satu kali commit untuk add + notify
+            db.commit()
 
             log_audit(
                 db=db,
@@ -230,9 +262,7 @@ async def record_video_and_save_db(
 
     success = await asyncio.to_thread(save_video_record_sync, video_data, user_name, client_ip)
 
-
     if success:
-        # ✅ Broadcast ke WebSocket dengan asyncio.gather()
         connections = get_ws_connections()
         message = {
             "type": "record_complete",
