@@ -514,3 +514,29 @@ def revoke_token(user_id: int, token_data: dict, db: Session = Depends(get_db), 
 
     db.commit()
     return {"message": "Token revoked successfully"}
+
+
+# Show all users API tokens
+@router.get("/api/admin/all-api-tokens", response_class=JSONResponse)
+async def get_all_api_tokens(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    Returns all API tokens for all users. Admin only.
+    """
+    users = db.query(User).all()
+    result = []
+
+    for user in users:
+        tokens = user.api_tokens or []
+        for t in tokens:
+            result.append({
+                "user_id": user.id,
+                "username": user.username,
+                "token": t.get("token"),
+                "created_at": format_datetime_gmt8(datetime.fromisoformat(t["created_at"])) if t.get("created_at") else "Unknown",
+                "expires_at": format_datetime_gmt8(datetime.fromisoformat(t["expires_at"])) if t.get("expires_at") else "Never"
+            })
+
+    return result

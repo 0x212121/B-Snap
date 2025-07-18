@@ -94,7 +94,8 @@
 - [ ] Tidy up API documentation
 - [ ] n8n add command:
   - [ ] Change CCTV user and password
-  - [ ] 
+  - [ ] Kirim persentase uptime per kamera selama 7 hari terakhir.
+  - [ ] Cek Token API yang Aktif
 
 
 🆕 Added:
