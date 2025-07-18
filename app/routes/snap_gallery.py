@@ -86,10 +86,22 @@ def snapshot_handler(
     current_operator: User = Depends(operator_access_required)
 ):
     # This function remains the same. It requires an existing camera to take a snapshot.
+    from sqlalchemy import and_
+
     if is_ip_address(camera_id_or_ip):
-        camera = db.query(Camera).filter(Camera.ip == camera_id_or_ip).first()
+        camera = db.query(Camera).filter(
+            and_(
+                Camera.ip == camera_id_or_ip,
+                Camera.status == "Active"
+            )
+        ).first()
     else:
-        camera = db.query(Camera).filter(Camera.hostname == camera_id_or_ip).first()
+        camera = db.query(Camera).filter(
+            and_(
+                Camera.hostname == camera_id_or_ip,
+                Camera.status == "Active"
+            )
+        ).first()
 
     if not camera:
         raise HTTPException(status_code=404, detail="Camera not found")
