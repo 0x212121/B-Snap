@@ -10,8 +10,11 @@ router = APIRouter()
 
 
 @router.get("/api/whitelist", response_model=List[WhitelistOut])
-def list_whitelist(db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
-    return db.query(WhatsappWhitelist).all()
+def list_whitelist(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    return db.query(WhatsappWhitelist).all()  # ✅ langsung return list
 
 # Add or update entry
 @router.post("/api/whitelist")
@@ -25,6 +28,7 @@ def add_whitelist(entry: WhitelistCreate, db: Session = Depends(get_db), current
         db.add(new_entry)
     db.commit()
     return {"status": "success"}
+
 
 
 # Delete

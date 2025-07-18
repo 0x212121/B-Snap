@@ -3,8 +3,8 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models_sql import User
-from app.utils.auth_token import admin_access_required
 from fastapi.templating import Jinja2Templates
+from app.routes.auth import admin_access_required
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -15,7 +15,7 @@ async def whitelist_admin_page(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    return templates.TemplateResponse("admin/whitelist.html", {
+    return templates.TemplateResponse("whitelist.html", {
         "request": request,
         "title": "WhatsApp Whitelist",
         "admin": current_admin,

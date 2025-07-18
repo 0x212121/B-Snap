@@ -237,25 +237,22 @@ async def health_history(
         ).order_by(CameraStatusChangeLog.changed_at).all()
 
         for log in offline_logs:
-            duration_secs = log.duration_since_last_change
+            duration_secs = log.duration_since_last_change or 0
             utc_dt = log.changed_at.replace(tzinfo=timezone.utc) if log.changed_at.tzinfo is None else log.changed_at.astimezone(timezone.utc)
             local_dt = utc_dt.astimezone(wita_tz)
 
             date_str = local_dt.date().isoformat()
             time_str = local_dt.strftime("%H:%M")
 
-            if duration_secs:
-                duration_str = format_duration(duration_secs)
-                duration_text = f"({duration_str})"
-            else:
-                duration_text = ""
+            duration_str = format_duration(duration_secs) if duration_secs > 0 else ""
+            duration_text = f"({duration_str})" if duration_str else ""
 
-            # Simpan informasi waktu dan durasi sejak event sebelumnya
             offline_map[(cam.id, date_str)].append({
                 "time": time_str,
                 "duration_since_last_change": duration_secs,
-                "duration_text": f"({duration_str})" if duration_str else ""
+                "duration_text": duration_text
             })
+
 
         historical_data.append({
             "hostname": cam.hostname,

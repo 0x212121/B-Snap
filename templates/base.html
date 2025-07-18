@@ -80,6 +80,7 @@
               <div x-show="open" x-transition class="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 border dark:border-gray-700" x-cloak>
                   <a href="/stats" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Stats</a>
                   <a href="/users" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Users</a>
+                  <a href="/admin/whitelist" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Whitelist</a>
                   <a href="/config" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Settings</a>
                   <div class="my-1 border-t dark:border-gray-700"></div>
                   <a href="/logs" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Logs Viewer</a>
@@ -154,9 +155,9 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="text-center py-4 text-sm text-gray-500 dark:text-gray-400">
+  <div class="fixed bottom-2 right-4 bg-gray-800 text-white text-xs px-3 py-1 rounded shadow-lg z-50 opacity-80 hover:opacity-100 transition-opacity">
     B-SNAP v{{ version }}
-  </footer>
+  </div>
 
   {% block scripts %}{% endblock %}
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>

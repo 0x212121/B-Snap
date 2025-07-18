@@ -31,7 +31,7 @@ from app.db.database import Base, engine, SessionLocal
 from app.routes import (
     auth, audit, cameras, config, dev_docs, docs, health, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
-    user_management, videos, admin_whitelist
+    user_management, videos, admin_whitelist, whitelist
 )
 from app.ws.routes import notification_listener, router as ws_router
 
@@ -143,6 +143,7 @@ app.include_router(dev_docs.router)
 app.include_router(ws_router)
 app.include_router(whatsapp_routes.router)
 app.include_router(admin_whitelist.router)
+app.include_router(whitelist.router)
 
 # ====================================================================
 # 7. CORE APP ROUTES & HANDLERS

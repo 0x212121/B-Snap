@@ -14,6 +14,37 @@
   .lazy-img.loaded {
     filter: blur(0);
   }
+
+  /* TomSelect Dark Mode Fix */
+  .dark .ts-control {
+    background-color: #1f2937; /* Equivalent to dark:bg-gray-800 */
+    border-color: #4b5563;   /* Equivalent to dark:border-gray-600 */
+    color: #f3f4f6;          /* Equivalent to dark:text-white */
+  }
+
+  .dark .ts-wrapper.focus .ts-control,
+  .dark .ts-wrapper.focus.input-active .ts-control {
+    border-color: #3b82f6; /* Equivalent to focus:ring-blue-500 */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* Equivalent to focus:ring-blue-500 */
+  }
+
+  .dark .ts-input {
+    color: #f3f4f6; /* Ensures the typed input text is white */
+  }
+
+  .dark .ts-dropdown {
+    background-color: #1f2937; /* Dropdown background */
+    border-color: #4b5563;     /* Dropdown border */
+  }
+
+  .dark .ts-dropdown .option {
+    color: #f3f4f6; /* Dropdown option text color */
+  }
+
+  .dark .ts-dropdown .option.active {
+    background-color: #374151; /* Hover/active option background */
+    color: #f3f4f6;
+  }
 </style>
 
 <div class="container mx-auto px-4 py-8">
@@ -38,31 +69,23 @@
     <button type="button" id="clearFilterBtn"
       class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear Filter</button>
 
-    <!-- 
-      This container's content will be dynamically replaced by the /gallery-data endpoint.
-      The initial state is rendered here for the first page load.
-    -->
     <div id="actionButtonsContainer" class="flex gap-4">
       {% if selected_camera %}
-        <!-- CHANGE 1: The Snapshot button is only shown if the camera is not deleted -->
         {% if camera_exists %}
         <button type="button" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
           data-action="snapshot" data-camera="{{ selected_camera }}">📸 Snapshot</button>
         {% endif %}
 
-        <!-- The Delete All button is always shown if a camera is selected, as it acts on snapshots -->
         <button type="button" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
           data-action="delete-all" data-camera="{{ selected_camera }}">🗑️ Delete All</button>
       {% endif %}
     </div>
   </form>
 
-  <!-- This grid is populated on initial load and then updated via AJAX -->
   <div id="snapshotGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
     {% include "_gallery_grid.html" %}
   </div>
 
-  <!-- Modal for viewing a single image -->
   <div id="modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
     <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl max-h-[80vh]">
       <div class="relative">
