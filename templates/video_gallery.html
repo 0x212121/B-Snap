@@ -8,34 +8,40 @@
   }
 
   /* TomSelect Dark Mode Fix */
+  /* Ensure these styles override default TomSelect styles for dark mode */
   .dark .ts-control {
-    background-color: #1f2937; /* Equivalent to dark:bg-gray-800 */
-    border-color: #4b5563;   /* Equivalent to dark:border-gray-600 */
-    color: #f3f4f6;          /* Equivalent to dark:text-white */
+    background-color: #1f2937 !important; /* Equivalent to dark:bg-gray-800 */
+    border-color: #4b5563 !important;   /* Equivalent to dark:border-gray-600 */
+    color: #f3f4f6 !important;          /* Text color for selected item/placeholder */
   }
 
   .dark .ts-wrapper.focus .ts-control,
   .dark .ts-wrapper.focus.input-active .ts-control {
-    border-color: #3b82f6; /* Equivalent to focus:ring-blue-500 */
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* Equivalent to focus:ring-blue-500 */
+    border-color: #3b82f6 !important; /* Equivalent to focus:ring-blue-500 */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5) !important; /* Equivalent to focus:ring-blue-500 */
   }
 
-  .dark .ts-input {
-    color: #f3f4f6; /* Ensures the typed input text is white */
+  .dark .ts-control input {
+    color: #f3f4f6 !important; /* Ensures the typed input text is white */
   }
 
   .dark .ts-dropdown {
-    background-color: #1f2937; /* Dropdown background */
-    border-color: #4b5563;     /* Dropdown border */
+    background-color: #1f2937 !important; /* Dropdown background */
+    border-color: #4b5563 !important;     /* Dropdown border */
   }
 
   .dark .ts-dropdown .option {
-    color: #f3f4f6; /* Dropdown option text color */
+    color: #f3f4f6 !important; /* Dropdown option text color */
   }
 
   .dark .ts-dropdown .option.active {
-    background-color: #374151; /* Hover/active option background */
-    color: #f3f4f6;
+    background-color: #374151 !important; /* Hover/active option background */
+    color: #f3f4f6 !important;
+  }
+
+  /* Specific targeting for selected items if they appear with dark text */
+  .dark .item {
+    color: #f3f4f6 !important;
   }
 </style>
 
