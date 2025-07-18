@@ -26,7 +26,7 @@ from sqlalchemy.orm import Session, joinedload
 from fastapi.responses import StreamingResponse
 import io
 
-router = APIRouter()
+router = APIRouter(tags=["Cameras"])
 
 from app.utils.template_helper import templates
 
@@ -568,3 +568,88 @@ def detect_csv_delimiter(csv_content: str):
         else:
             return ';'
     return ',' # Default if no clear delimiter or both are 0
+
+
+@router.post("/api/n8n/update-camera", response_class=JSONResponse)
+async def update_camera_n8n(
+    payload: dict,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    Update camera info via n8n by hostname. Admin only.
+    Required fields: hostname, username, password
+    Optional: ip, port, status, group_name
+    """
+    required_fields = ["hostname", "username", "password"]
+    for field in required_fields:
+        if field not in payload or not payload[field].strip():
+            raise HTTPException(status_code=400, detail=f"{field} is required")
+
+    cam = db.query(DBCamera).filter(DBCamera.hostname == payload["hostname"]).first()
+    if not cam:
+        raise HTTPException(status_code=404, detail="Camera not found")
+
+    # Save before state
+    before = {
+        "hostname": cam.hostname,
+        "ip": cam.ip,
+        "port": cam.port,
+        "username": cam.username,
+        "status": cam.status,
+        "group_id": cam.group_id
+    }
+
+    try:
+        cam.username = payload["username"]
+        cam.password = payload["password"]
+
+        if "ip" in payload:
+            cam.ip = payload["ip"]
+
+        if "port" in payload:
+            cam.port = int(payload["port"]) if str(payload["port"]).strip() else None
+
+        if "status" in payload:
+            cam.status = payload["status"]
+
+        if "group_name" in payload:
+            group_name = payload["group_name"]
+            group = db.query(CameraGroup).filter(CameraGroup.name == group_name).first()
+            if not group:
+                group = CameraGroup(name=group_name)
+                db.add(group)
+                db.flush()
+            cam.group_id = group.id
+
+        db.commit()
+
+        after = {
+            "hostname": cam.hostname,
+            "ip": cam.ip,
+            "port": cam.port,
+            "username": cam.username,
+            "status": cam.status,
+            "group_id": cam.group_id
+        }
+
+        # Audit
+        log_audit(
+            db=db,
+            user=request.session.get("user_name", "Whatsapp-bot"),
+            action="update_camera",
+            target=cam.hostname,
+            ip=request.client.host,
+            extra=json.dumps({
+                "before": before,
+                "after": after
+            }, indent=2)
+        )
+
+        return {"status": "success", "message": f"Camera '{cam.hostname}' updated successfully"}
+
+    except Exception as e:
+        db.rollback()
+        logger.error("Error updating camera from n8n: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")

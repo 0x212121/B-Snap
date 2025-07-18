@@ -12,7 +12,7 @@ from app.models_sql import Camera as DBCamera, User
 from app.routes.auth import get_current_user
 from app.utils.timezone import format_wita, to_wita  # 🆕 centralized import
 
-router = APIRouter(tags=["Maps & Cameras"])
+router = APIRouter(tags=["Maps"])
 from app.utils.template_helper import templates
 
 
