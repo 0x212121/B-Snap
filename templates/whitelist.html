@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto p-6">
+  <h2 class="text-xl font-bold mb-4">📱 WhatsApp Whitelist</h2>
+
+  <!-- Form -->
+  <form id="whitelist-form" class="flex flex-col md:flex-row gap-4 mb-6">
+    <input name="phone_number" placeholder="Phone (628xxxx)" class="border p-2 rounded w-full md:w-1/4" required>
+    <input name="name" placeholder="Name" class="border p-2 rounded w-full md:w-1/4">
+    <select name="role" class="border p-2 rounded w-full md:w-1/4">
+      <option value="user">User</option>
+      <option value="admin">Admin</option>
+    </select>
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">➕ Add</button>
+  </form>
+
+  <!-- Table -->
+  <table class="table-auto w-full text-left">
+    <thead>
+      <tr>
+        <th>Phone</th><th>Name</th><th>Role</th><th>Active</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="whitelist-table"></tbody>
+  </table>
+</div>
+
+<script>
+async function loadWhitelist() {
+  const res = await fetch('/api/whitelist');
+  const data = await res.json();
+  const tbody = document.getElementById("whitelist-table");
+  tbody.innerHTML = "";
+  data.forEach(w => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${w.phone_number}</td>
+        <td>${w.name || "-"}</td>
+        <td>${w.role}</td>
+        <td>
+          <input type="checkbox" ${w.is_active ? 'checked' : ''} onchange="toggleActive('${w.phone_number}', this.checked)">
+        </td>
+        <td>
+          <button onclick="deleteEntry('${w.phone_number}')" class="text-red-600">🗑 Delete</button>
+        </td>
+      </tr>`;
+  });
+}
+
+async function toggleActive(phone, state) {
+  await fetch('/api/whitelist', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ phone_number: phone, is_active: state })
+  });
+  loadWhitelist();
+}
+
+async function deleteEntry(phone) {
+  await fetch(`/api/whitelist/${phone}`, { method: 'DELETE' });
+  loadWhitelist();
+}
+
+document.getElementById("whitelist-form").onsubmit = async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const obj = Object.fromEntries(formData.entries());
+  obj.is_active = true;
+  await fetch('/api/whitelist', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(obj)
+  });
+  e.target.reset();
+  loadWhitelist();
+};
+
+loadWhitelist();
+</script>
+{% endblock %}

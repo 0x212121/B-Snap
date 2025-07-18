@@ -93,9 +93,10 @@
 ⏳ Ongoing:
 - [ ] Tidy up API documentation
 - [ ] n8n add command:
-  - [ ] Change CCTV user and password
+  - [x] Change CCTV user and password in B-Snap using WA Bot
   - [ ] Kirim persentase uptime per kamera selama 7 hari terakhir.
-  - [ ] Cek Token API yang Aktif
+  - [x] Cek Token API yang Aktif
+- [ ] Whitelist phone number dashboard
 
 
 🆕 Added:

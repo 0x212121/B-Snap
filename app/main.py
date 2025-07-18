@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from fastapi import (
     FastAPI, HTTPException, Request, Response, status
 )
+from app.api import whatsapp_routes
 from app.ws.manager import websocket_connections
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -30,7 +31,7 @@ from app.db.database import Base, engine, SessionLocal
 from app.routes import (
     auth, audit, cameras, config, dev_docs, docs, health, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
-    user_management, videos
+    user_management, videos, admin_whitelist
 )
 from app.ws.routes import notification_listener, router as ws_router
 
@@ -140,7 +141,8 @@ app.include_router(snap_gallery.router)
 app.include_router(audit.router)
 app.include_router(dev_docs.router)
 app.include_router(ws_router)
-
+app.include_router(whatsapp_routes.router)
+app.include_router(admin_whitelist.router)
 
 # ====================================================================
 # 7. CORE APP ROUTES & HANDLERS

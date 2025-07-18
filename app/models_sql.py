@@ -275,3 +275,14 @@ class NotificationQueue(Base):
 
     def __repr__(self):
         return f"<NotificationQueue(id={self.id}, created_at='{self.created_at}')>"
+    
+
+class WhatsappWhitelist(Base):
+    __tablename__ = "whatsapp_whitelist"
+
+    id = Column(Integer, primary_key=True, index=True)
+    phone_number = Column(String, unique=True, index=True, nullable=False)  # format e.g. 628123456789
+    name = Column(String, nullable=True)
+    role = Column(String, default="user")  # optional: user/admin/dev
+    is_active = Column(Boolean, default=True)
+    added_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
