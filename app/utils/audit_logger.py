@@ -1,3 +1,4 @@
+import json
 from app.models_sql import AuditLog
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
@@ -9,7 +10,7 @@ def log_audit(db: Session, user: str, action: str, target: str, ip: str = None, 
         action=action,
         target=target,
         ip=ip,
-        extra=extra,
+        extra=json.dumps(extra) if extra else None,
     )
     db.add(audit)
     db.commit()
