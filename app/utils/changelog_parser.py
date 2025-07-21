@@ -1,6 +1,6 @@
-import re
-from pathlib import Path
+from datetime import datetime
 from typing import List, Dict
+import re
 
 def parse_changelog_md(filepath: str = "CHANGELOG.md") -> List[Dict]:
     changelog = []
@@ -16,10 +16,12 @@ def parse_changelog_md(filepath: str = "CHANGELOG.md") -> List[Dict]:
         # Match version header
         version_match = re.match(r"## \[(.*?)\] - (\d{4}-\d{2}-\d{2})", line)
         if version_match:
-            version, date = version_match.groups()
+            version, raw_date = version_match.groups()
+            date_obj = datetime.strptime(raw_date, "%Y-%m-%d")
+            human_date = date_obj.strftime("%B %d, %Y")  # Contoh: July 21, 2025
             current_version = {
                 "version": version,
-                "date": date,
+                "date": human_date,
                 "added": [],
                 "changed": [],
                 "fixed": [],
