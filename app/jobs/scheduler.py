@@ -2,6 +2,7 @@ from datetime import date, datetime, timedelta, timezone
 from uuid import uuid4
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.jobstores.base import JobLookupError
 from fastapi import Depends
 from app.core.logging_config import setup_logging
 from app.db.database import SessionLocal
@@ -124,24 +125,28 @@ def update_scheduler_config():
 
         changed = False
 
-        if new_snapshot_interval != last_config["snapshot_interval"]: # type: ignore
-            scheduler.reschedule_job("scheduled_snapshot", trigger=IntervalTrigger(minutes=new_snapshot_interval))
-            last_config["snapshot_interval"] = new_snapshot_interval # type: ignore
-            print(f"[Scheduler] 🔁 Snapshot interval updated to {new_snapshot_interval} minutes.")
-            changed = True
+        if new_snapshot_interval != last_config["snapshot_interval"]:
+            try:
+                scheduler.reschedule_job("scheduled_snapshot", trigger=IntervalTrigger(minutes=new_snapshot_interval))
+                last_config["snapshot_interval"] = new_snapshot_interval
+                logger.info("[Scheduler] 🔁 Snapshot interval updated to %s minutes.", new_snapshot_interval)
+                changed = True
+            except JobLookupError:
+                logger.warning("[Scheduler] ⚠️ Job 'scheduled_snapshot' not found during config update.")
 
-        if new_healthcheck_interval != last_config["healthcheck_interval"]: # type: ignore
-            scheduler.reschedule_job("health_check", trigger=IntervalTrigger(minutes=new_healthcheck_interval)) # type: ignore
-            last_config["healthcheck_interval"] = new_healthcheck_interval # type: ignore
-            print(f"[Scheduler] 🔁 Health check interval updated to {new_healthcheck_interval} minutes.")
-            changed = True
+        if new_healthcheck_interval != last_config["healthcheck_interval"]:
+            try:
+                scheduler.reschedule_job("health_check", trigger=IntervalTrigger(minutes=new_healthcheck_interval))
+                last_config["healthcheck_interval"] = new_healthcheck_interval
+                logger.info("[Scheduler] 🔁 Health check interval updated to %s minutes.", new_healthcheck_interval)
+                changed = True
+            except JobLookupError:
+                logger.warning("[Scheduler] ⚠️ Job 'health_check' not found during config update.")
 
         if changed:
-            print("[Scheduler] ✅ Scheduler config updated and jobs rescheduled.")
+            logger.info("[Scheduler] ✅ Scheduler config updated and jobs rescheduled.")
         else:
-            print("[Scheduler] ⏸ No config changes detected. Scheduler not updated.")
-
-        return get_config("items_per_page", 10)
+            logger.info("[Scheduler] ⏸ No config changes detected. Scheduler not updated.")
 
     except Exception as e:
         logger.warning(f"[Scheduler] ⚠️ Failed to reload scheduler config: {e}")

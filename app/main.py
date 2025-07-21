@@ -29,9 +29,9 @@ from app.core.logging_config import setup_logging
 from app.db.database import Base, engine, SessionLocal
 # Combined router imports for cleaner organization
 from app.routes import (
-    auth, audit, cameras, config, dev_docs, docs, health, logs, maps,
+    admin, auth, audit, cameras, changelog, config, dev_docs, docs, health, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
-    user_management, videos, admin_whitelist, whitelist
+    user_management, videos, whitelist
 )
 from app.ws.routes import notification_listener, router as ws_router
 
@@ -142,8 +142,9 @@ app.include_router(audit.router)
 app.include_router(dev_docs.router)
 app.include_router(ws_router)
 app.include_router(whatsapp_routes.router)
-app.include_router(admin_whitelist.router)
+app.include_router(admin.router)
 app.include_router(whitelist.router)
+app.include_router(changelog.router)
 
 # ====================================================================
 # 7. CORE APP ROUTES & HANDLERS
@@ -188,6 +189,7 @@ async def custom_swagger_ui():
         swagger_js_url="/static/swagger-ui-bundle.js",
         swagger_css_url="/static/swagger-ui-tailwind.css"
     )
+
 
 @app.get("/version")
 async def get_version():
