@@ -1,15 +1,13 @@
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
-from pathlib import Path
+from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models_sql import User
-from fastapi.templating import Jinja2Templates
 from app.routes.auth import admin_access_required
-import markdown
+from app.utils.changelog_parser import parse_changelog_md
+from app.utils.template_helper import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 
 @router.get("/admin/whitelist", response_class=HTMLResponse)
@@ -25,12 +23,16 @@ async def whitelist_admin_page(
     })
 
 
-@router.get("/changelog", include_in_schema=False)
-async def changelog_page(request: Request):
-    changelog_path = Path("CHANGELOG.md")
-    changelog_md = changelog_path.read_text(encoding="utf-8")
-    changelog_html = markdown.markdown(changelog_md, extensions=["extra"])
+@router.get("/api/changelog")
+async def changelog_api():
+    data = parse_changelog_md()
+    return JSONResponse(content=data)
+
+
+@router.get("/changelog", response_class=HTMLResponse)
+async def changelog_html(request: Request):
+    changelog_data = parse_changelog_md()
     return templates.TemplateResponse("changelog.html", {
         "request": request,
-        "changelog_html": changelog_html
+        "changelog": changelog_data
     })

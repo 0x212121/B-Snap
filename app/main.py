@@ -29,7 +29,7 @@ from app.core.logging_config import setup_logging
 from app.db.database import Base, engine, SessionLocal
 # Combined router imports for cleaner organization
 from app.routes import (
-    admin, auth, audit, cameras, changelog, config, dev_docs, docs, health, logs, maps,
+    admin, auth, audit, cameras, config, dev_docs, docs, health, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
     user_management, videos, whitelist
 )
@@ -109,7 +109,7 @@ app = FastAPI(
     lifespan=lifespan,
     title="B-Snap API",
     description="B-Snap Documentation API",
-    version="1.0.1",
+    version="1.2.1",
     docs_url=None,  # Disabled to use custom docs
     redoc_url=None,
     middleware=middleware
@@ -144,7 +144,6 @@ app.include_router(ws_router)
 app.include_router(whatsapp_routes.router)
 app.include_router(admin.router)
 app.include_router(whitelist.router)
-app.include_router(changelog.router)
 
 # ====================================================================
 # 7. CORE APP ROUTES & HANDLERS
