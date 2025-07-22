@@ -92,7 +92,7 @@ async def manage_data(
                 </td>
                 <td class="p-3 space-x-3 whitespace-nowrap">
                     <button onclick="showEditCameraModal('{cam.id}')" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold text-xs">✏️ Edit</button>
-                    <form method="post" class="inline" onsubmit="event.preventDefault(); confirmDelete('{cam.id}')">
+                    <form method="post" class="inline" onsubmit="event.preventDefault(); confirmDelete('{cam.id}', '{ cam.hostname }')">
                         <button type="submit" class="text-red-500 dark:text-red-400 hover:underline font-semibold text-xs">🗑️ Delete</button>
                     </form>
                     <button onclick="captureVideo('{cam.id}')" class="text-green-600 dark:text-green-400 hover:underline font-semibold text-xs">🎥 Capture</button>

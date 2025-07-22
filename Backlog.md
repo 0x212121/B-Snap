@@ -96,7 +96,8 @@
   - [x] Change CCTV user and password in B-Snap using WA Bot
   - [ ] Kirim persentase uptime per kamera selama 7 hari terakhir.
   - [x] Cek Token API yang Aktif
-- [ ] Whitelist phone number dashboard
+- [x] Whitelist phone number dashboard
+- [ ] Improve UI/UX
 
 
 🆕 Added:

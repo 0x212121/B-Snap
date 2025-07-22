@@ -4,7 +4,6 @@
 {% block content %}
 <div class="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
 
-    <!-- Header and Stats Cards -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
             <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">User Management</h2>
@@ -37,7 +36,6 @@
         </div>
     </div>
 
-    <!-- Add/Edit User Form -->
     <div id="userFormContainer" class="hidden mb-8 transition-all duration-500">
          <form id="userForm" method="post" action="/users/create" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 space-y-6">
             <div class="flex justify-between items-center">
@@ -77,7 +75,6 @@
         </form>
     </div>
 
-    <!-- User Table -->
     <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
         <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
             <div class="flex items-center gap-2 w-full md:w-auto">
@@ -126,33 +123,31 @@
                             <div class="font-medium text-gray-900 dark:text-white">{{ user.username }}</div>
                         </td>
                         <td class="p-4 whitespace-nowrap">
-                            {% if user.role == 'admin' %}
-                                <span class="px-2 py-1 text-xs font-semibold leading-5 text-red-800 bg-red-100 dark:text-red-100 dark:bg-red-800/50 rounded-full">{{ user.role }}</span>
-                            {% elif user.role == 'operator' %}
-                                <span class="px-2 py-1 text-xs font-semibold leading-5 text-yellow-800 bg-yellow-100 dark:text-yellow-100 dark:bg-yellow-800/50 rounded-full">{{ user.role }}</span>
-                            {% else %}
-                                <span class="px-2 py-1 text-xs font-semibold leading-5 text-green-800 bg-green-100 dark:text-green-100 dark:bg-green-800/50 rounded-full">{{ user.role }}</span>
+                            {% if user.role == 'admin' %}<span class="px-2 py-1 text-xs font-semibold leading-5 text-red-800 bg-red-100 dark:text-red-100 dark:bg-red-800/50 rounded-full">{{ user.role }}</span>
+                            {% elif user.role == 'operator' %}<span class="px-2 py-1 text-xs font-semibold leading-5 text-yellow-800 bg-yellow-100 dark:text-yellow-100 dark:bg-yellow-800/50 rounded-full">{{ user.role }}</span>
+                            {% else %}<span class="px-2 py-1 text-xs font-semibold leading-5 text-green-800 bg-green-100 dark:text-green-100 dark:bg-green-800/50 rounded-full">{{ user.role }}</span>
                             {% endif %}
                         </td>
                         <td class="p-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{{ user.group.name if user.group else '-' }}</td>
-                        
-                        <!-- PERUBAHAN 1: Menambahkan ID unik ke sel token -->
                         <td id="token-cell-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
                             {% if user.api_tokens %}
                                 <ul class="space-y-1">
                                 {% for token in user.api_tokens %}
                                     <li class="flex items-center justify-between gap-2">
                                     <span>{{ token.token[:8] }}...{{ token.token[-4:] }}</span>
-                                    <button onclick="revokeToken('{{ user.id }}', '{{ token.token }}')" class="text-red-500 hover:text-red-700 text-xs font-semibold">Revoke</button>
-                                    </li>
+                                    <button onclick="handleRevokeClick(this)"
+                                            data-user-id="{{ user.id }}"
+                                            data-token="{{ token.token }}"
+                                            data-username="{{ user.username | escape }}"
+                                            class="text-red-500 hover:text-red-700 text-xs font-semibold">
+                                        Revoke
+                                    </button>
                                 {% endfor %}
                                 </ul>
                             {% else %}
                                 <span>-</span>
                             {% endif %}
                         </td>
-                        
-                        <!-- PERUBAHAN 2: Menambahkan ID unik ke sel expiry date -->
                         <td id="token-expiry-cell-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
                             {% if user.api_tokens %}
                                 <ul class="space-y-1">
@@ -164,12 +159,9 @@
                                 <span>-</span>
                             {% endif %}
                         </td>
-                        
                         <td class="p-4 whitespace-nowrap">
-                            {% if user.is_2fa_enabled %}
-                                <span class="px-2 py-1 text-xs font-semibold leading-5 text-green-800 bg-green-100 dark:text-green-100 dark:bg-green-800/50 rounded-full">Enabled</span>
-                            {% else %}
-                                <span class="px-2 py-1 text-xs font-semibold leading-5 text-gray-600 bg-gray-100 dark:text-gray-300 dark:bg-gray-700 rounded-full">Disabled</span>
+                            {% if user.is_2fa_enabled %} <span class="px-2 py-1 text-xs font-semibold leading-5 text-green-800 bg-green-100 dark:text-green-100 dark:bg-green-800/50 rounded-full">Enabled</span>
+                            {% else %} <span class="px-2 py-1 text-xs font-semibold leading-5 text-gray-600 bg-gray-100 dark:text-gray-300 dark:bg-gray-700 rounded-full">Disabled</span>
                             {% endif %}
                         </td>
                         <td id="last-logon-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
@@ -179,24 +171,19 @@
                             <button onclick="editUser({{ user.id }}, '{{ user.username }}', '{{ user.role }}', '{{ user.group.name if user.group else 'ALL' }}')" aria-label="Edit user {{ user.username }}" class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 p-2 rounded-full transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
                             </button>
-                             <button onclick="openGenerateTokenModal({{ user.id }}, '{{ user.username }}')" aria-label="Generate token for {{ user.username }}" class="text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 p-2 rounded-full transition-colors">
-                                 <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                     <path fill-rule="evenodd" clip-rule="evenodd" d="M16 5.5C16 8.53757 13.5376 11 10.5 11H7V13H5V15L4 16H0V12L5.16351 6.83649C5.0567 6.40863 5 5.96094 5 5.5C5 2.46243 7.46243 0 10.5 0C13.5376 0 16 2.46243 16 5.5ZM13 4C13 4.55228 12.5523 5 12 5C11.4477 5 11 4.55228 11 4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z"/>
-                                 </svg>
+                            <button onclick="openGenerateTokenModal({{ user.id }}, '{{ user.username }}')" aria-label="Generate token for {{ user.username }}" class="text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 p-2 rounded-full transition-colors">
+                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M16 5.5C16 8.53757 13.5376 11 10.5 11H7V13H5V15L4 16H0V12L5.16351 6.83649C5.0567 6.40863 5 5.96094 5 5.5C5 2.46243 7.46243 0 10.5 0C13.5376 0 16 2.46243 16 5.5ZM13 4C13 4.55228 12.5523 5 12 5C11.4477 5 11 4.55228 11 4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z"/></svg>
                             </button>
-                            {% if user.is_2fa_enabled %}
-                            <button onclick="confirmResetMfa({{ user.id }}, '{{ user.username }}')" aria-label="Reset MFA for {{ user.username }}" class="text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 p-2 rounded-full transition-colors">
-                                <svg fill="currentColor" class="h-5 w-5" viewBox="0 0 32 32" id="icon" xmlns="http://www.w3.org/2000/svg">
-                                    <defs><style>.cls-1{fill:none;}</style></defs>
-                                    <polygon points="11 23.18 9 21.179 7.589 22.589 11 26 17 20 15.59 18.59 11 23.18"/>
-                                    <path d="M28,30H24V28h4V16H24V8a4.0045,4.0045,0,0,0-4-4V2a6.0067,6.0067,0,0,1,6,6v6h2a2.0021,2.0021,0,0,1,2,2V28A2.0021,2.0021,0,0,1,28,30Z" transform="translate(0 0)"/>
-                                    <path d="M20,14H18V8A6,6,0,0,0,6,8v6H4a2,2,0,0,0-2,2V28a2,2,0,0,0,2,2H20a2,2,0,0,0,2-2V16A2,2,0,0,0,20,14ZM8,8a4,4,0,0,1,8,0v6H8ZM20,28H4V16H20Z" transform="translate(0 0)"/>
-                                    <rect id="_Transparent_Rectangle_" data-name="&lt;Transparent Rectangle&gt;" class="cls-1" width="32" height="32"/>
-                                </svg>
-                            </button>
-                            {% endif %}
                             {% if request.session['user_id'] != user.id %}
-                                <button onclick="confirmDelete({{ user.id }}, '{{ user.username }}')" aria-label="Delete user" class="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 p-2 rounded-full transition-colors">
+                                {% if user.is_2fa_enabled %}
+                                <button onclick="confirmResetMfa({{ user.id }}, '{{ user.username }}')" aria-label="Reset MFA for {{ user.username }}" class="text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 p-2 rounded-full transition-colors">
+                                    <svg fill="currentColor" class="h-5 w-5" viewBox="0 0 32 32" id="icon" xmlns="http://www.w3.org/2000/svg"><defs><style>.cls-1{fill:none;}</style></defs><polygon points="11 23.18 9 21.179 7.589 22.589 11 26 17 20 15.59 18.59 11 23.18"/><path d="M28,30H24V28h4V16H24V8a4.0045,4.0045,0,0,0-4-4V2a6.0067,6.0067,0,0,1,6,6v6h2a2.0021,2.0021,0,0,1,2,2V28A2.0021,2.0021,0,0,1,28,30Z" transform="translate(0 0)"/><path d="M20,14H18V8A6,6,0,0,0,6,8v6H4a2,2,0,0,0-2,2V28a2,2,0,0,0,2,2H20a2,2,0,0,0,2-2V16A2,2,0,0,0,20,14ZM8,8a4,4,0,0,1,8,0v6H8ZM20,28H4V16H20Z" transform="translate(0 0)"/><rect id="_Transparent_Rectangle_" data-name="&lt;Transparent Rectangle&gt;" class="cls-1" width="32" height="32"/></svg>
+                                </button>
+                                {% endif %}
+                                <button onclick="confirmUserDelete(this)"
+                                        data-user-id="{{ user.id }}"
+                                        data-username="{{ user.username | escape }}"
+                                        aria-label="Delete user" class="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 p-2 rounded-full transition-colors">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
                                 </button>
                                 <form id="deleteForm{{ user.id }}" method="post" action="/users/delete/{{ user.id }}" class="hidden"></form>
@@ -211,17 +198,6 @@
     </div>
 </div>
 
-<!-- Modals: Confirmation, Generate Token, Show Token -->
-<div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl w-full max-w-sm">
-        <h3 id="confirmTitle" class="text-lg font-bold text-red-600 dark:text-red-400 mb-2">⚠️ Confirm Action</h3>
-        <p id="confirmMessage" class="text-gray-800 dark:text-gray-100 mb-6">Are you sure?</p>
-        <div class="flex justify-end space-x-4">
-            <button id="confirmCancel" class="bg-gray-200 hover:bg-gray-300 text-black dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500 px-4 py-2 rounded-lg font-semibold">Cancel</button>
-            <button id="confirmYes" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold">Yes, Proceed</button>
-        </div>
-    </div>
-</div>
 <div id="generateTokenModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
     <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl w-full max-w-sm">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Generate Token</h3>
@@ -263,6 +239,9 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
 <script>
 // --- MODAL & ACTION LOGIC ---
 let activeUserId = null;
@@ -271,27 +250,23 @@ function closeModal(modalId) {
     document.getElementById(modalId).classList.add('hidden');
 }
 
-// --- DELETE LOGIC ---
-function confirmDelete(userId, username, callback, bulkMessage) {
-    const message = bulkMessage || `Are you sure you want to permanently delete user '${username}'?`;
-    document.getElementById('confirmMessage').textContent = message;
-    const modal = document.getElementById('confirmModal');
-    modal.classList.remove('hidden');
-
-    const confirmBtn = document.getElementById('confirmYes');
-    const newConfirmBtn = confirmBtn.cloneNode(true);
-    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-
-    newConfirmBtn.onclick = () => {
-        if (callback) {
-            callback();
-        } else {
+// FUNGSI BARU: Untuk menangani klik tombol hapus dengan aman
+function confirmUserDelete(buttonElement) {
+    const userId = buttonElement.dataset.userId;
+    const username = buttonElement.dataset.username;
+    const message = `Are you sure you want to permanently delete user '${username}'?`;
+    
+    showGlobalConfirm(
+        message, 
+        () => {
             document.getElementById(`deleteForm${userId}`).submit();
+        }, 
+        { 
+            title: '⚠️ Delete User', 
+            confirmText: 'Yes, Delete', 
+            confirmClasses: 'bg-red-600 hover:bg-red-700' 
         }
-        closeModal('confirmModal');
-    };
-
-    document.getElementById('confirmCancel').onclick = () => closeModal('confirmModal');
+    );
 }
 
 // --- TOKEN GENERATION LOGIC ---
@@ -309,6 +284,9 @@ async function handleTokenGeneration() {
     const errorP = document.getElementById('generateTokenError');
     const spinner = document.getElementById('generateSpinner');
     const btn = document.getElementById('generateTokenBtn');
+    
+    // DITAMBAHKAN: Ambil username dari elemen yang sudah ada
+    const username = document.getElementById('tokenUsername').textContent;
 
     spinner.classList.remove('hidden');
     btn.disabled = true;
@@ -331,7 +309,9 @@ async function handleTokenGeneration() {
 
         const data = await response.json();
         closeModal('generateTokenModal');
-        showGeneratedToken(activeUserId, data.token, data.token_expires_at, data.api_tokens);
+        
+        // DIPERBARUI: Kirim username ke fungsi showGeneratedToken
+        showGeneratedToken(activeUserId, data.token, data.token_expires_at, data.api_tokens, username);
 
     } catch (error) {
         errorP.textContent = `Error: ${error.message}`;
@@ -342,7 +322,7 @@ async function handleTokenGeneration() {
     }
 }
 
-function showGeneratedToken(userId, token, expiresGmt8Str, apiTokens) {
+function showGeneratedToken(userId, token, expiresGmt8Str, apiTokens, username) {
     const modal = document.getElementById('showTokenModal');
     const tokenInput = document.getElementById('generatedTokenInput');
     const copyBtn = document.getElementById('copyTokenBtn');
@@ -354,12 +334,21 @@ function showGeneratedToken(userId, token, expiresGmt8Str, apiTokens) {
     const expiryCell = document.getElementById(`token-expiry-cell-${userId}`);
 
     if (tokenCell && expiryCell && Array.isArray(apiTokens)) {
-        const tokenListHTML = apiTokens.map(t => `
+        // PERBAIKAN UTAMA: Membuat tombol "Revoke" dengan metode data-* yang aman
+        const tokenListHTML = apiTokens.map(t => {
+            // Gunakan `username` yang diterima dari parameter fungsi
+            const safeUsername = username || ''; 
+            
+            return `
             <li class="flex items-center justify-between gap-2">
                 <span>${t.token.substring(0, 8)}...${t.token.slice(-4)}</span>
-                <button onclick="revokeToken('${userId}', '${t.token}')" class="text-red-500 hover:text-red-700 text-xs font-semibold">Revoke</button>
+                <button onclick="handleRevokeClick(this)"
+                        data-user-id="${userId}"
+                        data-token="${t.token}"
+                        data-username="${safeUsername}"
+                        class="text-red-500 hover:text-red-700 text-xs font-semibold">Revoke</button>
             </li>
-        `).join('');
+        `}).join('');
 
         tokenCell.innerHTML = `<ul class="space-y-1">${tokenListHTML}</ul>`;
 
@@ -370,7 +359,6 @@ function showGeneratedToken(userId, token, expiresGmt8Str, apiTokens) {
         expiryCell.innerHTML = `<ul class="space-y-1">${expiryListHTML}</ul>`;
     }
 
-    // Reset copy icon
     document.getElementById('copyIcon').classList.remove('hidden');
     document.getElementById('checkIcon').classList.add('hidden');
 
@@ -386,14 +374,12 @@ function showGeneratedToken(userId, token, expiresGmt8Str, apiTokens) {
     };
 }
 
-
 // --- COMPLETE FORM AND TABLE LOGIC ---
 const userFormContainer = document.getElementById('userFormContainer');
 const showFormBtn = document.getElementById('showFormBtn');
 const bulkActionContainer = document.getElementById('bulkActionContainer');
 const selectedCountSpan = document.getElementById('selectedCount');
 const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-
 const userForm = document.getElementById('userForm');
 const formTitle = document.getElementById('formTitle');
 const usernameInput = document.getElementById('usernameInput');
@@ -403,7 +389,6 @@ const roleSelect = document.getElementById('roleSelect');
 const groupSelect = document.getElementById('groupSelect');
 const submitBtn = document.getElementById('submitBtn');
 const cancelEditBtn = document.getElementById('cancelEditBtn');
-
 
 function toggleUserForm(show) {
     if (show) {
@@ -449,13 +434,12 @@ function toggleAllCheckboxes(checked) {
 
 document.querySelectorAll('.user-checkbox').forEach(checkbox => checkbox.addEventListener('change', updateSelectionState));
 
-
 function confirmBulkDelete() {
     const selectedCheckboxes = document.querySelectorAll('.user-checkbox:checked');
     if (selectedCheckboxes.length === 0) return;
     const userIds = Array.from(selectedCheckboxes).map(cb => cb.value);
     const message = `Are you sure you want to delete ${userIds.length} selected users? This action cannot be undone.`;
-    confirmDelete(null, null, () => {
+    showGlobalConfirm(message, () => {
         const form = document.createElement('form');
         form.method = 'post';
         form.action = '/users/delete/bulk';
@@ -468,7 +452,11 @@ function confirmBulkDelete() {
         });
         document.body.appendChild(form);
         form.submit();
-    }, message);
+    }, {
+        title: '⚠️ Bulk Delete Users',
+        confirmText: 'Yes, Delete Selected',
+        confirmClasses: 'bg-red-600 hover:bg-red-700'
+    });
 }
 
 function editUser(id, username, role, groupName) {
@@ -506,46 +494,58 @@ function resetForm() {
 }
 
 function confirmResetMfa(userId, username) {
-    const modal = document.getElementById('confirmModal');
-    document.getElementById('confirmTitle').textContent = '⚠️ Confirm MFA Reset';
-    document.getElementById('confirmMessage').textContent = `Are you sure you want to reset MFA for '${username}'? They will be required to set it up again on their next login.`;
-    
-    modal.classList.remove('hidden');
-
-    const confirmBtn = document.getElementById('confirmYes');
-    const newConfirmBtn = confirmBtn.cloneNode(true);
-    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-
-    newConfirmBtn.onclick = () => {
+    const message = `Are you sure you want to reset MFA for '${username}'? They will be required to set it up again on their next login.`;
+    showGlobalConfirm(message, () => {
         document.getElementById(`resetMfaForm${userId}`).submit();
-        closeModal('confirmModal');
-    };
-
-    document.getElementById('confirmCancel').onclick = () => closeModal('confirmModal');
-}
-
-function revokeToken(userId, token) {
-    if (!confirm("Revoke this token?")) return;
-
-    fetch(`/users/${userId}/revoke-token`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ token })
-    })
-    .then(res => {
-        if (!res.ok) throw new Error("Failed to revoke token.");
-        return res.json();
-    })
-    .then(data => {
-        alert("Token revoked.");
-        location.reload();
-    })
-    .catch(err => {
-        alert("Error revoking token.");
-        console.error(err);
+    }, {
+        title: '⚠️ Confirm MFA Reset',
+        confirmText: 'Yes, Reset MFA',
+        confirmClasses: 'bg-orange-600 hover:bg-orange-700'
     });
 }
+
+function handleRevokeClick(buttonElement) {
+    const userId = buttonElement.dataset.userId;
+    const token = buttonElement.dataset.token;
+    const username = buttonElement.dataset.username;
+    
+    // Panggil fungsi revokeToken yang sudah ada dengan data yang bersih
+    revokeToken(userId, token, username);
+}
+
+
+function revokeToken(userId, token, username) {
+    const message = `Are you sure you want to revoke this token for user '${username}'?`;
+    
+    showGlobalConfirm(message, () => {
+        fetch(`/users/${userId}/revoke-token`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token })
+        })
+        .then(res => {
+            if (!res.ok) {
+                // Melempar error agar ditangkap oleh .catch()
+                return res.json().then(err => { throw new Error(err.detail || "Failed to revoke token.") });
+            }
+            return res.json();
+        })
+        .then(data => {
+            // Menggunakan modal peringatan untuk notifikasi sukses
+            showGlobalAlert("Token revoked successfully. The page will now reload.", "✅ Success");
+            setTimeout(() => location.reload(), 2000); // Reload setelah 2 detik
+        })
+        .catch(err => {
+            // Menggunakan modal peringatan untuk notifikasi error
+            showGlobalAlert(err.message, "❌ Error");
+            console.error(err);
+        });
+    }, {
+        title: '⚠️ Revoke Token',
+        confirmText: 'Yes, Revoke',
+        confirmClasses: 'bg-red-600 hover:bg-red-700'
+    });
+}
+
 </script>
 {% endblock %}

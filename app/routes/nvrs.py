@@ -112,7 +112,7 @@ async def get_nvrs_data(
                 </td>
                 <td class="p-3 space-x-3 whitespace-nowrap">
                 <button onclick="showEditNVRModal('{nvr.id}')" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold text-xs">✏️ Edit</button>
-                <form method="post" class="inline" onsubmit="event.preventDefault(); confirmDelete('{nvr.id}')">
+                <form method="post" class="inline" onsubmit="event.preventDefault(); confirmDelete('{nvr.id}', '{ nvr.hostname }')">
                     <button type="submit" class="text-red-500 dark:text-red-400 hover:underline font-semibold text-xs">🗑️ Delete</button>
                 </form>
             </td>

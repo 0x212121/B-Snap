@@ -79,7 +79,6 @@
   </div>
 </div>
 
-<!-- Modal Alert -->
 <div id="alertModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
     <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">⚠️ Alert</h2>
@@ -93,59 +92,32 @@
 </div>
 
 <script>
-  // --- REFAKTORISASI JAVASCRIPT TOTAL ---
-  
-  let fullDataset = []; // Satu-satunya sumber data mentah dari server
+  let fullDataset = []; 
   let sortState = {
-    column: 'hostname', // Kolom default untuk diurutkan
+    column: 'hostname',
     direction: 'asc'
   };
-  
   let healthCheckInterval;
   
-  /**
-  * Mengonversi string tanggal ISO (UTC) menjadi format tanggal & waktu WITA (GMT+8).
-  * @param {string | null} isoString - String tanggal dalam format ISO 8601, e.g., "2025-06-24T10:30:00Z".
-  * @returns {string} - Tanggal dan waktu yang diformat, e.g., "2025-06-24 18:30:00".
-  */
   function formatToWITA(isoString) {
-    // 1. Jika input tidak ada, kembalikan strip.
     if (!isoString) return "-";
-    
-    // Untuk debugging: tampilkan apa yang diterima dari server
-    // console.log("Menerima ISO String:", isoString);
-    
     try {
       const date = new Date(isoString);
-      
-      // 2. Periksa apakah tanggal valid setelah parsing.
       if (isNaN(date.getTime())) {
-        // console.error("Format tanggal tidak valid:", isoString);
         return "Invalid Date";
       }
-      
-      // 3. Opsi untuk format Intl.DateTimeFormat
       const options = {
-        timeZone: 'Asia/Makassar', // Zona Waktu Indonesia Tengah (WITA)
+        timeZone: 'Asia/Makassar',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hourCycle: 'h23', // Gunakan format 24 jam (00-23)
+        hourCycle: 'h23',
       };
-      
-      // 4. Gunakan locale 'sv-SE' (Swedish) yang secara native menghasilkan format YYYY-MM-DD HH:MM:SS
-      // Ini lebih andal daripada trik 'en-CA' dan replace.
-      const formattedDate = new Intl.DateTimeFormat('sv-SE', options).format(date);
-      
-      // Untuk debugging: tampilkan hasilnya
-      // console.log("Diformat ke WITA:", formattedDate);
-      
-      return formattedDate;
+      return new Intl.DateTimeFormat('sv-SE', options).format(date);
     } catch (e) {
-      // console.error("Error saat memformat tanggal:", e);
       return "-";
     }
   }
@@ -172,28 +144,17 @@
     return `${Math.floor(seconds)} second${Math.floor(seconds) > 1 ? 's' : ''} ago`;
   }
   
-  
-  // --- Core Rendering and Logic Functions ---
-  
   function renderTable(data) {
     const tableBody = document.getElementById('healthTableBody');
     tableBody.innerHTML = ''; 
-    
-    // ... (kode pengecekan data kosong) ...
-    
     const rowsHtml = data.map(device => {
-      // PANGGILAN FUNGSI YANG KRUSIAL ADA DI SINI:
       const checkedAt = formatToWITA(device.checked);
-      
-      // Pembuatan status display juga menggunakan formatDuration
-      let statusDisplay = device.status || 'Unknown';
+      let statusDisplay;
       if (device.status_changed_at) {
         statusDisplay = `${device.status} since ${formatDuration(formatToWITA(device.status_changed_at))}`;
       } else {
         statusDisplay = `${device.status} since ${formatDuration(formatToWITA(device.last_online))}`;
       }
-      
-      // ... sisa kode untuk membuat HTML baris ...
       const latency = device.latency !== null ? `<span class="${device.latency <= 50 ? 'text-green-500' : 'text-yellow-500'}">${device.latency} ms</span>` : '-';
       const statusClass = device.status?.includes('Online') ? 'bg-green-100 text-green-800' :
       device.status?.includes('Offline') ? 'bg-red-100 text-red-800' :
@@ -202,7 +163,6 @@
       const pingButton = `<button onclick='triggerHealth(this, "${device.id}", "${device.type.toLowerCase()}")' class="bg-gray-600 text-white px-2 py-1 rounded text-xs hover:bg-gray-700">🔄 Ping</button>`;
       const viewButton = device.type === 'Camera' ? `<button class='bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600' onclick='viewSnapshot(${JSON.stringify(device.hostname)})'>📸 View</button>` : '';
       const realtimeButton = device.type === 'Camera' && device.status !== 'Offline' ? `<button class='bg-teal-500 text-white px-2 py-1 rounded text-sm hover:bg-teal-600' onclick='viewRealtimeSnapshot(this, ${JSON.stringify(device.hostname)})'>📸 Realtime</button>` : '';
-      
       
       return `
       <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -221,11 +181,8 @@
       </tr>
     `;
     }).join('');
-    
     tableBody.innerHTML = rowsHtml;
   }
-  
-  
   
   function applyFilters() {
     const searchInput = document.getElementById('searchInput').value.toLowerCase();
@@ -243,12 +200,9 @@
   function applySort(data) {
     const { column, direction } = sortState;
     const modifier = direction === 'asc' ? 1 : -1;
-    
-    // Gunakan slice() untuk membuat salinan agar tidak mengubah array asli
     return data.slice().sort((a, b) => {
-      const valA = a[column] === null ? -Infinity : a[column]; // Handle null values
+      const valA = a[column] === null ? -Infinity : a[column];
       const valB = b[column] === null ? -Infinity : b[column];
-      
       if (valA < valB) return -1 * modifier;
       if (valA > valB) return 1 * modifier;
       return 0;
@@ -287,34 +241,25 @@
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       
       const data = await response.json();
-      
-      // Update data utama
       fullDataset = data.statuses;
       
-      // Update counts langsung dari data API
       document.getElementById('camera-online-count').textContent = data.camera_online_count;
       document.getElementById('camera-offline-count').textContent = data.camera_offline_count;
       document.getElementById('nvr-online-count').textContent = data.nvr_online_count;
       document.getElementById('nvr-offline-count').textContent = data.nvr_offline_count;
       
-      // Terapkan filter dan sort yang ada ke data baru
       filterAndRenderTable();
-      
     } catch (error) {
       console.error('Failed to refresh table:', error);
       showAlertModal('Failed to refresh device status.');
     }
   }
   
-  // Event Listeners dan Inisialisasi
   document.addEventListener('DOMContentLoaded', () => {
-    refreshTable(); // Muat data pertama kali
-    checkHealthCheckProgress(); // Cek jika ada proses yang sedang berjalan
+    refreshTable(); 
+    checkHealthCheckProgress();
   });
   
-  
-  // ... (Fungsi triggerHealth, checkHealthCheckProgress, viewSnapshot, dll. sebagian besar tetap sama)
-  // Pastikan URL dan method POST sesuai.
   function triggerHealth(button, deviceId, type) {
     const originalText = button.innerHTML;
     button.disabled = true;
@@ -324,7 +269,6 @@
     .then(res => res.json())
     .then(data => {
       console.log(data.status);
-      // Refresh table setelah 1.5 detik untuk memberi waktu server memproses
       setTimeout(refreshTable, 1500); 
     })
     .catch(err => {
@@ -339,14 +283,21 @@
     });
   }
   
-  // Fungsi lainnya (triggerAllHealthcheck, checkHealthCheckProgress, viewRealtimeSnapshot, viewSnapshot, hideSnapshotModal)
-  // bisa digunakan dari kode lama Anda karena logikanya sudah cukup baik.
+  // MODIFIED: This function now just shows the confirmation modal
   function triggerAllHealthcheck() {
-    if (!confirm("Are you sure want to ping all devices?")) return;
+    const message = 'Are you sure you want to ping all devices? This may cause high network traffic.';
+    showGlobalConfirm(message, executePingAll, {
+      title: 'Confirm Ping All',
+      confirmText: 'Yes, Ping All',
+      confirmClasses: 'bg-blue-600 hover:bg-blue-700'
+    });
+  }
+  
+  // NEW: This function contains the actual logic to run the ping
+  function executePingAll() {
+    hideConfirmPingModal(); // Close the confirmation modal
     
-    // Gunakan ID untuk memilih tombol
     const button = document.getElementById('ping-all-btn'); 
-    
     button.disabled = true;
     button.innerHTML = '🔄 Processing...';
     
@@ -367,13 +318,11 @@
       console.error('Error triggering health check:', error);
       showAlertModal('Failed to trigger health check: ' + error.message);
       
-      // Reset tombol jika error
       button.disabled = false;
       button.innerHTML = '🔄 Ping All Devices';
       document.getElementById('healthCheckStatus').classList.add('hidden');
     });
   }
-  
   
   function checkHealthCheckProgress() {
     if (healthCheckInterval) {
@@ -384,13 +333,11 @@
       fetch('/health/status/check')
       .then(response => response.json())
       .then(data => {
-        const button = document.getElementById('ping-all-btn'); // Gunakan ID lagi
-        
+        const button = document.getElementById('ping-all-btn');
         if (data.is_complete) {
           clearInterval(healthCheckInterval);
           document.getElementById('healthCheckStatus').classList.add('hidden');
           
-          // Reset tombol setelah selesai
           if (button) {
             button.disabled = false;
             button.innerHTML = '🔄 Ping All Devices';
@@ -399,7 +346,6 @@
           console.log("Health check completed. Refreshing table...");
           refreshTable();
         } else {
-          // Tampilkan progress
           document.getElementById('healthCheckStatus').classList.remove('hidden');
           const total = data.progress.total;
           const completed = data.progress.completed;
@@ -413,7 +359,6 @@
         clearInterval(healthCheckInterval);
         document.getElementById('healthCheckStatus').classList.add('hidden');
         
-        // Reset tombol jika ada error saat polling
         const button = document.getElementById('ping-all-btn');
         if (button) {
           button.disabled = false;
@@ -512,17 +457,20 @@
   function hideSnapshotModal() {
     document.getElementById('snapshotModal').classList.add('hidden');
   }
-
-  function showAlertModal(message) {
-  document.getElementById('alertModalMessage').textContent = message;
-  document.getElementById('alertModal').classList.remove('hidden');
-}
-
-function hideAlertModal() {
-  document.getElementById('alertModal').classList.add('hidden');
-}
-
   
+  function showAlertModal(message) {
+    document.getElementById('alertModalMessage').textContent = message;
+    document.getElementById('alertModal').classList.remove('hidden');
+  }
+  
+  function hideAlertModal() {
+    document.getElementById('alertModal').classList.add('hidden');
+  }
+  
+  // NEW: Function to hide the confirmation modal
+  function hideConfirmPingModal() {
+    document.getElementById('confirmPingModal').classList.add('hidden');
+  }
 </script>
 
 {% endblock %}

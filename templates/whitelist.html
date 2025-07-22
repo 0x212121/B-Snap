@@ -5,16 +5,6 @@
 <div class="container mx-auto p-4 sm:p-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 min-h-screen">
   <h2 class="text-2xl sm:text-3xl font-bold mb-6 text-center">📱 WhatsApp Whitelist</h2>
   
-  <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md text-center">
-      <p class="text-lg text-gray-800 dark:text-gray-100 mb-6" id="confirmText">Are you sure?</p>
-      <div class="flex justify-center gap-4">
-        <button id="confirmYes" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Yes</button>
-        <button onclick="closeModal()" class="bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-4 py-2 rounded hover:bg-gray-400 dark:hover:bg-gray-500">Cancel</button>
-      </div>
-    </div>
-  </div>
-  
   <form id="whitelist-form" class="flex flex-col md:flex-row gap-4 mb-8 p-4 rounded-lg shadow-md bg-gray-50 dark:bg-gray-700">
     <input id="phone_number" name="phone_number" placeholder="Phone (628xxxx)" class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-3 rounded-md w-full md:w-1/4 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
     <input id="name" name="name" placeholder="Name" class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-3 rounded-md w-full md:w-1/4 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -44,45 +34,28 @@
 
 {% block scripts %}
 <script>
-  // --- Notification Function (Merged into this file) ---
+  // --- Notification Function ---
   function showNotification(message, type = 'success') {
     const container = document.getElementById('notification-container');
     if (!container) return;
-
     const notification = document.createElement('div');
-
     const baseClasses = 'p-4 mb-3 rounded-lg shadow-lg flex items-center gap-x-4 text-white transition-all duration-300 ease-in-out transform';
-    const typeStyles = {
-      success: 'bg-green-500',
-      error: 'bg-red-500',
-      info: 'bg-blue-500'
-    };
-
+    const typeStyles = { success: 'bg-green-500', error: 'bg-red-500', info: 'bg-blue-500' };
     notification.className = `${baseClasses} ${typeStyles[type] || 'bg-gray-500'}`;
     notification.style.opacity = '0';
     notification.style.transform = 'translateX(100%)';
-
-    notification.innerHTML = `
-      <span class="flex-grow">${message}</span>
-      <button class="font-semibold text-lg leading-none">&times;</button>
-    `;
-
+    notification.innerHTML = `<span class="flex-grow">${message}</span><button class="font-semibold text-lg leading-none">&times;</button>`;
     container.appendChild(notification);
     setTimeout(() => {
       notification.style.opacity = '1';
       notification.style.transform = 'translateX(0)';
     }, 10);
-
     const removeNotification = () => {
       notification.style.opacity = '0';
       notification.style.transform = 'translateX(100%)';
-      setTimeout(() => {
-        notification.remove();
-      }, 300);
+      setTimeout(() => { notification.remove(); }, 300);
     };
-
     const autoDismissTimer = setTimeout(removeNotification, 5000);
-
     notification.querySelector('button').addEventListener('click', () => {
       clearTimeout(autoDismissTimer);
       removeNotification();
@@ -90,7 +63,6 @@
   }
 
   // --- Page-Specific Logic ---
-  let pendingDeletePhone = null;
   
   function validatePhoneNumber(phone) {
     const regex = /^628[1-9][0-9]{7,12}$/;
@@ -128,27 +100,25 @@
     showNotification("Status updated", 'success');
   }
   
+  // PERUBAHAN: Fungsi confirmDelete sekarang menggunakan modal global
   function confirmDelete(phone) {
-    pendingDeletePhone = phone;
-    document.getElementById("confirmText").textContent = `Are you sure you want to delete ${phone}?`;
-    const modal = document.getElementById("confirmModal");
-    modal.classList.remove("hidden");
+    const message = `Are you sure you want to delete ${phone} from the whitelist?`;
+    
+    // Panggil fungsi global dari base.html
+    showGlobalConfirm(message, async () => {
+        // Logika yang dijalankan saat tombol "Yes" diklik
+        await fetch(`/api/whitelist/${phone}`, { method: 'DELETE' });
+        showNotification(`Deleted ${phone}`, 'error');
+        loadWhitelist();
+    }, {
+        // Opsi untuk kustomisasi modal
+        title: '⚠️ Delete Whitelist Number',
+        confirmText: 'Yes, Delete',
+        confirmClasses: 'bg-red-600 hover:bg-red-700'
+    });
   }
   
-  function closeModal() {
-    const modal = document.getElementById("confirmModal");
-    modal.classList.add("hidden");
-    pendingDeletePhone = null;
-  }
-  
-  document.getElementById("confirmYes").onclick = async () => {
-    if (pendingDeletePhone) {
-      await fetch(`/api/whitelist/${pendingDeletePhone}`, { method: 'DELETE' });
-      showNotification(`Deleted ${pendingDeletePhone}`, 'error');
-      loadWhitelist();
-      closeModal();
-    }
-  };
+  // Fungsi closeModal dan event listener confirmYes telah dihapus karena tidak diperlukan lagi
   
   document.getElementById("whitelist-form").onsubmit = async (e) => {
     e.preventDefault();

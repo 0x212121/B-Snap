@@ -214,7 +214,7 @@ def show_snapshots(request: Request, db: Session = Depends(get_db), camera: str 
     # Get all snapshots for the initial view using the helper
     images = _get_filtered_snapshots(db, group_id, camera_filter=camera)
 
-    return templates.TemplateResponse("snap_gallery.html", {
+    return templates.TemplateResponse("snapshot_gallery.html", {
         "request": request,
         "images": images,
         "camera_names": all_camera_names, # Use the new list of names
