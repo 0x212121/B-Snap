@@ -24,16 +24,20 @@ async def config_page(request: Request):
     configs = db.query(Configuration).all()
     db.close()
 
+    import pytz
     config_dict = {c.key: c.value for c in configs}
+    timezones = pytz.all_timezones  # Untuk populasi dropdown
     return templates.TemplateResponse("config.html", {
         "request": request,
-        "configs": config_dict
+        "configs": config_dict,
+        "timezones": timezones
     })
 
 
 MAX_LOGO_SIZE = 512 * 1024  # 512 KB
 ALLOWED_EXTENSIONS = {".png", ".ico"}
 ALLOWED_MIME_TYPES = {"image/png", "image/x-icon"}
+
 
 @router.post("/config/save")
 @admin_required
@@ -46,9 +50,17 @@ async def config_save(
     max_screenshot_per_camera: int = Form(...),
     watermark_text: str = Form(...),
     map_title: str = Form(...),
+    timezone: str = Form(...),
     app_logo: UploadFile = File(None)
 ):
+    import pytz
     db = SessionLocal()
+
+    # Validasi timezone
+    if timezone not in pytz.all_timezones:
+        db.close()
+        return RedirectResponse(url="/config?error=InvalidTimezone", status_code=303)
+
     keys = {
         "snapshot_interval_minutes": snapshot_interval_minutes,
         "healthcheck_interval_minutes": healthcheck_interval_minutes,
@@ -56,7 +68,8 @@ async def config_save(
         "items_per_page": items_per_page,
         "max_screenshot_per_camera": max_screenshot_per_camera,
         "watermark_text": watermark_text,
-        "map_title": map_title
+        "map_title": map_title,
+        "timezone": timezone  # ⬅️ Tambahkan di sini juga
     }
 
     for key, value in keys.items():

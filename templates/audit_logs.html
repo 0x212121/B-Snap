@@ -151,7 +151,7 @@
         actionLower.includes('delete') ? 'bg-red-500' :
         actionLower.includes('login') ? 'bg-blue-500' :
         actionLower.includes('logout') ? 'bg-indigo-500' : 'bg-gray-500';
-        const timezone = document.body.dataset.timezone || 'Asia/Jakarta';
+        const timezone = document.body.dataset.timezone || 'Asia/Singapore';
         const formattedTimestamp = dayjs.utc(log.timestamp).tz(timezone).format("DD MMM YYYY HH:mm:ss");
         
         const extraButton = log.extra
