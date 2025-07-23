@@ -369,7 +369,7 @@ async def get_camera_groups(request: Request, db: Session = Depends(get_db), cur
     return [{"id": g.id, "name": g.name} for g in groups]
 
 
-@router.post("/cameras/{camera_id}/delete", response_class=JSONResponse)
+@router.post("/cameras/delete/{camera_id}", response_class=JSONResponse)
 async def delete_camera(request: Request, camera_id: str, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
     cam = db.query(DBCamera).filter(DBCamera.id == camera_id).first()
     if not cam:

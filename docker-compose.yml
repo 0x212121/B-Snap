@@ -1,6 +1,6 @@
 services:
   b-snap:
-    image: wijayaindra21/b-snap:v1.2.1
+    image: wijayaindra21/b-snap:v1.2.3
     container_name: bsnap-app
     ports:
       - "8080:8080"
@@ -19,7 +19,7 @@ services:
     command: gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8080 --workers 5
 
   scheduler:
-    image: wijayaindra21/b-snap:v1.2.1
+    image: wijayaindra21/b-snap:v1.2.3
     container_name: bsnap-scheduler
     env_file:
       - .env
@@ -33,7 +33,7 @@ services:
     command: python -m app.jobs.scheduler_main
   
   notifier:
-    image: wijayaindra21/b-snap:v1.2.1
+    image: wijayaindra21/b-snap:v1.2.3
     container_name: bsnap-notifier
     env_file:
       - .env
