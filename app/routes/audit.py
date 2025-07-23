@@ -2,7 +2,6 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, Request, Query
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models_sql import AuditLog, User
@@ -11,10 +10,9 @@ from app.utils.timezone_helper import get_current_timezone, to_current_timezone
 from sqlalchemy import or_
 import io
 import csv
-from pytz import UTC, timezone
+from app.utils.template_helper import templates
 
 router = APIRouter()
-from app.utils.template_helper import templates
 
 
 def format_datetime_local(dt, tz_name=None):
@@ -137,14 +135,8 @@ async def get_audit_logs_api(
                .limit(per_page)\
                .all()
 
-    # Konversi data log ke format yang aman untuk JSON
-    ts_local = to_current_timezone(log.timestamp, db)
-
     logs_data = []
     for log in logs:
-        ts = log.timestamp
-        if ts.tzinfo is None:  # ⛔ naive datetime
-            ts = UTC.localize(ts)
         ts_local = to_current_timezone(log.timestamp, db)
 
         logs_data.append({
