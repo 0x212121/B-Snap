@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models_sql import AuditLog, User
 from app.routes.auth import admin_access_required
+from app.utils.timezone_helper import get_current_timezone, to_current_timezone
 from sqlalchemy import or_
 import io
 import csv
@@ -16,42 +17,35 @@ router = APIRouter()
 from app.utils.template_helper import templates
 
 
-def format_datetime_local(dt, tz_name="Asia/Singapore"):
+def format_datetime_local(dt, tz_name=None):
     """
-    Convert datetime object or string timestamp to local timezone
+    Convert datetime object or string timestamp to configured timezone
     """
-    if not dt: # Menangani None atau string kosong
+    if not dt:
         return ""
 
     dt_obj = None
-    # Langkah 1: Periksa jika input adalah string, konversi ke objek datetime
     if isinstance(dt, str):
         try:
-            # fromisoformat() adalah cara modern & cepat untuk parse YYYY-MM-DD HH:MM:SS
             dt_obj = datetime.fromisoformat(dt)
         except ValueError:
-            # Fallback jika formatnya sedikit berbeda (misal tanpa mikrodetik)
             try:
                 dt_obj = datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
             except ValueError:
-                # Jika parsing tetap gagal, kembalikan string aslinya agar tidak error
                 return dt
     elif isinstance(dt, datetime):
-        # Jika sudah merupakan objek datetime, gunakan langsung
         dt_obj = dt
     else:
-        # Jika tipe data tidak dikenali, kembalikan representasi stringnya
         return str(dt)
 
-
-    # Langkah 2: Lanjutkan dengan logika timezone yang sudah ada
     if dt_obj.tzinfo is None:
-        # Anggap timestamp 'naive' dari DB sebagai UTC
-        dt_obj = dt_obj.replace(tzinfo=timezone.utc)
-    
-    local_tz = ZoneInfo(tz_name)
-    return dt_obj.astimezone(local_tz).strftime("%d %B %Y, %H:%M:%S WITA")
+        dt_obj = dt_obj.replace(tzinfo=UTC)
 
+    try:
+        tz = ZoneInfo(tz_name or "UTC")
+        return dt_obj.astimezone(tz).strftime("%d %B %Y, %H:%M:%S %Z")
+    except Exception:
+        return dt_obj.strftime("%d %B %Y, %H:%M:%S UTC")
 
 # Daftarkan filter agar bisa digunakan di template
 templates.env.filters["format_datetime"] = format_datetime_local
@@ -67,7 +61,7 @@ async def audit_logs_page(
     current_admin: User = Depends(admin_access_required)
 ):
     from pytz import timezone
-    Singapore_tz = timezone("Asia/Singapore")
+    tz_name = get_current_timezone(db)
 
     total_logs = db.query(AuditLog).count()
     logs = db.query(AuditLog)\
@@ -78,7 +72,7 @@ async def audit_logs_page(
 
     # Ubah timestamp ke waktu lokal
     for log in logs:
-        log.timestamp = log.timestamp.astimezone(Singapore_tz)
+        log.timestamp = to_current_timezone(log.timestamp, db)
 
     total_pages = (total_logs + per_page - 1) // per_page
 
@@ -89,7 +83,7 @@ async def audit_logs_page(
         "per_page": per_page,
         "total_pages": total_pages,
         "total_logs": total_logs,
-        "timezone": "Asia/Singapore"
+        "timezone": tz_name
     })
 
 
@@ -144,14 +138,14 @@ async def get_audit_logs_api(
                .all()
 
     # Konversi data log ke format yang aman untuk JSON
-    Singapore_tz = timezone("Asia/Singapore")
+    ts_local = to_current_timezone(log.timestamp, db)
 
     logs_data = []
     for log in logs:
         ts = log.timestamp
         if ts.tzinfo is None:  # ⛔ naive datetime
             ts = UTC.localize(ts)
-        ts_local = ts.astimezone(Singapore_tz)
+        ts_local = to_current_timezone(log.timestamp, db)
 
         logs_data.append({
             "timestamp": ts_local.isoformat(),
@@ -168,7 +162,7 @@ async def get_audit_logs_api(
         "per_page": per_page,
         "total_pages": total_pages,
         "total_logs": total_logs,
-        "timezone": "Asia/Singapore"
+        "timezone": get_current_timezone(db)
     }
 
 
@@ -204,7 +198,10 @@ async def export_audit_logs_csv(
     writer = csv.writer(output)
     writer.writerow(["Timestamp", "User", "Action", "Target", "IP Address", "Extra"])
     for log in logs:
-        writer.writerow([log.timestamp, log.user, log.action, log.target, log.ip, log.extra])
+        writer.writerow([
+            to_current_timezone(log.timestamp, db).strftime("%Y-%m-%d %H:%M:%S"),
+            log.user, log.action, log.target, log.ip, log.extra
+        ])
     
     output.seek(0)
     
