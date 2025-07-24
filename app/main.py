@@ -11,9 +11,8 @@ from contextlib import asynccontextmanager
 from fastapi import (
     FastAPI, HTTPException, Request, Response, status
 )
-from app.api import whatsapp_routes
-from app.ws.manager import websocket_connections
-from fastapi.responses import RedirectResponse
+
+from fastapi.responses import ORJSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.docs import get_swagger_ui_html
 from app.middleware.auth_and_setup import AuthAndSetupMiddleware
@@ -34,6 +33,10 @@ from app.routes import (
     user_management, videos, whitelist
 )
 from app.ws.routes import notification_listener, router as ws_router
+from app.version import __version__
+from app.api import whatsapp_routes
+from app.ws.manager import websocket_connections
+from functools import lru_cache
 
 # from app.ws.notifier import pg_listen_and_broadcast
 
@@ -53,7 +56,6 @@ TRUSTED_HOSTS = os.getenv("TRUSTED_HOSTS", "*")
 from app.utils.template_helper import templates
 
 # B-snap version
-from app.version import __version__
 templates.env.globals["version"] = __version__
 
 # ====================================================================
@@ -112,7 +114,8 @@ app = FastAPI(
     version="1.2.1",
     docs_url=None,  # Disabled to use custom docs
     redoc_url=None,
-    middleware=middleware
+    middleware=middleware,
+    default_response_class=ORJSONResponse
 )
 
 
@@ -190,7 +193,11 @@ async def custom_swagger_ui():
     )
 
 
-@app.get("/version")
-async def get_version():
-    from app.version import __version__
+@lru_cache()
+def get_version_info():
     return {"version": __version__}
+
+
+@app.get("/version")
+async def version():
+    return get_version_info()

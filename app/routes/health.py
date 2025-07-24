@@ -6,6 +6,7 @@ from typing import Optional
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field, ConfigDict
+import pytz
 from sqlalchemy import asc, desc, func, union_all, literal_column, select
 from sqlalchemy.orm import Session, contains_eager
 from app.core.config import get_config
@@ -15,11 +16,10 @@ from app.routes.auth import operator_access_required
 from app.utils.health_check import run_healthcheck_for_all, run_healthcheck_for_camera, run_healthcheck_for_nvr
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 from app.models_sql import NVR, CameraDailyStats, CameraHealth as Health, Camera as DBCamera, HealthCheckStatus, User, CameraStatusChangeLog
-import pytz
 from app.utils.template_helper import templates
+from app.utils.timezone_helper import get_current_timezone, to_current_timezone
 
 router = APIRouter()
-wita_tz = pytz.timezone('Asia/Makassar')
 
 setup_logging()
 logger = logging.getLogger("healthcheck")
@@ -32,9 +32,9 @@ class DeviceHealthStatus(BaseModel):
     type: str
     status: str | None
     latency: float | None
-    checked_at: datetime | None = Field(None, alias="checked")
-    last_online_at: datetime | None = Field(None, alias="last_online")
-    status_changed_at: datetime | None
+    checked_at: str | None = Field(None, alias="checked")
+    last_online_at: str | None = Field(None, alias="last_online")
+    status_changed_at: str | None
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -75,12 +75,17 @@ async def health_monitor_page(
     db: Session = Depends(get_db),
     current_operator: User = Depends(operator_access_required)
 ):
+    
+    logger.info(f"Current Timezone: {get_current_timezone(db)}")
+    tz_name = get_current_timezone(db)
     return templates.TemplateResponse("health.html", {
         "request": request,
         "initial_data": HealthStatusResponse(
             statuses=[], camera_online_count=0, nvr_online_count=0,
             camera_offline_count=0, nvr_offline_count=0
-        ).json()
+        ).json(),
+        "server_timezone": get_current_timezone(db),
+        "server_timezone_label": pytz.timezone(tz_name).tzname(datetime.now())
     })
 
 @router.get("/health/status", response_model=HealthStatusResponse)
@@ -88,27 +93,41 @@ async def get_health_status_api(db: Session = Depends(get_db), current_operator:
     try:
         all_devices = _get_all_devices_health_data(db)
         counts = Counter((dev.type, dev.status) for dev in all_devices)
-        for dev in all_devices:
-            assert hasattr(dev, "type"), f"Device missing 'type': {dev}"
-            assert hasattr(dev, "status"), f"Device missing 'status': {dev}"
 
-        logger.debug("Device counts: %s", counts)
-
+        # Count online/offline
         camera_online = counts.get(("Camera", "Online"), 0) + counts.get(("Camera", "High Latency"), 0)
         nvr_online = counts.get(("NVR", "Online"), 0) + counts.get(("NVR", "High Latency"), 0)
         camera_offline = counts.get(("Camera", "Offline"), 0)
         nvr_offline = counts.get(("NVR", "Offline"), 0)
 
-        return HealthStatusResponse(
-            statuses=all_devices,
-            camera_online_count=camera_online,
-            nvr_online_count=nvr_online,
-            camera_offline_count=camera_offline,
-            nvr_offline_count=nvr_offline,
-        )
+        formatted_devices = []
+        for dev in all_devices:
+            dev_dict = dict(dev._mapping)
+            # Convert timestamps to ISO with timezone
+            for ts_field in ["checked", "last_online", "status_changed_at"]:
+                if dev_dict.get(ts_field):
+                    # Biarkan format ISO (dengan offset) agar JS bisa parse dengan akurat
+                    dev_dict[ts_field] = to_current_timezone(dev_dict[ts_field], db).isoformat()
+                else:
+                    dev_dict[ts_field] = None
+            formatted_devices.append(dev_dict)
+
+        # NEW: Inject server timezone (e.g. Asia/Makassar) dan nama label
+        tz_name = get_current_timezone(db)
+        return {
+            "statuses": formatted_devices,
+            "camera_online_count": camera_online,
+            "nvr_online_count": nvr_online,
+            "camera_offline_count": camera_offline,
+            "nvr_offline_count": nvr_offline,
+            "server_timezone": tz_name,
+            "server_timezone_label": pytz.timezone(tz_name).tzname(datetime.now())
+        }
+
     except Exception as e:
         print("Error in get_health_status_api: %s" % e)
         return JSONResponse(status_code=500, content={"message": "An internal error occurred."})
+
 
 @router.post("/health/trigger/{entity_id}")
 async def trigger_healthcheck(
@@ -235,14 +254,15 @@ async def health_history(
             CameraStatusChangeLog.previous_status == "Offline",
             CameraStatusChangeLog.changed_at >= thirty_days_ago
         ).order_by(CameraStatusChangeLog.changed_at).all()
-
+        
         for log in offline_logs:
             duration_secs = log.duration_since_last_change or 0
-            utc_dt = log.changed_at.replace(tzinfo=timezone.utc) if log.changed_at.tzinfo is None else log.changed_at.astimezone(timezone.utc)
-            local_dt = utc_dt.astimezone(wita_tz)
+
+            # Convert timestamp ke timezone lokal dari DB
+            local_dt = to_current_timezone(log.changed_at, db)
 
             date_str = local_dt.date().isoformat()
-            time_str = local_dt.strftime("%H:%M")
+            time_str = local_dt.strftime("%H:%M %z")  # Bisa juga pakai %z kalau butuh offset
 
             duration_str = format_duration(duration_secs) if duration_secs > 0 else ""
             duration_text = f"({duration_str})" if duration_str else ""

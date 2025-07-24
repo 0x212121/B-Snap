@@ -58,19 +58,28 @@ async def audit_logs_page(
     per_page: int = Query(20, ge=1, le=100),
     current_admin: User = Depends(admin_access_required)
 ):
-    from pytz import timezone
     tz_name = get_current_timezone(db)
 
     total_logs = db.query(AuditLog).count()
-    logs = db.query(AuditLog)\
+    raw_logs = db.query(AuditLog)\
         .order_by(AuditLog.timestamp.desc())\
         .offset((page - 1) * per_page)\
         .limit(per_page)\
         .all()
 
-    # Ubah timestamp ke waktu lokal
-    for log in logs:
-        log.timestamp = to_current_timezone(log.timestamp, db)
+    logs = []
+    for log in raw_logs:
+        ts_local = to_current_timezone(log.timestamp, db)
+        formatted_time = ts_local.strftime("%d %B %Y, %H:%M:%S %Z")  # contoh: 24 Juli 2025, 14:30:00 WITA
+
+        logs.append({
+            "timestamp": formatted_time,
+            "user": log.user,
+            "action": log.action,
+            "target": log.target,
+            "ip": log.ip,
+            "extra": log.extra
+        })
 
     total_pages = (total_logs + per_page - 1) // per_page
 
@@ -81,7 +90,7 @@ async def audit_logs_page(
         "per_page": per_page,
         "total_pages": total_pages,
         "total_logs": total_logs,
-        "timezone": tz_name
+        "timezone": tz_name,
     })
 
 
@@ -137,10 +146,10 @@ async def get_audit_logs_api(
 
     logs_data = []
     for log in logs:
-        ts_local = to_current_timezone(log.timestamp, db)
+        ts_local = to_current_timezone(log.timestamp, db).strftime('%d %b %Y %H:%M:%S %Z'),
 
         logs_data.append({
-            "timestamp": ts_local.isoformat(),
+            "timestamp": ts_local,
             "user": log.user,
             "action": log.action,
             "target": log.target,

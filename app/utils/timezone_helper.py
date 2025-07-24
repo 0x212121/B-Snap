@@ -1,11 +1,20 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
-from app.models_sql.configuration import Configuration
+from app.models_sql import Configuration
 import pytz
 
 def get_current_timezone(db: Session) -> str:
     config = db.query(Configuration).filter_by(key="timezone").first()
-    return config.value if config else "UTC"
+    if not config or not config.value:
+        return "UTC"
+    try:
+        # pastikan valid timezone
+        pytz.timezone(config.value)
+        return config.value
+    except Exception as e:
+        print(f"[Timezone] Invalid timezone in DB: {config.value} ({e})")
+        return "UTC"
+
 
 def to_current_timezone(dt: datetime, db: Session) -> datetime:
     tz_name = get_current_timezone(db)

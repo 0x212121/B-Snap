@@ -22,14 +22,18 @@
           class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
           <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Frequency for checking camera online status.</p>
         </div>
-        <label for="timezone">Timezone:</label>
-          <select name="timezone" id="timezone" required>
+        <div>
+          <label for="timezone" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Timezone</label>
+          <select name="timezone" id="timezone" required
+            class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
             {% for tz in timezones %}
-              <option value="{{ tz }}" {% if configs.timezone == tz %}selected{% endif %}>
+              <option value="{{ tz }}" {% if configs.get('timezone') == tz %}selected{% endif %}>
                 {{ tz }}
               </option>
             {% endfor %}
           </select>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Used across all timestamps in the app.</p>
+        </div>
       </div>
     </div>
     

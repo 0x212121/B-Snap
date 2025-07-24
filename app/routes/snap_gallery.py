@@ -15,6 +15,8 @@ from app.utils.snapshot_service import take_snapshot
 from app.utils.timezone import format_wita
 from app.utils.snapshot_utils import record_snapshot_metadata
 import os
+
+from app.utils.timezone_helper import to_current_timezone
 router = APIRouter()
 
 from app.utils.template_helper import templates
@@ -59,7 +61,7 @@ def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[
             "url": f"/{SNAPSHOT_BASE_DIR}/snapshots/{s.file_path}",
             "camera": s.camera_name,
             "ip": s.camera_ip,
-            "time": format_wita(s.timestamp),
+            "time": to_current_timezone(s.timestamp, db).strftime('%d %b %Y %H:%M:%S %Z'),
             "group": s.camera_group,
             "id": s.id,
             "file_size": int(s.file_size / 1024) if s.file_size else 0,
@@ -168,11 +170,14 @@ def delete_snapshot(
         db.commit()
         logger.info("Snapshot record deleted from DB: %s", snapshot_id)
 
+        target_time = to_current_timezone(snapshot.timestamp, db)
+        formatted_time = target_time.strftime('%d %B %Y, %H:%M:%S GMT%z')
+
         log_audit(
             db=db,
             user=request.session["user_name"],
             action="delete_snapshot",
-            target="%s | %s" % (snapshot.camera_name, snapshot.timestamp.strftime('%d %B %Y, %H:%M:%S WITA')),
+            target=f"{snapshot.camera_name} | {formatted_time}",
             ip=request.client.host,
             extra="via dashboard"
         )

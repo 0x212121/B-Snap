@@ -12,6 +12,7 @@ from app.db.database import get_db
 from app.models_sql import Camera, CameraGroup, User, Video
 from app.routes.auth import operator_access_required
 from app.utils.audit_logger import log_audit
+from app.utils.timezone_helper import to_current_timezone
 from app.utils.video import record_video_and_save_db
 from app.utils.timezone import format_wita
 
@@ -62,7 +63,7 @@ def _get_filtered_videos(
 
     formatted_videos = []
     for v in videos:
-        formatted_time = format_wita(v.timestamp)
+        formatted_time = to_current_timezone(v.timestamp, db).strftime('%d %b %Y %H:%M:%S %Z')
 
         formatted_videos.append({
             "id": v.id,
