@@ -26,7 +26,7 @@ async def config_page(request: Request):
 
     import pytz
     config_dict = {c.key: c.value for c in configs}
-    timezones = pytz.all_timezones  # Untuk populasi dropdown
+    timezones = pytz.common_timezones  # Untuk populasi dropdown
     return templates.TemplateResponse("config.html", {
         "request": request,
         "configs": config_dict,

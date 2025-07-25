@@ -1,8 +1,9 @@
+#Berkas: app/routes/maps.py
+
 from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import joinedload, Session
 from pydantic import BaseModel
 
@@ -10,10 +11,10 @@ from app.core.config import get_config
 from app.db.database import get_db
 from app.models_sql import Camera as DBCamera, User
 from app.routes.auth import get_current_user
-from app.utils.timezone import format_wita, to_wita  # 🆕 centralized import
+from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
+from app.utils.template_helper import templates
 
 router = APIRouter(tags=["Maps"])
-from app.utils.template_helper import templates
 
 
 def format_uptime(start_time: datetime, end_time: datetime) -> str:
@@ -74,7 +75,10 @@ async def get_camera_locations(
         
     cameras = query.all()
 
-    current_time_wita = to_wita(datetime.now(timezone.utc))  # 🆕 centralize timezone now
+    # --- PERUBAHAN LOGIKA WAKTU ---
+    # Ambil waktu saat ini sekali dan konversikan ke zona waktu lokal dari database
+    now_utc = datetime.now(timezone.utc)
+    current_time_local = to_current_timezone(now_utc, db)
     online_statuses = ["Online", "High Latency", "Optimal Latency"]
 
     result = []
@@ -87,11 +91,14 @@ async def get_camera_locations(
         if health and health.last_online:
             status_str = health.status
 
-            last_online_wita = to_wita(health.last_online)  # 🆕 centralized
-            formatted_last_online = format_wita(last_online_wita)  # 🆕 centralized
+            # Konversi waktu 'last_online' dari UTC ke zona waktu lokal
+            last_online_local = to_current_timezone(health.last_online, db)
+            # Gunakan fungsi pemformatan terpusat yang baru
+            formatted_last_online = format_datetime_with_tz(last_online_local)
 
             if health.status in online_statuses:
-                uptime_str = format_uptime(last_online_wita, current_time_wita)
+                # Hitung uptime menggunakan waktu yang sudah dilokalkan
+                uptime_str = format_uptime(last_online_local, current_time_local)
             else:
                 uptime_str = "Offline"
 
@@ -105,7 +112,7 @@ async def get_camera_locations(
             "lng": cam.longitude,
             "asset_no": cam.asset_no,
             "status": status_str,
-            "last_online": formatted_last_online,
+            "last_online": formatted_last_online, # Sekarang berisi string waktu yang sudah diformat
             "uptime": uptime_str,
             "restricted": restriction_status,
             "cam_group": cam.group_id,

@@ -152,7 +152,7 @@
                             {% if user.api_tokens %}
                                 <ul class="space-y-1">
                                 {% for token in user.api_tokens %}
-                                    <li>{{ token.expires_at | to_gmt8 }}</li>
+                                    <li>{{ token.expires_at | to_localtime }}</li>
                                 {% endfor %}
                                 </ul>
                             {% else %}
@@ -165,7 +165,7 @@
                             {% endif %}
                         </td>
                         <td id="last-logon-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
-                            {{ user.last_login | to_gmt8 }}
+                            {{ user.last_login | to_localtime }}
                         </td>
                         <td class="p-4 whitespace-nowrap text-center space-x-2">
                             <button onclick="editUser({{ user.id }}, '{{ user.username }}', '{{ user.role }}', '{{ user.group.name if user.group else 'ALL' }}')" aria-label="Edit user {{ user.username }}" class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 p-2 rounded-full transition-colors">
@@ -243,49 +243,59 @@
 
 {% block scripts %}
 <script>
-// --- MODAL & ACTION LOGIC ---
+// --- GLOBAL STATE & UTILITIES ---
 let activeUserId = null;
 
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
+/**
+ * Toggles the visibility of a modal dialog.
+ * @param {string} modalId The ID of the modal element.
+ * @param {boolean} show True to show, false to hide.
+ */
+function toggleModal(modalId, show) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.toggle('hidden', !show);
+    }
 }
 
-// FUNGSI BARU: Untuk menangani klik tombol hapus dengan aman
-function confirmUserDelete(buttonElement) {
-    const userId = buttonElement.dataset.userId;
-    const username = buttonElement.dataset.username;
-    const message = `Are you sure you want to permanently delete user '${username}'?`;
-    
-    showGlobalConfirm(
-        message, 
-        () => {
-            document.getElementById(`deleteForm${userId}`).submit();
-        }, 
-        { 
-            title: '⚠️ Delete User', 
-            confirmText: 'Yes, Delete', 
-            confirmClasses: 'bg-red-600 hover:bg-red-700' 
-        }
-    );
+/**
+ * Escapes special characters in a string for safe use in HTML attributes.
+ * @param {string} str The string to escape.
+ * @returns {string} The escaped string.
+ */
+function escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#039;');
 }
 
-// --- TOKEN GENERATION LOGIC ---
+
+// --- TOKEN MANAGEMENT ---
+
+/**
+ * Prepares and opens the "Generate Token" modal.
+ * @param {number} userId The ID of the user.
+ * @param {string} username The name of the user.
+ */
 function openGenerateTokenModal(userId, username) {
     activeUserId = userId;
     document.getElementById('tokenUsername').textContent = username;
     document.getElementById('generateTokenError').classList.add('hidden');
-    const modal = document.getElementById('generateTokenModal');
-    modal.classList.remove('hidden');
     document.getElementById('generateTokenBtn').onclick = handleTokenGeneration;
+    toggleModal('generateTokenModal', true);
 }
 
+/**
+ * Handles the API call to generate a new token and updates the UI.
+ */
 async function handleTokenGeneration() {
     const expiryDays = document.getElementById('expirySelect').value;
     const errorP = document.getElementById('generateTokenError');
     const spinner = document.getElementById('generateSpinner');
     const btn = document.getElementById('generateTokenBtn');
-    
-    // DITAMBAHKAN: Ambil username dari elemen yang sudah ada
     const username = document.getElementById('tokenUsername').textContent;
 
     spinner.classList.remove('hidden');
@@ -303,14 +313,13 @@ async function handleTokenGeneration() {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Failed to generate token.');
+            // Try to get a detailed error message from the server's JSON response
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.detail || `Server returned status ${response.status}`);
         }
 
         const data = await response.json();
-        closeModal('generateTokenModal');
-        
-        // DIPERBARUI: Kirim username ke fungsi showGeneratedToken
+        toggleModal('generateTokenModal', false);
         showGeneratedToken(activeUserId, data.token, data.token_expires_at, data.api_tokens, username);
 
     } catch (error) {
@@ -322,59 +331,116 @@ async function handleTokenGeneration() {
     }
 }
 
+/**
+ * Displays the newly generated token and updates the user's token list in the table.
+ * @param {number} userId
+ * @param {string} token The new token.
+ * @param {string} expiresGmt8Str The new token's expiration date string.
+ * @param {Array} apiTokens The full, updated list of tokens for the user.
+ * @param {string} username
+ */
 function showGeneratedToken(userId, token, expiresGmt8Str, apiTokens, username) {
-    const modal = document.getElementById('showTokenModal');
-    const tokenInput = document.getElementById('generatedTokenInput');
+    document.getElementById('generatedTokenInput').value = token;
+    toggleModal('showTokenModal', true);
+    
+    // Update the token list in the main user table
+    updateTokenCells(userId, username, apiTokens);
+
+    // Reset copy button state
     const copyBtn = document.getElementById('copyTokenBtn');
-
-    tokenInput.value = token;
-    modal.classList.remove('hidden');
-
-    const tokenCell = document.getElementById(`token-cell-${userId}`);
-    const expiryCell = document.getElementById(`token-expiry-cell-${userId}`);
-
-    if (tokenCell && expiryCell && Array.isArray(apiTokens)) {
-        // PERBAIKAN UTAMA: Membuat tombol "Revoke" dengan metode data-* yang aman
-        const tokenListHTML = apiTokens.map(t => {
-            // Gunakan `username` yang diterima dari parameter fungsi
-            const safeUsername = username || ''; 
-            
-            return `
-            <li class="flex items-center justify-between gap-2">
-                <span>${t.token.substring(0, 8)}...${t.token.slice(-4)}</span>
-                <button onclick="handleRevokeClick(this)"
-                        data-user-id="${userId}"
-                        data-token="${t.token}"
-                        data-username="${safeUsername}"
-                        class="text-red-500 hover:text-red-700 text-xs font-semibold">Revoke</button>
-            </li>
-        `}).join('');
-
-        tokenCell.innerHTML = `<ul class="space-y-1">${tokenListHTML}</ul>`;
-
-        const expiryListHTML = apiTokens.map(t => `
-            <li>${t.expires_at_gmt8 || 'Never'}</li>
-        `).join('');
-
-        expiryCell.innerHTML = `<ul class="space-y-1">${expiryListHTML}</ul>`;
-    }
-
-    document.getElementById('copyIcon').classList.remove('hidden');
-    document.getElementById('checkIcon').classList.add('hidden');
+    const copyIcon = document.getElementById('copyIcon');
+    const checkIcon = document.getElementById('checkIcon');
+    copyIcon.classList.remove('hidden');
+    checkIcon.classList.add('hidden');
 
     copyBtn.onclick = () => {
         navigator.clipboard.writeText(token).then(() => {
-            document.getElementById('copyIcon').classList.add('hidden');
-            document.getElementById('checkIcon').classList.remove('hidden');
+            copyIcon.classList.add('hidden');
+            checkIcon.classList.remove('hidden');
             setTimeout(() => {
-                document.getElementById('copyIcon').classList.remove('hidden');
-                document.getElementById('checkIcon').classList.add('hidden');
+                copyIcon.classList.remove('hidden');
+                checkIcon.classList.add('hidden');
             }, 2000);
         });
     };
 }
 
-// --- COMPLETE FORM AND TABLE LOGIC ---
+/**
+ * Handles the click on a "Revoke" button, confirming and executing token revocation.
+ * @param {HTMLElement} buttonElement The button element that was clicked.
+ */
+function handleRevokeClick(buttonElement) {
+    const { userId, token, username } = buttonElement.dataset;
+    const message = `Are you sure you want to revoke this token for user '${username}'?`;
+
+    showGlobalConfirm(message, () => {
+        fetch(`/users/${userId}/revoke-token`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token })
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.detail || "Failed to revoke token.") });
+            }
+            return res.json();
+        })
+        .then(() => {
+            showGlobalAlert("Token revoked successfully. The page will now reload.", "✅ Success");
+            setTimeout(() => location.reload(), 2000);
+        })
+        .catch(err => {
+            showGlobalAlert(err.message, "❌ Error");
+        });
+    }, {
+        title: '⚠️ Revoke Token',
+        confirmText: 'Yes, Revoke',
+        confirmClasses: 'bg-red-600 hover:bg-red-700'
+    });
+}
+
+/**
+ * Re-renders the content of the token and expiry cells for a given user.
+ * @param {number} userId
+ * @param {string} username
+ * @param {Array} apiTokens
+ */
+function updateTokenCells(userId, username, apiTokens) {
+    const tokenCell = document.getElementById(`token-cell-${userId}`);
+    const expiryCell = document.getElementById(`token-expiry-cell-${userId}`);
+
+    if (!tokenCell || !expiryCell) return;
+
+    if (!apiTokens || apiTokens.length === 0) {
+        tokenCell.innerHTML = '<span>-</span>';
+        expiryCell.innerHTML = '<span>-</span>';
+        return;
+    }
+
+    // FIX: Use escapeHTML to prevent HTML injection if a username contains special characters.
+    const escapedUsername = escapeHTML(username);
+
+    const tokenListHTML = apiTokens.map(t => `
+        <li class="flex items-center justify-between gap-2">
+            <span>${t.token.substring(0, 8)}...${t.token.slice(-4)}</span>
+            <button onclick="handleRevokeClick(this)"
+                    data-user-id="${userId}"
+                    data-token="${t.token}"
+                    data-username="${escapedUsername}"
+                    class="text-red-500 hover:text-red-700 text-xs font-semibold">Revoke</button>
+        </li>
+    `).join('');
+
+    const expiryListHTML = apiTokens.map(t => `
+        <li>${t.expires_at_gmt8 || 'Never'}</li>
+    `).join('');
+
+    tokenCell.innerHTML = `<ul class="space-y-1">${tokenListHTML}</ul>`;
+    expiryCell.innerHTML = `<ul class="space-y-1">${expiryListHTML}</ul>`;
+}
+
+
+// --- GENERAL USER & FORM MANAGEMENT --- (No changes needed in this section)
 const userFormContainer = document.getElementById('userFormContainer');
 const showFormBtn = document.getElementById('showFormBtn');
 const bulkActionContainer = document.getElementById('bulkActionContainer');
@@ -545,6 +611,10 @@ function revokeToken(userId, token, username) {
         confirmText: 'Yes, Revoke',
         confirmClasses: 'bg-red-600 hover:bg-red-700'
     });
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
 }
 
 </script>

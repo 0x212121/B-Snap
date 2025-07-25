@@ -27,7 +27,7 @@ services:
     depends_on:
       - postgres
     volumes:
-      - ./static/snapshots:/app/static/snapshots
+      - ./static/snapshots:/app/app/static/snapshots
       # - ./app/data.db:/app/app/data.db
       - ./logs:/app/logs
     restart: unless-stopped

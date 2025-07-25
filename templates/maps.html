@@ -56,103 +56,119 @@
     L.control.cameraStats = function(opts) { return new L.Control.cameraStats(opts); };
     L.control.cameraStats({ position: "bottomright" }).addTo(map);
     
-      let markerClusterGroup = L.markerClusterGroup();
-      markerClusterGroup.addTo(map);
-      
-      function refreshMapData() {
-        markerClusterGroup.clearLayers();
-        fetch("/camera-locations")
-        .then(res => {
-            if (!res.ok) { // Cek jika respons tidak OK (misal: 500 Internal Server Error)
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            return res.json();
-        })
-        .then(data => {
-          let onlineCount = 0;
-          let offlineCount = 0;
-          let highLatencyCount = 0;
-          let user_group = '';
+    let markerClusterGroup = L.markerClusterGroup();
+    markerClusterGroup.addTo(map);
+    
+    function escapeHTML(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+    
+    function refreshMapData() {
+      markerClusterGroup.clearLayers();
+      fetch("/camera-locations")
+      .then(res => {
+        if (!res.ok) { // Cek jika respons tidak OK (misal: 500 Internal Server Error)
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        let onlineCount = 0;
+        let offlineCount = 0;
+        let highLatencyCount = 0;
+        let user_group = '';
+        
+        data.forEach(cam => {
+          if (cam.status === "Online" || cam.status === "Optimal Latency") onlineCount++;
+          else if (cam.status === "High Latency") highLatencyCount++;
+          else offlineCount++;
           
-          data.forEach(cam => {
-            if (cam.status === "Online" || cam.status === "Optimal Latency") onlineCount++;
-            else if (cam.status === "High Latency") highLatencyCount++;
-            else offlineCount++;
+          // --- PERBAIKAN: Filter keamanan yang berlebihan dihapus ---
+          // Backend sudah memastikan hanya data yang boleh dilihat user yang dikirim.
+          if (cam.lat && cam.lng && cam.restricted !== "Restricted") {
+            const color =
+            cam.status === "Online" || cam.status === "Optimal Latency" ? "green" :
+            cam.status === "High Latency" ? "orange" :
+            "red";
             
-            // --- PERBAIKAN: Filter keamanan yang berlebihan dihapus ---
-            // Backend sudah memastikan hanya data yang boleh dilihat user yang dikirim.
-            if (cam.lat && cam.lng && cam.restricted !== "Restricted") {
-              const color =
-              cam.status === "Online" || cam.status === "Optimal Latency" ? "green" :
-              cam.status === "High Latency" ? "orange" :
-              "red";
-              
-              const marker = L.circleMarker([cam.lat, cam.lng], { radius: 8, color, fillColor: color, fillOpacity: 0.8 });
-              
-              const popupContent = L.DomUtil.create('div');
-              popupContent.innerHTML = `
-                <strong style="font-size: 18px;">${cam.hostname}</strong><br><br>
+            const marker = L.circleMarker([cam.lat, cam.lng], { radius: 8, color, fillColor: color, fillOpacity: 0.8 });
+            
+            const popupContent = L.DomUtil.create('div');
+            const safeHostname = escapeHTML(cam.hostname);
+            const safeIp = escapeHTML(cam.ip);
+            const safeAssetNo = escapeHTML(cam.asset_no || 'N/A');
+            const safeStatus = escapeHTML(cam.status === "Online" || cam.status === "Optimal Latency" ? "🟢 Online" : cam.status === "High Latency" ? "🟡 High Latency" : "🔴 Offline");
+            const safeUptime = escapeHTML(cam.uptime);
+            
+            popupContent.innerHTML = `
+                <strong style="font-size: 18px;">${safeHostname}</strong><br><br>
                 <table style="font-size: 14px;">
-                  <tr><td>IP</td><td>: ${cam.ip}</td></tr>
-                  <tr><td>Asset No</td><td>: ${cam.asset_no || 'N/A'}</td></tr>
-                  <tr><td>Status</td><td>: ${cam.status === "Online" || cam.status === "Optimal Latency" ? "🟢 Online" : cam.status === "High Latency" ? "🟡 High Latency" : "🔴 Offline"}</td></tr>
-                  <tr><td>Uptime</td><td>: ${cam.uptime}</td></tr>
+                  <tr><td>IP</td><td>: ${safeIp}</td></tr>
+                  <tr><td>Asset No</td><td>: ${safeAssetNo}</td></tr>
+                  <tr><td>Status</td><td>: ${safeStatus}</td></tr>
+                  <tr><td>Uptime</td><td>: ${safeUptime}</td></tr>
                 </table>
                 <div id="snapshot-container-${cam.id}" class="mt-0 text-center text-gray-500 dark:text-gray-400">Loading snapshot...</div>
               `;
+            
+            marker.bindPopup(popupContent, { maxWidth: 1500 });
+            
+            marker.on('popupopen', async function () {
+              const snapshotContainer = document.getElementById(`snapshot-container-${cam.id}`);
               
-              marker.bindPopup(popupContent, { maxWidth: 1500 });
-              
-              marker.on('popupopen', async function () {
-                const snapshotContainer = document.getElementById(`snapshot-container-${cam.id}`);
-                if (snapshotContainer) {
-                  snapshotContainer.innerHTML = `<p class="loading-text text-gray-500 dark:text-gray-400 mt-1">Loading snapshot info...</p>`;
-                  try {
-                    const infoResponse = await fetch(`/snapshot/latest/${encodeURIComponent(cam.hostname)}/info`);
-                    if (!infoResponse.ok) {
-                      const errorData = await infoResponse.json().catch(() => ({ detail: `HTTP ${infoResponse.status}` }));
-                      throw new Error(errorData.detail);
-                    }
-                    const snapshotInfo = await infoResponse.json();
-                    snapshotContainer.innerHTML = `
-                    <p class="text-left text-gray-800">Snapshot time : ${snapshotInfo.timestamp} WITA </p>
-                    <img src="${snapshotInfo.url}" class="w-full h-auto rounded-md shadow-md mt-1 camera-snapshot-img" alt="Camera Snapshot"
-                      onerror="this.onerror=null; this.src='/static/placeholder.svg'; this.parentElement.querySelector('.error-message').classList.remove('hidden');"
-                      onload="this.parentElement.querySelector('.loading-text').classList.add('hidden');">
-                    <p class="loading-text text-gray-500 dark:text-gray-400 mt-1">Loading image...</p>
-                    <p class="error-message text-red-500 text-xs mt-1 hidden">Image failed to load.</p>
-                  `;
-                  } catch (error) {
-                    console.error("Error loading snapshot for popup:", error);
-                    snapshotContainer.innerHTML = `<div class="placeholder-content p-4 bg-gray-200 dark:bg-gray-700 rounded text-center"><p class="text-gray-600 dark:text-gray-300">❌ Image Not Available</p><p class="text-red-500 text-xs mt-1">Error: ${error.message}</p></div>`;
+              if (snapshotContainer) {
+                snapshotContainer.innerHTML = `<p class="loading-text text-gray-500 dark:text-gray-400 mt-1">Loading snapshot info...</p>`;
+                try {
+                  const infoResponse = await fetch(`/snapshot/latest/${encodeURIComponent(cam.hostname)}/info`);
+                  if (!infoResponse.ok) {
+                    const errorData = await infoResponse.json().catch(() => ({ detail: `HTTP ${infoResponse.status}` }));
+                    throw new Error(errorData.detail);
                   }
+                  const snapshotInfo = await infoResponse.json();
+                  
+                  // --- PERBAIKAN DI SINI ---
+                  // Hapus "WITA" yang di-hardcode dan gunakan nilai timestamp dari server secara langsung.
+                  // Ini mengasumsikan `snapshotInfo.timestamp` berisi string waktu lengkap ("... WITA", "... WIB", dll.).
+                  snapshotContainer.innerHTML = `
+        <p class="text-left text-gray-800">Snapshot time : ${snapshotInfo.timestamp}</p>
+        <img src="${snapshotInfo.url}" class="w-full h-auto rounded-md shadow-md mt-1 camera-snapshot-img" alt="Camera Snapshot"
+          onerror="this.onerror=null; this.src='/static/placeholder.svg'; this.parentElement.querySelector('.error-message').classList.remove('hidden');"
+          onload="this.parentElement.querySelector('.loading-text').classList.add('hidden');">
+        <p class="loading-text text-gray-500 dark:text-gray-400 mt-1">Loading image...</p>
+        <p class="error-message text-red-500 text-xs mt-1 hidden">Image failed to load.</p>
+      `;
+                } catch (error) {
+                  console.error("Error loading snapshot for popup:", error);
+                  snapshotContainer.innerHTML = `<div class="placeholder-content p-4 bg-gray-200 dark:bg-gray-700 rounded text-center"><p class="text-gray-600 dark:text-gray-300">❌ Image Not Available</p><p class="text-red-500 text-xs mt-1">Error: ${error.message}</p></div>`;
                 }
-              });
-              
-              marker.on('popupclose', function () {
-                const snapshotContainer = document.getElementById(`snapshot-container-${cam.id}`);
-                if (snapshotContainer) { snapshotContainer.innerHTML = `Loading snapshot...`; }
-              });
-              
-              markerClusterGroup.addLayer(marker);
-            }
-            user_group = cam.user_group;
-          });
-          
-          document.getElementById("user-group").textContent = user_group;
-          document.getElementById("stat-total").textContent = data.length;
-          document.getElementById("stat-online").textContent = onlineCount;
-          document.getElementById("stat-offline").textContent = offlineCount;
-          document.getElementById("stat-highlatency").textContent = highLatencyCount;
-        })
-        .catch(error => {
-          console.error('Error fetching camera locations:', error);
-          // Tambahkan notifikasi error di UI jika perlu
+              }
+            });
+            
+            marker.on('popupclose', function () {
+              const snapshotContainer = document.getElementById(`snapshot-container-${cam.id}`);
+              if (snapshotContainer) { snapshotContainer.innerHTML = `Loading snapshot...`; }
+            });
+            
+            markerClusterGroup.addLayer(marker);
+          }
+          user_group = cam.user_group;
         });
-      }
-      
-      refreshMapData();
-      setInterval(refreshMapData, 600000); // refresh every 10 minutes
-    });
-  </script>
+        
+        document.getElementById("user-group").textContent = user_group;
+        document.getElementById("stat-total").textContent = data.length;
+        document.getElementById("stat-online").textContent = onlineCount;
+        document.getElementById("stat-offline").textContent = offlineCount;
+        document.getElementById("stat-highlatency").textContent = highLatencyCount;
+      })
+      .catch(error => {
+        console.error('Error fetching camera locations:', error);
+        // Tambahkan notifikasi error di UI jika perlu
+      });
+    }
+    
+    refreshMapData();
+    setInterval(refreshMapData, 600000); // refresh every 10 minutes
+  });
+</script>
 {% endblock %}

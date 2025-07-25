@@ -15,10 +15,7 @@ from app.models_sql import Camera as DBCamera, Snapshot, User
 from app.routes.auth import admin_access_required, user_access_required_optional
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_utils import SNAPSHOT_BASE_DIR  # points to app/static/snapshots
-from zoneinfo import ZoneInfo
-from app.utils.timezone import format_wita, to_wita
-
-WITA = ZoneInfo("Asia/Makassar")
+from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
 
 router = APIRouter()
 
@@ -28,7 +25,7 @@ class SnapshotResponse(BaseModel):
     filename: str
     camera: str
     ip: str
-    timestamp: str # Time string format
+    timestamp: str
     url: str
     img_path: str
     lat: str
@@ -128,8 +125,8 @@ def search_snapshots(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
+    # ... (logika query kamera tetap sama)
     query = db.query(DBCamera)
-
     if identifier:
         identifier = identifier.strip()
         if len(identifier) < 2:
@@ -139,40 +136,30 @@ def search_snapshots(
             query = query.filter(DBCamera.ip == identifier)
         else:
             query = query.filter(DBCamera.hostname.ilike(f"{identifier}%"))
-
     cameras = query.all()
     if not cameras:
         return []
-
-    camera_id_to_info = {
-        str(cam.id): {
-            "hostname": cam.hostname,
-            "ip": cam.ip,
-            "lat": str(cam.latitude or None),
-            "long": str(cam.longitude or None)
-        } for cam in cameras
-    }
-
+    
+    camera_id_to_info = {str(cam.id): {"hostname": cam.hostname, "ip": cam.ip, "lat": str(cam.latitude or None), "long": str(cam.longitude or None)} for cam in cameras}
     camera_ids = list(camera_id_to_info.keys())
 
-    snapshots = (
-        db.query(Snapshot)
-        .filter(Snapshot.camera_id.in_(camera_ids))
-        .order_by(Snapshot.timestamp.desc())
-        .all()
-    )
-
+    snapshots = (db.query(Snapshot).filter(Snapshot.camera_id.in_(camera_ids)).order_by(Snapshot.timestamp.desc()).all())
 
     latest_snapshot_per_camera = {}
     for snap in snapshots:
         if snap.camera_id not in latest_snapshot_per_camera:
             cam_info = camera_id_to_info.get(snap.camera_id, {})
-            timestamp_converted = to_wita(snap.timestamp) if snap.timestamp else None
+            
+            # --- PERBAIKAN ZONA WAKTU ---
+            # Gunakan helper dinamis untuk mengonversi dan memformat waktu
+            timestamp_local = to_current_timezone(snap.timestamp, db)
+            formatted_timestamp = format_datetime_with_tz(timestamp_local)
+
             latest_snapshot_per_camera[snap.camera_id] = SnapshotResponse(
                 filename=os.path.basename(snap.file_path),
                 camera=snap.camera_name,
                 ip=snap.camera_ip,
-                timestamp=format_wita(timestamp_converted),  # ⬅️ Sudah dalam WITA
+                timestamp=formatted_timestamp, # ⬅️ Sekarang sudah menggunakan zona waktu dinamis
                 url=f"/snapshot/file/{quote(snap.file_path)}",
                 img_path=f"{quote(snap.file_path)}",
                 lat=cam_info.get("lat", None),
@@ -180,6 +167,7 @@ def search_snapshots(
             )
 
     return list(latest_snapshot_per_camera.values())
+
 
 @router.get("/snapshot/latest/{identifier}/info", response_model=SnapshotResponse)
 def get_latest_snapshot_info(identifier: str, db: Session = Depends(get_db)):
@@ -197,13 +185,11 @@ def get_latest_snapshot_info(identifier: str, db: Session = Depends(get_db)):
     if not snapshot:
         raise HTTPException(status_code=404, detail=f"No snapshot found for '{identifier}'.")
 
-    # --- Perbaikan Timezone WITA ---
-    timestamp = snapshot.timestamp
-    if timestamp.tzinfo is None:
-        timestamp = timestamp.replace(tzinfo=ZoneInfo("UTC"))  # Anggap waktu dari DB = UTC
-    timestamp_wita = timestamp.astimezone(WITA)
-    formatted_timestamp = timestamp_wita.strftime("%Y-%m-%d %H:%M:%S")
-
+    # --- PERBAIKAN ZONA WAKTU ---
+    # Gunakan helper dinamis untuk mengonversi dan memformat waktu
+    timestamp_local = to_current_timezone(snapshot.timestamp, db)
+    formatted_timestamp = format_datetime_with_tz(timestamp_local)
+    
     latitude = str(snapshot.camera.latitude) if snapshot.camera and snapshot.camera.latitude else ""
     longitude = str(snapshot.camera.longitude) if snapshot.camera and snapshot.camera.longitude else ""
 
@@ -211,12 +197,13 @@ def get_latest_snapshot_info(identifier: str, db: Session = Depends(get_db)):
         filename=os.path.basename(snapshot.file_path),
         camera=snapshot.camera_name,
         ip=snapshot.camera_ip,
-        timestamp=formatted_timestamp,  # ⬅️ Sudah dalam WITA
+        timestamp=formatted_timestamp, # ⬅️ Sekarang sudah menggunakan zona waktu dinamis
         url=f"/snapshot/file/{quote(snapshot.file_path)}",
         img_path=f"{quote(snapshot.file_path)}",
         lat=latitude,
         long=longitude
     )
+
 
 # --- Serve File or Metadata ---
 @router.get("/snapshot/file/{file_path:path}")
