@@ -98,7 +98,6 @@
   - [x] Cek Token API yang Aktif
 - [x] Whitelist phone number dashboard
 - [x] Improve UI/UX
-- [ ] Tamper detection (snapshot blur / dark)
-
+- [x] Tamper detection (snapshot blur / dark)
 
 🆕 Added:

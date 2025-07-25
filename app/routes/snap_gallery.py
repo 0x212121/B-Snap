@@ -16,6 +16,7 @@ from app.utils.audit_logger import log_audit
 from app.utils.snapshot_service import take_snapshot
 from app.utils.snapshot_utils import record_snapshot_metadata
 from app.utils.timezone_helper import to_current_timezone
+from sqlalchemy import or_
 
 router = APIRouter()
 
@@ -91,26 +92,19 @@ def snapshot_handler(
     user_phone: str = Query(default=None),
     current_operator: User = Depends(operator_access_required)
 ):
-    # This function remains the same. It requires an existing camera to take a snapshot.
-    from sqlalchemy import and_
+    
+    normalized_input = camera_id_or_ip.strip()
 
-    if is_ip_address(camera_id_or_ip):
-        camera = db.query(Camera).filter(
-            and_(
-                Camera.ip == camera_id_or_ip,
-                Camera.status == "Active"
-            )
-        ).first()
+    if is_ip_address(normalized_input):
+        camera = db.query(Camera).filter(Camera.ip == normalized_input).first()
     else:
-        camera = db.query(Camera).filter(
-            and_(
-                Camera.hostname == camera_id_or_ip,
-                Camera.status == "Active"
-            )
-        ).first()
+        camera = db.query(Camera).filter(Camera.hostname.ilike(normalized_input)).first()
 
     if not camera:
         raise HTTPException(status_code=404, detail="Camera not found")
+
+    if camera.status not in ["Active", "Restricted"]:
+        raise HTTPException(status_code=403, detail=f"Camera status '{camera.status}' is not allowed")
 
     result = take_snapshot(camera, db)
 
@@ -121,21 +115,20 @@ def snapshot_handler(
         )
         db.add(snapshot_log)
 
-        path = result["file_path"]
         snapshot = record_snapshot_metadata(
             db=db,
             camera_id=camera.id,
-            file_path=path,
+            file_path=result["file_path"],
             resolution=result.get("resolution", "N/A"),
         )
         result["snapshot_id"] = snapshot.id
-    
+
     user_from_param = user_phone if user_phone else None
     if user_from_param:
         final_user_name, extra = user_from_param, "via Whatsapp Bot"  
     else:
         final_user_name, extra = request.session["user_name"], "via dashboard"
-    
+
     log_audit(
         db=db,
         user=final_user_name,
@@ -144,6 +137,7 @@ def snapshot_handler(
         ip=request.client.host,
         extra=extra
     )
+
     return result
 
 

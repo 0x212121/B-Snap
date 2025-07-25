@@ -51,6 +51,12 @@
   .dark .item {
     color: #f3f4f6 !important;
   }
+  
+  .peer:checked ~ span::before {
+    content: "✔ ";
+    color: #ef4444;
+  }
+  
 </style>
 
 <div class="container mx-auto px-4 py-8">
@@ -60,40 +66,55 @@
     <h1 class="text-3xl font-bold text-blue-700 dark:text-blue-300">📷 Snapshot Gallery</h1>
   </div>
   
-  <form id="filterForm" class="flex flex-wrap justify-center items-center gap-4 mb-6" onsubmit="return false;">
-    <input id="searchInput" type="text" placeholder="Search Camera Name..."
-    class="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-64 focus:outline-none focus:ring focus:ring-blue-200" />
+  <form id="filterForm" class="flex flex-col md:flex-row justify-between gap-4 mb-6" onsubmit="return false;">
+    <!-- Filter Controls -->
+    <div class="flex flex-wrap items-center gap-4">
+      <!-- Search input -->
+      <input id="searchInput" type="text" placeholder="Search Camera Name..."
+      class="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-64 focus:outline-none focus:ring focus:ring-blue-200" />
+      
+      <!-- Camera select -->
+      <select id="cameraSelect" name="camera"
+      class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-[20rem] sm:w-[24rem] focus:outline-none">
+      <option value="">🎥 All Cameras</option>
+      {% for cname in camera_names | sort %}
+      <option value="{{ cname }}" {% if cname == selected_camera %}selected{% endif %}>{{ cname }}</option>
+      {% endfor %}
+    </select>
     
-    <select id="cameraSelect" name="camera"
-    class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-[20rem] sm:w-[24rem] focus:outline-none">
-    <option value="">🎥 All Cameras</option>
-    {% for cname in camera_names | sort %}
-    <option value="{{ cname }}" {% if cname == selected_camera %}selected{% endif %}>{{ cname }}</option>
-    {% endfor %}
-  </select>
-  
-  <button type="button" id="clearFilterBtn"
-  class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear Filter</button>
-
-  
-  <div id="actionButtonsContainer" class="flex gap-4">
-    {% if selected_camera %}
-    {% if camera_exists %}
-    <button type="button" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
-    data-action="snapshot" data-camera="{{ selected_camera }}">📸 Snapshot</button>
-    {% endif %}
+    <!-- Clear filter -->
+    <button type="button" id="clearFilterBtn"
+    class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear Filter</button>
     
-    <button type="button" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
-    data-action="delete-all" data-camera="{{ selected_camera }}">🗑️ Delete All</button>
-    {% endif %}
+    <!-- Toggle switch -->
+    <label for="filterTampered"
+    class="flex items-center cursor-pointer select-none gap-2 text-sm text-gray-800 dark:text-gray-200">
+    <input type="checkbox" id="filterTampered" class="sr-only peer">
+    <div
+    class="w-10 h-5 bg-gray-300 rounded-full peer-checked:bg-red-500 dark:bg-gray-600 dark:peer-checked:bg-red-600 relative transition-colors">
+    <div
+    class="absolute left-1 top-1 w-3 h-3 bg-white rounded-full peer-checked:translate-x-5 transform transition-transform">
   </div>
+</div>
+<span>Show Tampered Only</span>
+</label>
+</div>
 
-  <label class="inline-flex items-center">
-    <input type="checkbox" id="filterTampered" class="form-checkbox text-red-500">
-    <span class="ml-2 text-sm">Show Tampered Only</span>
-  </label>
-
+<!-- Action Buttons -->
+<div id="actionButtonsContainer" class="flex flex-wrap gap-4 items-center">
+  {% if selected_camera %}
+  {% if camera_exists %}
+  <button type="button"
+  class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+  data-action="snapshot" data-camera="{{ selected_camera }}">📸 Snapshot</button>
+  {% endif %}
+  <button type="button"
+  class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
+  data-action="delete-all" data-camera="{{ selected_camera }}">🗑️ Delete All</button>
+  {% endif %}
+</div>
 </form>
+
 
 <div id="snapshotGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
   {% include "_gallery_grid.html" %}
@@ -131,7 +152,8 @@
   let hasMore = true;
   
   async function fetchAndUpdateGallery(params = {}, append = false) {
-    if (isLoading || !hasMore) return;
+    // ⛔ FIX: Only check !hasMore when appending data for infinite scroll.
+    if (isLoading || (append && !hasMore)) return;
     
     isLoading = true;
     const grid = document.getElementById("snapshotGrid");
@@ -145,10 +167,10 @@
     const urlParams = new URLSearchParams();
     if (params.camera) urlParams.set('camera', params.camera);
     if (params.q) urlParams.set('q', params.q);
-
+    
     const tamperedOnly = document.getElementById("filterTampered")?.checked;
     if (tamperedOnly) urlParams.set('tampered', 'true');
-
+    
     urlParams.set('offset', pageOffset);
     urlParams.set('limit', pageLimit);
     
@@ -212,7 +234,7 @@
       }
     });
   }
-  
+
   /**
   * Deletes a single snapshot by its ID.
   */
@@ -256,8 +278,8 @@
         hasMore = true;
         fetchAndUpdateGallery({ camera: selectedCamera, q: e.target.value });
       }, 350);
-    });
-
+    })});
+    
     document.getElementById("filterTampered")?.addEventListener("change", () => {
       const selectedCamera = tom?.getValue() || "";
       const searchQuery = document.getElementById("searchInput")?.value || "";
@@ -265,47 +287,66 @@
       hasMore = true;
       fetchAndUpdateGallery({ camera: selectedCamera, q: searchQuery });
     });
-
+    
     
     document.getElementById("clearFilterBtn")?.addEventListener("click", () => {
       document.getElementById("searchInput").value = '';
       tom.clear(); 
+      
+      const tampered = document.getElementById("filterTampered")?.checked;
+      pageOffset = 0;
+      hasMore = true;
+      
+      fetchAndUpdateGallery({ camera: "", q: "" });
     });
+    
     
     // Event delegation for dynamically added action buttons
     document.getElementById("actionButtonsContainer").addEventListener("click", async (e) => {
       const target = e.target.closest("[data-action]");
       if (!target) return;
-      
+
+      // ⛔ FIX: cek disabled sebelum mengubah state tombol
+      if (target.disabled) return;
+
       const action = target.dataset.action;
       const camera = target.dataset.camera;
-      
-      if (!camera) return; // Should not happen but good practice
-      
+
+      if (!camera) return;
+
+      // ✅ baru di-set disable setelah validasi
       target.disabled = true;
       target.style.opacity = '0.7';
-      
+
       try {
         if (action === "snapshot") {
           const res = await fetch(`/snap/${encodeURIComponent(camera)}`, { method: "POST" });
           const data = await res.json();
-          showToast(data.message || (data.status === "success" ? "Snapshot taken!" : "Failed to take snapshot"), data.status !== "success");
+
           if (data.status === "success") {
-            // Refresh the gallery to show the new snapshot
-            fetchAndUpdateGallery({ camera: tom.getValue(), q: document.getElementById("searchInput").value });
+            showToast("Snapshot taken!");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+
+            pageOffset = 0;
+            hasMore = true;
+
+            fetchAndUpdateGallery({
+              camera: tom.getValue() || "",
+              q: document.getElementById("searchInput").value || "",
+              tampered: document.getElementById("filterTampered").checked
+            });
+          } else {
+            showToast(data.message || "Snapshot failed", true);
           }
         }
-        
+
         if (action === "delete-all") {
           if (!confirm(`Are you sure you want to delete all snapshots for ${camera}? This cannot be undone.`)) {
             return;
-          };
-          // NOTE: This assumes you have an endpoint to delete all snapshots for a camera.
-          // You may need to implement this endpoint. For now, this will fail.
-          // A proper implementation would be something like:
-          // const res = await fetch(`/snap/delete-all/${encodeURIComponent(camera)}`, { method: "DELETE" });
+          }
           showToast("Delete-all functionality not yet implemented.", true);
         }
+
       } catch (error) {
         console.error(`Error performing action '${action}':`, error);
         showToast(`An error occurred.`, true);
@@ -314,7 +355,6 @@
         target.style.opacity = '1';
       }
     });
-  });
   
   // --- Utility and UI Functions ---
   
@@ -360,7 +400,7 @@
       });
     }, { rootMargin: "0px 0px 200px 0px" }); // Start loading images 200px before they enter the viewport
     lazyImages.forEach(img => observer.observe(img));
-  }
+  }  
   
 </script>
 {% endblock %}
