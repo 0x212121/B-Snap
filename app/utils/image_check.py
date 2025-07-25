@@ -22,16 +22,19 @@ def detect_brightness(image_bytes, dark_thresh=30, bright_thresh=220):
     return False, None
 
 
-def detect_occlusion(image_bytes, entropy_thresh=1.0):
-    """
-    Detects whether the image is too monotonous (possibly covered)
-    """
-    img = Image.open(BytesIO(image_bytes)).convert("L")  # grayscale
-    arr = np.array(img)
+def detect_occlusion(image_bytes, entropy_thresh=5.0, blur_thresh=100.0, stddev_thresh=20.0):
+    # Decode image bytes to numpy array
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    img_arr = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
 
-    hist = np.histogram(arr, bins=256)[0]
+    if img_arr is None:
+        raise ValueError("Failed to decode image bytes.")
+
+    hist = np.histogram(img_arr, bins=256, range=(0, 255))[0]
     prob = hist / hist.sum()
-    entropy = -np.sum(prob * np.log2(prob + 1e-7))  # +1e-7 untuk mencegah log(0)
+    entropy = -np.sum(prob * np.log2(prob + 1e-7))
+    lap_var = cv2.Laplacian(img_arr, cv2.CV_64F).var()
+    std_dev = np.std(img_arr)
 
-    is_occluded = entropy < entropy_thresh
-    return is_occluded, entropy
+    is_occluded = (entropy < entropy_thresh and lap_var < blur_thresh) or std_dev < stddev_thresh
+    return is_occluded, {"entropy": entropy, "lap_var": float(lap_var), "std_dev": std_dev}

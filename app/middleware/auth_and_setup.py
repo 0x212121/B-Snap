@@ -37,36 +37,36 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
             token_query = request.query_params.get("token")
             session_user_id = session.get("user_id")
 
-            # Step 1: Redirect to /setup if no users exist
+            # Step 0: Setup mode if no users exist
             if not db.query(User).first():
                 if not path.startswith("/setup") and not path.startswith("/static"):
                     return RedirectResponse("/setup", status_code=307)
                 return await call_next(request)
 
-            # Step 2: Allow public paths
-            if any(path.startswith(p) for p in ALLOWED_PUBLIC_PATHS):
+            # Step 1: Allow public and tokenized access
+            if any(path.startswith(p) for p in ALLOWED_PUBLIC_PATHS) or token_query:
                 return await call_next(request)
 
-            # Step 2.5: Allow token query (?token=...)
-            if token_query:
-                return await call_next(request)
-
-            # Step 3: Bearer token-based API access
+            # Step 2: Bearer token-based API access
             if auth_header and auth_header.lower().startswith("bearer "):
                 return await call_next(request)
 
-            # Step 4: Session-based access
-            if session_user_id:
+            # Step 3: Early validation using both session + session_token
+            if session_user_id and session_token:
                 try:
                     user_id = int(session_user_id)
                     user = db.query(User).filter(User.id == user_id).first()
-                    if user:
-                        return await call_next(request)
-                except (ValueError, TypeError):
-                    logger.warning("Invalid session_user_id in session. Clearing session.")
-                session.clear()
 
-            # Step 5: Restore session from cookie token
+                    if user:
+                        tokens = self.parse_tokens(user.web_tokens)
+                        if is_valid_web_token(session_token, tokens):
+                            return await call_next(request)
+                        else:
+                            logger.warning("Session token is invalid or expired.")
+                except (ValueError, TypeError):
+                    logger.warning("Invalid session_user_id format in session.")
+
+            # Step 4: Fallback – Restore session from cookie
             if session_token:
                 user = self.get_user_by_session_token(db, session_token)
                 if user:
@@ -94,8 +94,12 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                             secure=request.url.scheme == "https"
                         )
                         return response
+                    else:
+                        logger.warning("Token found but failed validation.")
+                else:
+                    logger.warning("No user found for session token.")
 
-            # Step 6: Failed authentication
+            # Step 5: Final fallback – force re-authentication
             session.clear()
             response = RedirectResponse("/login?reason=session_expired", status_code=303)
             response.delete_cookie("session_token")

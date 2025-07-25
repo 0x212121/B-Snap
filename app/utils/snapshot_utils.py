@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timezone
 from io import BytesIO
 from PIL import Image
+import numpy as np
 from sqlalchemy.orm import Session
 from app.models_sql import Camera, Snapshot
 from app.utils.image_check import detect_blur, detect_brightness, detect_occlusion
@@ -14,6 +15,11 @@ def get_image_resolution(image_bytes: bytes) -> str:
     with Image.open(BytesIO(image_bytes)) as img:
         width, height = img.size
     return f"{width}x{height}"
+
+def to_native_float(val):
+    if isinstance(val, (np.float32, np.float64)):
+        return float(val)
+    return val
 
 def record_snapshot_metadata(
     db: Session,
@@ -37,7 +43,7 @@ def record_snapshot_metadata(
 
     is_blur, blur_score = detect_blur(image_bytes)
     is_brightness_issue, brightness_reason = detect_brightness(image_bytes)
-    is_occluded, entropy_score = detect_occlusion(image_bytes)
+    is_occluded, occlusion_metrics = detect_occlusion(image_bytes)
 
     is_tampered = is_blur or is_brightness_issue or is_occluded
     tamper_reasons = []
@@ -63,7 +69,7 @@ def record_snapshot_metadata(
         is_tampered=is_tampered,
         tamper_reason=", ".join(tamper_reasons) if tamper_reasons else None,
         blur_score=blur_score,
-        entropy_score=float(entropy_score)
+        entropy_score=to_native_float(occlusion_metrics["entropy"])
     )
 
     db.add(snapshot)
@@ -71,6 +77,6 @@ def record_snapshot_metadata(
     db.refresh(snapshot)
 
     if is_tampered:
-        logging.warning(f"[TAMPER] Detected on snapshot {file_path}: {snapshot.tamper_reason}")
+        logging.warning("[TAMPER] Detected on snapshot %s: %s", file_path, snapshot.tamper_reason)
 
     return snapshot
