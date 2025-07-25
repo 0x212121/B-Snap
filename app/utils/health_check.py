@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 import time
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
@@ -7,6 +7,8 @@ from app.db.database import SessionLocal
 from ping3 import ping, errors
 from app.core.logging_config import setup_logging
 import logging
+from app.models_sql import TaskTiming
+
 
 # setup logging
 setup_logging()
@@ -182,7 +184,9 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
 
 def ping_all_devices():
     """Performs health checks on all active Cameras and NVRs."""
-    process_start_time = time.perf_counter()
+    time_start = time.monotonic()
+    started_at = datetime.utcnow()
+
     db = SessionLocal()
     status_tracker = None
     try:
@@ -203,28 +207,43 @@ def ping_all_devices():
         status_tracker.completed_cameras = 0
         db.commit()
 
-        logger.info("\ud83d\udd0d Starting health check for %d devices...", len(devices))
+        logger.info("🔍 Starting health check for %d devices...", len(devices))
 
         for i, device_info in enumerate(devices, 1):
-            # Call the integrated function for each device
             _perform_and_update_health_check(db, device_info)
             status_tracker.completed_cameras = i
             db.commit()
 
-        logger.info("\u2705 Health check for all devices completed.")
+        logger.info("✅ Health check for all devices completed.")
         status_tracker.is_running = False
         status_tracker.start_time = None
         db.commit()
 
+        status = "success"
     except Exception as e:
-        logger.critical("\u274c Critical error in ping_all_devices: %s", e, exc_info=True)
+        logger.critical("❌ Critical error in ping_all_devices: %s", e, exc_info=True)
         if status_tracker:
             status_tracker.is_running = False
             db.commit()
+        status = "fail"
     finally:
+        ended_at = datetime.utcnow()
+        duration_ms = int((time.monotonic() - time_start) * 1000)
+
+        try:
+            db.add(TaskTiming(
+                task_name='ping_all_devices',
+                started_at=started_at,
+                ended_at=ended_at,
+                duration_ms=duration_ms,
+                status=status
+            ))
+            db.commit()
+        except Exception as e:
+            logger.warning(f"[TimingLog] Failed to log ping timing: {e}")
         db.close()
-        duration = time.perf_counter() - process_start_time
-        logger.info("\u23f1 Finished in %.2f seconds.", duration)
+
+        logger.info("⏱️ Finished in %.2f seconds.", duration_ms / 1000)
 
 
 def ping_camera_by_id(camera_id: str):

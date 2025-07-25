@@ -68,11 +68,13 @@ def _get_filtered_videos(
         formatted_videos.append({
             "id": v.id,
             "url": f"/{VIDEO_URL_BASE}/{v.file_path.replace('\\', '/')}",
+            "ip": v.camera_ip,
             "camera": v.camera_name,
             "time": formatted_time,
             "group": v.camera_group,
             "file_size": int(v.file_size / 1024) if v.file_size else 0,
             "duration": v.duration,
+            "resolution": v.resolution,
             "resolution": v.resolution,
         })
 

@@ -15,8 +15,11 @@ from app.core.config import get_config
 from app.models_sql import AuditLog, CameraDailyStats, SnapshotLog
 from app.utils.snapshot_utils import record_snapshot_metadata
 from sqlalchemy.orm import Session
+from app.models_sql import TaskTiming
 import concurrent.futures
 import logging
+from time import monotonic
+from datetime import datetime
 
 scheduler = BackgroundScheduler()
 setup_logging()
@@ -55,26 +58,48 @@ def run_snapshot(camera):
 
 
 def scheduled_snapshot():
+    db: Session = SessionLocal()
     workers = get_config("snapshot_concurrent_workers", 5)
     cameras = load_active_cameras()
 
     logger.info(f"[SCHEDULED] Running snapshot for {len(cameras)} cameras with {workers} workers.")
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-        future_to_camera = {
-            executor.submit(run_snapshot, cam): cam for cam in cameras
-        }
+    started_at = datetime.utcnow()
+    time_start = monotonic()
 
-        for future in concurrent.futures.as_completed(future_to_camera):
-            cam = future_to_camera[future]
-            try:
-                result = future.result()
-                if result and result.get("status") == "success":
-                    logger.info(f"[SUCCESS] Snapshot taken for: {cam.hostname}")
-                else:
-                    logger.warning(f"[FAIL] Snapshot failed or returned error for: {cam.hostname}")
-            except Exception as e:
-                logger.error(f"[EXCEPTION] Unhandled error for {cam.hostname}: {e}")
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            future_to_camera = {
+                executor.submit(run_snapshot, cam): cam for cam in cameras
+            }
+
+            for future in concurrent.futures.as_completed(future_to_camera):
+                cam = future_to_camera[future]
+                try:
+                    result = future.result()
+                    if result and result.get("status") == "success":
+                        logger.info(f"[SUCCESS] Snapshot taken for: {cam.hostname}")
+                    else:
+                        logger.warning(f"[FAIL] Snapshot failed or returned error for: {cam.hostname}")
+                except Exception as e:
+                    logger.error(f"[EXCEPTION] Unhandled error for {cam.hostname}: {e}")
+    finally:
+        ended_at = datetime.utcnow()
+        duration_ms = int((monotonic() - time_start) * 1000)
+
+        task_log = TaskTiming(
+            task_name='scheduled_snapshot',
+            started_at=started_at,
+            ended_at=ended_at,
+            duration_ms=duration_ms,
+            status='success'
+        )
+        try:
+            db.add(task_log)
+            db.commit()
+        except Exception as e:
+            logger.warning(f"[TimingLog] Failed to save snapshot timing log: {e}")
+        db.close()
 
 
 # Global state untuk menyimpan konfigurasi terakhir

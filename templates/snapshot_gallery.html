@@ -74,6 +74,7 @@
   
   <button type="button" id="clearFilterBtn"
   class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear Filter</button>
+
   
   <div id="actionButtonsContainer" class="flex gap-4">
     {% if selected_camera %}
@@ -86,6 +87,12 @@
     data-action="delete-all" data-camera="{{ selected_camera }}">🗑️ Delete All</button>
     {% endif %}
   </div>
+
+  <label class="inline-flex items-center">
+    <input type="checkbox" id="filterTampered" class="form-checkbox text-red-500">
+    <span class="ml-2 text-sm">Show Tampered Only</span>
+  </label>
+
 </form>
 
 <div id="snapshotGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
@@ -138,6 +145,10 @@
     const urlParams = new URLSearchParams();
     if (params.camera) urlParams.set('camera', params.camera);
     if (params.q) urlParams.set('q', params.q);
+
+    const tamperedOnly = document.getElementById("filterTampered")?.checked;
+    if (tamperedOnly) urlParams.set('tampered', 'true');
+
     urlParams.set('offset', pageOffset);
     urlParams.set('limit', pageLimit);
     
@@ -246,6 +257,15 @@
         fetchAndUpdateGallery({ camera: selectedCamera, q: e.target.value });
       }, 350);
     });
+
+    document.getElementById("filterTampered")?.addEventListener("change", () => {
+      const selectedCamera = tom?.getValue() || "";
+      const searchQuery = document.getElementById("searchInput")?.value || "";
+      pageOffset = 0;
+      hasMore = true;
+      fetchAndUpdateGallery({ camera: selectedCamera, q: searchQuery });
+    });
+
     
     document.getElementById("clearFilterBtn")?.addEventListener("click", () => {
       document.getElementById("searchInput").value = '';

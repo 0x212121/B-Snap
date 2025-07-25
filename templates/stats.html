@@ -5,7 +5,7 @@
 
 <div class="container mx-auto px-4 py-8">
   <h1 class="text-3xl font-bold text-blue-700 dark:text-blue-300 mb-6">📈 Camera Snapshot Stats</h1>
-
+  
   <div class="flex items-center gap-4 mb-6">
     <select id="cameraDropdown" class="border p-2 rounded dark:bg-gray-800 dark:text-white">
       <option value="">All Cameras</option>
@@ -21,11 +21,42 @@
       <option value="365">Last Year</option>
     </select>
   </div>
-
+  
   <div class="bg-white dark:bg-gray-800 p-6 rounded shadow mb-6">
     <canvas id="snapshotChart" height="100"></canvas>
   </div>
-
+  
+  <div class="bg-white dark:bg-gray-800 p-6 rounded shadow mb-6">
+    <h2 class="text-xl font-semibold text-blue-600 dark:text-blue-300 mb-4">⏱️ Snapshot Scheduler Log</h2>
+    <table class="w-full table-auto text-sm">
+      <thead class="bg-gray-100 dark:bg-gray-700">
+        <tr>
+          <th class="px-4 py-2 text-left">Started At</th>
+          <th class="px-4 py-2 text-left">Ended At</th>
+          <th class="px-4 py-2 text-left">Duration</th>
+          <th class="px-4 py-2 text-left">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in timing_logs %}
+        <tr class="border-t dark:border-gray-600">
+          <td class="px-4 py-2">{{ log.started_at_local }}</td>
+          <td class="px-4 py-2">{{ log.ended_at_local }}</td>
+          <td class="px-4 py-2">{{ log.duration_formatted }}</td>
+          <td class="px-4 py-2">
+            {% if log.status == "success" %}
+            <span class="text-green-600 dark:text-green-400 font-semibold">✅ Success</span>
+            {% else %}
+            <span class="text-red-600 dark:text-red-400 font-semibold">❌ Failed</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  
+  
   <div id="noDataCamerasSection" class="bg-red-100 dark:bg-red-900 p-4 rounded shadow hidden">
     <h2 class="text-xl font-bold mb-2 text-red-700 dark:text-red-300">
       📛 Cameras Without Snapshots (<span id="totalNoDataCamerasCount">0</span>)
@@ -38,25 +69,25 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   let chartInstance;
-
+  
   async function fetchStats(camera = "", days = 7) {
     const res = await fetch(`/stats/data?camera=${camera}&days=${days}`);
     const data = await res.json();
-
+    
     updateChart(data.chart_labels, data.chart_data);
   }
-
+  
   async function fetchNoDataCameras(days = 7, selectedCamera = "") {
     const res = await fetch(`/stats/no-data-cameras?days=${days}`);
     const data = await res.json();
-
+    
     updateNoDataCameras(data.cameras, selectedCamera);
   }
-
+  
   function updateChart(labels, values) {
     const ctx = document.getElementById('snapshotChart').getContext('2d');
     if (chartInstance) chartInstance.destroy();
-
+    
     chartInstance = new Chart(ctx, {
       type: 'bar',
       data: {
@@ -78,12 +109,12 @@
       }
     });
   }
-
+  
   function updateNoDataCameras(cameras, selectedCamera) {
     const ul = document.getElementById('noDataCamerasList');
     const totalCountSpan = document.getElementById('totalNoDataCamerasCount');
     const noDataSection = document.getElementById('noDataCamerasSection');
-
+    
     if (selectedCamera === "" && cameras.length > 0) {
       totalCountSpan.textContent = cameras.length;
       noDataSection.classList.remove('hidden');
@@ -91,9 +122,9 @@
       cameras.forEach(cam => {
         const li = document.createElement("li");
         const statusColor = cam.status === "Online" ? "text-green-600 dark:text-green-400"
-          : cam.status === "Offline" ? "text-red-600 dark:text-red-400"
-          : "text-yellow-600 dark:text-yellow-300";
-
+        : cam.status === "Offline" ? "text-red-600 dark:text-red-400"
+        : "text-yellow-600 dark:text-yellow-300";
+        
         li.innerHTML = `<span class="${statusColor} font-semibold">${cam.hostname}</span> - <span class="italic">${cam.status}</span>`;
         ul.appendChild(li);
       });
@@ -102,20 +133,20 @@
       ul.innerHTML = "";
     }
   }
-
+  
   document.getElementById("cameraDropdown").addEventListener("change", (e) => {
     const selectedCamera = e.target.value;
     const selectedPeriod = document.getElementById("periodDropdown").value;
     fetchStats(selectedCamera, selectedPeriod);
     fetchNoDataCameras(selectedPeriod, selectedCamera);
   });
-
+  
   document.getElementById("periodDropdown").addEventListener("change", (e) => {
     const selectedCamera = document.getElementById("cameraDropdown").value;
     fetchStats(selectedCamera, e.target.value);
     fetchNoDataCameras(e.target.value, selectedCamera);
   });
-
+  
   // Initial load
   const initialSelectedCamera = document.getElementById("cameraDropdown").value;
   const initialSelectedPeriod = document.getElementById("periodDropdown").value;

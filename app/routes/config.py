@@ -118,6 +118,6 @@ async def config_save(
 
 @router.post("/reload-config")
 async def reload_config():
-    with open("/tmp/reload_scheduler.flag", "w") as f:
+    with open("/tmp/shared/reload_scheduler.flag", "w") as f:
         f.write("reload")
     return {"message": "Reload flag created"}

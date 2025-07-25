@@ -189,6 +189,11 @@ class Snapshot(Base):
     file_size = Column(Integer)
     resolution = Column(String)
 
+    is_tampered = Column(Boolean, default=False)
+    tamper_reason = Column(String, nullable=True)
+    blur_score = Column(Float, nullable=True)
+    entropy_score = Column(Float, nullable=True)
+
     camera = relationship("Camera", back_populates="snapshots")
 
 
@@ -286,3 +291,15 @@ class WhatsappWhitelist(Base):
     role = Column(String, default="user")  # optional: user/admin/dev
     is_active = Column(Boolean, default=True)
     added_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class TaskTiming(Base):
+    __tablename__ = 'task_timings'
+
+    id = Column(Integer, primary_key=True, index=True)
+    task_name = Column(String, nullable=False)        # e.g., 'ping', 'snapshot'
+    device_id = Column(String, nullable=True)          # opsional, bisa NULL jika tidak spesifik
+    started_at = Column(DateTime, default=func.now(), nullable=False)
+    ended_at = Column(DateTime, nullable=False)
+    duration_ms = Column(Integer, nullable=False)      # dihitung dari ended - started
+    status = Column(String, nullable=False)            # e.g., 'success', 'fail', 'timeout'

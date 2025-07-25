@@ -18,6 +18,7 @@
     <div class="p-4 text-center">
         <h2 class="font-semibold text-lg text-gray-800 dark:text-white truncate">{{ video.camera }}</h2>
         <div class="text-sm text-gray-500 dark:text-gray-400 mt-2 space-y-1 text-left">
+          <p><span class="font-medium text-gray-600 dark:text-gray-300">📍 IP:</span> {{ video.ip }}</p>
           <p><span class="font-medium text-gray-600 dark:text-gray-300">🕒 Time:</span> {{ video.time }}</p>
           <p><span class="font-medium text-gray-600 dark:text-gray-300">🏷️ Group:</span> {{ video.group or 'N/A' }}</p>
           <p><span class="font-medium text-gray-600 dark:text-gray-300">📁 Size:</span> {{ video.file_size }} kB</p>

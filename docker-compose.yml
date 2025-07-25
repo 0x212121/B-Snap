@@ -16,6 +16,7 @@ services:
       - ./static/videos:/app/static/videos
       # - ./app/data.db:/app/app/data.db
       - ./logs:/app/logs
+      - shared_tmp:/tmp/shared
     restart: unless-stopped
     command: gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8080 --workers 5 --worker-connections 1000 --timeout 60 --keep-alive 2
 
@@ -27,9 +28,11 @@ services:
     depends_on:
       - postgres
     volumes:
-      - ./static/snapshots:/app/app/static/snapshots
+      - ./static/snapshots:/app/static/snapshots
       # - ./app/data.db:/app/app/data.db
       - ./logs:/app/logs
+      - shared_tmp:/tmp/shared
+
     restart: unless-stopped
     command: python -m app.jobs.scheduler_main
   
@@ -70,3 +73,4 @@ services:
 
 volumes:
   postgres_data:
+  shared_tmp:

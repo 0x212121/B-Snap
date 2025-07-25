@@ -1,25 +1,24 @@
+import os
 import logging
 import re
 from typing import Optional, List, Dict, Any
 from uuid import uuid4
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import JSONResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.core.logging_config import setup_logging
+from app.utils.template_helper import templates
 from app.db.database import get_db
 from app.models_sql import CameraGroup, Camera, Snapshot, SnapshotLog, User
 from app.routes.auth import operator_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_service import take_snapshot
-from app.utils.timezone import format_wita
 from app.utils.snapshot_utils import record_snapshot_metadata
-import os
-
 from app.utils.timezone_helper import to_current_timezone
+
 router = APIRouter()
 
-from app.utils.template_helper import templates
 
 SNAPSHOT_BASE_DIR = "static"
 
@@ -28,7 +27,7 @@ logger = logging.getLogger("snapshot")
 
 
 def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[str] = None, search_query: Optional[str] = None,
-                            offset: int = 0, limit: int = 15) -> List[Dict[str, Any]]:
+                            tampered_only: bool = False, offset: int = 0, limit: int = 15) -> List[Dict[str, Any]]:
     """
     Helper function to query and filter snapshots from the database.
     This function now correctly fetches all snapshots, even if the camera has been deleted.
@@ -50,6 +49,9 @@ def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[
     if search_query:
         snapshot_query = snapshot_query.filter(Snapshot.camera_name.ilike(f"%{search_query}%"))
 
+    if tampered_only:
+        snapshot_query = snapshot_query.filter(Snapshot.is_tampered == True)
+
     # snapshots = snapshot_query.order_by(Snapshot.timestamp.desc()).all()
     # Lazy load snapshots
     snapshots = snapshot_query.order_by(Snapshot.timestamp.desc()).offset(offset).limit(limit).all()
@@ -65,7 +67,9 @@ def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[
             "group": s.camera_group,
             "id": s.id,
             "file_size": int(s.file_size / 1024) if s.file_size else 0,
-            "resolution": s.resolution
+            "resolution": s.resolution,
+            "is_tampered": s.is_tampered,
+            "tamper_reason": s.tamper_reason
         }
         for s in snapshots
     ]
@@ -234,6 +238,7 @@ async def get_gallery_data(
     db: Session = Depends(get_db),
     camera: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
+    tampered: Optional[bool] = Query(False),
     current_operator: User = Depends(operator_access_required),
     offset: int = Query(0),
     limit: int = Query(15),
@@ -242,25 +247,64 @@ async def get_gallery_data(
     if not group_id:
         return JSONResponse(status_code=403, content={"detail": "Authentication required."})
 
-    # Use the helper function to get the filtered snapshot data
-    filtered_images = _get_filtered_snapshots(db, group_id, camera_filter=camera, search_query=q, offset=offset, limit=limit)
+    filtered_images = _get_filtered_snapshots(
+        db,
+        group_id,
+        camera_filter=camera,
+        search_query=q,
+        tampered_only=tampered,
+        offset=offset,
+        limit=limit
+    )
 
-    # --- CHANGE 3: Check if camera exists before rendering action buttons ---
     camera_exists = False
-    if camera:
-        # Check if the camera exists in the Camera table to enable the snapshot button
-        if db.query(Camera).filter(Camera.hostname == camera).first():
-            camera_exists = True
+    if camera and db.query(Camera).filter(Camera.hostname == camera).first():
+        camera_exists = True
 
-    # Render the HTML partials with the filtered data
     gallery_html = templates.get_template("_gallery_grid.html").render({"images": filtered_images})
     buttons_html = templates.get_template("_action_buttons.html").render({
         "selected_camera": camera, 
-        "camera_exists": camera_exists, # Pass the flag to the buttons template
+        "camera_exists": camera_exists,
         'role': request.session.get("user_role")
     })
-    
+
     return JSONResponse({
         'html': gallery_html,
         'buttons_html': buttons_html
     })
+
+from app.schemas.snapshot_schema import SnapshotOut
+@router.get("/snapshots/tampered", response_model=List[SnapshotOut])
+def get_tampered_snapshots(request: Request, db: Session = Depends(get_db), current_operator: User = Depends(operator_access_required),):
+    return db.query(Snapshot).filter(Snapshot.is_tampered == True).all()
+
+
+@router.get("/snapshots/tampered", response_class=JSONResponse)
+def get_tampered_snapshots_range(
+    start: str = Query(..., description="Start date in YYYY-MM-DD"),
+    end: str = Query(..., description="End date in YYYY-MM-DD"),
+    db: Session = Depends(get_db),
+    current_operator: User = Depends(operator_access_required),
+):
+    try:
+        start_date = datetime.strptime(start, "%Y-%m-%d")
+        end_date = datetime.strptime(end, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+
+    snapshots = db.query(Snapshot).filter(
+        Snapshot.is_tampered == True,
+        Snapshot.timestamp >= start_date,
+        Snapshot.timestamp <= end_date
+    ).order_by(Snapshot.timestamp.desc()).all()
+
+    result = [{
+        "id": s.id,
+        "camera": s.camera_name,
+        "timestamp": s.timestamp.isoformat(),
+        "tamper_reason": s.tamper_reason,
+        "blur_score": s.blur_score,
+        "entropy_score": getattr(s, 'entropy_score', None),
+    } for s in snapshots]
+
+    return JSONResponse(content=result)

@@ -6,6 +6,9 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models_sql import CameraDailyStats, Camera as DBCamera, CameraHealth, SnapshotLog, User
 from app.routes.auth import admin_access_required
+from app.models_sql import TaskTiming
+from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
+
 
 router = APIRouter()
 from app.utils.template_helper import templates
@@ -51,6 +54,25 @@ async def get_camera_stats(
     cameras_with_data = {s.camera_name.strip() for s in stats if s.camera_name}
     cameras_without_data = [c for c in all_cameras if c not in cameras_with_data]
 
+    timing_logs = (
+        db.query(TaskTiming)
+        .filter(TaskTiming.task_name == "scheduled_snapshot")
+        .order_by(TaskTiming.started_at.desc())
+        .limit(10)
+        .all()
+    )
+
+    for log in timing_logs:
+        log.started_at_local = format_datetime_with_tz(to_current_timezone(log.started_at, db))
+        log.ended_at_local = format_datetime_with_tz(to_current_timezone(log.ended_at, db))
+
+        # Format duration jadi hh:mm:ss
+        seconds = int((log.duration_ms or 0) / 1000)
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        secs = seconds % 60
+        log.duration_formatted = f"{hours:02}:{minutes:02}:{secs:02}"
+
     context = {
         "request": request,
         "stats_grouped": dict(stats_grouped),
@@ -60,6 +82,7 @@ async def get_camera_stats(
         "chart_data": [d["snapshot_count"] for d in chart_data],
         "no_data_cameras": cameras_without_data,
         "total_cameras_without_data": len(cameras_without_data),
+        "timing_logs": timing_logs,
     }
 
     return templates.TemplateResponse("stats.html", context)

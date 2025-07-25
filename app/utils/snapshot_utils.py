@@ -1,10 +1,11 @@
 import os
 from datetime import datetime, timezone
 from io import BytesIO
-from zoneinfo import ZoneInfo
 from PIL import Image
 from sqlalchemy.orm import Session
-from app.models_sql import Snapshot
+from app.models_sql import Camera, Snapshot
+from app.utils.image_check import detect_blur, detect_brightness, detect_occlusion
+import logging
 
 # BASE_DIR = os.path.dirname(os.path.dirname(__file__))  # 'app' folder
 SNAPSHOT_BASE_DIR = os.path.join("static", "snapshots")  # absolut path
@@ -20,7 +21,6 @@ def record_snapshot_metadata(
     file_path: str,
     resolution: str
 ) -> Snapshot:
-    from app.models_sql import Snapshot, Camera
 
     camera = db.query(Camera).filter(Camera.id == camera_id).first()
     if not camera:
@@ -32,6 +32,23 @@ def record_snapshot_metadata(
 
     file_size = os.path.getsize(abs_file_path)
 
+    with open(abs_file_path, "rb") as f:
+        image_bytes = f.read()
+
+    is_blur, blur_score = detect_blur(image_bytes)
+    is_brightness_issue, brightness_reason = detect_brightness(image_bytes)
+    is_occluded, entropy_score = detect_occlusion(image_bytes)
+
+    is_tampered = is_blur or is_brightness_issue or is_occluded
+    tamper_reasons = []
+
+    if is_blur:
+        tamper_reasons.append("blur")
+    if is_brightness_issue:
+        tamper_reasons.append(brightness_reason)
+    if is_occluded:
+        tamper_reasons.append("occluded")
+
     snapshot = Snapshot(
         camera_id=camera.id,
         camera_name=camera.hostname,
@@ -42,10 +59,18 @@ def record_snapshot_metadata(
         file_path=file_path,
         file_size=file_size,
         resolution=resolution,
-        timestamp=datetime.now(timezone.utc)
+        timestamp=datetime.now(timezone.utc),
+        is_tampered=is_tampered,
+        tamper_reason=", ".join(tamper_reasons) if tamper_reasons else None,
+        blur_score=blur_score,
+        entropy_score=float(entropy_score)
     )
 
     db.add(snapshot)
     db.commit()
     db.refresh(snapshot)
+
+    if is_tampered:
+        logging.warning(f"[TAMPER] Detected on snapshot {file_path}: {snapshot.tamper_reason}")
+
     return snapshot

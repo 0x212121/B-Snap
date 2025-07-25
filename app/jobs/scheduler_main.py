@@ -15,9 +15,9 @@ if __name__ == "__main__":
 
     try:
         while True:
-            if os.path.exists("/tmp/reload_scheduler.flag"):
+            if os.path.exists("/tmp/shared/reload_scheduler.flag"):
                 update_scheduler_config()
-                os.remove("/tmp/reload_scheduler.flag")
+                os.remove("/tmp/shared/reload_scheduler.flag")
                 logger.info("✅ Scheduler config reloaded from trigger.")
 
             time.sleep(60)

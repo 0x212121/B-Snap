@@ -97,8 +97,8 @@
   - [ ] Kirim persentase uptime per kamera selama 7 hari terakhir.
   - [x] Cek Token API yang Aktif
 - [x] Whitelist phone number dashboard
-- [ ] Improve UI/UX
+- [x] Improve UI/UX
+- [ ] Tamper detection (snapshot blur / dark)
 
 
 🆕 Added:
-- [ ] Tamper detection (snapshot blur / dark)
