@@ -101,6 +101,8 @@ def scheduled_snapshot():
         else:
             status = "partial"
 
+        logger.info(f"[SUMMARY] Snapshot run complete: {success_count} succeeded, {fail_count} failed.")
+
         task_log = TaskTiming(
             task_name='scheduled_snapshot',
             started_at=started_at,

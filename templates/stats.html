@@ -45,9 +45,11 @@
           <td class="px-4 py-2">{{ log.duration_formatted }}</td>
           <td class="px-4 py-2">
             {% if log.status == "success" %}
-            <span class="text-green-600 dark:text-green-400 font-semibold">✅ Success</span>
+              <span class="text-green-600 dark:text-green-400 font-semibold">✅ Success</span>
+            {% elif log.status == "partial" %}
+              <span class="text-yellow-600 dark:text-yellow-400 font-semibold">⏳ Partial</span>
             {% else %}
-            <span class="text-red-600 dark:text-red-400 font-semibold">❌ Failed</span>
+              <span class="text-red-600 dark:text-red-400 font-semibold">❌ Failed</span>
             {% endif %}
           </td>
         </tr>
