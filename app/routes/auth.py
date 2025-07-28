@@ -1,19 +1,16 @@
 import io
 import base64
-import datetime
 import os
 import secrets
 from typing import Optional
-
 import pyotp
 import qrcode
 from fastapi import APIRouter, Depends, Form, HTTPException, Header, Request, Cookie
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
 from starlette import status
+from datetime import datetime, timezone, timedelta
 
-# --- Adjust according to your project structure ---
 from app.db.database import get_db
 from app.models_sql import User
 from app.utils.auth import get_password_hash, verify_password
@@ -122,18 +119,19 @@ def otp_post(
 
     # Create and attach the session token to the DB.
     token = secrets.token_urlsafe(32)
-    expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+    
     
     web_tokens = user.web_tokens or []
     new_token_entry = {
         "token": token,
-        "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "expires_at": expires_at.isoformat()
     }
     web_tokens.append(new_token_entry)
     user.web_tokens = sorted(web_tokens, key=lambda x: x['expires_at'], reverse=True)[:MAX_WEB_SESSIONS]
 
-    user.last_login = datetime.datetime.now(datetime.timezone.utc)
+    user.last_login = datetime.now(timezone.utc)
     db.commit()
 
     log_audit(
@@ -240,16 +238,16 @@ def mfa_setup_post(
         request.session["user_group"] = user.group.name
         request.session["user_groupid"] = user.group_id
 
-    user.last_login = datetime.datetime.now(datetime.timezone.utc)
+    user.last_login = datetime.now(timezone.utc)
 
     # Add session token to DB and cookie.
     token = secrets.token_urlsafe(32)
-    expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
     
     web_tokens = user.web_tokens or []
     web_tokens.append({
         "token": token,
-        "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "expires_at": expires_at.isoformat()
     })
     user.web_tokens = sorted(web_tokens, key=lambda x: x['expires_at'], reverse=True)[:MAX_WEB_SESSIONS]
@@ -328,8 +326,8 @@ async def get_current_user(
         if user and user.web_tokens:
             for t in user.web_tokens:
                 if t.get("token") == session_token:
-                    expires_at = datetime.datetime.fromisoformat(t.get("expires_at"))
-                    if expires_at > datetime.datetime.now(datetime.timezone.utc):
+                    expires_at = datetime.fromisoformat(t.get("expires_at"))
+                    if expires_at > datetime.now(timezone.utc):
                         is_token_valid = True
                         return user # ✅ Authentication successful
 
@@ -347,7 +345,10 @@ async def get_current_user(
 
     # === 2. Authentication via Bearer token (API) ===
     if authorization:
-        scheme, token = authorization.strip().split(" ", 1)
+        try:
+            scheme, token = authorization.strip().split(" ", 1)
+        except ValueError:
+            raise HTTPException(status_code=401, detail="Invalid Authorization header format")
         if scheme.lower() != "bearer":
             raise HTTPException(status_code=401, detail="Authorization scheme must be Bearer")
 
@@ -362,11 +363,11 @@ async def get_current_user(
                         return user
 
                     try:
-                        expires_at = datetime.datetime.fromisoformat(expires_at_str)
+                        expires_at = datetime.fromisoformat(expires_at_str)
                         if expires_at.tzinfo is None:
-                            expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
+                            expires_at = expires_at.replace(tzinfo=timezone.utc)
 
-                        if expires_at > datetime.datetime.now(datetime.timezone.utc):
+                        if expires_at > datetime.now(timezone.utc):
                             return user
                     except Exception as e:
                         print(f"⚠️ Token parse error: {e}")
@@ -461,7 +462,7 @@ def user_access_required_optional(
         token = token.replace("Bearer ", "")
         user = db.query(User).filter(
             User.token == token,
-            User.token_expires_at > datetime.utcnow()
+            User.token_expires_at > datetime.now(timezone.utc)
         ).first()
         if user:
             return user

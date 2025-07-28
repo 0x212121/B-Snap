@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 from app.core.logging_config import setup_logging
 from typing import List
@@ -288,7 +288,7 @@ async def api_generate_token(
         raise HTTPException(status_code=404, detail="User not found.")
 
     token = secrets.token_hex(32)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     expires_at = None
 
     if token_request.expires_in_days > 0:

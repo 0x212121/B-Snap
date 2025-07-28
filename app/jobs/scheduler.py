@@ -65,10 +65,11 @@ def scheduled_snapshot():
 
     logger.info(f"[SCHEDULED] Running snapshot for {len(cameras)} cameras with {workers} workers.")
 
-    started_at = datetime.utcnow()
+    started_at = datetime.now(timezone.utc)
     time_start = monotonic()
 
-    overall_success = True  # <- track status
+    success_count = 0
+    fail_count = 0
 
     try:
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
@@ -81,23 +82,31 @@ def scheduled_snapshot():
                 try:
                     result = future.result()
                     if result and result.get("status") == "success":
+                        success_count += 1
                         logger.info(f"[SUCCESS] Snapshot taken for: {cam.hostname}")
                     else:
-                        overall_success = False  # <- Mark partial failure
+                        fail_count += 1
                         logger.warning(f"[FAIL] Snapshot failed or returned error for: {cam.hostname}")
                 except Exception as e:
-                    overall_success = False  # <- Mark unhandled exception
+                    fail_count += 1
                     logger.error(f"[EXCEPTION] Unhandled error for {cam.hostname}: {e}")
     finally:
-        ended_at = datetime.utcnow()
+        ended_at = datetime.now(timezone.utc)
         duration_ms = int((monotonic() - time_start) * 1000)
+
+        if success_count == 0:
+            status = "fail"
+        elif fail_count == 0:
+            status = "success"
+        else:
+            status = "partial"
 
         task_log = TaskTiming(
             task_name='scheduled_snapshot',
             started_at=started_at,
             ended_at=ended_at,
             duration_ms=duration_ms,
-            status='success' if overall_success else 'fail'
+            status=status
         )
         try:
             db.add(task_log)

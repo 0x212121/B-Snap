@@ -9,7 +9,10 @@ All notable changes to B-Snap will be documented in this file.
 ### Fixed
 - Fixed bug camera with "Restricted" status skipped from scheduled snapshots.
 - Fixed missing `db.commit()` in `run_snapshot()` which caused snapshot records not being saved to the database.
-- Improved reliability of `scheduled_snapshot()` logging by correctly marking task status as `fail` when any snapshot operation fails.
+- Improved scheduled snapshot task reporting:
+  - `"success"` if all cameras succeed
+  - `"partial"` if some cameras fail
+  - `"fail"` only if all snapshots fail
 
 
 ## [1.3.2] - 2025-07-25
