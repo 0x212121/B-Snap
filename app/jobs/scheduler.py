@@ -44,6 +44,7 @@ def run_snapshot(camera):
             snapshot_log = SnapshotLog(id=str(uuid4()), camera_name=camera.hostname)
 
             db.add(snapshot_log)
+            db.commit()
             logger.info(f"[SUCCESS] Scheduled snapshot for {camera}, saved with ID {snapshot.id}")
             
             return {"status": "success"}  # ✅ Tambahkan return jika sukses
@@ -67,6 +68,8 @@ def scheduled_snapshot():
     started_at = datetime.utcnow()
     time_start = monotonic()
 
+    overall_success = True  # <- track status
+
     try:
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
             future_to_camera = {
@@ -80,8 +83,10 @@ def scheduled_snapshot():
                     if result and result.get("status") == "success":
                         logger.info(f"[SUCCESS] Snapshot taken for: {cam.hostname}")
                     else:
+                        overall_success = False  # <- Mark partial failure
                         logger.warning(f"[FAIL] Snapshot failed or returned error for: {cam.hostname}")
                 except Exception as e:
+                    overall_success = False  # <- Mark unhandled exception
                     logger.error(f"[EXCEPTION] Unhandled error for {cam.hostname}: {e}")
     finally:
         ended_at = datetime.utcnow()
@@ -92,7 +97,7 @@ def scheduled_snapshot():
             started_at=started_at,
             ended_at=ended_at,
             duration_ms=duration_ms,
-            status='success'
+            status='success' if overall_success else 'fail'
         )
         try:
             db.add(task_log)

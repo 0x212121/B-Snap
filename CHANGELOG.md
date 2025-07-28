@@ -1,6 +1,16 @@
 # Changelog
 
 All notable changes to B-Snap will be documented in this file.
+## [1.3.3] - 2025-07-28
+
+### Changed
+- Increase Snapshot Log size from 1MB to 5MB
+
+### Fixed
+- Fixed bug camera with "Restricted" status skipped from scheduled snapshots.
+- Fixed missing `db.commit()` in `run_snapshot()` which caused snapshot records not being saved to the database.
+- Improved reliability of `scheduled_snapshot()` logging by correctly marking task status as `fail` when any snapshot operation fails.
+
 
 ## [1.3.2] - 2025-07-25
 

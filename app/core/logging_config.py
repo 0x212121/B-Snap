@@ -36,7 +36,7 @@ LOGGING_CONFIG = {
             "filename": os.path.join(LOG_DIR, "snapshot.log"),
             "formatter": "standard",
             "level": "INFO",
-            "maxBytes": 1_000_000,
+            "maxBytes": 5_000_000,
             "backupCount": 5,
             "encoding": "utf-8"
         },

@@ -1,8 +1,6 @@
 import logging
 from onvif import ONVIFCamera
 import os
-import subprocess
-import platform
 import requests
 import cv2
 import time
@@ -68,10 +66,10 @@ def stream_exists_opencv(rtsp_url: str, timeout: float = 5.0) -> bool:
 
 
 def load_active_cameras():
-    """Get all cameras with status 'Active' from DB"""
+    """Get all cameras with status 'Active' or 'Restricted' from DB"""
     db = SessionLocal()
     try:
-        cameras = db.query(Camera).filter(Camera.status == "Active").all()
+        cameras = db.query(Camera).filter(Camera.status.in_(["Active", "Restricted"])).all()
         return cameras
     finally:
         db.close()
