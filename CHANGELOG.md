@@ -1,6 +1,19 @@
 # Changelog
 
 All notable changes to B-Snap will be documented in this file.
+
+## [1.5.0] - 2025-07-28
+
+### Added
+- Map: Dynamic Pie Chart Clusters - Cluster markers on the map now display as pie charts, showing the proportion of Online, High Latency, and Offline cameras within that area.
+- Map: Pulsing Animation for Online Markers - "Online" camera markers now have a subtle pulse animation for better visibility of live assets.
+- Map: Marker Hover Effect - All map markers now scale up slightly on hover for improved user interaction feedback.
+
+### Changed
+- Map: Cluster Style Overhaul - Replaced the default cluster markers with the new, more informative pie chart style.
+- Map: Marker Aesthetics - Individual camera markers have been restyled with cleaner borders and shadows for a more modern look.
+
+
 ## [1.4.0] - 2025-07-28
 
 ### Added
