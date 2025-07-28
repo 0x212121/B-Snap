@@ -7,6 +7,7 @@ All notable changes to B-Snap will be documented in this file.
 ### Added
 - Map: Dynamic Pie Chart Clusters - Cluster markers on the map now display as pie charts, showing the proportion of Online, High Latency, and Offline cameras within that area.
 - Map: Pulsing Animation for Online Markers - "Online" camera markers now have a subtle pulse animation for better visibility of live assets.
+- Map: Blinking Animation for Offline Markers - "Offline" camera markers now have a blinking animation to draw attention to critical issues.
 - Map: Marker Hover Effect - All map markers now scale up slightly on hover for improved user interaction feedback.
 
 ### Changed

@@ -21,7 +21,14 @@ import logging
 from time import monotonic
 from datetime import datetime
 
-scheduler = BackgroundScheduler()
+scheduler = BackgroundScheduler(
+    job_defaults={
+        "coalesce": True,
+        "max_instances": 10,
+        "misfire_grace_time": 60
+    }
+)
+
 setup_logging()
 logger = logging.getLogger("scheduler")
 
@@ -89,8 +96,10 @@ def scheduled_snapshot():
                         logger.warning(f"[FAIL] Snapshot failed or returned error for: {cam.hostname}")
                 except Exception as e:
                     fail_count += 1
-                    logger.error(f"[EXCEPTION] Unhandled error for {cam.hostname}: {e}")
-    finally:
+                    logger.exception(f"[EXCEPTION] Unhandled error for {cam.hostname}: {e}")
+    except Exception as e:
+        logger.exception(f"[SCHEDULER ERROR] Critical failure during scheduled snapshot: {e}")
+    else:
         ended_at = datetime.now(timezone.utc)
         duration_ms = int((monotonic() - time_start) * 1000)
 
@@ -102,19 +111,23 @@ def scheduled_snapshot():
             status = "partial"
 
         logger.info(f"[SUMMARY] Snapshot run complete: {success_count} succeeded, {fail_count} failed.")
+        logger.info(f"[SUMMARY] Duration: {duration_ms} ms")
 
-        task_log = TaskTiming(
-            task_name='scheduled_snapshot',
-            started_at=started_at,
-            ended_at=ended_at,
-            duration_ms=duration_ms,
-            status=status
-        )
         try:
+            task_log = TaskTiming(
+                task_name="scheduled_snapshot",
+                started_at=started_at,
+                ended_at=ended_at,
+                duration_ms=duration_ms,
+                status=status,
+            )
+            logger.info(f"[DEBUG] Writing TaskTiming: {task_log}")
             db.add(task_log)
             db.commit()
+            logger.info("[DEBUG] TaskTiming committed to DB")
         except Exception as e:
-            logger.warning(f"[TimingLog] Failed to save snapshot timing log: {e}")
+            logger.exception(f"[TimingLog] Failed to save snapshot timing log: {e}")
+    finally:
         db.close()
 
 
@@ -134,11 +147,12 @@ def start_scheduler():
     last_config["snapshot_interval"] = snapshot_interval
     last_config["healthcheck_interval"] = healthcheck_interval
 
+
     scheduler.add_job(
         scheduled_snapshot,
         trigger=IntervalTrigger(minutes=snapshot_interval),
         id='scheduled_snapshot',
-        max_instances=workers,
+        max_instances=10,
         coalesce=True,
         misfire_grace_time=60
     )

@@ -27,6 +27,11 @@
     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(4, 120, 87, 0); }
   }
 
+  /* NEW: Animation for blinking offline markers */
+  @keyframes blink {
+    50% { opacity: 0.2; }
+  }
+  
   .circle-marker {
     width: 16px;
     height: 16px;
@@ -39,12 +44,13 @@
   .custom-div-icon:hover .circle-marker {
     transform: scale(1.4);
   }
-
+  
   /* Status colors for markers */
   .circle-marker.green { background-color: #10B981; animation: pulse 2s infinite; }
   .circle-marker.orange { background-color: #F59E0B; }
-  .circle-marker.red { background-color: #EF4444; }
-
+  /* CHANGED: Apply the new blink animation to red markers */
+  .circle-marker.red { background-color: #EF4444; animation: blink 1.5s step-end infinite; }
+  
   /* --- BEST PRACTICE CLUSTER STYLES (PIE CHART) --- */
   .marker-cluster-pie {
     transition: all 0.2s ease-in-out;
@@ -77,15 +83,15 @@
     const map = L.map('map', { zoomDelta: 0.25, zoomSnap: 0, zoomControl: false, fullscreenControl: false }).setView([0.544447, 117.510262], 12);
     map.attributionControl.setPrefix('');
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
-
+    
     L.control.zoom({ position: 'topright' }).addTo(map);
     L.control.fullscreen({ position: 'topright' }).addTo(map);
-
+    
     // Unchanged Controls: Title, Filter, Stats
     L.Control.MapTitle = L.Control.extend({ onAdd: function () { const div = L.DomUtil.create('div', 'leaflet-control-map-title'); div.innerHTML = `<div class="custom-title-bar"><img src="/static/icons/logo.png" alt="Logo KPC" class="title-logo"><span class="title-text">${MAP_TITLE}</span></div>`; L.DomEvent.disableClickPropagation(div); return div; }, }); L.control.mapTitle = function (opts) { return new L.Control.MapTitle(opts); }; L.control.mapTitle({ position: "topleft" }).addTo(map);
     L.Control.statusFilter = L.Control.extend({ onAdd: function() { const div = L.DomUtil.create('div', 'leaflet-control-status-filter bg-white/95 dark:bg-gray-800 text-sm rounded shadow p-3 mt-2 w-[160px] space-y-2'); div.innerHTML = `<label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="Online" checked> 🟢 Online</label><label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="High Latency" checked> 🟡 High Latency</label><label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="Offline" checked> 🔴 Offline</label>`; L.DomEvent.disableClickPropagation(div); return div; } }); L.control.statusFilter = function(opts) { return new L.Control.statusFilter(opts); }; L.control.statusFilter({ position: "bottomright" }).addTo(map);
     L.Control.cameraStats = L.Control.extend({ onAdd: function() { const container = L.DomUtil.create("div", "leaflet-bar camera-stats p-2 text-sm bg-white/85 dark:bg-gray-800 rounded-[5px] shadow-[0_0_15px_rgba(0,0,0,0.2)] leading-[1.2em] mt-2"); container.innerHTML = `<div id="camera-stats"><div class="text-gray-800 dark:text-gray-100 mb-2 font-semibold text-center"><span id="user-group">-</span> Camera Stats</div><div class="text-green-600 dark:text-green-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-green-500"></span>Online: <span id="stat-online">-</span></div><div class="text-yellow-500 dark:text-yellow-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-yellow-500"></span>High Latency (&gt;50 ms): <span id="stat-highlatency">-</span></div><div class="text-red-600 dark:text-red-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-red-500"></span>Offline: <span id="stat-offline">-</span></div><div class="text-gray-700 dark:text-gray-300 mb-1">Total: <span id="stat-total">-</span></div></div>`; L.DomEvent.disableClickPropagation(container); return container; }, }); L.control.cameraStats = function(opts) { return new L.Control.cameraStats(opts); }; L.control.cameraStats({ position: "bottomright" }).addTo(map);
-
+    
     // --- BEST PRACTICE CLUSTER GROUP INITIALIZATION ---
     const markerClusterGroup = L.markerClusterGroup({
       // The magic happens here: a custom function to create cluster icons
@@ -99,7 +105,7 @@
           else if (c.status === 'High Latency') highLatency++;
           else if (c.status === 'Offline') offline++;
         });
-
+        
         // Define colors for the pie chart segments
         const onlineColor = '#10B981'; // green-500
         const highLatencyColor = '#F59E0B'; // yellow-500
@@ -115,10 +121,10 @@
           ${highLatencyColor} ${onlineEnd}deg ${highLatencyEnd}deg,
           ${offlineColor} ${highLatencyEnd}deg 360deg
         )`;
-
+        
         // Dynamically calculate size for a nice visual effect
         const size = 30 + Math.log2(count) * 5;
-
+        
         // Return a DivIcon with the custom pie chart style
         return L.divIcon({
           html: `<div><span>${count}</span></div>`,
@@ -135,9 +141,9 @@
       zoomToBoundsOnClick: true
     });
     map.addLayer(markerClusterGroup);
-
+    
     let statusFilter = new Set(["Online", "High Latency", "Offline"]);
-
+    
     document.addEventListener("change", function (e) {
       if (e.target && e.target.classList.contains("status-checkbox")) {
         const value = e.target.value;
@@ -145,16 +151,16 @@
         refreshMapData();
       }
     });
-
+    
     function escapeHTML(str) {
       if (!str) return '';
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
-
+    
     function normalizeStatus(status) {
       return (status === "Optimal Latency") ? "Online" : status;
     }
-
+    
     function refreshMapData() {
       markerClusterGroup.clearLayers();
       fetch("/camera-locations")
@@ -168,15 +174,15 @@
         data.forEach(cam => {
           const normalized = normalizeStatus(cam.status);
           if (!statusFilter.has(normalized)) return;
-
+          
           if (normalized === "Online") onlineCount++;
           else if (normalized === "High Latency") highLatencyCount++;
           else offlineCount++;
-
+          
           if (cam.lat && cam.lng && cam.restricted !== "Restricted") {
             const color =
-              normalized === "Online" ? "green" :
-              normalized === "High Latency" ? "orange" : "red";
+            normalized === "Online" ? "green" :
+            normalized === "High Latency" ? "orange" : "red";
             
             const marker = L.marker([cam.lat, cam.lng], {
               icon: L.divIcon({
@@ -190,18 +196,36 @@
             // IMPORTANT: Store the status on the marker object itself
             // This allows the iconCreateFunction to access it
             marker.status = normalized;
-
-            // Popup creation logic remains the same...
+            
             const popupContent = L.DomUtil.create('div');
             popupContent.innerHTML = `<strong style="font-size: 18px;">${escapeHTML(cam.hostname)}</strong><br><br><table style="font-size: 14px;"><tr><td>IP</td><td>: ${escapeHTML(cam.ip)}</td></tr><tr><td>Asset No</td><td>: ${escapeHTML(cam.asset_no || 'N/A')}</td></tr><tr><td>Status</td><td>: ${normalized === "Online" ? "🟢 Online" : normalized === "High Latency" ? "🟡 High Latency" : "🔴 Offline"}</td></tr><tr><td>Uptime</td><td>: ${escapeHTML(cam.uptime)}</td></tr></table><div id="snapshot-container-${cam.id}" class="mt-0 text-center text-gray-500 dark:text-gray-400">Loading snapshot...</div>`;
             marker.bindPopup(popupContent, { maxWidth: 1500 });
-            marker.on('popupopen', async () => { const container = document.getElementById(`snapshot-container-${cam.id}`); if (!container) return; container.innerHTML = `<p class="loading-text">Loading snapshot info...</p>`; try { const info = await fetch(`/snapshot/latest/${encodeURIComponent(cam.hostname)}/info`); if (!info.ok) throw new Error("Snapshot not available"); const snapshot = await info.json(); container.innerHTML = `<p class="text-left text-gray-800">Snapshot time : ${snapshot.timestamp}</p><img src="${snapshot.url}" class="w-full h-auto rounded-md shadow-md mt-1" alt="Camera Snapshot" onerror="this.onerror=null; this.src='/static/placeholder.svg'; this.nextElementSibling.classList.remove('hidden');" onload="this.previousElementSibling.classList.add('hidden');"><p class="loading-text text-gray-500 mt-1">Loading image...</p><p class="error-message text-red-500 text-xs mt-1 hidden">Image failed to load.</p>`; } catch (err) { container.innerHTML = `<div class="text-center text-sm text-red-500">❌ ${err.message}</div>`; } });
-            
+            marker.on('popupopen', async () => {
+              const container = document.getElementById(`snapshot-container-${cam.id}`);
+              if (!container) return;
+              container.innerHTML = `<p class="loading-text">Loading snapshot info...</p>`;
+              try {
+                const info = await fetch(`/snapshot/latest/${encodeURIComponent(cam.hostname)}/info`);
+                if (!info.ok) throw new Error("Snapshot not available");
+                const snapshot = await info.json();
+                
+                container.innerHTML = `
+                  <p class="text-left text-gray-800 dark:text-gray-300">Snapshot time : ${snapshot.timestamp}</p>
+                  <img src="${snapshot.url}" class="w-full h-auto rounded-md shadow-md mt-1" alt="Camera Snapshot"
+                    onload="this.nextElementSibling.style.display='none';"
+                    onerror="this.onerror=null; this.src='/static/placeholder.svg'; this.nextElementSibling.style.display='none'; this.nextElementSibling.nextElementSibling.style.display='block';">
+                  <p class="loading-text text-gray-500 dark:text-gray-400 mt-1">Loading image...</p>
+                  <p class="error-message text-red-500 text-xs mt-1" style="display: none;">Image failed to load.</p>
+                `;
+              } catch (err) {
+                container.innerHTML = `<div class="text-center text-sm text-red-500">❌ ${err.message}</div>`;
+              }
+            });
             markerClusterGroup.addLayer(marker);
           }
           user_group = cam.user_group;
         });
-
+        
         // Stats update logic remains the same...
         document.getElementById("user-group").textContent = user_group;
         document.getElementById("stat-total").textContent = data.length;
@@ -213,7 +237,7 @@
         console.error("Map data fetch error:", err);
       });
     }
-
+    
     refreshMapData();
     setInterval(refreshMapData, 600000); // 10 minutes
   });
