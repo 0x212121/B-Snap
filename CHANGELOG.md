@@ -1,10 +1,19 @@
 # Changelog
 
 All notable changes to B-Snap will be documented in this file.
-## [1.3.3] - 2025-07-28
+## [1.4.0] - 2025-07-28
+
+### Added
+- Separate dropdowns for log type and log file.
+- Automatic color highlighting for log levels: ERROR, WARN, INFO, DEBUG.
+- Log parsing into timestamp, level, and message sections.
+- Auto-scroll to the bottom after displaying log content.
+- Download button is only enabled after a file is selected.
+- Escaping of HTML in log content to prevent XSS.
 
 ### Changed
 - Increase Snapshot Log size from 1MB to 5MB
+- Log content is no longer loaded automatically on page load.
 
 ### Fixed
 - Fixed bug camera with "Restricted" status skipped from scheduled snapshots.

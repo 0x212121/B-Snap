@@ -14,7 +14,7 @@
             <h1 class="text-3xl font-bold text-white">Welcome Back!</h1>
             <p class="text-gray-400">Sign in to manage your account.</p>
         </div>
-
+        
         {% if request.query_params.get('reason') == 'session_expired' %}
         <div class="bg-blue-500/10 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg mb-6 flex items-center text-sm" role="alert">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
@@ -23,7 +23,7 @@
             <span>Session ended. Please login again.</span>
         </div>
         {% endif %}
-
+        
         {% if request.query_params.get('reason') == 'invalid_session' %}
         <div class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 px-4 py-3 rounded-lg mb-6 flex items-center text-sm" role="alert">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
@@ -32,7 +32,7 @@
             <span>Session invalid or logged out. Please login again.</span>
         </div>
         {% endif %}
-
+        
         <form id="loginForm" method="post" action="/login" class="bg-gray-800 p-8 rounded-xl shadow-2xl">
             {% if error %}
             <div class="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg mb-6 flex items-center text-sm" role="alert">
@@ -42,7 +42,7 @@
                 <span>{{ error }}</span>
             </div>
             {% endif %}
-
+            
             <div class="space-y-6">
                 <div>
                     <label for="username" class="block text-gray-300 text-sm font-medium mb-2">Username</label>
@@ -53,20 +53,21 @@
                             </svg>
                         </div>
                         <input id="username" name="username" type="text" placeholder="your.username" required 
-                               class="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" />
+                        class="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" />
                     </div>
                 </div>
-
+                
                 <div>
                     <label for="password" class="block text-gray-300 text-sm font-medium mb-2">Password</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L4.257 19.743A1 1 0 112.843 18.33l10.9-10.9A6 6 0 0118 8zM10 8a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
-                           </svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 2a4 4 0 00-4 4v2H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-1V6a4 4 0 00-4-4zM8 6a2 2 0 114 0v2H8V6z" clip-rule="evenodd" />
+                            </svg>
+                            
                         </div>
                         <input id="password" name="password" type="password" placeholder="••••••••" required 
-                               class="w-full pl-10 pr-10 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" />
+                        class="w-full pl-10 pr-10 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" />
                         <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white">
                             <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
@@ -80,60 +81,60 @@
                     </div>
                 </div>
             </div>
-
-            <div class="flex items-center justify-between mt-6">
+            
+            <!-- <div class="flex items-center justify-between mt-6">
                 <div class="flex items-center">
                     <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500 rounded">
                     <label for="remember-me" class="ml-2 block text-sm text-gray-400">Remember me</label>
                 </div>
-            </div>
-
+            </div> -->
+            
             <button id="submitButton" type="submit" 
-                    class="w-full mt-8 bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition flex items-center justify-center">
-                <span class="button-text">Sign In</span>
-                <div class="spinner hidden ml-3 border-t-transparent border-solid animate-spin rounded-full border-white border-2 h-5 w-5"></div>
-            </button>
-        </form>
-    </div>
+            class="w-full mt-8 bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition flex items-center justify-center">
+            <span class="button-text">Sign In</span>
+            <div class="spinner hidden ml-3 border-t-transparent border-solid animate-spin rounded-full border-white border-2 h-5 w-5"></div>
+        </button>
+    </form>
+</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const passwordInput = document.getElementById('password');
-            const togglePasswordButton = document.getElementById('togglePassword');
-            const eyeIcon = document.getElementById('eyeIcon');
-            const eyeOffIcon = document.getElementById('eyeOffIcon');
-
-            // Password visibility toggle
-            togglePasswordButton.addEventListener('click', function () {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-
-                // Toggle icon visibility
-                eyeIcon.classList.toggle('hidden');
-                eyeOffIcon.classList.toggle('hidden');
-            });
-
-            // Form submission loading state
-            const loginForm = document.getElementById('loginForm');
-            const submitButton = document.getElementById('submitButton');
-            const buttonText = submitButton.querySelector('.button-text');
-            const spinner = submitButton.querySelector('.spinner');
-
-            loginForm.addEventListener('submit', function (e) {
-                // To see the loading state, you can prevent immediate submission.
-                // In a real app, you would handle this with fetch/AJAX and remove this line.
-                e.preventDefault(); 
-                
-                // Disable button and show spinner
-                submitButton.disabled = true;
-                buttonText.textContent = 'Signing In...';
-                spinner.classList.remove('hidden');
-
-                setTimeout(() => {
-                    loginForm.submit(); 
-                }, 500); // 0.5 second delay
-            });
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const passwordInput = document.getElementById('password');
+        const togglePasswordButton = document.getElementById('togglePassword');
+        const eyeIcon = document.getElementById('eyeIcon');
+        const eyeOffIcon = document.getElementById('eyeOffIcon');
+        
+        // Password visibility toggle
+        togglePasswordButton.addEventListener('click', function () {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            // Toggle icon visibility
+            eyeIcon.classList.toggle('hidden');
+            eyeOffIcon.classList.toggle('hidden');
         });
-    </script>
+        
+        // Form submission loading state
+        const loginForm = document.getElementById('loginForm');
+        const submitButton = document.getElementById('submitButton');
+        const buttonText = submitButton.querySelector('.button-text');
+        const spinner = submitButton.querySelector('.spinner');
+        
+        loginForm.addEventListener('submit', function (e) {
+            // To see the loading state, you can prevent immediate submission.
+            // In a real app, you would handle this with fetch/AJAX and remove this line.
+            e.preventDefault(); 
+            
+            // Disable button and show spinner
+            submitButton.disabled = true;
+            buttonText.textContent = 'Signing In...';
+            spinner.classList.remove('hidden');
+            
+            setTimeout(() => {
+                loginForm.submit(); 
+            }, 500); // 0.5 second delay
+        });
+    });
+</script>
 </body>
 </html>

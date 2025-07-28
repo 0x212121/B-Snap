@@ -249,6 +249,10 @@ async def update_user(
     try:
         db.commit()
 
+        if user_to_update.id == request.session.get("user_id"):
+            request.session["user_role"] = role
+
+
         log_audit(
             db=db,
             user=request.session.get("user_name"),

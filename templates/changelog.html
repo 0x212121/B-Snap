@@ -22,49 +22,34 @@
     </button>
 
     <div x-show="open" x-collapse class="px-6 py-4 space-y-4 bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-200">
-      {% if version.added %}
-      <div>
-        <h3 class="flex items-center gap-2 text-green-600 font-semibold">🟢 Added</h3>
-        <ul class="list-disc ml-6 mt-1 space-y-1">
-          {% for item in version.added %}
-          <li>{{ item }}</li>
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
 
-      {% if version.changed %}
-      <div>
-        <h3 class="flex items-center gap-2 text-yellow-500 font-semibold">🟡 Changed</h3>
-        <ul class="list-disc ml-6 mt-1 space-y-1">
-          {% for item in version.changed %}
-          <li>{{ item }}</li>
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
+      {% for section, label, color in [
+        ('added', '🟢 Added', 'green-600'),
+        ('changed', '🟡 Changed', 'yellow-500'),
+        ('fixed', '🔧 Fixed', 'blue-500'),
+        ('other', '📄 Other', 'gray-500')
+      ] %}
+        {% if version[section] %}
+        <div>
+          <h3 class="flex items-center gap-2 text-{{ color }} font-semibold">{{ label }}</h3>
+          <ul class="list-disc ml-6 mt-1 space-y-1">
+            {% for item in version[section] %}
+            <li>
+              {{ item.text }}
+              {% if item.subitems %}
+              <ul class="list-[circle] ml-6 mt-1 space-y-1">
+                {% for sub in item.subitems %}
+                  <li>{{ sub }}</li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+      {% endfor %}
 
-      {% if version.fixed %}
-      <div>
-        <h3 class="flex items-center gap-2 text-blue-500 font-semibold">🔧 Fixed</h3>
-        <ul class="list-disc ml-6 mt-1 space-y-1">
-          {% for item in version.fixed %}
-          <li>{{ item }}</li>
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
-
-      {% if version.other %}
-      <div>
-        <h3 class="flex items-center gap-2 text-gray-500 font-semibold">📄 Other</h3>
-        <ul class="list-disc ml-6 mt-1 space-y-1">
-          {% for item in version.other %}
-          <li>{{ item }}</li>
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
     </div>
   </div>
   {% endfor %}

@@ -944,10 +944,6 @@ select {
   left: 0px;
 }
 
-.left-0\.5 {
-  left: 0.125rem;
-}
-
 .right-0 {
   right: 0px;
 }
@@ -970,10 +966,6 @@ select {
 
 .top-0 {
   top: 0px;
-}
-
-.top-0\.5 {
-  top: 0.125rem;
 }
 
 .top-1\/2 {
@@ -1019,11 +1011,6 @@ select {
 .mx-auto {
   margin-left: auto;
   margin-right: auto;
-}
-
-.my-1 {
-  margin-top: 0.25rem;
-  margin-bottom: 0.25rem;
 }
 
 .my-4 {
@@ -1087,6 +1074,10 @@ select {
   margin-right: 0.75rem;
 }
 
+.ms-3 {
+  margin-inline-start: 0.75rem;
+}
+
 .mt-0 {
   margin-top: 0px;
 }
@@ -1113,10 +1104,6 @@ select {
 
 .mt-8 {
   margin-top: 2rem;
-}
-
-.ms-3 {
-  margin-inline-start: 0.75rem;
 }
 
 .block {
@@ -1195,6 +1182,10 @@ select {
   height: 1.5rem;
 }
 
+.h-7 {
+  height: 1.75rem;
+}
+
 .h-8 {
   height: 2rem;
 }
@@ -1247,8 +1238,8 @@ select {
   width: 25%;
 }
 
-.w-10 {
-  width: 2.5rem;
+.w-11 {
+  width: 2.75rem;
 }
 
 .w-12 {
@@ -1291,6 +1282,10 @@ select {
   width: 16rem;
 }
 
+.w-7 {
+  width: 1.75rem;
+}
+
 .w-8 {
   width: 2rem;
 }
@@ -1301,10 +1296,6 @@ select {
 
 .w-full {
   width: 100%;
-}
-
-.w-11 {
-  width: 2.75rem;
 }
 
 .min-w-full {
@@ -1480,12 +1471,6 @@ select {
        column-gap: 1rem;
 }
 
-.space-x-1 > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-x-reverse: 0;
-  margin-right: calc(0.25rem * var(--tw-space-x-reverse));
-  margin-left: calc(0.25rem * calc(1 - var(--tw-space-x-reverse)));
-}
-
 .space-x-2 > :not([hidden]) ~ :not([hidden]) {
   --tw-space-x-reverse: 0;
   margin-right: calc(0.5rem * var(--tw-space-x-reverse));
@@ -1577,6 +1562,10 @@ select {
   white-space: nowrap;
 }
 
+.whitespace-pre-wrap {
+  white-space: pre-wrap;
+}
+
 .rounded {
   border-radius: 0.25rem;
 }
@@ -1666,6 +1655,11 @@ select {
   border-color: rgb(75 85 99 / var(--tw-border-opacity));
 }
 
+.border-gray-800 {
+  --tw-border-opacity: 1;
+  border-color: rgb(31 41 55 / var(--tw-border-opacity));
+}
+
 .border-red-400 {
   --tw-border-opacity: 1;
   border-color: rgb(248 113 113 / var(--tw-border-opacity));
@@ -1729,11 +1723,6 @@ select {
 .bg-gray-300 {
   --tw-bg-opacity: 1;
   background-color: rgb(209 213 219 / var(--tw-bg-opacity));
-}
-
-.bg-gray-400 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(156 163 175 / var(--tw-bg-opacity));
 }
 
 .bg-gray-50 {
@@ -2136,6 +2125,10 @@ select {
   line-height: 1;
 }
 
+.leading-snug {
+  line-height: 1.375;
+}
+
 .tracking-tight {
   letter-spacing: -0.025em;
 }
@@ -2243,6 +2236,11 @@ select {
   color: rgb(252 165 165 / var(--tw-text-opacity));
 }
 
+.text-red-400 {
+  --tw-text-opacity: 1;
+  color: rgb(248 113 113 / var(--tw-text-opacity));
+}
+
 .text-red-500 {
   --tw-text-opacity: 1;
   color: rgb(239 68 68 / var(--tw-text-opacity));
@@ -2314,6 +2312,10 @@ select {
   opacity: 0.25;
 }
 
+.opacity-50 {
+  opacity: 0.5;
+}
+
 .opacity-75 {
   opacity: 0.75;
 }
@@ -2337,6 +2339,12 @@ select {
 .shadow-\[0_0_15px_rgba\(0\2c 0\2c 0\2c 0\.2\)\] {
   --tw-shadow: 0 0 15px rgba(0,0,0,0.2);
   --tw-shadow-colored: 0 0 15px var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+
+.shadow-inner {
+  --tw-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+  --tw-shadow-colored: inset 0 2px 4px 0 var(--tw-shadow-color);
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
 
@@ -2641,11 +2649,6 @@ select {
   background-color: rgb(126 34 206 / var(--tw-bg-opacity));
 }
 
-.hover\:bg-red-50:hover {
-  --tw-bg-opacity: 1;
-  background-color: rgb(254 242 242 / var(--tw-bg-opacity));
-}
-
 .hover\:bg-red-700:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(185 28 28 / var(--tw-bg-opacity));
@@ -2817,15 +2820,6 @@ select {
 
 .group:hover .group-hover\:opacity-100 {
   opacity: 1;
-}
-
-.peer:checked ~ .peer-checked\:left-5 {
-  left: 1.25rem;
-}
-
-.peer:checked ~ .peer-checked\:bg-green-500 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(34 197 94 / var(--tw-bg-opacity));
 }
 
 .peer:checked ~ .peer-checked\:bg-blue-600 {
@@ -3066,10 +3060,6 @@ select {
 
 :is(.dark .dark\:hover\:bg-gray-700\/50:hover) {
   background-color: rgb(55 65 81 / 0.5);
-}
-
-:is(.dark .dark\:hover\:bg-red-900\/50:hover) {
-  background-color: rgb(127 29 29 / 0.5);
 }
 
 :is(.dark .dark\:hover\:text-blue-300:hover) {

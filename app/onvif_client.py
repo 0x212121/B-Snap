@@ -155,7 +155,6 @@ def get_rtsp_url(camera: Camera):
 
         # Inject username/password if not exist
         parsed = urlparse(uri)
-        print(f"parsed {parsed}")
         if not parsed.username and camera.username:
             netloc = f"{encoded_user}:{encoded_pass}@{parsed.hostname}"
             if parsed.port:
@@ -163,7 +162,6 @@ def get_rtsp_url(camera: Camera):
             parsed = parsed._replace(netloc=netloc)
         
         final_uri = urlunparse(parsed)
-        print(f"final uri {final_uri}")
         return final_uri
     except Exception as e:
         logger.error(f"Error getting RTSP URL: {str(e)}")

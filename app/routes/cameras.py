@@ -315,7 +315,6 @@ async def edit_camera_submit(
         )
 
         if cam.status == "Deactivated":
-            print(f"Masuk if val_status")
             health = db.query(CameraHealth).filter(CameraHealth.id == cam.id).first()
     
             if health:
@@ -390,7 +389,7 @@ async def delete_camera(request: Request, camera_id: str, db: Session = Depends(
         return JSONResponse(status_code=200, content={"status": "success", "message": f"Camera '{cam.hostname}' deleted."})
     except Exception as e:
         db.rollback()
-        print(f"❌ Delete error: {e}")
+        logger.warning("❌ Delete error: %s", e)
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"status": "error", "message": "Failed to delete camera."})
 

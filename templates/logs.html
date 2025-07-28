@@ -2,72 +2,166 @@
 {% block content %}
 <div class="p-6 space-y-6">
   <div class="flex justify-between items-center">
-    <h1 class="text-2xl font-bold">Logs Viewer</h1>
-    <div class="flex gap-2 items-center">
-      <label for="log_type" class="text-sm font-medium">Select Log:</label>
-      <select id="log_type" class="border rounded px-2 py-1 dark:bg-gray-700">
-        <option value="main" selected>Main</option>
-        <option value="snapshot">Snapshot</option>
-        <option value="healthcheck">Health Check</option>
-        <option value="scheduler">Scheduler</option>
-        <option value="management">Management</option>
-      </select>
-
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Logs Viewer</h1>
+    <div class="flex flex-wrap gap-3 items-center">
+      <div>
+        <label for="log_type" class="text-sm font-medium text-gray-700 dark:text-gray-300">Log Type:</label>
+        <select id="log_type" class="border rounded px-2 py-1 dark:bg-gray-700">
+          <option value="main">Main</option>
+          <option value="snapshot">Snapshot</option>
+          <option value="healthcheck">Health Check</option>
+          <option value="scheduler">Scheduler</option>
+          <option value="management">Management</option>
+        </select>
+      </div>
+      
+      <div>
+        <label for="log_file" class="text-sm font-medium text-gray-700 dark:text-gray-300">Log File:</label>
+        <select id="log_file" class="border rounded px-2 py-1 dark:bg-gray-700">
+          <option disabled selected>Loading...</option>
+        </select>
+      </div>
+      
       <a id="downloadBtn"
-         href="/logs/download/main"
+         href="#"
          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow">
-         Download Log
+         Download
       </a>
-
+    
       <button id="refreshBtn"
               type="button"
-              class="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600">
-              Refresh
+              class="bg-gray-500 text-white px-3 py-2 rounded hover:bg-gray-600">
+        🔄 Refresh
       </button>
     </div>
   </div>
 
   <div id="logViewer"
-       class="bg-black text-green-400 font-mono text-sm rounded p-4 overflow-auto max-h-[70vh]">
-    <div>Loading logs...</div>
+       class="bg-black text-green-400 font-mono text-sm rounded p-4 overflow-auto max-h-[70vh] border border-gray-800 shadow-inner whitespace-pre-wrap leading-snug">
+    <div class="text-gray-400">Please select a log file to view its content.</div>
   </div>
+
+</div>
 </div>
 
 <script>
   const logTypeSelect = document.getElementById('log_type');
+  const logFileSelect = document.getElementById('log_file');
   const downloadBtn = document.getElementById('downloadBtn');
   const refreshBtn = document.getElementById('refreshBtn');
   const logViewer = document.getElementById('logViewer');
 
-  async function fetchLog(logType) {
-    const res = await fetch(`/logs/content/${logType}`);
+  // Fetch log content and render it line by line
+  async function fetchLog() {
+    const logType = logTypeSelect.value;
+    const file = logFileSelect.value;
+    if (!file) return;
+    
+    const res = await fetch(`/logs/content/${logType}/${file}`);
     const data = await res.json();
-    logViewer.innerHTML = "";
+    
+    logViewer.innerHTML = ""; // Clear the viewer
+    
+    // Process each line individually
     data.lines.forEach(line => {
-      const div = document.createElement("div");
-      div.textContent = line.trim();
-      logViewer.appendChild(div);
+        // Create a container for each line to prevent collapsing empty lines
+        const lineDiv = document.createElement("div");
+        lineDiv.className = "whitespace-pre-wrap"; // Preserve whitespace
+
+        // Determine the level from the current line
+        const levelMatch = line.match(/\[(ERROR|WARNING|WARN|INFO|DEBUG)\]/i);
+        const level = levelMatch ? levelMatch[1].toUpperCase() : "";
+
+        // Determine color class, default to a neutral color if no level is found
+        // The default color of the parent is green-400, so we can use that.
+        let colorClass = ""; 
+        if (level === "ERROR") {
+            colorClass = "text-red-400 font-bold";
+        } else if (level === "WARNING" || level === "WARN") {
+            colorClass = "text-yellow-300 font-semibold";
+        } else if (level === "INFO") {
+            colorClass = "text-blue-300";
+        } else if (level === "DEBUG") {
+            colorClass = "text-gray-400";
+        }
+
+        // Apply class if a specific color was determined
+        if(colorClass) {
+            lineDiv.className += ` ${colorClass}`;
+        }
+        
+        // Use textContent for security and correct rendering
+        // If the line is empty, display a non-breaking space to maintain its height
+        lineDiv.textContent = line.trim().length === 0 ? '\u00A0' : line;
+        
+        logViewer.appendChild(lineDiv);
     });
+
+    logViewer.scrollTop = logViewer.scrollHeight;
   }
-
-  function updateDownloadLink(logType) {
-    downloadBtn.href = `/logs/download/${logType}`;
+  
+  function updateDownloadLink() {
+    const logType = logTypeSelect.value;
+    const file = logFileSelect.value;
+    
+    if (!file || logFileSelect.selectedIndex === 0) {
+      downloadBtn.href = "#";
+      downloadBtn.classList.add("opacity-50", "pointer-events-none");
+    } else {
+      downloadBtn.href = `/logs/download/${logType}/${file}`;
+      downloadBtn.classList.remove("opacity-50", "pointer-events-none");
+    }
   }
-
-  // Load initial log
-  let currentLogType = "main";
-  fetchLog(currentLogType);
-
-  // On dropdown change
+  
+  async function fetchLogFiles(logType) {
+    const res = await fetch(`/logs/files/${logType}`);
+    const data = await res.json();
+    
+    logFileSelect.innerHTML = "";
+    
+    if (data.files.length === 0) {
+      const opt = document.createElement("option");
+      opt.textContent = "No log files";
+      opt.disabled = true;
+      opt.selected = true;
+      logFileSelect.appendChild(opt);
+      logViewer.innerHTML = "<div class='text-red-400'>No log files found.</div>";
+      updateDownloadLink();
+      return;
+    }
+    
+    const placeholder = document.createElement("option");
+    placeholder.textContent = "-- Select log file --";
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    logFileSelect.appendChild(placeholder);
+    
+    data.files.forEach(filename => {
+      const opt = document.createElement("option");
+      opt.value = filename;
+      opt.textContent = filename;
+      logFileSelect.appendChild(opt);
+    });
+    
+    updateDownloadLink();
+    logViewer.innerHTML = `<div class="text-gray-400">Please select a log file to view.</div>`;
+  }
+  
+  // Events
   logTypeSelect.addEventListener("change", () => {
-    currentLogType = logTypeSelect.value;
-    fetchLog(currentLogType);
-    updateDownloadLink(currentLogType);
+    fetchLogFiles(logTypeSelect.value);
   });
-
-  // Refresh button
+  
+  logFileSelect.addEventListener("change", () => {
+    updateDownloadLink();
+    fetchLog();
+  });
+  
   refreshBtn.addEventListener("click", () => {
-    fetchLog(currentLogType);
+    fetchLog();
   });
+  
+  // Initial load
+  fetchLogFiles(logTypeSelect.value);
 </script>
 {% endblock %}

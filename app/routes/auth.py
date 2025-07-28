@@ -386,7 +386,6 @@ async def user_access_required(current_user: User = Depends(get_current_user)) -
     - Depends on get_current_user.
     - Throw error 403 if role does not match.
     """
-    #  print(f"Your role: {current_user.role}")
     if current_user.role not in ["viewer", "operator", "admin"]:
         # Raise a "signal" to display the access denied page.
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access requires User or Admin role.")

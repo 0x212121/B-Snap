@@ -22,136 +22,74 @@
     .dark .ts-control { background-color: #1f2937 !important; color: white !important; border-color: #4b5563 !important; }
     .dark .ts-dropdown { background-color: #1f2937 !important; color: white !important; border-color: #4b5563 !important; }
     @keyframes fade-in-out {
-      0% { opacity: 0; transform: translateY(-10px); } 10% { opacity: 1; transform: translateY(0); }
-      90% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-10px); }
+      0% { opacity: 0; transform: translateY(-10px); }
+      10% { opacity: 1; transform: translateY(0); }
+      90% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-10px); }
     }
     .animate-fade-in-out { animation: fade-in-out 3s ease-in-out forwards; }
     .leaflet-container { z-index: 0 !important; }
   </style>
 </head>
 <body 
-class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white"
-x-data="{ 
-  mobileMenuOpen: false, 
-  userMenuOpen: false,
-  isDarkMode: document.documentElement.classList.contains('dark')
-}"
-data-timezone="{{ timezone }}"
+  class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white"
+  x-data="{ 
+    mobileMenuOpen: false, 
+    userMenuOpen: false,
+    isDarkMode: document.documentElement.classList.contains('dark')
+  }"
+  data-timezone="{{ timezone }}"
 >
 <header 
-class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50"
-@keydown.escape.window="mobileMenuOpen = false; userMenuOpen = false"
+  class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50"
+  @keydown.escape.window="mobileMenuOpen = false; userMenuOpen = false"
 >
-<div class="container mx-auto px-4">
-  <div class="flex items-center justify-between h-16">
-    <a href="/" class="flex items-center gap-2">
-      <img src="/static/icons/b-snap.png" class="h-8">
-    </a>
-    
-    <div class="hidden md:flex items-center space-x-4">
-      <nav class="flex items-center space-x-1">
-        <div x-data="{ open: false }" @click.away="open = false" class="relative">
-          <button @click="open = !open" class="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
-            <span>Monitoring</span>
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-          </button>
-          <div x-show="open" x-transition class="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 border dark:border-gray-700" x-cloak>
-            <a href="/maps" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Maps</a>
-            <a href="/snap_gallery" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Gallery</a>
-            <a href="/videos" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Videos</a>
-          </div>
-        </div>
-        {% if request.session["user_role"] == "admin" %}
-        <div x-data="{ open: false }" @click.away="open = false" class="relative">
-          <button @click="open = !open" class="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
-            <span>Management</span>
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-          </button>
-          <div x-show="open" x-transition class="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 border dark:border-gray-700" x-cloak>
-            <a href="/cameras" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Cameras</a>
-            <a href="/nvrs" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">NVRs</a>
-            <a href="/health" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Devices Status</a>
-          </div>
-        </div>
-        <div x-data="{ open: false }" @click.away="open = false" class="relative">
-          <button @click="open = !open" class="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
-            <span>Administration</span>
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-          </button>
-          <div x-show="open" x-transition class="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 border dark:border-gray-700" x-cloak>
-            <a href="/stats" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Stats</a>
-            <a href="/users" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Users</a>
-            <a href="/admin/whitelist" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Whitelist</a>
-            <a href="/config" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Settings</a>
-            <div class="my-1 border-t dark:border-gray-700"></div>
-            <a href="/logs" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Logs Viewer</a>
-            <a href="/audit-logs" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Audit Logs</a>
-            <a href="/developer/docs" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">API Docs</a>
-            <a href="/changelog" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Changelog</a>
-          </div>
-        </div>
-        {% endif %}
-      </nav>
-      
-      <div class="border-l border-gray-300 dark:border-gray-600 h-6"></div>
-      
-      <button @click="toggleDark()" class="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
-        <svg x-show="!isDarkMode" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-        <svg x-show="isDarkMode" x-cloak class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-      </button>
-      
-      <div class="relative" @click.away="userMenuOpen = false">
-        <button @click="userMenuOpen = !userMenuOpen" class="flex items-center gap-2 rounded-full py-1.5 pl-2 pr-3 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-          <span class="text-sm font-medium">{{ request.session.user_name | default('User') }}</span>
+  <div class="container mx-auto px-4">
+    <div class="flex items-center justify-between h-16">
+      <a href="/" class="flex items-center gap-2">
+        <img src="/static/icons/b-snap.png" class="h-8">
+      </a>
+
+      <div class="hidden md:flex items-center space-x-4">
+        {% from "macros/navigation.html" import render_nav %}
+        {{ render_nav(nav_items, request) }}
+
+        <div class="border-l border-gray-300 dark:border-gray-600 h-6"></div>
+
+        <button @click="toggleDark()" class="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <svg x-show="!isDarkMode" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+          <svg x-show="isDarkMode" x-cloak class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
         </button>
-        <div x-show="userMenuOpen" x-transition class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 border dark:border-gray-700" x-cloak>
-          <a href="/change-password" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Change Password</a>
-          <a href="/logout" class="block px-4 py-2 text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700">Logout</a>
+
+        <div class="relative" @click.away="userMenuOpen = false">
+          <button @click="userMenuOpen = !userMenuOpen" class="flex items-center gap-2 rounded-full py-1.5 pl-2 pr-3 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            <span class="text-sm font-medium">{{ request.session.user_name | default('User') }}</span>
+          </button>
+          <div x-show="userMenuOpen" x-transition class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 border dark:border-gray-700" x-cloak>
+            <a href="/change-password" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Change Password</a>
+            <a href="/logout" class="block px-4 py-2 text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700">Logout</a>
+          </div>
         </div>
       </div>
-    </div>
-    
-    <div class="md:hidden">
-      <button @click="mobileMenuOpen = !mobileMenuOpen" class="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
-        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m4 6h-16" /></svg>
-      </button>
-    </div>
-  </div>
-</div>
 
-<div x-show="mobileMenuOpen" @click.away="mobileMenuOpen = false" class="md:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700" x-cloak>
-  <div class="px-2 pt-2 pb-3 space-y-1">
-    {% if request.session["user_role"] == "admin" %}
-    <a href="/stats" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">📊 Stats</a>
-    {% endif %}
-    <a href="/maps" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">🗺️ Camera Map</a>
-    <a href="/snap_gallery" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">🖼️ Snapshot Gallery</a>
-    <a href="/videos" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">🎞️ Video Gallery</a>
-    {% if request.session["user_role"] == "admin" %}
-    <a href="/cameras" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">🛠️ Cameras</a>
-    <a href="/nvrs" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">📹 NVRs</a>
-    <a href="/users" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">👥 Users</a>
-    <a href="/health" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">🟢 Devices Status</a>
-    <a href="/config" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">⚙️ Settings</a>
-    <a href="/logs" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">📄 Logs Viewer</a>
-    <a href="/audit-logs" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">🕵🏼‍♂️ Audit Logs</a>
-    <a href="/developer/docs" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">📄 API Docs</a>
-    <a href="/changelog" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">📘 Changelog</a>
-    
-    
-    <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 space-y-1">
-      <button @click="toggleDark()" class="w-full flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
-        <span x-show="!isDarkMode">🌙</span>
-        <span x-show="isDarkMode" x-cloak>☀️</span>
-        <span class="ml-3">Toggle Theme</span>
-      </button>
-      <a href="/change-password" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">🔐 Change Password</a>
-      <a href="/logout" class="block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50">🚪 Logout</a>
+      <div class="md:hidden">
+        <button @click="mobileMenuOpen = !mobileMenuOpen" class="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m4 6h-16" /></svg>
+        </button>
+      </div>
     </div>
-    {% endif %}
   </div>
-</div>
+
+  {% from "macros/navigation.html" import render_mobile_nav %}
+  <div x-show="mobileMenuOpen"
+       @click.away="mobileMenuOpen = false"
+       x-cloak
+       class="md:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+    <div class="px-2 pt-2 pb-3 space-y-1">
+      {{ render_mobile_nav(nav_items, request) }}
+    </div>
+  </div>
 </header>
 
 <main id="main-content" class="container mx-auto p-4 md:p-8">
@@ -175,105 +113,22 @@ class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50"
 </div>
 
 {% block scripts %}{% endblock %}
+<script defer src="https://unpkg.com/@alpinejs/collapse@3.14.1/dist/cdn.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 
 <script>
   function toggleDark() {
     let html = document.documentElement;
     let isDark = html.classList.toggle('dark');
-    
     let alpineComponent = document.querySelector('[x-data]');
     if (alpineComponent && alpineComponent.__x) {
       alpineComponent.__x.getUnobservedData().isDarkMode = isDark;
     }
-    
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    
     document.querySelector('link[rel="icon"]').href = isDark 
-    ? '/static/icons/favicon-white.ico' 
-    : '/static/icons/favicon.ico';
-  }
-  
-  function hideGlobalConfirm() {
-    const modal = document.getElementById('globalConfirmModal');
-    const modalContent = modal.querySelector('.transform');
-    modalContent.classList.add('opacity-0', '-translate-y-4');
-    modalContent.addEventListener('transitionend', () => {
-      modal.classList.add('hidden');
-    }, { once: true });
-  }
-  
-  function showGlobalConfirm(message, onConfirm, options = {}) {
-    const config = {
-      title: 'Confirm Action',
-      confirmText: 'Confirm',
-      confirmClasses: 'bg-blue-600 hover:bg-blue-700',
-      ...options
-    };
-    
-    const modal = document.getElementById('globalConfirmModal');
-    const titleEl = document.getElementById('globalConfirmTitle');
-    const messageEl = document.getElementById('globalConfirmMessage');
-    const yesBtn = document.getElementById('globalConfirmYesBtn');
-    const cancelBtn = document.getElementById('globalConfirmCancelBtn');
-    
-    titleEl.textContent = config.title;
-    messageEl.textContent = message;
-    yesBtn.textContent = config.confirmText;
-    
-    // Reset class dan terapkan yang baru
-    yesBtn.className = 'text-white px-4 py-2 rounded-lg font-bold ' + config.confirmClasses;
-    
-    // Menghapus event listener lama dengan kloning tombol
-    const newYesBtn = yesBtn.cloneNode(true);
-    yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
-    
-    newYesBtn.onclick = () => {
-      onConfirm();
-      hideGlobalConfirm();
-    };
-    
-    cancelBtn.onclick = hideGlobalConfirm;
-    
-    modal.classList.remove('hidden');
-    requestAnimationFrame(() => {
-      modal.querySelector('.transform').classList.remove('opacity-0', '-translate-y-4');
-    });
-  }
-  
-  
-  function hideGlobalAlert() {
-    const modal = document.getElementById('globalAlertModal');
-    const modalContent = modal.querySelector('.transform');
-    modalContent.classList.add('opacity-0', '-translate-y-4');
-    modalContent.addEventListener('transitionend', () => {
-      modal.classList.add('hidden');
-    }, { once: true });
-  }
-  
-  function showGlobalAlert(message, title = 'ℹ️ Information') {
-    const modal = document.getElementById('globalAlertModal');
-    const titleEl = document.getElementById('globalAlertTitle');
-    const messageEl = document.getElementById('globalAlertMessage');
-    
-    titleEl.textContent = title;
-    messageEl.textContent = message;
-    
-    modal.classList.remove('hidden');
-    requestAnimationFrame(() => {
-      modal.querySelector('.transform').classList.remove('opacity-0', '-translate-y-4');
-    });
+      ? '/static/icons/favicon-white.ico' 
+      : '/static/icons/favicon.ico';
   }
 </script>
-
-<div id="globalAlertModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
-  <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl w-full max-w-sm transform transition-all opacity-0 -translate-y-4">
-    <h3 id="globalAlertTitle" class="text-lg font-bold text-gray-900 dark:text-white mb-4"></h3>
-    <p id="globalAlertMessage" class="text-gray-700 dark:text-gray-300 mb-6"></p>
-    <div class="flex justify-end">
-      <button onclick="hideGlobalAlert()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold">OK</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>
