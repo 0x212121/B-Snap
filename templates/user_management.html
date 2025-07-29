@@ -440,7 +440,7 @@ function updateTokenCells(userId, username, apiTokens) {
 }
 
 
-// --- GENERAL USER & FORM MANAGEMENT --- (No changes needed in this section)
+// --- GENERAL USER & FORM MANAGEMENT ---
 const userFormContainer = document.getElementById('userFormContainer');
 const showFormBtn = document.getElementById('showFormBtn');
 const bulkActionContainer = document.getElementById('bulkActionContainer');
@@ -525,6 +525,20 @@ function confirmBulkDelete() {
     });
 }
 
+function confirmUserDelete(buttonElement) {
+    const userId = buttonElement.dataset.userId;
+    const username = buttonElement.dataset.username;
+    const message = `Are you sure you want to delete the user '${username}'? This action cannot be undone.`;
+
+    showGlobalConfirm(message, () => {
+        document.getElementById(`deleteForm${userId}`).submit();
+    }, {
+        title: '⚠️ Confirm User Deletion',
+        confirmText: 'Yes, Delete',
+        confirmClasses: 'bg-red-600 hover:bg-red-700'
+    });
+}
+
 function editUser(id, username, role, groupName) {
     toggleUserForm(true);
     formTitle.innerText = `Edit User: ${username}`;
@@ -567,49 +581,6 @@ function confirmResetMfa(userId, username) {
         title: '⚠️ Confirm MFA Reset',
         confirmText: 'Yes, Reset MFA',
         confirmClasses: 'bg-orange-600 hover:bg-orange-700'
-    });
-}
-
-function handleRevokeClick(buttonElement) {
-    const userId = buttonElement.dataset.userId;
-    const token = buttonElement.dataset.token;
-    const username = buttonElement.dataset.username;
-    
-    // Panggil fungsi revokeToken yang sudah ada dengan data yang bersih
-    revokeToken(userId, token, username);
-}
-
-
-function revokeToken(userId, token, username) {
-    const message = `Are you sure you want to revoke this token for user '${username}'?`;
-    
-    showGlobalConfirm(message, () => {
-        fetch(`/users/${userId}/revoke-token`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token })
-        })
-        .then(res => {
-            if (!res.ok) {
-                // Melempar error agar ditangkap oleh .catch()
-                return res.json().then(err => { throw new Error(err.detail || "Failed to revoke token.") });
-            }
-            return res.json();
-        })
-        .then(data => {
-            // Menggunakan modal peringatan untuk notifikasi sukses
-            showGlobalAlert("Token revoked successfully. The page will now reload.", "✅ Success");
-            setTimeout(() => location.reload(), 2000); // Reload setelah 2 detik
-        })
-        .catch(err => {
-            // Menggunakan modal peringatan untuk notifikasi error
-            showGlobalAlert(err.message, "❌ Error");
-            console.error(err);
-        });
-    }, {
-        title: '⚠️ Revoke Token',
-        confirmText: 'Yes, Revoke',
-        confirmClasses: 'bg-red-600 hover:bg-red-700'
     });
 }
 

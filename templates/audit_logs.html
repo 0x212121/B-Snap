@@ -143,9 +143,9 @@
                       log.action.includes('login')  ? 'bg-blue-500' :
                       log.action.includes('logout') ? 'bg-indigo-500' : 'bg-gray-500';
 
-
+        const extraData = log.extra ? log.extra.replace(/"/g, '&quot;') : '';
         const extraButton = log.extra
-          ? `<button class="text-blue-600 hover:underline text-xs" data-extra="${log.extra}" onclick="showExtraModal(this)">View</button>`
+          ? `<button class="text-blue-600 hover:underline text-xs" data-extra="${extraData}" onclick="showExtraModal(this)">View</button>`
           : `<span class="text-gray-400">-</span>`;
 
         const row = `

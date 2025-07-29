@@ -77,6 +77,7 @@ def scheduled_snapshot():
 
     success_count = 0
     fail_count = 0
+    status = "fail"  # Default status jika semua gagal
 
     try:
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
@@ -97,13 +98,18 @@ def scheduled_snapshot():
                 except Exception as e:
                     fail_count += 1
                     logger.exception(f"[EXCEPTION] Unhandled error for {cam.hostname}: {e}")
+
     except Exception as e:
         logger.exception(f"[SCHEDULER ERROR] Critical failure during scheduled snapshot: {e}")
-    else:
+
+    finally:
         ended_at = datetime.now(timezone.utc)
         duration_ms = int((monotonic() - time_start) * 1000)
 
-        if success_count == 0:
+        # Hitung status task
+        if success_count == 0 and fail_count == 0:
+            status = "no_camera"
+        elif success_count == 0:
             status = "fail"
         elif fail_count == 0:
             status = "success"
@@ -113,6 +119,7 @@ def scheduled_snapshot():
         logger.info(f"[SUMMARY] Snapshot run complete: {success_count} succeeded, {fail_count} failed.")
         logger.info(f"[SUMMARY] Duration: {duration_ms} ms")
 
+        # Simpan ke TaskTiming meski snapshot gagal
         try:
             task_log = TaskTiming(
                 task_name="scheduled_snapshot",
@@ -121,14 +128,14 @@ def scheduled_snapshot():
                 duration_ms=duration_ms,
                 status=status,
             )
-            logger.info(f"[DEBUG] Writing TaskTiming: {task_log}")
+            logger.warning(f"[CONFIRM] Writing TaskTiming with status={status}, duration={duration_ms}ms")
             db.add(task_log)
             db.commit()
-            logger.info("[DEBUG] TaskTiming committed to DB")
+            logger.warning(f"[CONFIRM] TaskTiming committed to DB")
         except Exception as e:
             logger.exception(f"[TimingLog] Failed to save snapshot timing log: {e}")
-    finally:
-        db.close()
+        finally:
+            db.close()
 
 
 # Global state untuk menyimpan konfigurasi terakhir
