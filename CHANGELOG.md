@@ -2,6 +2,23 @@
 
 All notable changes to B-Snap will be documented in this file.
 
+## [1.5.2] - 2025-07-29
+
+### Changed
+- Video Gallery grid column for XL screen from 4 to 3.
+- 
+
+### Fixed
+- Typo in get audit logs API, cause extra field not return to frontend
+- CCTV Hostname overflow in maps
+
+## [1.5.1] - 2025-07-29
+
+### Changed
+- PostgreSQL connections are pooled using SQLAlchemy (pool_size=20, max_overflow=10) for better connection reuse and performance.
+- Remove support SQLite DB.
+
+
 ## [1.5.0] - 2025-07-28
 
 ### Added

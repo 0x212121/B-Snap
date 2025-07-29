@@ -2997,6 +2997,11 @@ select {
   color: rgb(156 163 175 / var(--tw-text-opacity));
 }
 
+:is(.dark .dark\:text-gray-800) {
+  --tw-text-opacity: 1;
+  color: rgb(31 41 55 / var(--tw-text-opacity));
+}
+
 :is(.dark .dark\:text-green-100) {
   --tw-text-opacity: 1;
   color: rgb(220 252 231 / var(--tw-text-opacity));
@@ -3040,11 +3045,6 @@ select {
 :is(.dark .dark\:text-yellow-400) {
   --tw-text-opacity: 1;
   color: rgb(250 204 21 / var(--tw-text-opacity));
-}
-
-:is(.dark .dark\:text-gray-800) {
-  --tw-text-opacity: 1;
-  color: rgb(31 41 55 / var(--tw-text-opacity));
 }
 
 :is(.dark .dark\:ring-gray-600) {
@@ -3294,8 +3294,8 @@ select {
 }
 
 @media (min-width: 1280px) {
-  .xl\:grid-cols-4 {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .xl\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

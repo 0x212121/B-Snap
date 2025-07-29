@@ -18,7 +18,18 @@
   .leaflet-control-map-title { pointer-events: auto; margin-top: 10px; }
   .custom-title-bar { display: flex; align-items: center; position: relative; background-color: #E60000; color: white; padding: 8px 15px 8px 65px; border-radius: 30px; font-weight: bold; font-size: 1.3em; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); text-shadow: 1px 1px 2px rgba(0,0,0,0.2); animation: fadeInUp 0.6s ease-out; }
   .title-logo { position: absolute; left: 0px; width: 60px; height: 60px; border-radius: 50%; background-color: #fff; border: 5px solid #E60000; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); padding: 2px; }
-  .leaflet-popup-content { width: 15rem !important; }
+  .leaflet-popup-content { 
+    width: 15rem !important; 
+  }
+
+  /* Prevent hostname overflow in popup */
+.leaflet-popup-content strong {
+  display: block;
+  max-width: 220px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
   
   /* --- BEST PRACTICE MARKER STYLES --- */
   @keyframes pulse {
@@ -210,7 +221,7 @@
                 const snapshot = await info.json();
                 
                 container.innerHTML = `
-                  <p class="text-left text-gray-800 dark:text-gray-300">Snapshot time : ${snapshot.timestamp}</p>
+                  <p class="text-left text-gray-800 dark:text-gray-800">Snapshot time : ${snapshot.timestamp}</p>
                   <img src="${snapshot.url}" class="w-full h-auto rounded-md shadow-md mt-1" alt="Camera Snapshot"
                     onload="this.nextElementSibling.style.display='none';"
                     onerror="this.onerror=null; this.src='/static/placeholder.svg'; this.nextElementSibling.style.display='none'; this.nextElementSibling.nextElementSibling.style.display='block';">

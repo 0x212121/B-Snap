@@ -35,7 +35,7 @@
 - [ ] **Master camera/switch IP feature**
 - [ ] **Engineer photo on check-in/out**
 - [ ] **WA notification on snapshot failure**
-- [ ] **Check if snapshot is blur**
+- [x] **Check if snapshot is blur**
 
 
 ---
@@ -79,16 +79,24 @@
   - [x] don't expose B-Snap port to outside
 - [x] Bug fixing
   - [x] Timestamp di maps tidak sync
-  - [x] Logs terhapus ketika restart container
+  - [x] Logs deleted when restarting container
 - [x] Timestamp delete snapshot, snapshot in maps converted
 - [x] Double snapshot 
   - [x] Pisah scheduler dari web server (scheduler menggunakan docker container sendiri)
 - [x] Change font in docker (Liberation font)
 - [x] Add resolution column to videos table
 - [x] **Downtime Accumulation**
-- [x] Lazy load backend
+
+
+-----------------------------------------------------------------------------------------
+- [x] Lazy load backend (improved load performance)
   - [x] Snapshot Gallery menu
-  - [x] Video gallery menu
+  - [x] Video gallery menu  
+- [x] Whitelist phone number dashboard
+- [x] Improve UI/UX
+- [x] Tamper detection (snapshot blur, occluded, too bright/dark)
+- [x] Redesign map UI
+- [x] Added settings to change timezone 
 
 ⏳ Ongoing:
 - [ ] Tidy up API documentation
@@ -96,8 +104,5 @@
   - [x] Change CCTV user and password in B-Snap using WA Bot
   - [ ] Kirim persentase uptime per kamera selama 7 hari terakhir.
   - [x] Cek Token API yang Aktif
-- [x] Whitelist phone number dashboard
-- [x] Improve UI/UX
-- [x] Tamper detection (snapshot blur / dark)
 
 🆕 Added:
