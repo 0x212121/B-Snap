@@ -152,7 +152,7 @@ def start_scheduler():
         scheduled_snapshot,
         trigger=IntervalTrigger(minutes=snapshot_interval),
         id='scheduled_snapshot',
-        max_instances=10,
+        max_instances=workers,
         coalesce=True,
         misfire_grace_time=60
     )

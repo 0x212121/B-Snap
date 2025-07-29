@@ -40,10 +40,12 @@ masked_url = mask_db_url(DATABASE_URL)
 logger.info("Database URL: %s", masked_url)
 
 # === Create SQLAlchemy Engine ===
-if DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-else:
-    engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL, pool_size=20,
+    max_overflow=10,
+    pool_timeout=30,
+    pool_recycle=1800
+)
 
 # === SQLAlchemy Session ===
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
