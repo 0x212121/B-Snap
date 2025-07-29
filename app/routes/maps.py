@@ -97,10 +97,11 @@ async def get_camera_locations(
             formatted_last_online = format_datetime_with_tz(last_online_local)
 
             if health.status in online_statuses:
-                # Hitung uptime menggunakan waktu yang sudah dilokalkan
+                # Calculate uptime for online cameras
                 uptime_str = format_uptime(last_online_local, current_time_local)
             else:
-                uptime_str = "Offline"
+                # Calculate DOWNTIME duration for offline cameras
+                uptime_str = format_uptime(last_online_local, current_time_local)
 
         restriction_status = getattr(cam, 'restriction_status', None)
 

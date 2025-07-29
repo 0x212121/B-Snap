@@ -209,7 +209,22 @@
             marker.status = normalized;
             
             const popupContent = L.DomUtil.create('div');
-            popupContent.innerHTML = `<strong style="font-size: 18px;">${escapeHTML(cam.hostname)}</strong><br><br><table style="font-size: 14px;"><tr><td>IP</td><td>: ${escapeHTML(cam.ip)}</td></tr><tr><td>Asset No</td><td>: ${escapeHTML(cam.asset_no || 'N/A')}</td></tr><tr><td>Status</td><td>: ${normalized === "Online" ? "🟢 Online" : normalized === "High Latency" ? "🟡 High Latency" : "🔴 Offline"}</td></tr><tr><td>Uptime</td><td>: ${escapeHTML(cam.uptime)}</td></tr></table><div id="snapshot-container-${cam.id}" class="mt-0 text-center text-gray-500 dark:text-gray-400">Loading snapshot...</div>`;
+            const isOnline = normalized === "Online" || normalized === "High Latency";
+            
+            popupContent.innerHTML = `
+              <strong style="font-size: 18px;">${escapeHTML(cam.hostname)}</strong><br><br>
+              <table style="font-size: 14px;">
+                <tr><td>IP</td><td>: ${escapeHTML(cam.ip)}</td></tr>
+                <tr><td>Asset No</td><td>: ${escapeHTML(cam.asset_no || 'N/A')}</td></tr>
+                <tr><td>Status</td><td>: ${isOnline ? (normalized === "Online" ? "🟢 Online" : "🟡 High Latency") : "🔴 Offline"}</td></tr>
+                ${isOnline
+                  ? `<tr><td>Uptime</td><td>: ${escapeHTML(cam.uptime)}</td></tr>`
+                  : `<tr><td>Downtime</td><td>: ${escapeHTML(cam.uptime)}</td></tr>
+                     <tr><td>Last Online</td><td>: ${escapeHTML(cam.last_online)}</td></tr>`
+                }
+              </table>
+              <div id="snapshot-container-${cam.id}" class="mt-0 text-center text-gray-500 dark:text-gray-400">Loading snapshot...</div>
+            `;p
             marker.bindPopup(popupContent, { maxWidth: 1500 });
             marker.on('popupopen', async () => {
               const container = document.getElementById(`snapshot-container-${cam.id}`);
