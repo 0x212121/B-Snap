@@ -146,7 +146,7 @@ async def get_audit_logs_api(
 
     logs_data = []
     for log in logs:
-        ts_local = to_current_timezone(log.timestamp, db).strftime('%d %b %Y %H:%M:%S %Z'),
+        ts_local = to_current_timezone(log.timestamp, db).strftime('%d %b %Y %H:%M:%S %Z')
 
         logs_data.append({
             "timestamp": ts_local,
