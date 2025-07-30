@@ -7,9 +7,10 @@ All notable changes to B-Snap will be documented in this file.
 ### Added
 
 ### Changed
+- /cctv/resolve-ip endpoint now not return camera with no IP.
 
 ### Fixed
-- CCTV Snapshot log 
+- Snapshot Scheduler Log now recorded when scheduled snapshot job running for hundred of cameras.
 
 
 ## [1.5.3] - 2025-07-30

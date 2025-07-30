@@ -17,7 +17,10 @@ def resolve_ip_by_name(
     db: Session = SessionLocal()
     try:
         # Ambil semua kamera dari database yang memiliki IP
-        all_cameras = db.query(DBCamera).filter(DBCamera.ip.isnot(None)).all()
+        all_cameras = db.query(DBCamera).filter(
+            DBCamera.ip.isnot(None),
+            DBCamera.ip != ""
+        ).all()
 
         results = []
 
