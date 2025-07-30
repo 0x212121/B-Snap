@@ -2,11 +2,22 @@
 
 All notable changes to B-Snap will be documented in this file.
 
+## [1.5.3] - 2025-07-30
+
+### Changed
+- Latitude and longitude inputs now support up to 7 decimal digits.
+
+### Fixed
+- Error when CCTV name contains parentheses is now resolved.
+- The "extra" field in audit logs is now displayed correctly.
+- Modal popups now appear as expected.
+- Long text in map popups no longer overflows.
+
+
 ## [1.5.2] - 2025-07-29
 
 ### Changed
 - Video Gallery grid column for XL screen from 4 to 3.
-- 
 
 ### Fixed
 - Typo in get audit logs API, cause extra field not return to frontend

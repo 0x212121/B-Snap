@@ -75,7 +75,21 @@
       <input type="hidden" id="cameraId" name="id">
       
       <div id="tab-basic" class="tab-content space-y-4">
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="name">Hostname</label><input type="text" id="name" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" pattern="[A-Za-z0-9_\-#\s]+$" title="Only letters, numbers, underscore, hash and hyphen allowed"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Only alphabets, numbers, underscore, hash, and hyphen.</p></div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="name">Hostname</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            required
+            pattern="^[A-Za-z0-9_\-#() ]+$"
+            title="Only letters, numbers, underscore, hash, parentheses, and hyphen allowed"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"
+          >
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Only letters, numbers, underscore, hash, parentheses, and hyphen.
+          </p>
+        </div>
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="previous-name">Previous hostname</label><input type="text" id="previous-name" name="previous-name" disabled class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" title="Only letters, numbers, underscore and hyphen allowed"></div>
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="ip">IP Address</label><input type="text" id="ip" name="ip" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$" title="Please enter a valid IP address"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Format: xxx.xxx.xxx.xxx</p></div>
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="port">Port</label>
@@ -112,8 +126,8 @@
       </div>
       
       <div id="tab-location" class="tab-content space-y-4 hidden">
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="latitude">Latitude</label><input type="number" step="0.000001" id="latitude" name="latitude" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: -7.252</p></div>
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">Longitude</label><input type="number" step="0.000001" id="longitude" name="longitude" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: 112.753</p></div>
+        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="latitude">Latitude</label><input type="number" step="0.0000001" id="latitude" name="latitude" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: -7.252</p></div>
+        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">Longitude</label><input type="number" step="0.0000001" id="longitude" name="longitude" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: 112.753</p></div>
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="asset_no">Asset No.</label><input type="text" id="asset_no" name="asset_no" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></div>
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="location">Location</label><input type="text" id="location" name="location" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></div>
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="group_name">Camera Division</label><select id="group_name" name="group_name" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="">-- Select Division --</option></select><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Grouping camera to filter in maps</p></div>
