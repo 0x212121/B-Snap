@@ -18,8 +18,7 @@ from app.utils.snapshot_utils import record_snapshot_metadata
 from app.utils.timezone_helper import to_current_timezone
 from sqlalchemy import or_
 
-router = APIRouter()
-
+router = APIRouter(tags=["Snapshots"])
 
 SNAPSHOT_BASE_DIR = "static"
 

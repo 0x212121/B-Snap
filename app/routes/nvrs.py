@@ -17,7 +17,7 @@ from app.routes.cameras import detect_csv_delimiter
 from app.utils.audit_logger import log_audit
 from app.utils.health_check import ping_nvr_by_id
 
-router = APIRouter()
+router = APIRouter(tags=["NVRs"])
 from app.utils.template_helper import templates
 
 setup_logging()

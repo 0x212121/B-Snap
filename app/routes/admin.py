@@ -7,7 +7,7 @@ from app.routes.auth import admin_access_required
 from app.utils.changelog_parser import parse_changelog_md
 from app.utils.template_helper import templates
 
-router = APIRouter()
+router = APIRouter(tags=["Admin"])
 
 
 @router.get("/admin/whitelist", response_class=HTMLResponse)

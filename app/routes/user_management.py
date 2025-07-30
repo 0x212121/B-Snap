@@ -18,7 +18,7 @@ from app.utils.template_helper import templates
 from app.utils.timezone_helper import to_current_timezone
 from datetime import datetime
 
-router = APIRouter()
+router = APIRouter(tags=["User Management"])
 
 setup_logging()
 logger = logging.getLogger("management")

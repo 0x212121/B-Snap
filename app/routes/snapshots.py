@@ -17,7 +17,7 @@ from app.utils.audit_logger import log_audit
 from app.utils.snapshot_utils import SNAPSHOT_BASE_DIR  # points to app/static/snapshots
 from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
 
-router = APIRouter()
+router = APIRouter(tags=["Snapshots API"])
 
 # --- Pydantic Models for API Responses ---
 class SnapshotResponse(BaseModel):

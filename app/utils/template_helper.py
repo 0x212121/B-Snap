@@ -27,7 +27,7 @@ nav_items = [
         "items": [
             {"label": "👤 Users", "href": "/users", "roles": ["admin"]},
             {"label": "✅ WA Whitelist", "href": "/admin/whitelist", "roles": ["admin"]},
-            {"label": "⚙️ Settings", "href": "/config", "roles": ["admin"]},
+            {"label": "⚙️ Config", "href": "/config", "roles": ["admin"]},
         ],
     },
     {

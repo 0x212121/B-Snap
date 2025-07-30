@@ -8,10 +8,10 @@ from app.models_sql import CameraDailyStats, Camera as DBCamera, CameraHealth, S
 from app.routes.auth import admin_access_required
 from app.models_sql import TaskTiming
 from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
-
-
-router = APIRouter()
 from app.utils.template_helper import templates
+
+
+router = APIRouter(tags=["Stats"])
 
 
 @router.get("/stats", response_class=HTMLResponse)

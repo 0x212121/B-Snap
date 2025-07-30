@@ -17,7 +17,7 @@ from app.utils.auth import get_password_hash, verify_password
 from app.utils.audit_logger import log_audit
 
 # --- Setup Router and Template ---
-router = APIRouter()
+router = APIRouter(tags=["Authentication"])
 from app.utils.template_helper import templates
 
 # MAX_WEB_SESSIONS = 1  # Maximum logins per user

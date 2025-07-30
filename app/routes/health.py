@@ -4,7 +4,6 @@ import logging
 import math
 from typing import Optional
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field, ConfigDict
 import pytz
 from sqlalchemy import asc, desc, func, union_all, literal_column, select
@@ -19,7 +18,7 @@ from app.models_sql import NVR, CameraDailyStats, CameraHealth as Health, Camera
 from app.utils.template_helper import templates
 from app.utils.timezone_helper import get_current_timezone, to_current_timezone
 
-router = APIRouter()
+router = APIRouter(tags=["Health Check"])
 
 setup_logging()
 logger = logging.getLogger("healthcheck")

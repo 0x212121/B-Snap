@@ -3,7 +3,8 @@ from fastapi.responses import PlainTextResponse
 import logging
 from ping3 import ping
 
-router = APIRouter()
+router = APIRouter(tags=["Ping"])
+
 logger = logging.getLogger("ping")
 
 @router.get("/ping", response_class=PlainTextResponse)

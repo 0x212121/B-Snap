@@ -17,7 +17,7 @@ from app.utils.video import record_video_and_save_db
 from app.utils.timezone import format_wita
 
 
-router = APIRouter()
+router = APIRouter(tags=["Videos"])
 from app.utils.template_helper import templates
 
 # Base URL path for videos.

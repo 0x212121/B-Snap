@@ -7,7 +7,7 @@ from app.routes.auth import admin_access_required
 from app.schemas.whitelist_schema import WhitelistOut, WhitelistCreate
 from app.utils.audit_logger import log_audit
 
-router = APIRouter()
+router = APIRouter(tags=["Whitelist"])
 
 
 @router.get("/api/whitelist", response_model=List[WhitelistOut])

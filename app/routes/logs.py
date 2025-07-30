@@ -7,7 +7,7 @@ from app.utils.template_helper import templates
 from pathlib import Path
 import os
 
-router = APIRouter()
+router = APIRouter(tags=["Logs"])
 
 LOG_DIR = Path("logs")  # Pastikan ini path absolut atau relatif yang aman
 LOG_TYPES = ["main", "snapshot", "healthcheck", "scheduler", "management"]
