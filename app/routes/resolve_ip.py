@@ -26,7 +26,7 @@ def resolve_ip_by_name(
             keyword_lower = keyword.lower()
 
             # Cocokkan jika nama kamera mengandung keyword dan tidak diawali dengan "m7 "
-            if keyword_lower in name_lower and not name_lower.startswith("m7 "):
+            if keyword_lower in name_lower:
                 results.append({
                     "name": cam.hostname,
                     "ip": cam.ip

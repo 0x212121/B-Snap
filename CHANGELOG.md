@@ -2,9 +2,19 @@
 
 All notable changes to B-Snap will be documented in this file.
 
+## [1.5.4] - 2025-07-30
+
+### Added
+
+### Changed
+
+### Fixed
+- CCTV Snapshot log 
+
+
 ## [1.5.3] - 2025-07-30
 
-###
+### Added
 - Added tampered reason and resolution to maps popup window
 
 ### Changed
