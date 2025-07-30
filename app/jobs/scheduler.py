@@ -119,7 +119,7 @@ def scheduled_snapshot():
         logger.info(f"[SUMMARY] Snapshot run complete: {success_count} succeeded, {fail_count} failed.")
         logger.info(f"[SUMMARY] Duration: {duration_ms} ms")
 
-        # Simpan ke TaskTiming meski snapshot gagal
+        # Simpan ke TaskTiming q snapshot gagal
         try:
             task_log = TaskTiming(
                 task_name="scheduled_snapshot",
