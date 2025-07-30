@@ -9,7 +9,7 @@ All notable changes to B-Snap will be documented in this file.
 
 ### Changed
 - Latitude and longitude inputs now support up to 7 decimal digits.
-- Update API Documentation
+- Grouping API Documentation
 
 ### Fixed
 - Error when CCTV name contains parentheses is now resolved.

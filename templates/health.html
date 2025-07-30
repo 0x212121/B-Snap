@@ -305,8 +305,7 @@
   
   // NEW: This function contains the actual logic to run the ping
   function executePingAll() {
-    hideConfirmPingModal(); // Close the confirmation modal
-    
+    hideGlobalConfirm();
     const button = document.getElementById('ping-all-btn'); 
     button.disabled = true;
     button.innerHTML = '🔄 Processing...';
@@ -477,10 +476,6 @@
     document.getElementById('alertModal').classList.add('hidden');
   }
   
-  // NEW: Function to hide the confirmation modal
-  function hideConfirmPingModal() {
-    document.getElementById('confirmPingModal').classList.add('hidden');
-  }
 </script>
 
 {% endblock %}

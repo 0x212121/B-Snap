@@ -165,7 +165,9 @@ def search_snapshots(
                 url=f"/snapshot/file/{quote(snap.file_path)}",
                 img_path=f"{quote(snap.file_path)}",
                 lat=cam_info.get("lat", None),
-                long=cam_info.get("long", None)
+                long=cam_info.get("long", None),
+                tamper_reason=snap.tamper_reason,
+                res=snap.resolution
             )
 
     return list(latest_snapshot_per_camera.values())

@@ -111,3 +111,5 @@
 🆕 Added:
 - [ ] Change phone number from audit logs to username -> Indra (6282191799711)
 - [x] Add tampered reason and resolution to maps popup window - 30/07/2025
+- [ ] Add tampered and resolution in n8n
+- [ ] Filter camera with no IP in /ip command

@@ -68,75 +68,97 @@ def run_snapshot(camera):
 def scheduled_snapshot():
     db: Session = SessionLocal()
     workers = get_config("snapshot_concurrent_workers", 5)
-    cameras = load_active_cameras()
+    all_cameras = load_active_cameras() # Load all 406 cameras
 
-    logger.info(f"[SCHEDULED] Running snapshot for {len(cameras)} cameras with {workers} workers.")
+    logger.info(f"[SCHEDULED] Running snapshot for {len(all_cameras)} cameras with {workers} workers, in batches.")
 
     started_at = datetime.now(timezone.utc)
     time_start = monotonic()
 
-    success_count = 0
-    fail_count = 0
-    status = "fail"  # Default status jika semua gagal
+    total_success_count = 0
+    total_fail_count = 0
 
-    try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-            future_to_camera = {
-                executor.submit(run_snapshot, cam): cam for cam in cameras
-            }
+    # Define batch size (make this configurable or calculate dynamically later)
+    BATCH_SIZE = get_config("snapshot_batch_size", 50) # New config setting
 
-            for future in concurrent.futures.as_completed(future_to_camera):
-                cam = future_to_camera[future]
-                try:
-                    result = future.result()
-                    if result and result.get("status") == "success":
-                        success_count += 1
-                        logger.info(f"[SUCCESS] Snapshot taken for: {cam.hostname}")
-                    else:
-                        fail_count += 1
-                        logger.warning(f"[FAIL] Snapshot failed or returned error for: {cam.hostname}")
-                except Exception as e:
-                    fail_count += 1
-                    logger.exception(f"[EXCEPTION] Unhandled error for {cam.hostname}: {e}")
+    try: # Outer try block for the entire function execution
+        # Iterate through cameras in batches
+        for i in range(0, len(all_cameras), BATCH_SIZE):
+            current_batch = all_cameras[i:i + BATCH_SIZE]
+            logger.info(f"[BATCH] Processing batch {int(i/BATCH_SIZE) + 1} of {len(current_batch)} cameras.")
 
-    except Exception as e:
-        logger.exception(f"[SCHEDULER ERROR] Critical failure during scheduled snapshot: {e}")
+            batch_success_count = 0
+            batch_fail_count = 0
 
-    finally:
-        ended_at = datetime.now(timezone.utc)
-        duration_ms = int((monotonic() - time_start) * 1000)
+            try:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+                    future_to_camera = {
+                        executor.submit(run_snapshot, cam): cam for cam in current_batch
+                    }
+
+                    for future in concurrent.futures.as_completed(future_to_camera):
+                        cam = future_to_camera[future]
+                        try:
+                            result = future.result()
+                            if result and result.get("status") == "success":
+                                batch_success_count += 1
+                                logger.info("[SUCCESS] Snapshot taken for: %s (Batch)", cam.hostname)
+                            else:
+                                batch_fail_count += 1
+                                logger.warning("[FAIL] Snapshot failed or returned error for: %s (Batch)", cam.hostname)
+                        except Exception as e:
+                            batch_fail_count += 1
+                            logger.exception("[EXCEPTION] Unhandled error for %s (Batch): %s", cam.hostname, e)
+
+            except Exception as e:
+                logger.exception("[BATCH ERROR] Critical failure during batch snapshot processing: %s", e)
+                # Decide how to handle a batch-level failure: continue to next batch or stop?
+                # For now, we'll continue to try other batches.
+
+            total_success_count += batch_success_count
+            total_fail_count += batch_fail_count
+            logger.info("[BATCH SUMMARY] Batch complete: %d succeeded, %d failed.", batch_success_count, batch_fail_count)
+
+            # Optional: Add a short delay between batches to allow system to cool down
+            # time.sleep(5) # e.g., 5 seconds between batches
+
+    except Exception as e: # Catch any exceptions that occur outside of batch processing loop
+        logger.exception(f"[SCHEDULER ERROR] Critical failure during scheduled snapshot: {e}") #
+
+    finally: # This finally block MUST be at the end of the entire scheduled_snapshot function
+        ended_at = datetime.now(timezone.utc) #
+        duration_ms = int((monotonic() - time_start) * 1000) #
 
         # Hitung status task
-        if success_count == 0 and fail_count == 0:
+        if total_success_count == 0 and total_fail_count == 0:
             status = "no_camera"
-        elif success_count == 0:
+        elif total_success_count == 0:
             status = "fail"
-        elif fail_count == 0:
+        elif total_fail_count == 0:
             status = "success"
         else:
             status = "partial"
 
-        logger.info(f"[SUMMARY] Snapshot run complete: {success_count} succeeded, {fail_count} failed.")
-        logger.info(f"[SUMMARY] Duration: {duration_ms} ms")
+        logger.info(f"[SUMMARY] Snapshot run complete: {total_success_count} succeeded, {total_fail_count} failed.") # Use total counts
+        logger.info(f"[SUMMARY] Duration: {duration_ms} ms") #
 
-        # Simpan ke TaskTiming q snapshot gagal
+        # Simpan ke TaskTiming meski snapshot gagal
         try:
-            task_log = TaskTiming(
-                task_name="scheduled_snapshot",
-                started_at=started_at,
-                ended_at=ended_at,
-                duration_ms=duration_ms,
-                status=status,
+            task_log = TaskTiming( #
+                task_name="scheduled_snapshot", #
+                started_at=started_at, #
+                ended_at=ended_at, #
+                duration_ms=duration_ms, #
+                status=status, #
             )
-            logger.warning(f"[CONFIRM] Writing TaskTiming with status={status}, duration={duration_ms}ms")
-            db.add(task_log)
-            db.commit()
-            logger.warning(f"[CONFIRM] TaskTiming committed to DB")
+            logger.warning(f"[CONFIRM] Writing TaskTiming with status={status}, duration={duration_ms}ms") #
+            db.add(task_log) #
+            db.commit() #
+            logger.warning(f"[CONFIRM] TaskTiming committed to DB") #
         except Exception as e:
-            logger.exception(f"[TimingLog] Failed to save snapshot timing log: {e}")
+            logger.exception(f"[TimingLog] Failed to save snapshot timing log: {e}") #
         finally:
-            db.close()
-
+            db.close() #
 
 # Global state untuk menyimpan konfigurasi terakhir
 last_config = {
