@@ -4,8 +4,12 @@ All notable changes to B-Snap will be documented in this file.
 
 ## [1.5.3] - 2025-07-30
 
+###
+- Added tampered reason and resolution to maps popup window
+
 ### Changed
 - Latitude and longitude inputs now support up to 7 decimal digits.
+- Update API Documentation
 
 ### Fixed
 - Error when CCTV name contains parentheses is now resolved.

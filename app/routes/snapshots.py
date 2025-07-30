@@ -30,6 +30,8 @@ class SnapshotResponse(BaseModel):
     img_path: str
     lat: str
     long: str
+    tamper_reason: Optional[str] = None  # ⬅️ Accepts None/null
+    res: str
 
 class LatestSnapshotDetailResponse(BaseModel):
     """Detail response model for the latest snapshot (metadata)."""
@@ -201,7 +203,9 @@ def get_latest_snapshot_info(identifier: str, db: Session = Depends(get_db)):
         url=f"/snapshot/file/{quote(snapshot.file_path)}",
         img_path=f"{quote(snapshot.file_path)}",
         lat=latitude,
-        long=longitude
+        long=longitude,
+        tamper_reason=snapshot.tamper_reason,
+        res=snapshot.resolution
     )
 
 

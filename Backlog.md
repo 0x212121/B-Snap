@@ -98,6 +98,9 @@
 - [x] Redesign map UI
 - [x] Added settings to change timezone 
 
+
+29/07/2025
+
 ⏳ Ongoing:
 - [ ] Tidy up API documentation
 - [ ] n8n add command:
@@ -106,3 +109,5 @@
   - [x] Cek Token API yang Aktif
 
 🆕 Added:
+- [ ] Change phone number from audit logs to username -> Indra (6282191799711)
+- [x] Add tampered reason and resolution to maps popup window - 30/07/2025
