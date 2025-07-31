@@ -142,6 +142,19 @@
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Standalone: portable camera without IP address</p>
         </div>
       </div>
+      <div class="flex items-center space-x-3">
+        <input
+          type="checkbox"
+          id="is_flipped"
+          name="is_flipped"
+          value="true"
+          class="h-4 w-4 text-blue-600 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+        >
+        <label for="is_flipped" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Flip Image 180°
+        </label>
+      </div>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Use this if the camera image appears upside down.</p>
     </form>
     <div class="flex justify-end space-x-3 pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
       <button type="button" onclick="hideCameraModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200 rounded-md font-semibold text-sm">Cancel</button>
@@ -347,6 +360,7 @@
         document.getElementById('asset_no').value = cam.asset_no || '';
         document.getElementById('location').value = cam.location || '';
         document.getElementById('status').value = cam.status;
+        document.getElementById('is_flipped').checked = cam.is_flipped;
         populateGroupSelect(cam.group ? cam.group.name : "");
         
         modalTabs.querySelector('.tab-button[data-tab="basic"]').click();

@@ -8,14 +8,22 @@ from app.routes.auth import admin_access_required
 
 router = APIRouter()
 
+from fastapi import HTTPException
+
 @router.get("/cctv/resolve-ip", response_class=JSONResponse)
 def resolve_ip_by_name(
     keyword: str = Query(..., description="Part of group name or camera name to search"),
     current_admin: User = Depends(admin_access_required),
 ):
+    keyword_clean = keyword.strip()
+
+    # Tolak input kosong atau spasi saja
+    if not keyword_clean:
+        raise HTTPException(status_code=400, detail="Keyword cannot be empty or only whitespace")
+
     db: Session = SessionLocal()
     try:
-        # --- Langkah 1: Coba filter berdasarkan group name dulu ---
+        # Step 1: Filter by group name
         group_match = (
             db.query(DBCamera)
             .join(DBCamera.group)
@@ -23,14 +31,14 @@ def resolve_ip_by_name(
             .filter(
                 DBCamera.ip.isnot(None),
                 DBCamera.ip != "",
-                CameraGroup.name.ilike(f"%{keyword}%")
+                CameraGroup.name.ilike(f"%{keyword_clean}%")
             )
             .all()
         )
 
         cameras = group_match
 
-        # --- Langkah 2: Kalau tidak ada hasil, fallback ke pencarian berdasarkan hostname ---
+        # Step 2: Fallback to camera hostname
         if not cameras:
             cameras = (
                 db.query(DBCamera)
@@ -39,12 +47,11 @@ def resolve_ip_by_name(
                 .filter(
                     DBCamera.ip.isnot(None),
                     DBCamera.ip != "",
-                    DBCamera.hostname.ilike(f"%{keyword}%")
+                    DBCamera.hostname.ilike(f"%{keyword_clean}%")
                 )
                 .all()
             )
 
-        # Format hasil
         results = []
         for cam in cameras:
             results.append({

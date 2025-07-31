@@ -60,6 +60,24 @@ def save_snapshot_file(camera_id: str, image_bytes: bytes) -> tuple[str, str]:
     return universal_relative_path, resolution
 
 
+def maybe_flip_image(image_path: str, is_flipped: bool):
+    """
+    Flip image horizontally if is_flipped is True.
+    """
+    if not is_flipped:
+        return
+
+    try:
+        img = cv2.imread(image_path)
+        if img is None:
+            raise RuntimeError(f"Failed to load image for flipping: {image_path}")
+        flipped = cv2.flip(img, -1)
+        cv2.imwrite(image_path, flipped)
+        logger.info("Flipped image: %s", image_path)
+    except Exception as e:
+        logger.error("Failed to flip image %s: %s", image_path, e)
+
+
 def take_snapshot(camera: Camera, db: Session) -> dict:
     if not is_reachable(camera.ip):
         msg = "\u26a0\ufe0f [%s] unreachable (ping failed)" % camera.hostname
@@ -118,6 +136,7 @@ def try_http_snapshot(camera: Camera, db: Session) -> dict:
         # If we get here, the image is valid. Now we can save it.
         relative_path, resolution = save_snapshot_file(str(camera.id), image_bytes)
         full_path = os.path.join(STATIC_DIR, *relative_path.split('/'))
+        maybe_flip_image(full_path, is_flipped=camera.is_flipped)
         add_watermark(full_path, text=WATERMARK_TEXT, opacity=0.5)
         clean_old_snapshots(camera.hostname, db)
         check_stats.check_stats(camera)
@@ -168,6 +187,7 @@ def try_rtsp_snapshot(camera: Camera, db: Session) -> dict:
         image_bytes = buffer.tobytes()
         relative_path, resolution = save_snapshot_file(str(camera.id), image_bytes)
         full_path = os.path.join(STATIC_DIR, *relative_path.split('/'))
+        maybe_flip_image(full_path, is_flipped=camera.is_flipped)
         add_watermark(full_path, text=WATERMARK_TEXT, opacity=0.5)
         clean_old_snapshots(camera.hostname, db)
         check_stats.check_stats(camera)
@@ -229,6 +249,7 @@ def try_ffmpeg_snapshot(camera: Camera, db: Session) -> dict:
         resolution = get_image_resolution(image_bytes)
         relative_path = os.path.relpath(full_path, start=STATIC_DIR).replace("\\", "/")
 
+        maybe_flip_image(full_path, is_flipped=camera.is_flipped)
         add_watermark(full_path, text=WATERMARK_TEXT, opacity=0.5)
         clean_old_snapshots(camera.hostname, db)
         check_stats.check_stats(camera)

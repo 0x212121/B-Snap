@@ -2,6 +2,18 @@
 
 All notable changes to B-Snap will be documented in this file.
 
+## [1.6.0] - 2025-07-31
+
+### Added
+- New feature: Snapshot images can now be automatically flipped vertically if the Flip Image setting is enabled for the camera.
+- Added is_flipped field to the database and to the add/edit camera form.
+- New support for `user_phone` parameter in snapshot and snapshot file retrieval endpoints:
+  - Automatically resolves name from `WhatsappWhitelist` table.
+  - Formats audit log as `Name (phone_number)` if name is available.
+
+### Changed
+- Snapshot-related audit logs now include user identity in the format `Name (phone_number)` when accessed via WhatsApp Bot.
+
 ## [1.5.4] - 2025-07-31
 
 ### Added

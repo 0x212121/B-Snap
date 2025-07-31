@@ -1,7 +1,7 @@
 FROM python:3.13.5-slim-bookworm
 
 LABEL maintainer="Indra W. <wijaya.indra2196@gmail.com>"
-LABEL org.opencontainers.image.version="1.5.4"
+LABEL org.opencontainers.image.version="1.6.0"
 LABEL org.opencontainers.image.authors="Indra W. <wijaya.indra2196@gmail.com>"
 LABEL org.opencontainers.image.source="https://github.com/0x212121/b-snap"
 
@@ -24,7 +24,11 @@ RUN ffprobe -version
 
 COPY . /app
 
+# After COPY . /app
+# COPY start.sh /app/start.sh
+RUN chmod +x /app/app/start.sh
+
 EXPOSE 8080
 
 # Gunicorn for multi-core performance
-CMD ["gunicorn", "app.main:app", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8080", "--workers", "2"]
+CMD ["/app/app/start.sh"]

@@ -11,7 +11,6 @@ from io import StringIO
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.responses import RedirectResponse
 from fastapi import Request, Query, Form
-from fastapi.templating import Jinja2Templates
 from sqlalchemy import asc, or_
 from app.core.logging_config import setup_logging
 from app.models_sql import Camera as DBCamera, CameraGroup, CameraHealth, User
@@ -21,7 +20,6 @@ from app.routes.auth import admin_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.health_check import ping_camera_by_id
 from app.utils.video import record_video_and_save_db
-from app.utils.decorators import admin_required
 from sqlalchemy.orm import Session, joinedload
 from fastapi.responses import StreamingResponse
 import io
@@ -151,6 +149,7 @@ async def add_camera_submit(
     location: Optional[str] = Form(None),
     group_name: Optional[str] = Form(None),
     status: str = Form(...),
+    is_flipped: bool = Form(False),
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
@@ -177,7 +176,7 @@ async def add_camera_submit(
         new_cam = DBCamera(
             hostname=name, ip=ip, port=port, username=username, password=password,
             latitude=lat, longitude=lon, asset_no=asset_no, location=location,
-            group_id=group_id, status=status
+            group_id=group_id, status=status, is_flipped=is_flipped
         )
         db.add(new_cam)
 
@@ -230,6 +229,7 @@ async def edit_camera_submit(
     asset_no: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
     group_name: Optional[str] = Form(None),
+    is_flipped: bool = Form(False),
     status: str = Form(...),
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
@@ -249,7 +249,8 @@ async def edit_camera_submit(
         "asset_no": cam.asset_no,
         "location": cam.location,
         "group_id": cam.group_id,
-        "status": cam.status
+        "status": cam.status,
+        "is_flipped": cam.is_flipped
     }
 
     try:
@@ -271,6 +272,7 @@ async def edit_camera_submit(
         cam.hostname, cam.ip, cam.port, cam.username = name, ip, port, username
         cam.latitude, cam.longitude, cam.asset_no = lat, lon, asset_no
         cam.location, cam.status = location, status
+        cam.is_flipped = is_flipped
 
         if password:
             cam.password = password
@@ -298,7 +300,8 @@ async def edit_camera_submit(
             "asset_no": cam.asset_no,
             "location": cam.location,
             "group_id": cam.group_id,
-            "status": cam.status
+            "status": cam.status,
+            "is_flipped": cam.is_flipped
         }
 
         # 📝 Audit log
@@ -358,6 +361,7 @@ async def get_camera_details(request: Request, camera_id: str, db: Session = Dep
         "asset_no": camera.asset_no,
         "location": camera.location,
         "status": camera.status,
+        "is_flipped": camera.is_flipped,
         "group": {"name": camera.group.name} if camera.group else None
     }
 
@@ -437,6 +441,7 @@ async def upload_csv(request: Request, file: UploadFile = File(...), current_adm
                     "asset_no": row.get("asset_no", "").strip(),
                     "location": row.get("location", "").strip(),
                     "status": row.get("status", "Active").strip() or "Active",
+                    "is_flipped": str(row.get("is_flipped", "")).strip().lower() in ["1", "true", "yes"],
                     "group_id": group_id
                 }
 
@@ -504,7 +509,7 @@ async def export_csv(request: Request, current_admin: User = Depends(admin_acces
     writer.writerow([
         "id", "hostname", "ip", "port", "username", "password",
         "latitude", "longitude", "group_name", "asset_no", "location", "status",
-        "previous_name", "previous_latitude", "previous_longitude"
+        "previous_name", "previous_latitude", "previous_longitude", "is_flipped"
     ])
 
     # Write the data rows with the group name.
@@ -525,6 +530,7 @@ async def export_csv(request: Request, current_admin: User = Depends(admin_acces
             cam.previous_name,
             cam.previous_latitude,
             cam.previous_longitude,
+            cam.is_flipped
         ])
 
     output.seek(0)

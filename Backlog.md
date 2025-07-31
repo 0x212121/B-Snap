@@ -99,7 +99,7 @@
 - [x] Added settings to change timezone 
 
 
-29/07/2025
+29/07/2025 - 31/07/2025
 
 ⏳ Ongoing:
 - [ ] Tidy up API documentation
@@ -107,9 +107,10 @@
   - [x] Change CCTV user and password in B-Snap using WA Bot
   - [ ] Kirim persentase uptime per kamera selama 7 hari terakhir.
   - [x] Cek Token API yang Aktif
+- [ ] Change phone number from audit logs to username -> Indra (6282191799711)
+- [x] Feature to flip snapshot result
 
 🆕 Added:
-- [ ] Change phone number from audit logs to username -> Indra (6282191799711)
 - [x] Add tampered reason and resolution to maps popup window - 30/07/2025
-- [ ] Add tampered and resolution in n8n
-- [ ] Filter camera with no IP in /ip command
+- [x] Filter camera with no IP in /ip command
+- [ ] Add tampered and resolution in n8n bot

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.logging_config import setup_logging
 from app.utils.template_helper import templates
 from app.db.database import get_db
-from app.models_sql import CameraGroup, Camera, Snapshot, SnapshotLog, User
+from app.models_sql import CameraGroup, Camera, Snapshot, SnapshotLog, User, WhatsappWhitelist
 from app.routes.auth import operator_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_service import take_snapshot
@@ -122,11 +122,20 @@ def snapshot_handler(
         )
         result["snapshot_id"] = snapshot.id
 
-    user_from_param = user_phone if user_phone else None
-    if user_from_param:
-        final_user_name, extra = user_from_param, "via Whatsapp Bot"  
+    if user_phone:
+        user_whitelist = (
+            db.query(WhatsappWhitelist)
+            .filter(WhatsappWhitelist.phone_number == user_phone)
+            .first()
+        )
+        if user_whitelist and user_whitelist.name:
+            final_user_name = f"{user_whitelist.name} ({user_whitelist.phone_number})"
+        else:
+            final_user_name = user_phone
+        extra = "via Whatsapp Bot"
     else:
-        final_user_name, extra = request.session["user_name"], "via dashboard"
+        final_user_name = request.session.get("user_name", "Unknown")
+        extra = "via dashboard"
 
     log_audit(
         db=db,

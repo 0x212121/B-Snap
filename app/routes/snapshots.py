@@ -245,10 +245,18 @@ def get_snapshot_file_raw(
         raise HTTPException(status_code=404, detail="Snapshot file not found")
 
     # Logging
-    user_from_param = user_phone if user_phone else None
-    if user_from_param:
+    if user_phone:
+        user_whitelist = (
+            db.query(WhatsappWhitelist)
+            .filter(WhatsappWhitelist.phone_number == user_phone)
+            .first()
+        )
+        if user_whitelist and user_whitelist.name:
+            final_user_name = f"{user_whitelist.name} ({user_whitelist.phone_number})"
+        else:
+            final_user_name = user_phone
         group_id = group
-        final_user_name, extra = user_from_param, f"via Whatsapp Bot [group ID: {group_id}]"
+        extra = f"via Whatsapp Bot [group ID: {group_id}]"
     else:
         final_user_name = request.session.get("user_name") or "token_user"
         extra = "via token" if token else "via dashboard"

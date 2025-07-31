@@ -7,6 +7,7 @@ from sqlalchemy.orm import relationship
 from app.db.database import Base
 from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.sql import expression
 
 
 
@@ -83,6 +84,7 @@ class Camera(Base):
     asset_no = Column(String)
     location = Column(String)
     status = Column(String)
+    is_flipped = Column(Boolean, default=False, server_default=expression.false())
 
     group_id = Column(Integer, ForeignKey('camera_groups.id'))
     group = relationship("CameraGroup", back_populates="cameras")
