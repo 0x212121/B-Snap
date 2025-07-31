@@ -1,8 +1,9 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-# Load environment variables from .env manually (kalau tidak otomatis loaded)
+# Load environment variables from .env manually (optional)
 if [ -f .env ]; then
+  echo "📦 Loading environment from .env"
   export $(grep -v '^#' .env | xargs)
 fi
 
@@ -16,4 +17,7 @@ echo "🚀 Starting Gunicorn with $WORKERS workers..."
 exec gunicorn app.main:app \
   -k uvicorn.workers.UvicornWorker \
   --bind 0.0.0.0:8080 \
-  --workers "$WORKERS"
+  --workers "$WORKERS" \
+  --worker-connections 1000 \
+  --timeout 60 \
+  --keep-alive 2
