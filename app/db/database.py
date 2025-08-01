@@ -9,7 +9,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 
 # --- Internal Modules ---
-from app import models
 from app.core.logging_config import setup_logging
 
 

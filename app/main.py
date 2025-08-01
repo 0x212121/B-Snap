@@ -36,6 +36,7 @@ from app.ws.routes import notification_listener, router as ws_router
 from app.version import __version__
 from app.api import whatsapp_routes
 from app.ws.manager import websocket_connections
+import app.models # Import all models to ensure they are registered with SQLAlchemy
 from functools import lru_cache
 
 # from app.ws.notifier import pg_listen_and_broadcast

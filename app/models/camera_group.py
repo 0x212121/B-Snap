@@ -1,7 +1,6 @@
-from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy import Column, Integer, String, Float, event
 from sqlalchemy.orm import relationship
 from app.db.database import Base
-from sqlalchemy import event
 
 default_groups = [
     {"id": 1, "name": "CPHD"}, {"id": 2, "name": "MSD"},
@@ -19,9 +18,11 @@ class CameraGroup(Base):
     name = Column(String, unique=True, nullable=False)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
-    cameras = relationship("Camera", back_populates="group")
+
+    cameras = relationship("Camera", back_populates="group")  # pakai string
     nvr = relationship("NVR", back_populates="group")
     users = relationship("User", back_populates="group")
+
 
 @event.listens_for(CameraGroup.__table__, "after_create")
 def insert_default_groups(target, connection, **kw):

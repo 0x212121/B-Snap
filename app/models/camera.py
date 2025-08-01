@@ -1,8 +1,8 @@
-import uuid
+from app.db.database import Base
 from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import expression
-from app.db.database import Base
+import uuid
 
 def generate_uuid():
     return str(uuid.uuid4())
@@ -25,8 +25,10 @@ class Camera(Base):
     location = Column(String)
     status = Column(String)
     is_flipped = Column(Boolean, default=False, server_default=expression.false())
+    
     group_id = Column(Integer, ForeignKey('camera_groups.id'))
-    group = relationship("CameraGroup", back_populates="cameras")
+    group = relationship("CameraGroup", back_populates="cameras")  # pakai string!
+
     snapshot_logs = relationship("SnapshotLog", back_populates="camera")
     health = relationship("CameraHealth", back_populates="camera", uselist=False, cascade="all, delete-orphan")
     daily_stats = relationship("CameraDailyStats", back_populates="camera", cascade="all, delete-orphan")

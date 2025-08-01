@@ -1,19 +1,20 @@
 import asyncio
 import csv
+import json
 from datetime import datetime
+import logging
 from typing import Optional, Union
 from fastapi import Depends, File, HTTPException, Path, UploadFile, APIRouter
 from io import StringIO
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.responses import RedirectResponse
 from fastapi import Request, Query, Form
-from sqlalchemy import asc, or_
+from sqlalchemy import or_
 from app.core.logging_config import setup_logging
 from app.models.camera import Camera as DBCamera
 from app.models.camera_group import CameraGroup
 from app.models.health import CameraHealth
-from app.models.user import User
-from app.db.database import SessionLocal, get_db
+from app.db.database import get_db
 from app.core.config import get_config
 from app.routes.auth import admin_access_required
 from app.utils.audit_logger import log_audit
@@ -38,11 +39,11 @@ async def manage(request: Request):
 
 @router.get("/cameras/data", response_class=HTMLResponse)
 async def manage_data(
-    request: Request, 
+    request: Request,
+    db: Session = Depends(get_db), 
     page: int = Query(1, ge=1),
     search: Optional[str] = Query(None),
 ):
-    db = request.state.db
     per_page = get_config('items_per_page', 10)
     query = db.query(DBCamera).options(joinedload(DBCamera.group))
 
@@ -136,6 +137,7 @@ async def manage_data(
 @router.post("/cameras/add_camera", response_class=JSONResponse)
 async def add_camera_submit(
     request: Request,
+    db: Session = Depends(get_db),
     name: str = Form(...),
     ip: str = Form(...),
     port: Union[int, str, None] = Form(None),
@@ -149,7 +151,6 @@ async def add_camera_submit(
     status: str = Form(...),
     is_flipped: bool = Form(False),
 ):
-    db = request.state.db
     try:
         existing_cam = db.query(DBCamera).filter(DBCamera.hostname == name).first()
         if existing_cam:
@@ -197,9 +198,8 @@ async def add_camera_submit(
 
 
 @router.post("/capture_video/{camera_id}")
-async def capture_video(request: Request, camera_id: str):
+async def capture_video(request: Request, camera_id: str, db: Session = Depends(get_db)):
     # Dibiarkan async karena memanggil asyncio.create_task
-    db = SessionLocal()
     try:
         camera = db.query(DBCamera).filter(DBCamera.id == camera_id).first()
         if not camera:
@@ -215,6 +215,7 @@ async def capture_video(request: Request, camera_id: str):
 async def edit_camera_submit(
     request: Request,
     camera_id: str = Path(...),
+    db: Session = Depends(get_db),
     name: str = Form(...),
     ip: str = Form(...),
     port: Union[int, str, None] = Form(None),
@@ -228,7 +229,6 @@ async def edit_camera_submit(
     is_flipped: bool = Form(False),
     status: str = Form(...),
 ):
-    db = request.state.db
     cam = db.query(DBCamera).filter(DBCamera.id == camera_id).first()
     if not cam:
         raise HTTPException(status_code=404, detail="Camera not found")
@@ -338,8 +338,7 @@ async def edit_camera_submit(
 
 
 @router.get("/api/camera/{camera_id}", response_class=JSONResponse)
-async def get_camera_details(request: Request, camera_id: str):
-    db = request.state.db
+async def get_camera_details(request: Request, camera_id: str, db: Session = Depends(get_db)):
     camera = db.query(DBCamera).options(joinedload(DBCamera.group)).filter(DBCamera.id == camera_id).first()
     if not camera:
         raise HTTPException(status_code=404, detail="Camera not found")
@@ -363,15 +362,13 @@ async def get_camera_details(request: Request, camera_id: str):
 
 
 @router.get("/api/camera_groups")
-async def get_camera_groups(request: Request):
-    db = request.state.db
+async def get_camera_groups(request: Request, db: Session = Depends(get_db)):
     groups = db.query(CameraGroup).all()
     return [{"id": g.id, "name": g.name} for g in groups]
 
 
 @router.post("/cameras/delete/{camera_id}", response_class=JSONResponse)
-async def delete_camera(request: Request, camera_id: str):
-    db = request.state.db
+async def delete_camera(request: Request, camera_id: str, db: Session = Depends(get_db)):
     cam = db.query(DBCamera).filter(DBCamera.id == camera_id).first()
     if not cam:
         return JSONResponse(status_code=404, content={"status": "error", "message": "Camera not found"})
@@ -397,9 +394,8 @@ async def delete_camera(request: Request, camera_id: str):
 
 
 @router.post("/cameras/upload_csv")
-async def upload_csv(request: Request, file: UploadFile = File(...)):
+async def upload_csv(request: Request, db: Session = Depends(get_db), file: UploadFile = File(...)):
     contents = await file.read()
-    db: Session = SessionLocal()
     failed_rows = []
     success_ids = []
     try:
@@ -493,8 +489,7 @@ async def upload_csv(request: Request, file: UploadFile = File(...)):
 
 
 @router.get("/cameras/export_csv")
-async def export_csv(request: Request):
-    db = SessionLocal()
+async def export_csv(request: Request, db: Session = Depends(get_db)):
     
     # Eagerly load the group relationship to prevent lazy loading issues.
     cameras = db.query(DBCamera).options(joinedload(DBCamera.group)).all()
@@ -577,8 +572,8 @@ def detect_csv_delimiter(csv_content: str):
 async def update_camera_n8n(
     payload: dict,
     request: Request,
+    db: Session = Depends(get_db)
 ):
-    db = request.state.db
     """
     Update camera info via n8n by hostname. Admin only.
     Required fields: hostname, username, password
