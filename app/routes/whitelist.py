@@ -1,7 +1,8 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Request
 from app.db.database import get_db
-from app.models_sql import User, WhatsappWhitelist
+from app.models.user import User
+from app.models.whitelist import WhatsappWhitelist
 from sqlalchemy.orm import Session
 from app.routes.auth import admin_access_required
 from app.schemas.whitelist_schema import WhitelistOut, WhitelistCreate

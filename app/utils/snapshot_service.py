@@ -18,7 +18,8 @@ from app.onvif_client import (
     try_auth
 )
 from app.utils import check_stats
-from app.models_sql import Camera, Snapshot
+from app.models.camera import Camera
+from app.models.snapshot import Snapshot
 
 # BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 STATIC_DIR = os.path.join("static", "snapshots")

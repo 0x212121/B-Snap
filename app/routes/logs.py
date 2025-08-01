@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
-from app.models_sql import User
+from app.models.user import User
 from app.routes.auth import operator_access_required
 from app.utils.template_helper import templates
 from pathlib import Path

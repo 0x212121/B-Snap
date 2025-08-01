@@ -12,10 +12,12 @@ from app.utils.snapshot_locker import get_camera_lock
 from app.utils.snapshot_service import take_snapshot
 from app.utils.health_check import ping_all_devices
 from app.core.config import get_config
-from app.models_sql import AuditLog, CameraDailyStats, SnapshotLog
+from app.models.audit_log import AuditLog
+from app.models.camera_daily_stats import CameraDailyStats
+from app.models.snapshot_log import SnapshotLog
 from app.utils.snapshot_utils import record_snapshot_metadata
 from sqlalchemy.orm import Session
-from app.models_sql import TaskTiming
+from app.models.task_timing import TaskTiming
 import concurrent.futures
 import logging
 from time import monotonic, sleep

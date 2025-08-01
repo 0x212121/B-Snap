@@ -2,7 +2,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import Request
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from app.models_sql import User
+from app.models.user import User
 from app.db.database import SessionLocal
 import json
 from app.utils.auth_token import is_valid_web_token

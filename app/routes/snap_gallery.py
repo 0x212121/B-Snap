@@ -10,13 +10,17 @@ from sqlalchemy.orm import Session
 from app.core.logging_config import setup_logging
 from app.utils.template_helper import templates
 from app.db.database import get_db
-from app.models_sql import CameraGroup, Camera, Snapshot, SnapshotLog, User, WhatsappWhitelist
+from app.models.camera_group import CameraGroup
+from app.models.camera import Camera
+from app.models.snapshot import Snapshot
+from app.models.snapshot_log import SnapshotLog
+from app.models.user import User
+from app.models.whitelist import WhatsappWhitelist
 from app.routes.auth import operator_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_service import take_snapshot
 from app.utils.snapshot_utils import record_snapshot_metadata
 from app.utils.timezone_helper import to_current_timezone
-from sqlalchemy import or_
 
 router = APIRouter(tags=["Snapshots"])
 

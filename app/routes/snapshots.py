@@ -11,7 +11,10 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel # Import BaseModel from pydantic
 import re
 from app.db.database import SessionLocal
-from app.models_sql import Camera as DBCamera, Snapshot, User, WhatsappWhitelist
+from app.models.camera import Camera as DBCamera
+from app.models.user import User
+from app.models.snapshot import Snapshot
+from app.models.whitelist import WhatsappWhitelist
 from app.routes.auth import admin_access_required, user_access_required_optional
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_utils import SNAPSHOT_BASE_DIR  # points to app/static/snapshots

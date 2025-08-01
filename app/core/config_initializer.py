@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from app.models_sql import Configuration
+from app.models.config import Configuration
 
 DEFAULT_CONFIG = {
     "snapshot_interval_minutes": "480",

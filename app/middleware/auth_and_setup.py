@@ -8,7 +8,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from fastapi.responses import RedirectResponse
 from sqlalchemy import text
 
-from app.models_sql import User
+from app.models.user import User
 from app.utils.auth_token import is_valid_web_token
 from app.db.database import SessionLocal
 

@@ -1,6 +1,6 @@
 from datetime import date
 from app.db.database import SessionLocal
-from app.models_sql import CameraDailyStats
+from app.models.camera_daily_stats import CameraDailyStats
 
 
 def check_stats(cam: object):

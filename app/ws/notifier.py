@@ -1,6 +1,4 @@
-# notifier.py
 import asyncio
-import json
 import asyncpg
 import os
 from datetime import datetime, timezone

@@ -6,9 +6,9 @@ import uuid
 from datetime import datetime, timezone
 from fastapi import Request
 from sqlalchemy import text
-from sqlalchemy.orm import Session
 from app.core.logging_config import setup_logging
-from app.models_sql import Camera, Video
+from app.models.camera import Camera
+from app.models.video import Video
 from app.onvif_client import get_rtsp_url, is_reachable
 from typing import Tuple, Dict, Any
 import json

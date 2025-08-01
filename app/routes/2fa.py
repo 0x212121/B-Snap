@@ -4,7 +4,7 @@ import pyotp
 import qrcode
 
 from app.db.database import update_user_secret
-from app.models_sql import User
+from app.models.user import User
 from app.routes.auth import get_current_user
 
 router = APIRouter()

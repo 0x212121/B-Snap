@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 from app.db.database import SessionLocal
-from app.models_sql import Camera as DBCamera, CameraGroup, User
+from app.models.camera import Camera as DBCamera
+from app.models.camera_group import CameraGroup
+from app.models.user import User
 from fastapi.responses import JSONResponse
 from app.routes.auth import admin_access_required
 

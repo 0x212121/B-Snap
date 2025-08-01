@@ -4,9 +4,13 @@ from fastapi import APIRouter, Query, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from app.db.database import get_db
-from app.models_sql import CameraDailyStats, Camera as DBCamera, CameraHealth, SnapshotLog, User
+from app.models.camera_daily_stats import CameraDailyStats
+from app.models.camera import Camera as DBCamera
+from app.models.health import CameraHealth
+from app.models.snapshot_log import SnapshotLog
+from app.models.user import User
+from app.models.task_timing import TaskTiming
 from app.routes.auth import admin_access_required
-from app.models_sql import TaskTiming
 from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
 from app.utils.template_helper import templates
 

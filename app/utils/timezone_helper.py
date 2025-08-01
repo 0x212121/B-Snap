@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
-from app.models_sql import Configuration
+from app.models.config import Configuration
 import pytz
 
 def get_current_timezone(db: Session) -> str:

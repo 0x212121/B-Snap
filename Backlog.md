@@ -107,7 +107,8 @@
   - [x] Change CCTV user and password in B-Snap using WA Bot
   - [ ] Kirim persentase uptime per kamera selama 7 hari terakhir.
   - [x] Cek Token API yang Aktif
-- [ ] Change phone number from audit logs to username -> Indra (6282191799711)
+- [x] Change phone number from audit logs to username -> Indra (6282191799711)
+- [x] Fixed redirect from gallery to maps caused by missing `user_groupid` in restored session
 - [x] Feature to flip snapshot result
 
 🆕 Added:

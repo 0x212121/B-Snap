@@ -14,7 +14,13 @@ from app.db.database import get_db
 from app.routes.auth import operator_access_required
 from app.utils.health_check import run_healthcheck_for_all, run_healthcheck_for_camera, run_healthcheck_for_nvr
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
-from app.models_sql import NVR, CameraDailyStats, CameraHealth as Health, Camera as DBCamera, HealthCheckStatus, User, CameraStatusChangeLog
+from app.models.nvr import NVR
+from app.models.camera_daily_stats import CameraDailyStats
+from app.models.health import CameraHealth as Health
+from app.models.camera import Camera as DBCamera
+from app.models.health_check_status import HealthCheckStatus
+from app.models.camera_status_change_log import CameraStatusChangeLog
+from app.models.user import User
 from app.utils.template_helper import templates
 from app.utils.timezone_helper import get_current_timezone, to_current_timezone
 

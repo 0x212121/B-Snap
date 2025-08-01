@@ -1,11 +1,7 @@
 import asyncio
 import csv
 from datetime import datetime
-import json
-import logging
-import traceback
 from typing import Optional, Union
-import uuid
 from fastapi import Depends, File, HTTPException, Path, UploadFile, APIRouter
 from io import StringIO
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -13,7 +9,10 @@ from fastapi.responses import RedirectResponse
 from fastapi import Request, Query, Form
 from sqlalchemy import asc, or_
 from app.core.logging_config import setup_logging
-from app.models_sql import Camera as DBCamera, CameraGroup, CameraHealth, User
+from app.models.camera import Camera as DBCamera
+from app.models.camera_group import CameraGroup
+from app.models.health import CameraHealth
+from app.models.user import User
 from app.db.database import SessionLocal, get_db
 from app.core.config import get_config
 from app.routes.auth import admin_access_required
@@ -24,7 +23,8 @@ from sqlalchemy.orm import Session, joinedload
 from fastapi.responses import StreamingResponse
 import io
 
-router = APIRouter(tags=["Cameras"])
+# Dependency injection for router
+router = APIRouter(tags=["Cameras"], dependencies=[Depends(get_db), Depends(admin_access_required)])
 
 from app.utils.template_helper import templates
 
@@ -32,7 +32,7 @@ setup_logging()
 logger = logging.getLogger("management")
 
 @router.get("/cameras", response_class=HTMLResponse)
-async def manage(request: Request, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
+async def manage(request: Request):
     return templates.TemplateResponse("cameras.html", {"request": request})
 
 
@@ -41,11 +41,9 @@ async def manage_data(
     request: Request, 
     page: int = Query(1, ge=1),
     search: Optional[str] = Query(None),
-    db: Session = Depends(get_db),
-    current_admin: User = Depends(admin_access_required)
 ):
+    db = request.state.db
     per_page = get_config('items_per_page', 10)
-    
     query = db.query(DBCamera).options(joinedload(DBCamera.group))
 
     if search:
@@ -150,10 +148,8 @@ async def add_camera_submit(
     group_name: Optional[str] = Form(None),
     status: str = Form(...),
     is_flipped: bool = Form(False),
-    db: Session = Depends(get_db),
-    current_admin: User = Depends(admin_access_required)
 ):
-    
+    db = request.state.db
     try:
         existing_cam = db.query(DBCamera).filter(DBCamera.hostname == name).first()
         if existing_cam:
@@ -201,7 +197,7 @@ async def add_camera_submit(
 
 
 @router.post("/capture_video/{camera_id}")
-async def capture_video(request: Request, camera_id: str, current_admin: User = Depends(admin_access_required)):
+async def capture_video(request: Request, camera_id: str):
     # Dibiarkan async karena memanggil asyncio.create_task
     db = SessionLocal()
     try:
@@ -231,9 +227,8 @@ async def edit_camera_submit(
     group_name: Optional[str] = Form(None),
     is_flipped: bool = Form(False),
     status: str = Form(...),
-    db: Session = Depends(get_db),
-    current_admin: User = Depends(admin_access_required)
 ):
+    db = request.state.db
     cam = db.query(DBCamera).filter(DBCamera.id == camera_id).first()
     if not cam:
         raise HTTPException(status_code=404, detail="Camera not found")
@@ -343,7 +338,8 @@ async def edit_camera_submit(
 
 
 @router.get("/api/camera/{camera_id}", response_class=JSONResponse)
-async def get_camera_details(request: Request, camera_id: str, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
+async def get_camera_details(request: Request, camera_id: str):
+    db = request.state.db
     camera = db.query(DBCamera).options(joinedload(DBCamera.group)).filter(DBCamera.id == camera_id).first()
     if not camera:
         raise HTTPException(status_code=404, detail="Camera not found")
@@ -367,13 +363,15 @@ async def get_camera_details(request: Request, camera_id: str, db: Session = Dep
 
 
 @router.get("/api/camera_groups")
-async def get_camera_groups(request: Request, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
+async def get_camera_groups(request: Request):
+    db = request.state.db
     groups = db.query(CameraGroup).all()
     return [{"id": g.id, "name": g.name} for g in groups]
 
 
 @router.post("/cameras/delete/{camera_id}", response_class=JSONResponse)
-async def delete_camera(request: Request, camera_id: str, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
+async def delete_camera(request: Request, camera_id: str):
+    db = request.state.db
     cam = db.query(DBCamera).filter(DBCamera.id == camera_id).first()
     if not cam:
         return JSONResponse(status_code=404, content={"status": "error", "message": "Camera not found"})
@@ -399,7 +397,7 @@ async def delete_camera(request: Request, camera_id: str, db: Session = Depends(
 
 
 @router.post("/cameras/upload_csv")
-async def upload_csv(request: Request, file: UploadFile = File(...), current_admin: User = Depends(admin_access_required)):
+async def upload_csv(request: Request, file: UploadFile = File(...)):
     contents = await file.read()
     db: Session = SessionLocal()
     failed_rows = []
@@ -495,7 +493,7 @@ async def upload_csv(request: Request, file: UploadFile = File(...), current_adm
 
 
 @router.get("/cameras/export_csv")
-async def export_csv(request: Request, current_admin: User = Depends(admin_access_required)):
+async def export_csv(request: Request):
     db = SessionLocal()
     
     # Eagerly load the group relationship to prevent lazy loading issues.
@@ -579,9 +577,8 @@ def detect_csv_delimiter(csv_content: str):
 async def update_camera_n8n(
     payload: dict,
     request: Request,
-    db: Session = Depends(get_db),
-    current_admin: User = Depends(admin_access_required)
 ):
+    db = request.state.db
     """
     Update camera info via n8n by hostname. Admin only.
     Required fields: hostname, username, password

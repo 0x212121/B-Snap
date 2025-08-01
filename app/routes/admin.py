@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from app.db.database import get_db
-from app.models_sql import User
+from app.models.user import User
 from app.routes.auth import admin_access_required
 from app.utils.changelog_parser import parse_changelog_md
 from app.utils.template_helper import templates

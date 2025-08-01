@@ -1,5 +1,3 @@
-# app/ws/manager.py
-
 from typing import Set
 from fastapi import WebSocket, WebSocketDisconnect
 import logging

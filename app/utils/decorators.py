@@ -1,7 +1,5 @@
 from fastapi import Request
 from functools import wraps
-from fastapi.templating import Jinja2Templates
-
 from app.utils.template_helper import templates
 
 

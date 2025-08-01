@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 
 from app.utils.decorators import admin_required
 
-router = APIRouter()
+router = APIRouter(tags=["API Documentation"])
+
 from app.utils.template_helper import templates
 
 

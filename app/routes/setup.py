@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from passlib.hash import bcrypt
-from app.models_sql import CameraGroup, User
+from app.models.camera_group import CameraGroup
+from app.models.user import User
 from app.db.database import SessionLocal
-from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
 

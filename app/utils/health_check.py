@@ -2,12 +2,17 @@ from datetime import datetime, timezone
 import time
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
-from app.models_sql import NVR, CameraHealth, Camera as DBCamera, HealthCheckStatus, CameraDailyStats
+from app.models.health import CameraHealth
+from app.models.nvr import NVR
+from app.models.camera import Camera as DBCamera
+from app.models.health_check_status import HealthCheckStatus
+from app.models.camera_daily_stats import CameraDailyStats
+from app.models.camera_status_change_log import CameraStatusChangeLog
 from app.db.database import SessionLocal
 from ping3 import ping, errors
 from app.core.logging_config import setup_logging
 import logging
-from app.models_sql import TaskTiming
+from app.models.task_timing import TaskTiming
 
 
 # setup logging
@@ -45,7 +50,6 @@ def ping_device(ip: str) -> tuple[bool, int | None]:
 # ==============================================================================
 # 💡 NEW INTEGRATED FUNCTION
 # ==============================================================================
-from app.models_sql import CameraStatusChangeLog  # pastikan kamu punya model ini
 
 def log_status_change(db: Session, camera_id: str, prev_status: str, new_status: str, changed_at: datetime):
     if prev_status == new_status:

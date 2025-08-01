@@ -6,7 +6,8 @@ from fastapi import APIRouter, HTTPException, Request, Form, Depends
 from fastapi.responses import JSONResponse, RedirectResponse
 from passlib.hash import bcrypt
 from pydantic import BaseModel
-from app.models_sql import CameraGroup, User
+from app.models.camera_group import CameraGroup
+from app.models.user import User
 from app.db.database import get_db
 from app.routes.auth import admin_access_required
 from app.utils.audit_logger import log_audit

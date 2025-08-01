@@ -9,7 +9,10 @@ from sqlalchemy.orm import Session
 
 from app.core.logging_config import setup_logging
 from app.db.database import get_db
-from app.models_sql import Camera, CameraGroup, User, Video
+from app.models.camera import Camera
+from app.models.camera_group import CameraGroup
+from app.models.user import User
+from app.models.video import Video
 from app.routes.auth import operator_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.timezone_helper import to_current_timezone

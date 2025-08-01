@@ -9,9 +9,10 @@ from sqlalchemy import asc, or_
 from sqlalchemy.orm import Session, joinedload
 from app.core.config import get_config
 from app.core.logging_config import setup_logging
-from app.models_sql import NVR, CameraGroup, User
+from app.models.nvr import NVR
+from app.models.camera_group import CameraGroup
+from app.models.user import User
 from app.db.database import get_db
-from starlette.templating import Jinja2Templates
 from app.routes.auth import admin_access_required
 from app.routes.cameras import detect_csv_delimiter
 from app.utils.audit_logger import log_audit

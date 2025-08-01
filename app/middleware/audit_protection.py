@@ -1,6 +1,6 @@
 from sqlalchemy import event
 from sqlalchemy.orm import Session
-from models_sql import AuditLog
+from models.audit_log import AuditLog
 
 @event.listens_for(Session, "before_flush")
 def prevent_auditlog_update_or_delete(session, flush_context, instances):

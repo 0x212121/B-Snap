@@ -10,9 +10,8 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session, joinedload
 from starlette import status
 from datetime import datetime, timezone, timedelta
-
 from app.db.database import get_db
-from app.models_sql import User
+from app.models.user import User
 from app.utils.auth import get_password_hash, verify_password
 from app.utils.audit_logger import log_audit
 

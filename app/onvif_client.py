@@ -5,7 +5,7 @@ import requests
 import cv2
 import time
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
-from app.models_sql import Camera
+from app.models.camera import Camera
 from app.db.database import SessionLocal
 from urllib.parse import urlparse, urlunparse
 from PIL import Image, ImageDraw, ImageFont

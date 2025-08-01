@@ -1,5 +1,5 @@
 import json
-from app.models_sql import AuditLog
+from app.models.audit_log import AuditLog
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from typing import Any

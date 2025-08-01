@@ -1,4 +1,4 @@
-from app.models_sql import Configuration
+from app.models.config import Configuration
 from app.db.database import SessionLocal
 
 

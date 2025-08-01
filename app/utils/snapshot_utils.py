@@ -4,7 +4,8 @@ from io import BytesIO
 from PIL import Image
 import numpy as np
 from sqlalchemy.orm import Session
-from app.models_sql import Camera, Snapshot
+from app.models.camera import Camera
+from app.models.snapshot import Snapshot
 from app.utils.image_check import detect_blur, detect_brightness, detect_occlusion
 import logging
 

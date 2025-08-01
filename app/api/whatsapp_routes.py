@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from app.db.database import get_db
-from app.models_sql import WhatsappWhitelist
+from app.models.whitelist import WhatsappWhitelist
 from sqlalchemy.orm import Session
 
 router = APIRouter()

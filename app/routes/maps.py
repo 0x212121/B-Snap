@@ -9,7 +9,8 @@ from pydantic import BaseModel
 
 from app.core.config import get_config
 from app.db.database import get_db
-from app.models_sql import Camera as DBCamera, User
+from app.models.camera import Camera as DBCamera
+from app.models.user import User
 from app.routes.auth import get_current_user
 from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
 from app.utils.template_helper import templates

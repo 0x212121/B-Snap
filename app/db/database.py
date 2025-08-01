@@ -5,7 +5,7 @@ from urllib.parse import urlparse, urlunparse
 
 # --- Third-party ---
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, Sequence
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 
 # --- Internal Modules ---

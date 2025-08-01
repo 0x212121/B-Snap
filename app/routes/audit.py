@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, Request, Query
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from app.db.database import get_db
-from app.models_sql import AuditLog, User
+from app.models.audit_log import AuditLog
+from app.models.user import User
 from app.routes.auth import admin_access_required
 from app.utils.timezone_helper import get_current_timezone, to_current_timezone
 from sqlalchemy import or_

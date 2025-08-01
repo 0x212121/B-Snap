@@ -4,7 +4,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 import pytz
 from PIL import Image
 from sqlalchemy.orm import Session
-from app.models_sql import Configuration, User
+from app.models.config import Configuration
+from app.models.user import User
 from app.db.database import get_db
 from app.routes.auth import admin_access_required
 from app.utils.template_helper import templates
