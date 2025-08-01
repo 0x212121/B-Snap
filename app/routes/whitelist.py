@@ -25,11 +25,11 @@ def list_whitelist(
 def add_whitelist(request: Request, entry: WhitelistCreate, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
     existing = db.query(WhatsappWhitelist).filter_by(phone_number=entry.phone_number).first()
     if existing:
-        for field, value in entry.dict().items():
+        for field, value in entry.model_dump().items():
             setattr(existing, field, value)
         action = "update_whitelist"
     else:
-        new_entry = WhatsappWhitelist(**entry.dict())
+        new_entry = WhatsappWhitelist(**entry.model_dump())
         db.add(new_entry)
         action = "create_whitelist"
 
@@ -40,7 +40,7 @@ def add_whitelist(request: Request, entry: WhitelistCreate, db: Session = Depend
         action=action,
         target=entry.phone_number,
         ip=request.client.host,
-        extra=entry.dict()
+        extra=entry.model_dump()
     )
     return {"status": "success"}
 
@@ -70,3 +70,30 @@ def delete_whitelist(request: Request, phone_number: str, db: Session = Depends(
         ip=request.client.host
     )
     return {"status": "deleted"}
+
+# Edit entry
+@router.put("/api/whitelist/{phone_number}")
+def edit_whitelist(request: Request, phone_number: str, update: WhitelistCreate, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
+    entry = db.query(WhatsappWhitelist).filter_by(phone_number=phone_number).first()
+    if not entry:
+        log_audit(
+            db=db,
+            user=current_admin.username,
+            action="edit_whitelist_failed",
+            target=phone_number,
+            ip=request.client.host,
+            extra={"error": "not found", **update.model_dump()}
+        )
+        raise HTTPException(404, "Not found")
+    for field, value in update.model_dump().items():
+        setattr(entry, field, value)
+    db.commit()
+    log_audit(
+        db=db,
+        user=current_admin.username,
+        action="edit_whitelist",
+        target=phone_number,
+        ip=request.client.host,
+        extra=update.model_dump()
+    )
+    return {"status": "updated"}
