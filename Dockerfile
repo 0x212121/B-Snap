@@ -1,7 +1,7 @@
 FROM python:3.13.5-slim-bookworm
 
 LABEL maintainer="Indra W. <wijaya.indra2196@gmail.com>"
-LABEL org.opencontainers.image.version="1.6.0"
+LABEL org.opencontainers.image.version="1.6.1"
 LABEL org.opencontainers.image.authors="Indra W. <wijaya.indra2196@gmail.com>"
 LABEL org.opencontainers.image.source="https://github.com/0x212121/b-snap"
 
@@ -22,13 +22,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Test ffmpeg install
 RUN ffprobe -version
 
-COPY . /app
+COPY . /
 
 # After COPY . /app
 # COPY start.sh /app/start.sh
-RUN chmod +x /app/app/start.sh
+RUN chmod +x /app/start.sh
 
 EXPOSE 8080
 
 # Gunicorn for multi-core performance
-CMD ["/app/app/start.sh"]
+CMD ["/app/start.sh"]

@@ -9,9 +9,10 @@ DEFAULT_CONFIG = {
     "items_per_page": "15",
     "max_screenshot_per_camera": "20",
     "watermark_text": "Property of ...",
-    "map_title": "CCTV Maps"
+    "map_title": "CCTV Maps",
+    "snapshot_batch_size": "50",  # Default value for batch size
+    "snapshot_batch_delay_seconds": "5" # Default value for batch delay
 }
-
 
 def seed_config(db: Session):
     try:

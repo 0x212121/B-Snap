@@ -2,6 +2,15 @@
 
 All notable changes to B-Snap will be documented in this file.
 
+## [1.6.1] - 2025-08-01
+
+### Added
+- Snapshot batch size and batch delay in config.
+
+### Changed
+- Snapshot scheduler with interval 5s between batch.
+
+
 ## [1.6.0] - 2025-07-31
 
 ### Added
