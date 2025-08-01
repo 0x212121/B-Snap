@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from app.models_sql import TaskTiming
 import concurrent.futures
 import logging
-from time import monotonic
+from time import monotonic, sleep
 from datetime import datetime
 
 scheduler = BackgroundScheduler(
@@ -68,9 +68,9 @@ def run_snapshot(camera):
 def scheduled_snapshot():
     db: Session = SessionLocal()
     workers = get_config("snapshot_concurrent_workers", 5)
-    all_cameras = load_active_cameras() # Load all 406 cameras
+    all_cameras = load_active_cameras()  # Load all 406 cameras
 
-    logger.info(f"[SCHEDULED] Running snapshot for {len(all_cameras)} cameras with {workers} workers, in batches.")
+    logger.info("[SCHEDULED] Running snapshot for %d cameras with %d workers, in batches.", len(all_cameras), workers)
 
     started_at = datetime.now(timezone.utc)
     time_start = monotonic()
@@ -78,14 +78,13 @@ def scheduled_snapshot():
     total_success_count = 0
     total_fail_count = 0
 
-    # Define batch size (make this configurable or calculate dynamically later)
-    BATCH_SIZE = get_config("snapshot_batch_size", 50) # New config setting
+    BATCH_SIZE = get_config("snapshot_batch_size", 50)
 
-    try: # Outer try block for the entire function execution
-        # Iterate through cameras in batches
+    try:
         for i in range(0, len(all_cameras), BATCH_SIZE):
             current_batch = all_cameras[i:i + BATCH_SIZE]
-            logger.info(f"[BATCH] Processing batch {int(i/BATCH_SIZE) + 1} of {len(current_batch)} cameras.")
+            batch_number = int(i/BATCH_SIZE) + 1
+            logger.info("[BATCH] Processing batch %d of %d cameras.", batch_number, len(current_batch))
 
             batch_success_count = 0
             batch_fail_count = 0
@@ -112,24 +111,22 @@ def scheduled_snapshot():
 
             except Exception as e:
                 logger.exception("[BATCH ERROR] Critical failure during batch snapshot processing: %s", e)
-                # Decide how to handle a batch-level failure: continue to next batch or stop?
-                # For now, we'll continue to try other batches.
-
+                
             total_success_count += batch_success_count
             total_fail_count += batch_fail_count
             logger.info("[BATCH SUMMARY] Batch complete: %d succeeded, %d failed.", batch_success_count, batch_fail_count)
 
-            # Optional: Add a short delay between batches to allow system to cool down
-            # time.sleep(5) # e.g., 5 seconds between batches
+            sleep_interval = get_config("snapshot_batch_delay_seconds", 5)
+            logger.debug("Pausing for %d seconds before next batch.", sleep_interval)
+            sleep(sleep_interval)
 
-    except Exception as e: # Catch any exceptions that occur outside of batch processing loop
-        logger.exception(f"[SCHEDULER ERROR] Critical failure during scheduled snapshot: {e}") #
+    except Exception as e:
+        logger.exception("[SCHEDULER ERROR] Critical failure during scheduled snapshot: %s", e)
 
-    finally: # This finally block MUST be at the end of the entire scheduled_snapshot function
-        ended_at = datetime.now(timezone.utc) #
-        duration_ms = int((monotonic() - time_start) * 1000) #
+    finally:
+        ended_at = datetime.now(timezone.utc)
+        duration_ms = int((monotonic() - time_start) * 1000)
 
-        # Hitung status task
         if total_success_count == 0 and total_fail_count == 0:
             status = "no_camera"
         elif total_success_count == 0:
@@ -139,26 +136,26 @@ def scheduled_snapshot():
         else:
             status = "partial"
 
-        logger.info(f"[SUMMARY] Snapshot run complete: {total_success_count} succeeded, {total_fail_count} failed.") # Use total counts
-        logger.info(f"[SUMMARY] Duration: {duration_ms} ms") #
+        logger.info("[SUMMARY] Snapshot run complete: %d succeeded, %d failed.", total_success_count, total_fail_count)
+        logger.info("[SUMMARY] Duration: %d ms", duration_ms)
 
-        # Simpan ke TaskTiming meski snapshot gagal
         try:
-            task_log = TaskTiming( #
-                task_name="scheduled_snapshot", #
-                started_at=started_at, #
-                ended_at=ended_at, #
-                duration_ms=duration_ms, #
-                status=status, #
+            task_log = TaskTiming(
+                task_name="scheduled_snapshot",
+                started_at=started_at,
+                ended_at=ended_at,
+                duration_ms=duration_ms,
+                status=status,
             )
-            logger.warning(f"[CONFIRM] Writing TaskTiming with status={status}, duration={duration_ms}ms") #
-            db.add(task_log) #
-            db.commit() #
-            logger.warning(f"[CONFIRM] TaskTiming committed to DB") #
+            logger.warning("[CONFIRM] Writing TaskTiming with status=%s, duration=%dms", status, duration_ms)
+            db.add(task_log)
+            db.commit()
+            logger.warning("[CONFIRM] TaskTiming committed to DB")
         except Exception as e:
-            logger.exception(f"[TimingLog] Failed to save snapshot timing log: {e}") #
+            logger.exception("[TimingLog] Failed to save snapshot timing log: %s", e)
         finally:
-            db.close() #
+            db.close()
+
 
 # Global state untuk menyimpan konfigurasi terakhir
 last_config = {
