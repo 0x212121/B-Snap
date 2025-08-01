@@ -6,9 +6,15 @@ All notable changes to B-Snap will be documented in this file.
 
 ### Added
 - Snapshot batch size and batch delay in config.
+- Edit whitelist user
 
 ### Changed
 - Snapshot scheduler with interval 5s between batch.
+
+### Fixed
+- User name now correctly restored from session token after app restart
+- Session automatically rehydrates missing `user_name` from `user_id` if session is partially corrupted
+- Fixed redirect from gallery to maps caused by missing `user_groupid` in restored session
 
 
 ## [1.6.0] - 2025-07-31

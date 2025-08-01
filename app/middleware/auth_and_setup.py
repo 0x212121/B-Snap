@@ -51,6 +51,18 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
             if auth_header and auth_header.lower().startswith("bearer "):
                 return await call_next(request)
 
+            # Fix incomplete session (missing username or group id)
+            if session_user_id and (not session.get("user_name") or not session.get("user_groupid")):
+                try:
+                    user = db.query(User).filter(User.id == int(session_user_id)).first()
+                    if user:
+                        if not session.get("user_name"):
+                            session["user_name"] = user.username
+                        if not session.get("user_groupid"):
+                            session["user_groupid"] = user.group_id
+                except Exception as e:
+                    logger.warning("Failed to restore session data from user_id: %s", e)
+
             # Step 3: Early validation using both session + session_token
             if session_user_id and session_token:
                 try:
@@ -83,6 +95,8 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
 
                         session["user_id"] = user.id
                         session["user_role"] = user.role
+                        session["user_name"] = user.username
+                        session["user_groupid"] = user.group_id
 
                         response = await call_next(request)
                         response.set_cookie(
@@ -107,7 +121,7 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
             return response
 
         except Exception as e:
-            logger.error(f"Critical error in AuthAndSetupMiddleware: {e}", exc_info=True)
+            logger.error("Critical error in AuthAndSetupMiddleware: %s", e, exc_info=True)
             return Response("Internal Server Error", status_code=500)
         finally:
             db.close()
@@ -129,14 +143,14 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
             if result:
                 return db.query(User).get(result.id)
         except Exception as e:
-            logger.warning(f"Error while retrieving user by token: {e}")
+            logger.warning("Error while retrieving user by token: %s", e)
         return None
 
     def parse_tokens(self, raw_tokens):
         try:
             return json.loads(raw_tokens) if isinstance(raw_tokens, str) else raw_tokens
         except (json.JSONDecodeError, TypeError) as e:
-            logger.warning(f"Failed to parse web_tokens: {e}")
+            logger.warning("Failed to parse web_tokens: %s", e)
             return []
 
     def generate_new_token(self):
