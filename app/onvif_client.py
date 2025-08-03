@@ -78,34 +78,43 @@ def load_active_cameras():
 def add_watermark(image_path, text, opacity=0.5, color=(128, 128, 128), outline_color=(255, 255, 255), outline_width=1):
     """
     Add text watermark with outline to image with specific transparency and color.
+    
+    This function has been revised to explicitly close Image objects in a finally block
+    to prevent potential memory leaks.
     """
+    base_image = None
+    temp_image = None
+    watermarked_image = None
+    
     try:
+        # Open image and convert to RGBA
         base_image = Image.open(image_path).convert("RGBA")
+
+        # Create a transparent overlay for the watermark
         temp_image = Image.new("RGBA", base_image.size, (255, 255, 255, 0))
         draw = ImageDraw.Draw(temp_image)
 
         try:
-            # Use Liberation Sans (installed via fonts-liberation in Docker)
+            # Use Liberation Sans font if available
             font_path = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
-            font_size = int(min(base_image.size) * 0.05)  # Font size ~5% of smallest dimension
+            font_size = int(min(base_image.size) * 0.05)
             font = ImageFont.truetype(font_path, font_size)
         except IOError:
             logger.warning("Liberation Sans font not found, falling back to default font.")
             font = ImageFont.load_default()
 
-        # Calculate text position in center using textbox
+        # Calculate text position in center
         bbox = draw.textbbox((0, 0), text, font=font)
-        text_width = bbox[-2] - bbox[-4]  # right - left
-        text_height = bbox[-1] - bbox[-3]  # bottom - top
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
 
         x = (base_image.width - text_width) / 2
         y = (base_image.height - text_height) / 2
 
-        # Colored text with opacity
-        text_color = color + (int(255 * opacity),)  # RGBA
-        outline_fill = outline_color + (int(255 * opacity),)  # RGBA for outline
+        text_color = color + (int(255 * opacity),)
+        outline_fill = outline_color + (int(255 * opacity),)
 
-        # Draw outline by drawing text slightly offset in all directions
+        # Draw outline
         for dx in range(-outline_width, outline_width + 1):
             for dy in range(-outline_width, outline_width + 1):
                 if dx == 0 and dy == 0:
@@ -118,7 +127,7 @@ def add_watermark(image_path, text, opacity=0.5, color=(128, 128, 128), outline_
         # Merge base image with watermark layer
         watermarked_image = Image.alpha_composite(base_image, temp_image)
 
-        # Save result as RGB (JPEG-friendly)
+        # Save result, converting to RGB for JPEG compatibility
         watermarked_image.convert("RGB").save(image_path)
 
         logger.info(
@@ -128,6 +137,17 @@ def add_watermark(image_path, text, opacity=0.5, color=(128, 128, 128), outline_
 
     except Exception as e:
         logger.error("Failed to add watermark to %s: %s", image_path, e)
+        # Re-raise the exception to be handled by the caller, e.g., run_snapshot
+        raise
+        
+    finally:
+        # IMPORTANT: Explicitly close all Pillow Image objects to free memory
+        if base_image:
+            base_image.close()
+        if temp_image:
+            temp_image.close()
+        if watermarked_image:
+            watermarked_image.close()
 
 
 def get_rtsp_url(camera: Camera):
