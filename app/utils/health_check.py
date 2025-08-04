@@ -203,7 +203,7 @@ def ping_all_devices():
         cameras = db.query(DBCamera).filter(and_(DBCamera.status != "Deactivated", DBCamera.status != "Standalone")).all()
         nvrs = db.query(NVR).filter(NVR.status != "Deactivated").all()
         devices = [{"id": cam.id, "name": cam.hostname, "ip": cam.ip, "type": "Camera"} for cam in cameras] + \
-                  [{"id": nvr.id, "name": nvr.hostname, "ip": nvr.ip, "type": "NVR"} for nvr in nvrs]
+                    [{"id": nvr.id, "name": nvr.hostname, "ip": nvr.ip, "type": "NVR"} for nvr in nvrs]
 
         status_tracker.is_running = True
         status_tracker.start_time = datetime.now(timezone.utc)
@@ -215,9 +215,14 @@ def ping_all_devices():
 
         for i, device_info in enumerate(devices, 1):
             _perform_and_update_health_check(db, device_info)
-            status_tracker.completed_cameras = i
-            db.commit()
-
+            # Commit setiap 50 perangkat (contoh)
+            if i % 50 == 0:
+                db.commit()
+                db.expunge_all() # Opsional: bersihkan cache sesi
+        
+        # Commit sisa perangkat di luar loop
+        db.commit()
+        
         logger.info("✅ Health check for all devices completed.")
         status_tracker.is_running = False
         status_tracker.start_time = None
@@ -244,10 +249,10 @@ def ping_all_devices():
             ))
             db.commit()
         except Exception as e:
-            logger.warning(f"[TimingLog] Failed to log ping timing: {e}")
+            logger.warning("[TimingLog] Failed to log ping timing: %s", e)
         db.close()
 
-        logger.info("⏱️ Finished in %.2f seconds.", duration_ms / 1000)
+    logger.info("⏱️ Finished in %.2f seconds.", duration_ms / 1000)
 
 
 def ping_camera_by_id(camera_id: str):

@@ -2,6 +2,11 @@
 
 All notable changes to B-Snap will be documented in this file.
 
+## [1.6.2] - 2025-08-04
+
+### Fixed
+- Fixed memory leak issue during snapshot process.
+
 ## [1.6.1] - 2025-08-01
 
 ### Added
