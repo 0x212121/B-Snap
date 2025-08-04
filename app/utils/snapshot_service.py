@@ -12,11 +12,11 @@ from onvif import ONVIFCamera
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 from app.core.config import get_config
 from app.core.logging_config import setup_logging
-from app.utils.snapshot_utils import (
+from app.onvif_client import (
     is_reachable,
     add_watermark,
     get_rtsp_url,
-    error_response
+    try_auth
 )
 from app.utils import check_stats
 from app.models.camera import Camera
