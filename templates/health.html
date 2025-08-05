@@ -334,17 +334,24 @@
   }
   
   function checkHealthCheckProgress() {
+    // Clear any existing interval to prevent multiple from running
     if (healthCheckInterval) {
       clearInterval(healthCheckInterval);
     }
     
     healthCheckInterval = setInterval(() => {
       fetch('/health/status/check')
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
       .then(data => {
         const button = document.getElementById('ping-all-btn');
         if (data.is_complete) {
           clearInterval(healthCheckInterval);
+          healthCheckInterval = null;
           document.getElementById('healthCheckStatus').classList.add('hidden');
           
           if (button) {
@@ -366,6 +373,7 @@
       .catch(error => {
         console.error('Error checking health check status:', error);
         clearInterval(healthCheckInterval);
+        healthCheckInterval = null;
         document.getElementById('healthCheckStatus').classList.add('hidden');
         
         const button = document.getElementById('ping-all-btn');

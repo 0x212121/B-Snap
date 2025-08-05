@@ -146,6 +146,7 @@ async def trigger_healthcheck(
         background_tasks.add_task(run_healthcheck_for_nvr, entity_id)
     return {"status": f"Healthcheck triggered for {type.upper()} ID {entity_id}"}
 
+
 @router.post("/health/trigger_all")
 async def trigger_healthcheck_all(background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_operator: User = Depends(operator_access_required)):
     status = db.query(HealthCheckStatus).get(1)

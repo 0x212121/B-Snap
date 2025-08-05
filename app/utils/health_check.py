@@ -162,7 +162,6 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
                 total_tracked = daily_stat.total_uptime_seconds + daily_stat.total_downtime_seconds
                 daily_stat.uptime_percentage = (daily_stat.total_uptime_seconds / total_tracked) * 100 if total_tracked > 0 else 0
 
-
     # Status update logic
     if current_status != new_status:
         logger.info("Status change: %s from %s to %s.", device_name, current_status, new_status)
@@ -189,7 +188,7 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
 def ping_all_devices():
     """Performs health checks on all active Cameras and NVRs."""
     time_start = time.monotonic()
-    started_at = datetime.utcnow()
+    started_at = datetime.now(timezone.utc)
 
     db = SessionLocal()
     status_tracker = None
@@ -215,18 +214,21 @@ def ping_all_devices():
 
         for i, device_info in enumerate(devices, 1):
             _perform_and_update_health_check(db, device_info)
-            # Commit setiap 50 perangkat (contoh)
-            if i % 50 == 0:
-                db.commit()
-                db.expunge_all() # Opsional: bersihkan cache sesi
-        
-        # Commit sisa perangkat di luar loop
-        db.commit()
+
+            status_tracker = db.query(HealthCheckStatus).get(1)
+            if status_tracker:
+                status_tracker.completed_cameras = i
+                # Commit setiap 50 perangkat (contoh)
+                if i % 50 == 0:
+                    db.commit()
+                    db.expunge_all()  # Opsional: bersihkan cache sesi
         
         logger.info("✅ Health check for all devices completed.")
-        status_tracker.is_running = False
-        status_tracker.start_time = None
-        db.commit()
+        status_tracker = db.query(HealthCheckStatus).get(1)
+        if status_tracker:
+            status_tracker.is_running = False
+            status_tracker.start_time = None
+            db.commit()
 
         status = "success"
     except Exception as e:
@@ -236,7 +238,7 @@ def ping_all_devices():
             db.commit()
         status = "fail"
     finally:
-        ended_at = datetime.utcnow()
+        ended_at = datetime.now(timezone.utc)
         duration_ms = int((time.monotonic() - time_start) * 1000)
 
         try:
