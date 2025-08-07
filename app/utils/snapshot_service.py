@@ -74,7 +74,7 @@ def take_snapshot(camera: Camera, db: Session) -> dict:
     if not is_reachable(camera.ip):
         msg = "⚠️ [%s] unreachable (ping failed)" % camera.hostname
         logger.warning(msg)
-        return error_response(camera.hostname, camera.ip, "Camera offline")
+        return error_response(camera.hostname, "Camera offline", camera.ip)
 
     result = try_http_snapshot(camera, db)
     if result["status"] == "success":
