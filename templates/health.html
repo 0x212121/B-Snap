@@ -18,12 +18,12 @@
   <div class="flex items-center gap-2">
     <input type="text" id="searchInput" onkeyup="filterAndRenderTable()" placeholder="Search by Name or IP..."
     class="py-2 pl-3 pr-6 border border-gray-300 dark:border-gray-600 rounded-md w-full sm:w-auto dark:bg-gray-700 dark:text-white">
-    <select id="typeFilter" onchange="filterAndRenderTable()" class="py-2 pl-3 pr-6 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white mr-10">
+    <select id="typeFilter" onchange="filterAndRenderTable()" class="py-2 pl-3 pr-8 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white mr-10 w-auto min-w-fit">
       <option value="All">All Types</option>
       <option value="Camera">Camera</option>
       <option value="NVR">NVR</option>
     </select>
-    <select id="statusFilter" onchange="filterAndRenderTable()" class="py-2 pl-3 pr-6 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
+    <select id="statusFilter" onchange="filterAndRenderTable()" class="py-2 pl-3 pr-8 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white w-auto min-w-fit">
       <option value="All">All Statuses</option>
       <option value="Online">Online</option>
       <option value="Offline">Offline</option>

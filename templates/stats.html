@@ -7,13 +7,13 @@
   <h1 class="text-3xl font-bold text-blue-700 dark:text-blue-300 mb-6">📈 Camera Snapshot Stats</h1>
   
   <div class="flex items-center gap-4 mb-6">
-    <select id="cameraDropdown" class="border p-2 rounded dark:bg-gray-800 dark:text-white">
+    <select id="cameraDropdown" class="border p-2 pr-8 rounded dark:bg-gray-800 dark:text-white">
       <option value="">All Cameras</option>
       {% for name in camera_names %}
       <option value="{{ name | urlencode }}" {% if selected_camera == name %}selected{% endif %}>{{ name }}</option>
       {% endfor %}
     </select>
-    <select id="periodDropdown" class="border p-2 rounded dark:bg-gray-800 dark:text-white">
+    <select id="periodDropdown" class="border p-2 pr-8 rounded dark:bg-gray-800 dark:text-white w-auto min-w-fit">
       <option value="7" selected>Last 7 Days</option>
       <option value="14">Last 14 Days</option>
       <option value="30">Last 30 Days</option>
