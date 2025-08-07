@@ -1,6 +1,7 @@
 from datetime import datetime
 import io
 import os
+from typing import Optional
 import cv2
 import subprocess
 from io import BytesIO
@@ -73,7 +74,7 @@ def take_snapshot(camera: Camera, db: Session) -> dict:
     if not is_reachable(camera.ip):
         msg = "⚠️ [%s] unreachable (ping failed)" % camera.hostname
         logger.warning(msg)
-        return error_response(camera.hostname, "Camera offline")
+        return error_response(camera.hostname, camera.ip, "Camera offline")
 
     result = try_http_snapshot(camera, db)
     if result["status"] == "success":
@@ -263,12 +264,17 @@ def try_ffmpeg_snapshot(camera: Camera, db: Session) -> dict:
         return error_response(camera.hostname, f"FFmpeg snapshot failed: {str(e)}")
 
 
-def error_response(camera_name: str, error: str) -> dict:
-    return {
+def error_response(camera_name: str, error: str, camera_ip: Optional[str] = None) -> dict:
+    response = {
         "status": "error",
         "message": f"Failed to take snapshot from {camera_name}: {error}",
-        "camera_name": camera_name
+        "camera_name": camera_name,
     }
+
+    if camera_ip:
+        response["camera_ip"] = camera_ip
+
+    return response
 
 
 def clean_old_snapshots(camera_name: str, db: Session):
