@@ -13,85 +13,113 @@
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
 <style>
-  /* Base map and popup styles (unchanged) */
+  /* Base map and popup styles */
   .leaflet-top.leaflet-left { width: 100%; display: flex; justify-content: left; pointer-events: none; margin-top: 10px; }
   .leaflet-control-map-title { pointer-events: auto; margin-top: 10px; }
   .custom-title-bar { display: flex; align-items: center; position: relative; background-color: #E60000; color: white; padding: 8px 15px 8px 65px; border-radius: 30px; font-weight: bold; font-size: 1.3em; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); text-shadow: 1px 1px 2px rgba(0,0,0,0.2); animation: fadeInUp 0.6s ease-out; }
   .title-logo { position: absolute; left: 0px; width: 60px; height: 60px; border-radius: 50%; background-color: #fff; border: 5px solid #E60000; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); padding: 2px; }
-  .leaflet-popup-content { 
-    width: 20rem !important; 
-  }
-
-  .leaflet-popup-content p {
-    font-size: 14px;
-    margin: 0;
-    padding: 1px;
-  }
-
-  /* Prevent hostname overflow in popup */
-  .leaflet-popup-content strong {
-    display: block;
-    max-width: 220px;
-    word-break: break-word;
-    overflow-wrap: break-word;
-    white-space: normal;
-  }
+  .leaflet-popup-content { width: 20rem !important; }
+  .leaflet-popup-content p { font-size: 14px; margin: 0; padding: 1px; }
+  .leaflet-popup-content strong { display: block; max-width: 220px; word-break: break-word; overflow-wrap: break-word; white-space: normal; }
   
-  /* --- BEST PRACTICE MARKER STYLES --- */
+  /* Marker animations and styles */
   @keyframes pulse {
     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(4, 120, 87, 0.7); }
     70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(4, 120, 87, 0); }
     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(4, 120, 87, 0); }
   }
+  @keyframes blink { 50% { opacity: 0.2; } }
   
-  /* NEW: Animation for blinking offline markers */
-  @keyframes blink {
-    50% { opacity: 0.2; }
-  }
-  
-  .circle-marker {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-    transition: transform 0.2s ease-in-out;
-  }
-  
-  .custom-div-icon:hover .circle-marker {
-    transform: scale(1.4);
-  }
-  
-  /* Status colors for markers */
+  .circle-marker { width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); transition: transform 0.2s ease-in-out; }
+  .custom-div-icon:hover .circle-marker { transform: scale(1.4); }
   .circle-marker.green { background-color: #10B981; animation: pulse 2s infinite; }
   .circle-marker.orange { background-color: #F59E0B; }
-  /* CHANGED: Apply the new blink animation to red markers */
   .circle-marker.red { background-color: #EF4444; animation: blink 1.5s step-end infinite; }
   
-  /* --- BEST PRACTICE CLUSTER STYLES (PIE CHART) --- */
-  .marker-cluster-pie {
+  /* Cluster pie chart styles */
+  .marker-cluster-pie { transition: all 0.2s ease-in-out; border-radius: 50%; background-clip: padding-box; border: 3px solid rgba(255, 255, 255, 0.6); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+  .marker-cluster-pie div { width: 100%; height: 100%; margin-left: 0; margin-top: 0; text-align: center; border-radius: 50%; color: #fff; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.25); }
+
+  /* --- ADDED/MODIFIED: Styles for the new search control with autocomplete --- */
+  .leaflet-control-search {
+    position: relative; /* Needed for absolute positioning of results */
+    background: transparent;
+  }
+  .leaflet-control-search input {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 8px 12px;
+    width: 250px; /* Wider search box */
+    font-size: 14px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2);
     transition: all 0.2s ease-in-out;
-    border-radius: 50%;
-    background-clip: padding-box; /* Ensures border doesn't overlap gradient */
-    border: 3px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   }
-  .marker-cluster-pie div {
-    /* Styles for the number inside the pie chart */
-    width: 100%;
-    height: 100%;
-    margin-left: 0;
-    margin-top: 0;
-    text-align: center;
-    border-radius: 50%;
-    color: #fff;
-    font-weight: bold;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 0, 0, 0.25); /* Darkens the center for readability */
+  .leaflet-control-search input:focus {
+    outline: none;
+    border-color: #3b82f6; /* Blue-500 */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
   }
+  
+
+  /* Dark mode styles for the search input */
+  .dark .leaflet-control-search input {
+    background-color: #374151; /* gray-700 */
+    border-color: #4b5563; /* gray-600 */
+    color: #f3f4f6; /* gray-100 */
+  }
+  .dark .leaflet-control-search input::placeholder {
+    color: #9ca3af; /* gray-400 */
+  }
+
+  /* Autocomplete results container */
+  #search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+
+  .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar {
+    z-index: 1;
+  }
+
+  /* Dark mode for results container */
+  .dark #search-results {
+    background-color: #1f2937; /* gray-800 */
+    border-color: #4b5563; /* gray-600 */
+  }
+
+  /* Individual result item */
+  .search-result-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .search-result-item:hover {
+    background-color: #f3f4f6; /* gray-100 */
+  }
+  .dark .search-result-item {
+    color: #d1d5db; /* gray-300 */
+  }
+  .dark .search-result-item:hover {
+    background-color: #374151; /* gray-700 */
+  }
+  .search-result-item small {
+    display: block;
+    color: #6b7280; /* gray-500 */
+  }
+  .dark .search-result-item small {
+    color: #9ca3af; /* gray-400 */
+  }
+
 </style>
 
 <script>
@@ -101,65 +129,106 @@
     map.attributionControl.setPrefix('');
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
     
+        // --- MODIFIED: Search Control with Autocomplete ---
+    L.Control.Search = L.Control.extend({
+        onAdd: function() {
+            const container = L.DomUtil.create('div', 'leaflet-control-search');
+            container.innerHTML = `
+                <input type="text" id="map-search-input" placeholder="Find camera by Name or IP...">
+                <div id="search-results" class="hidden"></div>
+            `;
+            L.DomEvent.disableClickPropagation(container);
+            return container;
+        }
+    });
+    new L.Control.Search({ position: 'topright' }).addTo(map);
+
     L.control.zoom({ position: 'topright' }).addTo(map);
     L.control.fullscreen({ position: 'topright' }).addTo(map);
     
-    // Unchanged Controls: Title, Filter, Stats
+    // Other controls (Title, Filter, Stats) remain the same
     L.Control.MapTitle = L.Control.extend({ onAdd: function () { const div = L.DomUtil.create('div', 'leaflet-control-map-title'); div.innerHTML = `<div class="custom-title-bar"><img src="/static/icons/logo.png" alt="Logo KPC" class="title-logo"><span class="title-text">${MAP_TITLE}</span></div>`; L.DomEvent.disableClickPropagation(div); return div; }, }); L.control.mapTitle = function (opts) { return new L.Control.MapTitle(opts); }; L.control.mapTitle({ position: "topleft" }).addTo(map);
     L.Control.statusFilter = L.Control.extend({ onAdd: function() { const div = L.DomUtil.create('div', 'leaflet-control-status-filter bg-white/95 dark:bg-gray-800 text-sm rounded shadow p-3 mt-2 w-[160px] space-y-2'); div.innerHTML = `<label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="Online" checked> 🟢 Online</label><label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="High Latency" checked> 🟡 High Latency</label><label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="Offline" checked> 🔴 Offline</label>`; L.DomEvent.disableClickPropagation(div); return div; } }); L.control.statusFilter = function(opts) { return new L.Control.statusFilter(opts); }; L.control.statusFilter({ position: "bottomright" }).addTo(map);
     L.Control.cameraStats = L.Control.extend({ onAdd: function() { const container = L.DomUtil.create("div", "leaflet-bar camera-stats p-2 text-sm bg-white/85 dark:bg-gray-800 rounded-[5px] shadow-[0_0_15px_rgba(0,0,0,0.2)] leading-[1.2em] mt-2"); container.innerHTML = `<div id="camera-stats"><div class="text-gray-800 dark:text-gray-100 mb-2 font-semibold text-center"><span id="user-group">-</span> Camera Stats</div><div class="text-green-600 dark:text-green-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-green-500"></span>Online: <span id="stat-online">-</span></div><div class="text-yellow-500 dark:text-yellow-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-yellow-500"></span>High Latency (&gt;50 ms): <span id="stat-highlatency">-</span></div><div class="text-red-600 dark:text-red-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-red-500"></span>Offline: <span id="stat-offline">-</span></div><div class="text-gray-700 dark:text-gray-100 mb-1">Total: <span id="stat-total">-</span></div></div>`; L.DomEvent.disableClickPropagation(container); return container; }, }); L.control.cameraStats = function(opts) { return new L.Control.cameraStats(opts); }; L.control.cameraStats({ position: "bottomright" }).addTo(map);
-    
-    // --- BEST PRACTICE CLUSTER GROUP INITIALIZATION ---
+
+
     const markerClusterGroup = L.markerClusterGroup({
-      // The magic happens here: a custom function to create cluster icons
       iconCreateFunction: function (cluster) {
         const children = cluster.getAllChildMarkers();
         const count = children.length;
-        
         let online = 0, highLatency = 0, offline = 0;
         children.forEach(c => {
           if (c.status === 'Online') online++;
           else if (c.status === 'High Latency') highLatency++;
           else if (c.status === 'Offline') offline++;
         });
-        
-        // Define colors for the pie chart segments
-        const onlineColor = '#10B981'; // green-500
-        const highLatencyColor = '#F59E0B'; // yellow-500
-        const offlineColor = '#EF4444'; // red-500
-        
-        // Calculate percentages for the conic-gradient
+        const onlineColor = '#10B981', highLatencyColor = '#F59E0B', offlineColor = '#EF4444';
         const onlineEnd = (online / count) * 360;
         const highLatencyEnd = onlineEnd + (highLatency / count) * 360;
-        
-        // Create the conic-gradient background for the pie chart effect
-        const gradient = `conic-gradient(
-          ${onlineColor} 0deg ${onlineEnd}deg,
-          ${highLatencyColor} ${onlineEnd}deg ${highLatencyEnd}deg,
-          ${offlineColor} ${highLatencyEnd}deg 360deg
-        )`;
-        
-        // Dynamically calculate size for a nice visual effect
+        const gradient = `conic-gradient(${onlineColor} 0deg ${onlineEnd}deg, ${highLatencyColor} ${onlineEnd}deg ${highLatencyEnd}deg, ${offlineColor} ${highLatencyEnd}deg 360deg)`;
         const size = 30 + Math.log2(count) * 5;
-        
-        // Return a DivIcon with the custom pie chart style
-        return L.divIcon({
-          html: `<div><span>${count}</span></div>`,
-          className: 'marker-cluster-pie',
-          iconSize: [size, size],
-          // Dynamically set the background using an inline style
-          // This is a powerful technique for data-driven styling
-          html: `<div style="background: ${gradient};"><span>${count}</span></div>`,
-        });
+        return L.divIcon({ html: `<div style="background: ${gradient};"><span>${count}</span></div>`, className: 'marker-cluster-pie', iconSize: [size, size] });
       },
-      // Other cluster options for better UX
-      spiderfyOnMaxZoom: true,
-      showCoverageOnHover: false,
-      zoomToBoundsOnClick: true
+      spiderfyOnMaxZoom: true, showCoverageOnHover: false, zoomToBoundsOnClick: true
     });
     map.addLayer(markerClusterGroup);
     
+    let allCameraData = []; // Store raw camera data for searching
+    let allMarkers = [];
     let statusFilter = new Set(["Online", "High Latency", "Offline"]);
+    
+    const searchInput = document.getElementById('map-search-input');
+    const searchResultsContainer = document.getElementById('search-results');
+
+    // --- NEW: Event Listeners for Autocomplete Search ---
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        if (query.length < 2) {
+            searchResultsContainer.innerHTML = '';
+            searchResultsContainer.classList.add('hidden');
+            return;
+        }
+
+        const filteredCameras = allCameraData.filter(cam => 
+            cam.hostname.toLowerCase().includes(query) || cam.ip.toLowerCase().includes(query)
+        );
+
+        searchResultsContainer.innerHTML = '';
+        if (filteredCameras.length > 0) {
+            filteredCameras.slice(0, 10).forEach(cam => { // Limit to 10 results
+                const item = document.createElement('div');
+                item.className = 'search-result-item';
+                item.innerHTML = `<div>${escapeHTML(cam.hostname)}</div><small>${escapeHTML(cam.ip)}</small>`;
+                item.dataset.cameraId = cam.id;
+                searchResultsContainer.appendChild(item);
+            });
+            searchResultsContainer.classList.remove('hidden');
+        } else {
+            searchResultsContainer.classList.add('hidden');
+        }
+    });
+
+    searchResultsContainer.addEventListener('click', function(e) {
+        const target = e.target.closest('.search-result-item');
+        if (!target) return;
+
+        const camId = target.dataset.cameraId;
+        const markerToFind = allMarkers.find(m => m.cameraData.id === camId);
+
+        if (markerToFind) {
+            markerClusterGroup.zoomToShowLayer(markerToFind, () => {
+                map.flyTo(markerToFind.getLatLng(), 18);
+                markerToFind.openPopup();
+            });
+        }
+        
+        searchInput.value = '';
+        searchResultsContainer.classList.add('hidden');
+    });
+
+    map.on('click', function() {
+        searchResultsContainer.classList.add('hidden');
+    });
     
     document.addEventListener("change", function (e) {
       if (e.target && e.target.classList.contains("status-checkbox")) {
@@ -171,14 +240,8 @@
     
     function escapeHTML(str) {
       if (typeof str !== 'string') return str;
-      return str
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
-    
     
     function normalizeStatus(status) {
       return (status === "Optimal Latency") ? "Online" : status;
@@ -186,6 +249,8 @@
     
     function refreshMapData() {
       markerClusterGroup.clearLayers();
+      allMarkers = [];
+      allCameraData = [];
       
       fetch("/camera-locations")
       .then(res => {
@@ -193,6 +258,7 @@
         return res.json();
       })
       .then(data => {
+        allCameraData = data; // Store all data for searching
         let onlineCount = 0, offlineCount = 0, highLatencyCount = 0, user_group = '';
         
         data.forEach(cam => {
@@ -204,20 +270,14 @@
           else offlineCount++;
           
           if (cam.lat && cam.lng && cam.restricted !== "Restricted") {
-            const color =
-            normalized === "Online" ? "green" :
-            normalized === "High Latency" ? "orange" : "red";
+            const color = normalized === "Online" ? "green" : normalized === "High Latency" ? "orange" : "red";
             
             const marker = L.marker([cam.lat, cam.lng], {
-              icon: L.divIcon({
-                className: 'custom-div-icon',
-                html: `<div class="circle-marker ${color}"></div>`,
-                iconSize: [20, 20],
-                iconAnchor: [10, 10],
-              }),
+              icon: L.divIcon({ className: 'custom-div-icon', html: `<div class="circle-marker ${color}"></div>`, iconSize: [20, 20], iconAnchor: [10, 10] }),
             });
             
             marker.status = normalized;
+            marker.cameraData = cam;
             
             const popupContent = L.DomUtil.create('div');
             const isOnline = normalized === "Online" || normalized === "High Latency";
@@ -228,10 +288,7 @@
               <tr><td>IP</td><td>: ${escapeHTML(cam.ip)}</td></tr>
               <tr><td>Asset No</td><td>: ${escapeHTML(cam.asset_no || 'N/A')}</td></tr>
               <tr><td>Status</td><td>: ${isOnline ? (normalized === "Online" ? "🟢 Online" : "🟡 High Latency") : "🔴 Offline"}</td></tr>
-              ${isOnline
-            ? `<tr><td>Uptime</td><td>: ${escapeHTML(cam.uptime)}</td></tr>`
-            : `<tr><td>Downtime</td><td>: ${escapeHTML(cam.uptime)}</td></tr>
-                   <tr><td>Last Online</td><td>: ${escapeHTML(cam.last_online)}</td></tr>`}
+              ${isOnline ? `<tr><td>Uptime</td><td>: ${escapeHTML(cam.uptime)}</td></tr>` : `<tr><td>Downtime</td><td>: ${escapeHTML(cam.uptime)}</td></tr><tr><td>Last Online</td><td>: ${escapeHTML(cam.last_online)}</td></tr>`}
             </table>
             <div id="snapshot-container-${cam.id}" class="mt-0 text-center text-gray-500 dark:text-gray-400">Loading snapshot...</div>
           `;
@@ -241,38 +298,23 @@
             marker.on('popupopen', async () => {
               const container = document.getElementById(`snapshot-container-${cam.id}`);
               if (!container) return;
-              
               container.innerHTML = `<p class="loading-text">Loading snapshot info...</p>`;
-              
               try {
                 const info = await fetch(`/snapshot/latest/${encodeURIComponent(cam.hostname)}/info`);
                 if (!info.ok) throw new Error("Snapshot not available");
                 const snapshot = await info.json();
-                
                 const timestamp = escapeHTML(snapshot.timestamp);
                 const resolution = escapeHTML(snapshot.res);
-                const tamperReason = snapshot.tamper_reason
-                ? `<p class="text-left text-gray-800 dark:text-gray-800">Tampered: ${escapeHTML(snapshot.tamper_reason)}</p>`
-                : '';
-                
-                container.innerHTML = `
-                ${tamperReason}
-                <p class="text-left text-gray-800 dark:text-gray-800">Resolution: ${resolution}</p>
-                <p class="text-left text-gray-800 dark:text-gray-800">Snapshot Time: ${timestamp}</p>
-                <img src="${escapeHTML(snapshot.url)}" class="w-full h-auto rounded-md shadow-md mt-1" alt="Camera Snapshot"
-                  onload="this.nextElementSibling.style.display='none';"
-                  onerror="this.onerror=null; this.src='/static/placeholder.svg'; this.nextElementSibling.style.display='none'; this.nextElementSibling.nextElementSibling.style.display='block';">
-                <p class="loading-text text-gray-500 dark:text-gray-400 mt-1">Loading image...</p>
-                <p class="error-message text-red-500 text-xs mt-1" style="display: none;">Image failed to load.</p>
-              `;
+                const tamperReason = snapshot.tamper_reason ? `<p class="text-left text-gray-800 dark:text-gray-800">Tampered: ${escapeHTML(snapshot.tamper_reason)}</p>` : '';
+                container.innerHTML = `${tamperReason}<p class="text-left text-gray-800 dark:text-gray-800">Resolution: ${resolution}</p><p class="text-left text-gray-800 dark:text-gray-800">Snapshot Time: ${timestamp}</p><img src="${escapeHTML(snapshot.url)}" class="w-full h-auto rounded-md shadow-md mt-1" alt="Camera Snapshot" onload="this.nextElementSibling.style.display='none';" onerror="this.onerror=null; this.src='/static/placeholder.svg'; this.nextElementSibling.style.display='none'; this.nextElementSibling.nextElementSibling.style.display='block';"><p class="loading-text text-gray-500 dark:text-gray-400 mt-1">Loading image...</p><p class="error-message text-red-500 text-xs mt-1" style="display: none;">Image failed to load.</p>`;
               } catch (err) {
                 container.innerHTML = `<div class="text-center text-sm text-red-500">❌ ${escapeHTML(err.message)}</div>`;
               }
             });
             
             markerClusterGroup.addLayer(marker);
+            allMarkers.push(marker);
           }
-          
           user_group = cam.user_group;
         });
         

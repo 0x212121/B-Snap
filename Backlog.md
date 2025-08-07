@@ -102,10 +102,9 @@
 29/07/2025 - 31/07/2025
 
 ⏳ Ongoing:
-- [ ] Tidy up API documentation
-- [ ] n8n add command:
+- [x] Tidy up API documentation
+- [x] n8n add command:
   - [x] Change CCTV user and password in B-Snap using WA Bot
-  - [ ] Kirim persentase uptime per kamera selama 7 hari terakhir.
   - [x] Cek Token API yang Aktif
 - [x] Change phone number from audit logs to username -> Indra (6282191799711)
 - [x] Fixed redirect from gallery to maps caused by missing `user_groupid` in restored session

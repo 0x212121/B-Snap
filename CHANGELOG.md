@@ -4,6 +4,9 @@ All notable changes to B-Snap will be documented in this file.
 
 ## [1.6.3] - 2025-08-07
 
+### Added
+- Search bar in maps view.
+
 ### Changed
 - Snapshot error responses now include the camera IP address.
 - Removed "items per page" option from the config menu.
