@@ -2,8 +2,7 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-6">
-  <!-- Header buttons for adding and managing NVRs -->
-  <div class="flex flex-wrap gap-4 mb-6">
+  <div class="flex flex-wrap items-center gap-4 mb-6">
     <button onclick="showAddNVRModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 shadow-sm">
       <span>➕</span> Add NVR
     </button>
@@ -17,9 +16,17 @@
     <a href="/nvrs/export_csv" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2">
       <span>⬇️</span> Export CSV
     </a>
+    <div class="flex items-center gap-2 ml-auto">
+        <label for="perPageSelect" class="text-sm font-medium text-gray-700 dark:text-gray-300">Items per page:</label>
+        <select id="perPageSelect" class="rounded-md pr-8 border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm py-2 px-3">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+        </select>
+    </div>
   </div>
   
-  <!-- Main content area for listing NVRs -->
   <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
       <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-300">📋 NVR Management</h2>
@@ -54,18 +61,13 @@
   </div>
 </div>  
 
-<!-- ====================================================== -->
-<!-- ================ MODAL ADD/EDIT NVR =============== -->
-<!-- ====================================================== -->
 <div id="nvrModal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-50 p-4">
   <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-2xl w-full max-w-md mx-auto max-h-[90vh] flex flex-col transform transition-all opacity-0 -translate-y-4">
-    <!-- Header -->
     <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-      <h2 id="modalTitle" class="text-xl font-bold text-gray-800 dark:text-gray-200">Camera</h2>
+      <h2 id="modalTitle" class="text-xl font-bold text-gray-800 dark:text-gray-200">NVR</h2>
       <button onclick="hideNVRmodal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">✕</button>
     </div>
     
-    <!-- Tabs -->
     <div class="border-b border-gray-200 dark:border-gray-700 mb-4">
       <nav id="modalTabs" class="-mb-px flex space-x-6" aria-label="Tabs">
         <button type="button" class="tab-button group inline-flex items-center py-3 px-1 border-b-2 font-semibold text-sm" data-tab="basic">
@@ -77,11 +79,9 @@
       </nav>
     </div>
     
-    <!-- Form -->
     <form id="cameraForm" class="space-y-4 overflow-y-auto flex-grow px-1">
       <input type="hidden" id="cameraId" name="id">
       
-      <!-- Basic Info Tab -->
       <div id="tab-basic" class="tab-content space-y-4">
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="name">Hostname</label><input type="text" id="name" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" pattern="[A-Za-z0-9_\-#\s]+$" title="Only letters, numbers, underscore, hash and hyphen allowed"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Hanya huruf, angka, garis bawah, dan tanda hubung.</p></div>
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="ip">IP Address</label><input type="text" id="ip" name="ip" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$" title="Please enter a valid IP address"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Format: xxx.xxx.xxx.xxx</p></div>
@@ -113,7 +113,6 @@
         
       </div>
       
-      <!-- Location Tab -->
       <div id="tab-location" class="tab-content space-y-4 hidden">
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="latitude">Latitude</label><input type="number" step="0.000001" id="latitude" name="latitude" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: -7.252</p></div>
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">Longitude</label><input type="number" step="0.000001" id="longitude" name="longitude" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: 112.753</p></div>
@@ -124,7 +123,6 @@
       </div>
     </form>
     
-    <!-- Footer -->
     <div class="flex justify-end space-x-3 pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
       <button type="button" onclick="hideNVRmodal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200 rounded-md font-semibold text-sm">Cancel</button>
       <button type="submit" form="cameraForm" id="modalSubmitButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold text-sm shadow-sm">Submit</button>
@@ -132,7 +130,6 @@
   </div>
 </div>
 
-<!-- Notifikasi -->
 <div id="notification-container" class="fixed top-5 right-5 z-[100] w-full max-w-sm"></div>
 
 <script>
@@ -193,12 +190,13 @@ document.addEventListener('DOMContentLoaded', function() {
   // ======================================================
   window.loadPage = async function(page = 1) {
     const search = document.getElementById("searchInput").value;
+    const perPage = document.getElementById("perPageSelect").value;
     const tbody = document.getElementById('camera-body');
     const paginationContainer = document.getElementById('pagination-controls');
     
     try {
         tbody.style.opacity = "0.5";
-        const res = await fetch(`/nvrs/data?page=${page}&search=${encodeURIComponent(search || '')}`);
+        const res = await fetch(`/nvrs/data?page=${page}&search=${encodeURIComponent(search || '')}&per_page=${perPage}`);
         
         if (res.status === 404) {
             tbody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-gray-500">No NVRs found.</td></tr>`;
@@ -217,16 +215,17 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const url = new URL(window.location);
         url.searchParams.set('page', page);
+        url.searchParams.set('per_page', perPage);
         if (search) {
             url.searchParams.set('search', search);
         } else {
             url.searchParams.delete('search');
         }
-        window.history.pushState({ page }, '', url);
+        window.history.pushState({ page, perPage }, '', url);
         
     } catch (err) {
         console.error("Failed to load page:", err);
-        showNotification({ status: 'error', message: 'Failed to load camera data.' });
+        showNotification({ status: 'error', message: 'Failed to load NVR data.' });
     } finally {
         tbody.style.opacity = "1";
     }
@@ -253,6 +252,14 @@ document.addEventListener('DOMContentLoaded', function() {
       option.selected = (group.name === selectedValue);
       select.appendChild(option);
     });
+  }
+
+  function updatePerPageSelect() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const perPage = urlParams.get('per_page');
+      if (perPage) {
+          document.getElementById('perPageSelect').value = perPage;
+      }
   }
 
   // ======================================================
@@ -373,11 +380,16 @@ document.addEventListener('DOMContentLoaded', function() {
     loadPage(1);
   });
   
+  document.getElementById('perPageSelect').addEventListener('change', () => {
+    loadPage(1);
+  });
+
   modalElement.addEventListener('click', (e) => {
     if (e.target === modalElement) hideNVRmodal();
   });
 
   // Init
+  updatePerPageSelect();
   loadPage(new URLSearchParams(window.location.search).get('page') || 1);
   setupTabs();
 });

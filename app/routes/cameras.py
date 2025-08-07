@@ -43,8 +43,11 @@ async def manage_data(
     db: Session = Depends(get_db), 
     page: int = Query(1, ge=1),
     search: Optional[str] = Query(None),
+    per_page: int = Query(10, ge=1) # MODIFIED: Accept per_page from query
 ):
-    per_page = get_config('items_per_page', 10)
+    # REMOVED: The per_page value is now taken directly from the function's arguments.
+    # per_page = get_config('items_per_page', 10) 
+    
     query = db.query(DBCamera).options(joinedload(DBCamera.group))
 
     if search:
@@ -63,6 +66,7 @@ async def manage_data(
     query = query.order_by(DBCamera.hostname.asc())
     
     total = query.count()
+    # The 'per_page' variable here will now use the value from the 'per_page' query parameter.
     cameras = query.offset((page - 1) * per_page).limit(per_page).all()
     total_pages = (total + per_page - 1) // per_page if total > 0 else 1
     
@@ -98,33 +102,27 @@ async def manage_data(
             </tr>
         """
     
-    # --- LOGIKA PAGINASI YANG DIPERBAIKI ---
     pagination_html = ""
     if total_pages > 1:
         links = []
-        window = 2  # Jumlah halaman di sekitar halaman saat ini
+        window = 2
         
-        # Link 'First' dan 'Prev'
         if page > 1:
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage(1)" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">First</a>')
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({page - 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">«</a>')
 
-        # Tampilkan ellipsis jika perlu
         if page > window + 2:
             links.append('<span class="px-3 py-1">...</span>')
 
-        # Tampilkan nomor halaman
         for i in range(max(1, page - window), min(total_pages, page + window) + 1):
             if i == page:
                 links.append(f'<span class="px-3 py-1 bg-blue-600 text-white rounded font-bold">{i}</span>')
             else:
                 links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({i})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">{i}</a>')
         
-        # Tampilkan ellipsis jika perlu
         if page < total_pages - window - 1:
              links.append('<span class="px-3 py-1">...</span>')
 
-        # Link 'Next' dan 'Last'
         if page < total_pages:
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({page + 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">»</a>')
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({total_pages})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">Last</a>')
@@ -132,7 +130,6 @@ async def manage_data(
         pagination_html = " ".join(links)
 
     return HTMLResponse(content=f"{rows_html}|||{pagination_html}")
-
 
 @router.post("/cameras/add_camera", response_class=JSONResponse)
 async def add_camera_submit(

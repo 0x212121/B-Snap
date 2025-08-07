@@ -15,6 +15,15 @@
     <a href="/cameras/export_csv" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2">
       <span>⬇️</span> Export CSV
     </a>
+    <div class="flex items-center gap-2 ml-auto">
+        <label for="perPageSelect" class="text-sm font-medium text-gray-700 dark:text-gray-300">Items per page:</label>
+        <select id="perPageSelect" class="rounded-md pr-8 border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm py-2 px-3">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+        </select>
+    </div>
   </div>
   
   <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
@@ -181,8 +190,6 @@
 <div id="notification-container" class="fixed top-5 right-5 z-[100] w-full max-w-sm"></div>
 
 <script>
-  // PERUBAHAN DIMULAI: Fungsi showCustomConfirm yang lama telah dihapus
-  // dan diganti dengan logika untuk modal statis.
   document.addEventListener('DOMContentLoaded', function() {
     
     // ======================================================
@@ -223,14 +230,17 @@
     // ======================================================
     // ================== DATA LOADING ======================
     // ======================================================
+    // MODIFIED: loadPage function now reads the per-page value
     window.loadPage = async function(page = 1) {
       const search = document.getElementById("searchInput").value;
+      const perPage = document.getElementById("perPageSelect").value; // Get value from dropdown
       const tbody = document.getElementById('camera-body');
       const paginationContainer = document.getElementById('pagination-controls');
       
       try {
         tbody.style.opacity = "0.5";
-        const res = await fetch(`/cameras/data?page=${page}&search=${encodeURIComponent(search || '')}`);
+        // MODIFIED: Added per_page to the fetch URL
+        const res = await fetch(`/cameras/data?page=${page}&search=${encodeURIComponent(search || '')}&per_page=${perPage}`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         
         const [rowsHtml, paginationHtml] = (await res.text()).split('|||');
@@ -240,12 +250,13 @@
         
         const url = new URL(window.location);
         url.searchParams.set('page', page);
+        url.searchParams.set('per_page', perPage); // Also manage per_page in URL
         if (search) {
           url.searchParams.set('search', search);
         } else {
           url.searchParams.delete('search');
         }
-        window.history.pushState({ page }, '', url);
+        window.history.pushState({ page, perPage }, '', url);
         
       } catch (err) {
         console.error("Failed to load page:", err);
@@ -276,6 +287,15 @@
         option.selected = (group.name === selectedValue);
         select.appendChild(option);
       });
+    }
+
+    // ADDED: Function to set dropdown value from URL on page load
+    function updatePerPageSelect() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const perPage = urlParams.get('per_page');
+        if (perPage) {
+            document.getElementById('perPageSelect').value = perPage;
+        }
     }
     
     // ======================================================
@@ -320,8 +340,7 @@
       modalTitle.textContent = 'Add New Camera';
       modalSubmitButton.textContent = 'Add Camera';
       document.getElementById('password-help').textContent = 'Password is required.';
-      document.getElementById('password').required = false;
-      // document.getElementById('previous-name').hidden = true;
+      document.getElementById('password').required = true;
       document.querySelectorAll('#tab-basic > div')[1].classList.add('hidden');
       
       modalForm.onsubmit = handleAddCamera;
@@ -354,7 +373,7 @@
         document.getElementById('ip').value = cam.ip;
         document.getElementById('port').value = cam.port || '';
         document.getElementById('username').value = cam.username;
-        document.getElementById('password').value = cam.password;
+        document.getElementById('password').value = ''; // Don't show old password
         document.getElementById('latitude').value = cam.latitude || '';
         document.getElementById('longitude').value = cam.longitude || '';
         document.getElementById('asset_no').value = cam.asset_no || '';
@@ -388,7 +407,6 @@
     async function handleEditCamera(event) {
       event.preventDefault();
       const cameraId = document.getElementById('cameraId').value;
-      // --- PERBAIKAN URL DI SINI ---
       const result = await apiPost(`/cameras/edit_camera/${cameraId}`, new FormData(modalForm));
       if (result.ok) {
         hideCameraModal();
@@ -404,12 +422,18 @@
       e.preventDefault();
       loadPage(1);
     });
+
+    // ADDED: Event listener for the new dropdown
+    document.getElementById('perPageSelect').addEventListener('change', () => {
+        loadPage(1); // When dropdown changes, go to page 1 with new size
+    });
     
     modalElement.addEventListener('click', (e) => {
       if (e.target === modalElement) hideCameraModal();
     });
     
     // Init
+    updatePerPageSelect(); // Set dropdown on initial load
     loadPage(new URLSearchParams(window.location.search).get('page') || 1);
     setupTabs();
     setupWebSocket();

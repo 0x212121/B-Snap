@@ -58,6 +58,7 @@ async def get_nvrs_data(
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
     search: str = Query(None),
+    per_page: int = Query(10, ge=1), # MODIFIED: Accept per_page from query
     current_admin: User = Depends(admin_access_required)
 ):
     """
@@ -65,7 +66,7 @@ async def get_nvrs_data(
     without reloading the entire page. It returns only the HTML for the table rows
     and the pagination controls.
     """
-    per_page = get_config('items_per_page', 10)
+    # REMOVED: The per_page value is now an argument from the query parameter.
     query = db.query(NVR)
 
     # Apply the same search logic as the main endpoint
@@ -118,8 +119,8 @@ async def get_nvrs_data(
                 </form>
             </td>
             </tr>
-            """# --- Generate HTML for pagination controls ---
-    # This now matches the simple loadPage(page, per_page) function in your JS
+            """
+    # --- Generate HTML for pagination controls ---
     pagination_html = ""
     if total_pages > 1:
         links = []
