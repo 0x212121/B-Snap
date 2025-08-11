@@ -4,6 +4,7 @@ module.exports = {
     './templates/**/*.html',
     './app/**/*.py',
     './static/**/*.js',
+    './node_modules/preline/dist/*.js'
   ],
   darkMode: 'class', // 👈 enable toggle with class="dark"
   theme: {

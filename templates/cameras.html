@@ -16,13 +16,13 @@
       <span>⬇️</span> Export CSV
     </a>
     <div class="flex items-center gap-2 ml-auto">
-        <label for="perPageSelect" class="text-sm font-medium text-gray-700 dark:text-gray-300">Items per page:</label>
-        <select id="perPageSelect" class="rounded-md pr-8 border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm py-2 px-3">
-            <option value="10">10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-        </select>
+      <label for="perPageSelect" class="text-sm font-medium text-gray-700 dark:text-gray-300">Items per page:</label>
+      <select id="perPageSelect" class="rounded-md pr-8 border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm py-2 px-3">
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
     </div>
   </div>
   
@@ -54,11 +54,11 @@
           </tr>
         </thead>
         <tbody id="camera-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-          </tbody>
+        </tbody>
       </table>
     </div>
     <div id="pagination-controls" class="flex justify-center items-center gap-2 mt-6 text-sm">
-      </div>
+    </div>
   </div>
 </div>
 
@@ -87,13 +87,13 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="name">Hostname</label>
           <input
-            type="text"
-            id="name"
-            name="name"
-            required
-            pattern="^[A-Za-z0-9_#() -]+$"
-            title="Only letters, numbers, underscore, hash, parentheses, and hyphen allowed"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"
+          type="text"
+          id="name"
+          name="name"
+          required
+          pattern="^[A-Za-z0-9_#\(\)\- ]+$"
+          title="Only letters, numbers, underscore, hash, parentheses, and hyphen allowed"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"
           >
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
             Only letters, numbers, underscore, hash, parentheses, and hyphen.
@@ -107,518 +107,568 @@
           step="1" inputmode="numeric">
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Range: 1-65535</p></div>
           <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="username">Username</label><input type="text" id="username" name="username" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></div>
-          <div class="relative">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="password">Password</label>
-            <input type="password" id="password" name="password"
-            class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"
-            placeholder="Password">
-            
-            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" onclick="
-            const p = document.getElementById('password');
-            const eye = this.querySelector('svg');
-            if (p.type === 'password') {
-              p.type = 'text';
-              eye.innerHTML = '<path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M2.25 12c1.5-5.25 6-9 9.75-9s8.25 3.75 9.75 9c-1.5 5.25-6 9-9.75 9s-8.25-3.75-9.75-9z\'/><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M15 12a3 3 0 11-6 0 3 3 0 016 0z\' />';
-            } else {
-              p.type = 'password';
-              eye.innerHTML = '<path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M3.98 8.223A10.477 10.477 0 002.25 12c1.5 5.25 6 9 9.75 9 2.36 0 4.49-.84 6.2-2.234M6.32 6.328A9.978 9.978 0 0112 3c3.75 0 8.25 3.75 9.75 9a10.448 10.448 0 01-4.084 5.174M3 3l18 18\' />';
-            }
-            ">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-              d="M3.98 8.223A10.477 10.477 0 002.25 12c1.5 5.25 6 9 9.75 9 2.36 0 4.49-.84 6.2-2.234M6.32 6.328A9.978 9.978 0 0112 3c3.75 0 8.25 3.75 9.75 9a10.448 10.448 0 01-4.084 5.174M3 3l18 18" />
-            </svg>
-          </button>
-          <p id="password-help" class="text-xs text-gray-500 dark:text-gray-400 mt-1"></p>
+          <div class="relative max-w-sm password-toggle-wrapper">
+            <label class="block text-sm font-medium mb-1 dark:text-white">Password</label>
+            <input id="hs-toggle-password" type="password"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:border-blue-500 focus:ring-blue-500 pr-12"
+              placeholder="Enter password" name="password" autocomplete="new-password">
+            <button type="button" class="toggle-password-btn absolute top-1/2 right-3 -translate-y-1/2 p-1 rounded-md focus:outline-none text-gray-400 dark:text-neutral-400 focus:text-blue-600 dark:focus:text-blue-500"
+              tabindex="-1">
+              <!-- Eye icon -->
+              <svg class="eye-icon shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.522 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <!-- Eye-off icon -->
+              <svg class="eye-off-icon hidden shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-7 0-10-7-10-7a16.06 16.06 0 013.062-4.938m3.197-2.197A9.956 9.956 0 0112 5c7 0 10 7 10 7a15.978 15.978 0 01-4.908 5.712M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
+              </svg>
+            </button>
+            <div id="password-help" class="text-xs text-gray-500 dark:text-gray-400 mt-1"></div>
+          </div>
+          
         </div>
         
-      </div>
-      
-      <div id="tab-location" class="tab-content space-y-4 hidden">
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="latitude">Latitude</label><input type="number" step="0.0000001" id="latitude" name="latitude" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: -7.252</p></div>
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">Longitude</label><input type="number" step="0.0000001" id="longitude" name="longitude" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: 112.753</p></div>
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="asset_no">Asset No.</label><input type="text" id="asset_no" name="asset_no" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></div>
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="location">Location</label><input type="text" id="location" name="location" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></div>
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="group_name">Camera Division</label><select id="group_name" name="group_name" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="">-- Select Division --</option></select><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Grouping camera to filter in maps</p></div>
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="status">Status</label>
-          <select id="status" name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600">
-            <option value="Active">Active</option>
-            <option value="Deactivated">Deactivated</option>
-            <option value="Restricted">Restricted</option>
-            <option value="Standalone">Standalone</option>
-          </select>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Deactivated: ignore from ping, Restricted: hide from maps</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Standalone: portable camera without IP address</p>
+        <div id="tab-location" class="tab-content space-y-4 hidden">
+          <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="latitude">Latitude</label><input type="number" step="0.0000001" id="latitude" name="latitude" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: -7.252</p></div>
+          <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">Longitude</label><input type="number" step="0.0000001" id="longitude" name="longitude" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: 112.753</p></div>
+          <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="asset_no">Asset No.</label><input type="text" id="asset_no" name="asset_no" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></div>
+          <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="location">Location</label><input type="text" id="location" name="location" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></div>
+          <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="group_name">Camera Division</label><select id="group_name" name="group_name" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="">-- Select Division --</option></select><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Grouping camera to filter in maps</p></div>
+          <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="status">Status</label>
+            <select id="status" name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600">
+              <option value="Active">Active</option>
+              <option value="Deactivated">Deactivated</option>
+              <option value="Restricted">Restricted</option>
+              <option value="Standalone">Standalone</option>
+            </select>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Deactivated: ignore from ping, Restricted: hide from maps</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Standalone: portable camera without IP address</p>
+          </div>
         </div>
-      </div>
-      <div class="flex items-center space-x-3">
-        <input
+        <div class="flex items-center space-x-3">
+          <input
           type="checkbox"
           id="is_flipped"
           name="is_flipped"
           value="true"
           class="h-4 w-4 text-blue-600 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
-        >
-        <label for="is_flipped" class="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Flip Image 180°
-        </label>
+          >
+          <label for="is_flipped" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Flip Image 180°
+          </label>
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Use this if the camera image appears upside down.</p>
+      </form>
+      <div class="flex justify-end space-x-3 pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
+        <button type="button" onclick="hideCameraModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200 rounded-md font-semibold text-sm">Cancel</button>
+        <button type="submit" form="cameraForm" id="modalSubmitButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold text-sm shadow-sm">Submit</button>
       </div>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Use this if the camera image appears upside down.</p>
-    </form>
-    <div class="flex justify-end space-x-3 pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
-      <button type="button" onclick="hideCameraModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200 rounded-md font-semibold text-sm">Cancel</button>
-      <button type="submit" form="cameraForm" id="modalSubmitButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold text-sm shadow-sm">Submit</button>
-    </div>
-  </div> 
-  
-</div>
+    </div> 
 
-<div id="snapshotModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
-  <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl max-h-[80vh]">
-    <div class="relative">
-      <img id="snapshot-img" src="" class="rounded w-full object-contain max-h-[70vh]" />
-      <div id="snapshot-info" class="absolute top-0 right-0 bg-black bg-opacity-60 text-white text-sm px-3 py-1 rounded shadow">
+  </div>
+
+  <div id="snapshotModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
+    <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl max-h-[80vh]">
+      <div class="relative">
+        <img id="snapshot-img" src="" class="rounded w-full object-contain max-h-[70vh]" />
+        <div id="snapshot-info" class="absolute top-0 right-0 bg-black bg-opacity-60 text-white text-sm px-3 py-1 rounded shadow">
+        </div>
       </div>
-    </div>
-    <div class="flex justify-end mt-2 space-x-4">
-      <a id="download-btn" href="#" download class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">⬇️ Download</a>
-      <button onclick="hideSnapshotModal()" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded">✖ Close</button>
+      <div class="flex justify-end mt-2 space-x-4">
+        <a id="download-btn" href="#" download class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">⬇️ Download</a>
+        <button onclick="hideSnapshotModal()" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded">✖ Close</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div id="notification-container" class="fixed top-5 right-5 z-[100] w-full max-w-sm"></div>
+  <div id="notification-container" class="fixed top-5 right-5 z-[100] w-full max-w-sm"></div>
 
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    
-    // ======================================================
-    // =================== GLOBAL STATE =====================
-    // ======================================================
-    let cameraGroups = [];
-    let cameraGroupsLoaded = false;
-    
-    const modalElement = document.getElementById('cameraModal');
-    const modalForm = document.getElementById('cameraForm');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalSubmitButton = document.getElementById('modalSubmitButton');
-    const modalTabs = document.getElementById('modalTabs');
-    
-    // ======================================================
-    // =================== UTILITIES ========================
-    // ======================================================
-    async function apiPost(url, body) {
-      try {
-        const response = await fetch(url, {
-          method: 'POST',
-          body: body
-        });
-        const data = await response.json();
-        showNotification({
-          status: response.ok ? 'success' : 'error',
-          message: data.detail || data.message || 'An error occurred.'
-        });
-        return { ok: response.ok, data: data };
-      } catch (error) {
-        console.error('API POST Error:', error);
-        showNotification({ status: 'error', message: 'Network or server error.' });
-        return { ok: false, data: null };
-      }
-    }
-
-    
-    // ======================================================
-    // ================== DATA LOADING ======================
-    // ======================================================
-    // MODIFIED: loadPage function now reads the per-page value
-    window.loadPage = async function(page = 1) {
-      const search = document.getElementById("searchInput").value;
-      const perPage = document.getElementById("perPageSelect").value; // Get value from dropdown
-      const tbody = document.getElementById('camera-body');
-      const paginationContainer = document.getElementById('pagination-controls');
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
       
-      try {
-        tbody.style.opacity = "0.5";
-        // MODIFIED: Added per_page to the fetch URL
-        const res = await fetch(`/cameras/data?page=${page}&search=${encodeURIComponent(search || '')}&per_page=${perPage}`);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        
-        const [rowsHtml, paginationHtml] = (await res.text()).split('|||');
-        
-        tbody.innerHTML = rowsHtml || `<tr><td colspan="11" class="p-6 text-center text-gray-500">No cameras found.</td></tr>`;
-        paginationContainer.innerHTML = paginationHtml || '';
-        
-        const url = new URL(window.location);
-        url.searchParams.set('page', page);
-        url.searchParams.set('per_page', perPage); // Also manage per_page in URL
-        if (search) {
-          url.searchParams.set('search', search);
-        } else {
-          url.searchParams.delete('search');
+      // ======================================================
+      // =================== GLOBAL STATE =====================
+      // ======================================================
+      let cameraGroups = [];
+      let cameraGroupsLoaded = false;
+      
+      const modalElement = document.getElementById('cameraModal');
+      const modalForm = document.getElementById('cameraForm');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalSubmitButton = document.getElementById('modalSubmitButton');
+      const modalTabs = document.getElementById('modalTabs');
+      
+      // ======================================================
+      // =================== UTILITIES ========================
+      // ======================================================
+      async function apiPost(url, body) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            body: body
+          });
+          const data = await response.json();
+          showNotification({
+            status: response.ok ? 'success' : 'error',
+            message: data.detail || data.message || 'An error occurred.'
+          });
+          return { ok: response.ok, data: data };
+        } catch (error) {
+          console.error('API POST Error:', error);
+          showNotification({ status: 'error', message: 'Network or server error.' });
+          return { ok: false, data: null };
         }
-        window.history.pushState({ page, perPage }, '', url);
+      }
+      
+      
+      // ======================================================
+      // ================== DATA LOADING ======================
+      // ======================================================
+      // MODIFIED: loadPage function now reads the per-page value
+      window.loadPage = async function(page = 1) {
+        const search = document.getElementById("searchInput").value;
+        const perPage = document.getElementById("perPageSelect").value; // Get value from dropdown
+        const tbody = document.getElementById('camera-body');
+        const paginationContainer = document.getElementById('pagination-controls');
         
-      } catch (err) {
-        console.error("Failed to load page:", err);
-        showNotification({ status: 'error', message: 'Failed to load camera data.' });
-      } finally {
-        tbody.style.opacity = "1";
+        try {
+          tbody.style.opacity = "0.5";
+          // MODIFIED: Added per_page to the fetch URL
+          const res = await fetch(`/cameras/data?page=${page}&search=${encodeURIComponent(search || '')}&per_page=${perPage}`);
+          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          
+          const [rowsHtml, paginationHtml] = (await res.text()).split('|||');
+          
+          tbody.innerHTML = rowsHtml || `<tr><td colspan="11" class="p-6 text-center text-gray-500">No cameras found.</td></tr>`;
+          paginationContainer.innerHTML = paginationHtml || '';
+          
+          const url = new URL(window.location);
+          url.searchParams.set('page', page);
+          url.searchParams.set('per_page', perPage); // Also manage per_page in URL
+          if (search) {
+            url.searchParams.set('search', search);
+          } else {
+            url.searchParams.delete('search');
+          }
+          window.history.pushState({ page, perPage }, '', url);
+          
+        } catch (err) {
+          console.error("Failed to load page:", err);
+          showNotification({ status: 'error', message: 'Failed to load camera data.' });
+        } finally {
+          tbody.style.opacity = "1";
+        }
       }
-    }
-    
-    async function loadCameraGroups() {
-      if (cameraGroupsLoaded) return;
-      try {
-        const response = await fetch('/api/camera_groups');
-        cameraGroups = await response.json();
-        cameraGroupsLoaded = true;
-      } catch (error) {
-        console.error("Failed to load groups:", error);
+      
+      async function loadCameraGroups() {
+        if (cameraGroupsLoaded) return;
+        try {
+          const response = await fetch('/api/camera_groups');
+          cameraGroups = await response.json();
+          cameraGroupsLoaded = true;
+        } catch (error) {
+          console.error("Failed to load groups:", error);
+        }
       }
-    }
-    
-    function populateGroupSelect(selectedValue = "") {
-      const select = document.getElementById('group_name');
-      select.innerHTML = '<option value="">-- Select Division --</option>';
-      cameraGroups.forEach(group => {
-        const option = document.createElement('option');
-        option.value = group.name;
-        option.textContent = group.name;
-        option.selected = (group.name === selectedValue);
-        select.appendChild(option);
-      });
-    }
-
-    // ADDED: Function to set dropdown value from URL on page load
-    function updatePerPageSelect() {
+      
+      function populateGroupSelect(selectedValue = "") {
+        const select = document.getElementById('group_name');
+        select.innerHTML = '<option value="">-- Select Division --</option>';
+        cameraGroups.forEach(group => {
+          const option = document.createElement('option');
+          option.value = group.name;
+          option.textContent = group.name;
+          option.selected = (group.name === selectedValue);
+          select.appendChild(option);
+        });
+      }
+      
+      // ADDED: Function to set dropdown value from URL on page load
+      function updatePerPageSelect() {
         const urlParams = new URLSearchParams(window.location.search);
         const perPage = urlParams.get('per_page');
         if (perPage) {
-            document.getElementById('perPageSelect').value = perPage;
+          document.getElementById('perPageSelect').value = perPage;
         }
-    }
-    
-    // ======================================================
-    // =============== MODAL HANDLING =====================
-    // ======================================================
-    function setupTabs() {
-      modalTabs.addEventListener('click', (e) => {
-        const button = e.target.closest('.tab-button');
-        if (!button) return;
-        
-        const targetTab = button.dataset.tab;
-        
-        modalElement.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-        modalElement.querySelectorAll('.tab-button span').forEach(s => {
-          s.classList.remove('text-blue-600', 'border-blue-600');
-          s.classList.add('border-transparent', 'text-gray-500');
+      }
+      
+      // ======================================================
+      // =============== MODAL HANDLING =====================
+      // ======================================================
+      function setupTabs() {
+        modalTabs.addEventListener('click', (e) => {
+          const button = e.target.closest('.tab-button');
+          if (!button) return;
+          
+          const targetTab = button.dataset.tab;
+          
+          modalElement.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+          modalElement.querySelectorAll('.tab-button span').forEach(s => {
+            s.classList.remove('text-blue-600', 'border-blue-600');
+            s.classList.add('border-transparent', 'text-gray-500');
+          });
+          
+          modalElement.querySelector(`#tab-${targetTab}`).classList.remove('hidden');
+          button.querySelector('span').classList.add('text-blue-600', 'border-blue-600');
         });
-        
-        modalElement.querySelector(`#tab-${targetTab}`).classList.remove('hidden');
-        button.querySelector('span').classList.add('text-blue-600', 'border-blue-600');
-      });
-    }
-    
-    function showModal() {
-      modalElement.classList.remove('hidden');
-      requestAnimationFrame(() => {
+      }
+      
+      function showModal() {
+        modalElement.classList.remove('hidden');
+        requestAnimationFrame(() => {
+          const modalContent = modalElement.querySelector('.transform');
+          modalContent.classList.remove('opacity-0', '-translate-y-4');
+        });
+      }
+      
+      function hideCameraModal() {
         const modalContent = modalElement.querySelector('.transform');
-        modalContent.classList.remove('opacity-0', '-translate-y-4');
-      });
-    }
-    
-    function hideCameraModal() {
-      const modalContent = modalElement.querySelector('.transform');
-      modalContent.classList.add('opacity-0', '-translate-y-4');
-      modalContent.addEventListener('transitionend', () => {
-        modalElement.classList.add('hidden');
-      }, { once: true });
-    }
-    
-    window.showAddCameraModal = async () => {
-      modalForm.reset();
-      modalTitle.textContent = 'Add New Camera';
-      modalSubmitButton.textContent = 'Add Camera';
-      document.getElementById('password-help').textContent = 'Password is required.';
-      document.getElementById('password').required = true;
-      document.querySelectorAll('#tab-basic > div')[1].classList.add('hidden');
+        modalContent.classList.add('opacity-0', '-translate-y-4');
+        modalContent.addEventListener('transitionend', () => {
+          modalElement.classList.add('hidden');
+        }, { once: true });
+      }
       
-      modalForm.onsubmit = handleAddCamera;
-      
-      await loadCameraGroups();
-      populateGroupSelect();
-      
-      modalTabs.querySelector('.tab-button[data-tab="basic"]').click();
-      showModal();
-    };
-    
-    window.showEditCameraModal = async (cameraId) => {
-      modalForm.reset();
-      modalTitle.textContent = 'Edit Camera';
-      modalSubmitButton.textContent = 'Save Changes';
-      document.getElementById('password-help').textContent = 'Do not edit to keep current password.';
-      document.getElementById('password').required = false;
-      modalForm.onsubmit = handleEditCamera;
-      document.querySelectorAll('#tab-basic > div')[1].classList.remove('hidden');
-      
-      try {
-        await loadCameraGroups();
-        const response = await fetch(`/api/camera/${cameraId}`);
-        if (!response.ok) throw new Error('Camera not found');
-        const cam = await response.json();
+      window.showAddCameraModal = async () => {
+        modalForm.reset();
+        modalTitle.textContent = 'Add New Camera';
+        modalSubmitButton.textContent = 'Add Camera';
+        document.getElementById('password-help').textContent = 'Password is required.';
+        // document.getElementById('password').required = true;
+        setRequiredSafe('hs-toggle-password', false);
+        document.querySelectorAll('#tab-basic > div')[1].classList.add('hidden');
         
-        document.getElementById('cameraId').value = cam.id;
-        document.getElementById('name').value = cam.hostname;
-        document.getElementById('previous-name').value = cam.previous_name;
-        document.getElementById('ip').value = cam.ip;
-        document.getElementById('port').value = cam.port || '';
-        document.getElementById('username').value = cam.username;
-        document.getElementById('password').value = cam.password || '';
-        document.getElementById('latitude').value = cam.latitude || '';
-        document.getElementById('longitude').value = cam.longitude || '';
-        document.getElementById('asset_no').value = cam.asset_no || '';
-        document.getElementById('location').value = cam.location || '';
-        document.getElementById('status').value = cam.status;
-        document.getElementById('is_flipped').checked = cam.is_flipped;
-        populateGroupSelect(cam.group ? cam.group.name : "");
+        modalForm.onsubmit = handleAddCamera;
+        
+        await loadCameraGroups();
+        populateGroupSelect();
         
         modalTabs.querySelector('.tab-button[data-tab="basic"]').click();
         showModal();
-      } catch(error) {
-        console.error('Error fetching camera for edit:', error);
-        showNotification({ status: 'error', message: 'Failed to load camera data.' });
+      };
+      
+      // Helper untuk set value
+      function setFieldValue(id, value) {
+        const el = document.getElementById(id);
+        if (!el) {
+          console.warn(`Field #${id} not found in DOM`);
+          return;
+        }
+        if ('value' in el) {
+          el.value = value;
+        } else if ('checked' in el) {
+          el.checked = Boolean(value);
+        }
       }
-    };
-    
-    window.hideCameraModal = hideCameraModal;
-    
-    // ======================================================
-    // ================= FORM SUBMISSION ====================
-    // ======================================================
-    async function handleAddCamera(event) {
-      event.preventDefault();
-      const result = await apiPost('/cameras/add_camera', new FormData(modalForm));
-      if (result.ok) {
-        hideCameraModal();
+      
+      // Helper untuk set required
+      function setFieldRequired(id, required) {
+        const el = document.getElementById(id);
+        if (!el) {
+          console.warn(`Field #${id} not found in DOM`);
+          return;
+        }
+        el.required = required;
+      }
+      
+      window.showEditCameraModal = async (cameraId) => {
+        modalForm.reset();
+        modalTitle.textContent = 'Edit Camera';
+        modalSubmitButton.textContent = 'Save Changes';
+        
+        const passwordHelp = document.getElementById('password-help');
+        if (passwordHelp) passwordHelp.textContent = 'Do not edit to keep current password.';
+        
+        setFieldRequired('hs-toggle-password', false);
+        modalForm.onsubmit = handleEditCamera;
+        
+        const tabBasicDivs = document.querySelectorAll('#tab-basic > div');
+        if (tabBasicDivs.length > 1) tabBasicDivs[1].classList.remove('hidden');
+        
+        try {
+          await loadCameraGroups();
+          const response = await fetch(`/api/camera/${cameraId}`);
+          if (!response.ok) throw new Error('Camera not found');
+          const cam = await response.json();
+          
+          setFieldValue('cameraId', cam.id);
+          setFieldValue('name', cam.hostname);
+          setFieldValue('previous-name', cam.previous_name);
+          setFieldValue('ip', cam.ip);
+          setFieldValue('port', cam.port || '');
+          setFieldValue('username', cam.username);
+          setFieldValue('hs-toggle-password', cam.password || '');
+          setFieldValue('latitude', cam.latitude || '');
+          setFieldValue('longitude', cam.longitude || '');
+          setFieldValue('asset_no', cam.asset_no || '');
+          setFieldValue('location', cam.location || '');
+          setFieldValue('status', cam.status);
+          setFieldValue('is_flipped', cam.is_flipped);
+          
+          if (typeof populateGroupSelect === 'function') {
+            populateGroupSelect(cam.group ? cam.group.name : "");
+          }
+          
+          if (modalTabs) {
+            const tabBtn = modalTabs.querySelector('.tab-button[data-tab="basic"]');
+            if (tabBtn) tabBtn.click();
+          }
+          
+          if (typeof showModal === 'function') showModal();
+          
+        } catch (error) {
+          console.error('Error fetching camera for edit:', error);
+          if (typeof showNotification === 'function') {
+            showNotification({ status: 'error', message: 'Failed to load camera data.' });
+          }
+        }
+      };
+      
+      window.hideCameraModal = hideCameraModal;
+      
+      // ======================================================
+      // ================= FORM SUBMISSION ====================
+      // ======================================================
+      async function handleAddCamera(event) {
+        event.preventDefault();
+        const result = await apiPost('/cameras/add_camera', new FormData(modalForm));
+        if (result.ok) {
+          hideCameraModal();
+          loadPage(1);
+        }
+      }
+      
+      async function handleEditCamera(event) {
+        event.preventDefault();
+        const cameraId = document.getElementById('cameraId').value;
+        const result = await apiPost(`/cameras/edit_camera/${cameraId}`, new FormData(modalForm));
+        if (result.ok) {
+          hideCameraModal();
+          const currentPage = new URLSearchParams(window.location.search).get('page') || 1;
+          loadPage(currentPage);
+        }
+      }
+      
+      // ======================================================
+      // ============== EVENT LISTENERS =======================
+      // ======================================================
+      document.getElementById('searchForm').addEventListener('submit', (e) => {
+        e.preventDefault();
         loadPage(1);
-      }
-    }
-    
-    async function handleEditCamera(event) {
-      event.preventDefault();
-      const cameraId = document.getElementById('cameraId').value;
-      const result = await apiPost(`/cameras/edit_camera/${cameraId}`, new FormData(modalForm));
-      if (result.ok) {
-        hideCameraModal();
-        const currentPage = new URLSearchParams(window.location.search).get('page') || 1;
-        loadPage(currentPage);
-      }
-    }
-    
-    // ======================================================
-    // ============== EVENT LISTENERS =======================
-    // ======================================================
-    document.getElementById('searchForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      loadPage(1);
-    });
-
-    // ADDED: Event listener for the new dropdown
-    document.getElementById('perPageSelect').addEventListener('change', () => {
+      });
+      
+      // ADDED: Event listener for the new dropdown
+      document.getElementById('perPageSelect').addEventListener('change', () => {
         loadPage(1); // When dropdown changes, go to page 1 with new size
+      });
+      
+      modalElement.addEventListener('click', (e) => {
+        if (e.target === modalElement) hideCameraModal();
+      });
+      
+      // Init
+      updatePerPageSelect(); // Set dropdown on initial load
+      loadPage(new URLSearchParams(window.location.search).get('page') || 1);
+      setupTabs();
+      setupWebSocket();
     });
     
-    modalElement.addEventListener('click', (e) => {
-      if (e.target === modalElement) hideCameraModal();
-    });
-    
-    // Init
-    updatePerPageSelect(); // Set dropdown on initial load
-    loadPage(new URLSearchParams(window.location.search).get('page') || 1);
-    setupTabs();
-    setupWebSocket();
-  });
-  
-  window.confirmDelete = (itemId, itemName) => {
-    const itemType = '{{ "NVR" if "nvrs" in request.path else "Camera" }}';
-    const message = `Are you sure you want to delete this ${itemType}: ${itemName}? This action cannot be undone.`;
-    
-    showGlobalConfirm(message, () => {
+    window.confirmDelete = (itemId, itemName) => {
+      const itemType = '{{ "NVR" if "nvrs" in request.path else "Camera" }}';
+      const message = `Are you sure you want to delete this ${itemType}: ${itemName}? This action cannot be undone.`;
+      
+      showGlobalConfirm(message, () => {
         // Logika fetch Anda untuk menghapus item
         const deleteUrl = `/{{ "nvrs" if "nvrs" in request.path else "cameras" }}/delete/${itemId}`;
         fetch(deleteUrl, { method: 'POST' })
-            .then(res => res.json())
-            .then(data => {
-                showNotification({ status: data.status, message: data.message });
-                if (data.status === 'success') {
-                    const currentPage = new URLSearchParams(window.location.search).get('page') || 1;
-                    loadPage(currentPage);
-                }
-            })
-            .catch(err => {
-                showNotification({ status: 'error', message: 'Failed to delete item.' });
-            });
-    }, {
+        .then(res => res.json())
+        .then(data => {
+          showNotification({ status: data.status, message: data.message });
+          if (data.status === 'success') {
+            const currentPage = new URLSearchParams(window.location.search).get('page') || 1;
+            loadPage(currentPage);
+          }
+        })
+        .catch(err => {
+          showNotification({ status: 'error', message: 'Failed to delete item.' });
+        });
+      }, {
         title: `⚠️ Delete ${itemType}`,
         confirmText: 'Yes, Delete',
         confirmClasses: 'bg-red-600 hover:bg-red-700'
-    });
-};
-  
-  window.captureVideo = (cameraId) => {
-    fetch(`/capture_video/${encodeURIComponent(cameraId)}`, { method: 'POST' })
-    .then(res => res.json())
-    .then(data => {
-      const notifContainer = document.getElementById('notification-container');
-      const notif = document.createElement('div');
-      notif.textContent = data.message;
-      notif.className = (data.status === 'success' ? 'bg-green-500' : 'bg-red-500') + ' text-white p-3 rounded';
-      notifContainer.appendChild(notif);
-      setTimeout(() => notif.remove(), 3000);
-    })
-    .catch(err => alert('Failed to start video capture.'));
-  };
-  
-  let currentSort = { column: null, direction: 'asc' };
-  function sortTable(columnIndex) {
-    const tbody = document.getElementById("camera-body");
-    const rows = Array.from(tbody.querySelectorAll('tr'));
+      });
+    };
     
-    currentSort.direction = (currentSort.column === columnIndex && currentSort.direction === 'asc') ? 'desc' : 'asc';
-    currentSort.column = columnIndex;
+    window.captureVideo = (cameraId) => {
+      fetch(`/capture_video/${encodeURIComponent(cameraId)}`, { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        const notifContainer = document.getElementById('notification-container');
+        const notif = document.createElement('div');
+        notif.textContent = data.message;
+        notif.className = (data.status === 'success' ? 'bg-green-500' : 'bg-red-500') + ' text-white p-3 rounded';
+        notifContainer.appendChild(notif);
+        setTimeout(() => notif.remove(), 3000);
+      })
+      .catch(err => alert('Failed to start video capture.'));
+    };
     
-    clearArrows();
-    updateArrow(columnIndex, currentSort.direction);
-    
-    rows.sort((a, b) => {
-      const aValue = a.cells[columnIndex].innerText.trim();
-      const bValue = b.cells[columnIndex].innerText.trim();
-      return currentSort.direction === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-    });
-    
-    tbody.innerHTML = ""; // Clear existing rows
-    rows.forEach(row => tbody.appendChild(row)); // Append sorted rows
-  }
-  function clearArrows() {
-    document.querySelectorAll('th span').forEach(arrow => arrow.textContent = '');
-  }
-  function updateArrow(index, dir) {
-    const ids = ['id-arrow', 'ip-arrow', 'port-arrow']; // Add more if needed
-    if(ids[index]) document.getElementById(ids[index]).textContent = dir === 'asc' ? '↑' : '↓';
-  }
-  
-  
-  function viewSnapshot(cameraName) { 
-    fetch(`/snapshot/latest/${encodeURIComponent(cameraName)}/info`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.url) {
-        const snapshotImg = document.getElementById('snapshot-img');
-        const snapshotInfo = document.getElementById('snapshot-info');
-        const downloadBtn = document.getElementById("download-btn");
-        
-        snapshotImg.src = data.url;
-        snapshotInfo.textContent = `${data.camera} • ${data.timestamp}`;
-        document.getElementById('snapshotModal').classList.remove('hidden');
-        
-        const filename = `snapshot_${data.camera}_${data.timestamp.replace(/[\s:]/g, '-')}.jpg`;
-        downloadBtn.setAttribute('download', filename); 
-        
-        downloadBtn.onclick = (event) => {
-          event.preventDefault();
-          const canvas = document.createElement('canvas');
-          const img = new Image();
-          img.crossOrigin = "anonymous"; 
-          img.src = data.url; 
-          img.onload = function () {
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            ctx.font = '24px sans-serif';
-            ctx.fillStyle = 'white';
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2;
-            ctx.textAlign = 'right';
-            ctx.strokeText(data.camera, canvas.width - 20, 40);
-            ctx.fillText(data.camera, canvas.width - 20, 40);
-            ctx.strokeText(data.timestamp, canvas.width - 20, 70);
-            ctx.fillText(data.timestamp, canvas.width - 20, 70);
-            const link = document.createElement('a');
-            link.href = canvas.toDataURL("image/jpeg");
-            link.download = filename; 
-            link.click();
-          };
-          img.onerror = () => alert("Failed to load image for download.");
-        };
-      } else {
-        alert(data.detail || "No snapshot found");
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      alert("Failed to load snapshot info.");
-    });
-  }
-  
-  function hideSnapshotModal() {
-    document.getElementById('snapshotModal').classList.add('hidden');
-  }
-  
-  function setupWebSocket() {
-  const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  const socket = new WebSocket(`${protocol}://${location.host}/ws`);
-
-  socket.onopen = () => {
-    console.log('✅ WebSocket connected');
-  };
-
-  socket.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      // Gaya notifikasi kamu, cukup panggil showNotification
-      if (data.type === "record_complete") {
-        const fileSizeMB = (data.file_size / (1024 * 1024)).toFixed(2);
-        const fileUrl = `/static/videos/${encodeURIComponent(data.file_path)}`;
-        showNotification({
-          status: 'success',
-          message: `
-            🎥 <strong>${data.camera_name}</strong> (${data.group}) finished recording.<br>
-            ⏱️ Duration: ${data.duration.toFixed(1)}s<br>
-            📦 Size: ${fileSizeMB} MB<br>
-            🔗 <a href="${fileUrl}" target="_blank" class="underline">View Video</a>
-          `
-        });
-      }
-    } catch (err) {
-      console.error("❌ WebSocket JSON parse error", err);
+    let currentSort = { column: null, direction: 'asc' };
+    function sortTable(columnIndex) {
+      const tbody = document.getElementById("camera-body");
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      
+      currentSort.direction = (currentSort.column === columnIndex && currentSort.direction === 'asc') ? 'desc' : 'asc';
+      currentSort.column = columnIndex;
+      
+      clearArrows();
+      updateArrow(columnIndex, currentSort.direction);
+      
+      rows.sort((a, b) => {
+        const aValue = a.cells[columnIndex].innerText.trim();
+        const bValue = b.cells[columnIndex].innerText.trim();
+        return currentSort.direction === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      });
+      
+      tbody.innerHTML = ""; // Clear existing rows
+      rows.forEach(row => tbody.appendChild(row)); // Append sorted rows
     }
-  };
-
-  socket.onclose = () => {
-    console.warn('⚠️ WebSocket disconnected');
-  };
-
-  socket.onerror = (error) => {
-    console.error('❌ WebSocket error', error);
-  };
-}
-
-function showNotification({ status, message }) {
-  const container = document.getElementById('notification-container');
-  const notif = document.createElement('div');
-  const statusClass = status === 'success' ? 'bg-green-500' : 'bg-red-500';
-  const icon = status === 'success' ? '✅' : '❌';
-  notif.className = `flex items-center p-4 mb-4 rounded-lg shadow-lg text-white transform transition-all duration-300 ease-in-out opacity-0 translate-y-[-20px] ${statusClass}`;
-  notif.innerHTML = `<span class="mr-3 text-lg">${icon}</span> <span class="font-medium">${message}</span>`;
-  container.appendChild(notif);
-  requestAnimationFrame(() => notif.classList.remove('opacity-0', 'translate-y-[-20px]'));
-  setTimeout(() => {
-    notif.classList.add('opacity-0');
-    notif.addEventListener('transitionend', () => notif.remove());
-  }, 3500);
-}
-</script>
+    function clearArrows() {
+      document.querySelectorAll('th span').forEach(arrow => arrow.textContent = '');
+    }
+    function updateArrow(index, dir) {
+      const ids = ['id-arrow', 'ip-arrow', 'port-arrow']; // Add more if needed
+      if(ids[index]) document.getElementById(ids[index]).textContent = dir === 'asc' ? '↑' : '↓';
+    }
+    
+    
+    function viewSnapshot(cameraName) { 
+      fetch(`/snapshot/latest/${encodeURIComponent(cameraName)}/info`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.url) {
+          const snapshotImg = document.getElementById('snapshot-img');
+          const snapshotInfo = document.getElementById('snapshot-info');
+          const downloadBtn = document.getElementById("download-btn");
+          
+          snapshotImg.src = data.url;
+          snapshotInfo.textContent = `${data.camera} • ${data.timestamp}`;
+          document.getElementById('snapshotModal').classList.remove('hidden');
+          
+          const filename = `snapshot_${data.camera}_${data.timestamp.replace(/[\s:]/g, '-')}.jpg`;
+          downloadBtn.setAttribute('download', filename); 
+          
+          downloadBtn.onclick = (event) => {
+            event.preventDefault();
+            const canvas = document.createElement('canvas');
+            const img = new Image();
+            img.crossOrigin = "anonymous"; 
+            img.src = data.url; 
+            img.onload = function () {
+              canvas.width = img.width;
+              canvas.height = img.height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0);
+              ctx.font = '24px sans-serif';
+              ctx.fillStyle = 'white';
+              ctx.strokeStyle = 'black';
+              ctx.lineWidth = 2;
+              ctx.textAlign = 'right';
+              ctx.strokeText(data.camera, canvas.width - 20, 40);
+              ctx.fillText(data.camera, canvas.width - 20, 40);
+              ctx.strokeText(data.timestamp, canvas.width - 20, 70);
+              ctx.fillText(data.timestamp, canvas.width - 20, 70);
+              const link = document.createElement('a');
+              link.href = canvas.toDataURL("image/jpeg");
+              link.download = filename; 
+              link.click();
+            };
+            img.onerror = () => alert("Failed to load image for download.");
+          };
+        } else {
+          alert(data.detail || "No snapshot found");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Failed to load snapshot info.");
+      });
+    }
+    
+    function hideSnapshotModal() {
+      document.getElementById('snapshotModal').classList.add('hidden');
+    }
+    
+    function setupWebSocket() {
+      const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+      const socket = new WebSocket(`${protocol}://${location.host}/ws`);
+      
+      socket.onopen = () => {
+        console.log('✅ WebSocket connected');
+      };
+      
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          // Gaya notifikasi kamu, cukup panggil showNotification
+          if (data.type === "record_complete") {
+            const fileSizeMB = (data.file_size / (1024 * 1024)).toFixed(2);
+            const fileUrl = `/static/videos/${encodeURIComponent(data.file_path)}`;
+            showNotification({
+              status: 'success',
+              message: `
+              🎥 <strong>${data.camera_name}</strong> (${data.group}) finished recording.<br>
+              ⏱️ Duration: ${data.duration.toFixed(1)}s<br>
+              📦 Size: ${fileSizeMB} MB<br>
+              🔗 <a href="${fileUrl}" target="_blank" class="underline">View Video</a>
+            `
+            });
+          }
+        } catch (err) {
+          console.error("❌ WebSocket JSON parse error", err);
+        }
+      };
+      
+      socket.onclose = () => {
+        console.warn('⚠️ WebSocket disconnected');
+      };
+      
+      socket.onerror = (error) => {
+        console.error('❌ WebSocket error', error);
+      };
+    }
+    
+    function showNotification({ status, message }) {
+      const container = document.getElementById('notification-container');
+      const notif = document.createElement('div');
+      const statusClass = status === 'success' ? 'bg-green-500' : 'bg-red-500';
+      const icon = status === 'success' ? '✅' : '❌';
+      notif.className = `flex items-center p-4 mb-4 rounded-lg shadow-lg text-white transform transition-all duration-300 ease-in-out opacity-0 translate-y-[-20px] ${statusClass}`;
+      notif.innerHTML = `<span class="mr-3 text-lg">${icon}</span> <span class="font-medium">${message}</span>`;
+      container.appendChild(notif);
+      requestAnimationFrame(() => notif.classList.remove('opacity-0', 'translate-y-[-20px]'));
+      setTimeout(() => {
+        notif.classList.add('opacity-0');
+        notif.addEventListener('transitionend', () => notif.remove());
+      }, 3500);
+    }
+    
+    function setValueSafe(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.value = value;
+    }
+    
+    function setRequiredSafe(id, required) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.required = required;
+      } else {
+        console.warn(`Field #${id} not found in DOM`);
+      }
+    }
+  </script>
 
 
 {% endblock %}

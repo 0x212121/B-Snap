@@ -10,5 +10,8 @@
   "scripts": {
     "dev": "tailwindcss -i ./assets/css/tailwind.css -o ./static/css/output.css --watch",
     "build": "tailwindcss -i ./assets/css/tailwind.css -o ./static/css/output.css"
+  },
+  "dependencies": {
+    "@preline/toggle-password": "^3.2.3"
   }
 }
