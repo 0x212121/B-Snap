@@ -3,11 +3,9 @@ from uuid import uuid4
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.jobstores.base import JobLookupError
-from fastapi import Depends
 from app.core.logging_config import setup_logging
 from app.db.database import SessionLocal
 from app.onvif_client import load_active_cameras
-from app.db.database import get_db
 from app.utils.snapshot_locker import get_camera_lock
 from app.utils.snapshot_service import take_snapshot
 from app.utils.health_check import ping_all_devices
@@ -236,16 +234,40 @@ def update_scheduler_config():
 
 
 def delete_old_audit_logs():
+    """Delete audit_log records older than 180 days."""
     db: Session = SessionLocal()
-    cutoff = datetime.now(timezone.utc) - timedelta(days=90)  # Retention: 90 hari
-    deleted_count = db.query(AuditLog).filter(AuditLog.timestamp < cutoff).delete()
-    db.commit()
-    logger.info(f"Deleted {deleted_count} old audit logs")
+    try:
+        cutoff_date = date.today() - timedelta(days=180)
+        deleted_rows = (
+            db.query(AuditLog)
+            .filter(AuditLog.timestamp < cutoff_date)
+            .delete(synchronize_session=False)
+        )
+        db.commit()
+        logger.info("[delete_old_audit_logs] Deleted %d rows older than %s", deleted_rows, cutoff_date)
+    except Exception as e:
+        db.rollback()
+        logger.error("[delete_old_audit_logs] Error: %s", e, exc_info=True)
+        raise
+    finally:
+        db.close()
 
 
-def delete_old_camera_stats(db: Session = Depends(get_db)):
+def delete_old_camera_stats():
     """Delete camera_daily_stats records older than 90 days."""
-    cutoff_date = date.today() - timedelta(days=90)
-    deleted_rows = db.query(CameraDailyStats).filter(CameraDailyStats.date < cutoff_date).delete()
-    db.commit()
-    return deleted_rows
+    db: Session = SessionLocal()
+    try:
+        cutoff_date = date.today() - timedelta(days=90)
+        deleted_rows = (
+            db.query(CameraDailyStats)
+            .filter(CameraDailyStats.date < cutoff_date)
+            .delete(synchronize_session=False)
+        )
+        db.commit()
+        logger.info("[delete_old_camera_stats] Deleted %d rows older than %s", deleted_rows, cutoff_date)
+    except Exception as e:
+        db.rollback()
+        logger.error("[delete_old_camera_stats] Error: %s", e, exc_info=True)
+        raise
+    finally:
+        db.close()
