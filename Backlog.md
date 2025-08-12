@@ -114,3 +114,4 @@
 - [x] Add tampered reason and resolution to maps popup window - 30/07/2025
 - [x] Filter camera with no IP in /ip command
 - [ ] Add tampered and resolution in n8n bot
+- [ ] CCTV notes field/column, to show cctv details (like in services, SOED, and others)

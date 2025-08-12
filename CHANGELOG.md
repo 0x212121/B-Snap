@@ -2,6 +2,17 @@
 
 All notable changes to B-Snap will be documented in this file.
 
+## [1.6.4] - 2025-08-11
+
+### Added
+- CCTV GPS Coordinate in maps.
+
+### Changed
+- Password eye icon.
+
+### Fixed
+- Scheduler for deleting stats.
+
 ## [1.6.3] - 2025-08-07
 
 ### Added

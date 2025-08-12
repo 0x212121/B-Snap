@@ -1,15 +1,12 @@
-#Berkas: app/routes/maps.py
-
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional
-
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import joinedload, Session
 from pydantic import BaseModel
-
 from app.core.config import get_config
 from app.db.database import get_db
 from app.models.camera import Camera as DBCamera
+from app.models.snapshot import Snapshot
 from app.models.user import User
 from app.routes.auth import get_current_user
 from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
@@ -50,6 +47,7 @@ class CameraLocation(BaseModel):
     cam_group: int | None
     user_group: str
     user_group_id: int | None
+    coordinate: str | None
 
     class Config:
         from_attributes = True
@@ -76,11 +74,10 @@ async def get_camera_locations(
         
     cameras = query.all()
 
-    # --- PERUBAHAN LOGIKA WAKTU ---
-    # Ambil waktu saat ini sekali dan konversikan ke zona waktu lokal dari database
     now_utc = datetime.now(timezone.utc)
     current_time_local = to_current_timezone(now_utc, db)
     online_statuses = ["Online", "High Latency", "Optimal Latency"]
+    tolerance = timedelta(minutes=5)  # snapshot boleh dianggap online jika ≤5 menit dari now
 
     result = []
     for cam in cameras:
@@ -88,23 +85,34 @@ async def get_camera_locations(
         status_str = "Unknown"
         uptime_str = "N/A"
         formatted_last_online = "Unknown"
+        last_snapshot_time = None
+
+        # Ambil snapshot terakhir kamera ini
+        last_snapshot = (
+            db.query(Snapshot)
+            .filter(Snapshot.camera_id == cam.id)
+            .order_by(Snapshot.timestamp.desc())
+            .first()
+        )
+        if last_snapshot:
+            last_snapshot_time = to_current_timezone(last_snapshot.timestamp, db)
 
         if health and health.last_online:
             status_str = health.status
-
-            # Konversi waktu 'last_online' dari UTC ke zona waktu lokal
             last_online_local = to_current_timezone(health.last_online, db)
-            # Gunakan fungsi pemformatan terpusat yang baru
-            formatted_last_online = format_datetime_with_tz(last_online_local)
 
-            if health.status in online_statuses:
-                # Calculate uptime for online cameras
-                uptime_str = format_uptime(last_online_local, current_time_local)
-            else:
-                # Calculate DOWNTIME duration for offline cameras
-                uptime_str = format_uptime(last_online_local, current_time_local)
+            # Sinkronisasi ringan:
+            # Kalau offline tapi snapshot baru ≤ tolerance, update last_online & status
+            if status_str not in online_statuses and last_snapshot_time:
+                if (current_time_local - last_snapshot_time) <= tolerance:
+                    last_online_local = last_snapshot_time
+                    status_str = "Online (snapshot)"
+            
+            formatted_last_online = format_datetime_with_tz(last_online_local)
+            uptime_str = format_uptime(last_online_local, current_time_local)
 
         restriction_status = getattr(cam, 'restriction_status', None)
+        coordinate = f"{cam.latitude},{cam.longitude}"
 
         camera_data = {
             "id": cam.id,
@@ -114,12 +122,14 @@ async def get_camera_locations(
             "lng": cam.longitude,
             "asset_no": cam.asset_no,
             "status": status_str,
-            "last_online": formatted_last_online, # Sekarang berisi string waktu yang sudah diformat
+            "last_online": formatted_last_online,
             "uptime": uptime_str,
+            "last_snapshot_time": format_datetime_with_tz(last_snapshot_time) if last_snapshot_time else None,
             "restricted": restriction_status,
             "cam_group": cam.group_id,
             "user_group": group_name,
             "user_group_id": group_id,
+            "coordinate": coordinate,
         }
         result.append(camera_data)
 

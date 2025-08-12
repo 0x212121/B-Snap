@@ -1,7 +1,7 @@
 FROM python:3.13.5-slim-bookworm
 
 LABEL maintainer="Indra W. <wijaya.indra2196@gmail.com>"
-LABEL org.opencontainers.image.version="1.6.3"
+LABEL org.opencontainers.image.version="1.6.4"
 LABEL org.opencontainers.image.authors="Indra W. <wijaya.indra2196@gmail.com>"
 LABEL org.opencontainers.image.source="https://github.com/0x212121/b-snap"
 

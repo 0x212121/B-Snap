@@ -20,7 +20,7 @@
   .title-logo { position: absolute; left: 0px; width: 60px; height: 60px; border-radius: 50%; background-color: #fff; border: 5px solid #E60000; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); padding: 2px; }
   .leaflet-popup-content { width: 20rem !important; }
   .leaflet-popup-content p { font-size: 14px; margin: 0; padding: 1px; }
-  .leaflet-popup-content strong { display: block; max-width: 220px; word-break: break-word; overflow-wrap: break-word; white-space: normal; }
+  .leaflet-popup-content strong { display: block; max-width: 321px; word-break: break-word; overflow-wrap: break-word; white-space: normal; }
   
   /* Marker animations and styles */
   @keyframes pulse {
@@ -217,7 +217,7 @@
 
         if (markerToFind) {
             markerClusterGroup.zoomToShowLayer(markerToFind, () => {
-                map.flyTo(markerToFind.getLatLng(), 18);
+                // map.flyTo(markerToFind.getLatLng(), 18);
                 markerToFind.openPopup();
             });
         }
@@ -285,10 +285,11 @@
             popupContent.innerHTML = `
             <strong style="font-size: 18px;">${escapeHTML(cam.hostname)}</strong><br>
             <table style="font-size: 14px;">
-              <tr><td>IP</td><td>: ${escapeHTML(cam.ip)}</td></tr>
-              <tr><td>Asset No</td><td>: ${escapeHTML(cam.asset_no || 'N/A')}</td></tr>
-              <tr><td>Status</td><td>: ${isOnline ? (normalized === "Online" ? "🟢 Online" : "🟡 High Latency") : "🔴 Offline"}</td></tr>
-              ${isOnline ? `<tr><td>Uptime</td><td>: ${escapeHTML(cam.uptime)}</td></tr>` : `<tr><td>Downtime</td><td>: ${escapeHTML(cam.uptime)}</td></tr><tr><td>Last Online</td><td>: ${escapeHTML(cam.last_online)}</td></tr>`}
+              <tr><td>IP</td><td>:</td>  <td>${escapeHTML(cam.ip)}</td></tr>
+              <tr><td>Asset No</td><td>:</td>  <td>${escapeHTML(cam.asset_no || 'N/A')}</td></tr>
+              <tr><td>Status</td><td>:</td>  <td>${isOnline ? (normalized === "Online" ? "🟢 Online" : "🟡 High Latency") : "🔴 Offline"}</td></tr>
+              ${isOnline ? `<tr><td>Uptime</td><td>:</td>  <td>${escapeHTML(cam.uptime)}</td></tr>` : `<tr><td>Downtime</td><td>:</td>  <td>${escapeHTML(cam.uptime)}</td></tr><tr><td>Last Online</td><td>:</td>  <td>${escapeHTML(cam.last_online)}</td></tr>`}
+              <tr><td>Coordinate</td><td>:</td> <td><a href="https://www.google.com/maps?q=${escapeHTML(cam.coordinate || 'N/A')}" target="_blank" rel="noopener noreferrer">${escapeHTML(cam.coordinate || 'N/A')}</a></td></tr>
             </table>
             <div id="snapshot-container-${cam.id}" class="mt-0 text-center text-gray-500 dark:text-gray-400">Loading snapshot...</div>
           `;
@@ -306,9 +307,15 @@
                 const timestamp = escapeHTML(snapshot.timestamp);
                 const resolution = escapeHTML(snapshot.res);
                 const tamperReason = snapshot.tamper_reason ? `<p class="text-left text-gray-800 dark:text-gray-800">Tampered: ${escapeHTML(snapshot.tamper_reason)}</p>` : '';
-                container.innerHTML = `${tamperReason}<p class="text-left text-gray-800 dark:text-gray-800">Resolution: ${resolution}</p><p class="text-left text-gray-800 dark:text-gray-800">Snapshot Time: ${timestamp}</p><img src="${escapeHTML(snapshot.url)}" class="w-full h-auto rounded-md shadow-md mt-1" alt="Camera Snapshot" onload="this.nextElementSibling.style.display='none';" onerror="this.onerror=null; this.src='/static/placeholder.svg'; this.nextElementSibling.style.display='none'; this.nextElementSibling.nextElementSibling.style.display='block';"><p class="loading-text text-gray-500 dark:text-gray-400 mt-1">Loading image...</p><p class="error-message text-red-500 text-xs mt-1" style="display: none;">Image failed to load.</p>`;
+                let imageTag = '';
+                if (snapshot.url) {
+                  imageTag = `<img src="${escapeHTML(snapshot.url)}" class="w-full h-auto rounded-md shadow-md mt-1" alt="Camera Snapshot" onload="this.nextElementSibling.style.display='none';" onerror="this.onerror=null; this.src='/static/placeholder.svg'; this.nextElementSibling.style.display='none'; this.nextElementSibling.nextElementSibling.style.display='block';"><p class="loading-text text-gray-500 dark:text-gray-400 mt-1">Loading image...</p><p class="error-message text-red-500 text-xs mt-1" style="display: none;">Image failed to load.</p>`;
+                } else {
+                  imageTag = `<img src="/static/placeholder.svg" class="w-full h-auto rounded-md shadow-md mt-1" alt="No Snapshot Available"><p class="error-message text-red-500 text-xs mt-1 mt-1">No snapshot available.</p>`;
+                }
+                container.innerHTML = `${tamperReason}<p class="text-left text-gray-800 dark:text-gray-800">Resolution: ${resolution}</p><p class="text-left text-gray-800 dark:text-gray-800">Snapshot Time: ${timestamp}</p>${imageTag}`;
               } catch (err) {
-                container.innerHTML = `<div class="text-center text-sm text-red-500">❌ ${escapeHTML(err.message)}</div>`;
+                container.innerHTML = `<img src="/static/placeholder.svg" class="w-full h-auto rounded-md shadow-md mt-1" alt="No Snapshot Available">`;
               }
             });
             
