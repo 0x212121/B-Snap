@@ -253,6 +253,16 @@ async def update_user(
         if user_to_update.id == request.session.get("user_id"):
             request.session["user_role"] = role
 
+        # Audit log hanya menampilkan data yang berubah
+        changes = []
+        if before_details["role"] != after_details["role"]:
+            changes.append(f"- role: '{before_details['role']}' -> '{after_details['role']}'")
+        if before_details["group"] != after_details["group"]:
+            changes.append(f"- group: '{before_details['group']}' -> '{after_details['group']}'")
+        if after_details["password_changed"]:
+            changes.append("- password: [CHANGED]")
+
+        audit_extra = "\n".join(changes) if changes else "No changes detected."
 
         log_audit(
             db=db,
@@ -260,10 +270,7 @@ async def update_user(
             action="update_user",
             target=user_to_update.username,
             ip=request.client.host,
-            extra=json.dumps({
-                "before": before_details,
-                "after": after_details
-            })
+            extra=audit_extra
         )
 
         msg = quote("User updated successfully.")
@@ -308,7 +315,10 @@ async def api_generate_token(
     current_tokens = user.api_tokens or []
     current_tokens.append(new_entry)
 
-    current_tokens.sort(key=lambda t: t.get("created_at", ""), reverse=True)
+    # Mengurutkan token berdasarkan objek datetime agar lebih andal
+    current_tokens.sort(
+        key=lambda t: datetime.fromisoformat(t.get("created_at")) if t.get("created_at") else datetime.min, reverse=True
+    )
     user.api_tokens = current_tokens[:5]
 
     try:
@@ -348,7 +358,6 @@ async def api_generate_token(
         db.rollback()
         logger.error(f"Error during token generation for user {user.id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to process token generation. Check server logs.")
-
 
 @router.post("/users/reset-mfa/{user_id}")
 async def reset_user_mfa(
@@ -397,7 +406,49 @@ async def reset_user_mfa(
 
 
 @router.post("/users/{user_id}/revoke-token")
-def revoke_token(user_id: int, token_data: dict, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
+def revoke_token(
+    request: Request, # <-- Tambahkan Request untuk mendapatkan IP
+    user_id: int,
+    token_data: dict,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    Deletes a specific API token from a user's token list.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    token_to_revoke = token_data.get("token")
+    if not token_to_revoke:
+        raise HTTPException(status_code=400, detail="Missing token")
+    
+    # FIX: Ensure current_tokens is a list to prevent TypeError if api_tokens is None.
+    current_tokens = user.api_tokens or []
+    original_count = len(current_tokens)
+    
+    # Create the new list of tokens, excluding the one to be revoked
+    user.api_tokens = [t for t in current_tokens if t.get("token") != token_to_revoke]
+    
+    if len(user.api_tokens) == original_count:
+        raise HTTPException(status_code=404, detail="Token not found for this user.")
+
+    try:
+        db.commit()
+        log_audit(
+            db=db,
+            user=current_admin.username,
+            action="revoke_api_token",
+            target=user.username,
+            ip=request.client.host, # <-- Mencatat IP yang benar
+            extra=f"Revoked token: {token_to_revoke[:8]}..."
+        )
+        return {"message": "Token revoked successfully"}
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to revoke token for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Could not save changes to the database.")
     """
     Deletes a specific API token from a user's token list.
     """

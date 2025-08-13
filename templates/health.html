@@ -168,8 +168,8 @@
       device.status?.includes('High Latency') ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800';
       
       const pingButton = `<button onclick='triggerHealth(this, "${device.id}", "${device.type.toLowerCase()}")' class="bg-gray-600 text-white px-2 py-1 rounded text-xs hover:bg-gray-700">🔄 Ping</button>`;
-      const viewButton = device.type === 'Camera' ? `<button class='bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600' onclick='viewSnapshot(${JSON.stringify(device.hostname)})'>📸 View</button>` : '';
-      const realtimeButton = device.type === 'Camera' && device.status !== 'Offline' ? `<button class='bg-teal-500 text-white px-2 py-1 rounded text-sm hover:bg-teal-600' onclick='viewRealtimeSnapshot(this, ${JSON.stringify(device.hostname)})'>📸 Realtime</button>` : '';
+      const viewButton = device.type === 'Camera' ? `<button class='bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600' onclick='viewSnapshot(${JSON.stringify(device.id)}, ${JSON.stringify(device.hostname)})'>📸 View</button>` : '';
+      const realtimeButton = device.type === 'Camera' && device.status !== 'Offline' ? `<button class='bg-teal-500 text-white px-2 py-1 rounded text-sm hover:bg-teal-600' onclick='viewRealtimeSnapshot(this, ${JSON.stringify(device.id)}, ${JSON.stringify(device.hostname)})'>📸 Realtime</button>` : '';
       
       return `
       <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -251,7 +251,7 @@
       const data = await response.json();
       serverTimezone = data.server_timezone || serverTimezone;
       serverTimezoneLabel = data.server_timezone_label || serverTimezoneLabel;
-      fullDataset = data.statuses;      
+      fullDataset = data.statuses;       
       
       document.getElementById('camera-online-count').textContent = data.camera_online_count;
       document.getElementById('camera-offline-count').textContent = data.camera_offline_count;
@@ -293,7 +293,6 @@
     });
   }
   
-  // MODIFIED: This function now just shows the confirmation modal
   function triggerAllHealthcheck() {
     const message = 'Are you sure you want to ping all devices? This may cause high network traffic.';
     showGlobalConfirm(message, executePingAll, {
@@ -303,7 +302,6 @@
     });
   }
   
-  // NEW: This function contains the actual logic to run the ping
   function executePingAll() {
     hideGlobalConfirm();
     const button = document.getElementById('ping-all-btn'); 
@@ -334,7 +332,6 @@
   }
   
   function checkHealthCheckProgress() {
-    // Clear any existing interval to prevent multiple from running
     if (healthCheckInterval) {
       clearInterval(healthCheckInterval);
     }
@@ -385,12 +382,13 @@
     }, 2000);
   }
   
-  function viewRealtimeSnapshot(button, cameraName) {
+  // --- FUNGSI DIPERBAIKI ---
+  function viewRealtimeSnapshot(button, cameraId, cameraName) {
     const originalText = button.innerHTML;
     button.disabled = true;
     button.innerHTML = '📸 Loading...';
     
-    fetch(`/snap/${encodeURIComponent(cameraName)}`, {
+    fetch(`/snap/${encodeURIComponent(cameraId)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     })
@@ -403,7 +401,7 @@
     .then(data => {
       if (data.status === 'success' && data.file_path) {
         console.log('Realtime snapshot created. Now fetching its info to display.');
-        viewSnapshot(cameraName);
+        viewSnapshot(cameraId, cameraName);
       } else {
         showAlertModal('Failed to take snapshot: ' + (data.detail || 'Unknown error from server'));
       }
@@ -418,8 +416,9 @@
     });
   }
   
-  function viewSnapshot(cameraName) { 
-    fetch(`/snapshot/latest/${encodeURIComponent(cameraName)}/info`)
+  // --- FUNGSI DIPERBAIKI ---
+  function viewSnapshot(cameraId, cameraName) { 
+    fetch(`/snapshot/latest/${encodeURIComponent(cameraId)}/info`)
     .then(res => res.json())
     .then(data => {
       if (data.url) {
@@ -428,10 +427,11 @@
         const downloadBtn = document.getElementById("download-btn");
         
         snapshotImg.src = data.url;
-        snapshotInfo.textContent = `${data.camera} • ${data.timestamp}`;
+        const displayName = cameraName || data.camera;
+        snapshotInfo.textContent = `${displayName} • ${data.timestamp}`;
         document.getElementById('snapshotModal').classList.remove('hidden');
         
-        const filename = `snapshot_${data.camera}_${data.timestamp.replace(/[\s:]/g, '-')}.jpg`;
+        const filename = `snapshot_${displayName}_${data.timestamp.replace(/[\s:]/g, '-')}.jpg`;
         downloadBtn.setAttribute('download', filename); 
         
         downloadBtn.onclick = (event) => {
@@ -450,8 +450,8 @@
             ctx.strokeStyle = 'black';
             ctx.lineWidth = 2;
             ctx.textAlign = 'right';
-            ctx.strokeText(data.camera, canvas.width - 20, 40);
-            ctx.fillText(data.camera, canvas.width - 20, 40);
+            ctx.strokeText(displayName, canvas.width - 20, 40);
+            ctx.fillText(displayName, canvas.width - 20, 40);
             ctx.strokeText(data.timestamp, canvas.width - 20, 70);
             ctx.fillText(data.timestamp, canvas.width - 20, 70);
             const link = document.createElement('a');

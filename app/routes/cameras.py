@@ -227,7 +227,7 @@ async def edit_camera_submit(
     group_name: Optional[str] = Form(None),
     is_flipped: bool = Form(False),
     status: str = Form(...),
-    note: Optional[str] = Form(None),  # <-- Add note field
+    note: Optional[str] = Form(None),
 ):
     cam = db.query(DBCamera).filter(DBCamera.id == camera_id).first()
     if not cam:
@@ -255,7 +255,7 @@ async def edit_camera_submit(
         lon = float(longitude) if longitude and longitude.strip() else None
 
         if cam.hostname != name:
-            existing = db.query(DBCamera).filter(DBCamera.hostname == name, DBCamera.id != camera_id).first()
+            existing = db.query(DBCamera).filter(DBCamera.hostname.ilike(name), DBCamera.id != camera_id).first()
             if existing:
                 raise HTTPException(status_code=409, detail=f"Another camera with name '{name}' already exists.")
         if cam.longitude != longitude or cam.latitude != latitude:
@@ -263,15 +263,20 @@ async def edit_camera_submit(
         if name != cam.hostname:
             cam.previous_name = cam.hostname
 
+        # --- PERBAIKAN BUG PORT ---
+        # Memastikan nilai port yang sudah diproses tidak tertimpa
         port_val = int(port) if port not in [None, ""] else None
         cam.port = port_val
-        cam.hostname, cam.ip, cam.username = name, ip, username
+        cam.hostname, cam.ip, cam.username = name, ip, username # port dihapus dari sini
+        # -------------------------
+        
         cam.latitude, cam.longitude, cam.asset_no = lat, lon, asset_no
         cam.location, cam.status = location, status
         cam.is_flipped = is_flipped
         cam.note = note
 
         if password:
+            old_password = cam.password
             cam.password = password
 
         if group_name:
@@ -285,6 +290,7 @@ async def edit_camera_submit(
             cam.group_id = None
 
         db.commit()
+        db.refresh(cam) # Refresh objek cam untuk mendapatkan state terbaru dari DB
 
         # ✅ Simpan data setelah diubah
         after = {
@@ -302,6 +308,19 @@ async def edit_camera_submit(
             "note": cam.note
         }
 
+        # --- PERUBAHAN LOGIKA AUDIT LOG ---
+        # Membandingkan dictionary 'before' dan 'after' untuk mencari perubahan
+        changes = []
+        for key in before:
+            if before[key] != after[key]:
+                changes.append(f"- {key}: '{before[key]}' -> '{after[key]}'")
+        
+        if cam.password != old_password:
+            changes.append("- password: [CHANGED]")
+
+        audit_extra = "\n".join(changes) if changes else "No changes detected."
+        # ----------------------------------
+
         # 📝 Audit log
         log_audit(
             db=db,
@@ -309,10 +328,7 @@ async def edit_camera_submit(
             action="update_camera",
             target=cam.hostname,
             ip=request.client.host,
-            extra=json.dumps({
-                "before": before,
-                "after": after
-            }, indent=2)
+            extra=audit_extra # Menggunakan format baru
         )
 
         if cam.status == "Deactivated":

@@ -285,7 +285,7 @@ async def edit_nvr(
     nvr.group_id = group_id  # safe: will be None or int/UUID
 
     if password:
-        nvr.password = password  # TODO: hash this in production!
+        nvr.password = password
 
     db.commit()
 
@@ -301,13 +301,24 @@ async def edit_nvr(
         "status": nvr.status
     }
 
+    # Logika untuk menampilkan data yang berubah saja
+    changes = []
+    for key in before:
+        if before[key] != after[key]:
+            changes.append(f"- {key}: '{before[key]}' -> '{after[key]}'")
+    
+    if password:
+        changes.append("- password: [CHANGED]")
+
+    audit_extra = "\n".join(changes) if changes else "No changes detected."
+
     log_audit(
         db=db,
         user=request.session.get("user_name", "unknown"),
         action="update_nvr",
         target=nvr.hostname,
         ip=request.client.host,
-        extra=json.dumps({"before": before, "after": after}, indent=2)
+        extra=audit_extra
     )
 
     return JSONResponse(content={"status": "success", "message": "NVR updated successfully"})

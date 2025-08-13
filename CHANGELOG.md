@@ -2,17 +2,24 @@
 
 All notable changes to B-Snap will be documented in this file.
 
-## [1.6.4] - 2025-08-11
+## [1.7.0] - 2025-08-13
 
 ### Added
-- CCTV GPS Coordinate in maps.
-- Notes field in CCTV and NVR.
+- GPS Map Display: Added the ability to display CCTV locations on a marker popup
+- Notes Field: Added a 'Notes' field to the Camera and NVR management forms to store additional information.
+- Token Security Log: The client IP address is now recorded in the audit log when an admin revokes a user's API token to improve security.
 
 ### Changed
-- Password eye icon.
+- Password Visibility Icon: Updated the password field's visibility toggle icon for better usability and intuition.
+- Audit Log Format: The audit log for data updates (User, NVR, Camera) now displays a concise summary of changes instead of a full JSON dump, making it more compact and readable.
+- Snapshot Database Relation: Modernized the database structure by changing the snapshot log table's relationship from hostname to camera_id, improving data integrity and overall system stability.
 
 ### Fixed
-- Scheduler for deleting stats.
+- Automatic Scheduler: Fixed the scheduled task responsible for automatically deleting old statistics.
+- Snapshot Feature: Fixed the 'View Snapshot' and 'Realtime Snapshot' features, which were broken after the database structure update.
+- Camera Edit Bugs: Resolved several bugs in the camera edit form, including an issue with saving the port and a case-sensitive validation error for unique hostnames.
+- API Token Sorting: Corrected the API token sorting logic on the user management page to reliably display the most recent tokens first.
+- Frontend Error Handling: Improved the apiPost function in JavaScript to display more informative error messages from the backend, simplifying future debugging processes.
 
 ## [1.6.3] - 2025-08-07
 

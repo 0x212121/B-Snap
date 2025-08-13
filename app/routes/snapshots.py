@@ -176,23 +176,43 @@ def search_snapshots(
     return list(latest_snapshot_per_camera.values())
 
 
-@router.get("/snapshot/latest/{identifier}/info", response_model=SnapshotResponse)
-def get_latest_snapshot_info(identifier: str, db: Session = Depends(get_db)):
-    if len(identifier) < 2:
+# --- FUNGSI INI TELAH DIMODIFIKASI ---
+@router.get("/snapshot/latest/{camera_identifier}/info", response_model=SnapshotResponse)
+def get_latest_snapshot_info(camera_identifier: str, db: Session = Depends(get_db)):
+    """
+    Mendapatkan informasi snapshot terakhir untuk sebuah kamera berdasarkan ID, IP, atau nama.
+    """
+    if len(camera_identifier) < 2:
         raise HTTPException(status_code=400, detail="Identifier must be at least 2 characters.")
 
-    is_ip = re.fullmatch(r"\d{1,3}(?:\.\d{1,3}){3}", identifier)
+    # --- PERUBAHAN LOGIKA PENCARIAN ---
+    # Pertama, cari kamera berdasarkan identifier yang diberikan (bisa ID, IP, atau nama).
+    camera = None
+    is_ip = re.fullmatch(r"\d{1,3}(?:\.\d{1,3}){3}", camera_identifier)
+    if is_ip:
+        camera = db.query(DBCamera).filter(DBCamera.ip == camera_identifier).first()
+    else:
+        # Prioritaskan pencarian dengan ID, sesuai perubahan di frontend
+        camera = db.query(DBCamera).filter(DBCamera.id == camera_identifier).first()
+        # Fallback jika identifier yang dikirim adalah nama (untuk backward compatibility)
+        if not camera:
+            camera = db.query(DBCamera).filter(DBCamera.hostname.ilike(camera_identifier)).first()
+
+    if not camera:
+        raise HTTPException(status_code=404, detail=f"No camera found for identifier '{camera_identifier}'.")
+
+    # Setelah kamera ditemukan, cari snapshot terakhir berdasarkan camera.id
     snapshot = (
         db.query(Snapshot)
-        .filter(Snapshot.camera_ip == identifier if is_ip else Snapshot.camera_name == identifier)
+        .filter(Snapshot.camera_id == camera.id)
         .order_by(Snapshot.timestamp.desc())
         .first()
     )
 
     if not snapshot:
-        raise HTTPException(status_code=404, detail=f"No snapshot found for '{identifier}'.")
+        raise HTTPException(status_code=404, detail=f"No snapshot found for camera '{camera.hostname}'.")
+    # --- AKHIR PERUBAHAN LOGIKA PENCARIAN ---
 
-    # --- PERBAIKAN ZONA WAKTU ---
     # Gunakan helper dinamis untuk mengonversi dan memformat waktu
     timestamp_local = to_current_timezone(snapshot.timestamp, db)
     formatted_timestamp = format_datetime_with_tz(timestamp_local)
@@ -202,9 +222,9 @@ def get_latest_snapshot_info(identifier: str, db: Session = Depends(get_db)):
 
     return SnapshotResponse(
         filename=os.path.basename(snapshot.file_path),
-        camera=snapshot.camera_name,
+        camera=snapshot.camera_name, # Data display tetap pakai camera_name dari tabel Snapshot
         ip=snapshot.camera_ip,
-        timestamp=formatted_timestamp, # ⬅️ Sekarang sudah menggunakan zona waktu dinamis
+        timestamp=formatted_timestamp,
         url=f"/snapshot/file/{quote(snapshot.file_path)}",
         img_path=f"{quote(snapshot.file_path)}",
         lat=latitude,
