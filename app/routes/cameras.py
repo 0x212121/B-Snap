@@ -147,6 +147,7 @@ async def add_camera_submit(
     group_name: Optional[str] = Form(None),
     status: str = Form(...),
     is_flipped: bool = Form(False),
+    note: Optional[str] = Form(None),  # <-- Add note field
 ):
     try:
         existing_cam = db.query(DBCamera).filter(DBCamera.hostname == name).first()
@@ -170,7 +171,8 @@ async def add_camera_submit(
         new_cam = DBCamera(
             hostname=name, ip=ip, port=port, username=username, password=password,
             latitude=lat, longitude=lon, asset_no=asset_no, location=location,
-            group_id=group_id, status=status, is_flipped=is_flipped
+            group_id=group_id, status=status, is_flipped=is_flipped,
+            note=note  # <-- Save note to DB
         )
         db.add(new_cam)
 
@@ -225,6 +227,7 @@ async def edit_camera_submit(
     group_name: Optional[str] = Form(None),
     is_flipped: bool = Form(False),
     status: str = Form(...),
+    note: Optional[str] = Form(None),  # <-- Add note field
 ):
     cam = db.query(DBCamera).filter(DBCamera.id == camera_id).first()
     if not cam:
@@ -242,7 +245,8 @@ async def edit_camera_submit(
         "location": cam.location,
         "group_id": cam.group_id,
         "status": cam.status,
-        "is_flipped": cam.is_flipped
+        "is_flipped": cam.is_flipped,
+        "note": cam.note
     }
 
     try:
@@ -261,10 +265,11 @@ async def edit_camera_submit(
 
         port_val = int(port) if port not in [None, ""] else None
         cam.port = port_val
-        cam.hostname, cam.ip, cam.port, cam.username = name, ip, port, username
+        cam.hostname, cam.ip, cam.username = name, ip, username
         cam.latitude, cam.longitude, cam.asset_no = lat, lon, asset_no
         cam.location, cam.status = location, status
         cam.is_flipped = is_flipped
+        cam.note = note
 
         if password:
             cam.password = password
@@ -293,7 +298,8 @@ async def edit_camera_submit(
             "location": cam.location,
             "group_id": cam.group_id,
             "status": cam.status,
-            "is_flipped": cam.is_flipped
+            "is_flipped": cam.is_flipped,
+            "note": cam.note
         }
 
         # 📝 Audit log
@@ -354,7 +360,8 @@ async def get_camera_details(request: Request, camera_id: str, db: Session = Dep
         "location": camera.location,
         "status": camera.status,
         "is_flipped": camera.is_flipped,
-        "group": {"name": camera.group.name} if camera.group else None
+        "group": {"name": camera.group.name} if camera.group else None,
+        "note": camera.note
     }
 
 
@@ -499,7 +506,7 @@ async def export_csv(request: Request, db: Session = Depends(get_db)):
     writer.writerow([
         "id", "hostname", "ip", "port", "username", "password",
         "latitude", "longitude", "group_name", "asset_no", "location", "status",
-        "previous_name", "previous_latitude", "previous_longitude", "is_flipped"
+        "previous_name", "previous_latitude", "previous_longitude", "is_flipped", "note"
     ])
 
     # Write the data rows with the group name.
@@ -520,7 +527,8 @@ async def export_csv(request: Request, db: Session = Depends(get_db)):
             cam.previous_name,
             cam.previous_latitude,
             cam.previous_longitude,
-            cam.is_flipped
+            cam.is_flipped,
+            cam.note
         ])
 
     output.seek(0)

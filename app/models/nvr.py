@@ -20,5 +20,6 @@ class NVR(Base):
     latitude = Column(Float)
     longitude = Column(Float)
     group_id = Column(Integer, ForeignKey('camera_groups.id'))
+    note = Column(String, nullable=True)
     group = relationship("CameraGroup", back_populates="nvr")
     health = relationship("CameraHealth", back_populates="nvr", uselist=False, cascade="all, delete-orphan")

@@ -48,6 +48,7 @@ class CameraLocation(BaseModel):
     user_group: str
     user_group_id: int | None
     coordinate: str | None
+    note: str | None = ""
 
     class Config:
         from_attributes = True
@@ -130,6 +131,7 @@ async def get_camera_locations(
             "user_group": group_name,
             "user_group_id": group_id,
             "coordinate": coordinate,
+            "note": cam.note if cam.note is not None else ""  # Use empty string if null
         }
         result.append(camera_data)
 

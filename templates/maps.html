@@ -217,7 +217,6 @@
 
         if (markerToFind) {
             markerClusterGroup.zoomToShowLayer(markerToFind, () => {
-                // map.flyTo(markerToFind.getLatLng(), 18);
                 markerToFind.openPopup();
             });
         }
@@ -281,6 +280,7 @@
             
             const popupContent = L.DomUtil.create('div');
             const isOnline = normalized === "Online" || normalized === "High Latency";
+            const isNotes = typeof cam.note === 'string' && cam.note.trim().length > 0;
             
             popupContent.innerHTML = `
             <strong style="font-size: 18px;">${escapeHTML(cam.hostname)}</strong><br>
@@ -289,6 +289,7 @@
               <tr><td>Asset No</td><td>:</td>  <td>${escapeHTML(cam.asset_no || 'N/A')}</td></tr>
               <tr><td>Status</td><td>:</td>  <td>${isOnline ? (normalized === "Online" ? "🟢 Online" : "🟡 High Latency") : "🔴 Offline"}</td></tr>
               ${isOnline ? `<tr><td>Uptime</td><td>:</td>  <td>${escapeHTML(cam.uptime)}</td></tr>` : `<tr><td>Downtime</td><td>:</td>  <td>${escapeHTML(cam.uptime)}</td></tr><tr><td>Last Online</td><td>:</td>  <td>${escapeHTML(cam.last_online)}</td></tr>`}
+              ${isNotes ? `<tr><td>Notes</td><td>:</td>  <td class="text-gray-800 dark:text-gray-800">${escapeHTML(cam.note)}</td></tr>` : ''}
               <tr><td>Coordinate</td><td>:</td> <td><a href="https://www.google.com/maps?q=${escapeHTML(cam.coordinate || 'N/A')}" target="_blank" rel="noopener noreferrer">${escapeHTML(cam.coordinate || 'N/A')}</a></td></tr>
             </table>
             <div id="snapshot-container-${cam.id}" class="mt-0 text-center text-gray-500 dark:text-gray-400">Loading snapshot...</div>
@@ -313,7 +314,7 @@
                 } else {
                   imageTag = `<img src="/static/placeholder.svg" class="w-full h-auto rounded-md shadow-md mt-1" alt="No Snapshot Available"><p class="error-message text-red-500 text-xs mt-1 mt-1">No snapshot available.</p>`;
                 }
-                container.innerHTML = `${tamperReason}<p class="text-left text-gray-800 dark:text-gray-800">Resolution: ${resolution}</p><p class="text-left text-gray-800 dark:text-gray-800">Snapshot Time: ${timestamp}</p>${imageTag}`;
+                container.innerHTML = `${tamperReason}<p class="text-left text-gray-800 dark:text-gray-800">Resolution &nbsp: ${resolution}</p><p class="text-left text-gray-800 dark:text-gray-800">Snapshot Time : ${timestamp}</p>${imageTag}`;
               } catch (err) {
                 container.innerHTML = `<img src="/static/placeholder.svg" class="w-full h-auto rounded-md shadow-md mt-1" alt="No Snapshot Available">`;
               }

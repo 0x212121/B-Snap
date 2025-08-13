@@ -6,6 +6,7 @@ All notable changes to B-Snap will be documented in this file.
 
 ### Added
 - CCTV GPS Coordinate in maps.
+- Notes field in CCTV and NVR.
 
 ### Changed
 - Password eye icon.
