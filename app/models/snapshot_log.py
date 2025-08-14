@@ -14,11 +14,11 @@ class SnapshotLog(Base):
     
     # --- PERUBAHAN UTAMA DI SINI ---
     # 1. Hapus kolom 'camera_name' yang lama.
-    # camera_name = Column(String, ForeignKey("cameras.hostname", ondelete="SET NULL"), nullable=True)
     
     # 2. Tambahkan kolom 'camera_id' yang baru dan benar.
     #    Kolom ini tidak boleh NULL dan terhubung ke 'cameras.id'.
     camera_id = Column(String(36), ForeignKey("cameras.id"), nullable=False)
+    camera_name = Column(String(50), nullable=True)
     # -----------------------------
 
     timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

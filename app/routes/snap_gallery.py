@@ -125,7 +125,8 @@ def snapshot_handler(
         # Menggunakan camera.id, bukan camera.hostname, sesuai skema baru.
         snapshot_log = SnapshotLog(
             id=str(uuid4()),
-            camera_id=camera.id 
+            camera_id=camera.id,
+            camera_name=camera.hostname,
         )
         db.add(snapshot_log)
 

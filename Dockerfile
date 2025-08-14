@@ -1,4 +1,4 @@
-FROM python:3.13.5-slim-bookworm
+FROM python:3.13.6-slim
 
 LABEL maintainer="Indra W. <wijaya.indra2196@gmail.com>"
 LABEL org.opencontainers.image.version="1.7.0"

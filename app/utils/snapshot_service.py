@@ -13,18 +13,19 @@ from onvif import ONVIFCamera
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 from app.core.config import get_config
 from app.core.logging_config import setup_logging
+from pathlib import Path
+from typing import List
 from app.onvif_client import (
     is_reachable,
     add_watermark,
     get_rtsp_url,
-    try_auth
 )
 from app.utils import check_stats
 from app.models.camera import Camera
 from app.models.snapshot import Snapshot
 
-
 STATIC_DIR = os.path.join("static", "snapshots")
+_BASE_SNAP_DIR = Path(STATIC_DIR).resolve()
 setup_logging()
 logger = logging.getLogger("snapshot")
 
@@ -277,39 +278,77 @@ def error_response(camera_name: str, error: str, camera_ip: Optional[str] = None
     return response
 
 
-def clean_old_snapshots(camera_name: str, db: Session):
-    max_screenshots = int(get_config("max_screenshot_per_camera", default=3))
-    if max_screenshots <= 0:
-        return
-        
-    snapshots = db.query(Snapshot).filter(
-        Snapshot.camera_name == camera_name
-    ).order_by(Snapshot.timestamp.desc()).all()
+def _safe_snap_path(relative_path: str) -> Path:
+    """
+    Build a safe absolute path under STATIC_DIR from a DB relative path.
+    Prevents path traversal (../../).
+    """
+    # Normalisasi pemisah dan hilangkan leading slash
+    norm = relative_path.replace("\\", "/").lstrip("/")
 
-    if len(snapshots) < max_screenshots:
-        return
+    # Gabungkan dan resolve
+    p = (_BASE_SNAP_DIR / norm).resolve()
 
-    to_delete = snapshots[max_screenshots:]
+    # Pastikan tetap di dalam base dir
+    if os.path.commonpath([str(p), str(_BASE_SNAP_DIR)]) != str(_BASE_SNAP_DIR):
+        raise ValueError(f"Unsafe snapshot path detected: {relative_path}")
+    return p
 
-    for snap in to_delete:
-        path = os.path.join(STATIC_DIR, *snap.file_path.replace("\\", "/").split('/'))
-        try:
-            if os.path.exists(path):
-                os.remove(path)
-                logger.info("Deleted old snapshot file: %s", snap.file_path)
-            else:
-                logger.warning("Old snapshot file not found, skipping: %s", path)
-        except Exception as e:
-            logger.error("Failed to delete %s: %s", snap.file_path, e)
-        
-        try:
-            db.delete(snap)
-            # Perbaikan: expunge objek dari sesi untuk segera membebaskan memori
-            db.expunge(snap)
-        except Exception as e:
-            logger.error("Failed to delete snapshot DB entry: %s", e)
+
+def clean_old_snapshots(camera_name: str, db: Session) -> None:
+    """
+    Keep only the newest N snapshots per camera; delete the rest from disk and DB.
+    - Efisien: tidak load semua kolom/objek; hanya ambil id + file_path untuk yang akan dihapus.
+    - Aman: path sanitization (anti path traversal).
+    - Tahan error: kegagalan hapus file tidak menggagalkan penghapusan DB (dan sebaliknya).
+    """
     try:
+        max_keep = int(get_config("max_screenshot_per_camera", default=3))
+    except Exception:
+        max_keep = 3
+
+    if max_keep <= 0:
+        return
+
+    # Ambil ID & path yang akan DIHAPUS saja pakai offset, bukan semua rows.
+    rows_to_delete: List[tuple] = (
+        db.query(Snapshot.id, Snapshot.file_path)
+          .filter(Snapshot.camera_name == camera_name)
+          .order_by(Snapshot.timestamp.desc())
+          .offset(max_keep)              # lewati N terbaru
+          .all()
+    )
+
+    if not rows_to_delete:
+        return
+
+    # 1) Hapus file di disk (best-effort, safe path)
+    for snap_id, rel_path in rows_to_delete:
+        try:
+            p = _safe_snap_path(rel_path)
+            if p.exists():
+                try:
+                    p.unlink()
+                    logger.info("Deleted old snapshot file: %s", rel_path)
+                except Exception as e:
+                    # Log saja; lanjutkan proses DB
+                    logger.warning("Failed to delete file %s: %s", rel_path, e)
+            else:
+                logger.debug("Snapshot file already missing: %s", rel_path)
+        except Exception as e:
+            # Path invalid / traversal attempt / error lain → log dan lanjut
+            logger.error("Unsafe/invalid snapshot path for id=%s (%s): %s", snap_id, rel_path, e)
+
+    # 2) Hapus baris dari DB secara bulk
+    try:
+        ids = [rid for rid, _ in rows_to_delete]
+        (
+            db.query(Snapshot)
+              .filter(Snapshot.id.in_(ids))
+              .delete(synchronize_session=False)
+        )
         db.commit()
-        logger.info("Deleted %d old snapshots from DB", len(to_delete))
+        logger.info("Deleted %d old snapshots from DB (camera=%s)", len(ids), camera_name)
     except Exception as e:
-        logger.error("Failed to commit snapshot deletion: %s", e)
+        db.rollback()
+        logger.error("DB delete rollback for old snapshots (camera=%s): %s", camera_name, e)

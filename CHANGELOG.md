@@ -2,6 +2,11 @@
 
 All notable changes to B-Snap will be documented in this file.
 
+## [1.7.1] - 2025-08-14
+
+### Changed
+- Bring back camera_name field to snapshot logs table.
+
 ## [1.7.0] - 2025-08-13
 
 ### Added
@@ -10,6 +15,7 @@ All notable changes to B-Snap will be documented in this file.
 - Token Security Log: The client IP address is now recorded in the audit log when an admin revokes a user's API token to improve security.
 
 ### Changed
+- Bump python version to 3.13.6-slim.
 - Password Visibility Icon: Updated the password field's visibility toggle icon for better usability and intuition.
 - Audit Log Format: The audit log for data updates (User, NVR, Camera) now displays a concise summary of changes instead of a full JSON dump, making it more compact and readable.
 - Snapshot Database Relation: Modernized the database structure by changing the snapshot log table's relationship from hostname to camera_id, improving data integrity and overall system stability.
