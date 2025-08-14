@@ -132,6 +132,10 @@
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="asset_no">Asset No.</label><input type="text" id="asset_no" name="asset_no" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></div>
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="location">Location</label><input type="text" id="location" name="location" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></div>
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="group_name">Division</label><select id="group_name" name="group_name" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="">-- Select Division --</option></select><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Grouping camera to filter in maps</p></div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="note">Notes</label>
+          <textarea id="note" name="note" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></textarea>
+        </div>
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="status">Status</label><select id="status" name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="Active">Active</option><option value="Deactivated">Deactivated</option><option value="Restricted">Restricted</option></select></div>
       </div>
     </form>
@@ -349,11 +353,12 @@ or from CDN:
         document.getElementById('name').value = nvr.hostname || '';
         document.getElementById('ip').value = nvr.ip || '';
         document.getElementById('username').value = nvr.username || '';
-        document.getElementById('hs-toggle-password').value = '';
+        document.getElementById('hs-toggle-password').value = nvr.password || '';
         document.getElementById('latitude').value = nvr.latitude || '';
         document.getElementById('longitude').value = nvr.longitude || '';
         document.getElementById('asset_no').value = nvr.asset_no || '';
         document.getElementById('location').value = nvr.location || '';
+        document.getElementById('note').value = nvr.note || '';
         populateGroupSelect(nvr.group ? nvr.group.name : "");
         document.getElementById('status').value = nvr.status || 'Active';
         

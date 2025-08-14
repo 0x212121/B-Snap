@@ -168,8 +168,9 @@ async def create_nvr(
     longitude: Optional[str] = Form(None),
     asset_no: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
-    group_name: str = Form(None),  # ini dikirim dari form
-    status: str = Form(None),  # ini dikirim dari form
+    group_name: str = Form(None),
+    status: str = Form(None),
+    note: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
@@ -203,7 +204,8 @@ async def create_nvr(
         latitude=lat,
         longitude=lon,
         asset_no=asset_no,
-        status=status or "Deactivated"
+        status=status or "Deactivated",
+        note=note if note and note.strip() else None
     )
 
     db.add(nvr)
@@ -241,6 +243,7 @@ async def edit_nvr(
     location: Optional[str] = Form(None),
     group_name: str = Form(None),
     status: str = Form(...),
+    note: Optional[str] = Form(None),
     current_admin: User = Depends(admin_access_required)
 ):
     nvr = db.query(NVR).filter(NVR.id == nvr_id).first()
@@ -256,7 +259,8 @@ async def edit_nvr(
         "asset_no": nvr.asset_no,
         "location": nvr.location,
         "group_id": nvr.group_id,
-        "status": nvr.status
+        "status": nvr.status,
+        "note": nvr.note
     }
 
     # Parse float fields safely
@@ -283,6 +287,8 @@ async def edit_nvr(
     nvr.longitude = lon
     nvr.status = status
     nvr.group_id = group_id  # safe: will be None or int/UUID
+    nvr.note = note if note and note.strip() else None
+
 
     if password:
         nvr.password = password
@@ -298,7 +304,8 @@ async def edit_nvr(
         "asset_no": nvr.asset_no,
         "location": nvr.location,
         "group_id": nvr.group_id,
-        "status": nvr.status
+        "status": nvr.status,
+        "note": nvr.note,
     }
 
     # Logika untuk menampilkan data yang berubah saja
@@ -351,6 +358,7 @@ async def get_camera_details(request: Request, nvr_id: str, db: Session = Depend
         "username": nvr.username,
         "password": nvr.password,
         "location": nvr.location,
+        "note": nvr.note,
         "group": {"name": nvr.group.name} if nvr.group else None
     }
 
@@ -414,7 +422,7 @@ async def export_csv(request: Request, db: Session = Depends(get_db), current_ad
     # Header CSV - Changed 'division' to 'group_name' for consistency
     writer.writerow([
         "id", "hostname", "ip", "username", "password",
-        "group_name", "asset_no", "location", "latitude", "longitude", "status"
+        "group_name", "asset_no", "location", "latitude", "longitude", "status", "note"
     ])
 
     # Write data rows
@@ -431,6 +439,7 @@ async def export_csv(request: Request, db: Session = Depends(get_db), current_ad
             nvr.latitude,
             nvr.longitude,
             nvr.status,
+            nvr.note
         ])
 
     output.seek(0)
@@ -491,6 +500,7 @@ async def upload_nvr_csv(request: Request, db: Session = Depends(get_db), file: 
                     "latitude": float(row["latitude"]) if row.get("latitude", "").strip() else None,
                     "longitude": float(row["longitude"]) if row.get("longitude", "").strip() else None,
                     "group_id": int(group_id) if group_id is not None else None,
+                    "note": row.get("note", "").strip() or None
                 }
 
                 if existing_nvr:
