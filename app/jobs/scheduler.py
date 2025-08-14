@@ -19,7 +19,6 @@ from app.models.task_timing import TaskTiming
 import concurrent.futures
 import logging
 from time import monotonic, sleep
-from datetime import datetime
 
 scheduler = BackgroundScheduler(
     job_defaults={
@@ -49,18 +48,17 @@ def run_snapshot(camera):
                 resolution=result.get("resolution", "N/A"),
             )  
             snapshot_log = SnapshotLog(id=str(uuid4()), camera_name=camera.hostname)
-
             db.add(snapshot_log)
             db.commit()
             logger.info(f"[SUCCESS] Scheduled snapshot for {camera}, saved with ID {snapshot.id}")
             
-            return {"status": "success"}  # ✅ Tambahkan return jika sukses
+            return {"status": "success"}
         else:
             logger.warning(f"[FAIL] Snapshot failed for {camera}: {result}")
-            return {"status": "error", "details": result}  # ✅ Tambahkan return jika gagal
+            return {"status": "error", "details": result}
     except Exception as e:
         logger.error(f"[ERROR] Snapshot failed for {camera.hostname}: {e}")
-        return {"status": "error", "details": str(e)}  # ✅ Tambahkan return jika exception
+        return {"status": "error", "details": str(e)}
     finally:
         db.close()
 
@@ -68,7 +66,7 @@ def run_snapshot(camera):
 def scheduled_snapshot():
     db: Session = SessionLocal()
     workers = get_config("snapshot_concurrent_workers", 5)
-    all_cameras = load_active_cameras()  # Load all 406 cameras
+    all_cameras = load_active_cameras()
 
     logger.info("[SCHEDULED] Running snapshot for %d cameras with %d workers, in batches.", len(all_cameras), workers)
 
@@ -160,7 +158,10 @@ def scheduled_snapshot():
 # Global state untuk menyimpan konfigurasi terakhir
 last_config = {
     "snapshot_interval": None,
-    "healthcheck_interval": None
+    "healthcheck_interval": None,
+    "snapshot_concurrent_workers": None,
+    "snapshot_batch_size": None,
+    "snapshot_batch_delay_seconds": None,
 }
 
 
@@ -168,11 +169,15 @@ def start_scheduler():
     snapshot_interval = get_config("snapshot_interval_minutes", 600)
     healthcheck_interval = get_config("healthcheck_interval_minutes", 60)
     workers = get_config("snapshot_concurrent_workers", 5)
+    batch_size = get_config("snapshot_batch_size", 50)
+    batch_delay = get_config("snapshot_batch_delay_seconds", 5)
 
     # Simpan konfigurasi awal ke global state
     last_config["snapshot_interval"] = snapshot_interval
     last_config["healthcheck_interval"] = healthcheck_interval
-
+    last_config["snapshot_concurrent_workers"] = workers
+    last_config["snapshot_batch_size"] = batch_size
+    last_config["snapshot_batch_delay_seconds"] = batch_delay
 
     scheduler.add_job(
         scheduled_snapshot,
@@ -203,6 +208,9 @@ def update_scheduler_config():
     try:
         new_snapshot_interval = get_config("snapshot_interval_minutes", 600)
         new_healthcheck_interval = get_config("healthcheck_interval_minutes", 60)
+        new_concurrent_workers = get_config("snapshot_concurrent_workers", 5)
+        new_batch_size = get_config("snapshot_batch_size", 50)
+        new_batch_delay = get_config("snapshot_batch_delay_seconds", 5)
 
         changed = False
 
@@ -224,6 +232,25 @@ def update_scheduler_config():
             except JobLookupError:
                 logger.warning("[Scheduler] ⚠️ Job 'health_check' not found during config update.")
 
+        if new_concurrent_workers != last_config["snapshot_concurrent_workers"]:
+            try:
+                scheduler.modify_job("scheduled_snapshot", max_instances=new_concurrent_workers)
+                last_config["snapshot_concurrent_workers"] = new_concurrent_workers
+                logger.info("[Scheduler] 🔁 Concurrent workers updated to %d.", new_concurrent_workers)
+                changed = True
+            except JobLookupError:
+                logger.warning("[Scheduler] ⚠️ Job 'scheduled_snapshot' not found during concurrent workers update.")
+
+        if new_batch_size != last_config["snapshot_batch_size"]:
+            last_config["snapshot_batch_size"] = new_batch_size
+            logger.info("[Scheduler] 🔁 Snapshot batch size updated to %d.", new_batch_size)
+            changed = True
+            
+        if new_batch_delay != last_config["snapshot_batch_delay_seconds"]:
+            last_config["snapshot_batch_delay_seconds"] = new_batch_delay
+            logger.info("[Scheduler] 🔁 Snapshot batch delay updated to %d seconds.", new_batch_delay)
+            changed = True
+
         if changed:
             logger.info("[Scheduler] ✅ Scheduler config updated and jobs rescheduled.")
         else:
@@ -234,7 +261,6 @@ def update_scheduler_config():
 
 
 def delete_old_audit_logs():
-    """Delete audit_log records older than 180 days."""
     db: Session = SessionLocal()
     try:
         cutoff_date = date.today() - timedelta(days=180)
@@ -254,7 +280,6 @@ def delete_old_audit_logs():
 
 
 def delete_old_camera_stats():
-    """Delete camera_daily_stats records older than 90 days."""
     db: Session = SessionLocal()
     try:
         cutoff_date = date.today() - timedelta(days=90)
