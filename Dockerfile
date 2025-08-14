@@ -1,7 +1,7 @@
 FROM python:3.13.6-slim
 
 LABEL maintainer="Indra W. <wijaya.indra2196@gmail.com>"
-LABEL org.opencontainers.image.version="1.7.0"
+LABEL org.opencontainers.image.version="1.7.1"
 LABEL org.opencontainers.image.authors="Indra W. <wijaya.indra2196@gmail.com>"
 LABEL org.opencontainers.image.source="https://github.com/0x212121/b-snap"
 

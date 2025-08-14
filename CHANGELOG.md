@@ -5,7 +5,11 @@ All notable changes to B-Snap will be documented in this file.
 ## [1.7.1] - 2025-08-14
 
 ### Changed
-- Bring back camera_name field to snapshot logs table.
+- Reintroduced the `camera_name` field in the `snapshot_logs` table.
+
+### Fixed
+- Resolved snapshot scheduler failure caused by the recent table migration.
+
 
 ## [1.7.0] - 2025-08-13
 
