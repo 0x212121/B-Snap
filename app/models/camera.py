@@ -30,8 +30,8 @@ class Camera(Base):
     group_id = Column(Integer, ForeignKey('camera_groups.id'))
     group = relationship("CameraGroup", back_populates="cameras")
 
-    snapshot_logs = relationship("SnapshotLog", back_populates="camera")
+    snapshot_logs = relationship("SnapshotLog", back_populates="camera", cascade="all, delete-orphan")
     health = relationship("CameraHealth", back_populates="camera", uselist=False, cascade="all, delete-orphan")
     daily_stats = relationship("CameraDailyStats", back_populates="camera", cascade="all, delete-orphan")
-    snapshots = relationship("Snapshot", back_populates="camera")
-    videos = relationship("Video", back_populates="camera")
+    snapshots = relationship("Snapshot", back_populates="camera", cascade="all, delete-orphan")
+    videos = relationship("Video", back_populates="camera", cascade="all, delete-orphan")

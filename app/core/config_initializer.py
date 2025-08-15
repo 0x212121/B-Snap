@@ -6,7 +6,6 @@ DEFAULT_CONFIG = {
     "snapshot_interval_minutes": "480",
     "healthcheck_interval_minutes": "15",
     "snapshot_concurrent_workers": "5",
-    "items_per_page": "15",
     "max_screenshot_per_camera": "20",
     "watermark_text": "Property of ...",
     "map_title": "CCTV Maps",

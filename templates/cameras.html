@@ -500,7 +500,7 @@
   
   window.confirmDelete = (itemId, itemName) => {
     const itemType = '{{ "NVR" if "nvrs" in request.path else "Camera" }}';
-    const message = `Are you sure you want to delete this ${itemType}: ${itemName}? This action cannot be undone.`;
+    const message = `Delete ${itemType} "${itemName}"? All camera snapshots will be lost permanently. This cannot be undone.`;
     
     showGlobalConfirm(message, () => {
       // Logika fetch Anda untuk menghapus item
