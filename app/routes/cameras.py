@@ -404,7 +404,7 @@ async def delete_camera(request: Request, camera_id: str, db: Session = Depends(
         
         logger.info("Deleting %s associated snapshot files for camera '%s'...", len(cam.snapshots), cam.hostname)
         for snapshot in cam.snapshots:
-            file_path = os.path.join(SNAPSHOT_PATH, snapshot.filename)
+            file_path = os.path.join(SNAPSHOT_PATH, snapshot.file_path)
             if os.path.exists(file_path):
                 os.remove(file_path)
                 logger.debug("Deleted snapshot file: %s", file_path)
@@ -412,7 +412,7 @@ async def delete_camera(request: Request, camera_id: str, db: Session = Depends(
         # 2. Hapus file videos
         logger.info("Deleting %s associated video files for camera '%s'...", len(cam.videos), cam.hostname)
         for video in cam.videos:
-            file_path = os.path.join(VIDEO_PATH, video.filename)
+            file_path = os.path.join(VIDEO_PATH, video.file_path)
             if os.path.exists(file_path):
                 os.remove(file_path)
                 logger.debug("Deleted video file: %s", file_path)
@@ -566,7 +566,7 @@ async def export_csv(request: Request, db: Session = Depends(get_db)):
     return StreamingResponse(
         output,
         media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=cameras.csv"}
+        headers={"Content-Disposition": "attachment; file_path=cameras.csv"}
     )
 
 
