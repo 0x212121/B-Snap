@@ -46,12 +46,20 @@ def run_snapshot(camera):
                 camera_id=camera.id,
                 file_path=path,
                 resolution=result.get("resolution", "N/A"),
-            )  
-            snapshot_log = SnapshotLog(id=str(uuid4()), camera_name=camera.hostname)
-            db.add(snapshot_log)
+            )
+
+            if not camera.id:
+                logger.error(f"Camera {camera.hostname} has no ID, skipping snapshot log insert.")
+            else:
+                snapshot_log = SnapshotLog(
+                    id=str(uuid4()),
+                    camera_id=camera.id,
+                    camera_name=camera.hostname
+                )
+                db.add(snapshot_log)
+            
             db.commit()
             logger.info(f"[SUCCESS] Scheduled snapshot for {camera}, saved with ID {snapshot.id}")
-            
             return {"status": "success"}
         else:
             logger.warning(f"[FAIL] Snapshot failed for {camera}: {result}")
@@ -213,21 +221,42 @@ def update_scheduler_config():
         new_batch_delay = get_config("snapshot_batch_delay_seconds", 5)
 
         changed = False
+        next_run_times = {}
 
         if new_snapshot_interval != last_config["snapshot_interval"]:
             try:
-                scheduler.reschedule_job("scheduled_snapshot", trigger=IntervalTrigger(minutes=new_snapshot_interval))
+                scheduler.reschedule_job(
+                    "scheduled_snapshot",
+                    trigger=IntervalTrigger(minutes=new_snapshot_interval)
+                )
                 last_config["snapshot_interval"] = new_snapshot_interval
-                logger.info("[Scheduler] 🔁 Snapshot interval updated to %s minutes.", new_snapshot_interval)
+                job = scheduler.get_job("scheduled_snapshot")
+                if job and job.next_run_time:
+                    next_run_times["scheduled_snapshot"] = job.next_run_time.isoformat()
+                    logger.info(
+                        "[Scheduler] 🔁 Snapshot interval updated to %s minutes. Next run: %s",
+                        new_snapshot_interval,
+                        job.next_run_time
+                    )
                 changed = True
             except JobLookupError:
                 logger.warning("[Scheduler] ⚠️ Job 'scheduled_snapshot' not found during config update.")
 
         if new_healthcheck_interval != last_config["healthcheck_interval"]:
             try:
-                scheduler.reschedule_job("health_check", trigger=IntervalTrigger(minutes=new_healthcheck_interval))
+                scheduler.reschedule_job(
+                    "health_check",
+                    trigger=IntervalTrigger(minutes=new_healthcheck_interval)
+                )
                 last_config["healthcheck_interval"] = new_healthcheck_interval
-                logger.info("[Scheduler] 🔁 Health check interval updated to %s minutes.", new_healthcheck_interval)
+                job = scheduler.get_job("health_check")
+                if job and job.next_run_time:
+                    next_run_times["health_check"] = job.next_run_time.isoformat()
+                    logger.info(
+                        "[Scheduler] 🔁 Health check interval updated to %s minutes. Next run: %s",
+                        new_healthcheck_interval,
+                        job.next_run_time
+                    )
                 changed = True
             except JobLookupError:
                 logger.warning("[Scheduler] ⚠️ Job 'health_check' not found during config update.")
@@ -253,6 +282,8 @@ def update_scheduler_config():
 
         if changed:
             logger.info("[Scheduler] ✅ Scheduler config updated and jobs rescheduled.")
+            if next_run_times:
+                logger.info("[Scheduler] 📅 Next run times: %s", next_run_times)
         else:
             logger.info("[Scheduler] ⏸ No config changes detected. Scheduler not updated.")
 
