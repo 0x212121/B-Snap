@@ -101,3 +101,28 @@ LOGGING_CONFIG = {
 
 def setup_logging():
     logging.config.dictConfig(LOGGING_CONFIG)
+
+
+def set_debug_mode(enabled: bool):
+    """
+    Mengubah level log seluruh logger & handler sesuai status debug mode.
+    """
+    new_level = "DEBUG" if enabled else "INFO"
+
+    # Ubah level di loggers yang sudah terdaftar
+    for logger_name, logger_conf in LOGGING_CONFIG["loggers"].items():
+        logger_conf["level"] = new_level
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(new_level)
+
+    # Ubah level di handlers
+    for handler_name, handler_conf in LOGGING_CONFIG["handlers"].items():
+        handler_conf["level"] = new_level
+        for h in logging.getLogger().handlers:
+            h.setLevel(new_level)
+
+    # Catat perubahan
+    if enabled:
+        logging.getLogger("main").debug("✅ Debug mode ENABLED via admin panel.")
+    else:
+        logging.getLogger("main").info("ℹ️ Debug mode DISABLED via admin panel.")

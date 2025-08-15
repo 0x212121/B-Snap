@@ -2,6 +2,15 @@
 
 All notable changes to B-Snap will be documented in this file.
 
+## [1.7.2] - 2025-08-14
+
+### Added
+- Toggle for Debug Mode via the configuration menu, enabling easier troubleshooting.
+
+### Fixed
+- Scheduler snapshot logging failure issue resolved — snapshots now log correctly.
+
+
 ## [1.7.1] - 2025-08-14
 
 ### Changed

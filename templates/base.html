@@ -95,6 +95,19 @@ class="md:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-
 </div>
 </header>
 
+<style>
+  @keyframes pulse-warning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+</style>
+
+{% if request.session.user_role == 'admin' and request.state.debug_mode %}
+<div class="bg-red-600 text-white text-sm font-bold px-4 py-2 flex items-center justify-center shadow-lg animate-[pulse-warning_2s_infinite]">
+  🐞 DEBUG MODE ACTIVE – Detailed logging enabled
+</div>
+{% endif %}
+
 <main id="main-content" class="container mx-auto p-4 md:p-8">
   <div id="notification-container" class="fixed top-20 right-4 z-50"></div>
   {% block content %}{% endblock %}

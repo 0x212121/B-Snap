@@ -9,6 +9,7 @@ from PIL import Image
 import logging
 import requests
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from onvif import ONVIFCamera
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 from app.core.config import get_config
@@ -295,10 +296,10 @@ def _safe_snap_path(relative_path: str) -> Path:
 
 def clean_old_snapshots(camera_name: str, db: Session) -> None:
     """
-    Keep only the newest N snapshots per camera; delete the rest from disk and DB.
-    - Efisien: tidak load semua kolom/objek; hanya ambil id + file_path untuk yang akan dihapus.
-    - Aman: path sanitization (anti path traversal).
-    - Tahan error: kegagalan hapus file tidak menggagalkan penghapusan DB (dan sebaliknya).
+    Hapus snapshot lama sehingga tersisa tepat max_keep terbaru per kamera.
+    - Tidak load semua snapshot (hemat RAM)
+    - Aman dari race condition & path traversal
+    - Logging jumlah snapshot sebelum & sesudah clean-up
     """
     try:
         max_keep = int(get_config("max_screenshot_per_camera", default=3))
@@ -308,19 +309,41 @@ def clean_old_snapshots(camera_name: str, db: Session) -> None:
     if max_keep <= 0:
         return
 
-    # Ambil ID & path yang akan DIHAPUS saja pakai offset, bukan semua rows.
-    rows_to_delete: List[tuple] = (
-        db.query(Snapshot.id, Snapshot.file_path)
+    # Hitung total snapshot sebelum
+    total_before = db.query(func.count(Snapshot.id)).filter(
+        Snapshot.camera_name == camera_name
+    ).scalar()
+    logger.debug("Snapshot count before cleanup (camera=%s): %d", camera_name, total_before)
+
+    if total_before <= max_keep:
+        logger.debug(
+            "No cleanup needed for %s (only %d snapshots, max_keep=%d)",
+            camera_name, total_before, max_keep
+        )
+        return
+
+    # Subquery ID yang mau di-keep
+    keep_ids_subq = (
+        db.query(Snapshot.id)
           .filter(Snapshot.camera_name == camera_name)
           .order_by(Snapshot.timestamp.desc())
-          .offset(max_keep)              # lewati N terbaru
+          .limit(max_keep)
+          .subquery()
+    )
+
+    # Query file path yang mau dihapus
+    rows_to_delete = (
+        db.query(Snapshot.id, Snapshot.file_path)
+          .filter(Snapshot.camera_name == camera_name)
+          .filter(~Snapshot.id.in_(select(keep_ids_subq.c.id)))
           .all()
     )
 
     if not rows_to_delete:
+        logger.debug("Nothing to delete for %s", camera_name)
         return
 
-    # 1) Hapus file di disk (best-effort, safe path)
+    # Hapus file di disk
     for snap_id, rel_path in rows_to_delete:
         try:
             p = _safe_snap_path(rel_path)
@@ -329,24 +352,37 @@ def clean_old_snapshots(camera_name: str, db: Session) -> None:
                     p.unlink()
                     logger.info("Deleted old snapshot file: %s", rel_path)
                 except Exception as e:
-                    # Log saja; lanjutkan proses DB
                     logger.warning("Failed to delete file %s: %s", rel_path, e)
             else:
                 logger.debug("Snapshot file already missing: %s", rel_path)
         except Exception as e:
-            # Path invalid / traversal attempt / error lain → log dan lanjut
-            logger.error("Unsafe/invalid snapshot path for id=%s (%s): %s", snap_id, rel_path, e)
+            logger.error(
+                "Unsafe/invalid snapshot path for id=%s (%s): %s",
+                snap_id, rel_path, e
+            )
 
-    # 2) Hapus baris dari DB secara bulk
+    # Hapus DB
     try:
-        ids = [rid for rid, _ in rows_to_delete]
-        (
+        ids_to_delete = [rid for rid, _ in rows_to_delete]
+        deleted_count = (
             db.query(Snapshot)
-              .filter(Snapshot.id.in_(ids))
+              .filter(Snapshot.id.in_(ids_to_delete))
               .delete(synchronize_session=False)
         )
         db.commit()
-        logger.info("Deleted %d old snapshots from DB (camera=%s)", len(ids), camera_name)
+        logger.info(
+            "Deleted %d old snapshots from DB (camera=%s)",
+            deleted_count, camera_name
+        )
     except Exception as e:
         db.rollback()
-        logger.error("DB delete rollback for old snapshots (camera=%s): %s", camera_name, e)
+        logger.error(
+            "DB delete rollback for old snapshots (camera=%s): %s",
+            camera_name, e
+        )
+
+    # Hitung total snapshot sesudah
+    total_after = db.query(func.count(Snapshot.id)).filter(
+        Snapshot.camera_name == camera_name
+    ).scalar()
+    logger.debug("Snapshot count after cleanup (camera=%s): %d", camera_name, total_after)

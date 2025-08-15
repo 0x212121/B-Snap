@@ -1402,6 +1402,10 @@ select {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
+.animate-\[pulse-warning_2s_infinite\] {
+  animation: pulse-warning 2s infinite;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -2573,6 +2577,11 @@ select {
   position: absolute;
 }
 
+.after\:left-\[2px\]::after {
+  content: var(--tw-content);
+  left: 2px;
+}
+
 .after\:start-\[2px\]::after {
   content: var(--tw-content);
   inset-inline-start: 2px;
@@ -2941,6 +2950,11 @@ select {
 :is(.dark .dark\:divide-gray-700) > :not([hidden]) ~ :not([hidden]) {
   --tw-divide-opacity: 1;
   border-color: rgb(55 65 81 / var(--tw-divide-opacity));
+}
+
+:is(.dark .dark\:border-gray-500) {
+  --tw-border-opacity: 1;
+  border-color: rgb(107 114 128 / var(--tw-border-opacity));
 }
 
 :is(.dark .dark\:border-gray-600) {

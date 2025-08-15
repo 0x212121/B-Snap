@@ -6,7 +6,7 @@
   <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-8">⚙️ App Config</h1>
   
   <div id="error-message-container"></div>
-
+  
   <form id="configForm" enctype="multipart/form-data" class="space-y-8">
     
     <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
@@ -30,6 +30,29 @@
         </select>
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Used across all timestamps in the app.</p>
       </div>
+      <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+        <div>
+          <label for="debug_mode" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            🐞 Debug Mode
+          </label>
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            Enable detailed logging for troubleshooting. Disable when not in use.
+          </p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="debug_mode" name="debug_mode"
+          value="1"
+          {% if configs.get('debug_mode') == '1' %}checked{% endif %}
+          class="sr-only peer">
+          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300
+          dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600
+          peer-checked:after:translate-x-full peer-checked:after:border-white
+          after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+          after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5
+          after:transition-all dark:border-gray-500 peer-checked:bg-blue-600"></div>
+        </label>
+      </div>
+      
     </div>
   </div>
   
@@ -53,13 +76,13 @@
           Snapshot Batch Size
         </label>
         <input type="number"
-                id="snapshot_batch_size"
-                name="snapshot_batch_size"
-                value="{{ configs.get('snapshot_batch_size', 50) }}"
-                required
-                min="1"
-                max="150"
-                class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        id="snapshot_batch_size"
+        name="snapshot_batch_size"
+        value="{{ configs.get('snapshot_batch_size', 50) }}"
+        required
+        min="1"
+        max="150"
+        class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
           Number of cameras to process in each batch for scheduled snapshots.
           Maximum allowed value is <strong>150</strong>.
@@ -114,7 +137,7 @@
         </div>
         
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          Upload a PNG or ICO file. Displayed on the login page and header.
+          Upload a PNG or ICO file. Displayed on the maps view.
         </p>
       </div>
       
@@ -156,7 +179,7 @@
       'FileTooLarge': '❌ Error: The uploaded logo exceeds the maximum file size (512 KB).',
       'CorruptImage': '❌ Error: The uploaded image file is corrupt.',
     };
-
+    
     // Fungsi untuk menampilkan pesan dari URL parameter
     function getUrlParameter(name) {
       name = name.replace(/[\[\]]/g, '\\$&');
@@ -166,7 +189,7 @@
       if (!results[2]) return '';
       return decodeURIComponent(results[2].replace(/\+/g, ' '));
     }
-
+    
     const errorParam = getUrlParameter('error');
     if (errorParam && errorMessages[errorParam]) {
       showToast(errorMessages[errorParam], 'error');

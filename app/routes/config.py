@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from fastapi import APIRouter, File, Form, Request, Depends, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 import pytz
@@ -9,6 +10,7 @@ from app.models.user import User
 from app.db.database import get_db
 from app.routes.auth import admin_access_required
 from app.utils.template_helper import templates
+from app.core.logging_config import set_debug_mode
 from io import BytesIO
 
 router = APIRouter(tags=["Config"])
@@ -50,6 +52,7 @@ async def config_save(
     watermark_text: str = Form(...),
     map_title: str = Form(...),
     timezone: str = Form(...),
+    debug_mode: Optional[bool] = Form(False),
     app_logo: UploadFile = File(None)
 ):
     # Validasi timezone
@@ -71,7 +74,8 @@ async def config_save(
         "snapshot_batch_delay_seconds": snapshot_batch_delay_seconds,
         "watermark_text": watermark_text,
         "map_title": map_title,
-        "timezone": timezone
+        "timezone": timezone,
+        "debug_mode": str(int(debug_mode))
     }
 
     for key, value in keys.items():
@@ -110,7 +114,9 @@ async def config_save(
             buffer.write(contents)
 
     db.commit()
-    # Mengembalikan JSONResponse yang berhasil
+
+    set_debug_mode(debug_mode)
+
     return JSONResponse(status_code=200, content={"message": "Configuration saved successfully."})
 
 

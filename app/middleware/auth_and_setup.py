@@ -9,6 +9,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import text
 
 from app.models.user import User
+from app.models.config import Configuration
 from app.utils.auth_token import is_valid_web_token
 from app.db.database import SessionLocal
 
@@ -56,6 +57,12 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                 try:
                     user = db.query(User).filter(User.id == int(session_user_id)).first()
                     if user:
+                        if user.role == "admin":
+                            val = db.query(Configuration).filter_by(key="debug_mode").first()
+                            request.state.debug_mode = (val and val.value == "1")
+                        else:
+                            request.state.debug_mode = False
+
                         if not session.get("user_name"):
                             session["user_name"] = user.username
                         if not session.get("user_groupid"):
@@ -70,6 +77,11 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                     user = db.query(User).filter(User.id == user_id).first()
 
                     if user:
+                        if user.role == "admin":
+                            val = db.query(Configuration).filter_by(key="debug_mode").first()
+                            request.state.debug_mode = (val and val.value == "1")
+                        else:
+                            request.state.debug_mode = False
                         tokens = self.parse_tokens(user.web_tokens)
                         if is_valid_web_token(session_token, tokens):
                             return await call_next(request)
@@ -82,6 +94,11 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
             if session_token:
                 user = self.get_user_by_session_token(db, session_token)
                 if user:
+                    if user.role == "admin":
+                        val = db.query(Configuration).filter_by(key="debug_mode").first()
+                        request.state.debug_mode = (val and val.value == "1")
+                    else:
+                        request.state.debug_mode = False
                     tokens = self.parse_tokens(user.web_tokens)
                     if is_valid_web_token(session_token, tokens):
                         new_token, expires_at = self.generate_new_token()
@@ -158,3 +175,8 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
         new_token = token_urlsafe(32)
         expires_at = (now + timedelta(days=7)).isoformat()
         return new_token, expires_at
+
+def get_debug_mode_flag(db) -> bool:
+    from app.models.config import Configuration
+    val = db.query(Configuration).filter_by(key="debug_mode").first()
+    return bool(val and val.value == "1")
