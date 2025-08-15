@@ -116,4 +116,4 @@
 - [ ] Add tampered and resolution in n8n bot
 - [x] CCTV notes field/column, to show cctv details (like in services, SOED, and others)
 - [x] Bug scheduler failed
-- [ ] 
+- [x] Debug mode

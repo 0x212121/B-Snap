@@ -2,7 +2,7 @@
 
 All notable changes to B-Snap will be documented in this file.
 
-## [1.7.2] - 2025-08-14
+## [1.7.2] - 2025-08-15
 
 ### Added
 - Toggle for Debug Mode via the configuration menu, enabling easier troubleshooting.
