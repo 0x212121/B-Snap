@@ -9,7 +9,8 @@ from sqlalchemy import text
 from app.core.logging_config import setup_logging
 from app.models.camera import Camera
 from app.models.video import Video
-from app.onvif_client import get_rtsp_url, is_reachable
+from app.utils.camera_onvif import get_rtsp_url
+from app.utils.network_utils import is_reachable
 from typing import Tuple, Dict, Any
 import json
 from app.db.database import SessionLocal

@@ -15,10 +15,9 @@ from app.models.camera import Camera as DBCamera
 from app.models.camera_group import CameraGroup
 from app.models.health import CameraHealth
 from app.db.database import get_db
-from app.core.config import get_config
 from app.routes.auth import admin_access_required
 from app.utils.audit_logger import log_audit
-from app.utils.health_check import ping_camera_by_id
+from app.utils.healthcheck import ping_camera_by_id
 from app.utils.video import record_video_and_save_db
 from sqlalchemy.orm import Session, joinedload
 from fastapi.responses import StreamingResponse
@@ -43,10 +42,8 @@ async def manage_data(
     db: Session = Depends(get_db), 
     page: int = Query(1, ge=1),
     search: Optional[str] = Query(None),
-    per_page: int = Query(10, ge=1) # MODIFIED: Accept per_page from query
+    per_page: int = Query(10, ge=1)
 ):
-    # REMOVED: The per_page value is now taken directly from the function's arguments.
-    # per_page = get_config('items_per_page', 10) 
     
     query = db.query(DBCamera).options(joinedload(DBCamera.group))
 

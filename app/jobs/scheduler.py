@@ -5,10 +5,10 @@ from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.jobstores.base import JobLookupError
 from app.core.logging_config import setup_logging
 from app.db.database import SessionLocal
-from app.onvif_client import load_active_cameras
+from app.snapshot import load_active_cameras
 from app.utils.snapshot_locker import get_camera_lock
 from app.utils.snapshot_service import take_snapshot
-from app.utils.health_check import ping_all_devices
+from app.utils.healthcheck import ping_all_devices
 from app.core.config import get_config
 from app.models.audit_log import AuditLog
 from app.models.camera_daily_stats import CameraDailyStats

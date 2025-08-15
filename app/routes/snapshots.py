@@ -8,7 +8,6 @@ from urllib.parse import quote, unquote # Import quote for URL encoding
 from fastapi import APIRouter, Body, Query, Depends, HTTPException, Request
 from fastapi.responses import FileResponse # Import FileResponse!
 from sqlalchemy.orm import Session
-from pydantic import BaseModel # Import BaseModel from pydantic
 import re
 from app.db.database import SessionLocal
 from app.models.camera import Camera as DBCamera
@@ -19,29 +18,9 @@ from app.routes.auth import admin_access_required, user_access_required_optional
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_utils import SNAPSHOT_BASE_DIR  # points to app/static/snapshots
 from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
+from app.schemas.snapshot_schema import SnapshotResponse, LatestSnapshotDetailResponse
 
 router = APIRouter(tags=["Snapshots API"])
-
-# --- Pydantic Models for API Responses ---
-class SnapshotResponse(BaseModel):
-    """Response model for camera snapshots."""
-    filename: str
-    camera: str
-    ip: str
-    timestamp: str
-    url: str
-    img_path: str
-    lat: str
-    long: str
-    tamper_reason: Optional[str] = None  # ⬅️ Accepts None/null
-    res: str
-
-class LatestSnapshotDetailResponse(BaseModel):
-    """Detail response model for the latest snapshot (metadata)."""
-    status: str
-    camera: str
-    time: str
-    url: str # This URL points to the actual image serving endpoint
 
 def get_db():
     """Dependency to get a database session."""

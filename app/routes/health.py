@@ -12,7 +12,7 @@ from app.core.config import get_config
 from app.core.logging_config import setup_logging
 from app.db.database import get_db
 from app.routes.auth import operator_access_required
-from app.utils.health_check import run_healthcheck_for_all, run_healthcheck_for_camera, run_healthcheck_for_nvr
+from app.utils.healthcheck import run_healthcheck_for_all, run_healthcheck_for_camera, run_healthcheck_for_nvr
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 from app.models.nvr import NVR
 from app.models.camera_daily_stats import CameraDailyStats

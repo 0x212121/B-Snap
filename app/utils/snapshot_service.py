@@ -15,11 +15,9 @@ from app.core.config import get_config
 from app.core.logging_config import setup_logging
 from pathlib import Path
 from typing import List
-from app.onvif_client import (
-    is_reachable,
-    add_watermark,
-    get_rtsp_url,
-)
+from app.utils.network_utils import is_reachable
+from app.utils.image_utils import add_watermark
+from app.utils.camera_onvif import get_rtsp_url
 from app.utils import check_stats
 from app.models.camera import Camera
 from app.models.snapshot import Snapshot
