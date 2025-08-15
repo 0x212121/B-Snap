@@ -129,6 +129,11 @@
         </div>
         <!-- Notes field -->
         <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="snapshot_url">Snapshot URL</label>
+          <input id="snapshot_url" name="snapshot_url" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></textarea>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Use this if snapshot using automatic method fails.</p>
+        </div>
+        <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="note">Notes</label>
           <textarea id="note" name="note" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></textarea>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Optional notes about this camera.</p>
@@ -429,6 +434,7 @@
         setFieldValue('status', cam.status);
         setFieldValue('is_flipped', cam.is_flipped);
         setFieldValue('note', cam.note || '');
+        setFieldValue('snapshot_url', cam.snapshot_url || '');
         
         if (typeof populateGroupSelect === 'function') {
           populateGroupSelect(cam.group ? cam.group.name : "");

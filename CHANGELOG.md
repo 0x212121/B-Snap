@@ -6,6 +6,7 @@ All notable changes to B-Snap will be documented in this file.
 
 ### Added
 - Toggle for Debug Mode via the configuration menu, enabling easier troubleshooting.
+- `snapshot_url` field for cameras that cannot use automatic snapshot methods.
 
 ### Fixed
 - Scheduler snapshot logging failure issue resolved — snapshots now log correctly.

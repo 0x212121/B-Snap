@@ -152,6 +152,7 @@ async def add_camera_submit(
     status: str = Form(...),
     is_flipped: bool = Form(False),
     note: Optional[str] = Form(None),
+    snapshot_url: Optional[str] = Form(None),
 ):
     """Handles the form submission to add a new camera."""
     logger.info("Attempting to add new camera with hostname: %s", name)
@@ -180,7 +181,7 @@ async def add_camera_submit(
         new_cam = DBCamera(
             hostname=name, ip=ip, port=port_val, username=username, password=password,
             latitude=lat, longitude=lon, asset_no=asset_no, location=location,
-            group_id=group_id, status=status, is_flipped=is_flipped, note=note
+            group_id=group_id, status=status, is_flipped=is_flipped, note=note, snapshot_url=snapshot_url
         )
         db.add(new_cam)
         db.commit()
@@ -242,6 +243,7 @@ async def edit_camera_submit(
     is_flipped: bool = Form(False),
     status: str = Form(...),
     note: Optional[str] = Form(None),
+    snapshot_url: Optional[str] = Form(None),
 ):
     """Handles the form submission to edit an existing camera."""
     logger.info("Attempting to edit camera with ID: %s", camera_id)
@@ -256,7 +258,7 @@ async def edit_camera_submit(
         "hostname": cam.hostname, "ip": cam.ip, "port": cam.port, "username": cam.username,
         "latitude": cam.latitude, "longitude": cam.longitude, "asset_no": cam.asset_no,
         "location": cam.location, "group_id": cam.group_id, "status": cam.status,
-        "is_flipped": cam.is_flipped, "note": cam.note
+        "is_flipped": cam.is_flipped, "note": cam.note, "snapshot_url": cam.snapshot_url
     }
 
     try:
@@ -280,6 +282,7 @@ async def edit_camera_submit(
         cam.location, cam.status = location, status
         cam.is_flipped = is_flipped
         cam.note = note
+        cam.snapshot_url = snapshot_url
 
         if password:
             cam.password = password
@@ -304,7 +307,7 @@ async def edit_camera_submit(
             "hostname": cam.hostname, "ip": cam.ip, "port": cam.port, "username": cam.username,
             "latitude": cam.latitude, "longitude": cam.longitude, "asset_no": cam.asset_no,
             "location": cam.location, "group_id": cam.group_id, "status": cam.status,
-            "is_flipped": cam.is_flipped, "note": cam.note
+            "is_flipped": cam.is_flipped, "note": cam.note, "snapshot_url": cam.snapshot_url
         }
         
         changes = []
@@ -368,7 +371,8 @@ async def get_camera_details(request: Request, camera_id: str, db: Session = Dep
         "status": camera.status,
         "is_flipped": camera.is_flipped,
         "group": {"name": camera.group.name} if camera.group else None,
-        "note": camera.note
+        "note": camera.note,
+        "snapshot_url": camera.snapshot_url
     }
 
 
@@ -489,7 +493,8 @@ async def upload_csv(request: Request, db: Session = Depends(get_db), file: Uplo
                     "location": row.get("location", "").strip(),
                     "status": row.get("status", "Active").strip() or "Active",
                     "is_flipped": str(row.get("is_flipped", "")).strip().lower() in ["1", "true", "yes"],
-                    "group_id": group_id
+                    "group_id": group_id,
+                    "snapshot_url": row.get("snapshot_url", "").strip(),
                 }
 
                 if existing_cam:
@@ -542,7 +547,7 @@ async def export_csv(request: Request, db: Session = Depends(get_db)):
     writer.writerow([
         "id", "hostname", "ip", "port", "username", "password",
         "latitude", "longitude", "group_name", "asset_no", "location", "status",
-        "previous_name", "previous_latitude", "previous_longitude", "is_flipped", "note"
+        "previous_name", "previous_latitude", "previous_longitude", "is_flipped", "note", "snapshot_url"
     ])
 
     for cam in cameras:
@@ -550,7 +555,7 @@ async def export_csv(request: Request, db: Session = Depends(get_db)):
             cam.id, cam.hostname, cam.ip, cam.port, cam.username, cam.password,
             cam.latitude, cam.longitude, cam.group.name if cam.group else "",
             cam.asset_no, cam.location, cam.status, cam.previous_name,
-            cam.previous_latitude, cam.previous_longitude, cam.is_flipped, cam.note
+            cam.previous_latitude, cam.previous_longitude, cam.is_flipped, cam.note, cam.snapshot_url
         ])
 
     output.seek(0)

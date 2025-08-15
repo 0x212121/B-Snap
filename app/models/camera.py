@@ -26,6 +26,7 @@ class Camera(Base):
     status = Column(String)
     is_flipped = Column(Boolean, default=False, server_default=expression.false())
     note = Column(String, nullable=True)
+    snapshot_url = Column(String(255), nullable=True)
     
     group_id = Column(Integer, ForeignKey('camera_groups.id'))
     group = relationship("CameraGroup", back_populates="cameras")
