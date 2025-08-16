@@ -449,39 +449,3 @@ def revoke_token(
         db.rollback()
         logger.error(f"Failed to revoke token for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Could not save changes to the database.")
-    """
-    Deletes a specific API token from a user's token list.
-    """
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    token_to_revoke = token_data.get("token")
-    if not token_to_revoke:
-        raise HTTPException(status_code=400, detail="Missing token")
-    
-    # FIX: Ensure current_tokens is a list to prevent TypeError if api_tokens is None.
-    current_tokens = user.api_tokens or []
-    original_count = len(current_tokens)
-    
-    # Create the new list of tokens, excluding the one to be revoked
-    user.api_tokens = [t for t in current_tokens if t.get("token") != token_to_revoke]
-    
-    if len(user.api_tokens) == original_count:
-        raise HTTPException(status_code=404, detail="Token not found for this user.")
-
-    try:
-        db.commit()
-        log_audit(
-            db=db,
-            user=current_admin.username,
-            action="revoke_api_token",
-            target=user.username,
-            ip="N/A", # IP is not available in this request context easily
-            extra=f"Revoked token: {token_to_revoke[:8]}..."
-        )
-        return {"message": "Token revoked successfully"}
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to revoke token for user {user_id}: {e}")
-        raise HTTPException(status_code=500, detail="Could not save changes to the database.")

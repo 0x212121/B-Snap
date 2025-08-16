@@ -2,6 +2,12 @@
 
 All notable changes to B-Snap will be documented in this file.
 
+## [1.7.3] - 2025-08-15
+
+### Added
+- `group_id` field for whatsapp whitelist table.
+
+
 ## [1.7.2] - 2025-08-15
 
 ### Added
