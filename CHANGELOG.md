@@ -2,11 +2,21 @@
 
 All notable changes to B-Snap will be documented in this file.
 
-## [1.7.3] - 2025-08-15
+## [1.7.3] - 2025-08-18
 
 ### Added
 - `group_id` field for whatsapp whitelist table.
 
+### Changed
+- Refactored logger to use lazy formatting (logger.info("msg %s", var)) for better memory and CPU efficiency.
+- Refactored scheduler config to support dynamic reload for multiple parameters at once:
+  - `snapshot_concurrent_workers`
+  - `snapshot_interval_minutes`
+  - `healthcheck_interval_minutes`
+
+### Fixed
+- Ensured get_config always casts numeric values to int() to avoid type mismatch issues.
+- `update_scheduler_config` now detects and applies changes for multiple configs, not just a single parameter.
 
 ## [1.7.2] - 2025-08-15
 
