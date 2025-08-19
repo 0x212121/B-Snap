@@ -30,4 +30,4 @@ class WhitelistOut(WhitelistCreate):
     group_name: Optional[str]
 
     class Config:
-        orm_mode = True  # harus ini, bukan from_attributes
+        from_attributes = True

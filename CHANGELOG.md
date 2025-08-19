@@ -2,7 +2,7 @@
 
 All notable changes to B-Snap will be documented in this file.
 
-## [1.7.3] - 2025-08-18
+## [1.7.3] - 2025-08-19
 
 ### Added
 - `group_id` field for whatsapp whitelist table.
@@ -17,6 +17,7 @@ All notable changes to B-Snap will be documented in this file.
 ### Fixed
 - Ensured get_config always casts numeric values to int() to avoid type mismatch issues.
 - `update_scheduler_config` now detects and applies changes for multiple configs, not just a single parameter.
+- Last Online	and uptime value in CCTV map popup now display correctly.
 
 ## [1.7.2] - 2025-08-15
 

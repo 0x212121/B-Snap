@@ -115,13 +115,11 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
 
     # Accurate uptime/downtime calculation logic based on delta
     if device_type == "Camera" and last_check_time:
-        if last_check_time.date() != now.date():
-            # Jika last_check_time bukan hari ini, pakai sisa hari sebelumnya
-            delta_seconds = (datetime.combine(now.date(), datetime.min.time(), tzinfo=timezone.utc) - last_check_time).total_seconds()
-        else:
-            delta_seconds = (now - last_check_time).total_seconds()
         
+        # Determine the time elapsed since the last check
+        delta_seconds = (now - last_check_time).total_seconds()
         delta_seconds = max(0, delta_seconds)
+
         if delta_seconds > 0:
             today = now.date()
             daily_stat = db.query(CameraDailyStats).filter(
@@ -136,29 +134,38 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
                 )
                 db.add(daily_stat)
             
-            if new_status in ["Online", "High Latency"]:
-                daily_stat.total_uptime_seconds += int(delta_seconds)
+            # --- FIX: New logic for uptime calculation based on status transition ---
+            
+            # Case 1: Status remains the same (online or offline)
+            if current_status == new_status:
+                if new_status in ["Online", "High Latency"]:
+                    daily_stat.total_uptime_seconds += int(delta_seconds)
+                else: # Offline
+                    daily_stat.total_downtime_seconds += int(delta_seconds)
+            
+            # Case 2: Status changes
             else:
-                daily_stat.total_downtime_seconds += int(delta_seconds)
-
+                # Add the time since the last check to the *old* status's bucket
+                if current_status in ["Online", "High Latency"]:
+                    daily_stat.total_uptime_seconds += int(delta_seconds)
+                else: # Old status was Offline
+                    daily_stat.total_downtime_seconds += int(delta_seconds)
+            
+            # The rest of your existing logic for updating the daily stat
             total_tracked = daily_stat.total_uptime_seconds + daily_stat.total_downtime_seconds
             daily_stat.uptime_percentage = (daily_stat.total_uptime_seconds / total_tracked) * 100 if total_tracked > 0 else 0
-
+            
+            # Handle the overflow condition
             if total_tracked > 86400:
                 excess = total_tracked - 86400
-                # Default: cut downtime
-                
                 if daily_stat.total_downtime_seconds >= excess:
                     daily_stat.total_downtime_seconds -= excess
                 else:
-                    # Potong dari uptime kalau downtime gak cukup
                     remainder = excess - daily_stat.total_downtime_seconds
                     daily_stat.total_downtime_seconds = 0
                     daily_stat.total_uptime_seconds = max(0, daily_stat.total_uptime_seconds - remainder)
-
-                logger.warning(f"[{device_name}] ⚠️ Auto-fixed uptime overflow. Trimmed {excess} seconds to fit 86400s.")
                 
-                # Update ulang persentase
+                logger.warning("⚠️ %s Auto-fixed uptime overflow. Trimmed %d seconds to fit 86400s.", device_name, excess)
                 total_tracked = daily_stat.total_uptime_seconds + daily_stat.total_downtime_seconds
                 daily_stat.uptime_percentage = (daily_stat.total_uptime_seconds / total_tracked) * 100 if total_tracked > 0 else 0
 

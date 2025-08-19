@@ -14,8 +14,9 @@ fi
 # Default to 2 workers if not set
 : "${WORKERS:=2}"
 
-echo "🛠 Running Alembic migrations..."
-alembic -c alembic.ini upgrade head
+# echo "🛠 Running Alembic migrations..."
+# Comment if run b-snap from fresh install
+# alembic -c alembic.ini upgrade head
 
 echo "🚀 Starting Gunicorn with $WORKERS workers..."
 exec gunicorn app.main:app \

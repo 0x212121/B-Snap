@@ -15,6 +15,7 @@ from fastapi import (
 from fastapi.responses import ORJSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.docs import get_swagger_ui_html
+from sqlalchemy import inspect
 from app.middleware.auth_and_setup import AuthAndSetupMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from app.middleware.session_restore import RestoreSessionMiddleware
@@ -32,12 +33,14 @@ from app.routes import (
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
     user_management, videos, whitelist
 )
+
 from app.ws.routes import notification_listener, router as ws_router
 from app.version import __version__
 from app.api import whatsapp_routes
 from app.ws.manager import websocket_connections
-import app.models # Import all models to ensure they are registered with SQLAlchemy
 from functools import lru_cache
+from alembic.config import Config
+from alembic import command
 
 # from app.ws.notifier import pg_listen_and_broadcast
 
@@ -64,10 +67,23 @@ templates.env.globals["version"] = __version__
 # ====================================================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # --- STARTUP ---
-    # Setup database
     logger.info("Lifespan startup: Initializing database...")
-    Base.metadata.create_all(bind=engine)
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+
+    if not tables:  # DB masih kosong
+        logger.info("No tables found, creating all from Base metadata...")
+        Base.metadata.create_all(bind=engine)
+
+        # --- NEW: tandai Alembic sudah di head ---
+        alembic_cfg = Config("alembic.ini")
+        command.stamp(alembic_cfg, "head")
+        logger.info("Alembic schema version stamped to head.")
+    else:
+        logger.info("Tables already exist, running Alembic upgrade...")
+        alembic_cfg = Config("alembic.ini")
+        command.upgrade(alembic_cfg, "head")
+        logger.info("Alembic migrations applied.")
 
     db = SessionLocal()
     try:
@@ -76,24 +92,17 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
 
-    # Run listener notification
-    logger.info("Lifespan startup: Creating persistent notification listener task...")
+    # Notif listener
     task = asyncio.create_task(notification_listener(websocket_connections))
-    # Save in state to prevent task destroy by garbage collector
     app.state.notification_listener_task = task
     
-    yield  # Application run after this
+    yield
     
-    # --- SHUTDOWN ---
-    # Stop listener gracefully
-    logger.info("Lifespan shutdown: Cleaning up notification listener task...")
     app.state.notification_listener_task.cancel()
     try:
         await app.state.notification_listener_task
     except asyncio.CancelledError:
         logger.info("Notification listener task successfully cancelled.")
-    
-    logger.info("Application is shutting down...")
 
 # ====================================================================
 # 4. FASTAPI APP INSTANCE & MIDDLEWARE
