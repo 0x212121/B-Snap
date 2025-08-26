@@ -456,102 +456,8 @@ async def export_csv(request: Request, db: Session = Depends(get_db), current_ad
         headers={"Content-Disposition": "attachment; filename=nvrs.csv"}
     )
 
-
-@router.post("/nvrs/upload_csv")
-async def upload_nvr_csv(request: Request, db: Session = Depends(get_db), file: UploadFile = File(...), current_admin: User = Depends(admin_access_required)):
-    contents = await file.read()
-    failed_rows = []
-    success_ids = []
-
-    try:
-        csv_text = contents.decode("utf-8-sig") # Use utf-8-sig to handle potential BOM
-        detected_delimiter = detect_csv_delimiter(csv_text)
-        csv_reader = csv.DictReader(io.StringIO(csv_text), delimiter=detected_delimiter)
-
-        for row in csv_reader:
-            try:
-                hostname = row.get("hostname", "").strip()
-                if not hostname:
-                    continue # Skip rows without a hostname
-
-                # --- Group Name Handling ---
-                group_name = row.get("group_name", "").strip()
-                group_id = None
-                if group_name:
-                    group = db.query(CameraGroup).filter(CameraGroup.name == group_name).first()
-                    if not group:
-                        group = CameraGroup(name=group_name)
-                        db.add(group)
-                        db.flush()
-                    group_id = group.id
-
-                # Check for an existing NVR by hostname
-                existing_nvr = db.query(NVR).filter_by(hostname=hostname).first()
-
-                # Prepare NVR data from CSV row
-                nvr_data = {
-                    "ip": row.get("ip", "").strip(),
-                    "username": row.get("username", "").strip(),
-                    "password": row.get("password", "").strip(),
-                    "asset_no": row.get("asset_no", "").strip(),
-                    "location": row.get("location", "").strip(),
-                    "status": row.get("status", "Active").strip() or "Active",
-                    "latitude": float(row["latitude"]) if row.get("latitude", "").strip() else None,
-                    "longitude": float(row["longitude"]) if row.get("longitude", "").strip() else None,
-                    "group_id": int(group_id) if group_id is not None else None,
-                    "note": row.get("note", "").strip() or None
-                }
-
-                if existing_nvr:
-                    # Update the existing NVR's attributes
-                    for key, value in nvr_data.items():
-                        setattr(existing_nvr, key, value)
-                    db.add(existing_nvr)
-                    success_ids.append(existing_nvr.id)
-                    log_audit(
-                        db=db,
-                        user=request.session["user_name"],
-                        action="update_nvr",
-                        target=hostname,
-                        ip=request.client.host,
-                        extra="via CSV Upload"
-                    )
-                else:
-                    # Create a new NVR instance
-                    new_nvr = NVR(hostname=hostname, **nvr_data)
-                    db.add(new_nvr)
-                    db.flush()
-                    success_ids.append(new_nvr.id)
-                    log_audit(
-                        db=db,
-                        user=request.session["user_name"],
-                        action="create_camera",
-                        target=hostname,
-                        ip=request.client.host,
-                        extra="via CSV Upload"
-                    )
-
-            except Exception as e:
-                db.rollback() # Rollback changes for the failed row
-                logger.error("[Row Error] Hostname: %s => %s", row.get('hostname'), e)
-                failed_rows.append(row.get("hostname"))
-
-        db.commit()
-        logger.info("NVR upload committed")
-
-    except Exception as e:
-        db.rollback() # Rollback all changes if a major error occurs
-        logger.error("CSV upload error: %s", e)
-
-    finally:
-        db.close()
-
-    logger.info("[UPLOAD SUMMARY] Success: %d, Failed: %d", len(success_ids), len(failed_rows))
-    if failed_rows:
-        logger.warning("[FAILED HOSTNAMES]: %s", failed_rows)
-
-    return RedirectResponse(url="/nvrs", status_code=302)
-
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+ALLOWED_FILE_TYPES = ["text/csv"]
 
 def detect_csv_delimiter(csv_content: str):
     """Detects the delimiter (comma or semicolon) in a CSV string."""
@@ -575,3 +481,122 @@ def detect_csv_delimiter(csv_content: str):
         else:
             return ';'
     return ',' # Default if no delimiter found
+
+
+@router.post("/nvrs/upload_csv")
+async def upload_nvr_csv(
+    request: Request, 
+    db: Session = Depends(get_db), 
+    file: UploadFile = File(...), 
+    current_admin: User = Depends(admin_access_required)
+):
+    logger.info("Starting NVR CSV upload process.")
+
+    # 1. Validasi Tipe File (MIME Type)
+    if file.content_type not in ALLOWED_FILE_TYPES:
+        logger.warning("Upload failed: Invalid file type '%s'", file.content_type)
+        return RedirectResponse(url="/nvrs?upload_error=File+type+invalid.+Only+CSV+is+allowed.", status_code=303)
+
+    contents = await file.read()
+
+    # 2. Validasi Ukuran File
+    if len(contents) > MAX_FILE_SIZE:
+        logger.warning("Upload failed: File size %d exceeds limit of %d", len(contents), MAX_FILE_SIZE)
+        return RedirectResponse(url=f"/nvrs?upload_error=File+size+exceeded+maximum+limit+(5MB).", status_code=303)
+
+    # 3. Validasi Konten File
+    try:
+        if not contents:
+            logger.warning("Upload failed: Empty file uploaded.")
+            return RedirectResponse(url="/nvrs?upload_error=Uploaded+CSV+is+empty.", status_code=303)
+            
+        csv_text = contents.decode("utf-8-sig")
+        detected_delimiter = detect_csv_delimiter(csv_text)
+        csv_reader = csv.DictReader(io.StringIO(csv_text), delimiter=detected_delimiter)
+        
+        headers = csv_reader.fieldnames
+        required_headers = {"hostname"}
+
+        if not headers or not required_headers.issubset(set(h.strip() for h in headers)):
+            logger.warning("Upload failed: Missing required headers. Found: %s", headers)
+            return RedirectResponse(url="/nvrs?upload_error=CSV+header+do+not+have+required+headers+'hostname'.", status_code=303)
+
+        rows = list(csv_reader)
+        if not rows:
+            logger.warning("Upload failed: CSV file has headers but no data rows.")
+            return RedirectResponse(url="/nvrs?upload_error=CSV+file+don't+have+rows.", status_code=303)
+
+        failed_rows_info = []
+        success_count = 0
+
+        for i, row in enumerate(rows):
+            row_num = i + 2
+            hostname = row.get("hostname", "").strip()
+            try:
+                if not hostname:
+                    logger.warning("Skipping row %s due to empty hostname.", row_num)
+                    failed_rows_info.append(f"Row {row_num}: Hostname empty")
+                    continue
+
+                group_name = row.get("group_name", "").strip()
+                group_id = None
+                if group_name:
+                    group = db.query(CameraGroup).filter(CameraGroup.name == group_name).first()
+                    if not group:
+                        group = CameraGroup(name=group_name)
+                        db.add(group)
+                        db.flush()
+                    group_id = group.id
+
+                existing_nvr = db.query(NVR).filter_by(hostname=hostname).first()
+
+                nvr_data = {
+                    "ip": row.get("ip", "").strip(),
+                    "username": row.get("username", "").strip(),
+                    "password": row.get("password", "").strip(),
+                    "asset_no": row.get("asset_no", "").strip(),
+                    "location": row.get("location", "").strip(),
+                    "status": row.get("status", "Active").strip() or "Active",
+                    "latitude": float(row["latitude"]) if row.get("latitude", "").strip() else None,
+                    "longitude": float(row["longitude"]) if row.get("longitude", "").strip() else None,
+                    "group_id": group_id,
+                    "note": row.get("note", "").strip() or None
+                }
+
+                if existing_nvr:
+                    for key, value in nvr_data.items():
+                        setattr(existing_nvr, key, value)
+                    log_action = "update_nvr"
+                else:
+                    new_nvr = NVR(hostname=hostname, **nvr_data)
+                    db.add(new_nvr)
+                    log_action = "create_nvr"
+                
+                log_audit(
+                    db=db,
+                    user=request.session.get("user_name", "unknown"),
+                    action=log_action,
+                    target=hostname,
+                    ip=request.client.host,
+                    extra="via CSV Upload"
+                )
+                success_count += 1
+
+            except Exception as e:
+                db.rollback()
+                logger.error("Failed to process row %s (%s). Error: %s", row_num, hostname, e)
+                failed_rows_info.append(f"Baris {row_num} ({hostname}): Gagal diproses")
+
+        db.commit()
+        logger.info("NVR CSV upload finished. Successes: %s, Failures: %s.", success_count, len(failed_rows_info))
+        
+        if failed_rows_info:
+             return RedirectResponse(url=f"/nvrs?upload_warning={success_count}+sukses,+{len(failed_rows_info)}+gagal.", status_code=303)
+        else:
+             return RedirectResponse(url=f"/nvrs?upload_success={success_count}+NVR+berhasil+diproses.", status_code=303)
+
+    except Exception as e:
+        db.rollback()
+        logger.error("Critical error during NVR CSV upload. Error: %s", e, exc_info=True)
+        return RedirectResponse(url="/nvrs?upload_error=Terjadi+kesalahan+fatal+saat+memproses+file.", status_code=303)
+

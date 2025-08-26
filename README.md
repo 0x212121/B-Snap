@@ -35,9 +35,9 @@ URL: http://localhost:8000
 - **Backend:** FastAPI (Python)
 - **Scheduler:** APScheduler
 - **ONVIF SDK:** `onvif-zeep`
-- **Frontend UI:** Jinja2 + Tailwind CSS (via CDN)
+- **Frontend UI:** Jinja2 + Tailwind CSS
 - **Storage:** File system (local)
-- **Database:** SQLite
+- **Database:** PostgreSQL
 
 ## Menu Permission Role
 | No. | Menu Name         | Allowed Roles              | Description                          |

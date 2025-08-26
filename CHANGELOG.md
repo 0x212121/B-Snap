@@ -2,6 +2,15 @@
 
 All notable changes to B-Snap will be documented in this file.
 
+## [1.7.4] - 2025-08-19
+
+### Added
+- Technical Documentation. Can be accessed at /html-docs endpoint.
+- CSV file upload validation.
+
+### Fixed
+- Flipped camera bug.
+
 ## [1.7.3] - 2025-08-19
 
 ### Added

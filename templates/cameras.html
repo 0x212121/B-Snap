@@ -383,12 +383,16 @@
         console.warn(`Field #${id} not found in DOM`);
         return;
       }
-      if ('value' in el) {
-        el.value = value;
-      } else if ('checked' in el) {
+      
+      // Cek tipe elemen secara eksplisit
+      if (el.type === 'checkbox') {
+        // Jika ini adalah checkbox, atur properti .checked
         el.checked = Boolean(value);
+      } else {
+        el.value = value;
       }
     }
+    
     
     // Helper untuk set required
     function setFieldRequired(id, required) {
@@ -496,8 +500,26 @@
     modalElement.addEventListener('click', (e) => {
       if (e.target === modalElement) hideCameraModal();
     });
+
+      function showUploadStatus() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const successMessage = urlParams.get('upload_success');
+    const errorMessage = urlParams.get('upload_error');
+
+    if (successMessage) {
+      showNotification({ status: 'success', message: successMessage });
+      // Hapus parameter dari URL agar notifikasi tidak muncul lagi saat refresh
+      window.history.replaceState({}, document.title, "/cameras");
+    } else if (errorMessage) {
+      showNotification({ status: 'error', message: errorMessage });
+      window.history.replaceState({}, document.title, "/cameras");
+    }
+  }
+
+  // Panggil fungsi ini saat halaman dimuat
     
     // Init
+    showUploadStatus();
     updatePerPageSelect(); // Set dropdown on initial load
     loadPage(new URLSearchParams(window.location.search).get('page') || 1);
     setupTabs();

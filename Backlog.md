@@ -117,3 +117,7 @@
 - [x] CCTV notes field/column, to show cctv details (like in services, SOED, and others)
 - [x] Bug scheduler failed
 - [x] Debug mode
+- [ ] Fix vulnerability:
+  - [ ] CSRF
+  - [ ] CSV upload validation
+  - [ ] 

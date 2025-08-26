@@ -405,7 +405,29 @@ or from CDN:
     modalElement.addEventListener('click', (e) => {
       if (e.target === modalElement) hideNVRmodal();
     });
-    
+
+    function showUploadStatus() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const successMessage = urlParams.get('upload_success');
+    const errorMessage = urlParams.get('upload_error');
+    const warningMessage = urlParams.get('upload_warning');
+
+    if (successMessage) {
+      showNotification({ status: 'success', message: successMessage });
+      // Hapus parameter dari URL agar notifikasi tidak muncul lagi saat refresh
+      window.history.replaceState({}, document.title, "/nvrs");
+    } else if (errorMessage) {
+      showNotification({ status: 'error', message: errorMessage });
+      window.history.replaceState({}, document.title, "/nvrs");
+    } else if (warningMessage) {
+      // Anda bisa membuat status 'warning' jika mau, atau gunakan 'error'
+      showNotification({ status: 'error', message: warningMessage });
+      window.history.replaceState({}, document.title, "/nvrs");
+    }
+  }
+
+    showUploadStatus();
+
     // Init
     updatePerPageSelect();
     loadPage(new URLSearchParams(window.location.search).get('page') || 1);
