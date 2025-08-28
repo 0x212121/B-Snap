@@ -24,6 +24,7 @@ class SnapshotResponse(BaseModel):
     img_path: str
     lat: str
     long: str
+    group_name: str
     tamper_reason: Optional[str] = None  # ⬅️ Accepts None/null
     res: str
 

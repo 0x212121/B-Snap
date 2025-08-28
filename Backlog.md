@@ -119,5 +119,6 @@
 - [x] Debug mode
 - [ ] Fix vulnerability:
   - [ ] CSRF
-  - [ ] CSV upload validation
-  - [ ] 
+  - [x] CSV upload validation
+- [ ] Bug: Portable camera is at healthcheck
+- [ ] WA bot: filter camera can be view by whitelist user group

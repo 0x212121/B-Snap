@@ -1,5 +1,6 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
 from app.db.database import get_db
 from app.models.user import User
 from app.models.whitelist import WhatsappWhitelist
@@ -28,6 +29,17 @@ def get_whitelist(db: Session = Depends(get_db)):
             entry.added_at = datetime.now(timezone.utc)
 
     return entries
+
+
+@router.get("/api/whitelist/group/{phone_number}", response_class=JSONResponse)
+def get_whitelist_group(phone_number: str, db: Session = Depends(get_db)):
+    entries = (
+        db.query(WhatsappWhitelist)
+        .filter(WhatsappWhitelist.phone_number == phone_number)
+        .all()
+    )
+    data = [{"group_name": e.group_name, "group_id": e.group_id} for e in entries]
+    return JSONResponse(content={"results": data})
 
 
 @router.post("/api/whitelist")

@@ -10,9 +10,9 @@ Welcome to B-Snap Documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   development
    architecture
    security
+   development
    deployment
    maintenance
    appendix

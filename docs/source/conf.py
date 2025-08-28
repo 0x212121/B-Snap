@@ -9,7 +9,7 @@
 project = 'B-SNAP'
 copyright = '2025, Indra W.'
 author = 'Indra W.'
-release = 'v1.7.3'
+release = 'v1.8.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -38,5 +38,6 @@ source_suffix = {
 
 # Theme
 # html_theme = "sphinx_rtd_theme"
-html_theme = 'sphinx_book_theme'
+html_permalinks_icon = '<span>#</span>'
+html_theme = 'sphinxawesome_theme'
 html_static_path = ["_static"]

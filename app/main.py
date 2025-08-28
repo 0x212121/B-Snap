@@ -133,7 +133,7 @@ app = FastAPI(
 # 6. ROUTERS & STATIC FILES
 # ====================================================================
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/html-docs", StaticFiles(directory="docs/build/html"), name="docs")
+app.mount("/documentation", StaticFiles(directory="docs/build/html"), name="docs")
 
 # Organize routers for better organization
 app.include_router(auth.router)
@@ -213,6 +213,6 @@ def get_version_info():
 async def version():
     return get_version_info()
 
-@app.get("/html-docs", include_in_schema=False)
+@app.get("/documentation", include_in_schema=False)
 async def html_docs_redirect():
-    return RedirectResponse(url="/html-docs/index.html")
+    return RedirectResponse(url="/documentation/index.html")

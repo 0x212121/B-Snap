@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field, ConfigDict
 import pytz
-from sqlalchemy import asc, desc, func, union_all, literal_column, select
+from sqlalchemy import asc, desc, func, union_all, literal_column, select, and_
 from sqlalchemy.orm import Session, contains_eager
 from app.core.config import get_config
 from app.core.logging_config import setup_logging
@@ -60,7 +60,12 @@ def _get_all_devices_health_data(db: Session) -> list:
         literal_column("'Camera'").label("type"),
         Health.status, Health.latency, Health.checked,
         Health.last_online, Health.status_changed_at
-    ).join(Health, DBCamera.id == Health.camera_id)
+    ).join(Health, DBCamera.id == Health.camera_id).where(
+        and_(
+            DBCamera.ip.isnot(None),
+            DBCamera.ip != ''
+        )
+    )
 
     nvr_q = select(
         NVR.id, NVR.hostname, NVR.ip,

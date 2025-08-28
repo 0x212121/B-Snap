@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session, joinedload
 from app.db.database import SessionLocal
-from app.models.camera import Camera as DBCamera
+from app.models.camera import Camera
 from app.models.camera_group import CameraGroup
 from app.models.user import User
 from fastapi.responses import JSONResponse
+from app.models.whitelist import RoleEnum, WhatsappWhitelist
 from app.routes.auth import admin_access_required
 
 router = APIRouter()
@@ -14,52 +15,77 @@ from fastapi import HTTPException
 @router.get("/cctv/resolve-ip", response_class=JSONResponse)
 def resolve_ip_by_name(
     keyword: str = Query(..., description="Part of group name or camera name to search"),
+    phone_number: str | None = Query(None, description="Whitelist phone number to filter group access"),
     current_admin: User = Depends(admin_access_required),
 ):
     keyword_clean = keyword.strip()
-
-    # Tolak input kosong atau spasi saja
     if not keyword_clean:
         raise HTTPException(status_code=400, detail="Keyword cannot be empty or only whitespace")
 
     db: Session = SessionLocal()
     try:
-        # Step 1: Filter by group name
-        group_match = (
-            db.query(DBCamera)
-            .join(DBCamera.group)
-            .options(joinedload(DBCamera.group))
-            .filter(
-                DBCamera.ip.isnot(None),
-                DBCamera.ip != "",
-                CameraGroup.name.ilike(f"%{keyword_clean}%")
-            )
-            .all()
-        )
+        has_all = False
+        whitelisted_group_ids: list[int] = []
 
-        cameras = group_match
-
-        # Step 2: Fallback to camera hostname
-        if not cameras:
-            cameras = (
-                db.query(DBCamera)
-                .outerjoin(DBCamera.group)
-                .options(joinedload(DBCamera.group))
+        if phone_number:
+            # --- Ambil whitelist berdasarkan nomor WA ---
+            whitelist_entries = (
+                db.query(WhatsappWhitelist)
                 .filter(
-                    DBCamera.ip.isnot(None),
-                    DBCamera.ip != "",
-                    DBCamera.hostname.ilike(f"%{keyword_clean}%")
+                    WhatsappWhitelist.phone_number == phone_number,
+                    WhatsappWhitelist.is_active == True
                 )
                 .all()
             )
 
-        results = []
-        for cam in cameras:
-            results.append({
+            if not whitelist_entries:
+                return {"count": 0, "results": []}
+
+            # cek apakah punya akses ALL
+            has_all = any(
+                entry.group_name and entry.group_name.upper() == "ALL" or entry.role == RoleEnum.admin for w in whitelist_entries
+            for entry in whitelist_entries
+            )
+            whitelisted_group_ids = [entry.group_id for entry in whitelist_entries if entry.group_id]
+        else:
+            # tanpa phone_number → akses penuh
+            has_all = True
+
+        # --- Base query kamera ---
+        base_query = (
+            db.query(Camera)
+            .outerjoin(Camera.group)
+            .options(joinedload(Camera.group))
+            .filter(
+                Camera.ip.isnot(None),
+                Camera.ip != "",
+            )
+        )
+
+        # Step 1: cari berdasarkan group name
+        group_match = base_query.filter(Camera.group.has(CameraGroup.name.ilike(f"%{keyword_clean}%")))
+        if not has_all:
+            group_match = group_match.filter(Camera.group_id.in_(whitelisted_group_ids))
+
+        cameras = group_match.all()
+
+        # Step 2: fallback hostname
+        if not cameras:
+            host_match = base_query.filter(Camera.hostname.ilike(f"%{keyword_clean}%"))
+            if not has_all:
+                host_match = host_match.filter(Camera.group_id.in_(whitelisted_group_ids))
+            cameras = host_match.all()
+
+        results = [
+            {
+                "id": cam.id,
                 "name": cam.hostname,
                 "ip": cam.ip,
-                "group": cam.group.name if cam.group else None
-            })
+                "group_id": cam.group_id,
+                "group": cam.group.name if cam.group else None,
+            }
+            for cam in cameras
+        ]
 
         return {"count": len(results), "results": results}
     finally:

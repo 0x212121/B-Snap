@@ -13,12 +13,12 @@ from app.db.database import SessionLocal
 from app.models.camera import Camera as DBCamera
 from app.models.user import User
 from app.models.snapshot import Snapshot
-from app.models.whitelist import WhatsappWhitelist
+from app.models.whitelist import RoleEnum, WhatsappWhitelist
 from app.routes.auth import admin_access_required, user_access_required_optional
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_utils import SNAPSHOT_BASE_DIR  # points to app/static/snapshots
 from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
-from app.schemas.snapshot_schema import SnapshotResponse, LatestSnapshotDetailResponse
+from app.schemas.snapshot_schema import SnapshotResponse
 
 router = APIRouter(tags=["Snapshots API"])
 
@@ -101,16 +101,18 @@ def is_valid_signed_token(file_path: str, token: str) -> bool:
         return False
     
 
-# Refactored code
 # --- Search Latest Snapshot per Matching Camera ---
 @router.get("/snapshots/search", response_model=List[SnapshotResponse])
 def search_snapshots(
     identifier: Optional[str] = Query(None, description="Camera name prefix or IP address"),
+    phone_number: Optional[str] = Query(None, description="User's phone number for whitelist filtering"),
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    # ... (logika query kamera tetap sama)
+    # --- BASE QUERY ---
     query = db.query(DBCamera)
+
+    # --- FILTER BERDASARKAN IDENTIFIER ---
     if identifier:
         identifier = identifier.strip()
         if len(identifier) < 2:
@@ -120,22 +122,54 @@ def search_snapshots(
             query = query.filter(DBCamera.ip == identifier)
         else:
             query = query.filter(DBCamera.hostname.ilike(f"{identifier}%"))
+
+    # --- FILTER BERDASARKAN WHITELIST ---
+    if phone_number:
+        whitelist_entries = (
+            db.query(WhatsappWhitelist)
+            .filter(WhatsappWhitelist.phone_number == phone_number, WhatsappWhitelist.is_active == True)
+            .all()
+        )
+        if not whitelist_entries:
+            return []  # tidak ada whitelist untuk nomor ini
+
+        group_ids = [w.group_id for w in whitelist_entries if w.group_id is not None]
+
+        # Kalau ada role admin/global, izinkan semua kamera
+        is_global = any(w.group_name == "ALL" or w.role == RoleEnum.admin for w in whitelist_entries)
+        if not is_global:
+            query = query.filter(DBCamera.group_id.in_(group_ids))
+
+    # --- AMBIL KAMERA ---
     cameras = query.all()
     if not cameras:
         return []
-    
-    camera_id_to_info = {str(cam.id): {"hostname": cam.hostname, "ip": cam.ip, "lat": str(cam.latitude or None), "long": str(cam.longitude or None)} for cam in cameras}
+
+    camera_id_to_info = {
+        str(cam.id): {
+            "hostname": cam.hostname,
+            "ip": cam.ip,
+            "lat": str(cam.latitude or None),
+            "long": str(cam.longitude or None),
+        }
+        for cam in cameras
+    }
     camera_ids = list(camera_id_to_info.keys())
 
-    snapshots = (db.query(Snapshot).filter(Snapshot.camera_id.in_(camera_ids)).order_by(Snapshot.timestamp.desc()).all())
+    # --- SNAPSHOT QUERY ---
+    snapshots = (
+        db.query(Snapshot)
+        .filter(Snapshot.camera_id.in_(camera_ids))
+        .order_by(Snapshot.timestamp.desc())
+        .all()
+    )
 
     latest_snapshot_per_camera = {}
     for snap in snapshots:
         if snap.camera_id not in latest_snapshot_per_camera:
             cam_info = camera_id_to_info.get(snap.camera_id, {})
-            
-            # --- PERBAIKAN ZONA WAKTU ---
-            # Gunakan helper dinamis untuk mengonversi dan memformat waktu
+
+            # konversi timestamp ke timezone lokal
             timestamp_local = to_current_timezone(snap.timestamp, db)
             formatted_timestamp = format_datetime_with_tz(timestamp_local)
 
@@ -143,13 +177,14 @@ def search_snapshots(
                 filename=os.path.basename(snap.file_path),
                 camera=snap.camera_name,
                 ip=snap.camera_ip,
-                timestamp=formatted_timestamp, # ⬅️ Sekarang sudah menggunakan zona waktu dinamis
+                timestamp=formatted_timestamp,
                 url=f"/snapshot/file/{quote(snap.file_path)}",
                 img_path=f"{quote(snap.file_path)}",
-                lat=cam_info.get("lat", None),
-                long=cam_info.get("long", None),
+                lat=cam_info.get("lat"),
+                long=cam_info.get("long"),
                 tamper_reason=snap.tamper_reason,
-                res=snap.resolution
+                res=snap.resolution,
+                group_name=snap.camera.group.name if snap.camera and snap.camera.group else ""
             )
 
     return list(latest_snapshot_per_camera.values())
@@ -209,7 +244,8 @@ def get_latest_snapshot_info(camera_identifier: str, db: Session = Depends(get_d
         lat=latitude,
         long=longitude,
         tamper_reason=snapshot.tamper_reason,
-        res=snapshot.resolution
+        res=snapshot.resolution,
+        group_name=snapshot.camera.group.name if snapshot.camera and snapshot.camera.group else ""
     )
 
 
