@@ -60,6 +60,7 @@ websockets==15.0.1
 yarl==1.20.1
 zeep==4.3.1
 psutil==7.0.0
+cachetools==6.2.0
 # sphinx
 # sphinx_rtd_theme
 # sphinxcontrib-openapi

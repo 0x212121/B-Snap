@@ -44,7 +44,7 @@ engine = create_engine(
     max_overflow=10,
     pool_timeout=30,
     pool_recycle=1800,
-    echo=True # Enable SQL query logging for debugging
+    # echo=True # Enable SQL query logging for debugging
 )
 
 # === SQLAlchemy Session ===
@@ -52,11 +52,15 @@ SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 Base = declarative_base()
 
 
-# === Dependency: Get DB Session ===
+# === Dependency:  DB Session ===
 def get_db():
     db = SessionLocal()
     try:
         yield db
+        db.commit()  # commit kalau tidak ada exception
+    except:
+        db.rollback()  # rollback kalau ada error
+        raise
     finally:
         db.close()
 

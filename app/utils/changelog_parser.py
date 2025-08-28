@@ -14,7 +14,7 @@ def parse_changelog_md(filepath: str = "CHANGELOG.md") -> List[Dict]:
     for line in lines:
         line = line.rstrip()
 
-        # Match version header
+        # Match version header with date
         version_match = re.match(r"^## \[(.*?)\] - (\d{4}-\d{2}-\d{2})", line)
         if version_match:
             version, raw_date = version_match.groups()
@@ -23,6 +23,22 @@ def parse_changelog_md(filepath: str = "CHANGELOG.md") -> List[Dict]:
             current_version = {
                 "version": version,
                 "date": human_date,
+                "added": [],
+                "changed": [],
+                "fixed": [],
+                "other": []
+            }
+            changelog.append(current_version)
+            current_section = None
+            last_item = None
+            continue
+
+        # Match Unreleased header
+        unreleased_match = re.match(r"^## \[Unreleased\]", line, re.IGNORECASE)
+        if unreleased_match:
+            current_version = {
+                "version": "Unreleased",
+                "date": "Unreleased",
                 "added": [],
                 "changed": [],
                 "fixed": [],

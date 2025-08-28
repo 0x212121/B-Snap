@@ -1,21 +1,17 @@
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta, date, timezone
+from datetime import datetime, timedelta, timezone
 import logging
-import math
-from typing import Optional
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field, ConfigDict
 import pytz
-from sqlalchemy import asc, desc, func, union_all, literal_column, select, and_
-from sqlalchemy.orm import Session, contains_eager
-from app.core.config import get_config
+from sqlalchemy import asc, union_all, literal_column, select, and_
+from sqlalchemy.orm import Session
 from app.core.logging_config import setup_logging
 from app.db.database import get_db
 from app.routes.auth import operator_access_required
 from app.utils.healthcheck import run_healthcheck_for_all, run_healthcheck_for_camera, run_healthcheck_for_nvr
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 from app.models.nvr import NVR
-from app.models.camera_daily_stats import CameraDailyStats
 from app.models.health import CameraHealth as Health
 from app.models.camera import Camera as DBCamera
 from app.models.health_check_status import HealthCheckStatus
@@ -198,117 +194,73 @@ def format_duration(seconds: int) -> str:
         return f"{seconds}s"
     
 
-@router.get("/health/history", response_class=HTMLResponse, name="health_history")
-async def health_history(
+@router.get("/health/history", response_class=JSONResponse)
+async def get_camera_health_history(
     request: Request,
     db: Session = Depends(get_db),
-    current_operator: User = Depends(operator_access_required),
-    q: Optional[str] = "",
-    sort: str = "name_asc",
-    page: int = Query(1, ge=1)
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100)
 ):
-    ITEMS_PER_PAGE = get_config("items_per_page", default=25)
-    thirty_days_ago = date.today() - timedelta(days=30)
+    # pagination kamera
+    base_query = db.query(DBCamera)
+    total_cameras = base_query.count()
+    paginated_results = base_query.offset((page - 1) * page_size).limit(page_size).all()
 
-    base_query = db.query(
-        DBCamera.id,
-        DBCamera.hostname,
-        func.avg(CameraDailyStats.uptime_percentage).label("average_uptime")
-    ).outerjoin(
-        CameraDailyStats,
-        (DBCamera.id == CameraDailyStats.camera_id) & (CameraDailyStats.date >= thirty_days_ago)
-    ).group_by(DBCamera.id, DBCamera.hostname)
+    if not paginated_results:
+        return {"total": 0, "page": page, "page_size": page_size, "items": []}
 
-    if q:
-        base_query = base_query.filter(DBCamera.hostname.ilike(f"%{q}%"))
+    camera_ids_on_page = [cam.id for cam in paginated_results]
+    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
 
-    if sort == "name_asc":
-        base_query = base_query.order_by(asc(DBCamera.hostname))
-    elif sort == "name_desc":
-        base_query = base_query.order_by(desc(DBCamera.hostname))
-    elif sort == "uptime_asc":
-        base_query = base_query.order_by(asc("average_uptime").nulls_last())
-    elif sort == "uptime_desc":
-        base_query = base_query.order_by(desc("average_uptime").nulls_last())
-    else:
-        base_query = base_query.order_by(asc(DBCamera.hostname))
+    # ambil semua offline logs sekaligus (HAPUS N+1)
+    offline_logs = db.query(CameraStatusChangeLog).filter(
+        CameraStatusChangeLog.camera_id.in_(camera_ids_on_page),
+        CameraStatusChangeLog.previous_status == "Offline",
+        CameraStatusChangeLog.changed_at >= thirty_days_ago
+    ).order_by(CameraStatusChangeLog.changed_at).all()
 
-    total_items = base_query.count()
-    total_pages = math.ceil(total_items / ITEMS_PER_PAGE)
-    offset = (page - 1) * ITEMS_PER_PAGE
-    paginated_results = base_query.limit(ITEMS_PER_PAGE).offset(offset).all()
-    camera_ids_on_page = [item.id for item in paginated_results]
+    # group logs by (camera_id, date)
+    logs_by_camera = defaultdict(lambda: defaultdict(list))
+    for log in offline_logs:
+        local_dt = to_current_timezone(log.changed_at, db)
+        date_str = local_dt.date().isoformat()
+        time_str = local_dt.strftime("%H:%M %z")
 
-    full_camera_details = {}
-    if camera_ids_on_page:
-        query_details = db.query(DBCamera).options(
-            contains_eager(DBCamera.daily_stats)
-        ).filter(
-            DBCamera.id.in_(camera_ids_on_page)
-        ).outerjoin(
-            CameraDailyStats, 
-            (DBCamera.id == CameraDailyStats.camera_id) & (CameraDailyStats.date >= thirty_days_ago)
-        ).all()
-        full_camera_details = {cam.id: cam for cam in query_details}
+        duration_secs = log.duration_since_last_change or 0
+        duration_str = format_duration(duration_secs) if duration_secs > 0 else ""
+        duration_text = f"({duration_str})" if duration_str else ""
 
-    historical_data = []
-    for item in paginated_results:
-        cam = full_camera_details.get(item.id)
-        if not cam:
-            continue
-
-        sorted_stats = sorted(cam.daily_stats, key=lambda x: x.date, reverse=True) if cam.daily_stats else []
-
-        offline_map = defaultdict(list)
-        offline_logs = db.query(CameraStatusChangeLog).filter(
-            CameraStatusChangeLog.camera_id == cam.id,
-            CameraStatusChangeLog.previous_status == "Offline",
-            CameraStatusChangeLog.changed_at >= thirty_days_ago
-        ).order_by(CameraStatusChangeLog.changed_at).all()
-        
-        for log in offline_logs:
-            duration_secs = log.duration_since_last_change or 0
-
-            # Convert timestamp ke timezone lokal dari DB
-            local_dt = to_current_timezone(log.changed_at, db)
-
-            date_str = local_dt.date().isoformat()
-            time_str = local_dt.strftime("%H:%M %z")  # Bisa juga pakai %z kalau butuh offset
-
-            duration_str = format_duration(duration_secs) if duration_secs > 0 else ""
-            duration_text = f"({duration_str})" if duration_str else ""
-
-            offline_map[(cam.id, date_str)].append({
-                "time": time_str,
-                "duration_since_last_change": duration_secs,
-                "duration_text": duration_text
-            })
-
-
-        historical_data.append({
-            "hostname": cam.hostname,
-            "average_uptime": item.average_uptime,
-            "stats": [{
-                "date": stat.date.strftime("%Y-%m-%d"),
-                "uptime_seconds": stat.total_uptime_seconds,
-                "downtime_seconds": stat.total_downtime_seconds,
-                "uptime_percentage": stat.uptime_percentage,
-                "offline_times": offline_map.get((cam.id, stat.date.isoformat()), []),
-                
-            } for stat in sorted_stats]
+        logs_by_camera[log.camera_id][date_str].append({
+            "time": time_str,
+            "duration_since_last_change": duration_secs,
+            "duration_text": duration_text
         })
 
-    pagination_data = {
-        "page": page, "per_page": ITEMS_PER_PAGE, "total": total_items,
-        "total_pages": total_pages, "has_prev": page > 1, "prev_num": page - 1,
-        "has_next": page < total_pages, "next_num": page + 1,
-        "start_item": offset + 1, "end_item": min(offset + ITEMS_PER_PAGE, total_items),
-    }
+    items = []
+    for cam in paginated_results:
+        sorted_stats = sorted(cam.daily_stats, key=lambda x: x.date, reverse=True) if cam.daily_stats else []
 
-    return templates.TemplateResponse("health_history.html", {
-        "request": request,
-        "historical_data": historical_data,
-        "pagination": pagination_data,
-        "search_query": q,
-        "current_sort": sort
-    })
+        items.append({
+            "camera": {
+                "id": cam.id,
+                "hostname": cam.hostname,
+                "name": cam.name,
+                "group_id": cam.group_id,
+            },
+            "history": [
+                {
+                    "date": stat.date.isoformat(),
+                    "uptime_percentage": stat.uptime_percentage,
+                    "downtime_minutes": stat.downtime_minutes,
+                    "offline_times": logs_by_camera.get(cam.id, {}).get(stat.date.isoformat(), [])
+                }
+                for stat in sorted_stats
+            ],
+        })
+
+    return {
+        "total": total_cameras,
+        "page": page,
+        "page_size": page_size,
+        "items": items,
+    }

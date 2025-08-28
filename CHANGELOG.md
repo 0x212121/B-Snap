@@ -1,16 +1,34 @@
 # Changelog
 
-All notable changes to B-Snap will be documented in this file.
+All notable changes to this project will be documented in this file.  
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.7.4] - 2025-08-19
+## [Unreleased]
 
 ### Added
-- Technical Documentation. Can be accessed at /documentation endpoint.
+- (empty)
+
+### Changed
+- (empty)
+
+### Fixed
+- (empty)
+
+## [1.8.0] - 2025-08-28
+
+### Added
+- Technical documentation, accessible via `/documentation` endpoint.
 - CSV file upload validation.
 
 ### Fixed
-- Flipped camera bug.
-- Hide camera with no IP in Devices Status.
+- Camera flip bug.
+- Devices status now hides cameras without IP.
+- N+1 query issue resolved in configuration and devices status.
+
+### Changed
+- Optimized configuration access with global caching to reduce redundant queries.
+
 
 ## [1.7.3] - 2025-08-19
 
