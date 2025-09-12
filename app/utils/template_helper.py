@@ -44,6 +44,7 @@ nav_items = [
         "items": [
             {"label": "📘 API Docs", "href": "/developer/docs", "roles": ["admin"]},
             {"label": "📝 Changelog", "href": "/changelog", "roles": ["admin"]},
+            {"label": "📃 Documentation", "href": "/documentation", "roles": ["admin"]},
         ],
     },
     {

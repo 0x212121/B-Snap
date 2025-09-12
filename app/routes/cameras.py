@@ -26,6 +26,7 @@ from app.utils.audit_logger import log_audit
 from app.utils.healthcheck import ping_camera_by_id
 from app.utils.template_helper import templates
 from app.utils.video import record_video_and_save_db
+from app.utils.status_utils import get_status_classes
 
 # Dependency injection for router
 router = APIRouter(tags=["Cameras"], dependencies=[Depends(get_db), Depends(admin_access_required)])
@@ -87,6 +88,9 @@ async def manage_data(
     rows_html = ""
     for cam in cameras:
         gps_loc = f"{cam.latitude}, {cam.longitude}" if cam.latitude is not None or cam.longitude is not None else ""
+        status_classes = get_status_classes(cam.status)
+        status_label = cam.status or "Unknown"
+
         rows_html += f"""
             <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300">
                 <td class="p-3 font-semibold">{cam.hostname}</td>
@@ -98,8 +102,8 @@ async def manage_data(
                 <td class="p-3">{cam.location or ''}</td>
                 <td class="p-3">{cam.group.name if cam.group else ''}</td>
                 <td class="p-3">
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full {'bg-green-100 text-green-800' if cam.status == 'Active' else 'bg-red-100 text-red-800'}">
-                        {'Unknown' if not cam.status else cam.status}
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full {status_classes}">
+                        {status_label}
                     </span>
                 </td>
                 <td class="p-3 space-x-3 whitespace-nowrap">
@@ -112,7 +116,7 @@ async def manage_data(
                 </td>
             </tr>
         """
-    
+
     pagination_html = ""
     if total_pages > 1:
         links = []
