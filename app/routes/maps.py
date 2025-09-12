@@ -1,7 +1,8 @@
 from datetime import datetime, timezone, timedelta
-from typing import List, Optional
+from typing import List, Optional, cast
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import joinedload, Session
+from sqlalchemy import func, and_
 from pydantic import BaseModel
 from app.core.config import get_config
 from app.db.database import get_db
@@ -17,16 +18,12 @@ router = APIRouter(tags=["Maps"])
 
 
 def format_uptime(start_time: datetime, end_time: datetime) -> str:
-    """Calculate and format uptime duration from start time to now."""
     if not start_time or not end_time:
         return "N/A"
-    
-    time_difference = end_time - start_time
-    days = time_difference.days
-    seconds = time_difference.seconds
+    td = end_time - start_time
+    days, seconds = td.days, td.seconds
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
-
     if days > 0:
         return f"{days}d {hours}h {minutes}m"
     if hours > 0:
@@ -69,13 +66,78 @@ async def get_camera_locations(
     group_name = current_user.group.name if current_user.group else "N/A"
     group_id = current_user.group_id if current_user.group else None
 
-    query = db.query(DBCamera).filter(DBCamera.status == "Active").options(joinedload(DBCamera.health))
-    
+    # --- Kamera utama ---
+    query = (
+        db.query(DBCamera)
+        .filter(DBCamera.status.in_(["Active", "Maintenance"]))
+        .options(joinedload(DBCamera.health))
+    )
     if group_name != "ALL" and group_id is not None:
         query = query.filter(DBCamera.group_id == group_id)
-        
     cameras = query.all()
 
+    # --- Snapshot terakhir per camera ---
+    snapshot_sub = (
+        db.query(
+            Snapshot.camera_id,
+            func.max(Snapshot.timestamp).label("last_ts")
+        )
+        .group_by(Snapshot.camera_id)
+        .subquery()
+    )
+    last_snapshots = (
+        db.query(Snapshot)
+        .join(snapshot_sub,
+              and_(
+                  Snapshot.camera_id == snapshot_sub.c.camera_id,
+                  Snapshot.timestamp == snapshot_sub.c.last_ts
+              ))
+        .all()
+    )
+    snapshot_map = {s.camera_id: s for s in last_snapshots}
+
+    # --- Status log terakhir per camera ---
+    status_log_sub = (
+        db.query(
+            CameraStatusChangeLog.camera_id,
+            func.max(CameraStatusChangeLog.changed_at).label("last_changed")
+        )
+        .group_by(CameraStatusChangeLog.camera_id)
+        .subquery()
+    )
+    last_logs = (
+        db.query(CameraStatusChangeLog)
+        .join(status_log_sub,
+              and_(
+                  CameraStatusChangeLog.camera_id == status_log_sub.c.camera_id,
+                  CameraStatusChangeLog.changed_at == status_log_sub.c.last_changed
+              ))
+        .all()
+    )
+    log_map = {log.camera_id: log for log in last_logs}
+
+    # --- Last online log per camera ---
+    last_online_sub = (
+        db.query(
+            CameraStatusChangeLog.camera_id,
+            func.max(CameraStatusChangeLog.changed_at).label("last_online_changed")
+        )
+        .filter(CameraStatusChangeLog.new_status.in_(["Online", "High Latency", "Optimal Latency"]))
+        .group_by(CameraStatusChangeLog.camera_id)
+        .subquery()
+    )
+    last_online_logs = (
+        db.query(CameraStatusChangeLog)
+        .join(last_online_sub,
+              and_(
+                  CameraStatusChangeLog.camera_id == last_online_sub.c.camera_id,
+                  CameraStatusChangeLog.changed_at == last_online_sub.c.last_online_changed
+              ))
+        .all()
+    )
+    last_online_map = {log.camera_id: log for log in last_online_logs}
+
+    # --- Context ---
     now_utc = datetime.now(timezone.utc)
     current_time_local = to_current_timezone(now_utc, db)
     online_statuses = ["Online", "High Latency", "Optimal Latency"]
@@ -84,103 +146,78 @@ async def get_camera_locations(
     result = []
 
     for cam in cameras:
-        status_str = "Unknown"
+        # Status default dari DB
+        status_str = str(cam.status or "Unknown")
         uptime_str = "N/A"
         formatted_last_online = "Unknown"
+
+        # Snapshot terakhir
+        last_snapshot = snapshot_map.get(cam.id)
         last_snapshot_time = None
-
-        last_snapshot = (
-            db.query(Snapshot)
-            .filter(Snapshot.camera_id == cam.id)
-            .order_by(Snapshot.timestamp.desc())
-            .first()
-        )
         if last_snapshot:
-            last_snapshot_time = to_current_timezone(last_snapshot.timestamp, db)
+            ts: datetime = cast(datetime, last_snapshot.timestamp)
+            last_snapshot_time = to_current_timezone(ts, db)
 
-        last_status_log = (
-            db.query(CameraStatusChangeLog)
-            .filter(CameraStatusChangeLog.camera_id == cam.id)
-            .order_by(CameraStatusChangeLog.changed_at.desc())
-            .first()
-        )
-
+        # Log status terakhir
+        last_status_log = log_map.get(cam.id)
         if last_status_log:
             status_str = last_status_log.new_status
-            
-            # --- START: NEW AND CORRECTED UPTIME LOGIC ---
 
-            start_time_for_calc = None
-            
-            if status_str in online_statuses:
-                # If currently online, find the last time it transitioned FROM an OFFLINE/UNKNOWN state TO an ONLINE state.
-                # This is the true start of the current uptime period.
-                start_of_online_period_log = (
-                    db.query(CameraStatusChangeLog)
-                    .filter(
-                        CameraStatusChangeLog.camera_id == cam.id,
-                        CameraStatusChangeLog.new_status.in_(online_statuses),
-                        CameraStatusChangeLog.previous_status.notin_(online_statuses)
-                    )
-                    .order_by(CameraStatusChangeLog.changed_at.desc())
-                    .first()
-                )
-                if start_of_online_period_log:
-                    start_time_for_calc = start_of_online_period_log.changed_at
-                else:
-                    # Fallback for cameras that have always been online (no transition log exists)
-                    first_online_log = db.query(CameraStatusChangeLog).filter(
-                        CameraStatusChangeLog.camera_id == cam.id,
-                        CameraStatusChangeLog.new_status.in_(online_statuses)
-                    ).order_by(CameraStatusChangeLog.changed_at.asc()).first()
-                    if first_online_log:
-                        start_time_for_calc = first_online_log.changed_at
+        # Lock ke Maintenance jika DB kamera Maintenance
+        if cam.status == "Maintenance":
+            status_str = "Maintenance"
 
-            else: # It's offline
-                # If currently offline, find the last time it WENT offline.
-                start_of_offline_period_log = (
-                    db.query(CameraStatusChangeLog)
-                    .filter(
-                        CameraStatusChangeLog.camera_id == cam.id,
-                        CameraStatusChangeLog.new_status.notin_(online_statuses)
-                    )
-                    .order_by(CameraStatusChangeLog.changed_at.desc())
-                    .first()
-                )
-                if start_of_offline_period_log:
-                    start_time_for_calc = start_of_offline_period_log.changed_at
-            
-            if start_time_for_calc:
-                start_time_local = to_current_timezone(start_time_for_calc, db)
-                uptime_str = format_uptime(start_time_local, current_time_local)
-
-            # Find the absolute last time it was online for the 'Last Online' field
-            last_online_log = (
+        # Hitung uptime berdasarkan status log
+        start_time_for_calc = None
+        if status_str in online_statuses:
+            # cari awal periode online
+            start_of_online_period_log = (
                 db.query(CameraStatusChangeLog)
                 .filter(
                     CameraStatusChangeLog.camera_id == cam.id,
-                    CameraStatusChangeLog.new_status.in_(online_statuses)
+                    CameraStatusChangeLog.new_status.in_(online_statuses),
+                    CameraStatusChangeLog.previous_status.notin_(online_statuses),
                 )
                 .order_by(CameraStatusChangeLog.changed_at.desc())
                 .first()
             )
-            
-            last_online_time = None
-            if last_online_log:
-                last_online_time = to_current_timezone(last_online_log.changed_at, db)
+            if start_of_online_period_log:
+                start_time_for_calc = start_of_online_period_log.changed_at
+        else:
+            # cari awal periode offline/maintenance
+            start_of_offline_period_log = (
+                db.query(CameraStatusChangeLog)
+                .filter(
+                    CameraStatusChangeLog.camera_id == cam.id,
+                    CameraStatusChangeLog.new_status.notin_(online_statuses),
+                )
+                .order_by(CameraStatusChangeLog.changed_at.desc())
+                .first()
+            )
+            if start_of_offline_period_log:
+                start_time_for_calc = start_of_offline_period_log.changed_at
 
-            if status_str not in online_statuses and last_snapshot_time:
-                if (current_time_local - last_snapshot_time) <= tolerance:
-                    status_str = "Online"
-                    uptime_str = format_uptime(last_snapshot_time, current_time_local)
-                    last_online_time = last_snapshot_time
+        if start_time_for_calc:
+            start_time_local = to_current_timezone(start_time_for_calc, db)
+            uptime_str = format_uptime(start_time_local, current_time_local)
 
-            if last_online_time:
-                formatted_last_online = format_datetime_with_tz(last_online_time)
+        # Last online
+        last_online_time = None
+        last_online_log = last_online_map.get(cam.id)
+        if last_online_log:
+            last_online_time = to_current_timezone(last_online_log.changed_at, db)
 
-            # --- END: NEW AND CORRECTED LOGIC ---
+        # fallback: kalau offline tapi snapshot < 5 menit
+        if (status_str not in online_statuses and last_snapshot_time and status_str != "Maintenance"):
+            if (current_time_local - last_snapshot_time) <= tolerance:
+                status_str = "Online"
+                uptime_str = format_uptime(last_snapshot_time, current_time_local)
+                last_online_time = last_snapshot_time
 
-        restriction_status = getattr(cam, 'restriction_status', None)
+        if last_online_time:
+            formatted_last_online = format_datetime_with_tz(last_online_time)
+
+        restriction_status = getattr(cam, "restriction_status", None)
         coordinate = f"{cam.latitude},{cam.longitude}"
 
         camera_data = {
@@ -198,7 +235,7 @@ async def get_camera_locations(
             "user_group": group_name,
             "user_group_id": group_id,
             "coordinate": coordinate,
-            "note": cam.note if cam.note is not None else ""
+            "note": cam.note if cam.note else "",
         }
         result.append(camera_data)
 

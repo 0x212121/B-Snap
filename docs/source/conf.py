@@ -5,11 +5,22 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+import os
+import sys
+
+# Tambahkan root project ke sys.path
+sys.path.insert(0, os.path.abspath("../.."))
+
+
+from app.version import __version__
+
+version = __version__
+
 
 project = 'B-SNAP'
 copyright = '2025, Indra W.'
 author = 'Indra W.'
-release = 'v1.8.0'
+release = f'v{version}'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
