@@ -123,3 +123,4 @@
 - [x] Bug: Portable camera is at healthcheck
 - [ ] WA bot: filter camera can be view by whitelist user group
 - [x] Tambah status maintenance mode dan tampilkan statusnya pada maps
+- [x] Status maintenance change to Active when snapshot completed
