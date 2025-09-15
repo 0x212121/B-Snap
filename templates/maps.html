@@ -4,6 +4,7 @@
 
 <div id="map" class="h-[960px] mb-6 rounded shadow"></div>
 
+<!-- External Libraries -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js'></script>
@@ -21,7 +22,7 @@
   .leaflet-popup-content { width: 20rem !important; }
   .leaflet-popup-content p { font-size: 14px; margin: 0; padding: 1px; }
   .leaflet-popup-content strong { display: block; max-width: 321px; word-break: break-word; overflow-wrap: break-word; white-space: normal; }
-  
+
   /* Marker animations and styles */
   @keyframes pulse {
     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(4, 120, 87, 0.7); }
@@ -29,28 +30,28 @@
     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(4, 120, 87, 0); }
   }
   @keyframes blink { 50% { opacity: 0.2; } }
-  
+
   .circle-marker { width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); transition: transform 0.2s ease-in-out; }
   .custom-div-icon:hover .circle-marker { transform: scale(1.4); }
   .circle-marker.green { background-color: #10B981; animation: pulse 2s infinite; }
   .circle-marker.orange { background-color: #F59E0B; }
   .circle-marker.red { background-color: #EF4444; animation: blink 1.5s step-end infinite; }
   .circle-marker.gray { background-color: #6B7280; } /* Tailwind gray-500 */
-  
+
   /* Cluster pie chart styles */
   .marker-cluster-pie { transition: all 0.2s ease-in-out; border-radius: 50%; background-clip: padding-box; border: 3px solid rgba(255, 255, 255, 0.6); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
   .marker-cluster-pie div { width: 100%; height: 100%; margin-left: 0; margin-top: 0; text-align: center; border-radius: 50%; color: #fff; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.25); }
-  
-  /* --- ADDED/MODIFIED: Styles for the new search control with autocomplete --- */
+
+  /* Styles for the new search control with autocomplete */
   .leaflet-control-search {
-    position: relative; /* Needed for absolute positioning of results */
+    position: relative;
     background: transparent;
   }
   .leaflet-control-search input {
     border: 1px solid #ccc;
     border-radius: 5px;
     padding: 8px 12px;
-    width: 250px; /* Wider search box */
+    width: 250px;
     font-size: 14px;
     box-shadow: 0 1px 5px rgba(0,0,0,0.2);
     transition: all 0.2s ease-in-out;
@@ -60,8 +61,7 @@
     border-color: #3b82f6; /* Blue-500 */
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
   }
-  
-  
+
   /* Dark mode styles for the search input */
   .dark .leaflet-control-search input {
     background-color: #374151; /* gray-700 */
@@ -71,7 +71,7 @@
   .dark .leaflet-control-search input::placeholder {
     color: #9ca3af; /* gray-400 */
   }
-  
+
   /* Autocomplete results container */
   #search-results {
     position: absolute;
@@ -87,17 +87,17 @@
     z-index: 1000;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
   }
-  
+
   .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar {
     z-index: 1;
   }
-  
+
   /* Dark mode for results container */
   .dark #search-results {
     background-color: #1f2937; /* gray-800 */
     border-color: #4b5563; /* gray-600 */
   }
-  
+
   /* Individual result item */
   .search-result-item {
     padding: 10px 12px;
@@ -120,7 +120,6 @@
   .dark .search-result-item small {
     color: #9ca3af; /* gray-400 */
   }
-  
 </style>
 
 <script>
@@ -135,9 +134,9 @@
       onAdd: function() {
         const container = L.DomUtil.create('div', 'leaflet-control-search');
         container.innerHTML = `
-     <input type="text" id="map-search-input" placeholder="Find camera by Name or IP...">
-     <div id="search-results" class="hidden"></div>
-    `;
+          <input type="text" id="map-search-input" placeholder="Find camera by Name or IP...">
+          <div id="search-results" class="hidden"></div>
+        `;
         L.DomEvent.disableClickPropagation(container);
         return container;
       }
@@ -147,7 +146,7 @@
     L.control.zoom({ position: 'topright' }).addTo(map);
     L.control.fullscreen({ position: 'topright' }).addTo(map);
     
-    // Title, filter, stats
+    // Title, filter, stats controls
     L.Control.MapTitle = L.Control.extend({ onAdd: function () { const div = L.DomUtil.create('div', 'leaflet-control-map-title'); div.innerHTML = `<div class="custom-title-bar"><img src="/static/icons/logo.png" alt="Logo KPC" class="title-logo"><span class="title-text">${MAP_TITLE}</span></div>`; L.DomEvent.disableClickPropagation(div); return div; }, });
     L.control.mapTitle = function (opts) { return new L.Control.MapTitle(opts); };
     L.control.mapTitle({ position: "topleft" }).addTo(map);
@@ -155,10 +154,10 @@
     L.Control.statusFilter = L.Control.extend({ onAdd: function() {
       const div = L.DomUtil.create('div', 'leaflet-control-status-filter bg-white/95 dark:bg-gray-800 text-sm rounded shadow p-3 mt-2 w-[160px] space-y-2');
       div.innerHTML = `
-    <label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="Online" checked> 🟢 Online</label>
-    <label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="High Latency" checked> 🟡 High Latency</label>
-    <label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="Offline" checked> 🔴 Offline</label>
-    <label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="Maintenance" checked> ⚪ Maintenance</label>`
+        <label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="Online" checked> 🟢 Online</label>
+        <label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="High Latency" checked> 🟡 High Latency</label>
+        <label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="Offline" checked> 🔴 Offline</label>
+        <label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="Maintenance" checked> ⚪ Maintenance</label>`;
       L.DomEvent.disableClickPropagation(div);
       return div;
     }});
@@ -168,252 +167,277 @@
     L.Control.cameraStats = L.Control.extend({ onAdd: function() {
       const container = L.DomUtil.create("div", "camera-stats p-2 text-sm bg-white/85 dark:bg-gray-800 rounded-[5px] shadow-[0_0_15px_rgba(0,0,0,0.2)] leading-[1.2em] mt-2");
       container.innerHTML = `<div id="camera-stats">
-    <div class="text-gray-800 dark:text-gray-100 mb-2 font-semibold text-center"><span id="user-group">-</span> Camera Stats</div>
-    <div class="text-green-600 dark:text-green-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-green-500"></span>Online: <span id="stat-online">-</span></div>
-    <div class="text-yellow-500 dark:text-yellow-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-yellow-500"></span>High Latency (>50 ms): <span id="stat-highlatency">-</span></div>
-    <div class="text-red-600 dark:text-red-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-red-500"></span>Offline: <span id="stat-offline">-</span></div>
-    <div class="text-gray-600 dark:text-gray-300 mb-1">
-  <span class="w-3 h-3 inline-block mr-2 rounded-full bg-gray-500"></span>Maintenance: <span id="stat-maintenance">-</span>
-</div>
-    <div class="text-gray-700 dark:text-gray-100 mb-1">Total: <span id="stat-total">-</span></div>
-   </div>`;
+        <div class="text-gray-800 dark:text-gray-100 mb-2 font-semibold text-center"><span id="user-group">-</span> Camera Stats</div>
+        <div class="text-green-600 dark:text-green-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-green-500"></span>Online: <span id="stat-online">-</span></div>
+        <div class="text-yellow-500 dark:text-yellow-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-yellow-500"></span>High Latency (>50 ms): <span id="stat-highlatency">-</span></div>
+        <div class="text-red-600 dark:text-red-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-red-500"></span>Offline: <span id="stat-offline">-</span></div>
+        <div class="text-gray-600 dark:text-gray-300 mb-1">
+            <span class="w-3 h-3 inline-block mr-2 rounded-full bg-gray-500"></span>Maintenance: <span id="stat-maintenance">-</span>
+        </div>
+        <div class="text-gray-700 dark:text-gray-100 mb-1">Total: <span id="stat-total">-</span></div>
+      </div>`;
         L.DomEvent.disableClickPropagation(container);
         return container;
       }});
       L.control.cameraStats = function(opts) { return new L.Control.cameraStats(opts); };
       L.control.cameraStats({ position: "bottomright" }).addTo(map);
       
-      const markerClusterGroup = L.markerClusterGroup({
-        iconCreateFunction: function (cluster) {
-          const children = cluster.getAllChildMarkers();
-          const count = children.length;
-          let online = 0, highLatency = 0, offline = 0, maintenance = 0;
-          children.forEach(c => {
-            if (c.status === 'Maintenance') maintenance++;
-            else if (c.status === 'High Latency') highLatency++;
-            else if (c.status === 'Online') online++;
-            else if (c.status === 'Offline') offline++;
-          });
+    const markerClusterGroup = L.markerClusterGroup({
+      iconCreateFunction: function (cluster) {
+        const children = cluster.getAllChildMarkers();
+        const count = children.length;
+        let online = 0, highLatency = 0, offline = 0, maintenance = 0;
+        children.forEach(c => {
+          if (c.status === 'Maintenance') maintenance++;
+          else if (c.status === 'High Latency') highLatency++;
+          else if (c.status === 'Online') online++;
+          else if (c.status === 'Offline') offline++;
+        });
 
-          const onlineColor = '#10B981', highLatencyColor = '#F59E0B', offlineColor = '#EF4444';
-          const maintenanceColor = '#6B7280'; // gray
-          const onlineEnd = (online / count) * 360;
-          const highLatencyEnd = onlineEnd + (highLatency / count) * 360;
-          const maintenanceEnd = highLatencyEnd + (maintenance / count) * 360;
-          const gradient = `conic-gradient(
-            ${onlineColor} 0deg ${onlineEnd}deg,
-            ${highLatencyColor} ${onlineEnd}deg ${highLatencyEnd}deg,
-            ${maintenanceColor} ${highLatencyEnd}deg ${maintenanceEnd}deg,
-            ${offlineColor} ${maintenanceEnd}deg 360deg
-          )`;
-          const size = 30 + Math.log2(count) * 5;
-          return L.divIcon({ html: `<div style="background: ${gradient};"><span>${count}</span></div>`, className: 'marker-cluster-pie', iconSize: [size, size] });
-        },
-        spiderfyOnMaxZoom: true, showCoverageOnHover: false, zoomToBoundsOnClick: true
-      });
-      map.addLayer(markerClusterGroup);
-      
-      let allCameraData = [];
-      let allMarkers = [];
-      let statusFilter = new Set(["Online", "High Latency", "Offline", "Maintenance"]);
-
-      
-      const searchInput = document.getElementById('map-search-input');
-      const searchResultsContainer = document.getElementById('search-results');
-      
-      searchInput.addEventListener('input', function() {
-        const query = this.value.toLowerCase();
-        if (query.length < 2) { searchResultsContainer.innerHTML = ''; searchResultsContainer.classList.add('hidden'); return; }
-        const filtered = allCameraData.filter(cam => cam.hostname.toLowerCase().includes(query) || cam.ip.toLowerCase().includes(query));
-        searchResultsContainer.innerHTML = '';
-        if (filtered.length > 0) {
-          filtered.slice(0, 10).forEach(cam => {
-            const item = document.createElement('div');
-            item.className = 'search-result-item';
-            item.innerHTML = `<div>${escapeHTML(cam.hostname)}</div><small>${escapeHTML(cam.ip)}</small>`;
-            item.dataset.cameraId = cam.id;
-            searchResultsContainer.appendChild(item);
-          });
-          searchResultsContainer.classList.remove('hidden');
-        } else searchResultsContainer.classList.add('hidden');
-      });
-      
-      searchResultsContainer.addEventListener('click', function(e) {
-        const target = e.target.closest('.search-result-item'); if (!target) return;
-        const camId = target.dataset.cameraId;
-        const mk = allMarkers.find(m => m.cameraData.id === camId);
-        if (mk) markerClusterGroup.zoomToShowLayer(mk, () => mk.openPopup());
-        searchInput.value = ''; searchResultsContainer.classList.add('hidden');
-      });
-      map.on('click', () => searchResultsContainer.classList.add('hidden'));
-      
-      document.addEventListener("change", function (e) {
-        if (e.target && e.target.classList.contains("status-checkbox")) {
-          const v = e.target.value; e.target.checked ? statusFilter.add(v) : statusFilter.delete(v); refreshMapData();
-        }
-      });
-      
-      function escapeHTML(str) {
-        if (typeof str !== 'string') return str;
-        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        const onlineColor = '#10B981', highLatencyColor = '#F59E0B', offlineColor = '#EF4444';
+        const maintenanceColor = '#6B7280';
+        const onlineEnd = (online / count) * 360;
+        const highLatencyEnd = onlineEnd + (highLatency / count) * 360;
+        const maintenanceEnd = highLatencyEnd + (maintenance / count) * 360;
+        const gradient = `conic-gradient(
+          ${onlineColor} 0deg ${onlineEnd}deg,
+          ${highLatencyColor} ${onlineEnd}deg ${highLatencyEnd}deg,
+          ${maintenanceColor} ${highLatencyEnd}deg ${maintenanceEnd}deg,
+          ${offlineColor} ${maintenanceEnd}deg 360deg
+        )`;
+        const size = 30 + Math.log2(count) * 5;
+        return L.divIcon({ html: `<div style="background: ${gradient};"><span>${count}</span></div>`, className: 'marker-cluster-pie', iconSize: [size, size] });
+      },
+      spiderfyOnMaxZoom: true, showCoverageOnHover: false, zoomToBoundsOnClick: true
+    });
+    map.addLayer(markerClusterGroup);
+    
+    let masterCameraData = []; // Stores all data from the server
+    let allMarkers = [];       // Stores currently rendered marker objects for search
+    let statusFilter = new Set(["Online", "High Latency", "Offline", "Maintenance"]);
+    
+    const searchInput = document.getElementById('map-search-input');
+    const searchResultsContainer = document.getElementById('search-results');
+    
+    searchInput.addEventListener('input', function() {
+      const query = this.value.toLowerCase();
+      if (query.length < 2) { 
+          searchResultsContainer.innerHTML = ''; 
+          searchResultsContainer.classList.add('hidden'); 
+          return; 
       }
-      function normalizeStatus(status) {
-        if (!status) return "Unknown";
-        if (status === "Optimal Latency") return "Online";
-        if (status === "Maintenance") return "Maintenance";
-        return status;
+      // Search from the master data source
+      const filtered = masterCameraData.filter(cam => cam.hostname.toLowerCase().includes(query) || cam.ip.toLowerCase().includes(query));
+      searchResultsContainer.innerHTML = '';
+      if (filtered.length > 0) {
+        filtered.slice(0, 10).forEach(cam => {
+          const item = document.createElement('div');
+          item.className = 'search-result-item';
+          item.innerHTML = `<div>${escapeHTML(cam.hostname)}</div><small>${escapeHTML(cam.ip)}</small>`;
+          item.dataset.cameraId = cam.id;
+          searchResultsContainer.appendChild(item);
+        });
+        searchResultsContainer.classList.remove('hidden');
+      } else {
+          searchResultsContainer.classList.add('hidden');
       }
+    });
+    
+    searchResultsContainer.addEventListener('click', function(e) {
+      const target = e.target.closest('.search-result-item'); 
+      if (!target) return;
+      const camId = target.dataset.cameraId;
+      // Find the marker from the currently rendered markers
+      const mk = allMarkers.find(m => String(m.cameraData.id) === String(camId));
+      if (mk) {
+          markerClusterGroup.zoomToShowLayer(mk, () => mk.openPopup());
+      }
+      searchInput.value = ''; 
+      searchResultsContainer.classList.add('hidden');
+    });
 
-      
-      function refreshMapData() {
-        // Always clear layers and reset marker arrays before fetching new data.
+    map.on('click', () => searchResultsContainer.classList.add('hidden'));
+    
+    document.addEventListener("change", function (e) {
+      if (e.target && e.target.classList.contains("status-checkbox")) {
+        const v = e.target.value; 
+        e.target.checked ? statusFilter.add(v) : statusFilter.delete(v);
+        // Re-render markers from local data, no new fetch
+        renderMarkers(); 
+      }
+    });
+    
+    function escapeHTML(str) {
+      if (typeof str !== 'string') return str;
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function normalizeStatus(status) {
+      if (!status) return "Unknown";
+      if (status === "Optimal Latency") return "Online";
+      if (status === "Maintenance") return "Maintenance";
+      return status;
+    }
+    
+    /**
+     * Renders markers based on the masterCameraData and current statusFilter.
+     * This function does NOT fetch data from the server.
+     */
+    function renderMarkers() {
         markerClusterGroup.clearLayers();
         allMarkers = [];
-        allCameraData = [];
-        
+
+        if (!masterCameraData) return;
+
+        let onlineCount = 0, offlineCount = 0, highLatencyCount = 0, maintenanceCount = 0;
+        let user_group = (masterCameraData.length > 0) ? masterCameraData[0].user_group : '';
+
+        // First, calculate stats from the entire dataset
+        masterCameraData.forEach(cam => {
+            const normalized = normalizeStatus(cam.status);
+            if (normalized === "Online") onlineCount++;
+            else if (normalized === "High Latency") highLatencyCount++;
+            else if (normalized === "Maintenance") maintenanceCount++;
+            else offlineCount++;
+        });
+
+        // Second, create markers only for data matching the filter
+        masterCameraData.forEach(cam => {
+            const normalized = normalizeStatus(cam.status);
+            if (!statusFilter.has(normalized)) return; // Skip if not in filter
+
+            if (cam.lat && cam.lng && cam.restricted !== "Restricted") {
+                const color = normalized === "Online" ? "green"
+                    : normalized === "High Latency" ? "orange"
+                    : normalized === "Maintenance" ? "gray"
+                    : "red";
+
+                const marker = L.marker([cam.lat, cam.lng], {
+                    icon: L.divIcon({ className: 'custom-div-icon', html: `<div class="circle-marker ${color}"></div>`, iconSize: [20, 20], iconAnchor: [10, 10] }),
+                });
+                marker.status = normalized;
+                marker.cameraData = cam;
+                
+                const popupContent = L.DomUtil.create('div');
+                const isOnline = normalized === "Online" || normalized === "High Latency";
+                const isNotes = typeof cam.note === 'string' && cam.note.trim().length > 0;
+                
+                popupContent.innerHTML = `
+                    <strong style="font-size: 18px;">${escapeHTML(cam.hostname)}</strong><br>
+                    <table id="cam-table-${cam.id}" style="font-size: 14px; width:100%;">
+                        <tr><td>IP</td><td>:</td><td>${escapeHTML(cam.ip)}</td></tr>
+                        <tr><td>Asset No</td><td>:</td><td>${escapeHTML(cam.asset_no || 'N/A')}</td></tr>
+                        <tr><td>Status</td><td>:</td><td>${
+                            normalized === "Online" ? "🟢 Online" :
+                            normalized === "High Latency" ? "🟡 High Latency" :
+                            normalized === "Maintenance" ? "⚪ Maintenance" :
+                            "🔴 Offline"
+                        }</td></tr>
+                        ${isOnline
+                            ? `<tr><td>Uptime</td><td>:</td><td>${escapeHTML(cam.uptime)}</td></tr>`
+                            : `<tr><td>Downtime</td><td>:</td><td>${escapeHTML(cam.uptime)}</td></tr>
+                               <tr><td>Last Online</td><td>:</td><td>${escapeHTML(cam.last_online)}</td></tr>`
+                        }
+                        ${isNotes ? `<tr><td>Notes</td><td>:</td><td class="text-gray-800 dark:text-gray-800">${escapeHTML(cam.note)}</td></tr>` : ''}
+                        <tr><td>Coordinate</td><td>:</td><td><a href="https://www.google.com/maps?q=${escapeHTML(cam.coordinate || 'N/A')}" target="_blank" rel="noopener noreferrer">${escapeHTML(cam.coordinate || 'N/A')}</a></td></tr>
+                        <tr id="tampered-row-${cam.id}" style="display: none;"><td>Tampered</td><td>:</td><td id="tampered-${cam.id}" class="text-red-500 font-semibold"></td></tr>
+                        <tr id="res-row-${cam.id}"><td>Resolution</td><td>:</td><td id="res-${cam.id}">Loading...</td></tr>
+                        <tr id="time-row-${cam.id}"><td>Snapshot Time</td><td>:</td><td id="time-${cam.id}">Loading...</td></tr>
+                        <tr id="image-row-${cam.id}"><td colspan="3"><div id="snapshot-image-${cam.id}" class="mt-1 text-center text-gray-500 dark:text-gray-400">Loading snapshot...</div></td></tr>
+                    </table>
+                `;
+                
+                marker.bindPopup(popupContent, { maxWidth: 1500 });
+                
+                marker.on('popupopen', async () => {
+                    const resCell = document.getElementById(`res-${cam.id}`);
+                    const timeCell = document.getElementById(`time-${cam.id}`);
+                    const tamperedRow = document.getElementById(`tampered-row-${cam.id}`);
+                    const tamperedCell = document.getElementById(`tampered-${cam.id}`);
+                    const imgContainer = document.getElementById(`snapshot-image-${cam.id}`);
+                    
+                    if (!resCell || !timeCell || !tamperedRow || !tamperedCell || !imgContainer) return;
+                    
+                    try {
+                        const info = await fetch(`/snapshot/latest/${encodeURIComponent(cam.hostname)}/info`);
+                        if (!info.ok) throw new Error("Snapshot not available");
+                        const snapshot = await info.json();
+                        
+                        const ts = typeof snapshot.timestamp === 'string' ? escapeHTML(snapshot.timestamp) : 'N/A';
+                        const reso = typeof snapshot.res === 'string' ? escapeHTML(snapshot.res) : 'N/A';
+                        const tampered = (typeof snapshot.tamper_reason === 'string' && snapshot.tamper_reason.trim() !== '') ? escapeHTML(snapshot.tamper_reason.trim()) : '';
+                        
+                        resCell.textContent = reso || 'N/A';
+                        timeCell.textContent = ts || 'N/A';
+                        
+                        if (tampered) {
+                            tamperedCell.textContent = tampered;
+                            tamperedRow.style.display = "";
+                        } else {
+                            tamperedCell.textContent = "";
+                            tamperedRow.style.display = "none";
+                        }
+                        
+                        if (snapshot.url && typeof snapshot.url === 'string' && snapshot.url.trim() !== '') {
+                            imgContainer.innerHTML = `<img src="${escapeHTML(snapshot.url)}" class="w-full h-auto rounded-md shadow-md mt-1" alt="Camera Snapshot" onerror="this.onerror=null;this.src='/static/placeholder.svg';">`;
+                        } else {
+                            imgContainer.innerHTML = `<img src="/static/placeholder.svg" class="w-full h-auto rounded-md shadow-md mt-1" alt="No Snapshot Available">`;
+                        }
+                    } catch (err) {
+                        resCell.textContent = 'N/A';
+                        timeCell.textContent = 'N/A';
+                        tamperedCell.textContent = "";
+                        tamperedRow.style.display = "none";
+                        imgContainer.innerHTML = `<img src="/static/placeholder.svg" class="w-full h-auto rounded-md shadow-md mt-1" alt="No Snapshot Available">`;
+                    }
+                });
+                
+                markerClusterGroup.addLayer(marker);
+                allMarkers.push(marker);
+            }
+        });
+
+        // Update stats panel
+        document.getElementById("user-group").textContent = user_group;
+        document.getElementById("stat-total").textContent = masterCameraData.length;
+        document.getElementById("stat-online").textContent = onlineCount;
+        document.getElementById("stat-offline").textContent = offlineCount;
+        document.getElementById("stat-highlatency").textContent = highLatencyCount;
+        document.getElementById("stat-maintenance").textContent = maintenanceCount;
+    }
+
+    /**
+     * Fetches data from the server and updates the map.
+     * Replaces the old refreshMapData function.
+     */
+    function fetchAndUpdateMap() {
         fetch("/camera-locations")
         .then(res => {
-          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-          return res.json();
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return res.json();
         })
         .then(data => {
-          // OPTIMIZATION: Filter out duplicate data from the server response.
-          // Use a Set to track unique camera IDs.
-          const uniqueCameraIds = new Set();
-          const uniqueData = data.filter(cam => {
-            if (uniqueCameraIds.has(cam.id)) {
-              return false;
-            }
-            uniqueCameraIds.add(cam.id);
-            return true;
-          });
-          
-          allCameraData = uniqueData;
-          let onlineCount = 0, offlineCount = 0, highLatencyCount = 0, maintenanceCount = 0, user_group = '';
-          
-          allCameraData.forEach(cam => {
-            const normalized = normalizeStatus(cam.status);
-            if (!statusFilter.has(normalized)) return;
-            
-            // ... (marker creation logic remains the same) ...
-            if (normalized === "Online") onlineCount++;
-              else if (normalized === "High Latency") highLatencyCount++;
-              else if (normalized === "Maintenance") maintenanceCount++;
-              else offlineCount++;
-            
-            if (cam.lat && cam.lng && cam.restricted !== "Restricted") {
-              const color = normalized === "Online"
-              ? "green"
-              : normalized === "High Latency"
-                ? "orange"
-                : normalized === "Maintenance"
-                  ? "gray"
-                  : "red";
-
-              const marker = L.marker([cam.lat, cam.lng], {
-                icon: L.divIcon({ className: 'custom-div-icon', html: `<div class="circle-marker ${color}"></div>`, iconSize: [20, 20], iconAnchor: [10, 10] }),
-              });
-              marker.status = normalized;
-              marker.cameraData = cam;
-              
-              const popupContent = L.DomUtil.create('div');
-              const isOnline = normalized === "Online" || normalized === "High Latency";
-              const isNotes = typeof cam.note === 'string' && cam.note.trim().length > 0;
-              
-              popupContent.innerHTML = `
-<strong style="font-size: 18px;">${escapeHTML(cam.hostname)}</strong><br>
-<table id="cam-table-${cam.id}" style="font-size: 14px; width:100%;">
-<tr><td>IP</td><td>:</td><td>${escapeHTML(cam.ip)}</td></tr>
-<tr><td>Asset No</td><td>:</td><td>${escapeHTML(cam.asset_no || 'N/A')}</td></tr>
-<tr><td>Status</td><td>:</td><td>${
-  normalized === "Online" ? "🟢 Online" :
-  normalized === "High Latency" ? "🟡 High Latency" :
-  normalized === "Maintenance" ? "⚪ Maintenance" :
-  "🔴 Offline"
-}</td></tr>
-
-${isOnline
-              ? `<tr><td>Uptime</td><td>:</td><td>${escapeHTML(cam.uptime)}</td></tr>`
-              : `<tr><td>Downtime</td><td>:</td><td>${escapeHTML(cam.uptime)}</td></tr>
- <tr><td>Last Online</td><td>:</td><td>${escapeHTML(cam.last_online)}</td></tr>`}
-${isNotes ? `<tr><td>Notes</td><td>:</td><td class="text-gray-800 dark:text-gray-800">${escapeHTML(cam.note)}</td></tr>` : ''}
-<tr><td>Coordinate</td><td>:</td><td><a href="https://www.google.com/maps?q=${escapeHTML(cam.coordinate || 'N/A')}" target="_blank" rel="noopener noreferrer">${escapeHTML(cam.coordinate || 'N/A')}</a></td></tr>
-<tr id="tampered-row-${cam.id}" style="display: none;"><td>Tampered</td><td>:</td><td id="tampered-${cam.id}" class="text-red-500 font-semibold"></td></tr>
-<tr id="res-row-${cam.id}"><td>Resolution</td><td>:</td><td id="res-${cam.id}">Loading...</td></tr>
-<tr id="time-row-${cam.id}"><td>Snapshot Time</td><td>:</td><td id="time-${cam.id}">Loading...</td></tr>
-<tr id="image-row-${cam.id}"><td colspan="3"><div id="snapshot-image-${cam.id}" class="mt-1 text-center text-gray-500 dark:text-gray-400">Loading snapshot...</div></td></tr>
-</table>
-`;
-              
-              marker.bindPopup(popupContent, { maxWidth: 1500 });
-              
-              marker.on('popupopen', async () => {
-                const resCell = document.getElementById(`res-${cam.id}`);
-                const timeCell = document.getElementById(`time-${cam.id}`);
-                const tamperedRow = document.getElementById(`tampered-row-${cam.id}`);
-                const tamperedCell = document.getElementById(`tampered-${cam.id}`);
-                const imgContainer = document.getElementById(`snapshot-image-${cam.id}`);
-                
-                if (!resCell || !timeCell || !tamperedRow || !tamperedCell || !imgContainer) return;
-                
-                try {
-                  const info = await fetch(`/snapshot/latest/${encodeURIComponent(cam.hostname)}/info`);
-                  if (!info.ok) throw new Error("Snapshot not available");
-                  const snapshot = await info.json();
-                  
-                  const ts = typeof snapshot.timestamp === 'string' ? escapeHTML(snapshot.timestamp) : 'N/A';
-                  const reso = typeof snapshot.res === 'string' ? escapeHTML(snapshot.res) : 'N/A';
-                  const tampered = (typeof snapshot.tamper_reason === 'string' && snapshot.tamper_reason.trim() !== '') ? escapeHTML(snapshot.tamper_reason.trim()) : '';
-                  
-                  resCell.textContent = reso || 'N/A';
-                  timeCell.textContent = ts || 'N/A';
-                  
-                  if (tampered) {
-                    tamperedCell.textContent = tampered;
-                    tamperedRow.style.display = "";
-                  } else {
-                    tamperedCell.textContent = "";
-                    tamperedRow.style.display = "none";
-                  }
-                  
-                  if (snapshot.url && typeof snapshot.url === 'string' && snapshot.url.trim() !== '') {
-                    imgContainer.innerHTML = `
-<img src="${escapeHTML(snapshot.url)}" class="w-full h-auto rounded-md shadow-md mt-1" alt="Camera Snapshot"
-onerror="this.onerror=null;this.src='/static/placeholder.svg';">
-`;
-                  } else {
-                    imgContainer.innerHTML = `
-<img src="/static/placeholder.svg" class="w-full h-auto rounded-md shadow-md mt-1" alt="No Snapshot Available">
-`;
-                  }
-                } catch (err) {
-                  resCell.textContent = 'N/A';
-                  timeCell.textContent = 'N/A';
-                  tamperedCell.textContent = "";
-                  tamperedRow.style.display = "none";
-                  imgContainer.innerHTML = `<img src="/static/placeholder.svg" class="w-full h-auto rounded-md shadow-md mt-1" alt="No Snapshot Available">`;
+            // Filter out duplicates from the server response.
+            const uniqueCameraIds = new Set();
+            const uniqueData = data.filter(cam => {
+                if (uniqueCameraIds.has(cam.id)) {
+                    return false;
                 }
-              });
-              
-              markerClusterGroup.addLayer(marker);
-              allMarkers.push(marker);
-            }
-            user_group = cam.user_group;
-          });
-          
-          document.getElementById("user-group").textContent = user_group;
-          document.getElementById("stat-total").textContent = uniqueData.length;
-          document.getElementById("stat-online").textContent = onlineCount;
-          document.getElementById("stat-offline").textContent = offlineCount;
-          document.getElementById("stat-highlatency").textContent = highLatencyCount;
-          document.getElementById("stat-maintenance").textContent = maintenanceCount;
+                uniqueCameraIds.add(cam.id);
+                return true;
+            });
+            
+            masterCameraData = uniqueData; // Update the master data source
+            
+            renderMarkers(); // Call the render function to display the new data
         })
         .catch(err => { console.error("Map data fetch error:", err); });
-      }
-      refreshMapData();
-      setInterval(refreshMapData, 600000); // 10 minutes
-    });
-  </script>
-  
-  
-  {% endblock %}
+    }
+    
+    // Initial data load and periodic refresh
+    fetchAndUpdateMap();
+    setInterval(fetchAndUpdateMap, 600000); // 10 minutes
+  });
+</script>
+
+{% endblock %}

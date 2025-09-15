@@ -91,38 +91,36 @@ def get_user_by_phone(db: Session, phone: str):
 @router.post("/snap/{camera_identifier}")
 def snapshot_handler(
     request: Request,
-    camera_identifier: str, # Nama parameter diubah agar lebih jelas
+    camera_identifier: str,
     db: Session = Depends(get_db),
     user_phone: str = Query(default=None),
     current_operator: User = Depends(operator_access_required)
 ):
-    
     normalized_input = camera_identifier.strip()
     camera = None
 
-    # --- PERUBAHAN 1: Logika Pencarian Kamera ---
-    # Logika diubah untuk memprioritaskan pencarian berdasarkan ID,
-    # sesuai dengan perubahan di frontend.
+    # --- Cari kamera ---
     if is_ip_address(normalized_input):
         camera = db.query(Camera).filter(Camera.ip == normalized_input).first()
     else:
-        # Coba cari berdasarkan ID terlebih dahulu
         camera = db.query(Camera).filter(Camera.id == normalized_input).first()
-        # Fallback: jika tidak ketemu ID, coba cari berdasarkan hostname (untuk backward compatibility)
         if not camera:
             camera = db.query(Camera).filter(Camera.hostname.ilike(normalized_input)).first()
 
     if not camera:
         raise HTTPException(status_code=404, detail="Camera not found with provided identifier")
 
-    if camera.status not in ["Active", "Restricted"]:
-        raise HTTPException(status_code=403, detail=f"Camera status '{camera.status}' is not allowed")
+    # --- Status check ---
+    if camera.status not in ["Active", "Restricted", "Maintenance"]:
+        return JSONResponse(
+            status_code=403,
+            content={"status": "error", "detail": f"Camera status '{camera.status}' is not allowed"}
+        )
 
     result = take_snapshot(camera, db)
 
     if result["status"] == "success":
-        # --- PERUBAHAN 2: Menyimpan SnapshotLog dengan camera_id ---
-        # Menggunakan camera.id, bukan camera.hostname, sesuai skema baru.
+        # Simpan snapshot log
         snapshot_log = SnapshotLog(
             id=str(uuid4()),
             camera_id=camera.id,
@@ -130,7 +128,6 @@ def snapshot_handler(
         )
         db.add(snapshot_log)
 
-        # Bagian ini sudah benar karena menggunakan camera.id
         snapshot = record_snapshot_metadata(
             db=db,
             camera_id=camera.id,
@@ -139,12 +136,17 @@ def snapshot_handler(
         )
         result["snapshot_id"] = snapshot.id
 
+        # --- Update status dari Maintenance ke Active ---
+        if camera.status == "Maintenance":
+            camera.status = "Active"
+            db.add(camera)
+            db.commit()
+            db.refresh(camera)
+            result["status_update"] = "Camera status updated from Maintenance to Active"
+
+    # --- Logging user (Whatsapp / Dashboard) ---
     if user_phone:
-        user_whitelist = (
-            db.query(WhatsappWhitelist)
-            .filter(WhatsappWhitelist.phone_number == user_phone)
-            .first()
-        )
+        user_whitelist = db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == user_phone).first()
         if user_whitelist and user_whitelist.name:
             final_user_name = f"{user_whitelist.name} ({user_whitelist.phone_number})"
         else:

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Maintenance camera status automatically change to Active when snapshot run successfully.
+
+### Fixed
+- Race condition in maps when filtering CCTV status.
 
 ## [1.8.1] - 2025-09-12
 
