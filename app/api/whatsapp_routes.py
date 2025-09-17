@@ -14,6 +14,7 @@ def is_whatsapp_allowed(phone: str, db: Session = Depends(get_db)):
             "allowed": True,
             "role": entry.role,
             "name": entry.name,
+            "group": entry.group_name
         }
     return {
         "allowed": False
