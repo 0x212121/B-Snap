@@ -15,7 +15,6 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Stre
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.logging_config import setup_logging
 from app.db.database import get_db
 from app.models.camera import Camera as DBCamera
 from app.models.camera_group import CameraGroup
@@ -27,18 +26,13 @@ from app.utils.healthcheck import ping_camera_by_id
 from app.utils.template_helper import templates
 from app.utils.video import record_video_and_save_db
 from app.utils.status_utils import get_status_classes
+from app.core.logging_config import setup_logging
 
 # Dependency injection for router
 router = APIRouter(tags=["Cameras"], dependencies=[Depends(get_db), Depends(admin_access_required)])
 
 setup_logging()
 logger = logging.getLogger("management")
-
-@router.get("/cameras", response_class=HTMLResponse)
-async def manage(request: Request):
-    """Renders the main cameras management page."""
-    return templates.TemplateResponse("cameras.html", {"request": request})
-
 
 @router.get("/cameras", response_class=HTMLResponse)
 async def manage(request: Request):

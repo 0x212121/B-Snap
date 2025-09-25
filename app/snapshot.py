@@ -6,7 +6,6 @@ from app.models.camera import Camera
 from app.db.database import SessionLocal
 from app.core.logging_config import setup_logging
 
-setup_logging()
 logger = logging.getLogger("snapshot")
 
 def load_active_cameras():

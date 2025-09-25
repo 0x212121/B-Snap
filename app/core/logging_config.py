@@ -76,7 +76,7 @@ LOGGING_CONFIG = {
             "propagate": False
         },
         "snapshot": {
-            "handlers": ["snapshot_file", "console"],
+            "handlers": ["snapshot_file"],
             "level": "INFO",
             "propagate": False
         },
@@ -100,6 +100,9 @@ LOGGING_CONFIG = {
 
 
 def setup_logging():
+    logging.shutdown()
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
     logging.config.dictConfig(LOGGING_CONFIG)
 
 
@@ -114,15 +117,17 @@ def set_debug_mode(enabled: bool):
         logger_conf["level"] = new_level
         logger = logging.getLogger(logger_name)
         logger.setLevel(new_level)
-
-    # Ubah level di handlers
-    for handler_name, handler_conf in LOGGING_CONFIG["handlers"].items():
-        handler_conf["level"] = new_level
-        for h in logging.getLogger().handlers:
+        # Ubah level di semua handler logger ini
+        for h in logger.handlers:
             h.setLevel(new_level)
+
+    # Ubah level di root handlers juga
+    for h in logging.getLogger().handlers:
+        h.setLevel(new_level)
 
     # Catat perubahan
     if enabled:
         logging.getLogger("main").debug("✅ Debug mode ENABLED via admin panel.")
     else:
         logging.getLogger("main").info("ℹ️ Debug mode DISABLED via admin panel.")
+

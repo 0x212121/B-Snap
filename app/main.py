@@ -37,6 +37,7 @@ from app.routes import (
 from app.ws.routes import notification_listener, router as ws_router
 from app.version import __version__
 from app.api import whatsapp_routes
+from app.api import observability_log
 from app.ws.manager import websocket_connections
 from functools import lru_cache
 from alembic.config import Config
@@ -156,6 +157,7 @@ app.include_router(audit.router)
 app.include_router(dev_docs.router)
 app.include_router(ws_router)
 app.include_router(whatsapp_routes.router)
+app.include_router(observability_log.router)
 app.include_router(admin.router)
 app.include_router(whitelist.router)
 

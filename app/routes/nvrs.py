@@ -20,7 +20,6 @@ from app.utils.healthcheck import ping_nvr_by_id
 router = APIRouter(tags=["NVRs"])
 from app.utils.template_helper import templates
 
-setup_logging()
 logger = logging.getLogger("management")
 
 

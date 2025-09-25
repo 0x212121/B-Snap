@@ -7,7 +7,6 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from app.core.logging_config import setup_logging
 from app.utils.template_helper import templates
 from app.db.database import get_db
 from app.models.camera_group import CameraGroup
@@ -26,7 +25,6 @@ router = APIRouter(tags=["Snapshots"])
 
 SNAPSHOT_BASE_DIR = "static"
 
-setup_logging()
 logger = logging.getLogger("snapshot")
 
 
@@ -87,7 +85,6 @@ def get_user_by_phone(db: Session, phone: str):
     return db.query(User).filter(User.phone == phone).first()
 
 
-# --- FUNGSI INI TELAH DIMODIFIKASI ---
 @router.post("/snap/{camera_identifier}")
 def snapshot_handler(
     request: Request,
@@ -98,74 +95,116 @@ def snapshot_handler(
 ):
     normalized_input = camera_identifier.strip()
     camera = None
+    final_user_name = "Unknown"
+    extra = None
 
-    # --- Cari kamera ---
-    if is_ip_address(normalized_input):
-        camera = db.query(Camera).filter(Camera.ip == normalized_input).first()
-    else:
-        camera = db.query(Camera).filter(Camera.id == normalized_input).first()
-        if not camera:
-            camera = db.query(Camera).filter(Camera.hostname.ilike(normalized_input)).first()
-
-    if not camera:
-        raise HTTPException(status_code=404, detail="Camera not found with provided identifier")
-
-    # --- Status check ---
-    if camera.status not in ["Active", "Restricted", "Maintenance"]:
-        return JSONResponse(
-            status_code=403,
-            content={"status": "error", "detail": f"Camera status '{camera.status}' is not allowed"}
-        )
-
-    result = take_snapshot(camera, db)
-
-    if result["status"] == "success":
-        # Simpan snapshot log
-        snapshot_log = SnapshotLog(
-            id=str(uuid4()),
-            camera_id=camera.id,
-            camera_name=camera.hostname,
-        )
-        db.add(snapshot_log)
-
-        snapshot = record_snapshot_metadata(
-            db=db,
-            camera_id=camera.id,
-            file_path=result["file_path"],
-            resolution=result.get("resolution", "N/A"),
-        )
-        result["snapshot_id"] = snapshot.id
-
-        # --- Update status dari Maintenance ke Active ---
-        if camera.status == "Maintenance":
-            camera.status = "Active"
-            db.add(camera)
-            db.commit()
-            db.refresh(camera)
-            result["status_update"] = "Camera status updated from Maintenance to Active"
-
-    # --- Logging user (Whatsapp / Dashboard) ---
-    if user_phone:
-        user_whitelist = db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == user_phone).first()
-        if user_whitelist and user_whitelist.name:
-            final_user_name = f"{user_whitelist.name} ({user_whitelist.phone_number})"
+    try:
+        # --- Identifikasi user ---
+        if user_phone:
+            user_whitelist = (
+                db.query(WhatsappWhitelist)
+                .filter(WhatsappWhitelist.phone_number == user_phone)
+                .first()
+            )
+            if user_whitelist and user_whitelist.name:
+                final_user_name = f"{user_whitelist.name} ({user_whitelist.phone_number})"
+            else:
+                final_user_name = user_phone
+            extra = "via Whatsapp Bot"
         else:
-            final_user_name = user_phone
-        extra = "via Whatsapp Bot"
-    else:
-        final_user_name = request.session.get("user_name", "Unknown")
-        extra = "via dashboard"
+            final_user_name = request.session.get("user_name", "Unknown")
+            extra = "via dashboard"
 
-    log_audit(
-        db=db,
-        user=final_user_name,
-        action="create_snapshot",
-        target=camera.hostname,
-        ip=request.client.host,
-        extra=extra
-    )
+        # --- Cari kamera ---
+        if is_ip_address(normalized_input):
+            camera = db.query(Camera).filter(Camera.ip == normalized_input).first()
+        else:
+            camera = db.query(Camera).filter(Camera.id == normalized_input).first()
+            if not camera:
+                camera = db.query(Camera).filter(Camera.hostname.ilike(normalized_input)).first()
 
-    return result
+        if not camera:
+            log_audit(
+                db=db,
+                user=final_user_name,
+                action="create_snapshot_failed",
+                target=normalized_input,
+                ip=request.client.host,
+                extra=f"{extra} | reason=Camera not found"
+            )
+            raise HTTPException(status_code=404, detail="Camera not found with provided identifier")
+
+        # --- Status check ---
+        if camera.status not in ["Active", "Restricted", "Maintenance"]:
+            log_audit(
+                db=db,
+                user=final_user_name,
+                action="create_snapshot_blocked",
+                target=camera.hostname,
+                ip=request.client.host,
+                extra=f"{extra} | status={camera.status}"
+            )
+            return JSONResponse(
+                status_code=403,
+                content={"status": "error", "detail": f"Camera status '{camera.status}' is not allowed"}
+            )
+
+        # --- Snapshot process ---
+        result = take_snapshot(camera, db)
+
+        if result["status"] == "success":
+            snapshot_log = SnapshotLog(
+                id=str(uuid4()),
+                camera_id=camera.id,
+                camera_name=camera.hostname,
+            )
+            db.add(snapshot_log)
+
+            snapshot = record_snapshot_metadata(
+                db=db,
+                camera_id=camera.id,
+                file_path=result["file_path"],
+                resolution=result.get("resolution", "N/A"),
+            )
+            result["snapshot_id"] = snapshot.id
+
+            if camera.status == "Maintenance":
+                camera.status = "Active"
+                db.add(camera)
+                db.commit()
+                db.refresh(camera)
+                result["status_update"] = "Camera status updated from Maintenance to Active"
+
+            log_audit(
+                db=db,
+                user=final_user_name,
+                action="create_snapshot_success",
+                target=camera.hostname,
+                ip=request.client.host,
+                extra=f"{extra} | file={result['file_path']} | resolution={result.get('resolution', 'N/A')}"
+            )
+        else:
+            log_audit(
+                db=db,
+                user=final_user_name,
+                action="create_snapshot_failed",
+                target=camera.hostname,
+                ip=request.client.host,
+                extra=f"{extra} | reason={result.get('message', 'unknown error')}"
+            )
+
+        return result
+
+    except Exception as e:
+        log_audit(
+            db=db,
+            user=final_user_name,
+            action="create_snapshot_exception",
+            target=camera.hostname if camera else normalized_input,
+            ip=request.client.host,
+            extra=f"{extra} | exception={str(e)}"
+        )
+        raise
 
 
 @router.delete("/snap/{snapshot_id}", response_class=JSONResponse)

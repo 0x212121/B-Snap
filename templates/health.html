@@ -403,7 +403,7 @@
         console.log('Realtime snapshot created. Now fetching its info to display.');
         viewSnapshot(cameraId, cameraName);
       } else {
-        showAlertModal('Failed to take snapshot: ' + (data.detail || 'Unknown error from server'));
+        showAlertModal('Failed to take snapshot: ' + (data.message || data.detail || 'Unknown error from server'));
       }
     })
     .catch(error => {

@@ -6,14 +6,12 @@ import cv2
 import subprocess
 from io import BytesIO
 from PIL import Image
-import logging
 import requests
 from sqlalchemy.orm import Session
 from sqlalchemy import func, select
 from onvif import ONVIFCamera
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 from app.core.config import get_config
-from app.core.logging_config import setup_logging
 from pathlib import Path
 from typing import List
 from app.utils.network_utils import is_reachable
@@ -22,12 +20,20 @@ from app.utils.camera_onvif import get_rtsp_url
 from app.utils import check_stats
 from app.models.camera import Camera
 from app.models.snapshot import Snapshot
+from app.core.logging_config import setup_logging
+
 
 STATIC_DIR = os.path.join("static", "snapshots")
 _BASE_SNAP_DIR = Path(STATIC_DIR).resolve()
-setup_logging()
+
+# setup_logging()
+import logging
 logger = logging.getLogger("snapshot")
 
+logger.info("Snapshot logger initialized, writing to snapshot.log")
+
+for h in logger.handlers:
+    logger.info("Handler attached: %s", h)
 
 def get_image_resolution(image_bytes: bytes) -> str:
     with Image.open(BytesIO(image_bytes)) as img:

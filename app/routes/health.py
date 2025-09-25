@@ -26,7 +26,6 @@ from app.utils.timezone_helper import get_current_timezone, to_current_timezone
 
 router = APIRouter(tags=["Health Check"])
 
-setup_logging()
 logger = logging.getLogger("healthcheck")
 
 class DeviceHealthStatus(BaseModel):

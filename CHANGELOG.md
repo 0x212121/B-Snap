@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - CCTV streaming in maps menu.
 
+## [1.8.3] - 2025-09-25
+
+### Added
+- RTSP support for Hikvision camera
+- Observability tables and API 
+
+### Changed
+- Logging function
+- Failed snapshot output in health menu
+
+
 ## [1.8.2] - 2025-09-15
 
 ### Changed
