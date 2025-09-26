@@ -7,6 +7,7 @@ from app.db.database import get_db
 from app.models.recipient import GroupRecipient
 from app.models.camera_group import CameraGroup
 from app.utils.template_helper import templates
+from app.utils.email_helper import send_email
 
 logger = logging.getLogger(__name__)
 
@@ -67,3 +68,19 @@ def delete_recipient(id: int, db: Session = Depends(get_db)):
         db.delete(recipient)
         db.commit()
     return RedirectResponse(url="/recipients", status_code=303)
+
+
+@router.post("/recipients/send/{group_id}")
+def send_test_email(group_id: int, db: Session = Depends(get_db)):
+    recipients = db.query(GroupRecipient).filter(GroupRecipient.group_id == group_id).all()
+    emails = [r.email for r in recipients]
+
+    if not emails:
+        return {"error": "No recipients in this group"}
+
+    subject = "🔔 Test Notification"
+    body = "Ini contoh pesan notifikasi via B-SNAP."
+    html = "<h3>📢 Notifikasi</h3><p>Ini contoh email dari B-SNAP.</p>"
+
+    send_email(emails, subject, body, html)
+    return {"status": "Email sent", "recipients": emails}
