@@ -18,14 +18,19 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-def upgrade():
+def upgrade() -> None:
     op.create_table(
         'group_recipients',
         sa.Column('id', sa.Integer, primary_key=True, index=True),
-        sa.Column('group_id', sa.Integer, sa.ForeignKey('camera_groups.id', ondelete="CASCADE")),
+        sa.Column('group_id', sa.Integer, sa.ForeignKey('camera_groups.id', ondelete="CASCADE"), nullable=False),
         sa.Column('email', sa.String, nullable=False, index=True),
+        sa.Column('nickname', sa.String, nullable=True),
+    )
+    op.create_unique_constraint(
+        "uq_group_email", "group_recipients", ["group_id", "email"]
     )
 
 
-def downgrade():
-    op.drop_table('group_recipients')
+def downgrade() -> None:
+    op.drop_constraint("uq_group_email", "group_recipients", type_="unique")
+    op.drop_table("group_recipients")

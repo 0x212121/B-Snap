@@ -31,8 +31,9 @@ from app.db.database import Base, engine, SessionLocal
 from app.routes import (
     admin, auth, audit, cameras, config, dev_docs, docs, health, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
-    user_management, videos, whitelist
+    user_management, videos, whitelist, group_recipients
 )
+
 
 from app.ws.routes import notification_listener, router as ws_router
 from app.version import __version__
@@ -49,7 +50,7 @@ from alembic import command
 # 2. INITIAL SETUP & CONFIGURATION
 # ====================================================================
 setup_logging()
-logger = logging.getLogger("main")
+logger = logging.getLogger(__name__)
 
 # Ensure SECRET_KEY exists, if not use a safe default value for development
 SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key-for-dev")
@@ -126,7 +127,8 @@ app = FastAPI(
     docs_url=None,  # Disabled to use custom docs
     redoc_url=None,
     middleware=middleware,
-    default_response_class=ORJSONResponse
+    default_response_class=ORJSONResponse,
+    debug=True
 )
 
 
@@ -160,6 +162,7 @@ app.include_router(whatsapp_routes.router)
 app.include_router(observability_log.router)
 app.include_router(admin.router)
 app.include_router(whitelist.router)
+app.include_router(group_recipients.router)
 
 # ====================================================================
 # 7. CORE APP ROUTES & HANDLERS

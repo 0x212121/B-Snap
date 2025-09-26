@@ -22,7 +22,10 @@ echo "🚀 Starting Gunicorn with $WORKERS workers..."
 exec gunicorn app.main:app \
   -k uvicorn.workers.UvicornWorker \
   --bind 0.0.0.0:8080 \
-  --workers "$WORKERS" \
+  --workers "${WORKERS:-2}" \
   --worker-connections 1000 \
   --timeout 60 \
-  --keep-alive 2
+  --keep-alive 2 \
+  -c gunicorn.conf.py \
+  --access-logfile - --error-logfile - --log-level debug
+
