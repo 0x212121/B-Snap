@@ -127,3 +127,4 @@
 - [ ] Logging command and API call
 - [ ] Whatsapp Whitelist Filter user and pagination
 - [ ] Cameras filter by status
+- [ ] Send email to receipient when CCTV is offline

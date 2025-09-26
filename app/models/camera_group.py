@@ -23,6 +23,7 @@ class CameraGroup(Base):
     nvr = relationship("NVR", back_populates="group")
     users = relationship("User", back_populates="group")
     whatsapp_whitelist = relationship("WhatsappWhitelist", back_populates="group", cascade="all, delete-orphan")
+    recipients = relationship("GroupRecipient", back_populates="group", cascade="all, delete-orphan")
 
 
 @event.listens_for(CameraGroup.__table__, "after_create")
