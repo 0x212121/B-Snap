@@ -37,6 +37,7 @@ nav_items = [
         "items": [
             {"label": "📄 Logs Viewer", "href": "/logs", "roles": ["admin"]},
             {"label": "🕵️ Audit Logs", "href": "/audit-logs", "roles": ["admin"]},
+            {"label": "📧 E-mail Logs", "href": "/email-logs", "roles": ["admin"]},
         ],
     },
     {

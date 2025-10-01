@@ -31,7 +31,7 @@ from app.db.database import Base, engine, SessionLocal
 from app.routes import (
     admin, auth, audit, cameras, config, dev_docs, docs, health, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
-    user_management, videos, whitelist, group_recipients
+    user_management, videos, whitelist, group_recipients, email_logs
 )
 
 
@@ -123,12 +123,12 @@ app = FastAPI(
     lifespan=lifespan,
     title="B-Snap API",
     description="B-Snap Documentation API",
-    version="1.2.1",
+    version="1.0",
     docs_url=None,  # Disabled to use custom docs
     redoc_url=None,
     middleware=middleware,
     default_response_class=ORJSONResponse,
-    debug=True
+    # debug=True
 )
 
 
@@ -163,6 +163,7 @@ app.include_router(observability_log.router)
 app.include_router(admin.router)
 app.include_router(whitelist.router)
 app.include_router(group_recipients.router)
+app.include_router(email_logs.router)
 
 # ====================================================================
 # 7. CORE APP ROUTES & HANDLERS

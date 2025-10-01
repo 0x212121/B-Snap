@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import time
-from sqlalchemy import and_
+from sqlalchemy import and_, desc
 from sqlalchemy.orm import Session
 from app.models.health import CameraHealth
 from app.models.nvr import NVR
@@ -13,7 +13,8 @@ from ping3 import ping, errors
 from app.core.logging_config import setup_logging
 import logging
 from app.models.task_timing import TaskTiming
-
+from app.utils.notify import cleanup_old_email_logs
+from app.utils.notify import send_offline_incident_email_once
 
 # setup logging
 setup_logging()
@@ -24,44 +25,36 @@ PING_ATTEMPTS = 3
 
 
 def ping_device(ip: str) -> tuple[bool, int | None]:
-    """
-    Pings a device multiple times and returns its status and average latency.
-    A device is considered 'Online' if at least one ping attempt is successful.
-    """
     latencies = []
     try:
         for _ in range(PING_ATTEMPTS):
             latency = ping(ip, timeout=PING_TIMEOUT, unit='s')
             if isinstance(latency, float):
                 latencies.append(latency)
-        
+
         if not latencies:
             return False, None
-            
+
     except errors.DestinationHostUnreachable:
         return False, None
     except Exception as e:
         logger.error("An unexpected error occurred while pinging %s: %s", ip, e)
         return False, None
-    
+
     avg_latency = sum(latencies) / len(latencies)
     return True, int(avg_latency * 1000)
 
-# ==============================================================================
-# 💡 NEW INTEGRATED FUNCTION
-# ==============================================================================
 
 def log_status_change(db: Session, camera_id: str, prev_status: str, new_status: str, changed_at: datetime):
     if prev_status == new_status:
         return
 
-    last_log = db.query(CameraStatusChangeLog)\
-        .filter(CameraStatusChangeLog.camera_id == camera_id)\
-        .order_by(CameraStatusChangeLog.changed_at.desc())\
+    last_log = db.query(CameraStatusChangeLog) \
+        .filter(CameraStatusChangeLog.camera_id == camera_id) \
+        .order_by(CameraStatusChangeLog.changed_at.desc()) \
         .first()
 
     duration = None
-
     if last_log is not None:
         if last_log.changed_at.tzinfo is None:
             last_log_time = last_log.changed_at.replace(tzinfo=timezone.utc)
@@ -78,22 +71,18 @@ def log_status_change(db: Session, camera_id: str, prev_status: str, new_status:
     )
     db.add(new_log)
 
+
 def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[str, int | None]:
-    """
-    Perform a health check on a single device, update its status, and accurately calculate
-    daily uptime/downtime statistics. This is the core function used by all ping processes.
-    """
     device_id = device_info["id"]
     device_name = device_info["name"]
     device_ip = device_info["ip"]
     device_type = device_info["type"]
-    
+
     is_online, latency_ms = ping_device(device_ip)
     now = datetime.now(timezone.utc)
 
     entry = db.query(CameraHealth).filter(CameraHealth.id == device_id).first()
-    
-    # Get the last check time before updating
+
     last_check_time = entry.checked if entry else None
     if last_check_time and last_check_time.tzinfo is None:
         last_check_time = last_check_time.replace(tzinfo=timezone.utc)
@@ -105,18 +94,16 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
         }
         if device_type == 'Camera':
             entry_data["camera_id"] = device_id
-        else: # NVR
+        else:
             entry_data["nvr_id"] = device_id
         entry = CameraHealth(**entry_data)
         db.add(entry)
-    
+
     current_status = entry.status
     new_status = "High Latency" if is_online and latency_ms > 50 else "Online" if is_online else "Offline"
 
-    # Accurate uptime/downtime calculation logic based on delta
+    # Update daily stats untuk Camera
     if device_type == "Camera" and last_check_time:
-        
-        # Determine the time elapsed since the last check
         delta_seconds = (now - last_check_time).total_seconds()
         delta_seconds = max(0, delta_seconds)
 
@@ -133,29 +120,23 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
                     total_uptime_seconds=0, total_downtime_seconds=0
                 )
                 db.add(daily_stat)
-            
-            # --- FIX: New logic for uptime calculation based on status transition ---
-            
-            # Case 1: Status remains the same (online or offline)
+
             if current_status == new_status:
                 if new_status in ["Online", "High Latency"]:
                     daily_stat.total_uptime_seconds += int(delta_seconds)
-                else: # Offline
+                else:
                     daily_stat.total_downtime_seconds += int(delta_seconds)
-            
-            # Case 2: Status changes
             else:
-                # Add the time since the last check to the *old* status's bucket
                 if current_status in ["Online", "High Latency"]:
                     daily_stat.total_uptime_seconds += int(delta_seconds)
-                else: # Old status was Offline
+                else:
                     daily_stat.total_downtime_seconds += int(delta_seconds)
-            
-            # The rest of your existing logic for updating the daily stat
+
             total_tracked = daily_stat.total_uptime_seconds + daily_stat.total_downtime_seconds
-            daily_stat.uptime_percentage = (daily_stat.total_uptime_seconds / total_tracked) * 100 if total_tracked > 0 else 0
-            
-            # Handle the overflow condition
+            daily_stat.uptime_percentage = (
+                (daily_stat.total_uptime_seconds / total_tracked) * 100 if total_tracked > 0 else 0
+            )
+
             if total_tracked > 86400:
                 excess = total_tracked - 86400
                 if daily_stat.total_downtime_seconds >= excess:
@@ -164,36 +145,67 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
                     remainder = excess - daily_stat.total_downtime_seconds
                     daily_stat.total_downtime_seconds = 0
                     daily_stat.total_uptime_seconds = max(0, daily_stat.total_uptime_seconds - remainder)
-                
-                logger.warning("⚠️ %s Auto-fixed uptime overflow. Trimmed %d seconds to fit 86400s.", device_name, excess)
-                total_tracked = daily_stat.total_uptime_seconds + daily_stat.total_downtime_seconds
-                daily_stat.uptime_percentage = (daily_stat.total_uptime_seconds / total_tracked) * 100 if total_tracked > 0 else 0
 
-    # Status update logic
+                logger.warning("⚠️ %s Auto-fixed uptime overflow. Trimmed %d seconds to fit 86400s.",
+                               device_name, excess)
+                total_tracked = daily_stat.total_uptime_seconds + daily_stat.total_downtime_seconds
+                daily_stat.uptime_percentage = (
+                    (daily_stat.total_uptime_seconds / total_tracked) * 100 if total_tracked > 0 else 0
+                )
+
+    # Status change
     if current_status != new_status:
         logger.info("Status change: %s from %s to %s.", device_name, current_status, new_status)
 
         if device_type == "Camera":
             log_status_change(db, device_id, current_status, new_status, now)
+            db.flush()  # <--- penting, pastikan log tersimpan ke DB session
 
         entry.status_changed_at = now
         if current_status == "Offline" and new_status in ["Online", "High Latency"]:
             entry.last_online = now
 
-    # Update health record with latest data
+    # Update health entry
     entry.status = new_status
     entry.latency = latency_ms
     entry.checked = now
     entry.type = device_type
 
+    try:
+        if device_type == "Camera" and entry.status == "Offline":
+            last_offline_log = db.query(CameraStatusChangeLog) \
+                .filter(
+                    CameraStatusChangeLog.camera_id == device_id,
+                    CameraStatusChangeLog.new_status == "Offline"
+                ) \
+                .order_by(desc(CameraStatusChangeLog.changed_at)) \
+                .first()
+
+            if last_offline_log:
+                incident_started_at = last_offline_log.changed_at
+                if incident_started_at.tzinfo is None:
+                    incident_started_at = incident_started_at.replace(tzinfo=timezone.utc)
+
+                offline_duration_seconds = int((now - incident_started_at).total_seconds())
+                if offline_duration_seconds >= 60:
+                    camera_obj = db.query(DBCamera).filter(DBCamera.id == device_id).first()
+                    if camera_obj:
+                        sent = send_offline_incident_email_once(
+                            db,
+                            camera=camera_obj,
+                            incident_started_at=incident_started_at,
+                            offline_duration_seconds=offline_duration_seconds
+                        )
+                        if sent:
+                            logger.info("📨 Email offline-30m sent once for %s (since %s).",
+                                        camera_obj.hostname, incident_started_at)
+    except Exception as notif_err:
+        logger.warning("Notify offline-30m failed for device %s: %s", device_id, notif_err, exc_info=True)
+
     return entry.status, entry.latency
 
-# ==============================================================================
-# MAIN FUNCTIONS (CALLED FROM OUTSIDE)
-# ==============================================================================
 
 def ping_all_devices():
-    """Performs health checks on all active Cameras and NVRs."""
     time_start = time.monotonic()
     started_at = datetime.now(timezone.utc)
 
@@ -209,7 +221,7 @@ def ping_all_devices():
         cameras = db.query(DBCamera).filter(and_(DBCamera.status != "Deactivated", DBCamera.status != "Standalone")).all()
         nvrs = db.query(NVR).filter(NVR.status != "Deactivated").all()
         devices = [{"id": cam.id, "name": cam.hostname, "ip": cam.ip, "type": "Camera"} for cam in cameras] + \
-                    [{"id": nvr.id, "name": nvr.hostname, "ip": nvr.ip, "type": "NVR"} for nvr in nvrs]
+                  [{"id": nvr.id, "name": nvr.hostname, "ip": nvr.ip, "type": "NVR"} for nvr in nvrs]
 
         status_tracker.is_running = True
         status_tracker.start_time = datetime.now(timezone.utc)
@@ -225,11 +237,14 @@ def ping_all_devices():
             status_tracker = db.query(HealthCheckStatus).get(1)
             if status_tracker:
                 status_tracker.completed_cameras = i
-                # Commit setiap 50 perangkat (contoh)
-                if i % 50 == 0:
-                    db.commit()
-                    db.expunge_all()  # Opsional: bersihkan cache sesi
-        
+
+            if i % 10 == 0:
+                db.commit()
+                db.expunge_all()
+
+        # commit terakhir untuk sisa device (<10 atau bukan kelipatan 10)
+        db.commit()
+
         logger.info("✅ Health check for all devices completed.")
         status_tracker = db.query(HealthCheckStatus).get(1)
         if status_tracker:
@@ -238,6 +253,12 @@ def ping_all_devices():
             db.commit()
 
         status = "success"
+        try:
+            deleted = cleanup_old_email_logs(db, days=90)
+            if deleted:
+                logger.info("🧹 Cleaned up %d email notification logs older than 90 days.", deleted)
+        except Exception as e:
+            logger.warning("Failed to cleanup old email logs: %s", e)
     except Exception as e:
         logger.critical("❌ Critical error in ping_all_devices: %s", e, exc_info=True)
         if status_tracker:
@@ -265,19 +286,19 @@ def ping_all_devices():
 
 
 def ping_camera_by_id(camera_id: str):
-    """Trigger a health check for a single camera by its ID."""
     db = SessionLocal()
     try:
         camera = db.query(DBCamera).filter(DBCamera.id == camera_id).first()
         if not camera:
-            logger.warning("Camera with ID %%{camera_id}%% not found.")
+            logger.warning("Camera with ID %s not found.", camera_id)
             return "Not Found", None
-        
+
         device_info = {"id": camera.id, "name": camera.hostname, "ip": camera.ip, "type": "Camera"}
         status, latency = _perform_and_update_health_check(db, device_info)
+        db.flush()   # <--- flush sebelum commit
         db.commit()
         return status, latency
-        
+
     except Exception as e:
         logger.error("Ping error for camera ID %s: %s", camera_id, e, exc_info=True)
         db.rollback()
@@ -287,7 +308,6 @@ def ping_camera_by_id(camera_id: str):
 
 
 def ping_nvr_by_id(nvr_id: str):
-    """Trigger a health check for a single NVR by its ID."""
     db = SessionLocal()
     try:
         nvr = db.query(NVR).filter(NVR.id == nvr_id).first()
@@ -295,9 +315,9 @@ def ping_nvr_by_id(nvr_id: str):
             logger.warning("NVR with ID %s not found.", nvr_id)
             return "Not Found", None
 
-        # NVR does not have downtime statistics, but still use the same function for status consistency
         device_info = {"id": nvr.id, "name": nvr.hostname, "ip": nvr.ip, "type": "NVR"}
         status, latency = _perform_and_update_health_check(db, device_info)
+        db.flush()   # <--- flush sebelum commit
         db.commit()
         return status, latency
 
@@ -308,12 +328,15 @@ def ping_nvr_by_id(nvr_id: str):
     finally:
         db.close()
 
-# Functions to be called by background tasks
+
+# Background task wrappers
 def run_healthcheck_for_all():
     ping_all_devices()
 
+
 def run_healthcheck_for_camera(camera_id):
     ping_camera_by_id(camera_id)
+
 
 def run_healthcheck_for_nvr(nvr_id):
     ping_nvr_by_id(nvr_id)

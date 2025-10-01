@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-6xl mx-auto p-4">
+    <h2 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+        📧 Email Notification Logs
+    </h2>
+
+    <!-- Filter -->
+    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg mb-6 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <form method="get" action="{{ url_for('view_email_logs') }}" class="flex flex-wrap items-center gap-2">
+            <input type="text" name="camera_name" placeholder="Search Camera Name"
+                   value="{{ camera_name or '' }}"
+                   class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-2 py-1 focus:ring-blue-500 focus:border-blue-500">
+            
+            <select name="success" class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-2 py-1 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Status</option>
+                <option value="true" {% if success == "true" %}selected{% endif %}>Success</option>
+                <option value="false" {% if success == "false" %}selected{% endif %}>Failed</option>
+            </select>
+            
+            <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm">
+                🔍 Filter
+            </button>
+        </form>
+
+        <form method="get" action="{{ url_for('view_email_logs') }}" class="flex items-center">
+            <label for="per_page" class="text-sm text-gray-700 dark:text-gray-300">Per Page:</label>
+            <select name="per_page" id="per_page" onchange="this.form.submit()"
+                    class="ml-2 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:ring-blue-500 focus:border-blue-500">
+                {% for option in [10, 20, 50, 100] %}
+                <option value="{{ option }}" {% if option == per_page %}selected{% endif %}>
+                    {{ option }}
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-700 dark:text-gray-300">
+            <thead class="bg-gray-100 dark:bg-gray-700 dark:text-gray-200">
+                <tr>
+                    <th class="px-4 py-2">Camera</th>
+                    <th class="px-4 py-2">Incident Started</th>
+                    <th class="px-4 py-2">Sent At</th>
+                    <th class="px-4 py-2">Recipients</th>
+                    <th class="px-4 py-2">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                    <td class="px-4 py-2 font-medium">{{ log.camera_name or "-" }}</td>
+                    <td class="px-4 py-2">{{ log.local_incident_started_at }}</td>
+                    <td class="px-4 py-2">{{ log.local_sent_at }}</td>
+                    <td class="px-4 py-2">
+                       {% if log.recipients %}
+                        {% set count = log.recipients|length %}
+                        {% if count > 2 %}
+                            {{ log.recipients[0].recipient_email }},
+                            {{ log.recipients[1].recipient_email }}
+                            <span class="text-blue-600 dark:text-blue-400 cursor-pointer text-xs"
+                                  onclick="toggleRecipients('recipients-{{ loop.index }}', this)">
+                                Show {{ count - 2 }} more
+                            </span>
+                            <div id="recipients-{{ loop.index }}" class="hidden mt-1 space-y-1">
+                                {% for r in log.recipients[2:] %}
+                                <div>{{ r.recipient_email }}</div>
+                                {% endfor %}
+                            </div>
+                        {% elif count == 2 %}
+                            {{ log.recipients[0].recipient_email }},
+                            {{ log.recipients[1].recipient_email }}
+                        {% else %}
+                            {{ log.recipients[0].recipient_email }}
+                        {% endif %}
+                    {% else %}
+                        <span class="text-gray-500">-</span>
+                    {% endif %}
+
+                    </td>
+                    <td class="px-4 py-2">
+                        {% if log.success %}
+                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">Success</span>
+                        {% else %}
+                            <span class="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">Failed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
+                        No logs found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="p-4">
+        <nav class="flex justify-center">
+            <ul class="inline-flex items-center space-x-1">
+                {% if page > 1 %}
+                <li>
+                    <a href="{{ url_for('view_email_logs') }}?page={{ page-1 }}&per_page={{ per_page }}"
+                       class="px-3 py-1 rounded border bg-white hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-100">
+                        Previous
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for p in range(1, total_pages+1) %}
+                <li>
+                    <a href="{{ url_for('view_email_logs') }}?page={{ p }}&per_page={{ per_page }}"
+                       class="px-3 py-1 rounded border 
+                       {% if p == page %}
+                           bg-blue-600 text-white
+                       {% else %}
+                           bg-white hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-100
+                       {% endif %}">
+                        {{ p }}
+                    </a>
+                </li>
+                {% endfor %}
+
+                {% if page < total_pages %}
+                <li>
+                    <a href="{{ url_for('view_email_logs') }}?page={{ page+1 }}&per_page={{ per_page }}"
+                       class="px-3 py-1 rounded border bg-white hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-100">
+                        Next
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Toggle script -->
+<script>
+
+function toggleRecipients(id, el) {
+    const div = document.getElementById(id);
+    div.classList.toggle('hidden');
+    if (div.classList.contains('hidden')) {
+        // ambil angka X dari data-attr kalau mau lebih rapi
+        const totalHidden = div.querySelectorAll('div').length;
+        el.textContent = `Show ${totalHidden} more`;
+    } else {
+        el.textContent = "Show less";
+    }
+}
+</script>
+{% endblock %}

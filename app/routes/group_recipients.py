@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, Depends, Request, Form
+from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session, joinedload
 from typing import Optional
@@ -84,3 +84,23 @@ def send_test_email(group_id: int, db: Session = Depends(get_db)):
 
     send_email(emails, subject, body, html)
     return {"status": "Email sent", "recipients": emails}
+
+
+@router.post("/recipients/edit", name="edit_recipient")
+def edit_recipient(
+    id: int = Form(...),
+    email: str = Form(...),
+    nickname: str = Form(None),
+    group_id: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    recipient = db.query(GroupRecipient).get(id)
+    if not recipient:
+        raise HTTPException(status_code=404, detail="Recipient not found")
+
+    recipient.email = email
+    recipient.nickname = nickname
+    recipient.group_id = group_id
+    db.commit()
+    return RedirectResponse(url="/recipients", status_code=303)
+

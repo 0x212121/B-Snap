@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - CCTV streaming in maps menu.
 
+## [1.9.0] - 2025-09-26
+### Added
+- Email notification alert (use env to setup SMTP variable) and email sending logs UI
+
+
 ## [1.8.3] - 2025-09-25
 
 ### Added
