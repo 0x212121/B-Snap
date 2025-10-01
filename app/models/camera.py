@@ -36,3 +36,10 @@ class Camera(Base):
     daily_stats = relationship("CameraDailyStats", back_populates="camera", cascade="all, delete-orphan")
     snapshots = relationship("Snapshot", back_populates="camera", cascade="all, delete-orphan")
     videos = relationship("Video", back_populates="camera", cascade="all, delete-orphan")
+
+    email_logs = relationship(
+        "CameraEmailNotificationLog",
+        back_populates="camera",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )

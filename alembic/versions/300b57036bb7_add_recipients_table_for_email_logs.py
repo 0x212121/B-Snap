@@ -22,7 +22,7 @@ def upgrade() -> None:
     op.create_table(
         "camera_email_notification_logs",
         sa.Column("id", sa.Integer, primary_key=True, index=True),
-        sa.Column("camera_id", sa.String, sa.ForeignKey("cameras.id"), nullable=False, index=True),
+        sa.Column("camera_id", sa.String, sa.ForeignKey("cameras.id", ondelete="CASCADE"), nullable=False, index=True),
         sa.Column("camera_name", sa.String, nullable=True),
         sa.Column("incident_started_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("sent_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
