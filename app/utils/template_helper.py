@@ -53,7 +53,7 @@ nav_items = [
         "label": "Analytics",
         "roles": ["admin"],
         "items": [
-            {"label": "📊 Stats", "href": "/stats", "roles": ["admin"]},
+            {"label": "📈 Stats", "href": "/stats", "roles": ["admin"]},
         ],
     },
 ]

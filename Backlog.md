@@ -118,7 +118,7 @@
 - [x] Bug scheduler failed
 - [x] Debug mode
 - [ ] Fix vulnerability:
-  - [ ] CSRF
+  <!-- - [ ] CSRF -->
   - [x] CSV upload validation
 - [x] Bug: Portable camera is at healthcheck
 - [x] WA bot: filter camera can be view by whitelist user group
@@ -127,4 +127,4 @@
 - [ ] Logging command and API call
 - [ ] Whatsapp Whitelist Filter user and pagination
 - [ ] Cameras filter by status
-- [ ] Send email to receipient when CCTV is offline
+- [x] Send email to receipient when CCTV is offline

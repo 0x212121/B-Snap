@@ -1,11 +1,12 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Request, Form
+from fastapi import APIRouter, Depends, HTTPException, Request, Form, Path
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session, joinedload
 from typing import Optional
 from app.db.database import get_db
 from app.models.recipient import GroupRecipient
 from app.models.camera_group import CameraGroup
+from app.utils.audit_logger import log_audit
 from app.utils.template_helper import templates
 from app.utils.email_helper import send_email
 
@@ -60,15 +61,6 @@ def add_recipient(
 
     return RedirectResponse(url="/recipients", status_code=303)
 
-# === DELETE RECIPIENT ===
-@router.post("/recipients/delete/{id}", name="delete_recipient")
-def delete_recipient(id: int, db: Session = Depends(get_db)):
-    recipient = db.query(GroupRecipient).filter(GroupRecipient.id == id).first()
-    if recipient:
-        db.delete(recipient)
-        db.commit()
-    return RedirectResponse(url="/recipients", status_code=303)
-
 
 @router.post("/recipients/send/{group_id}")
 def send_test_email(group_id: int, db: Session = Depends(get_db)):
@@ -86,21 +78,60 @@ def send_test_email(group_id: int, db: Session = Depends(get_db)):
     return {"status": "Email sent", "recipients": emails}
 
 
-@router.post("/recipients/edit", name="edit_recipient")
-def edit_recipient(
-    id: int = Form(...),
+@router.post("/recipients/edit/{recipient_id}", status_code=200)
+async def edit_recipient_submit(
+    request: Request,
+    recipient_id: int = Path(...),
+    db: Session = Depends(get_db),
     email: str = Form(...),
     nickname: str = Form(None),
     group_id: int = Form(...),
-    db: Session = Depends(get_db),
 ):
-    recipient = db.query(GroupRecipient).get(id)
-    if not recipient:
+    rec = db.query(GroupRecipient).filter(GroupRecipient.id == recipient_id).first()
+    if not rec:
         raise HTTPException(status_code=404, detail="Recipient not found")
 
-    recipient.email = email
-    recipient.nickname = nickname
-    recipient.group_id = group_id
+    before = {"email": rec.email, "nickname": rec.nickname, "group_id": rec.group_id}
+    rec.email, rec.nickname, rec.group_id = email, nickname, group_id
     db.commit()
-    return RedirectResponse(url="/recipients", status_code=303)
+    db.refresh(rec)
 
+    after = {"email": rec.email, "nickname": rec.nickname, "group_id": rec.group_id}
+    changes = [f"- {k}: '{before[k]}' -> '{after[k]}'" for k in before if before[k] != after[k]]
+
+    log_audit(
+        db=db,
+        user=request.session.get("user_name", "unknown"),
+        action="update_recipient",
+        target=rec.email,
+        ip=request.client.host,
+        extra="\n".join(changes) if changes else "No changes detected."
+    )
+
+    return {"status": "success", "message": "Recipient updated successfully"}
+
+
+@router.post("/recipients/delete/{recipient_id}", status_code=200)
+async def delete_recipient_submit(
+    request: Request,
+    recipient_id: int = Path(...),
+    db: Session = Depends(get_db),
+):
+    rec = db.query(GroupRecipient).filter(GroupRecipient.id == recipient_id).first()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recipient not found")
+
+    target_email = rec.email
+    db.delete(rec)
+    db.commit()
+
+    log_audit(
+        db=db,
+        user=request.session.get("user_name", "unknown"),
+        action="delete_recipient",
+        target=target_email,
+        ip=request.client.host,
+        extra="Recipient deleted"
+    )
+
+    return {"status": "success", "message": f"Recipient {target_email} deleted"}

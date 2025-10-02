@@ -3,7 +3,8 @@ from datetime import datetime, timezone, timedelta
 import os
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from app.utils.email_helper import _send_email_with_image
+
+from app.utils.email_helper import _send_email_with_image, build_email_body
 from app.models.recipient import GroupRecipient
 from app.models.camera_email_notification_log import (
     CameraEmailNotificationLog,
@@ -18,7 +19,6 @@ SNAPSHOT_BASE_DIR = os.path.join("static", "snapshots")  # absolute base dir
 
 def cleanup_old_email_logs(db: Session, days: int = 90) -> int:
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-
     old_logs = db.query(CameraEmailNotificationLog).filter(
         CameraEmailNotificationLog.sent_at < cutoff
     )
@@ -38,8 +38,7 @@ def send_offline_incident_email_once(
     incident_started_at: datetime,
     offline_duration_seconds: int
 ) -> bool:
-    # ambil daftar penerima saat ini
-    # ambil daftar penerima hanya untuk group kamera ini
+    # ambil daftar penerima untuk group kamera ini
     if camera.group:
         recipients = db.query(GroupRecipient).filter(
             GroupRecipient.group_id == camera.group.id
@@ -49,15 +48,20 @@ def send_offline_incident_email_once(
 
     emails = [r.email for r in recipients if r.email]
     if not emails:
-        logger.warning("No recipients found for camera %s (%s) in group %s",
-                    camera.hostname, camera.ip,
-                    camera.group.name if camera.group else "No Group")
+        logger.warning(
+            "No recipients found for camera %s (%s) in group %s",
+            camera.hostname,
+            camera.ip,
+            camera.group.name if camera.group else "No Group",
+        )
         return False
 
-    # siapkan konten email
+    # siapkan data email
     camera_group = camera.group.name if camera.group else "No Division"
     minutes = offline_duration_seconds // 60
-    local_incident = format_datetime_with_tz(to_current_timezone(incident_started_at, db))
+    local_incident = format_datetime_with_tz(
+        to_current_timezone(incident_started_at, db)
+    )
 
     snapshot = (
         db.query(Snapshot)
@@ -69,48 +73,44 @@ def send_offline_incident_email_once(
     snapshot_path = None
     snapshot_time = "N/A"
     if snapshot:
-        snapshot_time = format_datetime_with_tz(to_current_timezone(snapshot.timestamp, db))
+        snapshot_time = format_datetime_with_tz(
+            to_current_timezone(snapshot.timestamp, db)
+        )
         candidate_path = os.path.join(SNAPSHOT_BASE_DIR, snapshot.file_path)
         if os.path.exists(candidate_path):
             snapshot_path = candidate_path
         else:
-            logger.warning("Snapshot file missing for camera %s (%s): %s",
-                           camera.hostname, camera.ip, candidate_path)
-
-    subject = f"🚨 [{camera_group}] CCTV {camera.hostname} OFFLINE > 30 minutes"
-    body = (
-        f"CCTV {camera.hostname} (IP: {camera.ip}) has been offline for more than {minutes} minutes.\n"
-        f"Incident started: {local_incident}.\n"
-        f"Last snapshot: {snapshot_time}.\n"
-        "Please check immediately."
-    )
-    html = (
-        f"<h2>[{camera_group}] 🚨 CCTV Alert</h2>"
-        f"<p><b>{camera.hostname}</b> (IP: {camera.ip}) offline more than <b>{minutes} minutes</b>.</p>"
-        f"<p>Incident started: <code>{local_incident}</code></p>"
-    )
-    if snapshot:
-        html += f"<p>Last snapshot at {snapshot_time} :</p>"
-    else:
-        html += "<p><i>No snapshot available.</i></p>"
+            logger.warning(
+                "Snapshot file missing for camera %s (%s): %s",
+                camera.hostname,
+                camera.ip,
+                candidate_path,
+            )
 
     # cek apakah log sudah ada (idempotent per incident)
-    existing_log = db.query(CameraEmailNotificationLog).filter(
-        CameraEmailNotificationLog.camera_id == camera.id,
-        CameraEmailNotificationLog.incident_started_at == incident_started_at
-    ).order_by(CameraEmailNotificationLog.id.desc()).first()
+    existing_log = (
+        db.query(CameraEmailNotificationLog)
+        .filter(
+            CameraEmailNotificationLog.camera_id == camera.id,
+            CameraEmailNotificationLog.incident_started_at == incident_started_at,
+        )
+        .order_by(CameraEmailNotificationLog.id.desc())
+        .first()
+    )
 
     if existing_log:
         if existing_log.success:
             logger.info(
                 "Email already sent for camera %s (incident %s). Skip re-sending.",
-                camera.hostname, incident_started_at.isoformat()
+                camera.hostname,
+                incident_started_at.isoformat(),
             )
             return False
         else:
             logger.info(
                 "Email log already exists but marked failed for camera %s (incident %s). Skip re-sending.",
-                camera.hostname, incident_started_at.isoformat()
+                camera.hostname,
+                incident_started_at.isoformat(),
             )
             return False
 
@@ -130,7 +130,8 @@ def send_offline_incident_email_once(
         db.rollback()
         logger.warning(
             "IntegrityError: Log already exists for camera %s (incident %s).",
-            camera.hostname, incident_started_at.isoformat()
+            camera.hostname,
+            incident_started_at.isoformat(),
         )
         return False
 
@@ -141,17 +142,45 @@ def send_offline_incident_email_once(
 
     # kirim email
     try:
-        _send_email_with_image(emails, subject, body, html, snapshot_path)
+        plain_body, html_body = build_email_body(
+            camera_name=camera.hostname,
+            ip=camera.ip,
+            incident_time=local_incident,
+            last_snapshot_time=snapshot_time,
+            has_snapshot=bool(snapshot_path)  # ✅ true kalau ada file snapshot
+        )
+
+        _send_email_with_image(
+            to_emails=emails,
+            subject=f"🚨 [{camera_group}] CCTV Alert – {camera.hostname} – Offline",
+            cam_group=camera_group,
+            cam_hostname=camera.hostname,
+            snapshot_time=to_current_timezone(snapshot.timestamp, db),
+            body=plain_body,
+            html=html_body,
+            image_path=snapshot_path,  # ✅ otomatis jadi attachment kalau ada
+        )
+
+
         log.success = True
         log.error_message = None
         log.sent_at = datetime.now(timezone.utc)
         db.commit()
-        logger.info("Successfully sent email alert for camera %s to %s", camera.hostname, emails)
+        logger.info(
+            "Successfully sent email alert for camera %s to %s",
+            camera.hostname,
+            emails,
+        )
         return True
     except Exception as e:
         log.success = False
         log.error_message = str(e)
         log.sent_at = datetime.now(timezone.utc)
         db.commit()
-        logger.exception("Failed to send email for camera %s (%s): %s", camera.hostname, camera.ip, e)
+        logger.exception(
+            "Failed to send email for camera %s (%s): %s",
+            camera.hostname,
+            camera.ip,
+            e,
+        )
         return False
