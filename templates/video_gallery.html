@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Video Gallery{% endblock %}
-
+{% from "_icons.html" import icon_video_camera, icon_arrow_down %}
 {% block content %}
 <style>
   #videoGrid {
@@ -49,7 +49,7 @@
   <div id="toast" class="fixed top-5 right-5 z-50 hidden bg-green-500 text-white px-4 py-2 rounded shadow-md transition-all duration-300"></div>
   
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">🎞️ Video Gallery</h1>
+    <h1 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">{{ icon_video_camera("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Video Gallery</h1>
   </div>
   
   <form id="filterForm" class="flex flex-wrap justify-center items-center gap-4 mb-6" onsubmit="return false;">
@@ -90,8 +90,11 @@
 </div>
 <div class="flex justify-center mt-6">
   <button id="loadMoreBtn"
-  class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm shadow"
-  onclick="loadMoreVideos()">⬇ Load More</button>
+    class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm shadow flex items-center gap-2"
+    onclick="loadMoreVideos()">
+    {{ icon_arrow_down("h-5 w-5 inline-block") }}
+    <span class="label">Load More</span>
+  </button>
 </div>
 </div>
 {% endblock %}
@@ -243,45 +246,46 @@
   }
   
   async function loadMoreVideos() {
-    if (isLoading) return;
-    isLoading = true;
-    currentPage++;
-    
-    const grid = document.getElementById("videoGrid");
-    const btn = document.getElementById("loadMoreBtn");
-    btn.textContent = "Loading...";
-    btn.disabled = true;
-    
-    const camera = tom.getValue();
-    const q = document.getElementById("searchInput").value;
-    const params = new URLSearchParams({ page: currentPage });
-    if (camera) params.set('camera', camera);
-    if (q) params.set('q', q);
-    
-    try {
-      const response = await fetch(`/video-gallery-data?${params}`);
-      const data = await response.json();
-      const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = data.html;
-      const newCards = tempDiv.querySelectorAll(".video-card");
-      
-      if (newCards.length === 0) {
-        btn.textContent = "No more videos";
-        btn.disabled = true;
-      } else {
-        newCards.forEach(card => grid.appendChild(card));
-        btn.textContent = "⬇ Load More";
-        btn.disabled = false;
-      }
-    } catch (err) {
-      console.error("Error loading more videos:", err);
-      showToast("Failed to load more videos.", true);
-      btn.textContent = "Load More";
+  if (isLoading) return;
+  isLoading = true;
+  currentPage++;
+
+  const grid = document.getElementById("videoGrid");
+  const btn = document.getElementById("loadMoreBtn");
+  const label = btn.querySelector(".label");
+  label.textContent = "Loading...";
+  btn.disabled = true;
+
+  const camera = tom.getValue();
+  const q = document.getElementById("searchInput").value;
+  const params = new URLSearchParams({ page: currentPage });
+  if (camera) params.set('camera', camera);
+  if (q) params.set('q', q);
+
+  try {
+    const response = await fetch(`/video-gallery-data?${params}`);
+    const data = await response.json();
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = data.html;
+    const newCards = tempDiv.querySelectorAll(".video-card");
+
+    if (newCards.length === 0) {
+      label.textContent = "No more videos";
+      btn.disabled = true;
+    } else {
+      newCards.forEach(card => grid.appendChild(card));
+      label.textContent = "Load More";
       btn.disabled = false;
-    } finally {
-      isLoading = false;
     }
+  } catch (err) {
+    console.error("Error loading more videos:", err);
+    showToast("Failed to load more videos.", true);
+    label.textContent = "Load More";
+    btn.disabled = false;
+  } finally {
+    isLoading = false;
   }
-  
+}
+
 </script>
 {% endblock %}

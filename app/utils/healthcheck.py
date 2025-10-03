@@ -187,7 +187,7 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
                     incident_started_at = incident_started_at.replace(tzinfo=timezone.utc)
 
                 offline_duration_seconds = int((now - incident_started_at).total_seconds())
-                if offline_duration_seconds >= 60:
+                if offline_duration_seconds >= 1800:  # 30 minutes
                     camera_obj = db.query(DBCamera).filter(DBCamera.id == device_id).first()
                     if camera_obj:
                         sent = send_offline_incident_email_once(

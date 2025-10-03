@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% block title %}BSNAP- Camera Management{% endblock %}
+{% from "_icons.html" import icon_clip_check, icon_search, icon_pencil, icon_trash, icon_camera, icon_video_camera, icon_upload, icon_download %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-6">
@@ -8,12 +10,12 @@
     </button>
     <form method="post" enctype="multipart/form-data" action="/cameras/upload_csv" class="flex items-center gap-2">
       <input type="file" name="file" accept=".csv" class="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 rounded-md border text-sm">
-      <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-green-700 flex items-center gap-2 shadow-sm">
-        <span>📤</span> Upload CSV
+      <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-green-700 flex items-center gap-2">
+        <span>{{ icon_upload("w-5 h-5 text-gray-100 inline") }}</span> Upload CSV
       </button>
     </form>
-    <a href="/cameras/export_csv" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2">
-      <span>⬇️</span> Export CSV
+    <a href="/cameras/export_csv" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-semibold text-sm flex items-center gap-2">
+      <span>{{ icon_download("w-5 h-5 text-gray-100 inline") }}</span> Export CSV
     </a>
     <div class="flex items-center gap-2 ml-auto">
       <label for="perPageSelect" class="text-sm font-medium text-gray-700 dark:text-gray-300">Items per page:</label>
@@ -28,11 +30,11 @@
   
   <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-      <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">📋 Camera Management</h2>
+      <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">{{ icon_clip_check("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Camera Management</h2>
       <form id="searchForm" class="flex gap-2 w-full md:w-auto">
         <input name="search" id="searchInput" type="text" placeholder="Search by Name, IP, Location..." value="{{ search or '' }}" class="w-full md:w-72 px-4 py-2 rounded-md border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm font-semibold flex items-center gap-2 shadow-sm">
-          <span>🔍</span> Search
+          <span>{{ icon_search("w-5 h-5 text-gray-100 inline") }}</span> Search
         </button>
       </form>
     </div>
@@ -68,17 +70,18 @@
       <h2 id="modalTitle" class="text-xl font-bold text-gray-800 dark:text-gray-200">Camera</h2>
       <button onclick="hideCameraModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">✕</button>
     </div>
-    
+
     <div class="border-b border-gray-200 dark:border-gray-700 mb-4">
       <nav id="modalTabs" class="-mb-px flex space-x-6" aria-label="Tabs">
-        <button type="button" class="tab-button group inline-flex items-center py-3 px-1 border-b-2 font-semibold text-sm" data-tab="basic">
-          <span class="text-blue-600 border-blue-600">Basic Info</span>
+        <button type="button" class="tab-button inline-flex items-center py-3 px-1 border-b-2 font-semibold text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="basic">
+          Basic Info
         </button>
-        <button type="button" class="tab-button group inline-flex items-center py-3 px-1 border-b-2 font-semibold text-sm" data-tab="location">
-          <span class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">Location & Asset</span>
+        <button type="button" class="tab-button inline-flex items-center py-3 px-1 border-b-2 font-semibold text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="location">
+          Location & Asset
         </button>
       </nav>
     </div>
+
     
     <form id="cameraForm" class="space-y-4 overflow-y-auto flex-grow px-1">
       <input type="hidden" id="cameraId" name="id">
@@ -721,6 +724,20 @@
       console.warn(`Field #${id} not found in DOM`);
     }
   }
+
+  const buttons = document.querySelectorAll(".tab-button");
+
+  buttons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      // reset semua
+      buttons.forEach(b => b.classList.remove("text-blue-600","border-blue-600"));
+      buttons.forEach(b => b.classList.add("text-gray-500","border-transparent"));
+
+      // aktifkan yang diklik
+      btn.classList.remove("text-gray-500","border-transparent");
+      btn.classList.add("text-blue-600","border-blue-600");
+    });
+  });
 </script>
 
 

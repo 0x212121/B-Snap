@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Gallery{% endblock %}
-
+{% from "_icons.html" import icon_camera %}
 {% block content %}
 <style>
   /* Add a subtle transition for the loading state */
@@ -58,69 +58,70 @@
   <div id="toast" class="fixed top-5 right-5 z-50 hidden bg-green-500 text-white px-4 py-2 rounded shadow-md transition-all duration-300"></div>
   
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">📷 Snapshot Gallery</h1>
-  </div>
-  
-  <form id="filterForm" class="flex flex-col md:flex-row justify-between gap-4 mb-6" onsubmit="return false;">
-    <!-- Filter Controls -->
-    <div class="flex flex-wrap items-center gap-4">
-      <!-- Search input -->
-      <input id="searchInput" type="text" placeholder="Search Camera Name..."
-      class="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-64 focus:outline-none focus:ring focus:ring-blue-200" />
+    <h1 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+      {{ icon_camera("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }}Snapshot Gallery</h1>
+    </div>
+    
+    <form id="filterForm" class="flex flex-col md:flex-row justify-between gap-4 mb-6" onsubmit="return false;">
+      <!-- Filter Controls -->
+      <div class="flex flex-wrap items-center gap-4">
+        <!-- Search input -->
+        <input id="searchInput" type="text" placeholder="Search Camera Name..."
+        class="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-64 focus:outline-none focus:ring focus:ring-blue-200" />
+        
+        <!-- Camera select -->
+        <select id="cameraSelect" name="camera"
+        class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-[20rem] sm:w-[24rem] focus:outline-none">
+        <option value="">🎥 All Cameras</option>
+        {% for cname in camera_names | sort %}
+        <option value="{{ cname }}" {% if cname == selected_camera %}selected{% endif %}>{{ cname }}</option>
+        {% endfor %}
+      </select>
       
-      <!-- Camera select -->
-      <select id="cameraSelect" name="camera"
-      class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-[20rem] sm:w-[24rem] focus:outline-none">
-      <option value="">🎥 All Cameras</option>
-      {% for cname in camera_names | sort %}
-      <option value="{{ cname }}" {% if cname == selected_camera %}selected{% endif %}>{{ cname }}</option>
-      {% endfor %}
-    </select>
+      <!-- Clear filter -->
+      <button type="button" id="clearFilterBtn"
+      class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear Filter</button>
+      
+      <label for="filterTampered" class="inline-flex items-center cursor-pointer">
+        <input type="checkbox" id="filterTampered" class="sr-only peer">
+        <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+        <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Show Tampered Only</span>
+      </label>
+      
+    </div>
     
-    <!-- Clear filter -->
-    <button type="button" id="clearFilterBtn"
-    class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear Filter</button>
-
-    <label for="filterTampered" class="inline-flex items-center cursor-pointer">
-      <input type="checkbox" id="filterTampered" class="sr-only peer">
-      <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
-      <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Show Tampered Only</span>
-    </label>
-    
+    <!-- Action Buttons -->
+    <div id="actionButtonsContainer" class="flex flex-wrap gap-4 items-center">
+      {% if selected_camera %}
+      {% if camera_exists %}
+      <button type="button"
+      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+      data-action="snapshot" data-camera="{{ selected_camera }}">📸 Snapshot</button>
+      {% endif %}
+      <button type="button"
+      class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
+      data-action="delete-all" data-camera="{{ selected_camera }}">🗑️ Delete All</button>
+      {% endif %}
+    </div>
+  </form>
+  
+  
+  <div id="snapshotGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
+    {% include "_gallery_grid.html" %}
   </div>
   
-  <!-- Action Buttons -->
-  <div id="actionButtonsContainer" class="flex flex-wrap gap-4 items-center">
-    {% if selected_camera %}
-    {% if camera_exists %}
-    <button type="button"
-    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
-    data-action="snapshot" data-camera="{{ selected_camera }}">📸 Snapshot</button>
-    {% endif %}
-    <button type="button"
-    class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
-    data-action="delete-all" data-camera="{{ selected_camera }}">🗑️ Delete All</button>
-    {% endif %}
-  </div>
-</form>
-
-
-<div id="snapshotGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
-  {% include "_gallery_grid.html" %}
-</div>
-
-<div id="modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
-  <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl max-h-[80vh]">
-    <div class="relative">
-      <img id="modal-img" src="" class="rounded w-full object-contain max-h-[70vh]" />
-      <div id="modal-info" class="absolute top-0 right-0 bg-black bg-opacity-60 text-white text-sm px-3 py-1 rounded shadow"></div>
-    </div>
-    <div class="flex justify-end mt-2 space-x-4">
-      <a id="download-btn" href="#" download class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">⬇️ Download</a>
-      <button onclick="hideModal()" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded">✖ Close</button>
+  <div id="modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
+    <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl max-h-[80vh]">
+      <div class="relative">
+        <img id="modal-img" src="" class="rounded w-full object-contain max-h-[70vh]" />
+        <div id="modal-info" class="absolute top-0 right-0 bg-black bg-opacity-60 text-white text-sm px-3 py-1 rounded shadow"></div>
+      </div>
+      <div class="flex justify-end mt-2 space-x-4">
+        <a id="download-btn" href="#" download class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">⬇️ Download</a>
+        <button onclick="hideModal()" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded">✖ Close</button>
+      </div>
     </div>
   </div>
-</div>
 </div>
 {% endblock %}
 

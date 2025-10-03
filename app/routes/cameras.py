@@ -80,6 +80,14 @@ async def manage_data(
     logger.debug("Fetched %s cameras for page %s of %s", len(cameras), page, total_pages)
 
     rows_html = ""
+
+    ICONS = {
+        "pencil": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 inline text-yellow-500"><path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" /></svg>',
+        "video": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 inline text-gray-900 dark:text-gray-100"><path d="M4.5 4.5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h8.25a3 3 0 0 0 3-3v-9a3 3 0 0 0-3-3H4.5ZM19.94 18.75l-2.69-2.69V7.94l2.69-2.69c.944-.945 2.56-.276 2.56 1.06v11.38c0 1.336-1.616 2.005-2.56 1.06Z" /></svg>',
+        "camera": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 inline text-gray-900 dark:text-gray-100"><path d="M12 9a3.75 3.75 0 1 0 0 7.5A3.75 3.75 0 0 0 12 9Z" /><path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 0 1 5.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 0 1-3 3h-15a3 3 0 0 1-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 0 0 1.11-.71l.822-1.315a2.942 2.942 0 0 1 2.332-1.39ZM6.75 12.75a5.25 5.25 0 1 1 10.5 0 5.25 5.25 0 0 1-10.5 0Zm12-1.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" /></svg>',
+        "trash": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 inline text-red-500"><path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" /></svg>'
+    }
+
     for cam in cameras:
         gps_loc = f"{cam.latitude}, {cam.longitude}" if cam.latitude is not None or cam.longitude is not None else ""
         status_classes = get_status_classes(cam.status)
@@ -101,12 +109,20 @@ async def manage_data(
                     </span>
                 </td>
                 <td class="p-3 space-x-3 whitespace-nowrap">
-                    <button onclick="showEditCameraModal('{cam.id}')" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold text-xs">✏️ Edit</button>
-                    <form method="post" class="inline" onsubmit="event.preventDefault(); confirmDelete('{cam.id}', '{ cam.hostname }')">
-                        <button type="submit" class="text-red-500 dark:text-red-400 hover:underline font-semibold text-xs">🗑️ Delete</button>
+                    <button onclick="showEditCameraModal('{cam.id}')" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold text-xs">
+                        {ICONS['pencil']} Edit
+                    </button>
+                    <form method="post" class="inline" onsubmit="event.preventDefault(); confirmDelete('{cam.id}', '{cam.hostname}')">
+                        <button type="submit" class="text-red-500 dark:text-red-400 hover:underline font-semibold text-xs">
+                            {ICONS['trash']} Delete
+                        </button>
                     </form>
-                    <button onclick="captureVideo('{cam.id}')" class="text-green-600 dark:text-green-400 hover:underline font-semibold text-xs">🎥 Capture</button>
-                    <button onclick='viewSnapshot({json.dumps(cam.hostname)})' class="text-green-600 dark:text-green-400 hover:underline font-semibold text-xs">📸 View Snapshot</button>
+                    <button onclick="captureVideo('{cam.id}')" class="text-green-600 dark:text-green-400 hover:underline font-semibold text-xs">
+                        {ICONS['video']} Capture
+                    </button>
+                    <button onclick='viewSnapshot({json.dumps(cam.hostname)})' class="text-green-600 dark:text-green-400 hover:underline font-semibold text-xs">
+                        {ICONS['camera']} View Snapshot
+                    </button>
                 </td>
             </tr>
         """

@@ -1,16 +1,17 @@
 {% extends "base.html" %}
-{% block title %}App Config{% endblock %}
+{% block title %}BSNAP Config{% endblock %}
+{% from "_icons.html" import icon_config, icon_globe, icon_camera, icon_bug, icon_paint, icon_folder %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-  <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-8">⚙️ App Config</h1>
+  <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-8">{{ icon_config("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} App Config</h1>
   
   <div id="error-message-container"></div>
   
   <form id="configForm" enctype="multipart/form-data" class="space-y-8">
     
     <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-      <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">🌐 General</h2>
+      <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_globe("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} General</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label for="healthcheck_interval_minutes" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Health Check Interval (minutes)</label>
@@ -33,7 +34,7 @@
       <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
         <div>
           <label for="debug_mode" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            🐞 Debug Mode
+            {{ icon_bug("w-5 h-5 text-gray-900 dark:text-gray-100 inline") }} Debug Mode
           </label>
           <p class="text-xs text-gray-500 dark:text-gray-400">
             Enable detailed logging for troubleshooting. Disable when not in use.
@@ -57,7 +58,7 @@
   </div>
   
   <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">📸 Snapshot Behavior</h2>
+    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_config("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Snapshot Behavior</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
         <label for="snapshot_interval_minutes" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Snapshot Interval (minutes)</label>
@@ -104,7 +105,7 @@
   </div>
   
   <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">🎨 Appearance</h2>
+    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_paint("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Appearance</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
         <label for="watermark_text" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Snapshot Watermark</label>
@@ -128,8 +129,8 @@
           class="h-16 w-16 object-contain rounded-md bg-gray-100 dark:bg-gray-700 {{ 'hidden' if not logo_url }}">
           
           <label for="logoUpload" class="w-full">
-            <div class="w-full h-10 flex items-center justify-center text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg cursor-pointer transition duration-150">
-              📁 Choose Logo File
+            <div class="w-full h-10 flex items-center justify-center text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg cursor-pointer transition duration-150 gap-2">
+              {{ icon_folder("w-8 h-8 text-yellow-500 inline") }} Choose Logo File
             </div>
             <input type="file" accept=".png,.ico" name="app_logo" id="logoUpload"
             class="hidden">
