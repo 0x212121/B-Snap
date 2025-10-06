@@ -4,8 +4,12 @@ import os
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from app.utils.email_helper import _send_email_with_image, build_email_body
-from app.models.recipient import GroupRecipient
+# ambil semua dari email_helper (sudah include get_recipients_for_camera)
+from app.utils.email_helper import (
+    _send_email_with_image,
+    build_email_body,
+    get_recipients_for_camera,
+)
 from app.models.camera_email_notification_log import (
     CameraEmailNotificationLog,
     CameraEmailNotificationRecipient,
@@ -38,21 +42,16 @@ def send_offline_incident_email_once(
     incident_started_at: datetime,
     offline_duration_seconds: int
 ) -> bool:
-    # ambil daftar penerima untuk group kamera ini
-    if camera.group:
-        recipients = db.query(GroupRecipient).filter(
-            GroupRecipient.group_id == camera.group.id
-        ).all()
-    else:
-        recipients = []
+    # 🔽 Ambil daftar penerima untuk camera ini (by group + by location)
+    emails = get_recipients_for_camera(db, camera)
 
-    emails = [r.email for r in recipients if r.email]
     if not emails:
         logger.warning(
-            "No recipients found for camera %s (%s) in group %s",
+            "No recipients found for camera %s (%s) in group %s location %s",
             camera.hostname,
             camera.ip,
             camera.group.name if camera.group else "No Group",
+            camera.location,
         )
         return False
 
@@ -147,7 +146,7 @@ def send_offline_incident_email_once(
             ip=camera.ip,
             incident_time=local_incident,
             last_snapshot_time=snapshot_time,
-            has_snapshot=bool(snapshot_path)  # ✅ true kalau ada file snapshot
+            has_snapshot=bool(snapshot_path)
         )
 
         _send_email_with_image(
@@ -155,12 +154,11 @@ def send_offline_incident_email_once(
             subject=f"🚨 [{camera_group}] CCTV Alert – {camera.hostname} – Offline",
             cam_group=camera_group,
             cam_hostname=camera.hostname,
-            snapshot_time=to_current_timezone(snapshot.timestamp, db),
+            snapshot_time=to_current_timezone(snapshot.timestamp, db) if snapshot else None,
             body=plain_body,
             html=html_body,
-            image_path=snapshot_path,  # ✅ otomatis jadi attachment kalau ada
+            image_path=snapshot_path,
         )
-
 
         log.success = True
         log.error_message = None

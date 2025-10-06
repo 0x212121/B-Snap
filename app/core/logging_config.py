@@ -65,6 +65,10 @@ LOGGING_CONFIG = {
         "scheduler":   {"handlers": ["scheduler_file"],       "level": "INFO", "propagate": False},
         "management":  {"handlers": ["management_file"],      "level": "INFO", "propagate": False},
 
+        "sqlalchemy.engine": {"handlers": ["main_file", "console"], "level": "INFO", "propagate": False},
+        "sqlalchemy.pool":   {"handlers": ["main_file", "console"], "level": "WARN", "propagate": False},
+        "sqlalchemy.orm":    {"handlers": ["main_file", "console"], "level": "WARN", "propagate": False},
+
         # === ambil alih log Gunicorn + Uvicorn ===
         "gunicorn.error":  {"handlers": ["main_file", "console"],  "level": "INFO", "propagate": False},
         "gunicorn.access": {"handlers": ["access_file", "console"],"level": "INFO", "propagate": False},

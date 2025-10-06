@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+{% from "_icons.html" import icon_clip_check, icon_search, icon_pencil, icon_trash, icon_camera, icon_video_camera, icon_server, icon_upload, icon_download %}
 {% block content %}
 <div class="container mx-auto px-4 py-6">
   <!-- Header buttons for adding and managing NVRs -->
@@ -11,11 +11,11 @@
     <form method="post" enctype="multipart/form-data" action="/nvrs/upload_csv" class="flex items-center gap-2">
       <input type="file" name="file" accept=".csv" class="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 rounded-md border text-sm">
       <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-green-700 flex items-center gap-2 shadow-sm">
-        <span>📤</span> Upload CSV
+        <span>{{ icon_upload("w-5 h-5 text-gray-100 inline") }}</span> Upload CSV
       </button>
     </form>
     <a href="/nvrs/export_csv" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2">
-      <span>⬇️</span> Export CSV
+      <span>{{ icon_download("w-5 h-5 text-gray-100 inline") }}</span> Export CSV
     </a>
     <div class="flex items-center gap-2 ml-auto">
       <label for="perPageSelect" class="text-sm font-medium text-gray-700 dark:text-gray-300">Items per page:</label>
@@ -32,11 +32,11 @@
   <!-- Main content area for listing NVRs -->
   <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-      <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-300">📋 NVR Management</h2>
+      <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-300">{{ icon_server("w-5 h-5 text-gray-100 inline") }} NVR Management</h2>
       <form id="searchForm" class="flex gap-2 w-full md:w-auto">
         <input name="search" id="searchInput" type="text" placeholder="Search by Name, IP, Location..." value="{{ search or '' }}" class="w-full md:w-72 px-4 py-2 rounded-md border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm font-semibold flex items-center gap-2 shadow-sm">
-          <span>🔍</span> Search
+          <span>{{ icon_search("w-5 h-5 text-gray-100 inline") }}</span> Search
         </button>
       </form>
     </div>

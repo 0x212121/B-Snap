@@ -56,21 +56,13 @@ async def get_nvrs_data(
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
     search: str = Query(None),
-    per_page: int = Query(10, ge=1), # MODIFIED: Accept per_page from query
+    per_page: int = Query(10, ge=1),
     current_admin: User = Depends(admin_access_required)
 ):
-    """
-    This endpoint is called via AJAX by the frontend to fetch new pages of data
-    without reloading the entire page. It returns only the HTML for the table rows
-    and the pagination controls.
-    """
-    # REMOVED: The per_page value is now an argument from the query parameter.
     query = db.query(NVR)
 
-    # Apply the same search logic as the main endpoint
     if search:
         search_term = f"%{search}%"
-
         query = query.join(CameraGroup, NVR.group_id == CameraGroup.id, isouter=True).filter(
             or_(
                 NVR.hostname.ilike(search_term),
@@ -81,74 +73,71 @@ async def get_nvrs_data(
                 NVR.status.ilike(search_term)
             )
         )
-    
-    # Sorting is handled client-side by the `sortTable` JavaScript function,
-    # so we only need a default order here.
-    query = query.order_by(asc(NVR.hostname)).options(joinedload(NVR.group))
 
-    # Pagination logic
+    query = query.order_by(asc(NVR.hostname)).options(joinedload(NVR.group))
     total = query.count()
     nvrs = query.offset((page - 1) * per_page).limit(per_page).all()
     total_pages = (total + per_page - 1) // per_page if total > 0 else 1
-    
-    # --- Generate HTML for table rows ---
+
+    ICONS = {
+        "pencil": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-yellow-500"><path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" /></svg>',
+        "trash": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-red-600"><path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" /></svg>'
+    }
+
     rows_html = ""
     if not nvrs:
-        rows_html = '<tr><td colspan="8" class="p-4 text-center text-gray-500">No NVRs found.</td></tr>'
+        rows_html = '<tr><td colspan="8" class="p-4 text-center text-gray-500 dark:text-gray-400">No NVRs found.</td></tr>'
     else:
         for nvr in nvrs:
-            # Note: The number of columns here must match your table header in nvrs.html
             rows_html += f"""
-            <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300">
-                <td class="p-3 truncate">{ nvr.hostname or '' }</td>
-                <td class="p-3 truncate">{ nvr.ip or '' }</td>
-                <td class="p-3 truncate">{ nvr.username or '' }</td>
-                <td class="p-3 truncate">{ nvr.location or '' }</td>
-                <td class="p-3 truncate">{ nvr.group.name if nvr.group else ''}</td>
+            <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm text-gray-700 dark:text-gray-300">
+                <td class="p-3 truncate">{nvr.hostname or ''}</td>
+                <td class="p-3 truncate">{nvr.ip or ''}</td>
+                <td class="p-3 truncate">{nvr.username or ''}</td>
+                <td class="p-3 truncate">{nvr.location or ''}</td>
+                <td class="p-3 truncate">{nvr.group.name if nvr.group else ''}</td>
                 <td class="p-3">
                     <span class="px-2 py-1 text-xs font-semibold rounded-full {'bg-green-100 text-green-800' if nvr.status == 'Active' else 'bg-red-100 text-red-800'}">
-                        {'Unknown' if not nvr.status else nvr.status}
+                        {nvr.status or 'Unknown'}
                     </span>
                 </td>
-                <td class="p-3 space-x-3 whitespace-nowrap">
-                <button onclick="showEditNVRModal('{nvr.id}')" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold text-xs">✏️ Edit</button>
-                <form method="post" class="inline" onsubmit="event.preventDefault(); confirmDelete('{nvr.id}', '{ nvr.hostname }')">
-                    <button type="submit" class="text-red-500 dark:text-red-400 hover:underline font-semibold text-xs">🗑️ Delete</button>
-                </form>
-            </td>
+                <td class="p-3 space-x-2 whitespace-nowrap">
+                    <button onclick="showEditNVRModal('{nvr.id}')"
+                        title="Edit NVR"
+                        class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-yellow-200 dark:hover:bg-yellow-800/50">
+                        {ICONS['pencil']}
+                    </button>
+                    <form method="post" class="inline" onsubmit="event.preventDefault(); confirmDelete('{nvr.id}', '{nvr.hostname}')">
+                        <button type="submit"
+                            title="Delete NVR"
+                            class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-red-200 dark:hover:bg-red-800/50">
+                            {ICONS['trash']}
+                        </button>
+                    </form>
+                </td>
             </tr>
             """
-    # --- Generate HTML for pagination controls ---
+
+    # Pagination (tidak diubah)
     pagination_html = ""
     if total_pages > 1:
         links = []
-        window = 2  # Number of pages around the current page
-        
-        # 'First' and 'Prev' links
+        window = 2
         if page > 1:
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage(1)" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">First</a>')
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({page - 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">«</a>')
-
-        # Show ellipsis if needed
         if page > window + 2:
             links.append('<span class="px-3 py-1">...</span>')
-
-        # Show page numbers
         for i in range(max(1, page - window), min(total_pages, page + window) + 1):
             if i == page:
                 links.append(f'<span class="px-3 py-1 bg-blue-600 text-white rounded font-bold">{i}</span>')
             else:
                 links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({i})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">{i}</a>')
-        
-        # Show ellipsis if needed
         if page < total_pages - window - 1:
-             links.append('<span class="px-3 py-1">...</span>')
-
-        # 'Next' and 'Last' links
+            links.append('<span class="px-3 py-1">...</span>')
         if page < total_pages:
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({page + 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">»</a>')
             links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({total_pages})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">Last</a>')
-        
         pagination_html = " ".join(links)
 
     return HTMLResponse(content=f"{rows_html}|||{pagination_html}")

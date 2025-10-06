@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="container mx-auto max-w-8xl px-4 sm:px-6 lg:px-8 py-8">
-
+    
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
             <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">{{ icon_users("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} User Management</h2>
@@ -17,7 +17,7 @@
             </button>
         </div>
     </div>
-
+    
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
             <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Users</h4>
@@ -36,9 +36,9 @@
             <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ users|selectattr('role', 'equalto', 'viewer')|list|length }}</p>
         </div>
     </div>
-
+    
     <div id="userFormContainer" class="hidden mb-8 transition-all duration-500">
-         <form id="userForm" method="post" action="/users/create" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 space-y-6">
+        <form id="userForm" method="post" action="/users/create" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 space-y-6">
             <div class="flex justify-between items-center">
                 <h3 id="formTitle" class="text-xl font-semibold text-gray-900 dark:text-white transition-colors duration-300">Add New User</h3>
                 <button type="button" onclick="toggleUserForm(false)" aria-label="Close form" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
@@ -75,13 +75,13 @@
             </div>
         </form>
     </div>
-
+    
     <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
         <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
             <div class="flex items-center gap-2 w-full md:w-auto">
                 <div class="relative w-full md:w-auto">
-                     <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
                     </span>
                     <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search users..." class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500">
                 </div>
@@ -115,9 +115,9 @@
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                         <td class="p-4 w-4">
                             {% if request.session['user_id'] == user.id %}
-                                <input type="checkbox" disabled class="cursor-not-allowed rounded border-gray-300 dark:border-gray-600 text-gray-400 dark:bg-gray-700">
+                            <input type="checkbox" disabled class="cursor-not-allowed rounded border-gray-300 dark:border-gray-600 text-gray-400 dark:bg-gray-700">
                             {% else %}
-                                <input type="checkbox" name="userIds" value="{{ user.id }}" onchange="updateSelectionState()" class="user-checkbox rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:bg-gray-900 dark:ring-offset-gray-800">
+                            <input type="checkbox" name="userIds" value="{{ user.id }}" onchange="updateSelectionState()" class="user-checkbox rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:bg-gray-900 dark:ring-offset-gray-800">
                             {% endif %}
                         </td>
                         <td class="p-4 whitespace-nowrap">
@@ -132,32 +132,32 @@
                         <td class="p-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{{ user.group.name if user.group else '-' }}</td>
                         <td id="token-cell-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
                             {% if user.api_tokens %}
-                                <ul class="space-y-1">
+                            <ul class="space-y-1">
                                 {% for token in user.api_tokens %}
-                                    <li class="flex items-center justify-between gap-2">
+                                <li class="flex items-center justify-between gap-2">
                                     <span>{{ token.token[:8] }}...{{ token.token[-4:] }}</span>
                                     <button onclick="handleRevokeClick(this)"
-                                            data-user-id="{{ user.id }}"
-                                            data-token="{{ token.token }}"
-                                            data-username="{{ user.username | escape }}"
-                                            class="text-red-500 hover:text-red-700 text-xs font-semibold">
-                                        Revoke
-                                    </button>
+                                    data-user-id="{{ user.id }}"
+                                    data-token="{{ token.token }}"
+                                    data-username="{{ user.username | escape }}"
+                                    class="text-red-500 hover:text-red-700 text-xs font-semibold">
+                                    Revoke
+                                </button>
                                 {% endfor %}
-                                </ul>
+                            </ul>
                             {% else %}
-                                <span>-</span>
+                            <span>-</span>
                             {% endif %}
                         </td>
                         <td id="token-expiry-cell-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
                             {% if user.api_tokens %}
-                                <ul class="space-y-1">
+                            <ul class="space-y-1">
                                 {% for token in user.api_tokens %}
-                                    <li>{{ token.expires_at | to_localtime }}</li>
+                                <li>{{ token.expires_at | to_localtime }}</li>
                                 {% endfor %}
-                                </ul>
+                            </ul>
                             {% else %}
-                                <span>-</span>
+                            <span>-</span>
                             {% endif %}
                         </td>
                         <td class="p-4 whitespace-nowrap">
@@ -169,34 +169,58 @@
                             {{ user.last_login | to_localtime }}
                         </td>
                         <td class="p-4 whitespace-nowrap text-center space-x-2">
-                            <button onclick="editUser({{ user.id }}, '{{ user.username }}', '{{ user.role }}', '{{ user.group.name if user.group else 'ALL' }}')" aria-label="Edit user {{ user.username }}" class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 p-2 rounded-full transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
-                            </button>
-                            <button onclick="openGenerateTokenModal({{ user.id }}, '{{ user.username }}')" aria-label="Generate token for {{ user.username }}" class="text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 p-2 rounded-full transition-colors">
-                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M16 5.5C16 8.53757 13.5376 11 10.5 11H7V13H5V15L4 16H0V12L5.16351 6.83649C5.0567 6.40863 5 5.96094 5 5.5C5 2.46243 7.46243 0 10.5 0C13.5376 0 16 2.46243 16 5.5ZM13 4C13 4.55228 12.5523 5 12 5C11.4477 5 11 4.55228 11 4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z"/></svg>
-                            </button>
-                            {% if request.session['user_id'] != user.id %}
-                                {% if user.is_2fa_enabled %}
-                                <button onclick="confirmResetMfa({{ user.id }}, '{{ user.username }}')" aria-label="Reset MFA for {{ user.username }}" class="text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 p-2 rounded-full transition-colors">
-                                    <svg fill="currentColor" class="h-5 w-5" viewBox="0 0 32 32" id="icon" xmlns="http://www.w3.org/2000/svg"><defs><style>.cls-1{fill:none;}</style></defs><polygon points="11 23.18 9 21.179 7.589 22.589 11 26 17 20 15.59 18.59 11 23.18"/><path d="M28,30H24V28h4V16H24V8a4.0045,4.0045,0,0,0-4-4V2a6.0067,6.0067,0,0,1,6,6v6h2a2.0021,2.0021,0,0,1,2,2V28A2.0021,2.0021,0,0,1,28,30Z" transform="translate(0 0)"/><path d="M20,14H18V8A6,6,0,0,0,6,8v6H4a2,2,0,0,0-2,2V28a2,2,0,0,0,2,2H20a2,2,0,0,0,2-2V16A2,2,0,0,0,20,14ZM8,8a4,4,0,0,1,8,0v6H8ZM20,28H4V16H20Z" transform="translate(0 0)"/><rect id="_Transparent_Rectangle_" data-name="&lt;Transparent Rectangle&gt;" class="cls-1" width="32" height="32"/></svg>
-                                </button>
-                                {% endif %}
-                                <button onclick="confirmUserDelete(this)"
-                                        data-user-id="{{ user.id }}"
-                                        data-username="{{ user.username | escape }}"
-                                        aria-label="Delete user" class="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 p-2 rounded-full transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
-                                </button>
-                                <form id="deleteForm{{ user.id }}" method="post" action="/users/delete/{{ user.id }}" class="hidden"></form>
-                                <form id="resetMfaForm{{ user.id }}" method="post" action="/users/reset-mfa/{{ user.id }}" class="hidden"></form>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+                            <!-- Edit User -->
+                            <button onclick="editUser({{ user.id }}, '{{ user.username }}', '{{ user.role }}', '{{ user.group.name if user.group else 'ALL' }}')"
+                            title="Edit user {{ user.username }}"
+                            class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-yellow-200 dark:hover:bg-yellow-800/50">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-yellow-500">
+                                <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" />
+                            </svg>
+                        </button>
+                        
+                        <!-- Generate Token -->
+                        <button onclick="openGenerateTokenModal({{ user.id }}, '{{ user.username }}')"
+                        title="Generate token for {{ user.username }}"
+                        class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-green-200 dark:hover:bg-green-800/50">
+                        <svg viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-green-600 dark:text-green-400">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M16 5.5C16 8.53757 13.5376 11 10.5 11H7V13H5V15L4 16H0V12L5.16351 6.83649C5.0567 6.40863 5 5.96094 5 5.5C5 2.46243 7.46243 0 10.5 0C13.5376 0 16 2.46243 16 5.5ZM13 4C13 4.55228 12.5523 5 12 5C11.4477 5 11 4.55228 11 4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z"/>
+                        </svg>
+                    </button>
+                    
+                    {% if request.session['user_id'] != user.id %}
+                    {% if user.is_2fa_enabled %}
+                    <!-- Reset MFA -->
+                    <button onclick="confirmResetMfa({{ user.id }}, '{{ user.username }}')"
+                    title="Reset MFA for {{ user.username }}"
+                    class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-orange-200 dark:hover:bg-orange-800/50">
+                    <svg fill="currentColor" class="w-5 h-5 text-orange-500 dark:text-orange-400" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="11 23.18 9 21.179 7.589 22.589 11 26 17 20 15.59 18.59 11 23.18"/>
+                        <path d="M28,30H24V28h4V16H24V8a4.0045,4.0045,0,0,0-4-4V2a6.0067,6.0067,0,0,1,6,6v6h2a2.0021,2.0021,0,0,1,2,2V28A2.0021,2.0021,0,0,1,28,30Z"/>
+                        <path d="M20,14H18V8A6,6,0,0,0,6,8v6H4a2,2,0,0,0-2,2V28a2,2,0,0,0,2,2H20a2,2,0,0,0,2-2V16A2,2,0,0,0,20,14ZM8,8a4,4,0,0,1,8,0v6H8Z"/>
+                    </svg>
+                </button>
+                {% endif %}
+                
+                <!-- Delete User -->
+                <button onclick="confirmUserDelete(this)"
+                data-user-id="{{ user.id }}"
+                data-username="{{ user.username | escape }}"
+                title="Delete user {{ user.username }}"
+                class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-red-200 dark:hover:bg-red-800/50">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-red-600"><path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" /></svg>
+            </button>
+            
+            <form id="deleteForm{{ user.id }}" method="post" action="/users/delete/{{ user.id }}" class="hidden"></form>
+            <form id="resetMfaForm{{ user.id }}" method="post" action="/users/reset-mfa/{{ user.id }}" class="hidden"></form>
+            {% endif %}
+        </td>
+        
+    </tr>
+    {% endfor %}
+</tbody>
+</table>
+</div>
+</div>
 </div>
 
 <div id="generateTokenModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
@@ -244,184 +268,184 @@
 
 {% block scripts %}
 <script>
-// --- GLOBAL STATE & UTILITIES ---
-let activeUserId = null;
-
-/**
- * Toggles the visibility of a modal dialog.
- * @param {string} modalId The ID of the modal element.
- * @param {boolean} show True to show, false to hide.
- */
-function toggleModal(modalId, show) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.toggle('hidden', !show);
-    }
-}
-
-/**
- * Escapes special characters in a string for safe use in HTML attributes.
- * @param {string} str The string to escape.
- * @returns {string} The escaped string.
- */
-function escapeHTML(str) {
-    if (!str) return '';
-    return str.replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#039;');
-}
-
-
-// --- TOKEN MANAGEMENT ---
-
-/**
- * Prepares and opens the "Generate Token" modal.
- * @param {number} userId The ID of the user.
- * @param {string} username The name of the user.
- */
-function openGenerateTokenModal(userId, username) {
-    activeUserId = userId;
-    document.getElementById('tokenUsername').textContent = username;
-    document.getElementById('generateTokenError').classList.add('hidden');
-    document.getElementById('generateTokenBtn').onclick = handleTokenGeneration;
-    toggleModal('generateTokenModal', true);
-}
-
-/**
- * Handles the API call to generate a new token and updates the UI.
- */
-async function handleTokenGeneration() {
-    const expiryDays = document.getElementById('expirySelect').value;
-    const errorP = document.getElementById('generateTokenError');
-    const spinner = document.getElementById('generateSpinner');
-    const btn = document.getElementById('generateTokenBtn');
-    const username = document.getElementById('tokenUsername').textContent;
-
-    spinner.classList.remove('hidden');
-    btn.disabled = true;
-    errorP.classList.add('hidden');
-
-    try {
-        const response = await fetch('/api/users/generate-token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: activeUserId,
-                expires_in_days: parseInt(expiryDays)
-            })
-        });
-
-        if (!response.ok) {
-            // Try to get a detailed error message from the server's JSON response
-            const errorData = await response.json().catch(() => null);
-            throw new Error(errorData?.detail || `Server returned status ${response.status}`);
-        }
-
-        const data = await response.json();
-        toggleModal('generateTokenModal', false);
-        showGeneratedToken(activeUserId, data.token, data.token_expires_at, data.api_tokens, username);
-
-    } catch (error) {
-        errorP.textContent = `Error: ${error.message}`;
-        errorP.classList.remove('hidden');
-    } finally {
-        spinner.classList.add('hidden');
-        btn.disabled = false;
-    }
-}
-
-/**
- * Displays the newly generated token and updates the user's token list in the table.
- * @param {number} userId
- * @param {string} token The new token.
- * @param {string} expiresGmt8Str The new token's expiration date string.
- * @param {Array} apiTokens The full, updated list of tokens for the user.
- * @param {string} username
- */
-function showGeneratedToken(userId, token, expiresGmt8Str, apiTokens, username) {
-    document.getElementById('generatedTokenInput').value = token;
-    toggleModal('showTokenModal', true);
+    // --- GLOBAL STATE & UTILITIES ---
+    let activeUserId = null;
     
-    // Update the token list in the main user table
-    updateTokenCells(userId, username, apiTokens);
-
-    // Reset copy button state
-    const copyBtn = document.getElementById('copyTokenBtn');
-    const copyIcon = document.getElementById('copyIcon');
-    const checkIcon = document.getElementById('checkIcon');
-    copyIcon.classList.remove('hidden');
-    checkIcon.classList.add('hidden');
-
-    copyBtn.onclick = () => {
-        navigator.clipboard.writeText(token).then(() => {
-            copyIcon.classList.add('hidden');
-            checkIcon.classList.remove('hidden');
-            setTimeout(() => {
-                copyIcon.classList.remove('hidden');
-                checkIcon.classList.add('hidden');
-            }, 2000);
-        });
-    };
-}
-
-/**
- * Handles the click on a "Revoke" button, confirming and executing token revocation.
- * @param {HTMLElement} buttonElement The button element that was clicked.
- */
-function handleRevokeClick(buttonElement) {
-    const { userId, token, username } = buttonElement.dataset;
-    const message = `Are you sure you want to revoke this token for user '${username}'?`;
-
-    showGlobalConfirm(message, () => {
-        fetch(`/users/${userId}/revoke-token`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token })
-        })
-        .then(res => {
-            if (!res.ok) {
-                return res.json().then(err => { throw new Error(err.detail || "Failed to revoke token.") });
-            }
-            return res.json();
-        })
-        .then(() => {
-            showGlobalAlert("Token revoked successfully. The page will now reload.", "✅ Success");
-            setTimeout(() => location.reload(), 2000);
-        })
-        .catch(err => {
-            showGlobalAlert(err.message, "❌ Error");
-        });
-    }, {
-        title: '⚠️ Revoke Token',
-        confirmText: 'Yes, Revoke',
-        confirmClasses: 'bg-red-600 hover:bg-red-700'
-    });
-}
-
-/**
- * Re-renders the content of the token and expiry cells for a given user.
- * @param {number} userId
- * @param {string} username
- * @param {Array} apiTokens
- */
-function updateTokenCells(userId, username, apiTokens) {
-    const tokenCell = document.getElementById(`token-cell-${userId}`);
-    const expiryCell = document.getElementById(`token-expiry-cell-${userId}`);
-
-    if (!tokenCell || !expiryCell) return;
-
-    if (!apiTokens || apiTokens.length === 0) {
-        tokenCell.innerHTML = '<span>-</span>';
-        expiryCell.innerHTML = '<span>-</span>';
-        return;
+    /**
+    * Toggles the visibility of a modal dialog.
+    * @param {string} modalId The ID of the modal element.
+    * @param {boolean} show True to show, false to hide.
+    */
+    function toggleModal(modalId, show) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.toggle('hidden', !show);
+        }
     }
-
-    // FIX: Use escapeHTML to prevent HTML injection if a username contains special characters.
-    const escapedUsername = escapeHTML(username);
-
-    const tokenListHTML = apiTokens.map(t => `
+    
+    /**
+    * Escapes special characters in a string for safe use in HTML attributes.
+    * @param {string} str The string to escape.
+    * @returns {string} The escaped string.
+    */
+    function escapeHTML(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+    
+    
+    // --- TOKEN MANAGEMENT ---
+    
+    /**
+    * Prepares and opens the "Generate Token" modal.
+    * @param {number} userId The ID of the user.
+    * @param {string} username The name of the user.
+    */
+    function openGenerateTokenModal(userId, username) {
+        activeUserId = userId;
+        document.getElementById('tokenUsername').textContent = username;
+        document.getElementById('generateTokenError').classList.add('hidden');
+        document.getElementById('generateTokenBtn').onclick = handleTokenGeneration;
+        toggleModal('generateTokenModal', true);
+    }
+    
+    /**
+    * Handles the API call to generate a new token and updates the UI.
+    */
+    async function handleTokenGeneration() {
+        const expiryDays = document.getElementById('expirySelect').value;
+        const errorP = document.getElementById('generateTokenError');
+        const spinner = document.getElementById('generateSpinner');
+        const btn = document.getElementById('generateTokenBtn');
+        const username = document.getElementById('tokenUsername').textContent;
+        
+        spinner.classList.remove('hidden');
+        btn.disabled = true;
+        errorP.classList.add('hidden');
+        
+        try {
+            const response = await fetch('/api/users/generate-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: activeUserId,
+                    expires_in_days: parseInt(expiryDays)
+                })
+            });
+            
+            if (!response.ok) {
+                // Try to get a detailed error message from the server's JSON response
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.detail || `Server returned status ${response.status}`);
+            }
+            
+            const data = await response.json();
+            toggleModal('generateTokenModal', false);
+            showGeneratedToken(activeUserId, data.token, data.token_expires_at, data.api_tokens, username);
+            
+        } catch (error) {
+            errorP.textContent = `Error: ${error.message}`;
+            errorP.classList.remove('hidden');
+        } finally {
+            spinner.classList.add('hidden');
+            btn.disabled = false;
+        }
+    }
+    
+    /**
+    * Displays the newly generated token and updates the user's token list in the table.
+    * @param {number} userId
+    * @param {string} token The new token.
+    * @param {string} expiresGmt8Str The new token's expiration date string.
+    * @param {Array} apiTokens The full, updated list of tokens for the user.
+    * @param {string} username
+    */
+    function showGeneratedToken(userId, token, expiresGmt8Str, apiTokens, username) {
+        document.getElementById('generatedTokenInput').value = token;
+        toggleModal('showTokenModal', true);
+        
+        // Update the token list in the main user table
+        updateTokenCells(userId, username, apiTokens);
+        
+        // Reset copy button state
+        const copyBtn = document.getElementById('copyTokenBtn');
+        const copyIcon = document.getElementById('copyIcon');
+        const checkIcon = document.getElementById('checkIcon');
+        copyIcon.classList.remove('hidden');
+        checkIcon.classList.add('hidden');
+        
+        copyBtn.onclick = () => {
+            navigator.clipboard.writeText(token).then(() => {
+                copyIcon.classList.add('hidden');
+                checkIcon.classList.remove('hidden');
+                setTimeout(() => {
+                    copyIcon.classList.remove('hidden');
+                    checkIcon.classList.add('hidden');
+                }, 2000);
+            });
+        };
+    }
+    
+    /**
+    * Handles the click on a "Revoke" button, confirming and executing token revocation.
+    * @param {HTMLElement} buttonElement The button element that was clicked.
+    */
+    function handleRevokeClick(buttonElement) {
+        const { userId, token, username } = buttonElement.dataset;
+        const message = `Are you sure you want to revoke this token for user '${username}'?`;
+        
+        showGlobalConfirm(message, () => {
+            fetch(`/users/${userId}/revoke-token`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token })
+            })
+            .then(res => {
+                if (!res.ok) {
+                    return res.json().then(err => { throw new Error(err.detail || "Failed to revoke token.") });
+                }
+                return res.json();
+            })
+            .then(() => {
+                showGlobalAlert("Token revoked successfully. The page will now reload.", "✅ Success");
+                setTimeout(() => location.reload(), 2000);
+            })
+            .catch(err => {
+                showGlobalAlert(err.message, "❌ Error");
+            });
+        }, {
+            title: '⚠️ Revoke Token',
+            confirmText: 'Yes, Revoke',
+            confirmClasses: 'bg-red-600 hover:bg-red-700'
+        });
+    }
+    
+    /**
+    * Re-renders the content of the token and expiry cells for a given user.
+    * @param {number} userId
+    * @param {string} username
+    * @param {Array} apiTokens
+    */
+    function updateTokenCells(userId, username, apiTokens) {
+        const tokenCell = document.getElementById(`token-cell-${userId}`);
+        const expiryCell = document.getElementById(`token-expiry-cell-${userId}`);
+        
+        if (!tokenCell || !expiryCell) return;
+        
+        if (!apiTokens || apiTokens.length === 0) {
+            tokenCell.innerHTML = '<span>-</span>';
+            expiryCell.innerHTML = '<span>-</span>';
+            return;
+        }
+        
+        // FIX: Use escapeHTML to prevent HTML injection if a username contains special characters.
+        const escapedUsername = escapeHTML(username);
+        
+        const tokenListHTML = apiTokens.map(t => `
         <li class="flex items-center justify-between gap-2">
             <span>${t.token.substring(0, 8)}...${t.token.slice(-4)}</span>
             <button onclick="handleRevokeClick(this)"
@@ -431,163 +455,163 @@ function updateTokenCells(userId, username, apiTokens) {
                     class="text-red-500 hover:text-red-700 text-xs font-semibold">Revoke</button>
         </li>
     `).join('');
-
-    const expiryListHTML = apiTokens.map(t => `
+        
+        const expiryListHTML = apiTokens.map(t => `
         <li>${t.expires_at_gmt8 || 'Never'}</li>
     `).join('');
-
-    tokenCell.innerHTML = `<ul class="space-y-1">${tokenListHTML}</ul>`;
-    expiryCell.innerHTML = `<ul class="space-y-1">${expiryListHTML}</ul>`;
-}
-
-
-// --- GENERAL USER & FORM MANAGEMENT ---
-const userFormContainer = document.getElementById('userFormContainer');
-const showFormBtn = document.getElementById('showFormBtn');
-const bulkActionContainer = document.getElementById('bulkActionContainer');
-const selectedCountSpan = document.getElementById('selectedCount');
-const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-const userForm = document.getElementById('userForm');
-const formTitle = document.getElementById('formTitle');
-const usernameInput = document.getElementById('usernameInput');
-const passwordInput = document.getElementById('passwordInput');
-const passwordLabel = document.getElementById('passwordLabel');
-const roleSelect = document.getElementById('roleSelect');
-const groupSelect = document.getElementById('groupSelect');
-const submitBtn = document.getElementById('submitBtn');
-const cancelEditBtn = document.getElementById('cancelEditBtn');
-
-function toggleUserForm(show) {
-    if (show) {
-        userFormContainer.classList.remove('hidden');
-        showFormBtn.classList.add('hidden');
-        resetForm();
-        window.scrollTo({ top: userFormContainer.offsetTop - 20, behavior: 'smooth' });
-    } else {
-        userFormContainer.classList.add('hidden');
-        showFormBtn.classList.remove('hidden');
+        
+        tokenCell.innerHTML = `<ul class="space-y-1">${tokenListHTML}</ul>`;
+        expiryCell.innerHTML = `<ul class="space-y-1">${expiryListHTML}</ul>`;
     }
-}
-
-function filterTable() {
-    const filter = document.getElementById('searchInput').value.toUpperCase();
-    const table = document.getElementById('userTable');
-    const tr = table.getElementsByTagName('tr');
-    for (let i = 1; i < tr.length; i++) {
-        const tds = tr[i].getElementsByTagName('td');
-        let textValue = "";
-        if (tds.length > 1) {
-            textValue = (tds[1]?.textContent || "") + (tds[2]?.textContent || "") + (tds[3]?.textContent || "");
-        }
-        tr[i].style.display = textValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
-    }
-}
-
-function updateSelectionState() {
-    const selectedCheckboxes = document.querySelectorAll('.user-checkbox:checked');
-    const count = selectedCheckboxes.length;
-    document.getElementById('selectedCount').textContent = count;
-    document.getElementById('bulkActionContainer').classList.toggle('hidden', count === 0);
+    
+    
+    // --- GENERAL USER & FORM MANAGEMENT ---
+    const userFormContainer = document.getElementById('userFormContainer');
+    const showFormBtn = document.getElementById('showFormBtn');
+    const bulkActionContainer = document.getElementById('bulkActionContainer');
+    const selectedCountSpan = document.getElementById('selectedCount');
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-    const userCheckboxes = document.querySelectorAll('.user-checkbox');
-    selectAllCheckbox.checked = userCheckboxes.length > 0 && count === userCheckboxes.length;
-    selectAllCheckbox.indeterminate = count > 0 && count < userCheckboxes.length;
-}
-
-function toggleAllCheckboxes(checked) {
-    document.querySelectorAll('.user-checkbox').forEach(checkbox => checkbox.checked = checked);
-    updateSelectionState();
-}
-
-document.querySelectorAll('.user-checkbox').forEach(checkbox => checkbox.addEventListener('change', updateSelectionState));
-
-function confirmBulkDelete() {
-    const selectedCheckboxes = document.querySelectorAll('.user-checkbox:checked');
-    if (selectedCheckboxes.length === 0) return;
-    const userIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-    const message = `Are you sure you want to delete ${userIds.length} selected users? This action cannot be undone.`;
-    showGlobalConfirm(message, () => {
-        const form = document.createElement('form');
-        form.method = 'post';
-        form.action = '/users/delete/bulk';
-        userIds.forEach(id => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'user_ids';
-            input.value = id;
-            form.appendChild(input);
-        });
-        document.body.appendChild(form);
-        form.submit();
-    }, {
-        title: '⚠️ Bulk Delete Users',
-        confirmText: 'Yes, Delete Selected',
-        confirmClasses: 'bg-red-600 hover:bg-red-700'
-    });
-}
-
-function confirmUserDelete(buttonElement) {
-    const userId = buttonElement.dataset.userId;
-    const username = buttonElement.dataset.username;
-    const message = `Are you sure you want to delete the user '${username}'? This action cannot be undone.`;
-
-    showGlobalConfirm(message, () => {
-        document.getElementById(`deleteForm${userId}`).submit();
-    }, {
-        title: '⚠️ Confirm User Deletion',
-        confirmText: 'Yes, Delete',
-        confirmClasses: 'bg-red-600 hover:bg-red-700'
-    });
-}
-
-function editUser(id, username, role, groupName) {
-    toggleUserForm(true);
-    formTitle.innerText = `Edit User: ${username}`;
-    userForm.action = `/users/update/${id}`;
-    submitBtn.innerHTML = '💾 Update User';
-    submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-    submitBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
-    cancelEditBtn.classList.remove('hidden');
-    usernameInput.value = username;
-    usernameInput.readOnly = true;
-    usernameInput.classList.add('bg-gray-100', 'dark:bg-gray-600', 'cursor-not-allowed');
-    passwordLabel.innerText = 'New Password (leave blank to keep current)';
-    passwordInput.required = false;
-    passwordInput.value = '';
-    roleSelect.value = role;
-    if (groupName) {
-        groupSelect.value = groupName;
+    const userForm = document.getElementById('userForm');
+    const formTitle = document.getElementById('formTitle');
+    const usernameInput = document.getElementById('usernameInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const passwordLabel = document.getElementById('passwordLabel');
+    const roleSelect = document.getElementById('roleSelect');
+    const groupSelect = document.getElementById('groupSelect');
+    const submitBtn = document.getElementById('submitBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    
+    function toggleUserForm(show) {
+        if (show) {
+            userFormContainer.classList.remove('hidden');
+            showFormBtn.classList.add('hidden');
+            resetForm();
+            window.scrollTo({ top: userFormContainer.offsetTop - 20, behavior: 'smooth' });
+        } else {
+            userFormContainer.classList.add('hidden');
+            showFormBtn.classList.remove('hidden');
+        }
     }
-}
-
-function resetForm() {
-    formTitle.innerText = 'Add New User';
-    userForm.action = '/users/create';
-    userForm.reset();
-    submitBtn.innerHTML = '➕ Add User';
-    submitBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
-    submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
-    cancelEditBtn.classList.add('hidden');
-    usernameInput.readOnly = false;
-    usernameInput.classList.remove('bg-gray-100', 'dark:bg-gray-600', 'cursor-not-allowed');
-    passwordLabel.innerText = 'Password';
-    passwordInput.required = true;
-}
-
-function confirmResetMfa(userId, username) {
-    const message = `Are you sure you want to reset MFA for '${username}'? They will be required to set it up again on their next login.`;
-    showGlobalConfirm(message, () => {
-        document.getElementById(`resetMfaForm${userId}`).submit();
-    }, {
-        title: '⚠️ Confirm MFA Reset',
-        confirmText: 'Yes, Reset MFA',
-        confirmClasses: 'bg-orange-600 hover:bg-orange-700'
-    });
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-}
-
+    
+    function filterTable() {
+        const filter = document.getElementById('searchInput').value.toUpperCase();
+        const table = document.getElementById('userTable');
+        const tr = table.getElementsByTagName('tr');
+        for (let i = 1; i < tr.length; i++) {
+            const tds = tr[i].getElementsByTagName('td');
+            let textValue = "";
+            if (tds.length > 1) {
+                textValue = (tds[1]?.textContent || "") + (tds[2]?.textContent || "") + (tds[3]?.textContent || "");
+            }
+            tr[i].style.display = textValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+        }
+    }
+    
+    function updateSelectionState() {
+        const selectedCheckboxes = document.querySelectorAll('.user-checkbox:checked');
+        const count = selectedCheckboxes.length;
+        document.getElementById('selectedCount').textContent = count;
+        document.getElementById('bulkActionContainer').classList.toggle('hidden', count === 0);
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const userCheckboxes = document.querySelectorAll('.user-checkbox');
+        selectAllCheckbox.checked = userCheckboxes.length > 0 && count === userCheckboxes.length;
+        selectAllCheckbox.indeterminate = count > 0 && count < userCheckboxes.length;
+    }
+    
+    function toggleAllCheckboxes(checked) {
+        document.querySelectorAll('.user-checkbox').forEach(checkbox => checkbox.checked = checked);
+        updateSelectionState();
+    }
+    
+    document.querySelectorAll('.user-checkbox').forEach(checkbox => checkbox.addEventListener('change', updateSelectionState));
+    
+    function confirmBulkDelete() {
+        const selectedCheckboxes = document.querySelectorAll('.user-checkbox:checked');
+        if (selectedCheckboxes.length === 0) return;
+        const userIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+        const message = `Are you sure you want to delete ${userIds.length} selected users? This action cannot be undone.`;
+        showGlobalConfirm(message, () => {
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.action = '/users/delete/bulk';
+            userIds.forEach(id => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'user_ids';
+                input.value = id;
+                form.appendChild(input);
+            });
+            document.body.appendChild(form);
+            form.submit();
+        }, {
+            title: '⚠️ Bulk Delete Users',
+            confirmText: 'Yes, Delete Selected',
+            confirmClasses: 'bg-red-600 hover:bg-red-700'
+        });
+    }
+    
+    function confirmUserDelete(buttonElement) {
+        const userId = buttonElement.dataset.userId;
+        const username = buttonElement.dataset.username;
+        const message = `Are you sure you want to delete the user '${username}'? This action cannot be undone.`;
+        
+        showGlobalConfirm(message, () => {
+            document.getElementById(`deleteForm${userId}`).submit();
+        }, {
+            title: '⚠️ Confirm User Deletion',
+            confirmText: 'Yes, Delete',
+            confirmClasses: 'bg-red-600 hover:bg-red-700'
+        });
+    }
+    
+    function editUser(id, username, role, groupName) {
+        toggleUserForm(true);
+        formTitle.innerText = `Edit User: ${username}`;
+        userForm.action = `/users/update/${id}`;
+        submitBtn.innerHTML = '💾 Update User';
+        submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        submitBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+        cancelEditBtn.classList.remove('hidden');
+        usernameInput.value = username;
+        usernameInput.readOnly = true;
+        usernameInput.classList.add('bg-gray-100', 'dark:bg-gray-600', 'cursor-not-allowed');
+        passwordLabel.innerText = 'New Password (leave blank to keep current)';
+        passwordInput.required = false;
+        passwordInput.value = '';
+        roleSelect.value = role;
+        if (groupName) {
+            groupSelect.value = groupName;
+        }
+    }
+    
+    function resetForm() {
+        formTitle.innerText = 'Add New User';
+        userForm.action = '/users/create';
+        userForm.reset();
+        submitBtn.innerHTML = '➕ Add User';
+        submitBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+        submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        cancelEditBtn.classList.add('hidden');
+        usernameInput.readOnly = false;
+        usernameInput.classList.remove('bg-gray-100', 'dark:bg-gray-600', 'cursor-not-allowed');
+        passwordLabel.innerText = 'Password';
+        passwordInput.required = true;
+    }
+    
+    function confirmResetMfa(userId, username) {
+        const message = `Are you sure you want to reset MFA for '${username}'? They will be required to set it up again on their next login.`;
+        showGlobalConfirm(message, () => {
+            document.getElementById(`resetMfaForm${userId}`).submit();
+        }, {
+            title: '⚠️ Confirm MFA Reset',
+            confirmText: 'Yes, Reset MFA',
+            confirmClasses: 'bg-orange-600 hover:bg-orange-700'
+        });
+    }
+    
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+    }
+    
 </script>
 {% endblock %}

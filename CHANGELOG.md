@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Email notification alert (use env to setup SMTP variable) and email sending logs via UI.
 - Email recipient list endpoint.
 
+### Changed
+- Redesign icon.
+
 ## [1.8.3] - 2025-09-25
 
 ### Added

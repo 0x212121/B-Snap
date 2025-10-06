@@ -6,6 +6,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from fastapi import BackgroundTasks
 from typing import List
+from sqlalchemy.orm import Session
 
 # Load dari environment (atur di .env)
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
@@ -14,6 +15,10 @@ SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASS = os.getenv("SMTP_PASS")
 EMAIL_FROM = os.getenv("EMAIL_FROM", SMTP_USER)
 
+
+# =========================
+# EMAIL CORE FUNCTIONS
+# =========================
 
 def _send_email_sync(to: list[str], subject: str, body: str, html: str | None = None):
     """
@@ -57,7 +62,13 @@ def send_email(
         _send_email_sync(to, subject, body, html)
 
 
-def build_email_body(camera_name: str, ip: str, incident_time: str, last_snapshot_time: str, has_snapshot: bool) -> tuple[str, str]:
+def build_email_body(
+    camera_name: str,
+    ip: str,
+    incident_time: str,
+    last_snapshot_time: str,
+    has_snapshot: bool
+) -> tuple[str, str]:
     """
     Return tuple (plain_text, html_text) untuk body email CCTV offline alert.
     """
@@ -85,7 +96,6 @@ PT Kaltim Prima Coal
 """.strip()
     
     snapshot_info = f"{snapshot_text} (foto terlampir)" if has_snapshot else snapshot_text
-
 
     html_body = f"""
 <html>
@@ -147,7 +157,7 @@ def _send_email_with_image(
     msg["From"] = EMAIL_FROM
     msg["To"] = ", ".join(to_emails)
 
-    # ✅ tambahkan CC helpdesk
+    # ✅ tambahkan CC helpdesk jika mau
     # helpdesk = "help.desk@kpc.co.id"
     # msg["Cc"] = helpdesk
 
@@ -159,9 +169,7 @@ def _send_email_with_image(
 
     # attach snapshot sebagai file (bukan inline)
     if image_path and os.path.exists(image_path):
-        # format snapshot_time ke YYYYMMDD-HHmmWITA
         ts_str = snapshot_time.strftime("%Y%m%d-%H%M%Z")
-        # bikin nama file sesuai format
         snapshot_file_name = f"B-Snap_{cam_group if cam_group else 'NoGroup'}_{cam_hostname}_LastSnapshot_{ts_str}.jpg"
         
         with open(image_path, "rb") as f:
@@ -177,3 +185,49 @@ def _send_email_with_image(
         server.login(SMTP_USER, SMTP_PASS)
         server.sendmail(EMAIL_FROM, all_recipients, msg.as_string())
 
+
+# =========================
+# RECIPIENT HELPER (gabungan recipient_utils)
+# =========================
+
+from app.models.recipient import GroupRecipient
+from app.models.camera import Camera as DBCamera
+
+def _normalize(s: str) -> str:
+    return s.strip().lower()
+
+def parse_locations(text: str) -> List[str]:
+    if not text:
+        return []
+    return [_normalize(p) for p in text.split(",") if p.strip()]
+
+def get_recipients_for_camera(db: Session, camera: DBCamera) -> List[str]:
+    """
+    Return list of unique recipient emails for given camera.
+    Matching rules:
+      - recipients with matching group_id
+      - recipients with locations set that contain camera.location (case-insensitive)
+    """
+    emails = []
+    # 1) recipients for camera group
+    if camera.group_id:
+        group_recs = db.query(GroupRecipient).filter(GroupRecipient.group_id == camera.group_id).all()
+        emails.extend([r.email for r in group_recs if r.email])
+
+    # 2) recipients by location
+    if camera.location:
+        cam_loc = _normalize(camera.location)
+        loc_recs = db.query(GroupRecipient).filter(GroupRecipient.locations != None).all()
+        for r in loc_recs:
+            locs = parse_locations(r.locations)
+            if cam_loc in locs:
+                emails.append(r.email)
+
+    # 3) dedupe
+    seen = set()
+    deduped = []
+    for e in emails:
+        if e and e not in seen:
+            deduped.append(e)
+            seen.add(e)
+    return deduped

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Audit Logs{% endblock %}
+{% from "_icons.html" import icon_download, icon_config, icon_x_circle, icon_user, icon_globe, icon_newspaper, icon_clock %}
 
 {% block content %}
 <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
@@ -43,7 +44,7 @@
 
 <div class="mb-4">
   <button onclick="exportToCSV()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition duration-200">
-    ⬇️ Export Logs
+    {{ icon_download("w-5 h-5 text-gray-100 inline") }} Export Logs
   </button>
 </div>
 
@@ -60,12 +61,12 @@
   <table class="min-w-full table-auto text-sm text-left" id="audit-table">
     <thead class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 uppercase text-xs">
       <tr>
-        <th class="px-4 py-3">🕒 Timestamp</th>
-        <th class="px-4 py-3">👤 User</th>
-        <th class="px-4 py-3">⚙️ Action</th>
-        <th class="px-4 py-3">🎯 Target</th>
-        <th class="px-4 py-3">🌐 Source IP</th>
-        <th class="px-4 py-3">📄 Extra</th>
+        <th class="px-4 py-3">{{ icon_clock("w-4 h-4 text-gray-500 dark:text-gray-100 inline") }} Timestamp</th>
+        <th class="px-4 py-3">{{ icon_user("w-4 h-4 text-gray-500 dark:text-gray-100 inline") }} User</th>
+        <th class="px-4 py-3">{{ icon_config("w-4 h-4 text-gray-500 dark:text-gray-100 inline") }} Action</th>
+        <th class="px-4 py-3">{{ icon_x_circle("w-4 h-4 text-gray-500 dark:text-gray-100 inline") }} Target</th>
+        <th class="px-4 py-3">{{ icon_globe("w-4 h-4 text-gray-500 dark:text-gray-100 inline") }} Source IP</th>
+        <th class="px-4 py-3">{{ icon_newspaper("w-4 h-4 text-gray-500 dark:text-gray-100 inline") }} Extra</th>
       </tr>
     </thead>
     <tbody class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
