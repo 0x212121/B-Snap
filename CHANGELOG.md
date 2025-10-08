@@ -8,7 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - None
 
-## [1.9.0] - 2025-09-26
+## [1.9.1] - 2025-10-08
+### Fixed
+- Email notification send to wrong group.
+
+## [1.9.0] - 2025-10-08
 ### Added
 - Email notification alert (use env to setup SMTP variable) and email sending logs via UI.
 - Email recipient list endpoint.

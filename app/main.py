@@ -52,6 +52,7 @@ logger = logging.getLogger("main")
 SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key-for-dev")
 if SECRET_KEY == "your-default-secret-key-for-dev":
     logger.warning("Using default SECRET_KEY. This is not secure for production.")
+    
 
 # FIX: parse TRUSTED_HOSTS string → set
 _raw_hosts = os.getenv("TRUSTED_HOSTS", "*")

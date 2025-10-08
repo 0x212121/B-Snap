@@ -158,8 +158,8 @@ def _send_email_with_image(
     msg["To"] = ", ".join(to_emails)
 
     # ✅ tambahkan CC helpdesk jika mau
-    # helpdesk = "help.desk@kpc.co.id"
-    # msg["Cc"] = helpdesk
+    helpdesk = "help.desk@kpc.co.id"
+    msg["Cc"] = helpdesk
 
     # alternative part: plain + html
     alt = MIMEMultipart("alternative")
@@ -178,7 +178,7 @@ def _send_email_with_image(
         msg.attach(part)
 
     # gabungkan recipients (to + cc)
-    all_recipients = to_emails
+    all_recipients = to_emails + [helpdesk]
 
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
         server.starttls()
@@ -201,33 +201,37 @@ def parse_locations(text: str) -> List[str]:
         return []
     return [_normalize(p) for p in text.split(",") if p.strip()]
 
+
 def get_recipients_for_camera(db: Session, camera: DBCamera) -> List[str]:
     """
     Return list of unique recipient emails for given camera.
     Matching rules:
-      - recipients with matching group_id
-      - recipients with locations set that contain camera.location (case-insensitive)
+      - Hanya recipients dengan group_id == camera.group_id
+      - Jika recipient punya daftar locations, maka harus cocok dengan camera.location
+      - Jika recipient tidak punya locations, tetap masuk (berdasarkan group)
     """
-    emails = []
-    # 1) recipients for camera group
-    if camera.group_id:
-        group_recs = db.query(GroupRecipient).filter(GroupRecipient.group_id == camera.group_id).all()
-        emails.extend([r.email for r in group_recs if r.email])
+    if not camera.group_id:
+        return []
 
-    # 2) recipients by location
-    if camera.location:
-        cam_loc = _normalize(camera.location)
-        loc_recs = db.query(GroupRecipient).filter(GroupRecipient.locations != None).all()
-        for r in loc_recs:
-            locs = parse_locations(r.locations)
-            if cam_loc in locs:
-                emails.append(r.email)
+    cam_loc = _normalize(camera.location) if camera.location else None
+    recipients = []
 
-    # 3) dedupe
+    group_recs = db.query(GroupRecipient).filter(GroupRecipient.group_id == camera.group_id).all()
+    for r in group_recs:
+        if not r.email:
+            continue
+
+        # lokasi tidak diset → valid (artinya berlaku untuk semua lokasi group itu)
+        if not r.locations:
+            recipients.append(r.email)
+            continue
+
+        # lokasi diset → cek cocok tidak
+        locs = parse_locations(r.locations)
+        if cam_loc and cam_loc in locs:
+            recipients.append(r.email)
+
+    # dedup
     seen = set()
-    deduped = []
-    for e in emails:
-        if e and e not in seen:
-            deduped.append(e)
-            seen.add(e)
-    return deduped
+    return [e for e in recipients if not (e in seen or seen.add(e))]
+

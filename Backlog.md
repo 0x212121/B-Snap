@@ -128,3 +128,4 @@
 - [ ] Whatsapp Whitelist Filter user and pagination
 - [ ] Cameras filter by status
 - [x] Send email to receipient when CCTV is offline
+- [ ] Bug tombol send test email setelah add user baru
