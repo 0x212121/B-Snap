@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Audit Logs{% endblock %}
+{% block title %}B-SNAP – Audit Logs{% endblock %}
 {% from "_icons.html" import icon_download, icon_config, icon_x_circle, icon_user, icon_globe, icon_newspaper, icon_clock %}
 
 {% block content %}
@@ -40,9 +40,7 @@
     <option value="50">50 per page</option>
     <option value="100">100 per page</option>
   </select>
-</div>
 
-<div class="mb-4">
   <button onclick="exportToCSV()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition duration-200">
     {{ icon_download("w-5 h-5 text-gray-100 inline") }} Export Logs
   </button>

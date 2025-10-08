@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% block title %}B-SNAP – Logs Viewer{% endblock %}
+{% from "_icons.html" import icon_arrow_path, icon_download %}
 {% block content %}
 <div class="p-6 space-y-6">
   <div class="flex justify-between items-center">
@@ -25,13 +27,14 @@
       <a id="downloadBtn"
          href="#"
          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow">
+         {{ icon_download("w-5 h-5 text-gray-100 inline") }}
          Download
       </a>
     
       <button id="refreshBtn"
               type="button"
               class="bg-gray-500 text-white px-3 py-2 rounded hover:bg-gray-600">
-        🔄 Refresh
+      {{ icon_arrow_path("w-5 h-5 text-gray-100 inline") }} Refresh
       </button>
     </div>
   </div>

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}B-SNAP – Access Denied{% endblock %}
+
+{% block content %}
+<div class="relative flex flex-col items-center justify-center min-h-[80vh] text-center overflow-hidden 
+            bg-gray-50 dark:bg-gray-900 transition-colors duration-500">
+
+  <!-- Static noise overlay -->
+  <div class="absolute inset-0 opacity-[0.05] pointer-events-none"
+       style="background-image: repeating-linear-gradient(0deg, #0001 0px, #0001 1px, transparent 2px);"
+       class="dark:opacity-[0.03]"></div>
+
+  <!-- Red scanline shimmer -->
+  <div class="absolute inset-0 pointer-events-none red-scanline"></div>
+
+  <!-- Warning light -->
+  <div class="absolute top-6 left-8 flex items-center gap-2 text-red-600 dark:text-red-400">
+    <div class="w-3 h-3 rounded-full bg-red-600 animate-ping"></div>
+    <span class="text-sm font-medium">SECURITY ALERT</span>
+  </div>
+
+  <!-- Main content -->
+  <div class="z-10 px-6">
+    <div class="mb-10 text-red-600 dark:text-red-500 animate-pulse">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-32 h-32 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18 9 9 0 000-18z" class="stroke-current"/>
+      </svg>
+    </div>
+
+    <!-- Access Denied Banner -->
+    <h1 class="relative text-[6rem] font-extrabold mb-4 leading-none tracking-tight drop-shadow-md 
+               text-red-600 dark:text-red-500 select-none forbidden-text">
+      ACCESS DENIED
+      <span aria-hidden="true">ACCESS DENIED</span>
+      <span aria-hidden="true">ACCESS DENIED</span>
+    </h1>
+
+    <p class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-3">Restricted Zone</p>
+    <p class="text-gray-500 dark:text-gray-400 mb-10 text-base max-w-xl mx-auto">
+      You don’t have permission to access this area.<br>
+    </p>
+
+    <a href="/" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg 
+                      transition-all flex items-center gap-2 justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      Back to Dashboard
+    </a>
+  </div>
+
+  <!-- CSS Animations -->
+  <style>
+    /* Glitch animation for ACCESS DENIED */
+    .forbidden-text {
+      position: relative;
+      display: inline-block;
+    }
+    .forbidden-text span {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      color: inherit;
+      animation: forbid-glitch-light 3.2s infinite;
+    }
+    .forbidden-text span:nth-child(2) {
+      left: 2px;
+      color: #ff000080;
+      clip-path: inset(0 0 50% 0);
+      animation-delay: 0.2s;
+    }
+    .forbidden-text span:nth-child(3) {
+      left: -2px;
+      color: #ff666680;
+      clip-path: inset(50% 0 0 0);
+      animation-delay: 0.4s;
+    }
+
+    @keyframes forbid-glitch-light {
+      0%,100% { transform: translate(0); }
+      15% { transform: translate(-1px, 1px); }
+      30% { transform: translate(1px, -1px); }
+      45% { transform: translate(-0.5px, 0.5px); }
+      60% { transform: translate(0.5px, -0.5px); }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .forbidden-text span {
+        animation: forbid-glitch-dark 1.6s infinite;
+      }
+    }
+
+    @keyframes forbid-glitch-dark {
+      0%,100% { transform: translate(0); }
+      10% { transform: translate(-2px, 2px); }
+      20% { transform: translate(2px, -2px); }
+      40% { transform: translate(-1px, 1px); }
+      60% { transform: translate(1px, -1px); }
+      80% { transform: translate(-3px, 2px); }
+    }
+
+    /* Red scanline shimmer effect */
+    .red-scanline::before {
+      content: "";
+      position: absolute;
+      top: -100%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, transparent 0%, rgba(255,0,0,0.08) 50%, transparent 100%);
+      animation: red-scan 6s linear infinite;
+    }
+    @keyframes red-scan {
+      0% { top: -100%; }
+      100% { top: 100%; }
+    }
+  </style>
+</div>
+{% endblock %}

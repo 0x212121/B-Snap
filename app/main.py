@@ -1,40 +1,35 @@
 # ====================================================================
 # 1. IMPORTS
 # ====================================================================
-# Python Standard Library
 import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
+import traceback
 
-# Third-party Libraries
-from fastapi import (
-    FastAPI, HTTPException, Request, Response, status
-)
-
+from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.responses import ORJSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.docs import get_swagger_ui_html
 from sqlalchemy import inspect
-from app.middleware.auth_and_setup import AuthAndSetupMiddleware
+
 from starlette.middleware.sessions import SessionMiddleware
-from app.middleware.session_restore import RestoreSessionMiddleware
 from starlette.middleware.gzip import GZipMiddleware
+from starlette.middleware.errors import ServerErrorMiddleware
+from starlette.middleware import Middleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
+from app.middleware.auth_and_setup import AuthAndSetupMiddleware
+from app.middleware.session_restore import RestoreSessionMiddleware
 
-# Application-specific Imports
 from app.core.config_initializer import seed_config
 from app.core.logging_config import setup_logging
 from app.db.database import Base, engine, SessionLocal
-# Combined router imports for cleaner organization
 from app.routes import (
     admin, auth, audit, cameras, config, dev_docs, docs, health, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
     user_management, videos, whitelist, group_recipients, email_logs
 )
-
-
 from app.ws.routes import notification_listener, router as ws_router
 from app.version import __version__
 from app.api import whatsapp_routes
@@ -44,24 +39,28 @@ from functools import lru_cache
 from alembic.config import Config
 from alembic import command
 
-# from app.ws.notifier import pg_listen_and_broadcast
+from app.utils.template_helper import templates
 
 # ====================================================================
 # 2. INITIAL SETUP & CONFIGURATION
 # ====================================================================
-setup_logging()
-logger = logging.getLogger(__name__)
+if os.getenv("BSNAP_LOG_VIA_GUNICORN", "1") not in ("1", "true", "yes"):
+    setup_logging()
 
-# Ensure SECRET_KEY exists, if not use a safe default value for development
+logger = logging.getLogger("main")
+
 SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key-for-dev")
 if SECRET_KEY == "your-default-secret-key-for-dev":
     logger.warning("Using default SECRET_KEY. This is not secure for production.")
 
-TRUSTED_HOSTS = os.getenv("TRUSTED_HOSTS", "*")
+# FIX: parse TRUSTED_HOSTS string → set
+_raw_hosts = os.getenv("TRUSTED_HOSTS", "*")
+if _raw_hosts.strip() == "*":
+    TRUSTED_HOSTS = {"*"}
+else:
+    TRUSTED_HOSTS = {h.strip() for h in _raw_hosts.split(",") if h.strip()}
 
-from app.utils.template_helper import templates
-
-# B-snap version
+# B-snap version ke template globals
 templates.env.globals["version"] = __version__
 
 # ====================================================================
@@ -73,11 +72,10 @@ async def lifespan(app: FastAPI):
     inspector = inspect(engine)
     tables = inspector.get_table_names()
 
-    if not tables:  # DB masih kosong
+    if not tables:
         logger.info("No tables found, creating all from Base metadata...")
         Base.metadata.create_all(bind=engine)
 
-        # --- NEW: tandai Alembic sudah di head ---
         alembic_cfg = Config("alembic.ini")
         command.stamp(alembic_cfg, "head")
         logger.info("Alembic schema version stamped to head.")
@@ -94,23 +92,22 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
 
-    # Notif listener
+    # Start WS notification listener
     task = asyncio.create_task(notification_listener(websocket_connections))
     app.state.notification_listener_task = task
-    
-    yield
-    
-    app.state.notification_listener_task.cancel()
+
     try:
-        await app.state.notification_listener_task
-    except asyncio.CancelledError:
-        logger.info("Notification listener task successfully cancelled.")
+        yield
+    finally:
+        app.state.notification_listener_task.cancel()
+        try:
+            await app.state.notification_listener_task
+        except asyncio.CancelledError:
+            logger.info("Notification listener task successfully cancelled.")
 
 # ====================================================================
 # 4. FASTAPI APP INSTANCE & MIDDLEWARE
 # ====================================================================
-from starlette.middleware import Middleware
-
 middleware = [
     Middleware(ProxyHeadersMiddleware, trusted_hosts=TRUSTED_HOSTS),
     Middleware(GZipMiddleware, minimum_size=1000),
@@ -124,13 +121,36 @@ app = FastAPI(
     title="B-Snap API",
     description="B-Snap Documentation API",
     version="1.0",
-    docs_url=None,  # Disabled to use custom docs
+    docs_url=None,
     redoc_url=None,
     middleware=middleware,
     default_response_class=ORJSONResponse,
-    # debug=True
 )
 
+# FIX: Hapus middleware yang tidak mengembalikan response
+# @app.middleware("http")
+# async def catch_exceptions_middleware(request: Request, call_next):
+#     log = logging.getLogger("main")
+#     log.warning(f"[MIDDLEWARE TEST] entered for {request.url}")
+#     # BUG: tidak memanggil call_next dan tidak mengembalikan Response
+
+# Tambahkan ServerErrorMiddleware lebih awal agar exceptions ditangani ke 500
+app.add_middleware(ServerErrorMiddleware, handler=None)
+
+# FIX: Satu middleware error wrapper yang benar-benar meneruskan request
+@app.middleware("http")
+async def error_wrapper_middleware(request: Request, call_next):
+    logger = logging.getLogger("main")
+    try:
+        response = await call_next(request)
+        if response.status_code >= 500:
+            logger.error(f"HTTP {response.status_code} at {request.url}")
+            return templates.TemplateResponse("500.html", {"request": request}, status_code=500)
+        return response
+    except Exception as exc:
+        error_trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+        logger.error(f"Unhandled error at {request.url}:\n{error_trace}")
+        return templates.TemplateResponse("500.html", {"request": request}, status_code=500)
 
 # ====================================================================
 # 6. ROUTERS & STATIC FILES
@@ -138,7 +158,7 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/documentation", StaticFiles(directory="docs/build/html"), name="docs")
 
-# Organize routers for better organization
+# Registrasi routers
 app.include_router(auth.router)
 app.include_router(setup.router)
 app.include_router(cameras.router)
@@ -172,17 +192,13 @@ app.include_router(email_logs.router)
 def root_redirect():
     return RedirectResponse(url="/maps")
 
-
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
-    # NEW: Handle "SESSION_INVALIDATED" signal specifically for redirect
     if exc.detail == "SESSION_INVALIDATED":
-        # Create redirect response to login page
         response = RedirectResponse(
             url="/login?reason=invalid_session",
             status_code=status.HTTP_303_SEE_OTHER
         )
-        # Delete any remaining session cookies in the browser
         response.delete_cookie("session")
         response.delete_cookie("session_token")
         return response
@@ -193,12 +209,8 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
             {"request": request, "detail": exc.detail},
             status_code=exc.status_code
         )
-    # For all other errors, display default message
-    return Response(
-        content=f"An error occurred: {exc.detail}",
-        status_code=exc.status_code
-    )
 
+    return Response(content=f"An error occurred: {exc.detail}", status_code=exc.status_code)
 
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui():
@@ -209,16 +221,25 @@ async def custom_swagger_ui():
         swagger_css_url="/static/swagger-ui-tailwind.css"
     )
 
-
 @lru_cache()
 def get_version_info():
     return {"version": __version__}
-
 
 @app.get("/version")
 async def version():
     return get_version_info()
 
-@app.get("/documentation", include_in_schema=False)
+# FIX: Hapus route /documentation yang konflik dengan mount StaticFiles
+# Gunakan index langsung: /documentation/index.html
+# Jika ingin redirect, pakai path lain:
+@app.get("/documentation-index", include_in_schema=False)
 async def html_docs_redirect():
     return RedirectResponse(url="/documentation/index.html")
+
+@app.exception_handler(404)
+async def not_found_404(request: Request, exc):
+    return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
+
+@app.exception_handler(403)
+async def forbidden_403(request: Request, exc):
+    return templates.TemplateResponse("403.html", {"request": request}, status_code=403)

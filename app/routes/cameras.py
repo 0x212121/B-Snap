@@ -111,7 +111,7 @@ async def manage_data(
                         </button>
                     </form>
                     <button onclick="captureVideo('{cam.id}')"
-                        title="Capture snapshot"
+                        title="Capture video (5s)"
                         class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-green-200 dark:hover:bg-green-800/50">
                         {ICONS['video']}
                     </button>

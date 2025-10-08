@@ -187,7 +187,7 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
                     incident_started_at = incident_started_at.replace(tzinfo=timezone.utc)
 
                 offline_duration_seconds = int((now - incident_started_at).total_seconds())
-                if offline_duration_seconds >= 30:  # 30 minutes
+                if offline_duration_seconds >= 1800:  # 30 minutes
                     camera_obj = db.query(DBCamera).filter(DBCamera.id == device_id).first()
                     if camera_obj:
                         sent = send_offline_incident_email_once(
@@ -197,7 +197,7 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
                             offline_duration_seconds=offline_duration_seconds
                         )
                         if sent:
-                            logger.info("📨 Email offline-30m sent once for %s (since %s).",
+                            logger.info("Email offline-30m sent once for %s (since %s).",
                                         camera_obj.hostname, incident_started_at)
     except Exception as notif_err:
         logger.warning("Notify offline-30m failed for device %s: %s", device_id, notif_err, exc_info=True)

@@ -25,6 +25,7 @@ def upgrade() -> None:
         sa.Column('group_id', sa.Integer, sa.ForeignKey('camera_groups.id', ondelete="CASCADE"), nullable=False),
         sa.Column('email', sa.String, nullable=False, index=True),
         sa.Column('nickname', sa.String, nullable=True),
+        sa.Column('locations', sa.Text(), nullable=True)
     )
     op.create_unique_constraint(
         "uq_group_email", "group_recipients", ["group_id", "email"]

@@ -1,4 +1,7 @@
 {% extends "base.html" %}
+{% block title %}B-SNAP – Email Logs{% endblock %}
+{% from "_icons.html" import icon_search %}
+
 {% block content %}
     <h2 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">
         Email Notification Logs
@@ -18,7 +21,7 @@
             </select>
             
             <button type="submit" class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 text-sm">
-                🔍 Filter
+                {{ icon_search("w-5 h-5 text-gray-100 inline") }} Filter
             </button>
         </form>
 

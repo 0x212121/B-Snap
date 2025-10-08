@@ -17,6 +17,7 @@ fi
 # echo "🛠 Running Alembic migrations..."
 # Comment if run b-snap from fresh install
 # alembic -c alembic.ini upgrade head
+export BSNAP_LOG_VIA_GUNICORN=0
 
 echo "🚀 Starting Gunicorn with $WORKERS workers..."
 exec gunicorn app.main:app \
@@ -27,5 +28,4 @@ exec gunicorn app.main:app \
   --timeout 60 \
   --keep-alive 2 \
   -c gunicorn.conf.py \
-  --access-logfile - --error-logfile - --log-level debug
-
+  --log-level info

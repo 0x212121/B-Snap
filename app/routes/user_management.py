@@ -30,13 +30,25 @@ def register_timezone_filter(db: Session):
     Registers a Jinja2 filter to format datetime objects into the local timezone
     including the timezone abbreviation (e.g., WITA, WIB).
     """
-    templates.env.filters['to_localtime'] = lambda dt: (
-        # Added %Z to display timezone abbreviation
-        to_current_timezone(datetime.fromisoformat(dt), db).strftime("%d/%m/%Y - %H:%M:%S %Z")
-        if isinstance(dt, str) else
-        to_current_timezone(dt, db).strftime("%d/%m/%Y - %H:%M:%S %Z")
-        if dt else "Never"
-    )
+    def _to_localtime(dt):
+        if not dt:
+            return "Never"
+        try:
+            # Convert string -> datetime jika perlu
+            if isinstance(dt, str):
+                try:
+                    dt_parsed = datetime.fromisoformat(dt.replace("Z", "+00:00"))
+                except ValueError:
+                    return dt  # Jika gagal parse, tampilkan mentah
+            else:
+                dt_parsed = dt
+            local_dt = to_current_timezone(dt_parsed, db)
+            return local_dt.strftime("%d/%m/%Y - %H:%M:%S %Z")
+        except Exception as e:
+            logging.getLogger("management").warning(f"Failed timezone filter parse: {dt} ({e})")
+            return "Invalid Date"
+
+    templates.env.filters['to_localtime'] = _to_localtime
 
 
 def safe_parse_datetime(val):
@@ -58,14 +70,14 @@ class TokenRequest(BaseModel):
 
 @router.get("/users")
 async def manage_users(request: Request, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
-    """
-    Renders the user management page with a list of all users and groups.
-    """
-    register_timezone_filter(db)
-    users = db.query(User).options(joinedload(User.group)).all()
-    groups = db.query(CameraGroup).order_by(CameraGroup.name).all()
-    return templates.TemplateResponse("user_management.html",
-                                      {"request": request, "users": users, "groups": groups})
+    try:
+        register_timezone_filter(db)
+        users = db.query(User).options(joinedload(User.group)).all()
+        groups = db.query(CameraGroup).order_by(CameraGroup.name).all()
+        return templates.TemplateResponse("user_management.html", {"request": request, "users": users, "groups": groups})
+    except Exception as e:
+        logger.exception(f"Failed to render user management page: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load user management page. Check server logs.")
 
 
 @router.post("/users/create")

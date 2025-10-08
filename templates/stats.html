@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Camera Statistics{% endblock %}
+{% block title %}B-SNAP – Camera Statistics{% endblock %}
+{% from "_icons.html" import icon_ppt_chart_bar, icon_clock, icon_no_symbol, icon_check_circle, icon_circle_stack, icon_x_circle %}
 
 {% block content %}
-
 <div class="container mx-auto px-4 py-8">
-  <h1 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">📈 Camera Snapshot Stats</h1>
+  <h1 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">{{ icon_ppt_chart_bar(class="w-8 h-8 text-blue-600") }} Camera Snapshot Stats</h1>
   
   <div class="flex items-center gap-4 mb-6">
     <select id="cameraDropdown" class="border p-2 pr-8 rounded dark:bg-gray-800 dark:text-white">
@@ -27,7 +27,7 @@
   </div>
   
   <div class="bg-white dark:bg-gray-800 p-6 rounded shadow mb-6">
-    <h2 class="text-xl font-semibold text-blue-600 dark:text-blue-300 mb-4">⏱️ Snapshot Scheduler Log</h2>
+    <h2 class="text-xl font-semibold text-blue-600 dark:text-blue-300 mb-4">{{ icon_clock(class="w-5 h-5 text-gray-700 dark:text-gray-100 inline") }} Snapshot Scheduler Log</h2>
     <table class="w-full table-auto text-sm">
       <thead class="bg-gray-100 dark:bg-gray-700">
         <tr>
@@ -45,11 +45,11 @@
           <td class="px-4 py-2">{{ log.duration_formatted }}</td>
           <td class="px-4 py-2">
             {% if log.status == "success" %}
-              <span class="text-green-600 dark:text-green-400 font-semibold">✅ Success</span>
+              <span class="text-green-600 dark:text-green-400 font-semibold">{{ icon_check_circle() }} Success</span>
             {% elif log.status == "partial" %}
-              <span class="text-yellow-600 dark:text-yellow-400 font-semibold">⏳ Partial</span>
+              <span class="text-yellow-600 dark:text-yellow-400 font-semibold">{{ icon_circle_stack() }} Partial</span>
             {% else %}
-              <span class="text-red-600 dark:text-red-400 font-semibold">❌ Failed</span>
+              <span class="text-red-600 dark:text-red-400 font-semibold">{{ icon_x_circle() }} Failed</span>
             {% endif %}
           </td>
         </tr>
@@ -61,7 +61,7 @@
   
   <div id="noDataCamerasSection" class="bg-red-100 dark:bg-red-900 p-4 rounded shadow hidden">
     <h2 class="text-xl font-bold mb-2 text-red-700 dark:text-red-300">
-      📛 Cameras Without Snapshots (<span id="totalNoDataCamerasCount">0</span>)
+      {{ icon_no_symbol() }} Cameras Without Snapshots (<span id="totalNoDataCamerasCount">0</span>)
     </h2>
     <ul id="noDataCamerasList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-red-800 dark:text-red-100 list-disc list-inside">
     </ul>

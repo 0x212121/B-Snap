@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}B-SNAP – System Error{% endblock %}
+
+{% block content %}
+<div class="relative flex flex-col items-center justify-center min-h-[80vh] text-center overflow-hidden 
+            bg-gray-50 dark:bg-gray-900 transition-colors duration-500">
+
+  <!-- Static background noise -->
+  <div class="absolute inset-0 opacity-[0.06] pointer-events-none"
+       style="background-image: repeating-linear-gradient(0deg, #0001 0px, #0001 1px, transparent 2px);"
+       class="dark:opacity-[0.03]"></div>
+
+  <!-- Blue flickering overlay -->
+  <div class="absolute inset-0 pointer-events-none system-flicker"></div>
+
+  <!-- System failure indicator -->
+  <div class="absolute top-6 left-8 flex items-center gap-2 text-yellow-500 dark:text-yellow-400">
+    <div class="w-3 h-3 rounded-full bg-yellow-400 animate-ping"></div>
+    <span class="text-sm font-medium">SYSTEM FAILURE</span>
+  </div>
+
+  <!-- Main content -->
+  <div class="z-10 px-6">
+    <div class="mb-10 text-yellow-500 dark:text-yellow-400 animate-pulse">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-32 h-32 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18 9 9 0 000-18z" class="stroke-current"/>
+      </svg>
+    </div>
+
+    <!-- Glitching 500 text -->
+    <h1 class="relative text-[8rem] font-extrabold mb-4 leading-none tracking-tight drop-shadow-md 
+               text-yellow-600 dark:text-yellow-400 select-none error-text">
+      500
+      <span aria-hidden="true">500</span>
+      <span aria-hidden="true">500</span>
+    </h1>
+
+    <p class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-3">Internal Server Error</p>
+    <p class="text-gray-500 dark:text-gray-400 mb-10 text-base max-w-xl mx-auto">
+      Something went wrong inside the B-SNAP system.<br>
+      The server might be rebooting or performing recovery operations.
+    </p>
+
+    <div class="flex flex-wrap justify-center gap-3">
+      <a href="/" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg 
+                        transition-all flex items-center gap-2 justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Return to Dashboard
+      </a>
+      <button onclick="location.reload()" 
+              class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold px-8 py-3 rounded-xl shadow-md 
+                     transition-all flex items-center gap-2 justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582M20 20v-5h-.581M5.5 9A7.5 7.5 0 0112 4.5a7.5 7.5 0 016.5 4.5M18.5 15a7.5 7.5 0 01-6.5 4.5 7.5 7.5 0 01-6.5-4.5" />
+        </svg>
+        Retry
+      </button>
+    </div>
+  </div>
+
+  <!-- CSS animations -->
+  <style>
+    .error-text {
+      position: relative;
+      display: inline-block;
+    }
+    .error-text span {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      color: inherit;
+      animation: error-glitch-light 3.5s infinite;
+    }
+    .error-text span:nth-child(2) {
+      left: 2px;
+      color: #ffcc0080;
+      clip-path: inset(0 0 50% 0);
+      animation-delay: 0.25s;
+    }
+    .error-text span:nth-child(3) {
+      left: -2px;
+      color: #ffaa0080;
+      clip-path: inset(50% 0 0 0);
+      animation-delay: 0.45s;
+    }
+
+    @keyframes error-glitch-light {
+      0%,100% { transform: translate(0); }
+      20% { transform: translate(-1px, 1px); }
+      40% { transform: translate(1px, -1px); }
+      60% { transform: translate(-0.5px, 0.5px); }
+      80% { transform: translate(0.5px, -0.5px); }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .error-text span { animation: error-glitch-dark 1.8s infinite; }
+    }
+    @keyframes error-glitch-dark {
+      0%,100% { transform: translate(0); }
+      10% { transform: translate(-2px, 2px); }
+      20% { transform: translate(2px, -2px); }
+      40% { transform: translate(-1px, 1px); }
+      60% { transform: translate(1px, -1px); }
+      80% { transform: translate(-3px, 2px); }
+    }
+
+    /* Blue flicker overlay */
+    .system-flicker::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle, rgba(0,128,255,0.08) 0%, transparent 70%);
+      opacity: 0.4;
+      animation: flicker 4s infinite alternate;
+    }
+    @keyframes flicker {
+      0% { opacity: 0.1; filter: brightness(0.8); }
+      50% { opacity: 0.5; filter: brightness(1.2); }
+      100% { opacity: 0.2; filter: brightness(0.9); }
+    }
+  </style>
+</div>
+{% endblock %}

@@ -1,10 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Email Recipients{% endblock %}
-{% from "_icons.html" import icon_envelope_open, icon_pencil, icon_trash %}
+{% block title %}B-SNAP – Email Recipients{% endblock %}
+{% from "_icons.html" import icon_envelope, icon_plus, icon_envelope_open, icon_pencil, icon_trash, icon_airplane, icon_download %}
+
 {% block content %}
-<div class="max-w-5xl mx-auto p-4">
-  <h2 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">
-    {{ icon_envelope_open("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }}
+<div class="container mx-auto p-4 text-gray-900 dark:text-gray-100 rounded-lg shadow">
+  <h2 class="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+    {{ icon_envelope_open("w-7 h-7 text-yellow-400 inline") }}
     Manage Email Recipients
   </h2>
 
@@ -40,13 +41,13 @@
             class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500">
           </select>
           <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Pilih lokasi dari group/divisi yang dipilih.
+            Choose location from selected group/divison.
           </p>
         </div>
         <div class="flex-shrink-0">
           <button type="submit"
             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 shadow-sm">
-            ➕ Add
+            {{ icon_plus("w-5 h-5 text-gray-100 inline") }} Add
           </button>
         </div>
       </form>
@@ -58,8 +59,31 @@
     <div class="flex items-center justify-between px-4 py-2 border-b dark:border-gray-700">
       <div>
         <h3 class="font-semibold text-gray-800 dark:text-gray-100">Recipients List</h3>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Daftar penerima email B-SNAP</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">List receiver B-SNAP Email</p>
       </div>
+
+      <div class="p-4 dark:border-gray-700 flex flex-col sm:flex-row gap-3 sm:items-end">
+  <div class="flex-1">
+    <label for="test_group" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Group</label>
+    <select id="test_group" name="test_group"
+      class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500">
+      <option value="">-- Select Group --</option>
+    </select>
+  </div>
+  <div class="flex-1">
+    <label for="test_location" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Location (optional)</label>
+    <select id="test_location" name="test_location"
+      class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500">
+      <option value="">-- All Locations --</option>
+    </select>
+  </div>
+  <div class="flex-1 align-bottom">
+    <button id="btnTestSend"
+      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 mt-1 rounded-md shadow text-sm font-semibold">
+      {{ icon_envelope("w-8 h-8 text-yellow-400 inline") }} Send Test Email
+    </button>
+  </div>
+</div>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm text-left text-gray-700 dark:text-gray-300">
@@ -86,7 +110,7 @@
 <div id="editModal"
   class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-md p-6">
-    <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{{ icon_pencil("w-8 h-8 text-yellow-500 inline") }} Edit Recipient</h3>
+    <h3 class="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-100">{{ icon_pencil("w-8 h-8 text-yellow-500 inline") }} Edit Recipient</h3>
     <form id="editForm" class="space-y-4">
       <input type="hidden" name="id" id="edit_id">
       <div>
@@ -114,7 +138,7 @@
         <button type="button" onclick="closeEditModal()"
           class="px-4 py-2 rounded bg-gray-300 dark:bg-gray-600">Cancel</button>
         <button type="submit"
-          class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">💾 Save</button>
+          class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">{{ icon_download("w-5 h-5 text-gray-100 inline") }} Save</button>
       </div>
     </form>
   </div>
@@ -290,5 +314,90 @@ function showNotification({ status, message }) {
 
 // Load awal
 loadRecipients();
+
+// === TEST SEND EMAIL ===
+const testGroupSelect = document.getElementById("test_group");
+const testLocationSelect = document.getElementById("test_location");
+const btnTestSend = document.getElementById("btnTestSend");
+
+// Populate dropdown test group dan location (re-use dari data API)
+async function populateTestDropdowns() {
+  try {
+    const resp = await fetch("/api/recipients");
+    const data = await resp.json();
+    if (data.status !== "success") return;
+    const { groups, locations_by_group } = data.data;
+
+    // isi dropdown group
+    testGroupSelect.innerHTML = '<option value="">-- Select Group --</option>';
+    groups.forEach(g => {
+      const opt = document.createElement("option");
+      opt.value = g.id;
+      opt.textContent = g.name;
+      testGroupSelect.appendChild(opt);
+    });
+
+    // isi lokasi tergantung group
+    window.locationsByGroup = locations_by_group;
+  } catch (err) {
+    console.error("Error populateTestDropdowns:", err);
+  }
+}
+
+// ubah lokasi saat pilih group
+testGroupSelect?.addEventListener("change", e => {
+  const groupId = e.target.value;
+  testLocationSelect.innerHTML = '<option value="">-- All Locations --</option>';
+  if (!groupId || !window.locationsByGroup[groupId]) return;
+  window.locationsByGroup[groupId].forEach(loc => {
+    const opt = document.createElement("option");
+    opt.value = loc;
+    opt.textContent = loc;
+    testLocationSelect.appendChild(opt);
+  });
+});
+
+// kirim test email
+btnTestSend?.addEventListener("click", async () => {
+  const groupId = testGroupSelect.value;
+  const location = testLocationSelect.value;
+  if (!groupId) {
+    showNotification({ status: "error", message: "Select a group first" });
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("group_id", groupId);
+  if (location) formData.append("location", location);
+
+  // ubah state tombol → loading
+  btnTestSend.disabled = true;
+  const originalHTML = btnTestSend.innerHTML;
+  btnTestSend.innerHTML = `<button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 mt-1 rounded-md shadow text-sm font-semibold">
+    {{ icon_airplane("w-5 h-5 text-gray-900 dark:text-gray-100 inline") }} Sending...</button>`;
+
+  try {
+    const resp = await fetch("/api/recipients/test-send", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await resp.json();
+    if (data.status === "success") {
+      showNotification({ status: "success", message: data.message });
+    } else {
+      showNotification({ status: "error", message: data.message });
+    }
+  } catch (err) {
+    console.error("Error test send:", err);
+    showNotification({ status: "error", message: "Server error while sending emails" });
+  } finally {
+    // restore HTML dengan ikon kembali seperti semula
+    btnTestSend.disabled = false;
+    btnTestSend.innerHTML = originalHTML;
+  }
+});
+
+populateTestDropdowns();
+
 </script>
 {% endblock %}

@@ -9,9 +9,10 @@ class CameraEmailNotificationLog(Base):
     __tablename__ = "camera_email_notification_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    camera_id = Column(String, ForeignKey("cameras.id", ondelete="CASCADE"), index=True, nullable=False)
+    camera_id = Column(String, ForeignKey("cameras.id", ondelete="SET NULL"), index=True, nullable=True)
     camera_name = Column(String, nullable=True)
     incident_started_at = Column(DateTime(timezone=True), nullable=False)
+    type = Column(String, nullable=True, default="alert")
     sent_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     success = Column(Boolean, default=False, nullable=False)
     error_message = Column(String, nullable=True)

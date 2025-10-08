@@ -12,19 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Email notification alert (use env to setup SMTP variable) and email sending logs via UI.
 - Email recipient list endpoint.
+- Custom 403, 404, and 500 page.
 
 ### Changed
-- Redesign icon.
+- Redesign icon and layout.
+- Improved logging.
 
 ## [1.8.3] - 2025-09-25
 
 ### Added
-- RTSP support for Hikvision camera
-- Observability tables and API 
+- RTSP support for Hikvision camera.
+- Observability tables and API.
 
 ### Changed
-- Logging function
-- Failed snapshot output in health menu
+- Logging function.
+- Failed snapshot output in health menu.
 
 
 ## [1.8.2] - 2025-09-15
@@ -38,13 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.8.1] - 2025-09-12
 
 ### Added
-- CCTV maintenance mode
-
-### Changed
-- (empty)
+- CCTV maintenance mode.
 
 ### Fixed
-- Fix N+1 query in `/camera-locations` endpoint
+- Fix N+1 query in `/camera-locations` endpoint.
 
 ## [1.8.0] - 2025-08-28
 
