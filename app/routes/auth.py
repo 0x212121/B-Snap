@@ -18,29 +18,9 @@ from app.utils.audit_logger import log_audit
 # --- Setup Router and Template ---
 router = APIRouter(tags=["Authentication"])
 from app.utils.template_helper import templates
-import logging
-logger = logging.getLogger("main")
 
 # MAX_WEB_SESSIONS = 1  # Maximum logins per user
 MAX_WEB_SESSIONS= int(os.getenv("MAX_WEB_SESSIONS", 1))  # Override from environment if needed
-BSNAP_SECURE_COOKIES = os.getenv("BSNAP_SECURE_COOKIES", "true").lower() in ("1", "true", "yes")
-
-def set_session_cookie(response: RedirectResponse, token: str):
-    """
-    Apply consistent cookie settings for session token across environments.
-    - Secure=True on HTTPS (production)
-    - Secure=False on localhost (development)
-    """
-    response.set_cookie(
-        key="session_token",
-        value=token,
-        httponly=True,
-        max_age=60 * 60 * 24,  # 1 day
-        samesite="lax" if BSNAP_SECURE_COOKIES else "none",
-        secure=BSNAP_SECURE_COOKIES,
-    )
-
-logger.info(f"Session cookies secure mode: {BSNAP_SECURE_COOKIES}")
 
 # ============================================================================== 
 # 1. CORE AUTHENTICATION FLOW
@@ -164,7 +144,15 @@ def otp_post(
 
     # Create redirect response and set cookie.
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    set_session_cookie(response, token)
+    response.set_cookie(
+        "session_token",
+        token,
+        httponly=True,
+        max_age=60*60*24,
+        samesite="lax",
+        secure=False  # Ganti ke True jika menggunakan HTTPS
+    )
+    return response
 
 # ============================================================================== 
 # 2. MANDATORY MFA/2FA SETUP FLOW
@@ -265,8 +253,14 @@ def mfa_setup_post(
     db.commit()
 
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    set_session_cookie(response, token)
-
+    response.set_cookie(
+        key="session_token",
+        value=token,
+        httponly=True,
+        max_age=60*60*24,
+        samesite="lax",
+        secure=False
+    )
     return response
 
 # ============================================================================== 
