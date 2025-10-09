@@ -129,3 +129,4 @@
 - [ ] Cameras filter by status
 - [x] Send email to receipient when CCTV is offline
 - [ ] Bug tombol send test email setelah add user baru
+- [ ] Input dokumentasi variable ENV yang digunakan
