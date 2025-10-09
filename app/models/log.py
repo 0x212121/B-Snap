@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, func
+from sqlalchemy import Column, Float, Integer, String, DateTime, func
 from app.db.database import Base
 
 
@@ -22,3 +22,7 @@ class ApiLog(Base):
     method = Column(String, index=True)
     status_code = Column(Integer, index=True)
     source = Column(String, default="web", index=True)
+    duration_ms = Column(Float, nullable=True)
+    ip_address = Column(String, nullable=True)
+    user_agent = Column(String, nullable=True)
+    error_message = Column(String, nullable=True)

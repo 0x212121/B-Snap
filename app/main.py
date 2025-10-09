@@ -18,6 +18,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.errors import ServerErrorMiddleware
 from starlette.middleware import Middleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+from app.middleware.observability import ObservabilityMiddleware
 
 from app.middleware.auth_and_setup import AuthAndSetupMiddleware
 from app.middleware.session_restore import RestoreSessionMiddleware
@@ -30,6 +31,7 @@ from app.routes import (
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
     user_management, videos, whitelist, group_recipients, email_logs
 )
+from app.routes import observability
 from app.ws.routes import notification_listener, router as ws_router
 from app.version import __version__
 from app.api import whatsapp_routes
@@ -137,6 +139,7 @@ app = FastAPI(
 
 # Tambahkan ServerErrorMiddleware lebih awal agar exceptions ditangani ke 500
 app.add_middleware(ServerErrorMiddleware, handler=None)
+app.add_middleware(ObservabilityMiddleware)
 
 # FIX: Satu middleware error wrapper yang benar-benar meneruskan request
 @app.middleware("http")
@@ -185,6 +188,7 @@ app.include_router(admin.router)
 app.include_router(whitelist.router)
 app.include_router(group_recipients.router)
 app.include_router(email_logs.router)
+app.include_router(observability.router)
 
 # ====================================================================
 # 7. CORE APP ROUTES & HANDLERS

@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}B-SNAP – Usage Insight Dashboard{% endblock %}
+{% from "_icons.html" import icon_chart_bar %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+  <div class="flex items-center gap-3 mb-6">
+    <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+      {{ icon_chart_bar("w-8 h-8 text-blue-600 dark:text-blue-400") }} Usage Insight Dashboard
+    </h2>
+  </div>
+
+  <!-- Summary Cards -->
+  <div id="summary" class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow text-center">
+      <h3 class="text-sm text-gray-500 dark:text-gray-400">Total API Calls Today</h3>
+      <p id="api-today" class="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">–</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow text-center">
+      <h3 class="text-sm text-gray-500 dark:text-gray-400">Total Commands Today</h3>
+      <p id="cmd-today" class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">–</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow text-center">
+      <h3 class="text-sm text-gray-500 dark:text-gray-400">Most Active Day</h3>
+      <p id="max-day" class="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">–</p>
+    </div>
+  </div>
+
+  <!-- Daily Chart -->
+  <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow mb-8">
+    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">📈 API vs Command (Last 30 Days)</h3>
+    <canvas id="usageChart" height="120"></canvas>
+  </div>
+
+  <!-- Top 10 Commands -->
+  <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow mb-8">
+    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">
+      🔝 Top 10 Most Executed Commands
+    </h3>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Chart -->
+      <div class="p-2">
+        <canvas id="topCommandChart" height="200"></canvas>
+      </div>
+
+      <!-- Table -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left border-collapse">
+          <thead class="bg-gray-100 dark:bg-gray-700">
+            <tr>
+              <th class="p-3 font-semibold text-gray-700 dark:text-gray-300 border-b">Command</th>
+              <th class="p-3 font-semibold text-gray-700 dark:text-gray-300 border-b">Usage Count</th>
+            </tr>
+          </thead>
+          <tbody id="top-commands-body" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily Table -->
+  <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow">
+    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">📅 Daily Usage Summary (Last 30 Days)</h3>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm text-left border-collapse">
+        <thead class="bg-gray-100 dark:bg-gray-700">
+          <tr>
+            <th class="p-3 font-semibold text-gray-700 dark:text-gray-300 border-b">Date</th>
+            <th class="p-3 font-semibold text-blue-600 dark:text-blue-400 border-b">API Calls</th>
+            <th class="p-3 font-semibold text-green-600 dark:text-green-400 border-b">Commands</th>
+          </tr>
+        </thead>
+        <tbody id="daily-table" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    // Fetch daily stats
+    const res = await fetch("/log/stats/daily");
+    const data = await res.json();
+
+    const labels = [...new Set([...data.api.map(d => d.date), ...data.command.map(d => d.date)])].sort();
+    const apiMap = Object.fromEntries(data.api.map(d => [d.date, d.count]));
+    const cmdMap = Object.fromEntries(data.command.map(d => [d.date, d.count]));
+    const apiCounts = labels.map(d => apiMap[d] || 0);
+    const cmdCounts = labels.map(d => cmdMap[d] || 0);
+
+    // Chart.js daily line chart
+    const ctx = document.getElementById("usageChart").getContext("2d");
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "API Calls",
+            data: apiCounts,
+            borderColor: "#3b82f6",
+            backgroundColor: "rgba(59,130,246,0.1)",
+            tension: 0.3,
+            fill: true,
+          },
+          {
+            label: "Commands",
+            data: cmdCounts,
+            borderColor: "#22c55e",
+            backgroundColor: "rgba(34,197,94,0.1)",
+            tension: 0.3,
+            fill: true,
+          }
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: getComputedStyle(document.body).color }}},
+        scales: {
+          x: { ticks: { color: getComputedStyle(document.body).color }},
+          y: { ticks: { color: getComputedStyle(document.body).color }},
+        },
+      },
+    });
+
+    // Update summary cards
+    const today = new Date().toISOString().split("T")[0];
+    const apiToday = apiMap[today] || 0;
+    const cmdToday = cmdMap[today] || 0;
+    document.getElementById("api-today").textContent = apiToday;
+    document.getElementById("cmd-today").textContent = cmdToday;
+    const dailySum = labels.map(d => ({date: d, total: (apiMap[d]||0)+(cmdMap[d]||0)}));
+    if (dailySum.length > 0) {
+      const maxDay = dailySum.reduce((a,b)=>b.total>a.total?b:a);
+      document.getElementById("max-day").textContent = maxDay.date;
+    }
+
+    // Populate daily table
+    const tbody = document.getElementById("daily-table");
+    labels.reverse().forEach(date => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="p-3 text-gray-700 dark:text-gray-300">${date}</td>
+        <td class="p-3 text-blue-600 dark:text-blue-400">${apiMap[date] || 0}</td>
+        <td class="p-3 text-green-600 dark:text-green-400">${cmdMap[date] || 0}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Fetch top 10 commands
+    const cmdRes = await fetch("/log/stats/top-commands");
+    const topCommands = await cmdRes.json();
+    const topTbody = document.getElementById("top-commands-body");
+
+    if (topCommands.length === 0) {
+      topTbody.innerHTML = `<tr><td colspan="2" class="p-3 text-center text-gray-500 dark:text-gray-400">No commands logged yet.</td></tr>`;
+    } else {
+      topCommands.forEach((cmd, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="p-3 text-gray-700 dark:text-gray-300 font-medium">${idx + 1}. ${cmd.command}</td>
+          <td class="p-3 text-gray-700 dark:text-gray-300">${cmd.count}</td>
+        `;
+        topTbody.appendChild(tr);
+      });
+
+      // Chart.js horizontal bar chart for top commands
+      const barCtx = document.getElementById("topCommandChart").getContext("2d");
+      new Chart(barCtx, {
+        type: "bar",
+        data: {
+          labels: topCommands.map(c => c.command),
+          datasets: [{
+            label: "Usage Count",
+            data: topCommands.map(c => c.count),
+            backgroundColor: "rgba(59,130,246,0.7)"
+          }]
+        },
+        options: {
+          indexAxis: "y",
+          plugins: { legend: { display: false }},
+          scales: {
+            x: { ticks: { color: getComputedStyle(document.body).color }},
+            y: { ticks: { color: getComputedStyle(document.body).color }},
+          },
+        }
+      });
+    }
+  } catch (err) {
+    console.error("Failed to load observability data:", err);
+  }
+});
+</script>
+{% endblock %}
