@@ -112,10 +112,12 @@ async def lifespan(app: FastAPI):
 # ====================================================================
 # 4. FASTAPI APP INSTANCE & MIDDLEWARE
 # ====================================================================
+from app.middleware.real_ip_fix import RealIPFixMiddleware
 
 middleware = [
     Middleware(ProxyHeadersMiddleware, trusted_hosts=TRUSTED_HOSTS),
     Middleware(HTTPSProxyFixMiddleware),
+    Middleware(RealIPFixMiddleware),   # ✅ Tambahkan ini
     Middleware(GZipMiddleware, minimum_size=1000),
     Middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=3600),
     Middleware(RestoreSessionMiddleware),
@@ -236,6 +238,14 @@ def get_version_info():
 @app.get("/version")
 async def version():
     return get_version_info()
+
+@app.get("/debug/ip")
+async def debug_ip(request: Request):
+    return {
+        "client": request.client.host,
+        "x-forwarded-for": request.headers.get("x-forwarded-for"),
+        "x-real-ip": request.headers.get("x-real-ip")
+    }
 
 # FIX: Hapus route /documentation yang konflik dengan mount StaticFiles
 # Gunakan index langsung: /documentation/index.html
