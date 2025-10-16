@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - None
+
+## [1.10.2] - 2025-10-16
+
+### Added
+- Standalone (local) camera to map.
+
+### Fixed
+- Pagination bug in email recipients menu.
+
+
 ## [1.10.1] - 2025-10-10
 ### Changed
 - Updated documentation and fix minor bugs. 

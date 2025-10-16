@@ -131,5 +131,5 @@
 - [x] Bug tombol send test email setelah add user baru
 - [x] Input dokumentasi variable ENV yang digunakan
 - [x] Email recipient frontend pagination bug
-- [ ] Standalone camera dimunculkan di maps. Keterangan -> Standalone (Local): XX
+- [x] Standalone camera dimunculkan di maps. Keterangan -> Standalone (Local): XX
 - [ ] Notification Camera Blur
