@@ -100,8 +100,7 @@
 
 
 29/07/2025 - 31/07/2025
-
-⏳ Ongoing:
+✅ Completed:
 - [x] Tidy up API documentation
 - [x] n8n add command:
   - [x] Change CCTV user and password in B-Snap using WA Bot
@@ -109,6 +108,7 @@
 - [x] Change phone number from audit logs to username -> Indra (6282191799711)
 - [x] Fixed redirect from gallery to maps caused by missing `user_groupid` in restored session
 - [x] Feature to flip snapshot result
+-----------------------------------------------------------------------------------------
 
 🆕 Added:
 - [x] Add tampered reason and resolution to maps popup window - 30/07/2025
@@ -125,11 +125,11 @@
 - [x] Tambah status maintenance mode dan tampilkan statusnya pada maps
 - [x] Status maintenance change to Active when snapshot completed
 - [x] Logging command and API call
-- [ ] Whatsapp Whitelist Filter user and pagination
-- [ ] Cameras filter by status
 - [x] Send email to receipient when CCTV is offline
 - [x] Bug tombol send test email setelah add user baru
 - [x] Input dokumentasi variable ENV yang digunakan
 - [x] Email recipient frontend pagination bug
 - [x] Standalone camera dimunculkan di maps. Keterangan -> Standalone (Local): XX
-- [ ] Notification Camera Blur
+- [x] Whatsapp Whitelist Filter user and pagination
+- [ ] Notification Tampered Snapshot
+- [ ] Cameras filter by status

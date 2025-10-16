@@ -5,6 +5,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.jobstores.base import JobLookupError
 from app.core.logging_config import setup_logging
 from app.db.database import SessionLocal
+from app.models.log import ApiLog, CommandLog
 from app.snapshot import load_active_cameras
 from app.utils.snapshot_locker import get_camera_lock
 from app.utils.snapshot_service import take_snapshot
@@ -273,6 +274,9 @@ def start_scheduler():
     scheduler.add_job(delete_old_audit_logs, 'interval', days=1)
     scheduler.add_job(delete_old_camera_stats, 'interval', days=1)
 
+    scheduler.add_job(delete_old_api_logs, 'interval', days=1)
+    scheduler.add_job(delete_old_command_logs, 'interval', days=1)
+
     scheduler.start()
     return scheduler
 
@@ -343,6 +347,44 @@ def delete_old_camera_stats():
     except Exception as e:
         db.rollback()
         logger.error("[delete_old_camera_stats] Error: %s", e, exc_info=True)
+        raise
+    finally:
+        db.close()
+
+
+def delete_old_api_logs():
+    db: Session = SessionLocal()
+    try:
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=90)
+        deleted_rows = (
+            db.query(ApiLog)
+            .filter(ApiLog.timestamp < cutoff_date)
+            .delete(synchronize_session=False)
+        )
+        db.commit()
+        logger.info("[delete_old_api_logs] Deleted %d rows older than %s", deleted_rows, cutoff_date.date())
+    except Exception as e:
+        db.rollback()
+        logger.error("[delete_old_api_logs] Error: %s", e, exc_info=True)
+        raise
+    finally:
+        db.close()
+
+
+def delete_old_command_logs():
+    db: Session = SessionLocal()
+    try:
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=90)
+        deleted_rows = (
+            db.query(CommandLog)
+            .filter(CommandLog.timestamp < cutoff_date)
+            .delete(synchronize_session=False)
+        )
+        db.commit()
+        logger.info("[delete_old_command_logs] Deleted %d rows older than %s", deleted_rows, cutoff_date.date())
+    except Exception as e:
+        db.rollback()
+        logger.error("[delete_old_command_logs] Error: %s", e, exc_info=True)
         raise
     finally:
         db.close()
