@@ -130,6 +130,6 @@
 - [x] Send email to receipient when CCTV is offline
 - [x] Bug tombol send test email setelah add user baru
 - [x] Input dokumentasi variable ENV yang digunakan
-- [ ] Email recipient frontend pagination bug
+- [x] Email recipient frontend pagination bug
 - [ ] Standalone camera dimunculkan di maps. Keterangan -> Standalone (Local): XX
 - [ ] Notification Camera Blur

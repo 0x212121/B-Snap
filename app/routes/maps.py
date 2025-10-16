@@ -69,7 +69,7 @@ async def get_camera_locations(
     # --- Kamera utama ---
     query = (
         db.query(DBCamera)
-        .filter(DBCamera.status.in_(["Active", "Maintenance"]))
+        .filter(DBCamera.status.in_(["Active", "Maintenance", "Standalone"]))
         .options(joinedload(DBCamera.health))
     )
     if group_name != "ALL" and group_id is not None:
@@ -166,6 +166,9 @@ async def get_camera_locations(
         # Lock ke Maintenance jika DB kamera Maintenance
         if cam.status == "Maintenance":
             status_str = "Maintenance"
+
+        if cam.status == "Standalone":
+            status_str = "Standalone"
 
         # Hitung uptime berdasarkan status log
         start_time_for_calc = None

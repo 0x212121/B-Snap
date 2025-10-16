@@ -37,6 +37,7 @@
   .circle-marker.orange { background-color: #F59E0B; }
   .circle-marker.red { background-color: #EF4444; animation: blink 1.5s step-end infinite; }
   .circle-marker.gray { background-color: #6B7280; } /* Tailwind gray-500 */
+  .circle-marker.sky { background-color: #0EA5E9; } /* Tailwind sky-500 */
 
   /* Cluster pie chart styles */
   .marker-cluster-pie { transition: all 0.2s ease-in-out; border-radius: 50%; background-clip: padding-box; border: 3px solid rgba(255, 255, 255, 0.6); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
@@ -156,6 +157,7 @@
       div.innerHTML = `
         <label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="Online" checked> 🟢 Online</label>
         <label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="High Latency" checked> 🟡 High Latency</label>
+        <label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="Standalone" checked> 🔵 Standalone</label>
         <label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="Offline" checked> 🔴 Offline</label>
         <label class="block text-gray-800 dark:text-gray-200"><input type="checkbox" class="status-checkbox" value="Maintenance" checked> ⚪ Maintenance</label>`;
       L.DomEvent.disableClickPropagation(div);
@@ -171,6 +173,7 @@
         <div class="text-green-600 dark:text-green-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-green-500"></span>Online: <span id="stat-online">-</span></div>
         <div class="text-yellow-500 dark:text-yellow-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-yellow-500"></span>High Latency (>50 ms): <span id="stat-highlatency">-</span></div>
         <div class="text-red-600 dark:text-red-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-red-500"></span>Offline: <span id="stat-offline">-</span></div>
+        <div class="text-sky-500 dark:text-sky-400 mb-1"><span class="w-3 h-3 inline-block mr-2 rounded-full bg-sky-500"></span>Standalone (Local): <span id="stat-standalone">-</span></div>
         <div class="text-gray-600 dark:text-gray-300 mb-1">
             <span class="w-3 h-3 inline-block mr-2 rounded-full bg-gray-500"></span>Maintenance: <span id="stat-maintenance">-</span>
         </div>
@@ -186,24 +189,27 @@
       iconCreateFunction: function (cluster) {
         const children = cluster.getAllChildMarkers();
         const count = children.length;
-        let online = 0, highLatency = 0, offline = 0, maintenance = 0;
+        let online = 0, highLatency = 0, offline = 0, maintenance = 0, standalone = 0;
         children.forEach(c => {
           if (c.status === 'Maintenance') maintenance++;
           else if (c.status === 'High Latency') highLatency++;
           else if (c.status === 'Online') online++;
           else if (c.status === 'Offline') offline++;
+          else if (c.status === 'Standalone') standalone++;
         });
 
-        const onlineColor = '#10B981', highLatencyColor = '#F59E0B', offlineColor = '#EF4444';
+        const onlineColor = '#10B981', highLatencyColor = '#F59E0B', offlineColor = '#EF4444', standaloneColor = '#0EA5E9';
         const maintenanceColor = '#6B7280';
         const onlineEnd = (online / count) * 360;
         const highLatencyEnd = onlineEnd + (highLatency / count) * 360;
         const maintenanceEnd = highLatencyEnd + (maintenance / count) * 360;
+        const standaloneEnd = maintenanceEnd + (standalone / count) * 360;
         const gradient = `conic-gradient(
           ${onlineColor} 0deg ${onlineEnd}deg,
           ${highLatencyColor} ${onlineEnd}deg ${highLatencyEnd}deg,
           ${maintenanceColor} ${highLatencyEnd}deg ${maintenanceEnd}deg,
-          ${offlineColor} ${maintenanceEnd}deg 360deg
+          ${standaloneColor} ${maintenanceEnd}deg ${standaloneEnd}deg,
+          ${offlineColor} ${standaloneEnd}deg 360deg
         )`;
         const size = 30 + Math.log2(count) * 5;
         return L.divIcon({ html: `<div style="background: ${gradient};"><span>${count}</span></div>`, className: 'marker-cluster-pie', iconSize: [size, size] });
@@ -214,7 +220,7 @@
     
     let masterCameraData = []; // Stores all data from the server
     let allMarkers = [];       // Stores currently rendered marker objects for search
-    let statusFilter = new Set(["Online", "High Latency", "Offline", "Maintenance"]);
+    let statusFilter = new Set(["Online", "High Latency", "Standalone", "Offline", "Maintenance"]);
     
     const searchInput = document.getElementById('map-search-input');
     const searchResultsContainer = document.getElementById('search-results');
@@ -289,7 +295,7 @@
 
         if (!masterCameraData) return;
 
-        let onlineCount = 0, offlineCount = 0, highLatencyCount = 0, maintenanceCount = 0;
+        let onlineCount = 0, offlineCount = 0, highLatencyCount = 0, maintenanceCount = 0, standaloneCount = 0;
         let user_group = (masterCameraData.length > 0) ? masterCameraData[0].user_group : '';
 
         // First, calculate stats from the entire dataset
@@ -298,6 +304,7 @@
             if (normalized === "Online") onlineCount++;
             else if (normalized === "High Latency") highLatencyCount++;
             else if (normalized === "Maintenance") maintenanceCount++;
+            else if (normalized === "Standalone") standaloneCount++;
             else offlineCount++;
         });
 
@@ -310,6 +317,7 @@
                 const color = normalized === "Online" ? "green"
                     : normalized === "High Latency" ? "orange"
                     : normalized === "Maintenance" ? "gray"
+                    : normalized === "Standalone" ? "sky"
                     : "red";
 
                 const marker = L.marker([cam.lat, cam.lng], {
@@ -331,6 +339,7 @@
                             normalized === "Online" ? "🟢 Online" :
                             normalized === "High Latency" ? "🟡 High Latency" :
                             normalized === "Maintenance" ? "⚪ Maintenance" :
+                            normalized === "Standalone" ? "🔵 Standalone (Local)" :
                             "🔴 Offline"
                         }</td></tr>
                         ${isOnline
@@ -404,6 +413,7 @@
         document.getElementById("stat-offline").textContent = offlineCount;
         document.getElementById("stat-highlatency").textContent = highLatencyCount;
         document.getElementById("stat-maintenance").textContent = maintenanceCount;
+        document.getElementById("stat-standalone").textContent = standaloneCount;
     }
 
     /**
