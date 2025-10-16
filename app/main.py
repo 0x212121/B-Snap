@@ -18,6 +18,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.errors import ServerErrorMiddleware
 from starlette.middleware import Middleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+from app.middleware.http_proxy_fix import HTTPSProxyFixMiddleware
 from app.middleware.observability import ObservabilityMiddleware
 
 from app.middleware.auth_and_setup import AuthAndSetupMiddleware
@@ -111,8 +112,10 @@ async def lifespan(app: FastAPI):
 # ====================================================================
 # 4. FASTAPI APP INSTANCE & MIDDLEWARE
 # ====================================================================
+
 middleware = [
     Middleware(ProxyHeadersMiddleware, trusted_hosts=TRUSTED_HOSTS),
+    Middleware(HTTPSProxyFixMiddleware),
     Middleware(GZipMiddleware, minimum_size=1000),
     Middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=3600),
     Middleware(RestoreSessionMiddleware),
