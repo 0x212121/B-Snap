@@ -119,9 +119,14 @@ def snapshot_handler(
         if is_ip_address(normalized_input):
             camera = db.query(Camera).filter(Camera.ip == normalized_input).first()
         else:
-            camera = db.query(Camera).filter(Camera.id == normalized_input).first()
-            if not camera:
-                camera = db.query(Camera).filter(Camera.hostname.ilike(normalized_input)).first()
+            camera = (
+                db.query(Camera)
+                .filter(Camera.id == normalized_input)
+                .first()
+                or db.query(Camera)
+                .filter(Camera.hostname.ilike(normalized_input))
+                .first()
+            )
 
         if not camera:
             log_audit(
@@ -132,7 +137,10 @@ def snapshot_handler(
                 ip=request.client.host,
                 extra=f"{extra} | reason=Camera not found"
             )
-            raise HTTPException(status_code=404, detail="Camera not found with provided identifier")
+            return JSONResponse(status_code=404, content={
+                "status": "error",
+                "detail": "Camera not found with provided identifier"
+            })
 
         # --- Status check ---
         if camera.status not in ["Active", "Restricted", "Maintenance"]:
@@ -183,6 +191,7 @@ def snapshot_handler(
                 ip=request.client.host,
                 extra=f"{extra} | file={result['file_path']} | resolution={result.get('resolution', 'N/A')}"
             )
+            return JSONResponse(status_code=200, content=result)
         else:
             log_audit(
                 db=db,
@@ -192,8 +201,7 @@ def snapshot_handler(
                 ip=request.client.host,
                 extra=f"{extra} | reason={result.get('message', 'unknown error')}"
             )
-
-        return result
+            return JSONResponse(status_code=500, content=result)
 
     except Exception as e:
         log_audit(
@@ -204,7 +212,13 @@ def snapshot_handler(
             ip=request.client.host,
             extra=f"{extra} | exception={str(e)}"
         )
-        raise
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "detail": f"Unexpected error occurred: {str(e)}"
+            }
+        )
 
 
 @router.delete("/snap/{snapshot_id}", response_class=JSONResponse)

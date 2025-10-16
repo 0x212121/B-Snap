@@ -55,7 +55,7 @@
       </div>
 
       <form id="userForm" method="post" action="/users/create" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
           <div>
             <label for="usernameInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
             <input id="usernameInput" name="username" required
@@ -390,7 +390,7 @@
     showUserModal();
     formTitle.textContent = `Edit User: ${username}`;
     userForm.action = `/users/update/${id}`;
-    submitBtn.innerHTML = '💾 Update User';
+    submitBtn.innerHTML = 'Update User';
     submitBtn.classList.remove('bg-blue-600','hover:bg-blue-700');
     submitBtn.classList.add('bg-yellow-600','hover:bg-yellow-700');
     cancelEditBtn.classList.remove('hidden');

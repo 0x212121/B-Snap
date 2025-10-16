@@ -124,9 +124,9 @@
 - [x] WA bot: filter camera can be view by whitelist user group
 - [x] Tambah status maintenance mode dan tampilkan statusnya pada maps
 - [x] Status maintenance change to Active when snapshot completed
-- [ ] Logging command and API call
+- [x] Logging command and API call
 - [ ] Whatsapp Whitelist Filter user and pagination
 - [ ] Cameras filter by status
 - [x] Send email to receipient when CCTV is offline
-- [ ] Bug tombol send test email setelah add user baru
-- [ ] Input dokumentasi variable ENV yang digunakan
+- [x] Bug tombol send test email setelah add user baru
+- [x] Input dokumentasi variable ENV yang digunakan

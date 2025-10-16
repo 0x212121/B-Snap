@@ -13,7 +13,7 @@ docker-compose.yml file:
 ```docker
 services:
   b-snap:
-    image: wijayaindra21/b-snap:v1.7.3
+    image: wijayaindra21/b-snap:v1.10.0
     container_name: bsnap-app
     ports:
       - "8080:8080"
@@ -31,7 +31,7 @@ services:
     restart: unless-stopped
 
   scheduler:
-    image: wijayaindra21/b-snap:v1.7.3
+    image: wijayaindra21/b-snap:v1.10.0
     container_name: bsnap-scheduler
     env_file:
       - .env
@@ -47,7 +47,7 @@ services:
     command: python -m app.jobs.scheduler_main
   
   notifier:
-    image: wijayaindra21/b-snap:v1.7.3
+    image: wijayaindra21/b-snap:v1.10.0
     container_name: bsnap-notifier
     env_file:
       - .env
@@ -87,17 +87,27 @@ volumes:
   shared_tmp:
 ```
 
-set .env file like below
+Set .env file like below:
 ```bash
 DATABASE_URL=postgresql+psycopg2://bsnap_user:bsnap_pass@postgres:5432/bsnap_db
-SECRET_KEY = "VerySecret!@#!%$@#%$#%^"
+SECRET_KEY = "YourSecretKey"
 TZ=Asia/Singapore
 WORKERS=2
+SMTP_HOST=192.168.0.1 # Your SMTP Server
+SMTP_PORT=587
+SMTP_USER=YourSMTPUser
+SMTP_PASS=SMTPUserPassword
+EMAIL_FROM=bsnap-noreply@example.com
 ```
 
+Other valid environment variables:
+```bash
+MAX_WEB_SESSIONS=1  # Maximum concurrent logins per user (default 1)
+APP_DEBUG=1 # DEBUG mode
+```
 Adjust WORKERS variable as needed: eg. 4 cpu -> 5 worker
 
-run:
+Run:
 ```bash
 docker compose up -d
 ```

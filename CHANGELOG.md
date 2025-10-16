@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - None
+## [1.10.1] - 2025-10-10
+### Changed
+- Updated documentation and fix minor bugs. 
 
-## [1.10.0] - 2025-10-08
+## [1.10.0] - 2025-10-09
 ### Added
 - Usage Insight Dashboard — new analytics page to visualize daily API activity and chatbot command usage. Includes interactive line and bar charts, summary cards, and top-10 command statistics for improved insight into system activity.
 

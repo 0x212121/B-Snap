@@ -115,7 +115,7 @@ async def add_recipient(
     except IntegrityError:
         db.rollback()
         logger.exception("IntegrityError on add_recipient")
-        return json_error_response(f"Email '{email}' sudah ada di group ini.", 400)
+        return json_error_response(f"Email '{email}' already exist in this group", 400)
     except Exception as e:
         db.rollback()
         logger.exception("Unexpected error on add_recipient")
@@ -161,7 +161,7 @@ async def edit_recipient_submit(
     except IntegrityError:
         db.rollback()
         logger.exception("IntegrityError on edit_recipient")
-        return json_error_response(f"Email '{email_norm}' sudah ada di group ini.", 400)
+        return json_error_response(f"Email '{email_norm}' already exist in this group", 400)
     except Exception as e:
         db.rollback()
         logger.exception("Unexpected error on edit_recipient")

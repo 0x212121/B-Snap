@@ -11,7 +11,7 @@
       {{ icon_envelope_open("w-6 h-6 text-yellow-400") }}
       Add Recipient
     </div>
-    <div class="p-3">
+    <div class="px-4 py-3">
       <form id="addForm" class="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
         <div id="leftStack" class="grid grid-cols-1 gap-2">
           <div>
@@ -51,7 +51,7 @@
           </div>
         </div>
       </form>
-      <p class="mt-2 text-[11px] text-gray-500 dark:text-gray-400">Locations akan menyesuaikan group/division yang dipilih.</p>
+      <p class="mt-2 text-[11px] text-gray-500 dark:text-gray-400">Locations will adjust to the selected group/division.</p>
     </div>
   </div>
 
@@ -434,7 +434,6 @@ async function deleteRecipient(id) {
     const data = await safeJSON(resp);
     if (data.status === "success") {
       showNotification({ status: "success", message: data.message || "Recipient deleted" });
-      // jika halaman jadi kosong setelah delete, mundurkan 1 halaman
       const maxIdx = (currentPage - 1) * perPage;
       if (allRecipients.length === 1 && currentPage > 1) currentPage -= 1;
       await loadRecipients(currentPage);
@@ -484,7 +483,7 @@ btnTestSend?.addEventListener("click", async () => {
 
   btnTestSend.disabled = true;
   const old = btnTestSend.innerHTML;
-  btnTestSend.innerHTML = `{{ icon_airplane("w-4 h-4 text-gray-100 inline") }} Sending...`;
+  btnTestSend.innerHTML = `{{ icon_airplane("w-5 h-5 text-yellow-400 inline") }} Sending...`;
 
   try {
     const resp = await fetch("/api/recipients/test-send", { method: "POST", body: formData });
