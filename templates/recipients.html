@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-6">
-
+  
   <!-- === Section 1: Add Recipient === -->
   <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg mb-6">
     <div class="px-4 py-2 border-b dark:border-gray-700 flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-100">
@@ -17,109 +17,110 @@
           <div>
             <label for="email" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Email *</label>
             <input type="email" id="email" name="email" required
-              class="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2">
+            class="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2">
           </div>
           <div>
             <label for="nickname" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Nickname</label>
             <input type="text" id="nickname" name="nickname"
-              class="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2">
+            class="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2">
           </div>
           <div>
             <label for="group_id" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Group *</label>
             <select id="group_id" name="group_id" required
-              class="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 pr-8">
-              <option value="">-- Select Group --</option>
-            </select>
-          </div>
-          <div class="md:hidden">
-            <button type="submit"
-              class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center justify-center gap-2 shadow-sm">
-              {{ icon_plus("w-5 h-5 text-gray-100 inline") }} Add
-            </button>
-          </div>
-        </div>
-        <div id="rightLocations" class="flex flex-col">
-          <label for="locations" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Locations</label>
-          <select id="locations" name="locations" multiple
-            class="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 pr-8 flex-1 min-h-[6.5rem]">
+            class="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 pr-8">
+            <option value="">-- Select Group --</option>
           </select>
-          <div class="hidden md:flex justify-end pt-3">
-            <button type="submit"
-              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 shadow-sm">
-              {{ icon_plus("w-5 h-5 text-gray-100 inline") }} Add
-            </button>
-          </div>
         </div>
-      </form>
-      <p class="mt-2 text-[11px] text-gray-500 dark:text-gray-400">Locations will adjust to the selected group/division.</p>
-    </div>
-  </div>
-
-  <!-- === Section 2: Recipients List === -->
-  <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg mb-6">
-    <div class="flex items-center justify-between px-4 py-3 border-b dark:border-gray-700">
-      <div>
-        <h3 class="font-semibold text-gray-800 dark:text-gray-100">Recipients List</h3>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">List receiver B-SNAP Email</p>
-      </div>
-      <div class="flex items-center gap-2">
-        <label for="perPageSelect" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Items per page</label>
-        <select id="perPageSelect"
-          class="mt-1 block rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 pr-8">
-          <option value="10">10</option>
-          <option value="20" selected>20</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-        </select>
-      </div>
-    </div>
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm text-left text-gray-700 dark:text-gray-300">
-        <thead class="bg-gray-100 dark:bg-gray-700 dark:text-gray-200">
-          <tr>
-            <th class="px-4 py-2">Email</th>
-            <th class="px-4 py-2">Nickname</th>
-            <th class="px-4 py-2">Group</th>
-            <th class="px-4 py-2">Locations</th>
-            <th class="px-4 py-2 text-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="recipients-body">
-          <tr><td colspan="5" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">Loading...</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div id="pagination-controls" class="flex justify-center items-center gap-2 px-4 py-4 text-sm"></div>
-  </div>
-
-  <!-- === Section 3: Send Test Email === -->
-  <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg">
-    <div class="flex items-center gap-2 border-b dark:border-gray-700 px-4 py-2">
-      {{ icon_envelope("w-6 h-6 text-yellow-400") }}
-      <h3 class="font-semibold text-gray-800 dark:text-gray-100">Send Test Email</h3>
-    </div>
-    <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-      <div>
-        <label for="test_group" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Group</label>
-        <select id="test_group" class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2 pr-8">
-          <option value="">-- Select Group --</option>
-        </select>
-      </div>
-      <div>
-        <label for="test_location" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Location (optional)</label>
-        <select id="test_location" class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2 pr-8">
-          <option value="">-- All Locations --</option>
-        </select>
-      </div>
-      <div class="flex items-end">
-        <button id="btnTestSend"
+        <div class="md:hidden">
+          <button type="submit"
           class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center justify-center gap-2 shadow-sm">
-          {{ icon_airplane("w-5 h-5 text-yellow-400 inline") }}
-          Send Test Email
+          {{ icon_plus("w-5 h-5 text-gray-100 inline") }} Add
         </button>
       </div>
     </div>
+    <div id="rightLocations" class="flex flex-col">
+      <label for="locations" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Locations</label>
+      <select id="locations" name="locations" multiple
+      class="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 pr-8 flex-1 min-h-[6.5rem]">
+    </select>
+    <div class="hidden md:flex justify-end pt-3">
+      <button type="submit"
+      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 shadow-sm">
+      {{ icon_plus("w-5 h-5 text-gray-100 inline") }} Add
+    </button>
   </div>
+</div>
+</form>
+<p class="mt-2 text-[11px] text-gray-500 dark:text-gray-400">Locations will adjust to the selected group/division.</p>
+</div>
+</div>
+
+<!-- === Section 2: Recipients List === -->
+<div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg mb-6">
+  <div class="flex items-center justify-between px-4 py-3 border-b dark:border-gray-700">
+    <div>
+      <h3 class="font-semibold text-gray-800 dark:text-gray-100">Recipients List</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">List receiver B-SNAP Email</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <label for="perPageSelect" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Items per page</label>
+      <select id="perPageSelect"
+      class="mt-1 block rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 pr-8">
+      <option value="10">10</option>
+      <option value="20" selected>20</option>
+      <option value="50">50</option>
+      <option value="100">100</option>
+    </select>
+  </div>
+</div>
+<div class="overflow-x-auto">
+  <table class="w-full text-sm text-left text-gray-700 dark:text-gray-300">
+    <thead class="bg-gray-100 dark:bg-gray-700 dark:text-gray-200">
+      <tr>
+        <th id="th-email" class="px-4 py-2 cursor-pointer select-none hover:text-blue-600"
+        onclick="sortRecipientsByEmail()">Email ↑</th>
+        <th class="px-4 py-2">Nickname</th>
+        <th class="px-4 py-2">Group</th>
+        <th class="px-4 py-2">Locations</th>
+        <th class="px-4 py-2 text-center">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="recipients-body">
+      <tr><td colspan="5" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">Loading...</td></tr>
+    </tbody>
+  </table>
+</div>
+<div id="pagination-controls" class="flex justify-center items-center gap-2 px-4 py-4 text-sm"></div>
+</div>
+
+<!-- === Section 3: Send Test Email === -->
+<div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg">
+  <div class="flex items-center gap-2 border-b dark:border-gray-700 px-4 py-2">
+    {{ icon_envelope("w-6 h-6 text-yellow-400") }}
+    <h3 class="font-semibold text-gray-800 dark:text-gray-100">Send Test Email</h3>
+  </div>
+  <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div>
+      <label for="test_group" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Group</label>
+      <select id="test_group" class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2 pr-8">
+        <option value="">-- Select Group --</option>
+      </select>
+    </div>
+    <div>
+      <label for="test_location" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Location (optional)</label>
+      <select id="test_location" class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2 pr-8">
+        <option value="">-- All Locations --</option>
+      </select>
+    </div>
+    <div class="flex items-end">
+      <button id="btnTestSend"
+      class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center justify-center gap-2 shadow-sm">
+      {{ icon_airplane("w-5 h-5 text-yellow-400 inline") }}
+      Send Test Email
+    </button>
+  </div>
+</div>
+</div>
 </div>
 
 <div id="notification-container" class="fixed top-5 right-5 z-[100] w-full max-w-sm"></div>
@@ -133,185 +134,222 @@
       <div>
         <label for="edit_email" class="block text-xs font-medium">Email *</label>
         <input type="email" id="edit_email" name="email" required
-          class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2">
+        class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2">
       </div>
       <div>
         <label for="edit_nickname" class="block text-xs font-medium">Nickname</label>
         <input type="text" id="edit_nickname" name="nickname"
-          class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2">
+        class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2">
       </div>
       <div>
         <label for="edit_group_id" class="block text-xs font-medium">Group *</label>
         <select id="edit_group_id" name="group_id" required
-          class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2 pr-8"></select>
+        class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2 pr-8"></select>
       </div>
       <div>
         <label for="edit_locations" class="block text-xs font-medium">Locations</label>
         <select id="edit_locations" name="locations" multiple size="4"
-          class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2 pr-8"></select>
+        class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2 pr-8"></select>
       </div>
       <div class="flex justify-end gap-2 pt-1">
         <button type="button" onclick="closeEditModal()"
-          class="px-3 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-sm">Cancel</button>
+        class="px-3 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-sm">Cancel</button>
         <button type="submit"
-          class="px-3 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold flex items-center gap-2">
-          {{ icon_download("w-4 h-4 text-gray-100 inline") }} Save
-        </button>
-      </div>
-    </form>
-  </div>
+        class="px-3 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold flex items-center gap-2">
+        {{ icon_download("w-4 h-4 text-gray-100 inline") }} Save
+      </button>
+    </div>
+  </form>
+</div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-/* ================== State ================== */
-let allRecipients = [];     // untuk client-side pagination
-let currentPage = 1;
-let perPage = 20;
-let totalPages = 1;
-
-/* ================== Utils ================== */
-function showNotification({ status, message }) {
-  const container = document.getElementById("notification-container");
-  const notif = document.createElement("div");
-  const color = status === "success" ? "bg-green-500" : (status === "info" ? "bg-blue-500" : "bg-red-500");
-  notif.className = `flex items-center p-3 rounded text-white text-sm shadow ${color}`;
-  notif.innerHTML = `<span class='mr-2'>${status === "success" ? "✅" : status === "info" ? "ℹ️" : "❌"}</span> ${message}`;
-  container.appendChild(notif);
-  setTimeout(() => notif.remove(), 3500);
-}
-
-async function safeJSON(res) {
-  const ct = res.headers.get('content-type') || '';
-  if (ct.includes('application/json')) return res.json();
-  const text = await res.text();
-  try { return JSON.parse(text); } catch { return { status: "error", message: text || `HTTP ${res.status}` }; }
-}
-
-/* ================== Height sync ================== */
-function syncLocationsHeight() {
-  const left = document.getElementById('leftStack');
-  const select = document.getElementById('locations');
-  if (!left || !select) return;
-  const isMdUp = window.matchMedia('(min-width: 768px)').matches;
-  if (!isMdUp) { select.style.height = ''; return; }
-  const h = left.getBoundingClientRect().height;
-  select.style.height = Math.max(110, Math.floor(h)) + 'px';
-}
-window.addEventListener('resize', syncLocationsHeight);
-
-/* ================== Pagination UI ================== */
-function buildPagination(container, page, total) {
-  container.innerHTML = '';
-  if (total <= 1) return;
-
-  const makeLink = (label, targetPage, disabled = false, active = false) => {
-    const el = document.createElement(active ? 'span' : 'a');
-    el.textContent = label;
-    el.className = active
+  /* ================== State ================== */
+  let allRecipients = [];     // untuk client-side pagination
+  let currentPage = 1;
+  let perPage = 20;
+  let totalPages = 1;
+  
+  /* ================== Utils ================== */
+  function showNotification({ status, message }) {
+    const container = document.getElementById("notification-container");
+    const notif = document.createElement("div");
+    const color = status === "success" ? "bg-green-500" : (status === "info" ? "bg-blue-500" : "bg-red-500");
+    notif.className = `flex items-center p-3 rounded text-white text-sm shadow ${color}`;
+    notif.innerHTML = `<span class='mr-2'>${status === "success" ? "✅" : status === "info" ? "ℹ️" : "❌"}</span> ${message}`;
+    container.appendChild(notif);
+    setTimeout(() => notif.remove(), 3500);
+  }
+  
+  async function safeJSON(res) {
+    const ct = res.headers.get('content-type') || '';
+    if (ct.includes('application/json')) return res.json();
+    const text = await res.text();
+    try { return JSON.parse(text); } catch { return { status: "error", message: text || `HTTP ${res.status}` }; }
+  }
+  
+  /* ================== Height sync ================== */
+  function syncLocationsHeight() {
+    const left = document.getElementById('leftStack');
+    const select = document.getElementById('locations');
+    if (!left || !select) return;
+    const isMdUp = window.matchMedia('(min-width: 768px)').matches;
+    if (!isMdUp) { select.style.height = ''; return; }
+    const h = left.getBoundingClientRect().height;
+    select.style.height = Math.max(110, Math.floor(h)) + 'px';
+  }
+  window.addEventListener('resize', syncLocationsHeight);
+  
+  /* ================== Pagination UI ================== */
+  /* ================== Pagination UI ================== */
+  /**
+  * buildPagination(container, page, total, serverPaged = false)
+  * - serverPaged: boolean — bila true, pagination akan memicu loadRecipients(page)
+  *   (request ke backend). Bila false, pagination akan render slice di client.
+  */
+  function buildPagination(container, page, total, serverPaged = false) {
+    container.innerHTML = '';
+    if (!total || total <= 1) return;
+    
+    const makeLink = (label, targetPage, disabled = false, active = false) => {
+      const el = document.createElement(active ? 'span' : 'a');
+      el.textContent = label;
+      el.className = active
       ? 'px-3 py-1 bg-blue-600 text-white rounded font-bold'
       : 'px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white';
-    if (!active && !disabled) {
-      el.href = '#';
-      el.onclick = (e) => { e.preventDefault(); renderRecipients(targetPage); };
+      if (!active && !disabled) {
+        el.href = '#';
+        el.onclick = (e) => {
+          e.preventDefault();
+          if (serverPaged && typeof loadRecipients === 'function') {
+            loadRecipients(targetPage, window.perPage);
+          } else if (typeof renderRecipients === 'function') {
+            renderRecipients(targetPage);
+          }
+        };
+      }
+      return el;
+    };
+    
+    const windowSize = 2;
+    
+    if (page > 1) {
+      container.appendChild(makeLink('First', 1));
+      container.appendChild(makeLink('«', page - 1));
     }
-    return el;
-  };
-
-  const windowSize = 2;
-
-  if (page > 1) {
-    container.appendChild(makeLink('First', 1));
-    container.appendChild(makeLink('«', page - 1));
+    if (page > windowSize + 2) container.appendChild(document.createTextNode('...'));
+    for (let i = Math.max(1, page - windowSize); i <= Math.min(total, page + windowSize); i++) {
+      container.appendChild(makeLink(String(i), i, false, i === page));
+    }
+    if (page < total - windowSize - 1) container.appendChild(document.createTextNode('...'));
+    if (page < total) {
+      container.appendChild(makeLink('»', page + 1));
+      container.appendChild(makeLink('Last', total));
+    }
   }
-  if (page > windowSize + 2) container.appendChild(document.createTextNode('...'));
-  for (let i = Math.max(1, page - windowSize); i <= Math.min(total, page + windowSize); i++) {
-    container.appendChild(makeLink(String(i), i, false, i === page));
+  
+  /* ================== Load & Render ================== */
+  async function loadRecipients(targetPage = 1, overridePerPage = null) {
+    const tbody = document.getElementById("recipients-body");
+    const paginationContainer = document.getElementById("pagination-controls");
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // --- Resolve per_page (priority: override → url param → current memory)
+    const urlPerPageRaw = urlParams.get("per_page");
+    const urlPerPage = urlPerPageRaw ? parseInt(urlPerPageRaw, 10) : null;
+    const selectedPerPage = (overridePerPage && !Number.isNaN(overridePerPage))
+    ? overridePerPage
+    : (urlPerPage || window.perPage || 10);
+    
+    window.perPage = selectedPerPage;
+    window.currentPage = targetPage; // <— selalu pakai targetPage yang diklik
+    
+    // --- Update dropdown UI
+    const perSel = document.getElementById("perPageSelect");
+    if (perSel) perSel.value = window.perPage;
+    
+    if (tbody) tbody.style.opacity = "0.6";
+    
+    try {
+      const resp = await fetch(`/api/recipients?page=${window.currentPage}&per_page=${window.perPage}`);
+      const data = await safeJSON(resp);
+      if (!data || data.status !== "success") {
+        throw new Error(data ? data.message : "Invalid response");
+      }
+      
+      const { recipients, groups, locations_by_group, pagination } = data.data || {};
+      window.locationsByGroup = locations_by_group || {};
+      
+      // --- Populate group selects
+      const selects = [document.getElementById("group_id"), document.getElementById("edit_group_id"), document.getElementById("test_group")];
+      selects.forEach(sel => {
+        if (!sel) return;
+        const keepFirst = sel.querySelector("option")?.outerHTML || '<option value="">-- Select Group --</option>';
+        sel.innerHTML = keepFirst;
+        (groups || []).forEach(g => sel.insertAdjacentHTML("beforeend", `<option value="${g.id}">${g.name}</option>`));
+      });
+      
+      // --- Update global state
+      window.allRecipients = recipients || [];
+      window.totalPages = pagination?.total_pages || 1;
+      window.currentPage = pagination?.page || window.currentPage;
+      
+      // --- Render current page
+      renderRecipients(window.currentPage, true);
+      
+      // --- Rebuild pagination UI (serverPaged = true)
+      if (paginationContainer) {
+        buildPagination(paginationContainer, window.currentPage, window.totalPages, true);
+      }
+      
+      sortAscending = true;
+      sortRecipientsByEmail();
+      
+      // --- Update URL AFTER success
+      const url = new URL(window.location);
+      url.searchParams.set("page", window.currentPage);
+      url.searchParams.set("per_page", window.perPage);
+      window.history.pushState({ page: window.currentPage, perPage: window.perPage }, "", url);
+      
+    } catch (err) {
+      console.error("Error loadRecipients:", err);
+      if (tbody) tbody.innerHTML =
+      `<tr><td colspan="5" class="px-4 py-6 text-center text-red-500">Failed to load data.</td></tr>`;
+      if (typeof showNotification === "function")
+      showNotification({ status: "error", message: "Failed to load recipients." });
+    } finally {
+      if (tbody) tbody.style.opacity = "1";
+    }
   }
-  if (page < total - windowSize - 1) container.appendChild(document.createTextNode('...'));
-  if (page < total) {
-    container.appendChild(makeLink('»', page + 1));
-    container.appendChild(makeLink('Last', total));
-  }
-}
-
-/* ================== Load & Render ================== */
-async function loadRecipients(initialPage = 1) {
-  const tbody = document.getElementById("recipients-body");
-  const urlParams = new URLSearchParams(window.location.search);
-  const urlPerPage = parseInt(urlParams.get('per_page') || '') || null;
-  const urlPage    = parseInt(urlParams.get('page') || '') || null;
-
-  if (urlPerPage) {
-    perPage = urlPerPage;
-    document.getElementById('perPageSelect').value = perPage;
-  }
-  if (urlPage) currentPage = urlPage;
-
-  try {
-    const resp = await fetch("/api/recipients");
-    const data = await safeJSON(resp);
-    if (data.status !== "success") throw new Error(data.message || "Failed to load");
-
-    const { recipients, groups, locations_by_group, total_pages, page } = data.data || data;
-
-    // Fill globals for dependent selects
-    window.locationsByGroup = locations_by_group || {};
-
-    // Fill groups (add + edit + test)
-    const addGroup = document.getElementById("group_id");
-    const editGroup = document.getElementById("edit_group_id");
-    const testGroup = document.getElementById("test_group");
-    [addGroup, editGroup, testGroup].forEach(sel => {
-      if (!sel) return;
-      const keepFirst = sel.querySelector("option")?.outerHTML || '<option value="">-- Select Group --</option>';
-      sel.innerHTML = keepFirst;
-      (data.data?.groups || data.groups || []).forEach(g => sel.insertAdjacentHTML("beforeend", `<option value="${g.id}">${g.name}</option>`));
-    });
-
-    // Support server-side pagination if provided; else fallback to client-side
-    if (Array.isArray(recipients) && (typeof total_pages === 'number')) {
-      allRecipients = recipients; // current page only
-      totalPages = total_pages || 1;
-      currentPage = page || currentPage || 1;
-      // render just what server returned (no slice)
-      renderRecipients(currentPage, true);
+  
+  /* ================== Render ================== */
+  function renderRecipients(page = 1, serverPaged = false) {
+    window.currentPage = page;
+    const tbody = document.getElementById("recipients-body");
+    const pag = document.getElementById("pagination-controls");
+    if (!tbody) return;
+    
+    tbody.innerHTML = "";
+    
+    let rows = [];
+    if (serverPaged) {
+      rows = window.allRecipients || []; // server already returned current page
     } else {
-      allRecipients = Array.isArray(recipients) ? recipients : (data.data?.recipients || []);
-      totalPages = Math.max(1, Math.ceil(allRecipients.length / perPage));
-      currentPage = Math.min(currentPage || initialPage, totalPages);
-      renderRecipients(currentPage);
+      const start = (page - 1) * perPage;
+      rows = (window.allRecipients || []).slice(start, start + perPage);
+      window.totalPages = Math.max(1, Math.ceil((window.allRecipients || []).length / perPage));
     }
-
-    syncLocationsHeight();
-  } catch (err) {
-    console.error("Error loadRecipients:", err);
-    tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-red-500">Failed to load data.</td></tr>`;
-  }
-}
-
-function renderRecipients(page = 1, serverPaged = false) {
-  currentPage = page;
-  const tbody = document.getElementById("recipients-body");
-  const pag = document.getElementById("pagination-controls");
-
-  tbody.innerHTML = "";
-
-  let rows = [];
-  if (serverPaged) {
-    rows = allRecipients; // server already paginated
-  } else {
-    const start = (page - 1) * perPage;
-    rows = allRecipients.slice(start, start + perPage);
-    totalPages = Math.max(1, Math.ceil(allRecipients.length / perPage));
-  }
-
-  if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No recipients found.</td></tr>`;
-  } else {
-    rows.forEach(r => {
-      tbody.insertAdjacentHTML("beforeend", `
+    
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No recipients found.</td></tr>`;
+    } else {
+      rows.forEach(r => {
+        const safeEmail = (r.email || '').replace(/'/g, "\\'");
+        const safeNickname = (r.nickname || '').replace(/'/g, "\\'");
+        const safeLoc = (r.locations || '').replace(/'/g, "\\'");
+        tbody.insertAdjacentHTML("beforeend", `
         <tr id="recipient-row-${r.id}" class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <td class="px-4 py-2 col-email">${r.email}</td>
           <td class="px-4 py-2 col-nickname">${r.nickname || "-"}</td>
@@ -319,247 +357,266 @@ function renderRecipients(page = 1, serverPaged = false) {
           <td class="px-4 py-2 col-locations">${r.locations || "-"}</td>
           <td class="px-4 py-2 text-center space-x-2">
             <button type="button"
-              onclick="openEditModal(${r.id}, '${r.email}', '${(r.nickname || '').replace(/'/g, "\\'")}', '${r.group_id}', '${(r.locations || '').replace(/'/g, "\\'")}')"
+              onclick="openEditModal(${r.id}, '${safeEmail}', '${safeNickname}', '${r.group_id}', '${safeLoc}')"
               title="Edit recipient"
               class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-yellow-200 dark:hover:bg-yellow-800/50">
               {{ icon_pencil("w-5 h-5 text-yellow-500") }}
             </button>
             <button type="button"
-              onclick="confirmDeleteRecipient(${r.id}, '${r.email}')"
+              onclick="confirmDeleteRecipient(${r.id}, '${safeEmail}')"
               title="Delete recipient"
               class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-red-200 dark:hover:bg-red-800/50">
               {{ icon_trash("w-5 h-5 text-red-600") }}
             </button>
           </td>
+
         </tr>`);
+      });
+    }
+    
+    if (pag) {
+      buildPagination(pag, window.currentPage, window.totalPages || 1, serverPaged);
+    }
+  }
+  
+  
+  /* ================== Sorting ================== */
+  let sortAscending = true; // toggle state
+  
+  function sortRecipientsByEmail() {
+    if (!Array.isArray(window.allRecipients)) return;
+    window.allRecipients.sort((a, b) => {
+      const emailA = (a.email || '').toLowerCase();
+      const emailB = (b.email || '').toLowerCase();
+      if (emailA < emailB) return sortAscending ? -1 : 1;
+      if (emailA > emailB) return sortAscending ? 1 : -1;
+      return 0;
+    });
+    sortAscending = !sortAscending; // toggle direction each click
+    renderRecipients(window.currentPage, true);
+    updateSortIndicator();
+  }
+  
+  function updateSortIndicator() {
+    const header = document.getElementById('th-email');
+    if (!header) return;
+    header.innerHTML = `Email ${sortAscending ? '↑' : '↓'}`;
+  }
+  
+  /* ================== Dependent selects ================== */
+  function populateLocations(groupId, selectEl, preselected = []) {
+    selectEl.innerHTML = "";
+    const map = window.locationsByGroup || {};
+    if (!groupId || !map[groupId] || !map[groupId].length) {
+      selectEl.insertAdjacentHTML("beforeend", `<option disabled selected>-- No locations --</option>`);
+      syncLocationsHeight();
+      return;
+    }
+    map[groupId].forEach(loc => {
+      const opt = document.createElement("option");
+      opt.value = loc;
+      opt.textContent = loc;
+      if (preselected.includes((loc || '').toLowerCase())) opt.selected = true;
+      selectEl.appendChild(opt);
+    });
+    syncLocationsHeight();
+  }
+  
+  document.getElementById("group_id")?.addEventListener("change", e => {
+    populateLocations(e.target.value, document.getElementById("locations"));
+  });
+  document.getElementById("edit_group_id")?.addEventListener("change", e => {
+    populateLocations(e.target.value, document.getElementById("edit_locations"));
+  });
+  
+  /* ================== Add/Edit/Delete/Test ================== */
+  document.getElementById("addForm")?.addEventListener("submit", async e => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    try {
+      const resp = await fetch("/recipients/add", { method: "POST", body: formData });
+      const data = await safeJSON(resp);
+      if (data.status === "success") {
+        showNotification({ status: "success", message: data.message || "Recipient added" });
+        e.target.reset();
+        document.getElementById("locations").innerHTML = "";
+        syncLocationsHeight();
+        // reload data & stay on first page (supaya entry baru terlihat jelas)
+        currentPage = 1;
+        await loadRecipients(1);
+      } else {
+        showNotification({ status: "error", message: data.message || "Failed to add recipient" });
+      }
+    } catch (err) {
+      console.error(err);
+      showNotification({ status: "error", message: "Server error while adding recipient" });
+    }
+  });
+  
+  function openEditModal(id, email, nickname, groupId, locationsCsv = "") {
+    document.getElementById("edit_id").value = id;
+    document.getElementById("edit_email").value = email;
+    document.getElementById("edit_nickname").value = nickname;
+    document.getElementById("edit_group_id").value = groupId;
+    const pre = locationsCsv.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+    populateLocations(groupId, document.getElementById("edit_locations"), pre);
+    document.getElementById("editModal").classList.remove("hidden");
+  }
+  function closeEditModal() {
+    document.getElementById("editModal").classList.add("hidden");
+  }
+  document.getElementById("editForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const id = formData.get("id");
+    try {
+      const resp = await fetch(`/recipients/edit/${id}`, { method: "POST", body: formData });
+      const data = await safeJSON(resp);
+      if (data.status === "success") {
+        showNotification({ status: "success", message: data.message || "Recipient updated" });
+        closeEditModal();
+        // re-render current page
+        await loadRecipients(currentPage);
+      } else {
+        showNotification({ status: "error", message: data.message || "Failed to update recipient" });
+      }
+    } catch (err) {
+      console.error(err);
+      showNotification({ status: "error", message: "Server error while updating recipient" });
+    }
+  });
+  
+  async function deleteRecipient(id) {
+    try {
+      const resp = await fetch(`/recipients/delete/${id}`, { method: "POST" });
+      const data = await safeJSON(resp);
+      if (data.status === "success") {
+        showNotification({ status: "success", message: data.message || "Recipient deleted" });
+        const maxIdx = (currentPage - 1) * perPage;
+        if (allRecipients.length === 1 && currentPage > 1) currentPage -= 1;
+        await loadRecipients(currentPage);
+      } else {
+        showNotification({ status: "error", message: data.message || "Failed to delete" });
+      }
+    } catch (err) {
+      console.error(err);
+      showNotification({ status: "error", message: "Server error while deleting recipient" });
+    }
+  }
+  function confirmDeleteRecipient(id, email) {
+    showGlobalConfirm(`Delete recipient ${email}?`, () => deleteRecipient(id), {
+      title: "Delete Recipient",
+      confirmText: "Delete",
+      confirmClasses: "bg-red-600 hover:bg-red-700"
     });
   }
-
-  // Build pagination (centered, same style as cameras)
-  buildPagination(pag, currentPage, totalPages);
-
-  // Sync URL params
-  const url = new URL(window.location);
-  url.searchParams.set('page', currentPage);
-  url.searchParams.set('per_page', perPage);
-  window.history.replaceState({ page: currentPage, perPage }, '', url);
-}
-
-/* ================== Dependent selects ================== */
-function populateLocations(groupId, selectEl, preselected = []) {
-  selectEl.innerHTML = "";
-  const map = window.locationsByGroup || {};
-  if (!groupId || !map[groupId] || !map[groupId].length) {
-    selectEl.insertAdjacentHTML("beforeend", `<option disabled selected>-- No locations --</option>`);
-    syncLocationsHeight();
-    return;
-  }
-  map[groupId].forEach(loc => {
-    const opt = document.createElement("option");
-    opt.value = loc;
-    opt.textContent = loc;
-    if (preselected.includes((loc || '').toLowerCase())) opt.selected = true;
-    selectEl.appendChild(opt);
-  });
-  syncLocationsHeight();
-}
-
-document.getElementById("group_id")?.addEventListener("change", e => {
-  populateLocations(e.target.value, document.getElementById("locations"));
-});
-document.getElementById("edit_group_id")?.addEventListener("change", e => {
-  populateLocations(e.target.value, document.getElementById("edit_locations"));
-});
-
-/* ================== Add/Edit/Delete/Test ================== */
-document.getElementById("addForm")?.addEventListener("submit", async e => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  try {
-    const resp = await fetch("/recipients/add", { method: "POST", body: formData });
-    const data = await safeJSON(resp);
-    if (data.status === "success") {
-      showNotification({ status: "success", message: data.message || "Recipient added" });
-      e.target.reset();
-      document.getElementById("locations").innerHTML = "";
-      syncLocationsHeight();
-      // reload data & stay on first page (supaya entry baru terlihat jelas)
-      currentPage = 1;
-      await loadRecipients(1);
-    } else {
-      showNotification({ status: "error", message: data.message || "Failed to add recipient" });
-    }
-  } catch (err) {
-    console.error(err);
-    showNotification({ status: "error", message: "Server error while adding recipient" });
-  }
-});
-
-function openEditModal(id, email, nickname, groupId, locationsCsv = "") {
-  document.getElementById("edit_id").value = id;
-  document.getElementById("edit_email").value = email;
-  document.getElementById("edit_nickname").value = nickname;
-  document.getElementById("edit_group_id").value = groupId;
-  const pre = locationsCsv.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
-  populateLocations(groupId, document.getElementById("edit_locations"), pre);
-  document.getElementById("editModal").classList.remove("hidden");
-}
-function closeEditModal() {
-  document.getElementById("editModal").classList.add("hidden");
-}
-document.getElementById("editForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  const id = formData.get("id");
-  try {
-    const resp = await fetch(`/recipients/edit/${id}`, { method: "POST", body: formData });
-    const data = await safeJSON(resp);
-    if (data.status === "success") {
-      showNotification({ status: "success", message: data.message || "Recipient updated" });
-      closeEditModal();
-      // re-render current page
-      await loadRecipients(currentPage);
-    } else {
-      showNotification({ status: "error", message: data.message || "Failed to update recipient" });
-    }
-  } catch (err) {
-    console.error(err);
-    showNotification({ status: "error", message: "Server error while updating recipient" });
-  }
-});
-
-async function deleteRecipient(id) {
-  try {
-    const resp = await fetch(`/recipients/delete/${id}`, { method: "POST" });
-    const data = await safeJSON(resp);
-    if (data.status === "success") {
-      showNotification({ status: "success", message: data.message || "Recipient deleted" });
-      const maxIdx = (currentPage - 1) * perPage;
-      if (allRecipients.length === 1 && currentPage > 1) currentPage -= 1;
-      await loadRecipients(currentPage);
-    } else {
-      showNotification({ status: "error", message: data.message || "Failed to delete" });
-    }
-  } catch (err) {
-    console.error(err);
-    showNotification({ status: "error", message: "Server error while deleting recipient" });
-  }
-}
-function confirmDeleteRecipient(id, email) {
-  showGlobalConfirm(`Delete recipient ${email}?`, () => deleteRecipient(id), {
-    title: "Delete Recipient",
-    confirmText: "Delete",
-    confirmClasses: "bg-red-600 hover:bg-red-700"
-  });
-}
-
-const testGroupSelect = document.getElementById("test_group");
-const testLocationSelect = document.getElementById("test_location");
-const btnTestSend = document.getElementById("btnTestSend");
-
-testGroupSelect?.addEventListener("change", e => {
-  const gid = e.target.value;
-  testLocationSelect.innerHTML = '<option value="">-- All Locations --</option>';
-  const map = window.locationsByGroup || {};
-  (map[gid] || []).forEach(loc => {
-    const opt = document.createElement("option");
-    opt.value = loc;
-    opt.textContent = loc;
-    testLocationSelect.appendChild(opt);
-  });
-});
-
-btnTestSend?.addEventListener("click", async () => {
-  const groupId = testGroupSelect.value;
-  const location = testLocationSelect.value;
-  if (!groupId) {
-    showNotification({ status: "error", message: "Select a group first" });
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("group_id", groupId);
-  if (location) formData.append("location", location);
-
-  btnTestSend.disabled = true;
-  const old = btnTestSend.innerHTML;
-  btnTestSend.innerHTML = `{{ icon_airplane("w-5 h-5 text-yellow-400 inline") }} Sending...`;
-
-  try {
-    const resp = await fetch("/api/recipients/test-send", { method: "POST", body: formData });
-    const data = await safeJSON(resp);
-    if (data.status === "success") {
-      showNotification({ status: "success", message: data.message || "Test emails sent" });
-    } else {
-      showNotification({ status: "error", message: data.message || "Failed to send test emails" });
-    }
-  } catch (err) {
-    console.error("Error test send:", err);
-    showNotification({ status: "error", message: "Server error while sending emails" });
-  } finally {
-    btnTestSend.disabled = false;
-    btnTestSend.innerHTML = old;
-  }
-});
-
-/* ================== Per-page select ================== */
-document.getElementById('perPageSelect').addEventListener('change', e => {
-  perPage = parseInt(e.target.value, 10) || 20;
-  totalPages = Math.max(1, Math.ceil(allRecipients.length / perPage));
-  currentPage = 1;
-  renderRecipients(currentPage);
-});
-
-/* ================== Init ================== */
-document.addEventListener("DOMContentLoaded", () => {
-  // existing init
-  loadRecipients(1);
-  syncLocationsHeight();
-
-  // ===== Test Send section =====
-  const testGroup = document.getElementById("test_group");
-  const testLoc   = document.getElementById("test_location");
-  const btnSend   = document.getElementById("btnTestSend");
-
-  testGroup?.addEventListener("change", e => {
+  
+  const testGroupSelect = document.getElementById("test_group");
+  const testLocationSelect = document.getElementById("test_location");
+  const btnTestSend = document.getElementById("btnTestSend");
+  
+  testGroupSelect?.addEventListener("change", e => {
     const gid = e.target.value;
-    testLoc.innerHTML = '<option value="">-- All Locations --</option>';
+    testLocationSelect.innerHTML = '<option value="">-- All Locations --</option>';
     const map = window.locationsByGroup || {};
     (map[gid] || []).forEach(loc => {
       const opt = document.createElement("option");
-      opt.value = loc; opt.textContent = loc;
-      testLoc.appendChild(opt);
+      opt.value = loc;
+      opt.textContent = loc;
+      testLocationSelect.appendChild(opt);
     });
   });
-
-  btnSend?.addEventListener("click", async () => {
-    const gid = testGroup.value;
-    const loc = testLoc.value;
-    if (!gid) {
-      showNotification({ status:"error", message:"Select a group first" });
+  
+  btnTestSend?.addEventListener("click", async () => {
+    const groupId = testGroupSelect.value;
+    const location = testLocationSelect.value;
+    if (!groupId) {
+      showNotification({ status: "error", message: "Select a group first" });
       return;
     }
-
+    
     const formData = new FormData();
-    formData.append("group_id", gid);
-    if (loc) formData.append("location", loc);
-
-    btnSend.disabled = true;
-    const old = btnSend.innerHTML;
-    btnSend.innerHTML = `{{ icon_airplane("w-4 h-4 text-gray-100 inline") }} Sending...`;
-
+    formData.append("group_id", groupId);
+    if (location) formData.append("location", location);
+    
+    btnTestSend.disabled = true;
+    const old = btnTestSend.innerHTML;
+    btnTestSend.innerHTML = `{{ icon_airplane("w-5 h-5 text-yellow-400 inline") }} Sending...`;
+    
     try {
-      const res = await fetch("/api/recipients/test-send", { method:"POST", body: formData });
-      const data = await safeJSON(res);
-      showNotification({ status: data.status, message: data.message || (data.status === "success" ? "Test email sent" : "Failed to send") });
-    } catch(err) {
-      console.error(err);
-      showNotification({ status:"error", message:"Server error while sending email" });
+      const resp = await fetch("/api/recipients/test-send", { method: "POST", body: formData });
+      const data = await safeJSON(resp);
+      if (data.status === "success") {
+        showNotification({ status: "success", message: data.message || "Test emails sent" });
+      } else {
+        showNotification({ status: "error", message: data.message || "Failed to send test emails" });
+      }
+    } catch (err) {
+      console.error("Error test send:", err);
+      showNotification({ status: "error", message: "Server error while sending emails" });
     } finally {
-      btnSend.disabled = false;
-      btnSend.innerHTML = old;
+      btnTestSend.disabled = false;
+      btnTestSend.innerHTML = old;
     }
   });
-});
+  
+  /* ================== Per-page select ================== */
+  document.getElementById('perPageSelect').addEventListener('change', e => {
+    perPage = parseInt(e.target.value, 10) || 20;
+    currentPage = 1;
+    loadRecipients(currentPage, perPage); // kirim juga per_page baru
+  });
+  
+  /* ================== Init ================== */
+  document.addEventListener("DOMContentLoaded", () => {
+    // existing init
+    loadRecipients(1);
+    syncLocationsHeight();
+    
+    // ===== Test Send section =====
+    const testGroup = document.getElementById("test_group");
+    const testLoc   = document.getElementById("test_location");
+    const btnSend   = document.getElementById("btnTestSend");
+    
+    testGroup?.addEventListener("change", e => {
+      const gid = e.target.value;
+      testLoc.innerHTML = '<option value="">-- All Locations --</option>';
+      const map = window.locationsByGroup || {};
+      (map[gid] || []).forEach(loc => {
+        const opt = document.createElement("option");
+        opt.value = loc; opt.textContent = loc;
+        testLoc.appendChild(opt);
+      });
+    });
+    
+    btnSend?.addEventListener("click", async () => {
+      const gid = testGroup.value;
+      const loc = testLoc.value;
+      if (!gid) {
+        showNotification({ status:"error", message:"Select a group first" });
+        return;
+      }
+      
+      const formData = new FormData();
+      formData.append("group_id", gid);
+      if (loc) formData.append("location", loc);
+      
+      btnSend.disabled = true;
+      const old = btnSend.innerHTML;
+      btnSend.innerHTML = `{{ icon_airplane("w-4 h-4 text-gray-100 inline") }} Sending...`;
+      
+      try {
+        const res = await fetch("/api/recipients/test-send", { method:"POST", body: formData });
+        const data = await safeJSON(res);
+        showNotification({ status: data.status, message: data.message || (data.status === "success" ? "Test email sent" : "Failed to send") });
+      } catch(err) {
+        console.error(err);
+        showNotification({ status:"error", message:"Server error while sending email" });
+      } finally {
+        btnSend.disabled = false;
+        btnSend.innerHTML = old;
+      }
+    });
+  });
 </script>
 {% endblock %}
