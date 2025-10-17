@@ -16,6 +16,8 @@ from app.models.camera_email_notification_log import (
 )
 from app.utils.timezone_helper import format_datetime_with_tz, to_current_timezone
 from app.models.snapshot import Snapshot
+from app.core.logging_config import set_debug_mode
+set_debug_mode(True)
 
 logger = logging.getLogger("email_notifier")
 SNAPSHOT_BASE_DIR = os.path.join("static", "snapshots")  # absolute base dir
@@ -182,3 +184,64 @@ def send_offline_incident_email_once(
             e,
         )
         return False
+
+
+from datetime import datetime
+from app.utils.email_helper import _send_email_with_image, get_recipients_for_camera
+
+def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str):
+    logger.info("[EMAIL_DEBUG] send_tamper_alert triggered for %s (%s)", camera.hostname, reason)
+
+    subject = f"[ALERT] {camera.hostname} – Tampered ({reason})"
+    body = f"""
+    <b>Camera:</b> {camera.hostname}<br>
+    <b>Location:</b> {camera.location or '-'}<br>
+    <b>Group:</b> {camera.group.name if camera.group else '-'}<br>
+    <b>Issue:</b> {reason}<br>
+    <b>Timestamp:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}<br>
+    """
+
+    try:
+        recipients = get_recipients_for_camera(db, camera)
+        if not recipients:
+            logger.warning("No recipients found for %s", camera.hostname)
+            return
+
+        _send_email_with_image(
+            to_emails=recipients,
+            subject=subject,
+            cam_group=camera.group.name if camera.group else "",
+            cam_hostname=camera.hostname,
+            snapshot_time=datetime.now(),
+            body=body,
+            html=body,
+            image_path=snapshot_path,
+        )
+        logger.info("Tamper alert email sent for %s → %s", camera.hostname, recipients)
+
+    except Exception as e:
+        logger.exception("Failed to send tamper alert for %s: %s", camera.hostname, e)
+
+
+def send_recovery_alert(db: Session, camera):
+    subject = f"[RECOVERY] {camera.hostname} back to normal"
+    body = f"Camera {camera.hostname} is back to normal condition."
+    try:
+        recipients = get_recipients_for_camera(db, camera)
+        if not recipients:
+            logger.warning("No recipients found for %s (recovery)", camera.hostname)
+            return
+
+        _send_email_with_image(
+            to_emails=recipients,
+            subject=subject,
+            cam_group=camera.group.name if camera.group else "",
+            cam_hostname=camera.hostname,
+            snapshot_time=datetime.now(),
+            body=body,
+            html=body,
+        )
+        logger.info("Recovery email sent for %s → %s", camera.hostname, recipients)
+
+    except Exception as e:
+        logger.exception("Failed to send recovery email for %s: %s", camera.hostname, e)

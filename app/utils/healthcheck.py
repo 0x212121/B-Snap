@@ -13,8 +13,8 @@ from ping3 import ping, errors
 from app.core.logging_config import setup_logging
 import logging
 from app.models.task_timing import TaskTiming
-from app.utils.notify import cleanup_old_email_logs
-from app.utils.notify import send_offline_incident_email_once
+from app.utils.email_notifier import cleanup_old_email_logs
+from app.utils.email_notifier import send_offline_incident_email_once
 
 # setup logging
 setup_logging()

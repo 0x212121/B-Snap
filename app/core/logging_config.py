@@ -12,12 +12,14 @@ BASE_DIR = Path(__file__).resolve().parents[2]  # sesuaikan jika struktur berbed
 LOG_DIR = Path(os.getenv("LOG_DIR", BASE_DIR / "logs"))
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
+# === Path file log ===
 MAIN_LOG = LOG_DIR / "main.log"
 SNAPSHOT_LOG = LOG_DIR / "snapshot.log"
 HEALTH_LOG = LOG_DIR / "healthcheck.log"
 SCHED_LOG = LOG_DIR / "scheduler.log"
 MGMT_LOG = LOG_DIR / "management.log"
 
+# === Utility handler builder ===
 def _file_handler(filename: Path, formatter: str, level: str = "INFO", max_bytes=5_000_000, backups=10):
     return {
         "class": "concurrent_log_handler.ConcurrentRotatingFileHandler",
@@ -29,9 +31,10 @@ def _file_handler(filename: Path, formatter: str, level: str = "INFO", max_bytes
         "encoding": "utf-8",
     }
 
+# === Konfigurasi utama logging ===
 LOGGING_CONFIG = {
     "version": 1,
-    "disable_existing_loggers": False,  # penting agar logger gunicorn/uvicorn bisa kita ambil alih
+    "disable_existing_loggers": False,  # penting agar logger Gunicorn/Uvicorn tidak dibungkam
 
     "formatters": {
         "standard": {
@@ -53,43 +56,85 @@ LOGGING_CONFIG = {
         "healthcheck_file": _file_handler(HEALTH_LOG, "standard", level="INFO"),
         "scheduler_file": _file_handler(SCHED_LOG, "standard", level="INFO"),
         "management_file": _file_handler(MGMT_LOG, "standard", level="INFO"),
-        # access log diarahkan ke main.log juga (boleh pisah file kalau mau)
         "access_file": _file_handler(MAIN_LOG, "access", level="INFO", max_bytes=10_000_000, backups=10),
     },
 
     "loggers": {
-        # === logger aplikasi (sebaiknya modul pakai __name__) ===
-        "main":        {"handlers": ["main_file", "console"], "level": "INFO", "propagate": False},
-        "snapshot":    {"handlers": ["snapshot_file"],        "level": "INFO", "propagate": False},
-        "healthcheck": {"handlers": ["healthcheck_file"],     "level": "INFO", "propagate": False},
-        "scheduler":   {"handlers": ["scheduler_file"],       "level": "INFO", "propagate": False},
-        "management":  {"handlers": ["management_file"],      "level": "INFO", "propagate": False},
+        # === Logger aplikasi utama ===
+        "main": {
+            "handlers": ["main_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
 
-        "sqlalchemy.engine": {"handlers": ["main_file", "console"], "level": "INFO", "propagate": False},
-        "sqlalchemy.pool":   {"handlers": ["main_file", "console"], "level": "WARN", "propagate": False},
-        "sqlalchemy.orm":    {"handlers": ["main_file", "console"], "level": "WARN", "propagate": False},
+        # === Snapshot dan semua turunannya (deteksi & email) ===
+        "snapshot": {
+            "handlers": ["snapshot_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "email_notifier": {
+            "handlers": ["snapshot_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "email_helper": {
+            "handlers": ["snapshot_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
 
-        # === ambil alih log Gunicorn + Uvicorn ===
+        # === Modul lainnya ===
+        "healthcheck": {
+            "handlers": ["healthcheck_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "scheduler": {
+            "handlers": ["scheduler_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "management": {
+            "handlers": ["management_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+
+        # # === SQLAlchemy & Server ===
+        # "sqlalchemy.engine": {"handlers": ["main_file", "console"], "level": "INFO", "propagate": False},
+        # "sqlalchemy.pool":   {"handlers": ["main_file", "console"], "level": "WARN", "propagate": False},
+        # "sqlalchemy.orm":    {"handlers": ["main_file", "console"], "level": "WARN", "propagate": False},
+
         "gunicorn.error":  {"handlers": ["main_file", "console"],  "level": "INFO", "propagate": False},
         "gunicorn.access": {"handlers": ["access_file", "console"],"level": "INFO", "propagate": False},
         "uvicorn.error":   {"handlers": ["main_file", "console"],  "level": "INFO", "propagate": False},
         "uvicorn.access":  {"handlers": ["access_file", "console"],"level": "INFO", "propagate": False},
     },
 
-    # Root juga menulis ke file → logger __name__ yang tidak terdaftar tetap aman
+    # Root fallback → menangkap semua logger lain
     "root": {
         "handlers": ["console", "main_file"],
-        "level": "INFO"
-    }
+        "level": "INFO",
+    },
 }
 
+
+# === Fungsi utilitas ===
 def setup_logging():
-    # Re-init bersih (aman dipanggil di master & tiap worker)
+    """
+    Inisialisasi logging dengan konfigurasi di atas.
+    Aman dipanggil ulang di setiap proses (Gunicorn worker, scheduler, dsb).
+    """
     for h in logging.root.handlers[:]:
         logging.root.removeHandler(h)
     logging.config.dictConfig(LOGGING_CONFIG)
 
+
 def set_debug_mode(enabled: bool):
+    """
+    Aktif/nonaktifkan debug mode secara dinamis.
+    """
     new_level = logging.DEBUG if enabled else logging.INFO
 
     # root
@@ -98,7 +143,7 @@ def set_debug_mode(enabled: bool):
     for h in root.handlers:
         h.setLevel(new_level)
 
-    # semua logger bernama + semua handlernya
+    # semua logger bernama
     for name in LOGGING_CONFIG["loggers"].keys():
         lg = logging.getLogger(name)
         lg.setLevel(new_level)

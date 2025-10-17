@@ -158,8 +158,8 @@ def _send_email_with_image(
     msg["To"] = ", ".join(to_emails)
 
     # ✅ tambahkan CC helpdesk jika mau
-    helpdesk = "help.desk@kpc.co.id"
-    msg["Cc"] = helpdesk
+    # helpdesk = "help.desk@kpc.co.id"
+    # msg["Cc"] = helpdesk
 
     # alternative part: plain + html
     alt = MIMEMultipart("alternative")
