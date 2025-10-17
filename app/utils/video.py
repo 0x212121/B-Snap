@@ -17,6 +17,8 @@ from app.db.database import SessionLocal
 from pathlib import Path
 from app.utils.audit_logger import log_audit
 from app.ws.manager import get_ws_connections
+import tempfile
+from PIL import Image, ImageStat
 
 # --- Basic Configuration ---
 STATIC_VIDEO_DIR = Path("static/videos")
@@ -39,6 +41,113 @@ def _run_ffmpeg_sync(cmd: str) -> Tuple[int, str, str]:
     if proc.returncode != 0:
         logger.error("FFMPEG Error (return code %d):\nSTDERR: %s", proc.returncode, proc.stderr)
     return proc.returncode, proc.stdout, proc.stderr
+
+
+import tempfile
+from PIL import Image, ImageStat
+
+def get_frame_brightness(rtsp_url: str) -> float:
+    """Ambil satu frame dari RTSP untuk hitung kecerahan rata-rata (0–255)."""
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+            tmp_path = tmp.name
+
+        # Ambil 1 frame di 0.5 detik pertama
+        subprocess.run([
+            "ffmpeg", "-rtsp_transport", "tcp",
+            "-y", "-i", rtsp_url,
+            "-frames:v", "1", "-ss", "0.5",
+            "-q:v", "5", tmp_path
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+
+        if not os.path.exists(tmp_path) or os.path.getsize(tmp_path) < 10_000:
+            raise RuntimeError("Frame capture failed or file too small")
+
+        img = Image.open(tmp_path).convert("L")
+        stat = ImageStat.Stat(img)
+        brightness = stat.mean[0]
+        img.close()
+        return brightness
+    except Exception as e:
+        logger.warning(f"[Watermark] Gagal ambil frame brightness dari RTSP: {e}")
+        return 128.0  # fallback netral
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
+
+
+def build_ffmpeg_watermark_cmd(rtsp_url: str, output_path: Path, duration: int, camera_name: str) -> str:
+    """Buat command ffmpeg dengan watermark Liberation Sans, posisi tengah, warna adaptif & fallback aman."""
+    # --- Ambil teks watermark dari config ---
+    watermark_text = get_config_value("watermark_text", "Property of B-SNAP")
+    text_combined = f"{watermark_text}"
+
+    # --- Ambil resolusi kamera via ffprobe ---
+    width, height = 1920, 1080  # default fallback
+    try:
+        meta_cmd = [
+            "ffprobe", "-v", "error",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=width,height",
+            "-of", "csv=p=0", rtsp_url
+        ]
+        meta_proc = subprocess.run(meta_cmd, capture_output=True, text=True, timeout=5)
+        parts = meta_proc.stdout.strip().split(",")
+        if len(parts) == 2:
+            width, height = [int(x) for x in parts]
+    except Exception as e:
+        logger.warning(f"[Watermark] Gagal ambil resolusi kamera: {e}")
+
+    # --- Hitung font size agar lebar teks ~70% dari frame width ---
+    char_estimate = max(len(text_combined) * 0.6, 1)
+    font_size = max(18, int(width * 0.7 / char_estimate))
+
+    # --- Ambil brightness frame untuk warna adaptif ---
+    brightness = get_frame_brightness(rtsp_url)
+
+    # --- Warna adaptif + fallback ---
+    if brightness < 100:
+        fontcolor = "white@0.9"
+        bordercolor = "black@0.8"
+    elif brightness > 160:
+        fontcolor = "black@0.8"
+        bordercolor = "white@0.9"
+    else:
+        fontcolor = "gray@0.8"
+        bordercolor = "white@0.9"
+
+    logger.info(
+        f"[Watermark] camera={camera_name}, brightness={brightness:.1f}, "
+        f"font={font_size}px, color={fontcolor}, border={bordercolor}"
+    )
+
+    # --- Path font Liberation Sans (sama seperti watermark foto) ---
+    font_path = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+    if not os.path.exists(font_path):
+        # fallback kalau font belum terinstall
+        logger.warning("[Watermark] LiberationSans-Regular.ttf tidak ditemukan, fallback ke DejaVuSans.")
+        font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+    # --- drawtext di tengah frame ---
+    drawtext = (
+        f"drawtext=fontfile={font_path}:"
+        f"text='{text_combined}':"
+        f"fontsize={font_size}:fontcolor={fontcolor}:"
+        f"bordercolor={bordercolor}:borderw=2:"
+        f"x=(w-text_w)/2:y=(h-text_h)/2"
+    )
+
+    # --- Command ffmpeg final ---
+    return (
+        f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} '
+        f'-vf "{drawtext}" '
+        f'-c:v libx264 -preset veryfast -crf 23 -an "{output_path}"'
+    )
+
 
 def get_video_metadata(file_path: str) -> Dict[str, Any]:
     if not os.path.exists(file_path):
@@ -84,6 +193,7 @@ def generate_thumbnail(video_path: str, output_thumb_path: str):
             "-i", video_path,
             "-vframes", "1",
             "-q:v", "2",
+            "-update", "1",
             output_thumb_path
         ], check=True)
         logger.info("🖼️ Thumbnail generated: %s", output_thumb_path)
@@ -91,6 +201,19 @@ def generate_thumbnail(video_path: str, output_thumb_path: str):
     except subprocess.CalledProcessError as e:
         logger.warning("❌ Failed to generate thumbnail for %s: %s", video_path, e)
         return False
+
+
+def get_config_value(key: str, default: str = "") -> str:
+    db = SessionLocal()
+    try:
+        from app.models.config import Configuration
+        item = db.query(Configuration).filter_by(key=key).first()
+        return item.value if item else default
+    except Exception as e:
+        logger.warning(f"⚠️ Failed getting config '{key}': {e}")
+        return default
+    finally:
+        db.close()
 
 def detect_codec(rtsp_url: str) -> str:
     try:
@@ -172,12 +295,18 @@ async def record_video_and_save_db(
     if codec in ["hevc", "h265"]:
         temp_output = output_path.with_suffix(".mkv")
 
-    if codec == "h264":
-        cmd = f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} -c:v copy -an "{temp_output}"'
-    elif codec in ["hevc", "h265"]:
-        cmd = f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} -c:v copy -an "{temp_output}"'
+    apply_watermark = True  # nanti bisa dibuat per kamera kalau mau
+
+    if apply_watermark:
+        cmd = build_ffmpeg_watermark_cmd(rtsp_url, output_path, duration, camera_name)
+        logger.info(f"Running watermark ffmpeg: {cmd}")
     else:
-        cmd = f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} -c:v libx264 -preset veryfast -crf 23 -an "{temp_output}"'
+        if codec == "h264":
+            cmd = f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} -c:v copy -an "{temp_output}"'
+        elif codec in ["hevc", "h265"]:
+            cmd = f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} -c:v copy -an "{temp_output}"'
+        else:
+            cmd = f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} -c:v libx264 -preset veryfast -crf 23 -an "{temp_output}"'
 
     code, _, err = await asyncio.to_thread(_run_ffmpeg_sync, cmd)
 
