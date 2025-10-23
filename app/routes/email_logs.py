@@ -72,6 +72,7 @@ def view_email_logs(
         else:
             log.local_incident_started_at = "N/A"
 
+
     return templates.TemplateResponse(
         "email_logs.html",
         {
@@ -83,5 +84,6 @@ def view_email_logs(
             "per_page": per_page,
             "total": total,
             "total_pages": total_pages,
+            "reason": reason,
         },
     )

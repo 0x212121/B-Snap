@@ -98,12 +98,15 @@ SMTP_PORT=587
 SMTP_USER=YourSMTPUser
 SMTP_PASS=SMTPUserPassword
 EMAIL_FROM=bsnap-noreply@example.com
+TRUSTED_HOSTS = "*"
 ```
 
 Other valid environment variables:
 ```bash
 MAX_WEB_SESSIONS=1  # Maximum concurrent logins per user (default 1)
 APP_DEBUG=1 # DEBUG mode
+EMAIL_CC=admin@admin.com # Optional. This email address as CC for alert notification.
+OFFLINE_ALERT_THRESHOLD_SECONDS=100 # Threshold for system sending notification, default: 1800 seconds.
 ```
 Adjust WORKERS variable as needed: eg. 4 cpu -> 5 worker
 

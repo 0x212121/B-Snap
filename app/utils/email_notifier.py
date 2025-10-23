@@ -123,6 +123,7 @@ def send_offline_incident_email_once(
         sent_at=datetime.now(timezone.utc),
         success=False,
         error_message=None,
+        reason="offline",
     )
     db.add(log)
     try:
@@ -188,62 +189,206 @@ def send_offline_incident_email_once(
         return False
 
 
-from datetime import datetime
-from app.utils.email_helper import _send_email_with_image, get_recipients_for_camera
-
 def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str):
     logger.info("[EMAIL_DEBUG] send_tamper_alert triggered for %s (%s)", camera.hostname, reason)
+    camera_group = camera.group.name if camera.group else "No Division"
+    recipients = get_recipients_for_camera(db, camera)
+    if not recipients:
+        logger.warning("No recipients found for %s", camera.hostname)
+        return False
 
-    subject = f"[ALERT] {camera.hostname} – Tampered ({reason})"
-    body = f"""
-    <b>Camera:</b> {camera.hostname}<br>
-    <b>Location:</b> {camera.location or '-'}<br>
-    <b>Group:</b> {camera.group.name if camera.group else '-'}<br>
-    <b>Issue:</b> {reason}<br>
-    <b>Timestamp:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}<br>
-    """
+    subject = f"⚠️ [{camera_group}] CCTV Alert – {camera.hostname} {reason.upper()}"
+
+    # === Plain text body ===
+    plain_body = f"""
+Yth. User,
+
+Sistem mendeteksi bahwa CCTV {camera.hostname} (IP: {camera.ip}) mengalami anomali/tampering dengan indikasi: {reason}.
+- No. Asset: {camera.asset_no or '-'}
+- Lokasi: {camera.location or '-'}
+- Group: {camera.group.name if camera.group else '-'}
+- Waktu Kejadian: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} 
+
+👉 Mohon segera buat tiket SIHEPI dengan mencantumkan cost code agar dapat diproses oleh tim teknis/mitra terkait.
+
+Catatan: Foto snapshot { "terlampir" if snapshot_path else "tidak tersedia" } sebagai referensi kondisi terakhir kamera.
+
+Terima kasih atas perhatian dan kerja samanya.
+
+Hormat kami,
+IT Computer Operations
+PT Kaltim Prima Coal
+""".strip()
+
+    # === HTML body ===
+    html_body = f"""
+<html>
+  <body style="font-family: Arial, sans-serif; color: #111; background-color: #ffffff; padding: 12px;">
+    <p>Yth. User,</p>
+
+    <p>
+      Sistem mendeteksi bahwa <b>CCTV {camera.hostname} (IP: {camera.ip})</b> mengalami 
+      <b>anomali / tampering</b> dengan indikasi: <b>{reason}</b>.
+    </p>
+
+    <ul>
+      <li><b>No. Asset:</b> {camera.asset_no or '-'}</li>
+      <li><b>Lokasi:</b> {camera.location or '-'}</li>
+      <li><b>Group:</b> {camera.group.name if camera.group else '-'}</li>
+      <li><b>Waktu Kejadian:</b> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</li>
+    </ul>
+
+    <p>
+        👉 Mohon segera buat tiket SIHEPI dengan mencantumkan cost code agar dapat diproses oleh tim teknis/mitra terkait.
+    </p>
+
+    <p style="font-size:13px; color:#444;">
+      <b>Catatan:</b> Foto snapshot { "terlampir" if snapshot_path else "tidak tersedia" } sebagai referensi kondisi terakhir kamera.
+    </p>
+
+    <p>Terima kasih atas perhatian dan kerja samanya.</p>
+
+    <p style="line-height:1.6; margin:0;">
+      Hormat kami,<br>
+      <b>IT Computer Operations</b><br>
+      PT Kaltim <span style="color:#e60000; font-weight:bold;">Prima</span> Coal
+    </p>
+  </body>
+</html>
+"""
+
+    # === Buat log DB ===
+    log_entry = CameraEmailNotificationLog(
+        camera_id=camera.id,
+        camera_name=camera.hostname,
+        incident_started_at=datetime.now(timezone.utc),
+        sent_at=datetime.now(timezone.utc),
+        success=False,
+        error_message=None,
+        reason="tampered",
+    )
+    db.add(log_entry)
+    db.flush()
+
+    for e in recipients:
+        db.add(CameraEmailNotificationRecipient(log_id=log_entry.id, recipient_email=e))
+    db.flush()
 
     try:
-        recipients = get_recipients_for_camera(db, camera)
-        if not recipients:
-            logger.warning("No recipients found for %s", camera.hostname)
-            return
-
         _send_email_with_image(
             to_emails=recipients,
             subject=subject,
-            cam_group=camera.group.name if camera.group else "",
+            cam_group=camera_group,
             cam_hostname=camera.hostname,
             snapshot_time=datetime.now(),
-            body=body,
-            html=body,
+            body=plain_body,
+            html=html_body,
             image_path=snapshot_path,
         )
+
+        log_entry.success = True
+        log_entry.error_message = None
+        log_entry.sent_at = datetime.now(timezone.utc)
+        db.commit()
         logger.info("Tamper alert email sent for %s → %s", camera.hostname, recipients)
+        return True
 
     except Exception as e:
+        log_entry.success = False
+        log_entry.error_message = str(e)
+        log_entry.sent_at = datetime.now(timezone.utc)
+        db.commit()
         logger.exception("Failed to send tamper alert for %s: %s", camera.hostname, e)
+        return False
 
 
 def send_recovery_alert(db: Session, camera):
-    subject = f"[RECOVERY] {camera.hostname} back to normal"
-    body = f"Camera {camera.hostname} is back to normal condition."
-    try:
-        recipients = get_recipients_for_camera(db, camera)
-        if not recipients:
-            logger.warning("No recipients found for %s (recovery)", camera.hostname)
-            return
+    camera_group = camera.group.name if camera.group else "No Division"
+    recipients = get_recipients_for_camera(db, camera)
+    if not recipients:
+        logger.warning("No recipients found for %s (recovery)", camera.hostname)
+        return False
 
+    subject = f"✅ [{camera_group}] CCTV Recovery – {camera.hostname} back to normal"
+
+    plain_body = f"""
+Yth. User,
+
+Kamera {camera.hostname} (IP: {camera.ip}) telah kembali normal dan terhubung dengan sistem B-Snap.
+
+Mohon update tiket atau status SIHEPI yang sebelumnya terkait kamera ini jika sudah selesai ditangani.
+
+Terima kasih atas kerja samanya.
+
+Hormat kami,
+IT Computer Operations
+PT Kaltim Prima Coal
+""".strip()
+
+    html_body = f"""
+<html>
+  <body style="font-family: Arial, sans-serif; color: #111; background-color: #ffffff; padding: 12px;">
+    <p>Yth. User,</p>
+
+    <p>
+      🎉 <b>CCTV {camera.hostname} (IP: {camera.ip})</b> telah kembali <b>normal</b> dan 
+      kembali terhubung dengan sistem <b>B-Snap</b>.
+    </p>
+
+    <p>
+      Mohon update tiket atau status SIHEPI yang sebelumnya terkait kamera ini apabila sudah ditutup atau selesai ditangani.
+    </p>
+
+    <p>Terima kasih atas kerja samanya.</p>
+
+    <p style="line-height:1.6; margin:0;">
+      Hormat kami,<br>
+      <b>IT Computer Operations</b><br>
+      PT Kaltim <span style="color:#e60000; font-weight:bold;">Prima</span> Coal
+    </p>
+  </body>
+</html>
+"""
+
+    # === Buat log DB ===
+    log_entry = CameraEmailNotificationLog(
+        camera_id=camera.id,
+        camera_name=camera.hostname,
+        incident_started_at=datetime.now(timezone.utc),
+        sent_at=datetime.now(timezone.utc),
+        success=False,
+        error_message=None,
+        reason="recovery",
+    )
+    db.add(log_entry)
+    db.flush()
+
+    for e in recipients:
+        db.add(CameraEmailNotificationRecipient(log_id=log_entry.id, recipient_email=e))
+    db.flush()
+
+    try:
         _send_email_with_image(
             to_emails=recipients,
             subject=subject,
-            cam_group=camera.group.name if camera.group else "",
+            cam_group=camera_group,
             cam_hostname=camera.hostname,
             snapshot_time=datetime.now(),
-            body=body,
-            html=body,
+            body=plain_body,
+            html=html_body,
         )
+
+        log_entry.success = True
+        log_entry.error_message = None
+        log_entry.sent_at = datetime.now(timezone.utc)
+        db.commit()
         logger.info("Recovery email sent for %s → %s", camera.hostname, recipients)
+        return True
 
     except Exception as e:
+        log_entry.success = False
+        log_entry.error_message = str(e)
+        log_entry.sent_at = datetime.now(timezone.utc)
+        db.commit()
         logger.exception("Failed to send recovery email for %s: %s", camera.hostname, e)
+        return False

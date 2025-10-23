@@ -47,6 +47,7 @@
                     <th class="px-4 py-2">Incident Started</th>
                     <th class="px-4 py-2">Sent At</th>
                     <th class="px-4 py-2">Recipients</th>
+                    <th class="px-4 py-2">Reason</th>
                     <th class="px-4 py-2">Status</th>
                     <th class="px-4 py-2">Error Message</th>
                 </tr>
@@ -82,6 +83,9 @@
                         <span class="text-gray-500">-</span>
                     {% endif %}
 
+                    </td>
+                    <td class="px-4 py-2">
+                        {{ log.reason or '<span class="text-gray-500">-</span>' | safe }}
                     </td>
                     <td class="px-4 py-2">
                         {% if log.success %}

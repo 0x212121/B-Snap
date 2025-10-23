@@ -16,6 +16,7 @@ class CameraEmailNotificationLog(Base):
     sent_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     success = Column(Boolean, default=False, nullable=False)
     error_message = Column(String, nullable=True)
+    reason = Column(String(64), nullable=True)
 
     camera = relationship("Camera", back_populates="email_logs", passive_deletes=True)
     recipients = relationship("CameraEmailNotificationRecipient", back_populates="log", cascade="all, delete")
@@ -23,7 +24,6 @@ class CameraEmailNotificationLog(Base):
     __table_args__ = (
         UniqueConstraint("camera_id", "incident_started_at", name="uq_camera_incident_once"),
     )
-
 
 class CameraEmailNotificationRecipient(Base):
     __tablename__ = "camera_email_notification_log_recipients"

@@ -196,11 +196,14 @@
 </span><span id="line-7"><span class="nv">SMTP_USER</span><span class="o">=</span>YourSMTPUser
 </span><span id="line-8"><span class="nv">SMTP_PASS</span><span class="o">=</span>SMTPUserPassword
 </span><span id="line-9"><span class="nv">EMAIL_FROM</span><span class="o">=</span>bsnap-noreply@example.com
+</span><span id="line-10"><span class="nv">TRUSTED_HOSTS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"*"</span>
 </span></code></pre></div>
 </div>
 <p>Other valid environment variables:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="nv">MAX_WEB_SESSIONS</span><span class="o">=</span><span class="m">1</span><span class="w">  </span><span class="c1"># Maximum concurrent logins per user (default 1)</span>
 </span><span id="line-2"><span class="nv">APP_DEBUG</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="c1"># DEBUG mode</span>
+</span><span id="line-3"><span class="nv">EMAIL_CC</span><span class="o">=</span>admin@admin.com<span class="w"> </span><span class="c1"># Optional. This email address as CC for alert notification.</span>
+</span><span id="line-4"><span class="nv">OFFLINE_ALERT_THRESHOLD_SECONDS</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="c1"># Threshold for system sending notification, default: 1800 seconds.</span>
 </span></code></pre></div>
 </div>
 <p>Adjust WORKERS variable as needed: eg. 4 cpu -&gt; 5 worker</p>
