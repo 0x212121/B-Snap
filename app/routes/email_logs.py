@@ -1,14 +1,14 @@
 from typing import Optional
-from fastapi import Request
+from fastapi import Request, APIRouter, Depends, Query
 from fastapi.responses import HTMLResponse
+from sqlalchemy.orm import joinedload, Session
+from math import ceil
+import pytz
+
 from app.db.database import get_db
 from app.utils.timezone_helper import get_current_timezone, format_datetime_with_tz
 from app.models.camera_email_notification_log import CameraEmailNotificationLog
 from app.utils.template_helper import templates
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import joinedload, Session
-from math import ceil
-import pytz
 
 router = APIRouter(tags=["Email Logs"])
 
@@ -30,7 +30,7 @@ def view_email_logs(
         query = query.filter(CameraEmailNotificationLog.camera_name.ilike(f"%{camera_name}%"))
 
     success_bool = None
-    if success is not None and success != "":
+    if success:
         if success.lower() in ["true", "1", "yes"]:
             success_bool = True
         elif success.lower() in ["false", "0", "no"]:
@@ -72,6 +72,8 @@ def view_email_logs(
         else:
             log.local_incident_started_at = "N/A"
 
+        # reason (safe fallback)
+        log.safe_reason = log.reason or "-"
 
     return templates.TemplateResponse(
         "email_logs.html",
@@ -84,6 +86,5 @@ def view_email_logs(
             "per_page": per_page,
             "total": total,
             "total_pages": total_pages,
-            "reason": reason,
         },
     )

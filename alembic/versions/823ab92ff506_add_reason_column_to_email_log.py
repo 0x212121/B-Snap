@@ -20,9 +20,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade():
     op.add_column(
-        'camera_email_notification_log',
-        sa.Column('reason', sa.String(length=255), nullable=True)
+        'camera_email_notification_logs',
+        sa.Column('reason', sa.String(length=64), nullable=True)
     )
 
 def downgrade():
-    op.drop_column('camera_email_notification_log', 'reason')
+    op.drop_column('camera_email_notification_logs', 'reason')
