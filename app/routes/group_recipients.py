@@ -264,6 +264,8 @@ def test_send_email(
         plain_body, html_body = build_email_body(
             camera_name=f"TEST — {group_name}",
             ip="127.0.0.1",
+            asset_no="N/A",
+            coordinate="N/A",
             incident_time=now_str,
             last_snapshot_time=now_str,
             has_snapshot=False,

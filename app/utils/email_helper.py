@@ -14,7 +14,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASS = os.getenv("SMTP_PASS")
 EMAIL_FROM = os.getenv("EMAIL_FROM", SMTP_USER)
-
+EMAIL_CC = os.getenv("EMAIL_CC", None)  # CC default, bisa None
 
 # =========================
 # EMAIL CORE FUNCTIONS
@@ -65,6 +65,8 @@ def send_email(
 def build_email_body(
     camera_name: str,
     ip: str,
+    asset_no: str,
+    coordinate: str,
     incident_time: str,
     last_snapshot_time: str,
     has_snapshot: bool
@@ -80,9 +82,10 @@ def build_email_body(
 Yth. User,
 
 Sistem mendeteksi bahwa CCTV {camera_name} (IP: {ip}) telah offline lebih dari 30 menit.
-
 - Waktu Kejadian: {incident_time}
 - Snapshot Terakhir: {snapshot_text}
+- Koordinat Lokasi Kamera: (lihat di sistem B-Snap)
+- Nomor Asset Kamera: (lihat di sistem B-Snap)
 
 👉 Mohon segera buat tiket SIHEPI dengan mencantumkan cost code agar dapat diproses oleh tim teknis/mitra terkait.
 
@@ -108,6 +111,8 @@ PT Kaltim Prima Coal
 
     <ul>
       <li><b>Waktu Kejadian:</b> {incident_time}</li>
+      <li><b>No. Asset:</b> {asset_no}</li>
+      <li><b>Koordinat Camera:</b> <a href="{coordinate}">{coordinate}</a></li>
       <li><b>Snapshot Terakhir:</b> {snapshot_info}</li>
     </ul>
 
@@ -159,7 +164,7 @@ def _send_email_with_image(
 
     # ✅ tambahkan CC helpdesk jika mau
     # helpdesk = "help.desk@kpc.co.id"
-    # msg["Cc"] = helpdesk
+    msg["Cc"] = EMAIL_CC if EMAIL_CC else ""
 
     # alternative part: plain + html
     alt = MIMEMultipart("alternative")
@@ -178,7 +183,7 @@ def _send_email_with_image(
         msg.attach(part)
 
     # gabungkan recipients (to + cc)
-    all_recipients = to_emails + [helpdesk]
+    all_recipients = to_emails + ([EMAIL_CC] if EMAIL_CC else [])
 
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
         server.starttls()

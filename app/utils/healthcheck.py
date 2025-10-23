@@ -15,6 +15,7 @@ import logging
 from app.models.task_timing import TaskTiming
 from app.utils.email_notifier import cleanup_old_email_logs
 from app.utils.email_notifier import send_offline_incident_email_once
+import os
 
 # setup logging
 setup_logging()
@@ -22,7 +23,7 @@ logger = logging.getLogger("healthcheck")
 
 PING_TIMEOUT = 1.0
 PING_ATTEMPTS = 3
-
+OFFLINE_ALERT_THRESHOLD_SECONDS = int(os.getenv("OFFLINE_ALERT_THRESHOLD_SECONDS", 1800))
 
 def ping_device(ip: str) -> tuple[bool, int | None]:
     latencies = []
@@ -187,7 +188,7 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
                     incident_started_at = incident_started_at.replace(tzinfo=timezone.utc)
 
                 offline_duration_seconds = int((now - incident_started_at).total_seconds())
-                if offline_duration_seconds >= 1800:  # 30 minutes
+                if offline_duration_seconds >= OFFLINE_ALERT_THRESHOLD_SECONDS:
                     camera_obj = db.query(DBCamera).filter(DBCamera.id == device_id).first()
                     if camera_obj:
                         sent = send_offline_incident_email_once(

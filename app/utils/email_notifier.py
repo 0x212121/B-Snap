@@ -146,6 +146,8 @@ def send_offline_incident_email_once(
         plain_body, html_body = build_email_body(
             camera_name=camera.hostname,
             ip=camera.ip,
+            asset_no=camera.asset_no or "N/A",
+            coordinate=f'https://www.google.com/maps?q={camera.latitude},{camera.longitude}' or "N/A",
             incident_time=local_incident,
             last_snapshot_time=snapshot_time,
             has_snapshot=bool(snapshot_path)

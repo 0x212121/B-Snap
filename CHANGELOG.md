@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Watermark on video record.
+- No. Asset & Camera Coordinate in email alert.
 
 ## [1.10.2] - 2025-10-16
 
