@@ -373,6 +373,10 @@ async def get_executive_report_pro(
         leftMargin=2 * cm,
         rightMargin=2 * cm,
     )
+
+    doc.title = f"B-SNAP Executive Report – {start_dt.date()} to {end_dt.date()}"
+    doc.author = "B-SNAP Automated Observability System"
+    doc.subject = "Executive Summary and Key Metrics Report"
     styles = getSampleStyleSheet()
     elems = []
 
@@ -382,7 +386,8 @@ async def get_executive_report_pro(
         elems.append(RLImage(logo_path, width=3 * cm, height=3 * cm))
     except Exception:
         pass
-    elems.append(Paragraph("B-SNAP Executive Report", styles["Title"]))
+    report_title = f"B-SNAP Executive Report"
+    elems.append(Paragraph(report_title, styles["Title"]))
     elems.append(Paragraph(f"Periode: {start_dt.date()} – {end_dt.date()}", styles["Normal"]))
     elems.append(Spacer(1, 0.5 * cm))
 
@@ -500,3 +505,4 @@ async def get_executive_report_pro(
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+

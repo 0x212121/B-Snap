@@ -1,10 +1,12 @@
 import logging
 from datetime import datetime, timezone, timedelta
 import os
+from uuid import uuid4
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 # ambil semua dari email_helper (sudah include get_recipients_for_camera)
+from app.models.email_retry_queue import EmailRetryQueue
 from app.utils.email_helper import (
     _send_email_with_image,
     build_email_body,
@@ -180,13 +182,11 @@ def send_offline_incident_email_once(
         log.error_message = str(e)
         log.sent_at = datetime.now(timezone.utc)
         db.commit()
-        logger.exception(
-            "Failed to send email for camera %s (%s): %s",
-            camera.hostname,
-            camera.ip,
-            e,
-        )
+
+        queue_email_retry(db, camera, "offline", reason="offline incident", delay_minutes=5)
+        logger.exception("Failed to send offline email for %s: %s", camera.hostname, e)
         return False
+
 
 
 def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str):
@@ -298,6 +298,8 @@ PT Kaltim Prima Coal
         log_entry.error_message = str(e)
         log_entry.sent_at = datetime.now(timezone.utc)
         db.commit()
+
+        queue_email_retry(db, camera, "tamper", reason=reason, file_path=snapshot_path, delay_minutes=1)
         logger.exception("Failed to send tamper alert for %s: %s", camera.hostname, e)
         return False
 
@@ -390,5 +392,27 @@ PT Kaltim Prima Coal
         log_entry.error_message = str(e)
         log_entry.sent_at = datetime.now(timezone.utc)
         db.commit()
+
+        queue_email_retry(db, camera, "recovery", reason="normal", delay_minutes=5)
         logger.exception("Failed to send recovery email for %s: %s", camera.hostname, e)
         return False
+
+
+def queue_email_retry(db, camera, type_: str, reason=None, file_path=None, delay_minutes=5):
+    """Tambahkan entry ke antrean; anti-duplikat dengan unique-partial-index sent=false."""
+    retry = EmailRetryQueue(
+        id=str(uuid4()),
+        camera_id=camera.id,
+        type=type_,
+        reason=reason,
+        file_path=file_path,
+        next_retry_at=datetime.now(timezone.utc) + timedelta(minutes=delay_minutes),
+    )
+    db.add(retry)
+    try:
+        db.commit()
+        logger.warning("[QUEUE] queued (%s) for %s – reason=%s", type_, camera.hostname, reason or "-")
+    except IntegrityError:
+        db.rollback()
+        # Sudah ada antrean aktif untuk (camera_id, type). Jangan tambah lagi.
+        logger.info("[QUEUE] skip duplicate active queue (%s) for %s", type_, camera.hostname)

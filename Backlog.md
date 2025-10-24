@@ -131,6 +131,6 @@
 - [x] Email recipient frontend pagination bug
 - [x] Standalone camera dimunculkan di maps. Keterangan -> Standalone (Local): XX
 - [x] Whatsapp Whitelist Filter user and pagination
-- [ ] Notification Tampered Snapshot
+- [x] Notification Tampered Snapshot
 - [ ] Cameras filter by status
 - [ ] Map tampilkan last update/refresh

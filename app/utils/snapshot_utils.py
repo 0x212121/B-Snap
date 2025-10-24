@@ -1,15 +1,18 @@
 import os
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from io import BytesIO
 from PIL import Image
 import numpy as np
 from sqlalchemy.orm import Session
+from uuid import uuid4
+
 from app.models.camera import Camera
 from app.models.snapshot import Snapshot
 from app.models.health import CameraHealth
+from app.models.email_retry_queue import EmailRetryQueue
 from app.utils.image_check import detect_blur, detect_brightness, detect_occlusion
-from app.utils.email_notifier import send_tamper_alert, send_recovery_alert
+from app.utils.email_notifier import send_tamper_alert, send_recovery_alert, queue_email_retry
 
 logger = logging.getLogger("snapshot")
 
@@ -18,7 +21,6 @@ SNAPSHOT_BASE_DIR = os.path.join("static", "snapshots")
 # === konfigurasi ambang ===
 TAMPER_CONFIRM_THRESHOLD = 3    # 3 snapshot berturut-turut baru dianggap tampered
 RECOVERY_CONFIRM_THRESHOLD = 2  # 2 snapshot normal berturut-turut dianggap pulih
-EMAIL_COOLDOWN_MINUTES = 30     # minimal jarak antar email alert per kamera
 
 
 def get_image_resolution(image_bytes: bytes) -> str:
@@ -43,7 +45,6 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
         raise FileNotFoundError(f"Snapshot file not found: {abs_file_path}")
 
     file_size = os.path.getsize(abs_file_path)
-
     with open(abs_file_path, "rb") as f:
         image_bytes = f.read()
 
@@ -75,7 +76,7 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
         is_tampered=is_tampered,
         tamper_reason=", ".join(tamper_reasons) if tamper_reasons else None,
         blur_score=blur_score,
-        entropy_score=to_native_float(occlusion_metrics["entropy"])
+        entropy_score=to_native_float(occlusion_metrics["entropy"]),
     )
 
     db.add(snapshot)
@@ -88,6 +89,7 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
         health = CameraHealth(camera_id=camera.id, status="Unknown")
         db.add(health)
 
+    # update counter
     if is_tampered:
         health.consecutive_tamper = (health.consecutive_tamper or 0) + 1
         health.consecutive_normal = 0
@@ -95,29 +97,36 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
         health.consecutive_normal = (health.consecutive_normal or 0) + 1
         health.consecutive_tamper = 0
 
-    # status sebelumnya
     prev_status = health.tamper_status or "normal"
-    new_status = "tampered" if health.consecutive_tamper >= TAMPER_CONFIRM_THRESHOLD else \
-                 "normal" if health.consecutive_normal >= RECOVERY_CONFIRM_THRESHOLD else \
-                 prev_status
+
+    # === pastikan status di-update eksplisit ===
+    if health.consecutive_tamper >= TAMPER_CONFIRM_THRESHOLD:
+        new_status = "tampered"
+    elif health.consecutive_normal >= RECOVERY_CONFIRM_THRESHOLD:
+        new_status = "normal"
+    else:
+        new_status = prev_status
+
+    health.tamper_status = new_status
 
     # === Transisi: normal → tampered ===
     if prev_status != "tampered" and new_status == "tampered":
-        cooldown_ok = (
-            not health.last_email_sent or
-            datetime.now(timezone.utc) - health.last_email_sent > timedelta(minutes=EMAIL_COOLDOWN_MINUTES)
-        )
-        if cooldown_ok:
-            try:
-                logger.warning("[DEBUG] entering tamper transition for %s, prev=%s new=%s", camera.hostname, prev_status, new_status)
-                send_tamper_alert(db, camera, snapshot.tamper_reason, abs_file_path)
-                health.last_email_sent = datetime.now(timezone.utc)
-                logger.warning("[ALERT] %s marked tampered (%s)", camera.hostname, snapshot.tamper_reason)
-            except Exception as e:
-                logger.error("Failed to send tamper alert for %s: %s", camera.hostname, e)
-
-        health.tamper_status = "tampered"
-        health.tamper_reason = snapshot.tamper_reason
+        try:
+            send_tamper_alert(db, camera, snapshot.tamper_reason, abs_file_path)
+            health.last_email_sent = datetime.now(timezone.utc)
+            logger.warning("[ALERT] %s marked tampered (%s)", camera.hostname, snapshot.tamper_reason)
+        except Exception as e:
+            # Pastikan tidak duplikat
+            existing_retry = db.query(EmailRetryQueue).filter(
+                EmailRetryQueue.camera_id == camera.id,
+                EmailRetryQueue.type == "tamper",
+                EmailRetryQueue.sent == False
+            ).first()
+            if not existing_retry:
+                queue_email_retry(db, camera, "tamper", reason=snapshot.tamper_reason, file_path=abs_file_path, delay_minutes=1)
+            else:
+                logger.info("[QUEUE] Skip duplicate tamper retry for %s", camera.hostname)
+            logger.exception("[QUEUE] Tamper email failed for %s: %s", camera.hostname, e)
 
     # === Transisi: tampered → normal ===
     elif prev_status == "tampered" and new_status == "normal":
@@ -126,16 +135,22 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
             health.last_email_sent = datetime.now(timezone.utc)
             logger.info("[RECOVERY] %s back to normal", camera.hostname)
         except Exception as e:
-            logger.error("Failed to send recovery email for %s: %s", camera.hostname, e)
-
-        health.tamper_status = "normal"
-        health.tamper_reason = None
-        health.consecutive_tamper = 0
+            existing_retry = db.query(EmailRetryQueue).filter(
+                EmailRetryQueue.camera_id == camera.id,
+                EmailRetryQueue.type == "recovery",
+                EmailRetryQueue.sent == False
+            ).first()
+            if not existing_retry:
+                queue_email_retry(db, camera, "recovery", delay_minutes=1)
+            else:
+                logger.info("[QUEUE] Skip duplicate recovery retry for %s", camera.hostname)
+            logger.exception("[QUEUE] Recovery email failed for %s: %s", camera.hostname, e)
 
     # === pembaruan umum ===
     health.checked = datetime.now(timezone.utc)
     health.status_changed_at = datetime.now(timezone.utc)
     db.commit()
+    db.refresh(health)
 
     # === log tambahan ===
     if is_tampered:

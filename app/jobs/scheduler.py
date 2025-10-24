@@ -5,8 +5,11 @@ from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.jobstores.base import JobLookupError
 from app.core.logging_config import setup_logging
 from app.db.database import SessionLocal
+from app.models.camera import Camera
+from app.models.email_retry_queue import EmailRetryQueue
 from app.models.log import ApiLog, CommandLog
 from app.snapshot import load_active_cameras
+from app.utils.email_notifier import send_recovery_alert, send_tamper_alert
 from app.utils.snapshot_locker import get_camera_lock
 from app.utils.snapshot_service import take_snapshot
 from app.utils.healthcheck import ping_all_devices
@@ -277,6 +280,10 @@ def start_scheduler():
     scheduler.add_job(delete_old_api_logs, 'interval', days=1)
     scheduler.add_job(delete_old_command_logs, 'interval', days=1)
 
+    scheduler.add_job(process_email_retry_queue, IntervalTrigger(minutes=1))
+    scheduler.add_job(cleanup_email_retry_queue, 'interval', days=1)
+
+
     scheduler.start()
     return scheduler
 
@@ -386,5 +393,163 @@ def delete_old_command_logs():
         db.rollback()
         logger.error("[delete_old_command_logs] Error: %s", e, exc_info=True)
         raise
+    finally:
+        db.close()
+
+
+def process_email_retry_queue():
+    db = SessionLocal()
+    now = datetime.now(timezone.utc)
+
+    # --- Parameter adaptif ---
+    SCHEDULER_INTERVAL_MINUTES = 1      # scheduler kamu jalan tiap 1 menit
+    BASE_RETRY_DELAY_MINUTES = 5        # minimal jeda antar attempt
+    MAX_RETRY_DELAY_MINUTES = 60        # maksimum jeda antar attempt (1 jam)
+
+    def _adaptive_delay(attempt: int) -> int:
+        """Hitung delay adaptif (eksponensial, dibatasi ke 1 jam)."""
+        delay = BASE_RETRY_DELAY_MINUTES * (2 ** (attempt - 1))
+        return min(max(delay, SCHEDULER_INTERVAL_MINUTES), MAX_RETRY_DELAY_MINUTES)
+
+    try:
+        pending = (
+            db.query(EmailRetryQueue)
+            .filter(
+                EmailRetryQueue.sent.is_(False),
+                EmailRetryQueue.attempts < EmailRetryQueue.max_attempts,
+                EmailRetryQueue.next_retry_at <= now,
+            )
+            # .with_for_update(skip_locked=True)  # aktifkan kalau multi-worker
+            .order_by(EmailRetryQueue.created_at.asc())
+            .all()
+        )
+    except Exception:
+        db.close()
+        raise
+
+    if not pending:
+        logger.debug("[RETRY] No pending emails at %s", now.strftime("%H:%M:%S"))
+        db.close()
+        return
+
+    total = len(pending)
+    success_count = 0
+    fail_count = 0
+    logger.info("[RETRY] Processing %d queued emails...", total)
+
+    for task in pending:
+        cam = db.query(Camera).filter(Camera.id == task.camera_id).first()
+        if not cam:
+            logger.warning("[RETRY] Camera %s not found, marking as sent", task.camera_id)
+            task.sent = True
+            db.commit()
+            continue
+
+        ok = False
+        attempt_num = task.attempts + 1
+        try:
+            if task.type == "tamper":
+                ok = bool(send_tamper_alert(db, cam, task.reason, task.file_path))
+            elif task.type == "recovery":
+                ok = bool(send_recovery_alert(db, cam))
+            elif task.type == "offline":
+                ok = bool(send_offline_incident_email_once(
+                    db,
+                    camera=cam,
+                    incident_started_at=now - timedelta(minutes=30),
+                    offline_duration_seconds=1800,
+                ))
+            elif task.type == "online":
+                from app.utils.email_notifier import send_online_alert
+                ok = bool(send_online_alert(db, cam))
+            else:
+                logger.warning("[RETRY] Unknown email type '%s' for %s", task.type, cam.hostname)
+                task.sent = True
+                db.commit()
+                continue
+
+            if ok:
+                task.sent = True
+                success_count += 1
+                logger.info(
+                    "[RETRY] Attempt %d/%d for %s (%s) – success",
+                    attempt_num, task.max_attempts, cam.hostname, task.type
+                )
+            else:
+                raise RuntimeError("Email send returned False")
+
+        except Exception as e:
+            # gagal → hitung delay adaptif
+            task.attempts = attempt_num
+            task.last_attempt = now
+            delay_minutes = _adaptive_delay(task.attempts)
+            task.next_retry_at = now + timedelta(minutes=delay_minutes)
+            fail_count += 1
+
+            logger.error(
+                "[RETRY FAIL] Attempt %d/%d for %s (%s) – %s; next retry in %d min (at %s)",
+                task.attempts, task.max_attempts, cam.hostname, task.type,
+                e, delay_minutes, task.next_retry_at.strftime("%H:%M:%S"),
+            )
+
+            if task.attempts >= task.max_attempts:
+                logger.error(
+                    "[RETRY STOPPED] Max attempts reached for %s (%s) – giving up.",
+                    cam.hostname, task.type
+                )
+        finally:
+            db.commit()
+
+    db.close()
+    logger.info(
+        "[RETRY SUMMARY] Finished processing %d tasks → success=%d, fail=%d",
+        total, success_count, fail_count
+    )
+
+
+def cleanup_email_retry_queue():
+    """Hapus antrean email retry yang sudah selesai >14 hari atau gagal total >7 hari."""
+    db = SessionLocal()
+    now = datetime.now(timezone.utc)
+
+    try:
+        cutoff_success = now - timedelta(days=14)
+        cutoff_fail = now - timedelta(days=7)
+
+        # === Hapus antrean sukses lama (>14 hari) ===
+        deleted_success = (
+            db.query(EmailRetryQueue)
+            .filter(
+                EmailRetryQueue.sent.is_(True),
+                EmailRetryQueue.last_attempt < cutoff_success,
+            )
+            .delete(synchronize_session=False)
+        )
+
+        # === Hapus antrean gagal total lama (>7 hari, attempts >= max_attempts) ===
+        deleted_fail = (
+            db.query(EmailRetryQueue)
+            .filter(
+                EmailRetryQueue.sent.is_(False),
+                EmailRetryQueue.attempts >= EmailRetryQueue.max_attempts,
+                EmailRetryQueue.last_attempt < cutoff_fail,
+            )
+            .delete(synchronize_session=False)
+        )
+
+        db.commit()
+
+        total_deleted = (deleted_success or 0) + (deleted_fail or 0)
+        if total_deleted > 0:
+            logger.info(
+                "[CLEANUP] Deleted %d old email retry rows (success>14d=%d, fail>7d=%d)",
+                total_deleted, deleted_success or 0, deleted_fail or 0
+            )
+        else:
+            logger.debug("[CLEANUP] No old email retry rows to delete")
+
+    except Exception as e:
+        db.rollback()
+        logger.error("[CLEANUP ERROR] Failed to cleanup email retry queue: %s", e, exc_info=True)
     finally:
         db.close()
