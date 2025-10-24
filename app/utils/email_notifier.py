@@ -206,7 +206,7 @@ Yth. User,
 Sistem mendeteksi bahwa CCTV {camera.hostname} (IP: {camera.ip}) mengalami anomali/tampering dengan indikasi: {reason}.
 - No. Asset: {camera.asset_no or '-'}
 - Lokasi: {camera.location or '-'}
-- Group: {camera.group.name if camera.group else '-'}
+- Koordinat: https://www.google.com/maps?q={camera.latitude},{camera.longitude}
 - Waktu Kejadian: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} 
 
 👉 Mohon segera buat tiket SIHEPI dengan mencantumkan cost code agar dapat diproses oleh tim teknis/mitra terkait.
@@ -234,7 +234,7 @@ PT Kaltim Prima Coal
     <ul>
       <li><b>No. Asset:</b> {camera.asset_no or '-'}</li>
       <li><b>Lokasi:</b> {camera.location or '-'}</li>
-      <li><b>Group:</b> {camera.group.name if camera.group else '-'}</li>
+      <li><b>Koordinat:</b> <a href="https://www.google.com/maps?q={camera.latitude},{camera.longitude}" target="_blank">Lihat di Google Maps</a></li>
       <li><b>Waktu Kejadian:</b> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</li>
     </ul>
 
@@ -265,7 +265,7 @@ PT Kaltim Prima Coal
         sent_at=datetime.now(timezone.utc),
         success=False,
         error_message=None,
-        reason="tampered",
+        reason="tampered: " + reason,
     )
     db.add(log_entry)
     db.flush()

@@ -19,6 +19,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN pip install reportlab
+
 # Test ffmpeg install
 RUN ffprobe -version
 

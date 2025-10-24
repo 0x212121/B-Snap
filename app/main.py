@@ -32,7 +32,7 @@ from app.routes import (
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
     user_management, videos, whitelist, group_recipients, email_logs
 )
-from app.routes import observability
+from app.routes import insights
 from app.ws.routes import notification_listener, router as ws_router
 from app.version import __version__
 from app.api import whatsapp_routes
@@ -193,7 +193,7 @@ app.include_router(admin.router)
 app.include_router(whitelist.router)
 app.include_router(group_recipients.router)
 app.include_router(email_logs.router)
-app.include_router(observability.router)
+app.include_router(insights.router)
 
 # ====================================================================
 # 7. CORE APP ROUTES & HANDLERS

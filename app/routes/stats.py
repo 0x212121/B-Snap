@@ -15,7 +15,7 @@ from app.utils.timezone_helper import to_current_timezone, format_datetime_with_
 from app.utils.template_helper import templates
 
 
-router = APIRouter(tags=["Stats"])
+router = APIRouter(tags=["Observability"])
 
 
 @router.get("/stats", response_class=HTMLResponse)

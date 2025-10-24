@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% block title %}B-SNAP – Insights{% endblock %}
+{% from "_icons.html" import icon_chart_bar, icon_arrow_path, icon_download, icon_trophy, icon_envelope, icon_clip_check %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+
+  <!-- HEADER -->
+  <div class="flex items-center gap-3 mb-6">
+    {{ icon_chart_bar("w-8 h-8 text-blue-600 dark:text-blue-400") }}
+    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">Insights Dashboard</h1>
+  </div>
+
+  <!-- FILTER DATE RANGE -->
+  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 mb-6 flex flex-wrap items-end gap-3">
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
+      <input type="date" id="startDate" class="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100">
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
+      <input type="date" id="endDate" class="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100">
+    </div>
+    <div class="flex gap-2 ml-auto">
+      <button id="applyFilter" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2">
+        {{ icon_arrow_path("w-5 h-5 text-white") }} Apply Filter
+      </button>
+      <button id="downloadReport" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2">
+        {{ icon_download("w-5 h-5 text-white") }} Download Report
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI SUMMARY -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+      <div class="text-xs text-gray-500 dark:text-gray-400">API Calls</div>
+      <div class="text-2xl font-bold" id="kpiApi">–</div>
+      <div class="text-sm" id="kpiApiDelta">–</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+      <div class="text-xs text-gray-500 dark:text-gray-400">Commands</div>
+      <div class="text-2xl font-bold" id="kpiCmd">–</div>
+      <div class="text-sm" id="kpiCmdDelta">–</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+      <div class="text-xs text-gray-500 dark:text-gray-400">Emails</div>
+      <div class="text-2xl font-bold" id="kpiEmail">–</div>
+      <div class="text-sm" id="kpiEmailDelta">–</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+      <div class="text-xs text-gray-500 dark:text-gray-400">Health Index</div>
+      <div class="text-2xl font-bold flex items-center gap-2">
+        <span id="healthValue">–</span>
+        <span id="healthBadge" class="text-xs font-semibold px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700">–</span>
+      </div>
+      <div class="text-xs text-gray-500 dark:text-gray-400" id="healthHint">Composite of trends</div>
+    </div>
+  </div>
+
+  <!-- API VS COMMAND -->
+  <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 mb-6">
+    <div class="flex items-center gap-2 mb-3">
+      {{ icon_clip_check("w-6 h-6 text-blue-600 dark:text-blue-400") }}
+      <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200">API vs Command Logs</h2>
+    </div>
+    <canvas id="chartApiCommand" height="140"></canvas>
+  </div>
+
+  <!-- EMAIL CHART -->
+  <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 mb-6">
+    <div class="flex items-center gap-2 mb-3">
+      {{ icon_envelope("w-6 h-6 text-yellow-500 dark:text-yellow-400") }}
+      <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200">Email Notifications</h2>
+    </div>
+    <canvas id="chartEmail" height="120"></canvas>
+  </div>
+
+  <!-- TOP COMMANDS & CAMERAS -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- TOP COMMANDS -->
+    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+          {{ icon_trophy(class="w-6 h-6 text-amber-300 inline") }}
+          Top 10 Most Executed Commands
+        </h2>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Left chart -->
+        <div class="min-h-[360px]">
+          <canvas id="chartTopCommands"></canvas>
+        </div>
+        <!-- Right table -->
+        <div>
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-700 text-gray-100">
+              <tr>
+                <th class="p-3 w-10 text-center">#</th>
+                <th class="p-3 text-left">Command</th>
+                <th class="p-3 w-28 text-right">Usage Count</th>
+              </tr>
+            </thead>
+            <tbody id="topCommandsBodyTable" class="divide-y divide-gray-700 text-gray-200"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOP CAMERAS -->
+    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+      <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+        {{ icon_envelope("w-6 h-6 text-yellow-500 dark:text-yellow-400") }}
+        Top 5 Cameras by Email
+      </h2>
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-700 text-gray-100">
+          <tr>
+            <th class="p-3 text-left">Camera</th>
+            <th class="p-3 text-right">Emails</th>
+          </tr>
+        </thead>
+        <tbody id="topCamerasBody" class="divide-y divide-gray-700 text-gray-200"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  let chart1, chart2, chartTopCmd;
+
+  // === INITIAL DATE RANGE ===
+  const today = new Date();
+  const prior = new Date();
+  prior.setDate(today.getDate() - 30);
+  const fmt = d => d.toISOString().split("T")[0];
+  startDate.value = fmt(prior);
+  endDate.value = fmt(today);
+
+  // === FETCH HELPERS ===
+  async function getJSON(url) {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(url + " failed");
+    return r.json();
+  }
+
+  async function renderAll() {
+    const s = startDate.value;
+    const e = endDate.value;
+    const q = `?start_date=${s}&end_date=${e}`;
+    const [summary, daily, topCmd, topCam] = await Promise.all([
+      getJSON(`/log/stats/summary${q}`),
+      getJSON(`/log/stats/daily${q}`),
+      getJSON(`/log/stats/top-commands${q}`),
+      getJSON(`/log/stats/top-cameras${q}`),
+    ]);
+
+    // KPI
+    kpiApi.textContent = summary.totals.api.toLocaleString();
+    kpiCmd.textContent = summary.totals.command.toLocaleString();
+    kpiEmail.textContent = summary.totals.email.toLocaleString();
+
+    const setDelta = (el, val) => {
+      const arrow = val > 0 ? "↑" : val < 0 ? "↓" : "→";
+      const color = val > 0 ? "text-green-600" : val < 0 ? "text-red-600" : "text-gray-500";
+      el.className = `text-sm ${color}`;
+      el.textContent = `${arrow} ${val.toFixed(1)}% vs prev`;
+    };
+    setDelta(kpiApiDelta, summary.delta_pct.api);
+    setDelta(kpiCmdDelta, summary.delta_pct.command);
+    setDelta(kpiEmailDelta, summary.delta_pct.email);
+
+    const hi = summary.health_index;
+    healthValue.textContent = hi.value;
+    healthBadge.textContent = hi.label;
+    healthBadge.className = `text-xs font-semibold px-2 py-0.5 rounded ${
+      hi.color === "green" ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"
+      : hi.color === "emerald" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
+      : hi.color === "amber" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+      : "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300"
+    }`;
+
+    // === API & CMD CHART ===
+    const allDates = Array.from(new Set([...daily.api.map(x => x.date), ...daily.command.map(x => x.date)])).sort();
+    const apiMap = Object.fromEntries(daily.api.map(x => [x.date, x.count]));
+    const cmdMap = Object.fromEntries(daily.command.map(x => [x.date, x.count]));
+    const apiCounts = allDates.map(d => apiMap[d] || 0);
+    const cmdCounts = allDates.map(d => cmdMap[d] || 0);
+    chart1?.destroy();
+    chart1 = new Chart(chartApiCommand, {
+      type: "line",
+      data: {
+        labels: allDates,
+        datasets: [
+          { label: "API Calls", data: apiCounts, borderColor: "rgba(54,162,235,1)", backgroundColor: "rgba(54,162,235,0.2)", borderWidth: 2, fill: true, tension: 0.25 },
+          { label: "Commands Executed", data: cmdCounts, borderColor: "rgba(75,192,192,1)", backgroundColor: "rgba(75,192,192,0.2)", borderWidth: 2, fill: true, tension: 0.25 }
+        ]
+      },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    // === EMAIL CHART ===
+    chart2?.destroy();
+    chart2 = new Chart(chartEmail, {
+      type: "bar",
+      data: {
+        labels: daily.email.map(x => x.date),
+        datasets: [{ label: "Emails Sent", data: daily.email.map(x => x.count), backgroundColor: "rgba(255,206,86,0.6)", borderColor: "rgba(255,206,86,1)" }]
+      },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    // === TOP COMMANDS ===
+    renderTopCommandsChartAndList(topCmd);
+
+    // === TOP CAMERAS ===
+    topCamerasBody.innerHTML = topCam.length
+      ? topCam.map(c => `<tr><td class="p-3 font-medium">${c.camera_name}</td><td class="p-3 text-right">${c.count}</td></tr>`).join("")
+      : `<tr><td colspan="2" class="p-4 text-center text-gray-500">No data</td></tr>`;
+  }
+
+  function renderTopCommandsChartAndList(data) {
+    const rows = (Array.isArray(data) ? data : []).slice(0, 10);
+    const labels = rows.map(r => r.command);
+    const counts = rows.map(r => r.count);
+
+    chartTopCmd?.destroy();
+    chartTopCmd = new Chart(chartTopCommands, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          data: counts,
+          backgroundColor: "rgba(59,130,246,0.9)",
+          barThickness: 22,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        maintainAspectRatio: false,
+        scales: {
+          x: { beginAtZero: true, ticks: { color: "#9ca3af" }, grid: { color: "rgba(255,255,255,0.05)" } },
+          y: { ticks: { color: "#d1d5db" }, grid: { display: false } }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => `${ctx.parsed.x.toLocaleString()} runs` } }
+        }
+      },
+      plugins: [{
+        id: 'values',
+        afterDatasetsDraw: c => {
+          const { ctx } = c;
+          ctx.save();
+          ctx.fillStyle = "#e5e7eb";
+          ctx.font = "600 12px Inter, system-ui, sans-serif";
+          c.data.datasets[0].data.forEach((v, i) => {
+            const meta = c.getDatasetMeta(0).data[i];
+            ctx.fillText(v.toString(), meta.x + 8, meta.y + 3);
+          });
+          ctx.restore();
+        }
+      }]
+    });
+
+    const tbody = document.getElementById("topCommandsBodyTable");
+    tbody.innerHTML = rows.map((r, i) =>
+      `<tr class="hover:bg-gray-800/60">
+         <td class="p-3 text-center text-gray-400">${i + 1}</td>
+         <td class="p-3 text-gray-100 truncate">${r.command}</td>
+         <td class="p-3 text-right">${r.count}</td>
+       </tr>`
+    ).join("");
+  }
+
+  // === EVENTS ===
+  applyFilter.addEventListener("click", renderAll);
+  downloadReport.addEventListener("click", async () => {
+    const s = startDate.value, e = endDate.value;
+    const apiImg = chartApiCommand.toDataURL("image/png");
+    const emailImg = chartEmail.toDataURL("image/png");
+    const topCmdImg = chartTopCommands.toDataURL("image/png");
+    const fd = new FormData();
+    fd.append("start_date", s);
+    fd.append("end_date", e);
+    fd.append("api_chart", apiImg);
+    fd.append("email_chart", emailImg);
+    fd.append("topcmd_chart", topCmdImg);
+    const r = await fetch("/log/stats/report-pro", { method: "POST", body: fd });
+    if (!r.ok) return alert("Failed to generate report");
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement("a"), { href: url, download: `b-snap-report-${s}_to_${e}.pdf` });
+    document.body.append(a);
+    a.click(); a.remove(); URL.revokeObjectURL(url);
+  });
+
+  renderAll();
+});
+</script>
+{% endblock %}

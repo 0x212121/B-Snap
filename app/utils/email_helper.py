@@ -83,9 +83,9 @@ Yth. User,
 
 Sistem mendeteksi bahwa CCTV {camera_name} (IP: {ip}) telah offline lebih dari 30 menit.
 - Waktu Kejadian: {incident_time}
+- Nomor Asset Kamera: {asset_no}
+- Koordinat Lokasi Kamera: {coordinate}
 - Snapshot Terakhir: {snapshot_text}
-- Koordinat Lokasi Kamera: (lihat di sistem B-Snap)
-- Nomor Asset Kamera: (lihat di sistem B-Snap)
 
 👉 Mohon segera buat tiket SIHEPI dengan mencantumkan cost code agar dapat diproses oleh tim teknis/mitra terkait.
 

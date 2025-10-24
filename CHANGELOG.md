@@ -11,8 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.11.0] - 2025-10-17
 
 ### Added
-- Watermark on video record.
-- No. Asset & Camera Coordinate in email alert.
+- Watermark support for recorded videos.
+- Asset Number and Camera Coordinates included in email alerts.
+- `reason` column added to email logs for improved traceability.
+- Admins can now generate Executive Reports from the Insights Dashboard.
 
 ## [1.10.2] - 2025-10-16
 
