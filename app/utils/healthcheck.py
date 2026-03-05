@@ -255,9 +255,9 @@ def ping_all_devices():
 
         status = "success"
         try:
-            deleted = cleanup_old_email_logs(db, days=90)
+            deleted = cleanup_old_email_logs(db)
             if deleted:
-                logger.info("🧹 Cleaned up %d email notification logs older than 90 days.", deleted)
+                logger.info("🧹 Cleaned up %d email notification logs.", deleted)
         except Exception as e:
             logger.warning("Failed to cleanup old email logs: %s", e)
     except Exception as e:

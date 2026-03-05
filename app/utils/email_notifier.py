@@ -25,7 +25,10 @@ logger = logging.getLogger("email_notifier")
 SNAPSHOT_BASE_DIR = os.path.join("static", "snapshots")  # absolute base dir
 
 
-def cleanup_old_email_logs(db: Session, days: int = 90) -> int:
+def cleanup_old_email_logs(db: Session, days: int = None) -> int:
+    from app.core.config import get_config
+    if days is None:
+        days = int(get_config("retention_email_logs_days", 90))
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     old_logs = db.query(CameraEmailNotificationLog).filter(
         CameraEmailNotificationLog.sent_at < cutoff

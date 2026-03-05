@@ -68,7 +68,8 @@ def get_db():
 # === Utility: Update User OTP Secret ===
 def update_user_secret(db: Session, username: str, secret: str):
     """Finds a user by username and updates their OTP secret."""
-    user = db.query(models.User).filter(models.User.username == username).first()
+    from app.models.user import User
+    user = db.query(User).filter(User.username == username).first()
     if user:
         user.otp_secret = secret  # TODO: Encrypt this secret before saving!
         db.commit()
@@ -79,7 +80,8 @@ def update_user_secret(db: Session, username: str, secret: str):
 # === Utility: Activate 2FA for User ===
 def activate_2fa_for_user(db: Session, username: str):
     """Finds a user and sets their is_2fa_enabled flag to True."""
-    user = db.query(models.User).filter(models.User.username == username).first()
+    from app.models.user import User
+    user = db.query(User).filter(User.username == username).first()
     if user:
         user.is_2fa_enabled = True
         db.commit()

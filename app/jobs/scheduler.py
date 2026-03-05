@@ -39,8 +39,15 @@ setup_logging()
 logger = logging.getLogger("scheduler")
 
 # --- Thread Pool ---
-WORKERS = int(get_config("snapshot_concurrent_workers", 5))
-thread_pool = ThreadPoolExecutor(max_workers=WORKERS)
+# Lazy initialization - will be set in start_scheduler()
+WORKERS = None
+thread_pool = None
+
+def init_thread_pool():
+    global WORKERS, thread_pool
+    if thread_pool is None:
+        WORKERS = int(get_config("snapshot_concurrent_workers", 5))
+        thread_pool = ThreadPoolExecutor(max_workers=WORKERS)
 
 # --- Global Config State ---
 last_config = {
@@ -96,6 +103,9 @@ def run_snapshot(camera):
 
 
 def scheduled_snapshot():
+    # Initialize thread pool if not already done
+    init_thread_pool()
+    
     all_cameras = load_active_cameras()
     workers = int(get_config("snapshot_concurrent_workers", 5))
 
@@ -250,6 +260,9 @@ CONFIG_HANDLERS = {
 # Scheduler Lifecycle
 # ----------------------------
 def start_scheduler():
+    # Initialize thread pool before starting scheduler
+    init_thread_pool()
+    
     config = {
         "snapshot_interval_minutes": int(get_config("snapshot_interval_minutes", 600)),
         "healthcheck_interval_minutes": int(get_config("healthcheck_interval_minutes", 60)),
@@ -286,6 +299,16 @@ def start_scheduler():
 
     scheduler.add_job(process_email_retry_queue, IntervalTrigger(minutes=1))
     scheduler.add_job(cleanup_email_retry_queue, 'interval', days=1)
+    
+    # Storage monitoring - every 1 hour
+    scheduler.add_job(
+        check_storage_job,
+        IntervalTrigger(hours=1),
+        id='storage_check',
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=300
+    )
 
 
     scheduler.start()
@@ -328,7 +351,8 @@ def update_scheduler_config():
 def delete_old_audit_logs():
     db: Session = SessionLocal()
     try:
-        cutoff_date = date.today() - timedelta(days=180)
+        retention_days = int(get_config("retention_audit_logs_days", 180))
+        cutoff_date = date.today() - timedelta(days=retention_days)
         deleted_rows = (
             db.query(AuditLog)
             .filter(AuditLog.timestamp < cutoff_date)
@@ -347,7 +371,8 @@ def delete_old_audit_logs():
 def delete_old_camera_stats():
     db: Session = SessionLocal()
     try:
-        cutoff_date = date.today() - timedelta(days=90)
+        retention_days = int(get_config("retention_camera_stats_days", 90))
+        cutoff_date = date.today() - timedelta(days=retention_days)
         deleted_rows = (
             db.query(CameraDailyStats)
             .filter(CameraDailyStats.date < cutoff_date)
@@ -366,7 +391,8 @@ def delete_old_camera_stats():
 def delete_old_api_logs():
     db: Session = SessionLocal()
     try:
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=90)
+        retention_days = int(get_config("retention_api_logs_days", 90))
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
         deleted_rows = (
             db.query(ApiLog)
             .filter(ApiLog.timestamp < cutoff_date)
@@ -385,7 +411,8 @@ def delete_old_api_logs():
 def delete_old_command_logs():
     db: Session = SessionLocal()
     try:
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=90)
+        retention_days = int(get_config("retention_command_logs_days", 90))
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
         deleted_rows = (
             db.query(CommandLog)
             .filter(CommandLog.timestamp < cutoff_date)
@@ -397,6 +424,28 @@ def delete_old_command_logs():
         db.rollback()
         logger.error("[delete_old_command_logs] Error: %s", e, exc_info=True)
         raise
+    finally:
+        db.close()
+
+
+def check_storage_job():
+    """
+    Scheduled job to monitor storage usage.
+    Runs every hour to track storage trends and alert on thresholds.
+    """
+    from app.utils.storage_monitor import record_storage_metric
+    
+    db: Session = SessionLocal()
+    try:
+        metric = record_storage_metric(db)
+        logger.info(
+            "[Storage Check] Level: %s, Usage: %.1f%%, Growth: %.2f GB/day",
+            metric.alert_level,
+            metric.usage_percent,
+            metric.daily_growth_rate
+        )
+    except Exception as e:
+        logger.error("[Storage Check] Error: %s", e, exc_info=True)
     finally:
         db.close()
 

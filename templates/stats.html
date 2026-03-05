@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – Camera Statistics{% endblock %}
-{% from "_icons.html" import icon_ppt_chart_bar, icon_clock, icon_no_symbol, icon_check_circle, icon_circle_stack, icon_x_circle %}
+{% from "_icons.html" import icon_ppt_chart_bar, icon_clock, icon_no_symbol, icon_check_circle, icon_circle_stack, icon_x_circle, icon_database %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
@@ -59,6 +59,96 @@
   </div>
   
   
+  <!-- Storage Monitor Widget -->
+  <div class="bg-white dark:bg-gray-800 p-6 rounded shadow mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300">{{ icon_database("w-6 h-6 text-blue-600 inline") }} Storage Health</h2>
+      <button id="refreshStorageBtn" class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded transition">
+        Refresh
+      </button>
+    </div>
+    
+    <div id="storageLoading" class="text-center py-4">
+      <svg class="animate-spin h-6 w-6 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+    </div>
+    
+    <div id="storageContent" class="hidden">
+      <!-- Progress Bar -->
+      <div class="mb-6">
+        <div class="flex justify-between mb-2">
+          <span id="storageStatusText" class="text-sm font-medium">Checking...</span>
+          <span id="storagePercentText" class="text-sm font-medium">0%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+          <div id="storageProgressBar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <p id="storageDetailText" class="mt-1 text-xs text-gray-500 dark:text-gray-400"></p>
+      </div>
+      
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded">
+          <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
+          <p id="storageTotal" class="text-lg font-semibold">-</p>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded">
+          <p class="text-xs text-gray-500 dark:text-gray-400">Used</p>
+          <p id="storageUsed" class="text-lg font-semibold">-</p>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded">
+          <p class="text-xs text-gray-500 dark:text-gray-400">Free</p>
+          <p id="storageFree" class="text-lg font-semibold">-</p>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded">
+          <p class="text-xs text-gray-500 dark:text-gray-400">Growth/Day</p>
+          <p id="storageGrowth" class="text-lg font-semibold">-</p>
+        </div>
+      </div>
+      
+      <!-- Breakdown -->
+      <div class="mb-4">
+        <h3 class="text-sm font-medium mb-2 text-gray-600 dark:text-gray-400">Usage Breakdown</h3>
+        <div class="space-y-2">
+          <div class="flex items-center">
+            <div class="w-24 text-xs text-gray-500 dark:text-gray-400">Snapshots</div>
+            <div class="flex-1 bg-gray-200 rounded-full h-2 dark:bg-gray-700 mx-2">
+              <div id="barSnapshots" class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
+            </div>
+            <div id="textSnapshots" class="w-20 text-xs text-right">-</div>
+          </div>
+          <div class="flex items-center">
+            <div class="w-24 text-xs text-gray-500 dark:text-gray-400">Videos</div>
+            <div class="flex-1 bg-gray-200 rounded-full h-2 dark:bg-gray-700 mx-2">
+              <div id="barVideos" class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+            </div>
+            <div id="textVideos" class="w-20 text-xs text-right">-</div>
+          </div>
+          <div class="flex items-center">
+            <div class="w-24 text-xs text-gray-500 dark:text-gray-400">Logs</div>
+            <div class="flex-1 bg-gray-200 rounded-full h-2 dark:bg-gray-700 mx-2">
+              <div id="barLogs" class="bg-yellow-500 h-2 rounded-full" style="width: 0%"></div>
+            </div>
+            <div id="textLogs" class="w-20 text-xs text-right">-</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Prediction -->
+      <div id="storagePrediction" class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded text-sm hidden">
+        <p class="text-blue-800 dark:text-blue-200">
+          <span class="font-medium">📈 Prediction:</span> 
+          Storage will be full in approximately <span id="daysUntilFull" class="font-bold">-</span> days at current growth rate.
+        </p>
+      </div>
+      
+      <!-- Alert Messages -->
+      <div id="storageAlert" class="hidden mt-4 p-3 rounded"></div>
+    </div>
+  </div>
+
   <div id="noDataCamerasSection" class="bg-red-100 dark:bg-red-900 p-4 rounded shadow hidden">
     <h2 class="text-xl font-bold mb-2 text-red-700 dark:text-red-300">
       {{ icon_no_symbol() }} Cameras Without Snapshots (<span id="totalNoDataCamerasCount">0</span>)
@@ -154,6 +244,146 @@
   const initialSelectedPeriod = document.getElementById("periodDropdown").value;
   fetchStats(initialSelectedCamera, initialSelectedPeriod);
   fetchNoDataCameras(initialSelectedPeriod, initialSelectedCamera);
+  
+  // Storage Monitor Functions
+  async function fetchStorageStatus() {
+    try {
+      const res = await fetch('/storage/status');
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      const data = await res.json();
+      updateStorageWidget(data);
+    } catch (error) {
+      console.error('Error fetching storage status:', error);
+      document.getElementById('storageLoading').classList.add('hidden');
+      document.getElementById('storageContent').classList.remove('hidden');
+      document.getElementById('storageStatusText').textContent = 'Error: ' + error.message;
+      document.getElementById('storageStatusText').className = 'text-sm font-medium text-red-600';
+      document.getElementById('storageTotal').textContent = '-';
+      document.getElementById('storageUsed').textContent = '-';
+      document.getElementById('storageFree').textContent = '-';
+      document.getElementById('storageGrowth').textContent = '-';
+    }
+  }
+  
+  function updateStorageWidget(data) {
+    // If no data available, show message
+    if (data.alert_level === 'unknown' || data.usage_percent === 0) {
+      document.getElementById('storageLoading').classList.add('hidden');
+      document.getElementById('storageContent').classList.remove('hidden');
+      
+      document.getElementById('storageStatusText').textContent = 'No data available - Click Refresh to check';
+      document.getElementById('storageStatusText').className = 'text-sm font-medium text-gray-500';
+      document.getElementById('storagePercentText').textContent = '-';
+      document.getElementById('storageTotal').textContent = '-';
+      document.getElementById('storageUsed').textContent = '-';
+      document.getElementById('storageFree').textContent = '-';
+      document.getElementById('storageGrowth').textContent = '-';
+      return;
+    }
+    
+    document.getElementById('storageLoading').classList.add('hidden');
+    document.getElementById('storageContent').classList.remove('hidden');
+    
+    // Update progress bar
+    const percent = data.usage_percent || 0;
+    const progressBar = document.getElementById('storageProgressBar');
+    progressBar.style.width = `${percent}%`;
+    
+    // Color based on alert level
+    let statusColor = 'text-green-600';
+    let barColor = 'bg-green-600';
+    if (data.alert_level === 'critical') {
+      statusColor = 'text-red-600';
+      barColor = 'bg-red-600';
+    } else if (data.alert_level === 'warning') {
+      statusColor = 'text-yellow-600';
+      barColor = 'bg-yellow-600';
+    } else if (data.alert_level === 'info') {
+      statusColor = 'text-blue-600';
+      barColor = 'bg-blue-600';
+    }
+    
+    progressBar.className = `${barColor} h-2.5 rounded-full transition-all duration-500`;
+    
+    document.getElementById('storageStatusText').textContent = 
+      data.alert_level === 'unknown' ? 'No data available' : 
+      data.alert_level.charAt(0).toUpperCase() + data.alert_level.slice(1);
+    document.getElementById('storageStatusText').className = `text-sm font-medium ${statusColor}`;
+    document.getElementById('storagePercentText').textContent = `${percent}%`;
+    document.getElementById('storageDetailText').textContent = 
+      data.last_updated ? `Last updated: ${new Date(data.last_updated).toLocaleString()}` : '';
+    
+    // Update stats
+    document.getElementById('storageTotal').textContent = data.total;
+    document.getElementById('storageUsed').textContent = data.used;
+    document.getElementById('storageFree').textContent = data.free;
+    document.getElementById('storageGrowth').textContent = 
+      data.growth_rate > 0 ? `+${data.growth_rate} GB/day` : `${data.growth_rate} GB/day`;
+    
+    // Update breakdown
+    if (data.breakdown) {
+      document.getElementById('barSnapshots').style.width = `${data.breakdown.snapshots_percent || 0}%`;
+      document.getElementById('textSnapshots').textContent = data.breakdown.snapshots;
+      document.getElementById('barVideos').style.width = `${data.breakdown.videos_percent || 0}%`;
+      document.getElementById('textVideos').textContent = data.breakdown.videos;
+      document.getElementById('barLogs').style.width = `${data.breakdown.logs_percent || 0}%`;
+      document.getElementById('textLogs').textContent = data.breakdown.logs;
+    }
+    
+    // Show prediction if available
+    if (data.days_until_full > 0 && data.growth_rate > 0) {
+      document.getElementById('storagePrediction').classList.remove('hidden');
+      document.getElementById('daysUntilFull').textContent = data.days_until_full;
+    } else {
+      document.getElementById('storagePrediction').classList.add('hidden');
+    }
+    
+    // Show alert if any
+    const alertDiv = document.getElementById('storageAlert');
+    if (data.alert_message) {
+      alertDiv.classList.remove('hidden');
+      alertDiv.className = `mt-4 p-3 rounded ${data.alert_level === 'critical' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}`;
+      alertDiv.textContent = data.alert_message;
+    } else {
+      alertDiv.classList.add('hidden');
+    }
+  }
+  
+  // Refresh button handler
+  document.getElementById('refreshStorageBtn').addEventListener('click', async () => {
+    document.getElementById('storageLoading').classList.remove('hidden');
+    document.getElementById('storageContent').classList.add('hidden');
+    
+    // Trigger manual check
+    let checkSuccess = false;
+    try {
+      const checkRes = await fetch('/storage/check-now', { 
+        method: 'POST'
+      });
+      if (checkRes.ok) {
+        checkSuccess = true;
+        console.log('Manual check triggered successfully');
+      } else {
+        const errorText = await checkRes.text();
+        console.warn('Check-now endpoint returned:', checkRes.status, errorText);
+      }
+    } catch (e) {
+      console.warn('Could not trigger manual check:', e);
+    }
+    
+    // Small delay to allow backend to process
+    if (checkSuccess) {
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    
+    // Fetch updated status (even if check failed)
+    await fetchStorageStatus();
+  });
+  
+  // Load storage status on page load
+  fetchStorageStatus();
 </script>
 
 {% endblock %}

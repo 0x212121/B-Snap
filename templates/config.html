@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – Config{% endblock %}
-{% from "_icons.html" import icon_config, icon_globe, icon_camera, icon_bug, icon_paint, icon_folder, icon_download %}
+{% from "_icons.html" import icon_config, icon_globe, icon_camera, icon_bug, icon_paint, icon_folder, icon_download, icon_trash, icon_play, icon_database %}
 
 {% block content %}
 <div class="container mx-auto p-4 text-gray-900 dark:text-gray-100 rounded-lg shadow">
@@ -104,6 +104,97 @@
     </div>
   </div>
   
+  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_trash("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Log Retention</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <label for="retention_audit_logs_days" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Audit Logs (days)</label>
+        <input type="number" id="retention_audit_logs_days" name="retention_audit_logs_days" 
+          value="{{ configs.get('retention_audit_logs_days', 180) }}" 
+          min="7" max="3650" required
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How long to keep audit logs (7-3650 days). Default: 180 days.</p>
+      </div>
+      <div>
+        <label for="retention_api_logs_days" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">API Logs (days)</label>
+        <input type="number" id="retention_api_logs_days" name="retention_api_logs_days" 
+          value="{{ configs.get('retention_api_logs_days', 90) }}" 
+          min="7" max="3650" required
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How long to keep API request logs. Default: 90 days.</p>
+      </div>
+      <div>
+        <label for="retention_command_logs_days" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Command Logs (days)</label>
+        <input type="number" id="retention_command_logs_days" name="retention_command_logs_days" 
+          value="{{ configs.get('retention_command_logs_days', 90) }}" 
+          min="7" max="3650" required
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How long to keep chatbot command logs. Default: 90 days.</p>
+      </div>
+      <div>
+        <label for="retention_camera_stats_days" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Camera Stats (days)</label>
+        <input type="number" id="retention_camera_stats_days" name="retention_camera_stats_days" 
+          value="{{ configs.get('retention_camera_stats_days', 90) }}" 
+          min="7" max="3650" required
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How long to keep daily camera statistics. Default: 90 days.</p>
+      </div>
+      <div>
+        <label for="retention_email_logs_days" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Email Logs (days)</label>
+        <input type="number" id="retention_email_logs_days" name="retention_email_logs_days" 
+          value="{{ configs.get('retention_email_logs_days', 90) }}" 
+          min="7" max="3650" required
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How long to keep email notification logs. Default: 90 days.</p>
+      </div>
+      <div class="flex items-end">
+        <button type="button" id="runCleanupBtn" 
+          class="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium px-4 py-2 rounded-lg shadow transition-colors duration-200 flex items-center justify-center gap-2">
+          {{ icon_play("w-5 h-5") }} Run Cleanup Now
+        </button>
+      </div>
+    </div>
+    <div id="cleanupResult" class="mt-4 hidden"></div>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_database("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Storage Monitoring</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <label for="storage_critical_percent" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Critical Threshold (%)</label>
+        <input type="number" id="storage_critical_percent" name="storage_critical_percent" 
+          value="{{ configs.get('storage_critical_percent', 95) }}" 
+          min="50" max="99" required
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Alert level CRITICAL when disk usage exceeds this percentage. Default: 95%</p>
+      </div>
+      <div>
+        <label for="storage_warning_percent" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Warning Threshold (%)</label>
+        <input type="number" id="storage_warning_percent" name="storage_warning_percent" 
+          value="{{ configs.get('storage_warning_percent', 85) }}" 
+          min="50" max="99" required
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Alert level WARNING when disk usage exceeds this percentage. Default: 85%</p>
+      </div>
+      <div>
+        <label for="storage_info_percent" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Info Threshold (%)</label>
+        <input type="number" id="storage_info_percent" name="storage_info_percent" 
+          value="{{ configs.get('storage_info_percent', 75) }}" 
+          min="50" max="99" required
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Info notification when disk usage exceeds this percentage. Default: 75%</p>
+      </div>
+      <div>
+        <label for="storage_critical_free_gb" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Critical Free Space (GB)</label>
+        <input type="number" id="storage_critical_free_gb" name="storage_critical_free_gb" 
+          value="{{ configs.get('storage_critical_free_gb', 5) }}" 
+          min="1" max="100" required
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Also trigger CRITICAL alert when free space below this value. Default: 5 GB</p>
+      </div>
+    </div>
+  </div>
+
   <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
     <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_paint("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Appearance</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -275,6 +366,52 @@
           logoPreview.classList.remove('hidden');
         }
         reader.readAsDataURL(file);
+      }
+    });
+
+    // Run Cleanup Now button handler
+    const runCleanupBtn = document.getElementById('runCleanupBtn');
+    const cleanupResult = document.getElementById('cleanupResult');
+    
+    runCleanupBtn.addEventListener('click', async function() {
+      // Password verification dialog
+      const password = prompt('⚠️ WARNING: This will permanently delete old logs based on retention settings.\n\nPlease enter your password to confirm:');
+      
+      if (!password) {
+        // User cancelled
+        return;
+      }
+      
+      runCleanupBtn.disabled = true;
+      runCleanupBtn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Running...`;
+      
+      try {
+        const response = await fetch('/config/run-cleanup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: password })
+        });
+        
+        const result = await response.json();
+        
+        cleanupResult.classList.remove('hidden');
+        if (response.ok) {
+          cleanupResult.className = 'mt-4 p-4 bg-green-100 dark:bg-green-900 rounded-lg';
+          cleanupResult.innerHTML = `<p class="text-green-800 dark:text-green-200 font-medium">✅ Cleanup completed successfully!</p><pre class="mt-2 text-sm text-green-700 dark:text-green-300 overflow-x-auto">${JSON.stringify(result.details, null, 2)}</pre>`;
+        } else if (response.status === 401) {
+          cleanupResult.className = 'mt-4 p-4 bg-red-100 dark:bg-red-900 rounded-lg';
+          cleanupResult.innerHTML = `<p class="text-red-800 dark:text-red-200">❌ Invalid password. Cleanup aborted.</p>`;
+        } else {
+          cleanupResult.className = 'mt-4 p-4 bg-red-100 dark:bg-red-900 rounded-lg';
+          cleanupResult.innerHTML = `<p class="text-red-800 dark:text-red-200">❌ ${result.message || 'Cleanup failed'}</p>`;
+        }
+      } catch (error) {
+        cleanupResult.classList.remove('hidden');
+        cleanupResult.className = 'mt-4 p-4 bg-red-100 dark:bg-red-900 rounded-lg';
+        cleanupResult.innerHTML = `<p class="text-red-800 dark:text-red-200">❌ Error: ${error.message}</p>`;
+      } finally {
+        runCleanupBtn.disabled = false;
+        runCleanupBtn.innerHTML = `{{ icon_play("w-5 h-5") }} Run Cleanup Now`;
       }
     });
   });

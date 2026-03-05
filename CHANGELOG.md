@@ -8,15 +8,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - None
 
-## [1.11.1] - 2026-03-06
+## [1.12.0] - 2026-03-06
+
+### Added
+- **Storage Monitor Dashboard** - Complete storage monitoring and alerting system:
+  - **Storage Health Widget** on Stats page (`/stats`) showing:
+    - Real-time disk usage with visual progress bar
+    - Color-coded alerts (green/yellow/red) based on thresholds
+    - Total / Used / Free space display
+    - Daily growth rate tracking (GB/day)
+    - Days-until-full prediction
+  - **Usage Breakdown by Category**:
+    - Snapshots folder size
+    - Videos folder size  
+    - Logs folder size
+    - Other files
+  - **Configurable Thresholds** (in `/config`):
+    - Critical: 95% or < 5GB free (default)
+    - Warning: 85% (default)
+    - Info: 75% (default)
+    - Critical Free Space: 5GB (default)
+  - **Automatic Monitoring**:
+    - Scheduler runs every 1 hour
+    - Records metrics to database
+    - Calculates growth trend from historical data
+  - **Manual Check**:
+    - "Refresh" button on widget
+    - API endpoint: `POST /storage/check-now`
+    - With audit logging
+  - **Alert History**:
+    - Tracks critical/warning alerts
+    - Mark alerts as resolved
+    - API: `GET /storage/alerts`
+  - **Trend Analysis**:
+    - 7-day historical data
+    - API: `GET /storage/trend?days=7`
+  - **Docker Support**:
+    - Compatible with container paths: `/static/snapshots`, `/static/videos`, `/logs`
+    - Fallback to local paths for development
+  - **New Database Tables**:
+    - `storage_metrics` - Historical usage data
+    - `storage_alerts` - Alert history
+  - **Files Added/Modified**:
+    - `app/models/storage_metric.py` - New models
+    - `app/utils/storage_monitor.py` - Core monitoring logic
+    - `app/routes/stats.py` - API endpoints
+    - `templates/stats.html` - Widget UI
+    - `templates/config.html` - Configuration UI
+    - `templates/_icons.html` - Icons
+    - `app/jobs/scheduler.py` - Scheduled job
+    - `app/core/config_initializer.py` - Default configs
+    - `alembic/versions/20260306_add_storage_monitoring.py` - Migration
+
+- **Log Retention Settings Dashboard** - Manage cleanup policies in `/config`:
+  - Retention periods (7-3650 days):
+    - Audit Logs: 180 days (default)
+    - API Logs: 90 days (default)
+    - Command Logs: 90 days (default)
+    - Camera Stats: 90 days (default)
+    - Email Logs: 90 days (default)
+  - "Run Cleanup Now" button with **password verification**
+  - **Audit logging** for all cleanup attempts
+  - Dynamic configuration (no restart required)
 
 ### Fixed
-- **Critical scheduler timeout bug**: Added proper timeout handling to prevent snapshot workers from getting stuck indefinitely.
-  - `app/jobs/scheduler.py`: Added 5-minute timeout to `future.result()` calls and proper `TimeoutError` handling
-  - `app/utils/snapshot_service.py`: Added `_rtsp_capture_with_timeout()` wrapper with 30-second timeout for RTSP capture to prevent `cv2.VideoCapture()` from hanging indefinitely on unresponsive cameras
-- **`app/routes/stats.py`**: Updated "cameras without snapshots" endpoints to exclude:
-  - Cameras with status "standalone" (case-insensitive)
-  - Cameras without IP address (`ip IS NULL` or empty string)
+- **Scheduler Thread Pool Initialization** - Fixed lazy initialization to prevent database connection errors during gunicorn boot
+- **Config Page Variable Conflict** - Fixed variable name collision in config save
+- **Database Models Import** - Fixed undefined `models` reference in `database.py`
+- **Template Icon Import** - Added missing `icon_database` import in config.html
+- **Validation Logic** - Separated storage threshold validation from retention validation
+- **Migration Safety** - Added table existence checks to prevent duplicate creation errors
+
+### Security
+- Added password verification for destructive operations (log cleanup)
+- Audit logging for all manual storage checks and cleanup operations
+
+---
 
 ## [1.11.0] - 2025-10-24
 
@@ -33,7 +100,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Pagination bug in email recipients menu.
-
 
 ## [1.10.1] - 2025-10-10
 ### Changed
@@ -58,303 +124,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Redesign icon and layout.
-- Improved logging.
-
-## [1.8.3] - 2025-09-25
-
-### Added
-- RTSP support for Hikvision camera.
-- Observability tables and API.
-
-### Changed
-- Logging function.
-- Failed snapshot output in health menu.
-
-
-## [1.8.2] - 2025-09-15
-
-### Changed
-- Maintenance camera status automatically change to Active when snapshot run successfully.
-
-### Fixed
-- Race condition in maps when filtering CCTV status.
-
-## [1.8.1] - 2025-09-12
-
-### Added
-- CCTV maintenance mode.
-
-### Fixed
-- Fix N+1 query in `/camera-locations` endpoint.
-
-## [1.8.0] - 2025-08-28
-
-### Added
-- Technical documentation, accessible via `/documentation` endpoint.
-- CSV file upload validation.
-
-### Fixed
-- Camera flip bug.
-- Devices status now hides cameras without IP.
-- N+1 query issue resolved in configuration and devices status.
-
-### Changed
-- Optimized configuration access with global caching to reduce redundant queries.
-
-
-## [1.7.3] - 2025-08-19
-
-### Added
-- `group_id` field for whatsapp whitelist table.
-
-### Changed
-- Refactored logger to use lazy formatting (logger.info("msg %s", var)) for better memory and CPU efficiency.
-- Refactored scheduler config to support dynamic reload for multiple parameters at once:
-  - `snapshot_concurrent_workers`
-  - `snapshot_interval_minutes`
-  - `healthcheck_interval_minutes`
-
-### Fixed
-- Ensured get_config always casts numeric values to int() to avoid type mismatch issues.
-- `update_scheduler_config` now detects and applies changes for multiple configs, not just a single parameter.
-- Last Online	and uptime value in CCTV map popup now display correctly.
-
-## [1.7.2] - 2025-08-15
-
-### Added
-- Toggle for Debug Mode via the configuration menu, enabling easier troubleshooting.
-- `snapshot_url` field for cameras that cannot use automatic snapshot methods.
-
-### Fixed
-- Scheduler snapshot logging failure issue resolved — snapshots now log correctly.
-
-
-## [1.7.1] - 2025-08-14
-
-### Changed
-- Reintroduced the `camera_name` field in the `snapshot_logs` table.
-
-### Fixed
-- Resolved snapshot scheduler failure caused by the recent table migration.
-
-
-## [1.7.0] - 2025-08-13
-
-### Added
-- GPS Map Display: Added the ability to display CCTV locations on a marker popup
-- Notes Field: Added a 'Notes' field to the Camera and NVR management forms to store additional information.
-- Token Security Log: The client IP address is now recorded in the audit log when an admin revokes a user's API token to improve security.
-
-### Changed
-- Bump python version to 3.13.6-slim.
-- Password Visibility Icon: Updated the password field's visibility toggle icon for better usability and intuition.
-- Audit Log Format: The audit log for data updates (User, NVR, Camera) now displays a concise summary of changes instead of a full JSON dump, making it more compact and readable.
-- Snapshot Database Relation: Modernized the database structure by changing the snapshot log table's relationship from hostname to camera_id, improving data integrity and overall system stability.
-
-### Fixed
-- Automatic Scheduler: Fixed the scheduled task responsible for automatically deleting old statistics.
-- Snapshot Feature: Fixed the 'View Snapshot' and 'Realtime Snapshot' features, which were broken after the database structure update.
-- Camera Edit Bugs: Resolved several bugs in the camera edit form, including an issue with saving the port and a case-sensitive validation error for unique hostnames.
-- API Token Sorting: Corrected the API token sorting logic on the user management page to reliably display the most recent tokens first.
-- Frontend Error Handling: Improved the apiPost function in JavaScript to display more informative error messages from the backend, simplifying future debugging processes.
-
-## [1.6.3] - 2025-08-07
-
-### Added
-- Search bar in maps view.
-
-### Changed
-- Snapshot error responses now include the camera IP address.
-- Removed "items per page" option from the config menu.
-
-### Fixed
-- Corrected HTML layout issues.
-
-
-## [1.6.2] - 2025-08-04
-
-### Fixed
-- Fixed memory leak issue during snapshot process.
-
-## [1.6.1] - 2025-08-01
-
-### Added
-- Snapshot batch size and batch delay in config.
-- Edit whitelist user
-
-### Changed
-- Snapshot scheduler with interval 5s between batch.
-
-### Fixed
-- User name now correctly restored from session token after app restart
-- Session automatically rehydrates missing `user_name` from `user_id` if session is partially corrupted
-- Fixed redirect from gallery to maps caused by missing `user_groupid` in restored session
-
-
-## [1.6.0] - 2025-07-31
-
-### Added
-- New feature: Snapshot images can now be automatically flipped vertically if the Flip Image setting is enabled for the camera.
-- Added is_flipped field to the database and to the add/edit camera form.
-- New support for `user_phone` parameter in snapshot and snapshot file retrieval endpoints:
-  - Automatically resolves name from `WhatsappWhitelist` table.
-  - Formats audit log as `Name (phone_number)` if name is available.
-
-### Changed
-- Snapshot-related audit logs now include user identity in the format `Name (phone_number)` when accessed via WhatsApp Bot.
-
-## [1.5.4] - 2025-07-31
-
-### Added
-
-### Changed
-- /cctv/resolve-ip endpoint now not return camera with no IP and list all cameras under group name
-
-### Fixed
-- Snapshot Scheduler Log now recorded when scheduled snapshot job running for hundred of cameras.
-
-
-## [1.5.3] - 2025-07-30
-
-### Added
-- Added tampered reason and resolution to maps popup window
-
-### Changed
-- Latitude and longitude inputs now support up to 7 decimal digits.
-- Grouping API Documentation
-
-### Fixed
-- Error when CCTV name contains parentheses is now resolved.
-- The "extra" field in audit logs is now displayed correctly.
-- Modal popups now appear as expected.
-- Long text in map popups no longer overflows.
-
-
-## [1.5.2] - 2025-07-29
-
-### Changed
-- Video Gallery grid column for XL screen from 4 to 3.
-
-### Fixed
-- Typo in get audit logs API, cause extra field not return to frontend
-- CCTV Hostname overflow in maps
-
-## [1.5.1] - 2025-07-29
-
-### Changed
-- PostgreSQL connections are pooled using SQLAlchemy (pool_size=20, max_overflow=10) for better connection reuse and performance.
-- Remove support SQLite DB.
-
-
-## [1.5.0] - 2025-07-28
-
-### Added
-- Map: Dynamic Pie Chart Clusters - Cluster markers on the map now display as pie charts, showing the proportion of Online, High Latency, and Offline cameras within that area.
-- Map: Pulsing Animation for Online Markers - "Online" camera markers now have a subtle pulse animation for better visibility of live assets.
-- Map: Blinking Animation for Offline Markers - "Offline" camera markers now have a blinking animation to draw attention to critical issues.
-- Map: Marker Hover Effect - All map markers now scale up slightly on hover for improved user interaction feedback.
-
-### Changed
-- Map: Cluster Style Overhaul - Replaced the default cluster markers with the new, more informative pie chart style.
-- Map: Marker Aesthetics - Individual camera markers have been restyled with cleaner borders and shadows for a more modern look.
-
-
-## [1.4.0] - 2025-07-28
-
-### Added
-- Separate dropdowns for log type and log file.
-- Automatic color highlighting for log levels: ERROR, WARN, INFO, DEBUG.
-- Log parsing into timestamp, level, and message sections.
-- Auto-scroll to the bottom after displaying log content.
-- Download button is only enabled after a file is selected.
-- Escaping of HTML in log content to prevent XSS.
-
-### Changed
-- Increase Snapshot Log size from 1MB to 5MB
-- Log content is no longer loaded automatically on page load.
-
-### Fixed
-- Fixed bug camera with "Restricted" status skipped from scheduled snapshots.
-- Fixed missing `db.commit()` in `run_snapshot()` which caused snapshot records not being saved to the database.
-- Improved scheduled snapshot task reporting:
-  - `"success"` if all cameras succeed
-  - `"partial"` if some cameras fail
-  - `"fail"` only if all snapshots fail
-
-
-## [1.3.2] - 2025-07-25
-
-### Added
-- Early validation combining `session_user_id` and `session_token` before processing the request.
-- Explicit logging for each authentication failure scenario (invalid token, corrupt session_user_id, user not found).
-
-### Changed
-- Refactored authentication flow to be more defensive and structured:
-  - Public paths and query tokens are checked earlier.
-  - Session & token validation is performed before falling back.
-  - Fallback to cookie-based session only occurs if initial validation fails.
-- `session.clear()` is now only called once at the end if all authentication methods fail, and not during internal logic errors or parsing issues.
-
-### Fixed
-- Bug where the login session was cleared if `session_user_id` was invalid or when exceptions were raised by external endpoints such as `try_auth()`.
-- Prevented unnecessary redirect to login when `session_token` is still valid but wasn't validated early.
-
-
-## [1.3.1] - 2025-07-25
-### Added
-
-### Changed
-
-### Fixed
-- **Snapshot:** Fixed bug can't snapshot camera with "Restricted" status..
-- **Snapshot Gallery:** Fixed a critical bug where the gallery would stop refreshing after a new filter was applied. This would happen if a previous search resulted in a partial page of images, causing the component to get stuck in a "no more results" state. The gallery filtering and search are now stable and reset correctly with every new request.
-
-
-
-## [1.3.0] - 2025-07-25
-### Added
-- Timezone formatting is now consistent across all menus.
-- Tampered snapshots (blurred, occluded, overexposed) now show a badge indicator in the gallery.
-- Snapshot scheduler log.
-
-### Changed
-- Timestamps now use localized timezone abbreviations (e.g. WITA, +08) instead of raw UTC.
-
-### Fixed
-- Fixed inconsistent timestamp displays between snapshot gallery and audit log views.
-
-
-## [1.2.3] - 2025-07-23
-### Added
-
-### Changed
-
-### Fixed
-- Delete camera endpoint bug.
-
-## [1.2.2] - 2025-07-22
-### Added
-
-### Changed
-
-### Fixed
-- Name become '-' when toggle active in whitelist menu.
-
-## [1.2.1] - 2025-07-21
-### Added
-
-### Changed
-- Bump dependencies.
-
-### Fixed
-- Snapshot scheduler not refreshed..
-
-
-## [1.2.0] - 2025-07-18
-### Added
-- WhatsApp whitelist admin page with role support.
-
-### Changed
-
-### Fixed
-

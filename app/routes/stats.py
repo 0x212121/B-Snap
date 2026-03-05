@@ -278,3 +278,184 @@ async def get_snapshot_heatmap(
         "labels": [f"{h:02d}:00" for h in range(24)],
         "datasets": datasets
     }
+
+
+# ----------------------------
+# Storage Monitoring Endpoints
+# ----------------------------
+@router.get("/storage/status", response_class=JSONResponse)
+async def get_storage_status(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    Get current storage status and metrics.
+    If no metrics exist, record one now.
+    """
+    from app.utils.storage_monitor import get_latest_storage_status, format_bytes, record_storage_metric
+    
+    metric = get_latest_storage_status(db)
+    
+    if not metric:
+        # No metrics yet, record one now
+        try:
+            metric = record_storage_metric(db)
+        except Exception as e:
+            import logging
+            logging.getLogger("storage").warning("Could not record storage metric: %s", e)
+    
+    if not metric:
+        # Still no metric (error occurred), return empty status
+        return {
+            "status": "unknown",
+            "usage_percent": 0,
+            "total": "0 B",
+            "used": "0 B",
+            "free": "0 B",
+            "breakdown": {},
+            "growth_rate": 0,
+            "days_until_full": -1,
+            "alert_level": "unknown",
+            "last_updated": None
+        }
+    
+    return {
+        "status": metric.alert_level,
+        "usage_percent": round(metric.usage_percent, 1),
+        "total": format_bytes(metric.total_bytes),
+        "used": format_bytes(metric.used_bytes),
+        "free": format_bytes(metric.free_bytes),
+        "breakdown": {
+            "snapshots": format_bytes(metric.snapshots_bytes),
+            "videos": format_bytes(metric.videos_bytes),
+            "logs": format_bytes(metric.logs_bytes),
+            "other": format_bytes(metric.other_bytes),
+            "snapshots_percent": round(metric.snapshots_bytes / metric.used_bytes * 100, 1) if metric.used_bytes > 0 else 0,
+            "videos_percent": round(metric.videos_bytes / metric.used_bytes * 100, 1) if metric.used_bytes > 0 else 0,
+            "logs_percent": round(metric.logs_bytes / metric.used_bytes * 100, 1) if metric.used_bytes > 0 else 0,
+        },
+        "growth_rate": round(metric.daily_growth_rate, 2),
+        "days_until_full": round(metric.days_until_full, 1) if metric.days_until_full < 9999 else -1,
+        "alert_level": metric.alert_level,
+        "alert_message": metric.alert_message,
+        "last_updated": metric.timestamp.isoformat() if metric.timestamp else None
+    }
+
+
+@router.get("/storage/trend", response_class=JSONResponse)
+async def get_storage_trend(
+    request: Request,
+    days: int = Query(7, ge=1, le=90),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    Get storage usage trend for the last N days.
+    """
+    from app.utils.storage_monitor import get_storage_trend
+    from datetime import datetime
+    
+    metrics = get_storage_trend(db, days)
+    
+    data = []
+    for m in metrics:
+        data.append({
+            "timestamp": m.timestamp.isoformat() if m.timestamp else None,
+            "usage_percent": round(m.usage_percent, 1),
+            "used_gb": round(m.used_bytes / (1024**3), 2),
+            "free_gb": round(m.free_bytes / (1024**3), 2),
+            "snapshots_gb": round(m.snapshots_bytes / (1024**3), 2),
+            "videos_gb": round(m.videos_bytes / (1024**3), 2),
+        })
+    
+    return {
+        "days": days,
+        "data_points": len(data),
+        "trend": data
+    }
+
+
+@router.get("/storage/alerts", response_class=JSONResponse)
+async def get_storage_alerts(
+    request: Request,
+    unresolved_only: bool = Query(False),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    Get storage alert history.
+    """
+    from app.models.storage_metric import StorageAlert
+    
+    query = db.query(StorageAlert)
+    
+    if unresolved_only:
+        query = query.filter(StorageAlert.resolved_at.is_(None))
+    
+    alerts = query.order_by(StorageAlert.timestamp.desc()).limit(limit).all()
+    
+    return {
+        "count": len(alerts),
+        "alerts": [
+            {
+                "id": a.id,
+                "timestamp": a.timestamp.isoformat() if a.timestamp else None,
+                "level": a.level,
+                "message": a.message,
+                "usage_percent": round(a.usage_percent, 1),
+                "free_gb": round(a.free_gb, 2),
+                "resolved_at": a.resolved_at.isoformat() if a.resolved_at else None,
+                "resolved_by": a.resolved_by
+            }
+            for a in alerts
+        ]
+    }
+
+
+@router.post("/storage/check-now", response_class=JSONResponse)
+async def trigger_storage_check(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    Manually trigger storage check.
+    """
+    from app.utils.storage_monitor import record_storage_metric
+    from app.utils.audit_logger import log_audit
+    import logging
+    
+    logger = logging.getLogger("storage")
+    logger.info("Manual storage check triggered by %s", current_admin.username)
+    
+    try:
+        metric = record_storage_metric(db)
+        logger.info("Storage metric recorded: %.1f%% usage", metric.usage_percent)
+        
+        # Log audit (separate try-except to not fail if audit fails)
+        try:
+            log_audit(
+                db=db,
+                user=current_admin.username,
+                action="STORAGE_CHECK_MANUAL",
+                target="storage_monitor",
+                ip=request.client.host if request.client else None,
+                extra={"usage_percent": metric.usage_percent, "alert_level": metric.alert_level}
+            )
+        except Exception as audit_error:
+            logger.warning("Failed to log audit: %s", audit_error)
+        
+        return {
+            "success": True,
+            "message": "Storage check completed",
+            "usage_percent": round(metric.usage_percent, 1),
+            "alert_level": metric.alert_level
+        }
+    except Exception as e:
+        logger.error("Storage check failed: %s", e, exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": str(e)}
+        )
