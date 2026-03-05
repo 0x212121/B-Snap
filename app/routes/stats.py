@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Query, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import not_, and_
 from app.db.database import get_db
 from app.models.camera_daily_stats import CameraDailyStats
 from app.models.camera import Camera as DBCamera
@@ -54,7 +55,17 @@ async def get_camera_stats(
             for d in sorted(snapshot_count_by_date)
         ]
 
-    all_cameras = [c[0].strip() for c in db.query(DBCamera.hostname).all()]
+    all_cameras = (
+        db.query(DBCamera.hostname)
+        .join(CameraHealth, DBCamera.id == CameraHealth.id)
+        .filter(and_(
+            not_(CameraHealth.status.ilike("standalone")),
+            DBCamera.ip.isnot(None),
+            DBCamera.ip != ""
+        ))
+        .all()
+    )
+    all_cameras = [c[0].strip() for c in all_cameras]
     cameras_with_data = {s.camera_name.strip() for s in stats if s.camera_name}
     cameras_without_data = [c for c in all_cameras if c not in cameras_with_data]
 
@@ -137,6 +148,11 @@ async def get_camera_stats_data(
         all_cameras = (
             db.query(DBCamera.hostname, CameraHealth.status)
             .join(CameraHealth, DBCamera.id == CameraHealth.id)
+            .filter(and_(
+                not_(CameraHealth.status.ilike("standalone")),
+                DBCamera.ip.isnot(None),
+                DBCamera.ip != ""
+            ))
             .all()
         )
 
@@ -166,10 +182,15 @@ async def get_no_data_cameras(
     end_date = now.date()
     start_date = end_date - timedelta(days=days)
 
-    # Ambil semua hostname kamera
+    # Ambil semua hostname kamera (exclude standalone & cameras without IP)
     all_cameras = (
         db.query(DBCamera.hostname, CameraHealth.status)
         .join(CameraHealth, DBCamera.id == CameraHealth.id)
+        .filter(and_(
+            not_(CameraHealth.status.ilike("standalone")),
+            DBCamera.ip.isnot(None),
+            DBCamera.ip != ""
+        ))
         .all()
     )
 

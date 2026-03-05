@@ -1,6 +1,6 @@
 services:
   b-snap:
-    image: wijayaindra21/b-snap:v1.11.0
+    image: wijayaindra21/b-snap:v1.11.1
     container_name: bsnap-app
     ports:
       - "8080:8080"

@@ -12,8 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Critical scheduler timeout bug**: Added proper timeout handling to prevent snapshot workers from getting stuck indefinitely.
-  - `app/jobs/scheduler.py`: Added 2-minute timeout to `future.result()` calls and proper `TimeoutError` handling
+  - `app/jobs/scheduler.py`: Added 5-minute timeout to `future.result()` calls and proper `TimeoutError` handling
   - `app/utils/snapshot_service.py`: Added `_rtsp_capture_with_timeout()` wrapper with 30-second timeout for RTSP capture to prevent `cv2.VideoCapture()` from hanging indefinitely on unresponsive cameras
+- **`app/routes/stats.py`**: Updated "cameras without snapshots" endpoints to exclude:
+  - Cameras with status "standalone" (case-insensitive)
+  - Cameras without IP address (`ip IS NULL` or empty string)
 
 ## [1.11.0] - 2025-10-24
 
