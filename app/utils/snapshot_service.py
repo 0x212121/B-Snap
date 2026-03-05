@@ -21,6 +21,7 @@ from app.utils import check_stats
 from app.models.camera import Camera
 from app.models.snapshot import Snapshot
 from app.core.logging_config import setup_logging
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 
 
 STATIC_DIR = os.path.join("static", "snapshots")
@@ -220,28 +221,54 @@ def try_http_snapshot(camera: Camera, db: Session) -> dict:
                 pass
 
 
+def _rtsp_capture_with_timeout(rtsp_uri: str, timeout_sec: int = 30):
+    """
+    Capture frame from RTSP stream with timeout to prevent hanging.
+    Returns (success: bool, frame_or_error: ndarray|str)
+    """
+    def _capture():
+        cap = None
+        try:
+            cap = cv2.VideoCapture()
+            cap.open(rtsp_uri, apiPreference=cv2.CAP_FFMPEG)
+            if not cap.isOpened():
+                return False, "Cannot open RTSP stream"
+            
+            # Flush buffer
+            for _ in range(5):
+                cap.read()
+            
+            ret, frame = cap.read()
+            if not ret or frame is None:
+                return False, "No valid frame received from RTSP after flushing buffer"
+            
+            return True, frame
+        finally:
+            if cap and cap.isOpened():
+                cap.release()
+    
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(_capture)
+        try:
+            return future.result(timeout=timeout_sec)
+        except FutureTimeoutError:
+            return False, f"RTSP capture timed out after {timeout_sec}s"
+
+
 def try_rtsp_snapshot(camera: Camera, db: Session) -> dict:
-    cap = None
     WATERMARK_TEXT = get_config("watermark_text", default="Property of Company")
     try:
         rtsp_uri = get_rtsp_url(camera)
         if not rtsp_uri:
             raise RuntimeError("RTSP URL not available")
 
-        cap = cv2.VideoCapture()
-        cap.open(rtsp_uri, apiPreference=cv2.CAP_FFMPEG)
-        if not cap.isOpened():
-            raise RuntimeError("Cannot open RTSP stream")
-        
-        for _ in range(5):
-            cap.read()
-        
-        ret, frame = cap.read()
-        if not ret or frame is None:
-            raise RuntimeError("No valid frame received from RTSP after flushing buffer")
-
-        success, buffer = cv2.imencode(".jpg", frame)
+        success, result = _rtsp_capture_with_timeout(rtsp_uri, timeout_sec=30)
         if not success:
+            raise RuntimeError(result)
+        
+        frame = result
+        success_encode, buffer = cv2.imencode(".jpg", frame)
+        if not success_encode:
             raise RuntimeError("Failed to encode frame to JPEG")
 
         image_bytes = buffer.tobytes()
@@ -264,10 +291,6 @@ def try_rtsp_snapshot(camera: Camera, db: Session) -> dict:
     except Exception as e:
         logger.exception("❌ [%s] RTSP snapshot failed definitively.", camera.hostname)
         return error_response(camera.hostname, f"RTSP snapshot failed: {str(e)}")
-
-    finally:
-        if cap and cap.isOpened():
-            cap.release()
 
 
 def try_ffmpeg_snapshot(camera: Camera, db: Session) -> dict:

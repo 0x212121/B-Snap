@@ -9,7 +9,7 @@ from app.models.camera import Camera
 from app.models.email_retry_queue import EmailRetryQueue
 from app.models.log import ApiLog, CommandLog
 from app.snapshot import load_active_cameras
-from app.utils.email_notifier import send_recovery_alert, send_tamper_alert
+from app.utils.email_notifier import send_recovery_alert, send_tamper_alert, send_offline_incident_email_once
 from app.utils.snapshot_locker import get_camera_lock
 from app.utils.snapshot_service import take_snapshot
 from app.utils.healthcheck import ping_all_devices
@@ -127,13 +127,17 @@ def scheduled_snapshot():
             for future in as_completed(futures):
                 cam = futures[future]
                 try:
-                    result = future.result()
+                    # Add 2 minute timeout per camera snapshot to prevent stuck workers
+                    result = future.result(timeout=120)
                     if result and result.get("status") == "success":
                         batch_success += 1
                         logger.info("[SUCCESS] Snapshot taken for: %s (Batch)", cam.hostname)
                     else:
                         batch_fail += 1
                         logger.warning("[FAIL] Snapshot failed or returned error for: %s (Batch)", cam.hostname)
+                except TimeoutError:
+                    batch_fail += 1
+                    logger.error("[TIMEOUT] Snapshot timed out for %s (Batch) after 300s", cam.hostname)
                 except Exception as e:
                     batch_fail += 1
                     logger.exception("[EXCEPTION] Unhandled error for %s (Batch): %s", cam.hostname, e)
