@@ -15,6 +15,7 @@ from app.utils.audit_logger import log_audit
 from app.utils.template_helper import templates
 from app.utils.email_helper import send_email, build_email_body
 from app.utils.response_helper import json_error_response, json_success_response
+from app.utils.smtp_config import get_smtp_status_message
 
 logger = logging.getLogger("main")
 mgmt_logger = logging.getLogger("management")
@@ -28,7 +29,12 @@ router = APIRouter()
 @router.get("/recipients", name="list_recipients_page")
 def list_recipients_page(request: Request, db: Session = Depends(get_db)):
     groups = db.query(CameraGroup).all()
-    return templates.TemplateResponse("recipients.html", {"request": request, "groups": groups})
+    smtp_status = get_smtp_status_message()
+    return templates.TemplateResponse("recipients.html", {
+        "request": request, 
+        "groups": groups,
+        "smtp_status": smtp_status
+    })
 
 
 # ============================================================

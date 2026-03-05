@@ -21,7 +21,14 @@ DEFAULT_CONFIG = {
     "storage_critical_percent": "95",
     "storage_warning_percent": "85",
     "storage_info_percent": "75",
-    "storage_critical_free_gb": "5"
+    "storage_critical_free_gb": "5",
+    # SMTP defaults (empty - user must configure)
+    "smtp_host": "",
+    "smtp_port": "587",
+    "smtp_user": "",
+    "smtp_pass": "",
+    "email_from": "",
+    "email_cc": ""
 }
 
 def seed_config(db: Session):

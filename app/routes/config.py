@@ -76,6 +76,12 @@ async def config_save(
     storage_warning_percent: int = Form(85),
     storage_info_percent: int = Form(75),
     storage_critical_free_gb: int = Form(5),
+    smtp_host: str = Form(""),
+    smtp_port: int = Form(587),
+    smtp_user: str = Form(""),
+    smtp_pass: str = Form(""),
+    email_from: str = Form(""),
+    email_cc: str = Form(""),
     app_logo: UploadFile = File(None)
 ):
     # Validasi timezone
@@ -131,6 +137,27 @@ async def config_save(
             status_code=400,
             content={"message": "Warning threshold must be higher than info threshold."}
         )
+    
+    # Validasi SMTP port (1-65535)
+    if smtp_port < 1 or smtp_port > 65535:
+        return JSONResponse(
+            status_code=400,
+            content={"message": "SMTP port must be between 1 and 65535."}
+        )
+    
+    # Validasi email format jika diisi
+    import re
+    email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if email_from and not re.match(email_regex, email_from):
+        return JSONResponse(
+            status_code=400,
+            content={"message": "Invalid 'From Email' format."}
+        )
+    if email_cc and not re.match(email_regex, email_cc):
+        return JSONResponse(
+            status_code=400,
+            content={"message": "Invalid 'CC Email' format."}
+        )
 
     keys = {
         "snapshot_interval_minutes": snapshot_interval_minutes,
@@ -152,6 +179,12 @@ async def config_save(
         "storage_warning_percent": storage_warning_percent,
         "storage_info_percent": storage_info_percent,
         "storage_critical_free_gb": storage_critical_free_gb,
+        "smtp_host": smtp_host,
+        "smtp_port": smtp_port,
+        "smtp_user": smtp_user,
+        "smtp_pass": smtp_pass,
+        "email_from": email_from,
+        "email_cc": email_cc,
     }
 
     for config_key, config_value in keys.items():

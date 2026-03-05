@@ -8,13 +8,12 @@ from fastapi import BackgroundTasks
 from typing import List
 from sqlalchemy.orm import Session
 
-# Load dari environment (atur di .env)
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-SMTP_USER = os.getenv("SMTP_USER")
-SMTP_PASS = os.getenv("SMTP_PASS")
-EMAIL_FROM = os.getenv("EMAIL_FROM", SMTP_USER)
-EMAIL_CC = os.getenv("EMAIL_CC", None)  # CC default, bisa None
+# Import SMTP config helper (with DB + env fallback)
+from app.utils.smtp_config import get_smtp_config
+
+# Note: SMTP settings are now loaded from database via get_smtp_config()
+# Environment variables serve as fallback only
+# Use /config page to configure SMTP settings
 
 # =========================
 # EMAIL CORE FUNCTIONS
@@ -26,9 +25,15 @@ def _send_email_sync(to: list[str], subject: str, body: str, html: str | None = 
     """
     if not to:
         raise ValueError("Recipient list is empty")
+    
+    # Load SMTP config from database (with env fallback)
+    config = get_smtp_config()
+    
+    if not config["is_configured"]:
+        raise RuntimeError("SMTP not configured. Please configure SMTP settings in /config page.")
 
     msg = MIMEMultipart("alternative")
-    msg["From"] = EMAIL_FROM
+    msg["From"] = config["email_from"]
     msg["To"] = ", ".join(to)
     msg["Subject"] = subject
 
@@ -38,10 +43,10 @@ def _send_email_sync(to: list[str], subject: str, body: str, html: str | None = 
     if html:
         msg.attach(MIMEText(html, "html"))
 
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+    with smtplib.SMTP(config["smtp_host"], config["smtp_port"]) as server:
         server.starttls()
-        server.login(SMTP_USER, SMTP_PASS)
-        server.sendmail(EMAIL_FROM, to, msg.as_string())
+        server.login(config["smtp_user"], config["smtp_pass"])
+        server.sendmail(config["email_from"], to, msg.as_string())
 
 
 def send_email(
@@ -157,14 +162,19 @@ def _send_email_with_image(
     Kirim email dengan plain text + HTML.
     Snapshot (jika ada) dikirim sebagai attachment, bukan inline.
     """
+    # Load SMTP config from database (with env fallback)
+    config = get_smtp_config()
+    
+    if not config["is_configured"]:
+        raise RuntimeError("SMTP not configured. Please configure SMTP settings in /config page.")
+    
     msg = MIMEMultipart("mixed")  # mixed = bisa ada lampiran
     msg["Subject"] = subject
-    msg["From"] = EMAIL_FROM
+    msg["From"] = config["email_from"]
     msg["To"] = ", ".join(to_emails)
 
-    # ✅ tambahkan CC helpdesk jika mau
-    # helpdesk = "help.desk@kpc.co.id"
-    msg["Cc"] = EMAIL_CC if EMAIL_CC else ""
+    # ✅ tambahkan CC helpdesk jika diset
+    msg["Cc"] = config["email_cc"] if config["email_cc"] else ""
 
     # alternative part: plain + html
     alt = MIMEMultipart("alternative")
@@ -183,12 +193,12 @@ def _send_email_with_image(
         msg.attach(part)
 
     # gabungkan recipients (to + cc)
-    all_recipients = to_emails + ([EMAIL_CC] if EMAIL_CC else [])
+    all_recipients = to_emails + ([config["email_cc"]] if config["email_cc"] else [])
 
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+    with smtplib.SMTP(config["smtp_host"], config["smtp_port"]) as server:
         server.starttls()
-        server.login(SMTP_USER, SMTP_PASS)
-        server.sendmail(EMAIL_FROM, all_recipients, msg.as_string())
+        server.login(config["smtp_user"], config["smtp_pass"])
+        server.sendmail(config["email_from"], all_recipients, msg.as_string())
 
 
 # =========================
