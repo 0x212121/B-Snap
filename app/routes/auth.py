@@ -14,6 +14,9 @@ from app.db.database import get_db
 from app.models.user import User
 from app.utils.auth import get_password_hash, verify_password
 from app.utils.audit_logger import log_audit
+from app.utils.remember_me import (
+    create_remember_token, revoke_token, get_cookie_settings
+)
 
 # --- Setup Router and Template ---
 router = APIRouter(tags=["Authentication"])
@@ -42,6 +45,7 @@ def login_post(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
+    remember_me: bool = Form(False),
     db: Session = Depends(get_db),
 ):
     """
@@ -59,6 +63,9 @@ def login_post(
 
     # --- FIX: Do not create the final token or session here. ---
     # Just store the temporary user ID for the next step.
+    # Store remember_me preference temporarily
+    if remember_me:
+        request.session["_remember_me"] = True
 
     if user.is_2fa_enabled:
         # User has 2FA. Store a temporary key for OTP verification.
@@ -152,6 +159,28 @@ def otp_post(
         samesite="lax",
         secure=False  # Ganti ke True jika menggunakan HTTPS
     )
+    
+    # Handle Remember Me
+    if request.session.pop("_remember_me", False):
+        device_name = f"{request.headers.get('sec-ch-ua-platform', 'Unknown').strip('"')} Browser"
+        remember_token = create_remember_token(
+            db=db,
+            user_id=user.id,
+            device_name=device_name,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent")
+        )
+        cookie_settings = get_cookie_settings()
+        response.set_cookie(
+            key=cookie_settings["key"],
+            value=remember_token,
+            max_age=cookie_settings["max_age"],
+            httponly=cookie_settings["httponly"],
+            secure=cookie_settings["secure"],
+            samesite=cookie_settings["samesite"],
+            path=cookie_settings["path"]
+        )
+    
     return response
 
 # ============================================================================== 
@@ -261,6 +290,28 @@ def mfa_setup_post(
         samesite="lax",
         secure=False
     )
+    
+    # Handle Remember Me (for first-time MFA setup flow)
+    if request.session.pop("_remember_me", False):
+        device_name = f"{request.headers.get('sec-ch-ua-platform', 'Unknown').strip('"')} Browser"
+        remember_token = create_remember_token(
+            db=db,
+            user_id=user.id,
+            device_name=device_name,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent")
+        )
+        cookie_settings = get_cookie_settings()
+        response.set_cookie(
+            key=cookie_settings["key"],
+            value=remember_token,
+            max_age=cookie_settings["max_age"],
+            httponly=cookie_settings["httponly"],
+            secure=cookie_settings["secure"],
+            samesite=cookie_settings["samesite"],
+            path=cookie_settings["path"]
+        )
+    
     return response
 
 # ============================================================================== 
@@ -275,6 +326,7 @@ def logout(
 ):
     """
     Handles logout: removes token from DB and clears browser session.
+    Also revokes the Remember Me token.
     """
     user_id = request.session.get("user_id")
     user_logged_out = False
@@ -294,10 +346,16 @@ def logout(
             ip=request.client.host if request.client else "unknown",
             extra=""
         )
+    
+    # Revoke Remember Me token
+    remember_token = request.cookies.get(get_cookie_settings()["key"])
+    if remember_token:
+        revoke_token(db, remember_token)
 
     request.session.clear()
     response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie("session_token")
+    response.delete_cookie(get_cookie_settings()["key"])
     return response
 
 

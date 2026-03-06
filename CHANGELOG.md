@@ -6,7 +6,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- None
+- **Logs Viewer Redesign** - Modern, feature-rich log viewing interface:
+  - **Smart Log Parsing** - Parses log format `[timestamp] [LEVEL] [logger] [pid=X] message`
+  - **Real-time Filtering**:
+    - Search within log messages (debounced, 300ms)
+    - Filter by log level (ERROR, WARNING, INFO, DEBUG)
+    - Filter by logger name (dropdown populated dynamically)
+  - **Auto-refresh Mode** - Toggle live update every 5 seconds with visual indicator
+  - **Color-coded Log Levels**:
+    - 🔴 ERROR - Red badge with bold text
+    - 🟡 WARNING - Yellow badge
+    - 🔵 INFO - Blue badge
+    - ⚪ DEBUG - Gray badge
+  - **Log Statistics Panel**:
+    - Total line count
+    - Entry count per log level
+    - File size and last modified info
+  - **Improved Navigation**:
+    - Sidebar with log file list (main, snapshot, healthcheck, scheduler, management)
+    - Quick scroll to Top/Bottom buttons
+    - Auto-scroll when near bottom
+  - **File Operations**:
+    - Download log files
+    - Clear filters button
+    - Active filter indicator
+
+- **Recipients UI Improvements** - More compact layout and confirmation modal:
+  - **Compact Design**: Reduced padding, smaller fonts, tighter spacing throughout
+  - **Confirmation Modal**: Tailwind-styled modal when sending test email
+    - Shows selected group and location
+    - Cancel / Confirm options
+    - Prevents accidental sends
+  - **Better Visual Hierarchy**: Clearer section separation with consistent styling
+
+### Fixed
+- **Email Sent Counter Bug** - Fixed email statistics counting failed emails as sent:
+  - Updated `_total_count()` and `_daily_counts()` helpers to support `success_only` filter
+  - Updated `_total_count()` calls for email to use `success_only=True`
+  - Updated `_daily_counts()` calls for email chart to use `success_only=True`
+  - Updated `get_top_cameras_by_email()` to filter `success=True`
+  - Email stats now only count successfully sent emails
+
+- **Logging Configuration Bug** - Fixed missing logger registrations causing logs to not be written to files:
+  - Registered missing loggers in `LOGGING_CONFIG`:
+    - `storage_monitor` - Storage monitoring logs
+    - `storage` - Storage stats API logs  
+    - `websocket` - WebSocket connection logs
+    - `auth` - Authentication middleware logs
+    - `ping` - Ping utility logs
+    - `app.insights` - Insights/reporting logs
+  - Fixed import pattern in `storage_monitor.py` - removed duplicate imports inside functions
+  - Fixed logger references in `stats.py` - using module-level loggers
+  - All loggers now correctly write to `main.log` with proper formatting
 
 ## [1.12.0] - 2026-03-06
 

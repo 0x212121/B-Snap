@@ -100,6 +100,36 @@ LOGGING_CONFIG = {
             "level": "INFO",
             "propagate": False,
         },
+        "storage_monitor": {
+            "handlers": ["main_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "storage": {
+            "handlers": ["main_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "websocket": {
+            "handlers": ["main_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "auth": {
+            "handlers": ["main_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "ping": {
+            "handlers": ["main_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "app.insights": {
+            "handlers": ["main_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
 
         # # === SQLAlchemy & Server ===
         # "sqlalchemy.engine": {"handlers": ["main_file", "console"], "level": "INFO", "propagate": False},

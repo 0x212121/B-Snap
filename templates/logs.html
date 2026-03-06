@@ -1,170 +1,568 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – Logs Viewer{% endblock %}
-{% from "_icons.html" import icon_arrow_path, icon_download %}
+{% from "_icons.html" import icon_arrow_path, icon_download, icon_search %}
+
 {% block content %}
-<div class="p-6 space-y-6">
-  <div class="flex justify-between items-center">
-    <h1 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">Logs Viewer</h1>
-    <div class="flex flex-wrap gap-3 items-center">
-      <div>
-        <label for="log_type" class="text-sm font-medium text-gray-700 dark:text-gray-300">Log Type:</label>
-        <select id="log_type" class="border rounded px-2 pr-8 py-1 dark:bg-gray-700 w-auto min-w-fit">
-          <option value="main">Main</option>
-          <option value="snapshot">Snapshot</option>
-          <option value="healthcheck">Health Check</option>
-          <option value="scheduler">Scheduler</option>
-          <option value="management">Management</option>
-        </select>
+<style>
+  /* Custom scrollbar for dark theme */
+  .log-viewer::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  .log-viewer::-webkit-scrollbar-track {
+    background: #1f2937;
+  }
+  .log-viewer::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 5px;
+  }
+  .log-viewer::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+  }
+  
+  /* Log level badges */
+  .badge-error { @apply bg-red-900/50 text-red-300 border-red-700; }
+  .badge-warn { @apply bg-yellow-900/50 text-yellow-300 border-yellow-700; }
+  .badge-info { @apply bg-blue-900/50 text-blue-300 border-blue-700; }
+  .badge-debug { @apply bg-gray-700/50 text-gray-300 border-gray-600; }
+  
+  /* Log row hover effect */
+  .log-row:hover {
+    background-color: rgba(75, 85, 99, 0.3);
+  }
+  
+  /* Animated refresh indicator */
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .live-indicator {
+    animation: pulse-dot 2s infinite;
+  }
+</style>
+
+<div class="h-[calc(100vh-4rem)] flex flex-col">
+  <!-- Header -->
+  <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Logs Viewer</h1>
+        <span id="liveBadge" class="hidden items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900/50 text-green-300 border border-green-700">
+          <span class="w-2 h-2 bg-green-400 rounded-full live-indicator"></span>
+          LIVE
+        </span>
       </div>
       
-      <div>
-        <label for="log_file" class="text-sm font-medium text-gray-700 dark:text-gray-300">Log File:</label>
-        <select id="log_file" class="border rounded px-2 pr-8 py-1 dark:bg-gray-700 w-auto min-w-fit">
-          <option disabled selected>Loading...</option>
-        </select>
+      <div class="flex items-center gap-3 flex-wrap">
+        <!-- Auto Refresh Toggle -->
+        <label class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+          <input type="checkbox" id="autoRefresh" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Auto-refresh (5s)</span>
+        </label>
+        
+        <!-- Refresh Button -->
+        <button id="refreshBtn" class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow transition-colors">
+          {{ icon_arrow_path("w-4 h-4") }}
+          <span>Refresh</span>
+        </button>
+        
+        <!-- Download Button -->
+        <a id="downloadBtn" href="#" class="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition-colors opacity-50 pointer-events-none">
+          {{ icon_download("w-4 h-4") }}
+          <span>Download</span>
+        </a>
       </div>
-      
-      <a id="downloadBtn"
-         href="#"
-         class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow">
-         {{ icon_download("w-5 h-5 text-gray-100 inline") }}
-         Download
-      </a>
-    
-      <button id="refreshBtn"
-              type="button"
-              class="bg-gray-500 text-white px-3 py-2 rounded hover:bg-gray-600">
-      {{ icon_arrow_path("w-5 h-5 text-gray-100 inline") }} Refresh
-      </button>
     </div>
   </div>
 
-  <div id="logViewer"
-       class="bg-black text-green-400 font-mono text-sm rounded p-4 overflow-auto max-h-[70vh] border border-gray-800 shadow-inner whitespace-pre-wrap leading-snug">
-    <div class="text-gray-400">Please select a log file to view its content.</div>
-  </div>
+  <!-- Main Content -->
+  <div class="flex-1 flex overflow-hidden">
+    <!-- Sidebar -->
+    <div class="w-72 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+      <!-- Log Type Selector -->
+      <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+        <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Log Type</label>
+        <select id="logTypeSelect" class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white">
+          <option value="main">📝 Main</option>
+          <option value="snapshot">📸 Snapshot</option>
+          <option value="healthcheck">❤️ Health Check</option>
+          <option value="scheduler">⏰ Scheduler</option>
+          <option value="management">⚙️ Management</option>
+        </select>
+      </div>
+      
+      <!-- Log Files List -->
+      <div class="flex-1 overflow-y-auto p-4">
+        <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Log Files</label>
+        <div id="logFilesList" class="space-y-1">
+          <div class="text-sm text-gray-500 dark:text-gray-400 italic">Loading...</div>
+        </div>
+      </div>
+      
+      <!-- Stats Panel -->
+      <div id="statsPanel" class="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/50">
+        <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Statistics</label>
+        <div id="statsContent" class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">Total Lines:</span>
+            <span id="statTotalLines" class="font-medium text-gray-900 dark:text-gray-200">-</span>
+          </div>
+          <div id="levelStats" class="grid grid-cols-2 gap-2 mt-2">
+            <!-- Level counts will be inserted here -->
+          </div>
+        </div>
+      </div>
+    </div>
 
-</div>
+    <!-- Log Viewer Area -->
+    <div class="flex-1 flex flex-col bg-gray-900">
+      <!-- Filters Bar -->
+      <div class="px-4 py-3 border-b border-gray-700 bg-gray-800/50 flex items-center gap-3 flex-wrap">
+        <!-- Search -->
+        <div class="relative flex-1 min-w-[200px] max-w-md">
+          {{ icon_search("w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2") }}
+          <input type="text" id="searchInput" placeholder="Search in logs..." 
+                 class="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        
+        <!-- Level Filter -->
+        <select id="levelFilter" class="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-100 focus:ring-2 focus:ring-blue-500">
+          <option value="">All Levels</option>
+          <option value="ERROR">❌ Error</option>
+          <option value="WARNING,WARN">⚠️ Warning</option>
+          <option value="INFO">ℹ️ Info</option>
+          <option value="DEBUG">🐛 Debug</option>
+        </select>
+        
+        <!-- Logger Filter -->
+        <select id="loggerFilter" class="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-100 focus:ring-2 focus:ring-blue-500">
+          <option value="">All Loggers</option>
+        </select>
+        
+        <!-- Clear Filters -->
+        <button id="clearFilters" class="px-3 py-2 text-sm text-gray-400 hover:text-gray-200 transition-colors">
+          Clear
+        </button>
+        
+        <!-- Result Count -->
+        <span id="resultCount" class="text-sm text-gray-400 ml-auto"></span>
+      </div>
+
+      <!-- Log Content -->
+      <div id="logViewer" class="flex-1 overflow-auto log-viewer p-0 font-mono text-sm">
+        <div class="flex items-center justify-center h-full text-gray-500">
+          <div class="text-center">
+            <div class="text-4xl mb-4">📄</div>
+            <p>Select a log file to view</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Bottom Toolbar -->
+      <div class="px-4 py-2 border-t border-gray-700 bg-gray-800/50 flex items-center justify-between text-xs text-gray-400">
+        <div class="flex items-center gap-4">
+          <span id="loadedInfo">No file loaded</span>
+          <span id="filterInfo"></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="scrollTop" class="px-3 py-1 hover:bg-gray-700 rounded transition-colors">Top</button>
+          <button id="scrollBottom" class="px-3 py-1 hover:bg-gray-700 rounded transition-colors">Bottom</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-  const logTypeSelect = document.getElementById('log_type');
-  const logFileSelect = document.getElementById('log_file');
-  const downloadBtn = document.getElementById('downloadBtn');
-  const refreshBtn = document.getElementById('refreshBtn');
-  const logViewer = document.getElementById('logViewer');
-
-  // Fetch log content and render it line by line
-  async function fetchLog() {
-    const logType = logTypeSelect.value;
-    const file = logFileSelect.value;
-    if (!file) return;
-    
-    const res = await fetch(`/logs/content/${logType}/${file}`);
-    const data = await res.json();
-    
-    logViewer.innerHTML = ""; // Clear the viewer
-    
-    // Process each line individually
-    data.lines.forEach(line => {
-        // Create a container for each line to prevent collapsing empty lines
-        const lineDiv = document.createElement("div");
-        lineDiv.className = "whitespace-pre-wrap"; // Preserve whitespace
-
-        // Determine the level from the current line
-        const levelMatch = line.match(/\[(ERROR|WARNING|WARN|INFO|DEBUG)\]/i);
-        const level = levelMatch ? levelMatch[1].toUpperCase() : "";
-
-        // Determine color class, default to a neutral color if no level is found
-        // The default color of the parent is green-400, so we can use that.
-        let colorClass = ""; 
-        if (level === "ERROR") {
-            colorClass = "text-red-400 font-bold";
-        } else if (level === "WARNING" || level === "WARN") {
-            colorClass = "text-yellow-300 font-semibold";
-        } else if (level === "INFO") {
-            colorClass = "text-blue-300";
-        } else if (level === "DEBUG") {
-            colorClass = "text-gray-400";
-        }
-
-        // Apply class if a specific color was determined
-        if(colorClass) {
-            lineDiv.className += ` ${colorClass}`;
-        }
-        
-        // Use textContent for security and correct rendering
-        // If the line is empty, display a non-breaking space to maintain its height
-        lineDiv.textContent = line.trim().length === 0 ? '\u00A0' : line;
-        
-        logViewer.appendChild(lineDiv);
-    });
-
-    logViewer.scrollTop = logViewer.scrollHeight;
+// State
+let currentState = {
+  logType: 'main',
+  filename: null,
+  autoRefresh: false,
+  refreshInterval: null,
+  filters: {
+    level: '',
+    logger: '',
+    search: ''
   }
+};
+
+// DOM Elements
+const elements = {
+  logTypeSelect: document.getElementById('logTypeSelect'),
+  logFilesList: document.getElementById('logFilesList'),
+  logViewer: document.getElementById('logViewer'),
+  downloadBtn: document.getElementById('downloadBtn'),
+  refreshBtn: document.getElementById('refreshBtn'),
+  autoRefresh: document.getElementById('autoRefresh'),
+  liveBadge: document.getElementById('liveBadge'),
+  searchInput: document.getElementById('searchInput'),
+  levelFilter: document.getElementById('levelFilter'),
+  loggerFilter: document.getElementById('loggerFilter'),
+  clearFilters: document.getElementById('clearFilters'),
+  resultCount: document.getElementById('resultCount'),
+  loadedInfo: document.getElementById('loadedInfo'),
+  filterInfo: document.getElementById('filterInfo'),
+  scrollTop: document.getElementById('scrollTop'),
+  scrollBottom: document.getElementById('scrollBottom'),
+  statTotalLines: document.getElementById('statTotalLines'),
+  levelStats: document.getElementById('levelStats'),
+  statsPanel: document.getElementById('statsPanel')
+};
+
+// Initialize
+function init() {
+  // Set initial log type from URL or default
+  const urlParams = new URLSearchParams(window.location.search);
+  const logType = urlParams.get('log_type') || 'main';
+  elements.logTypeSelect.value = logType;
+  currentState.logType = logType;
   
-  function updateDownloadLink() {
-    const logType = logTypeSelect.value;
-    const file = logFileSelect.value;
-    
-    if (!file || logFileSelect.selectedIndex === 0) {
-      downloadBtn.href = "#";
-      downloadBtn.classList.add("opacity-50", "pointer-events-none");
-    } else {
-      downloadBtn.href = `/logs/download/${logType}/${file}`;
-      downloadBtn.classList.remove("opacity-50", "pointer-events-none");
+  // Load log files
+  loadLogFiles(logType);
+  
+  // Event listeners
+  elements.logTypeSelect.addEventListener('change', (e) => {
+    currentState.logType = e.target.value;
+    currentState.filename = null;
+    loadLogFiles(currentState.logType);
+    updateURL();
+  });
+  
+  elements.refreshBtn.addEventListener('click', () => {
+    if (currentState.filename) {
+      loadLogContent();
     }
-  }
+  });
   
-  async function fetchLogFiles(logType) {
+  elements.autoRefresh.addEventListener('change', (e) => {
+    currentState.autoRefresh = e.target.checked;
+    toggleAutoRefresh();
+  });
+  
+  elements.searchInput.addEventListener('input', debounce((e) => {
+    currentState.filters.search = e.target.value;
+    loadLogContent();
+  }, 300));
+  
+  elements.levelFilter.addEventListener('change', (e) => {
+    currentState.filters.level = e.target.value;
+    loadLogContent();
+  });
+  
+  elements.loggerFilter.addEventListener('change', (e) => {
+    currentState.filters.logger = e.target.value;
+    loadLogContent();
+  });
+  
+  elements.clearFilters.addEventListener('click', () => {
+    elements.searchInput.value = '';
+    elements.levelFilter.value = '';
+    elements.loggerFilter.value = '';
+    currentState.filters = { level: '', logger: '', search: '' };
+    loadLogContent();
+  });
+  
+  elements.scrollTop.addEventListener('click', () => {
+    elements.logViewer.scrollTop = 0;
+  });
+  
+  elements.scrollBottom.addEventListener('click', () => {
+    elements.logViewer.scrollTop = elements.logViewer.scrollHeight;
+  });
+}
+
+// Load log files list
+async function loadLogFiles(logType) {
+  elements.logFilesList.innerHTML = '<div class="text-sm text-gray-500 dark:text-gray-400 italic">Loading...</div>';
+  
+  try {
     const res = await fetch(`/logs/files/${logType}`);
     const data = await res.json();
     
-    logFileSelect.innerHTML = "";
+    elements.logFilesList.innerHTML = '';
     
     if (data.files.length === 0) {
-      const opt = document.createElement("option");
-      opt.textContent = "No log files";
-      opt.disabled = true;
-      opt.selected = true;
-      logFileSelect.appendChild(opt);
-      logViewer.innerHTML = "<div class='text-red-400'>No log files found.</div>";
-      updateDownloadLink();
+      elements.logFilesList.innerHTML = '<div class="text-sm text-gray-500 dark:text-gray-400 italic">No log files found</div>';
+      elements.logViewer.innerHTML = `
+        <div class="flex items-center justify-center h-full text-gray-500">
+          <div class="text-center">
+            <div class="text-4xl mb-4">📭</div>
+            <p>No log files found for ${logType}</p>
+          </div>
+        </div>
+      `;
       return;
     }
     
-    const placeholder = document.createElement("option");
-    placeholder.textContent = "-- Select log file --";
-    placeholder.disabled = true;
-    placeholder.selected = true;
-    logFileSelect.appendChild(placeholder);
-    
-    data.files.forEach(filename => {
-      const opt = document.createElement("option");
-      opt.value = filename;
-      opt.textContent = filename;
-      logFileSelect.appendChild(opt);
+    data.files.forEach((file, index) => {
+      const btn = document.createElement('button');
+      btn.className = `w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${index === 0 ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`;
+      btn.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="font-medium truncate">${file.name}</span>
+          <span class="text-xs opacity-75">${file.size_human}</span>
+        </div>
+        <div class="text-xs opacity-60 mt-0.5">${formatDate(file.modified)}</div>
+      `;
+      btn.onclick = () => selectLogFile(file.name, btn);
+      elements.logFilesList.appendChild(btn);
+      
+      // Auto-select first file
+      if (index === 0) {
+        selectLogFile(file.name, btn);
+      }
     });
+  } catch (err) {
+    elements.logFilesList.innerHTML = `<div class="text-sm text-red-500">Error: ${err.message}</div>`;
+  }
+}
+
+// Select a log file
+function selectLogFile(filename, btnElement) {
+  currentState.filename = filename;
+  
+  // Update UI
+  Array.from(elements.logFilesList.children).forEach(child => {
+    child.className = 'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300';
+  });
+  btnElement.className = 'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors bg-blue-600 text-white';
+  
+  // Update download button
+  elements.downloadBtn.href = `/logs/download/${currentState.logType}/${filename}`;
+  elements.downloadBtn.classList.remove('opacity-50', 'pointer-events-none');
+  
+  // Load content
+  loadLogContent();
+  loadStats();
+}
+
+// Load log content
+async function loadLogContent() {
+  if (!currentState.filename) return;
+  
+  const params = new URLSearchParams();
+  if (currentState.filters.level) params.append('level', currentState.filters.level);
+  if (currentState.filters.logger) params.append('logger', currentState.filters.logger);
+  if (currentState.filters.search) params.append('search', currentState.filters.search);
+  params.append('limit', '2000');
+  
+  try {
+    const res = await fetch(`/logs/content/${currentState.logType}/${currentState.filename}?${params}`);
+    const data = await res.json();
     
-    updateDownloadLink();
-    logViewer.innerHTML = `<div class="text-gray-400">Please select a log file to view.</div>`;
+    if (data.error) {
+      elements.logViewer.innerHTML = `<div class="p-4 text-red-400">Error: ${data.error}</div>`;
+      return;
+    }
+    
+    // Update logger filter options
+    updateLoggerFilter(data.unique_loggers);
+    
+    // Render entries
+    renderLogEntries(data.entries);
+    
+    // Update stats
+    elements.resultCount.textContent = data.total > 0 ? `${data.total.toLocaleString()} entries` : 'No entries';
+    elements.loadedInfo.textContent = `${currentState.filename} | ${data.total.toLocaleString()} lines`;
+    
+    // Update filter info
+    const activeFilters = [];
+    if (currentState.filters.level) activeFilters.push(`Level: ${currentState.filters.level}`);
+    if (currentState.filters.logger) activeFilters.push(`Logger: ${currentState.filters.logger}`);
+    if (currentState.filters.search) activeFilters.push(`Search: "${currentState.filters.search}"`);
+    elements.filterInfo.textContent = activeFilters.length > 0 ? `Filtered by ${activeFilters.join(', ')}` : '';
+    
+    // Update level stats
+    updateLevelStats(data.level_counts);
+    
+  } catch (err) {
+    elements.logViewer.innerHTML = `<div class="p-4 text-red-400">Error loading logs: ${err.message}</div>`;
+  }
+}
+
+// Render log entries
+function renderLogEntries(entries) {
+  if (entries.length === 0) {
+    elements.logViewer.innerHTML = `
+      <div class="flex items-center justify-center h-full text-gray-500">
+        <div class="text-center">
+          <div class="text-4xl mb-4">🔍</div>
+          <p>No matching entries found</p>
+        </div>
+      </div>
+    `;
+    return;
   }
   
-  // Events
-  logTypeSelect.addEventListener("change", () => {
-    fetchLogFiles(logTypeSelect.value);
+  const container = document.createElement('div');
+  container.className = 'divide-y divide-gray-800';
+  
+  entries.forEach(entry => {
+    const row = document.createElement('div');
+    row.className = 'log-row flex items-start gap-3 px-4 py-2 transition-colors';
+    
+    // Level badge
+    const levelClass = {
+      'ERROR': 'badge-error',
+      'WARNING': 'badge-warn',
+      'WARN': 'badge-warn',
+      'INFO': 'badge-info',
+      'DEBUG': 'badge-debug'
+    }[entry.level] || 'badge-info';
+    
+    const levelBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${levelClass} min-w-[60px] justify-center">${entry.level}</span>`;
+    
+    // Timestamp
+    const timestamp = entry.timestamp ? `<span class="text-gray-500 text-xs whitespace-nowrap">${entry.timestamp}</span>` : '';
+    
+    // Logger
+    const logger = `<span class="text-purple-400 text-xs whitespace-nowrap">[${entry.logger}]</span>`;
+    
+    // Message with color
+    const messageColor = {
+      'ERROR': 'text-red-300',
+      'WARNING': 'text-yellow-200',
+      'WARN': 'text-yellow-200',
+      'INFO': 'text-gray-300',
+      'DEBUG': 'text-gray-500'
+    }[entry.level] || 'text-gray-300';
+    
+    row.innerHTML = `
+      <div class="flex items-center gap-2 pt-0.5">
+        ${levelBadge}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-0.5">
+          ${timestamp}
+          ${logger}
+          ${entry.pid ? `<span class="text-gray-600 text-xs">pid=${entry.pid}</span>` : ''}
+        </div>
+        <div class="${messageColor} break-all leading-relaxed">${escapeHtml(entry.message)}</div>
+      </div>
+    `;
+    
+    container.appendChild(row);
   });
   
-  logFileSelect.addEventListener("change", () => {
-    updateDownloadLink();
-    fetchLog();
-  });
+  elements.logViewer.innerHTML = '';
+  elements.logViewer.appendChild(container);
   
-  refreshBtn.addEventListener("click", () => {
-    fetchLog();
-  });
+  // Auto-scroll to bottom if near bottom
+  const isNearBottom = elements.logViewer.scrollHeight - elements.logViewer.scrollTop - elements.logViewer.clientHeight < 100;
+  if (isNearBottom || currentState.autoRefresh) {
+    elements.logViewer.scrollTop = elements.logViewer.scrollHeight;
+  }
+}
+
+// Update logger filter dropdown
+function updateLoggerFilter(loggers) {
+  const currentValue = elements.loggerFilter.value;
+  elements.loggerFilter.innerHTML = '<option value="">All Loggers</option>';
   
-  // Initial load
-  fetchLogFiles(logTypeSelect.value);
+  loggers.forEach(logger => {
+    const option = document.createElement('option');
+    option.value = logger;
+    option.textContent = logger;
+    if (logger === currentValue) option.selected = true;
+    elements.loggerFilter.appendChild(option);
+  });
+}
+
+// Update level stats
+function updateLevelStats(counts) {
+  elements.levelStats.innerHTML = '';
+  const colors = {
+    'ERROR': 'bg-red-600',
+    'WARNING': 'bg-yellow-600',
+    'WARN': 'bg-yellow-600',
+    'INFO': 'bg-blue-600',
+    'DEBUG': 'bg-gray-600'
+  };
+  
+  Object.entries(counts).forEach(([level, count]) => {
+    const div = document.createElement('div');
+    div.className = 'flex items-center justify-between px-2 py-1 rounded bg-gray-800';
+    div.innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full ${colors[level] || 'bg-gray-500'}"></span>
+        <span class="text-xs text-gray-400">${level}</span>
+      </div>
+      <span class="text-xs font-medium text-gray-200">${count.toLocaleString()}</span>
+    `;
+    elements.levelStats.appendChild(div);
+  });
+}
+
+// Load statistics
+async function loadStats() {
+  if (!currentState.filename) return;
+  
+  try {
+    const res = await fetch(`/logs/stats/${currentState.logType}/${currentState.filename}`);
+    const data = await res.json();
+    
+    if (data.error) {
+      elements.statTotalLines.textContent = '-';
+      return;
+    }
+    
+    elements.statTotalLines.textContent = data.total_lines.toLocaleString();
+  } catch (err) {
+    console.error('Failed to load stats:', err);
+  }
+}
+
+// Toggle auto refresh
+function toggleAutoRefresh() {
+  if (currentState.autoRefresh) {
+    elements.liveBadge.classList.remove('hidden');
+    elements.liveBadge.classList.add('inline-flex');
+    currentState.refreshInterval = setInterval(() => {
+      if (currentState.filename) {
+        loadLogContent();
+      }
+    }, 5000);
+  } else {
+    elements.liveBadge.classList.add('hidden');
+    elements.liveBadge.classList.remove('inline-flex');
+    if (currentState.refreshInterval) {
+      clearInterval(currentState.refreshInterval);
+      currentState.refreshInterval = null;
+    }
+  }
+}
+
+// Update URL
+function updateURL() {
+  const url = new URL(window.location);
+  url.searchParams.set('log_type', currentState.logType);
+  window.history.replaceState({}, '', url);
+}
+
+// Utility: Debounce
+function debounce(fn, delay) {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), delay);
+  };
+}
+
+// Utility: Format date
+function formatDate(isoString) {
+  const date = new Date(isoString);
+  return date.toLocaleString();
+}
+
+// Utility: Escape HTML
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Start
+init();
 </script>
 {% endblock %}

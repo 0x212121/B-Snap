@@ -137,29 +137,43 @@
     </div>
 
     {% if pagination and pagination.total > pagination.per_page %}
-    <nav class="mt-8 flex items-center justify-between" aria-label="Pagination">
-        <div class="hidden sm:block">
-            <p class="text-sm text-gray-700 dark:text-gray-400">
-                Showing <span class="font-medium">{{ pagination.start_item }}</span>
-                to <span class="font-medium">{{ pagination.end_item }}</span>
-                of <span class="font-medium">{{ pagination.total }}</span> results
-            </p>
-        </div>
-        <div class="flex-1 flex justify-between sm:justify-end gap-3">
-            {% if pagination.has_prev %}
-                <a href="{{ request.url_for('health_history') }}?page={{ pagination.prev_num }}&q={{ search_query }}&sort={{ current_sort }}"
-                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                    Previous
-                </a>
+    <div class="flex justify-center items-center gap-2 mt-6 text-sm">
+        {# First & Prev #}
+        {% if pagination.page > 1 %}
+            <a href="{{ request.url_for('health_history') }}?page=1&q={{ search_query }}&sort={{ current_sort }}"
+               class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">First</a>
+            <a href="{{ request.url_for('health_history') }}?page={{ pagination.prev_num }}&q={{ search_query }}&sort={{ current_sort }}"
+               class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">«</a>
+        {% endif %}
+
+        {# Ellipsis left #}
+        {% if pagination.page > 4 %}
+            <span class="px-3 py-1">...</span>
+        {% endif %}
+
+        {# Page numbers #}
+        {% for i in range([1, pagination.page - 2]|max, [pagination.pages, pagination.page + 2]|min + 1) %}
+            {% if i == pagination.page %}
+                <span class="px-3 py-1 bg-blue-600 text-white rounded font-bold">{{ i }}</span>
+            {% else %}
+                <a href="{{ request.url_for('health_history') }}?page={{ i }}&q={{ search_query }}&sort={{ current_sort }}"
+                   class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">{{ i }}</a>
             {% endif %}
-            {% if pagination.has_next %}
-                <a href="{{ request.url_for('health_history') }}?page={{ pagination.next_num }}&q={{ search_query }}&sort={{ current_sort }}"
-                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                    Next
-                </a>
-            {% endif %}
-        </div>
-    </nav>
+        {% endfor %}
+
+        {# Ellipsis right #}
+        {% if pagination.page < pagination.pages - 3 %}
+            <span class="px-3 py-1">...</span>
+        {% endif %}
+
+        {# Next & Last #}
+        {% if pagination.page < pagination.pages %}
+            <a href="{{ request.url_for('health_history') }}?page={{ pagination.next_num }}&q={{ search_query }}&sort={{ current_sort }}"
+               class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">»</a>
+            <a href="{{ request.url_for('health_history') }}?page={{ pagination.pages }}&q={{ search_query }}&sort={{ current_sort }}"
+               class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">Last</a>
+        {% endif %}
+    </div>
     {% endif %}
 </div>
 {% endblock %}

@@ -49,9 +49,6 @@ def get_storage_breakdown() -> Dict[str, int]:
     
     Checks multiple possible paths for Docker and local development.
     """
-    import logging
-    logger = logging.getLogger("storage_monitor")
-    
     breakdown = {
         "snapshots": 0,
         "videos": 0,
@@ -201,9 +198,6 @@ def record_storage_metric(db: Session) -> StorageMetric:
     Record current storage metrics to database.
     Returns the created metric.
     """
-    import logging
-    logger = logging.getLogger("storage_monitor")
-    
     logger.info("Starting storage metric recording...")
     
     # Get disk usage

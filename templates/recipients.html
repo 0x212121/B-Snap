@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – Email Recipients{% endblock %}
-{% from "_icons.html" import icon_envelope_open, icon_envelope, icon_plus, icon_pencil, icon_trash, icon_airplane, icon_download %}
+{% from "_icons.html" import icon_envelope_open, icon_envelope, icon_plus, icon_pencil, icon_trash, icon_airplane, icon_download, icon_warning %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-6">
+<div class="container mx-auto px-4 py-4">
   
   <!-- === SMTP Configuration Warning === -->
   {% if not smtp_status.configured %}
-  <div class="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg">
+  <div class="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-3 mb-4 rounded-r-lg">
     <div class="flex items-start">
       <div class="flex-shrink-0">
         <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -16,11 +16,11 @@
       </div>
       <div class="ml-3">
         <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">SMTP Not Configured</h3>
-        <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+        <div class="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
           <p>{{ smtp_status.message }}</p>
           <p class="mt-1">Email notifications will not be sent until SMTP is configured.</p>
         </div>
-        <div class="mt-3">
+        <div class="mt-2">
           <a href="/config" class="text-sm font-medium text-yellow-800 dark:text-yellow-200 underline hover:text-yellow-600">
             Configure SMTP Settings →
           </a>
@@ -29,7 +29,7 @@
     </div>
   </div>
   {% else %}
-  <div class="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-400 p-4 mb-6 rounded-r-lg">
+  <div class="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-400 p-3 mb-4 rounded-r-lg">
     <div class="flex items-center">
       <div class="flex-shrink-0">
         <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -43,67 +43,67 @@
   </div>
   {% endif %}
   
-  <!-- === Section 1: Add Recipient -->
-  <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg mb-6">
-    <div class="px-4 py-2 border-b dark:border-gray-700 flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-100">
-      {{ icon_envelope_open("w-6 h-6 text-yellow-400") }}
+  <!-- === Section 1: Add Recipient (Compact) === -->
+  <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-4">
+    <div class="px-3 py-2 border-b dark:border-gray-700 flex items-center gap-2 font-semibold text-sm text-gray-800 dark:text-gray-100">
+      {{ icon_envelope_open("w-5 h-5 text-yellow-400") }}
       Add Recipient
     </div>
-    <div class="px-4 py-3">
-      <form id="addForm" class="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
+    <div class="px-3 py-2">
+      <form id="addForm" class="grid grid-cols-1 md:grid-cols-2 gap-2 items-stretch">
         <div id="leftStack" class="grid grid-cols-1 gap-2">
           <div>
             <label for="email" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Email *</label>
-            <input type="email" id="email" name="email" required
-            class="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2">
+            <input type="email" id="email" name="email" required placeholder="email@example.com"
+            class="mt-0.5 w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs px-2 py-1.5">
           </div>
           <div>
             <label for="nickname" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Nickname</label>
-            <input type="text" id="nickname" name="nickname"
-            class="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2">
+            <input type="text" id="nickname" name="nickname" placeholder="Optional"
+            class="mt-0.5 w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs px-2 py-1.5">
           </div>
           <div>
             <label for="group_id" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Group *</label>
             <select id="group_id" name="group_id" required
-            class="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 pr-8">
+            class="mt-0.5 w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs px-2 py-1.5 pr-6">
             <option value="">-- Select Group --</option>
           </select>
         </div>
         <div class="md:hidden">
           <button type="submit"
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center justify-center gap-2 shadow-sm">
-          {{ icon_plus("w-5 h-5 text-gray-100 inline") }} Add
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1 shadow-sm">
+          {{ icon_plus("w-4 h-4 text-gray-100 inline") }} Add
         </button>
       </div>
     </div>
     <div id="rightLocations" class="flex flex-col">
       <label for="locations" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Locations</label>
       <select id="locations" name="locations" multiple
-      class="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 pr-8 flex-1 min-h-[6.5rem]">
+      class="mt-0.5 w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs px-2 py-1 flex-1 min-h-[5rem]">
     </select>
-    <div class="hidden md:flex justify-end pt-3">
+    <div class="hidden md:flex justify-end pt-1.5">
       <button type="submit"
-      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 shadow-sm">
-      {{ icon_plus("w-5 h-5 text-gray-100 inline") }} Add
+      class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-1 shadow-sm">
+      {{ icon_plus("w-4 h-4 text-gray-100 inline") }} Add
     </button>
   </div>
 </div>
 </form>
-<p class="mt-2 text-[11px] text-gray-500 dark:text-gray-400">Locations will adjust to the selected group/division.</p>
+<p class="mt-1 text-[10px] text-gray-500 dark:text-gray-400">Locations will adjust to the selected group/division.</p>
 </div>
 </div>
 
-<!-- === Section 2: Recipients List === -->
-<div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg mb-6">
-  <div class="flex items-center justify-between px-4 py-3 border-b dark:border-gray-700">
+<!-- === Section 2: Recipients List (Compact) === -->
+<div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-4">
+  <div class="flex items-center justify-between px-3 py-2 border-b dark:border-gray-700">
     <div>
-      <h3 class="font-semibold text-gray-800 dark:text-gray-100">Recipients List</h3>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">List receiver B-SNAP Email</p>
+      <h3 class="font-semibold text-sm text-gray-800 dark:text-gray-100">Recipients List</h3>
+      <p class="text-[10px] text-gray-500 dark:text-gray-400">List receiver B-SNAP Email</p>
     </div>
     <div class="flex items-center gap-2">
-      <label for="perPageSelect" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Items per page</label>
+      <label for="perPageSelect" class="text-xs text-gray-700 dark:text-gray-300">Per page</label>
       <select id="perPageSelect"
-      class="mt-1 block rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 pr-8">
+      class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 text-xs px-2 py-1 pr-6">
       <option value="10">10</option>
       <option value="20" selected>20</option>
       <option value="50">50</option>
@@ -112,48 +112,48 @@
   </div>
 </div>
 <div class="overflow-x-auto">
-  <table class="w-full text-sm text-left text-gray-700 dark:text-gray-300">
+  <table class="w-full text-xs text-left text-gray-700 dark:text-gray-300">
     <thead class="bg-gray-100 dark:bg-gray-700 dark:text-gray-200">
       <tr>
-        <th id="th-email" class="px-4 py-2 cursor-pointer select-none hover:text-blue-600"
+        <th id="th-email" class="px-3 py-1.5 cursor-pointer select-none hover:text-blue-600 font-medium"
         onclick="sortRecipientsByEmail()">Email ↑</th>
-        <th class="px-4 py-2">Nickname</th>
-        <th class="px-4 py-2">Group</th>
-        <th class="px-4 py-2">Locations</th>
-        <th class="px-4 py-2 text-center">Actions</th>
+        <th class="px-3 py-1.5 font-medium">Nickname</th>
+        <th class="px-3 py-1.5 font-medium">Group</th>
+        <th class="px-3 py-1.5 font-medium">Locations</th>
+        <th class="px-3 py-1.5 text-center font-medium">Actions</th>
       </tr>
     </thead>
     <tbody id="recipients-body">
-      <tr><td colspan="5" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">Loading...</td></tr>
+      <tr><td colspan="5" class="px-3 py-3 text-center text-gray-500 dark:text-gray-400">Loading...</td></tr>
     </tbody>
   </table>
 </div>
-<div id="pagination-controls" class="flex justify-center items-center gap-2 px-4 py-4 text-sm"></div>
+<div id="pagination-controls" class="flex justify-center items-center gap-1 px-3 py-2 text-xs"></div>
 </div>
 
-<!-- === Section 3: Send Test Email === -->
-<div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg">
-  <div class="flex items-center gap-2 border-b dark:border-gray-700 px-4 py-2">
-    {{ icon_envelope("w-6 h-6 text-yellow-400") }}
-    <h3 class="font-semibold text-gray-800 dark:text-gray-100">Send Test Email</h3>
+<!-- === Section 3: Send Test Email (Compact) === -->
+<div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+  <div class="flex items-center gap-2 border-b dark:border-gray-700 px-3 py-2">
+    {{ icon_envelope("w-5 h-5 text-yellow-400") }}
+    <h3 class="font-semibold text-sm text-gray-800 dark:text-gray-100">Send Test Email</h3>
   </div>
-  <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+  <div class="p-3 grid grid-cols-1 md:grid-cols-3 gap-2">
     <div>
       <label for="test_group" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Group</label>
-      <select id="test_group" class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2 pr-8">
+      <select id="test_group" class="mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-xs px-2 py-1.5 pr-6">
         <option value="">-- Select Group --</option>
       </select>
     </div>
     <div>
       <label for="test_location" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Location (optional)</label>
-      <select id="test_location" class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2 pr-8">
+      <select id="test_location" class="mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-xs px-2 py-1.5 pr-6">
         <option value="">-- All Locations --</option>
       </select>
     </div>
     <div class="flex items-end">
       <button id="btnTestSend"
-      class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center justify-center gap-2 shadow-sm">
-      {{ icon_airplane("w-5 h-5 text-yellow-400 inline") }}
+      class="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors">
+      {{ icon_airplane("w-4 h-4 text-yellow-300 inline") }}
       Send Test Email
     </button>
   </div>
@@ -163,42 +163,76 @@
 
 <div id="notification-container" class="fixed top-5 right-5 z-[100] w-full max-w-sm"></div>
 
-<!-- Modal Edit (unchanged) -->
+<!-- Modal Edit (Compact) -->
 <div id="editModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-md p-6 text-gray-800 dark:text-gray-100">
-    <h3 class="text-lg font-semibold mb-4">{{ icon_pencil("w-6 h-6 text-yellow-500 inline") }} Edit Recipient</h3>
-    <form id="editForm" class="space-y-3">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-md p-4 text-gray-800 dark:text-gray-100">
+    <h3 class="text-base font-semibold mb-3 flex items-center gap-2">{{ icon_pencil("w-5 h-5 text-yellow-500") }} Edit Recipient</h3>
+    <form id="editForm" class="space-y-2">
       <input type="hidden" name="id" id="edit_id">
       <div>
         <label for="edit_email" class="block text-xs font-medium">Email *</label>
         <input type="email" id="edit_email" name="email" required
-        class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2">
+        class="mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-xs px-2 py-1.5">
       </div>
       <div>
         <label for="edit_nickname" class="block text-xs font-medium">Nickname</label>
         <input type="text" id="edit_nickname" name="nickname"
-        class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2">
+        class="mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-xs px-2 py-1.5">
       </div>
       <div>
         <label for="edit_group_id" class="block text-xs font-medium">Group *</label>
         <select id="edit_group_id" name="group_id" required
-        class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2 pr-8"></select>
+        class="mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-xs px-2 py-1.5 pr-6"></select>
       </div>
       <div>
         <label for="edit_locations" class="block text-xs font-medium">Locations</label>
-        <select id="edit_locations" name="locations" multiple size="4"
-        class="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2 pr-8"></select>
+        <select id="edit_locations" name="locations" multiple size="3"
+        class="mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-xs px-2 py-1 pr-6"></select>
       </div>
-      <div class="flex justify-end gap-2 pt-1">
+      <div class="flex justify-end gap-2 pt-2">
         <button type="button" onclick="closeEditModal()"
-        class="px-3 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-sm">Cancel</button>
+        class="px-3 py-1.5 rounded bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-xs">Cancel</button>
         <button type="submit"
-        class="px-3 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold flex items-center gap-2">
-        {{ icon_download("w-4 h-4 text-gray-100 inline") }} Save
+        class="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1">
+        {{ icon_download("w-3.5 h-3.5 text-gray-100 inline") }} Save
       </button>
     </div>
   </form>
 </div>
+</div>
+
+<!-- Confirmation Modal for Test Email -->
+<div id="confirmModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-sm p-4 text-gray-800 dark:text-gray-100 transform transition-all">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+        {{ icon_airplane("w-6 h-6 text-blue-600 dark:text-blue-400") }}
+      </div>
+      <div>
+        <h3 class="text-base font-semibold">Send Test Email</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400">Confirm action</p>
+      </div>
+    </div>
+    <div class="bg-gray-50 dark:bg-gray-700/50 rounded p-2.5 mb-3 text-xs">
+      <p class="text-gray-600 dark:text-gray-300">Are you sure you want to send test email to recipients in:</p>
+      <p class="font-medium text-gray-900 dark:text-gray-100 mt-1">
+        Group: <span id="confirmGroupName" class="text-blue-600 dark:text-blue-400">-</span>
+      </p>
+      <p class="font-medium text-gray-900 dark:text-gray-100">
+        Location: <span id="confirmLocationName" class="text-blue-600 dark:text-blue-400">All</span>
+      </p>
+    </div>
+    <div class="flex justify-end gap-2">
+      <button type="button" onclick="closeConfirmModal()"
+      class="px-3 py-1.5 rounded bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-xs transition-colors">
+        Cancel
+      </button>
+      <button type="button" id="confirmSendBtn"
+      class="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors">
+        {{ icon_airplane("w-4 h-4 text-yellow-300 inline") }} Yes, Send
+      </button>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -209,6 +243,7 @@
   let currentPage = 1;
   let perPage = 20;
   let totalPages = 1;
+  let pendingSendData = null; // Store form data for confirmed send
   
   /* ================== Utils ================== */
   function showNotification({ status, message }) {
@@ -228,6 +263,18 @@
     try { return JSON.parse(text); } catch { return { status: "error", message: text || `HTTP ${res.status}` }; }
   }
   
+  /* ================== Confirmation Modal ================== */
+  function openConfirmModal(groupId, groupName, location) {
+    document.getElementById('confirmGroupName').textContent = groupName || '-';
+    document.getElementById('confirmLocationName').textContent = location || 'All';
+    document.getElementById('confirmModal').classList.remove('hidden');
+  }
+  
+  function closeConfirmModal() {
+    document.getElementById('confirmModal').classList.add('hidden');
+    pendingSendData = null;
+  }
+  
   /* ================== Height sync ================== */
   function syncLocationsHeight() {
     const left = document.getElementById('leftStack');
@@ -236,17 +283,11 @@
     const isMdUp = window.matchMedia('(min-width: 768px)').matches;
     if (!isMdUp) { select.style.height = ''; return; }
     const h = left.getBoundingClientRect().height;
-    select.style.height = Math.max(110, Math.floor(h)) + 'px';
+    select.style.height = Math.max(90, Math.floor(h)) + 'px';
   }
   window.addEventListener('resize', syncLocationsHeight);
   
   /* ================== Pagination UI ================== */
-  /* ================== Pagination UI ================== */
-  /**
-  * buildPagination(container, page, total, serverPaged = false)
-  * - serverPaged: boolean — bila true, pagination akan memicu loadRecipients(page)
-  *   (request ke backend). Bila false, pagination akan render slice di client.
-  */
   function buildPagination(container, page, total, serverPaged = false) {
     container.innerHTML = '';
     if (!total || total <= 1) return;
@@ -255,8 +296,8 @@
       const el = document.createElement(active ? 'span' : 'a');
       el.textContent = label;
       el.className = active
-      ? 'px-3 py-1 bg-blue-600 text-white rounded font-bold'
-      : 'px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white';
+      ? 'px-2 py-0.5 bg-blue-600 text-white rounded text-xs font-bold'
+      : 'px-2 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white';
       if (!active && !disabled) {
         el.href = '#';
         el.onclick = (e) => {
@@ -294,7 +335,6 @@
     const paginationContainer = document.getElementById("pagination-controls");
     const urlParams = new URLSearchParams(window.location.search);
     
-    // --- Resolve per_page (priority: override → url param → current memory)
     const urlPerPageRaw = urlParams.get("per_page");
     const urlPerPage = urlPerPageRaw ? parseInt(urlPerPageRaw, 10) : null;
     const selectedPerPage = (overridePerPage && !Number.isNaN(overridePerPage))
@@ -302,9 +342,8 @@
     : (urlPerPage || window.perPage || 10);
     
     window.perPage = selectedPerPage;
-    window.currentPage = targetPage; // <— selalu pakai targetPage yang diklik
+    window.currentPage = targetPage;
     
-    // --- Update dropdown UI
     const perSel = document.getElementById("perPageSelect");
     if (perSel) perSel.value = window.perPage;
     
@@ -320,7 +359,7 @@
       const { recipients, groups, locations_by_group, pagination } = data.data || {};
       window.locationsByGroup = locations_by_group || {};
       
-      // --- Populate group selects
+      // Populate group selects
       const selects = [document.getElementById("group_id"), document.getElementById("edit_group_id"), document.getElementById("test_group")];
       selects.forEach(sel => {
         if (!sel) return;
@@ -329,15 +368,12 @@
         (groups || []).forEach(g => sel.insertAdjacentHTML("beforeend", `<option value="${g.id}">${g.name}</option>`));
       });
       
-      // --- Update global state
       window.allRecipients = recipients || [];
       window.totalPages = pagination?.total_pages || 1;
       window.currentPage = pagination?.page || window.currentPage;
       
-      // --- Render current page
       renderRecipients(window.currentPage, true);
       
-      // --- Rebuild pagination UI (serverPaged = true)
       if (paginationContainer) {
         buildPagination(paginationContainer, window.currentPage, window.totalPages, true);
       }
@@ -345,7 +381,6 @@
       sortAscending = true;
       sortRecipientsByEmail();
       
-      // --- Update URL AFTER success
       const url = new URL(window.location);
       url.searchParams.set("page", window.currentPage);
       url.searchParams.set("per_page", window.perPage);
@@ -354,7 +389,7 @@
     } catch (err) {
       console.error("Error loadRecipients:", err);
       if (tbody) tbody.innerHTML =
-      `<tr><td colspan="5" class="px-4 py-6 text-center text-red-500">Failed to load data.</td></tr>`;
+      `<tr><td colspan="5" class="px-3 py-4 text-center text-red-500 text-xs">Failed to load data.</td></tr>`;
       if (typeof showNotification === "function")
       showNotification({ status: "error", message: "Failed to load recipients." });
     } finally {
@@ -373,7 +408,7 @@
     
     let rows = [];
     if (serverPaged) {
-      rows = window.allRecipients || []; // server already returned current page
+      rows = window.allRecipients || [];
     } else {
       const start = (page - 1) * perPage;
       rows = (window.allRecipients || []).slice(start, start + perPage);
@@ -381,7 +416,7 @@
     }
     
     if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No recipients found.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="px-3 py-4 text-center text-gray-500 dark:text-gray-400 text-xs">No recipients found.</td></tr>`;
     } else {
       rows.forEach(r => {
         const safeEmail = (r.email || '').replace(/'/g, "\\'");
@@ -389,25 +424,24 @@
         const safeLoc = (r.locations || '').replace(/'/g, "\\'");
         tbody.insertAdjacentHTML("beforeend", `
         <tr id="recipient-row-${r.id}" class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-          <td class="px-4 py-2 col-email">${r.email}</td>
-          <td class="px-4 py-2 col-nickname">${r.nickname || "-"}</td>
-          <td class="px-4 py-2 col-group">${r.group_name || "-"}</td>
-          <td class="px-4 py-2 col-locations">${r.locations || "-"}</td>
-          <td class="px-4 py-2 text-center space-x-2">
+          <td class="px-3 py-1.5 col-email text-xs">${r.email}</td>
+          <td class="px-3 py-1.5 col-nickname text-xs">${r.nickname || "-"}</td>
+          <td class="px-3 py-1.5 col-group text-xs">${r.group_name || "-"}</td>
+          <td class="px-3 py-1.5 col-locations text-xs">${r.locations || "-"}</td>
+          <td class="px-3 py-1.5 text-center space-x-1">
             <button type="button"
               onclick="openEditModal(${r.id}, '${safeEmail}', '${safeNickname}', '${r.group_id}', '${safeLoc}')"
               title="Edit recipient"
-              class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-yellow-200 dark:hover:bg-yellow-800/50">
-              {{ icon_pencil("w-5 h-5 text-yellow-500") }}
+              class="inline-flex items-center justify-center p-1 rounded transition-colors duration-150 hover:bg-yellow-100 dark:hover:bg-yellow-800/50">
+              {{ icon_pencil("w-4 h-4 text-yellow-600") }}
             </button>
             <button type="button"
               onclick="confirmDeleteRecipient(${r.id}, '${safeEmail}')"
               title="Delete recipient"
-              class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-red-200 dark:hover:bg-red-800/50">
-              {{ icon_trash("w-5 h-5 text-red-600") }}
+              class="inline-flex items-center justify-center p-1 rounded transition-colors duration-150 hover:bg-red-100 dark:hover:bg-red-800/50">
+              {{ icon_trash("w-4 h-4 text-red-600") }}
             </button>
           </td>
-
         </tr>`);
       });
     }
@@ -419,7 +453,7 @@
   
   
   /* ================== Sorting ================== */
-  let sortAscending = true; // toggle state
+  let sortAscending = true;
   
   function sortRecipientsByEmail() {
     if (!Array.isArray(window.allRecipients)) return;
@@ -430,7 +464,7 @@
       if (emailA > emailB) return sortAscending ? 1 : -1;
       return 0;
     });
-    sortAscending = !sortAscending; // toggle direction each click
+    sortAscending = !sortAscending;
     renderRecipients(window.currentPage, true);
     updateSortIndicator();
   }
@@ -446,7 +480,7 @@
     selectEl.innerHTML = "";
     const map = window.locationsByGroup || {};
     if (!groupId || !map[groupId] || !map[groupId].length) {
-      selectEl.insertAdjacentHTML("beforeend", `<option disabled selected>-- No locations --</option>`);
+      selectEl.insertAdjacentHTML("beforeend", `<option disabled selected class="text-xs">-- No locations --</option>`);
       syncLocationsHeight();
       return;
     }
@@ -454,6 +488,7 @@
       const opt = document.createElement("option");
       opt.value = loc;
       opt.textContent = loc;
+      opt.className = "text-xs";
       if (preselected.includes((loc || '').toLowerCase())) opt.selected = true;
       selectEl.appendChild(opt);
     });
@@ -479,7 +514,6 @@
         e.target.reset();
         document.getElementById("locations").innerHTML = "";
         syncLocationsHeight();
-        // reload data & stay on first page (supaya entry baru terlihat jelas)
         currentPage = 1;
         await loadRecipients(1);
       } else {
@@ -513,7 +547,6 @@
       if (data.status === "success") {
         showNotification({ status: "success", message: data.message || "Recipient updated" });
         closeEditModal();
-        // re-render current page
         await loadRecipients(currentPage);
       } else {
         showNotification({ status: "error", message: data.message || "Failed to update recipient" });
@@ -561,25 +594,46 @@
       const opt = document.createElement("option");
       opt.value = loc;
       opt.textContent = loc;
+      opt.className = "text-xs";
       testLocationSelect.appendChild(opt);
     });
   });
   
+  // Modified: Show confirmation modal before sending
   btnTestSend?.addEventListener("click", async () => {
     const groupId = testGroupSelect.value;
     const location = testLocationSelect.value;
+    
     if (!groupId) {
       showNotification({ status: "error", message: "Select a group first" });
       return;
     }
     
-    const formData = new FormData();
-    formData.append("group_id", groupId);
-    if (location) formData.append("location", location);
+    // Get selected group name
+    const groupName = testGroupSelect.options[testGroupSelect.selectedIndex].text;
+    const locationName = location ? testLocationSelect.options[testLocationSelect.selectedIndex].text : null;
     
+    // Store data for confirmed send
+    pendingSendData = { groupId, location };
+    
+    // Show confirmation modal
+    openConfirmModal(groupId, groupName, locationName);
+  });
+  
+  // Handle confirmed send
+  document.getElementById('confirmSendBtn')?.addEventListener('click', async () => {
+    if (!pendingSendData) return;
+    
+    closeConfirmModal();
+    
+    const formData = new FormData();
+    formData.append("group_id", pendingSendData.groupId);
+    if (pendingSendData.location) formData.append("location", pendingSendData.location);
+    
+    const btnTestSend = document.getElementById("btnTestSend");
     btnTestSend.disabled = true;
     const old = btnTestSend.innerHTML;
-    btnTestSend.innerHTML = `{{ icon_airplane("w-5 h-5 text-yellow-400 inline") }} Sending...`;
+    btnTestSend.innerHTML = `{{ icon_airplane("w-4 h-4 text-yellow-300 inline animate-pulse") }} Sending...`;
     
     try {
       const resp = await fetch("/api/recipients/test-send", { method: "POST", body: formData });
@@ -595,6 +649,7 @@
     } finally {
       btnTestSend.disabled = false;
       btnTestSend.innerHTML = old;
+      pendingSendData = null;
     }
   });
   
@@ -602,59 +657,13 @@
   document.getElementById('perPageSelect').addEventListener('change', e => {
     perPage = parseInt(e.target.value, 10) || 20;
     currentPage = 1;
-    loadRecipients(currentPage, perPage); // kirim juga per_page baru
+    loadRecipients(currentPage, perPage);
   });
   
   /* ================== Init ================== */
   document.addEventListener("DOMContentLoaded", () => {
-    // existing init
     loadRecipients(1);
     syncLocationsHeight();
-    
-    // ===== Test Send section =====
-    const testGroup = document.getElementById("test_group");
-    const testLoc   = document.getElementById("test_location");
-    const btnSend   = document.getElementById("btnTestSend");
-    
-    testGroup?.addEventListener("change", e => {
-      const gid = e.target.value;
-      testLoc.innerHTML = '<option value="">-- All Locations --</option>';
-      const map = window.locationsByGroup || {};
-      (map[gid] || []).forEach(loc => {
-        const opt = document.createElement("option");
-        opt.value = loc; opt.textContent = loc;
-        testLoc.appendChild(opt);
-      });
-    });
-    
-    btnSend?.addEventListener("click", async () => {
-      const gid = testGroup.value;
-      const loc = testLoc.value;
-      if (!gid) {
-        showNotification({ status:"error", message:"Select a group first" });
-        return;
-      }
-      
-      const formData = new FormData();
-      formData.append("group_id", gid);
-      if (loc) formData.append("location", loc);
-      
-      btnSend.disabled = true;
-      const old = btnSend.innerHTML;
-      btnSend.innerHTML = `{{ icon_airplane("w-4 h-4 text-gray-100 inline") }} Sending...`;
-      
-      try {
-        const res = await fetch("/api/recipients/test-send", { method:"POST", body: formData });
-        const data = await safeJSON(res);
-        showNotification({ status: data.status, message: data.message || (data.status === "success" ? "Test email sent" : "Failed to send") });
-      } catch(err) {
-        console.error(err);
-        showNotification({ status:"error", message:"Server error while sending email" });
-      } finally {
-        btnSend.disabled = false;
-        btnSend.innerHTML = old;
-      }
-    });
   });
 </script>
 {% endblock %}

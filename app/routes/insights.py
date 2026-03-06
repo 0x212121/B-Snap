@@ -63,25 +63,30 @@ def _parse_range(start_date: str | None, end_date: str | None):
     return start_dt, end_dt, prev_start, prev_end
 
 
-def _daily_counts(db: Session, model, ts_field, start_dt, end_dt):
+def _daily_counts(db: Session, model, ts_field, start_dt, end_dt, success_only=False):
     """Ambil agregasi per-hari (date, count) untuk model & kolom timestamp tertentu."""
     date_expr = func.date(getattr(model, ts_field))
-    rows = (
+    query = (
         db.query(date_expr.label("date"), func.count("*").label("count"))
         .filter(getattr(model, ts_field) >= start_dt,
                 getattr(model, ts_field) <= end_dt)
-        .group_by(date_expr)
-        .order_by(date_expr)
-        .all()
     )
+    # Filter success=True untuk email logs jika diminta
+    if success_only and hasattr(model, 'success'):
+        query = query.filter(model.success == True)
+    rows = query.group_by(date_expr).order_by(date_expr).all()
     return [{"date": str(r.date), "count": r.count} for r in rows]
 
 
-def _total_count(db: Session, model, ts_field, start_dt, end_dt):
-    return db.query(func.count("*")).filter(
+def _total_count(db: Session, model, ts_field, start_dt, end_dt, success_only=False):
+    query = db.query(func.count("*")).filter(
         getattr(model, ts_field) >= start_dt,
         getattr(model, ts_field) <= end_dt
-    ).scalar() or 0
+    )
+    # Filter success=True untuk email logs jika diminta
+    if success_only and hasattr(model, 'success'):
+        query = query.filter(model.success == True)
+    return query.scalar() or 0
 
 
 def _pct_change(current: int, previous: int, days_now: int, days_prev: int) -> float:
@@ -124,7 +129,7 @@ def _health_index(api_now, api_prev, cmd_now, cmd_prev, email_now, email_prev,
 
     api_score = squash(_pct_change(api_now, api_prev, days_now, days_prev))
     cmd_score = squash(_pct_change(cmd_now, cmd_prev, days_now, days_prev))
-    email_score = squash(_pct_change(email_now, email_prev, days_now, days_prev))
+    email_score = squash(_pct_change(email_now, email_prev, days_now, days_prev))  # email_now/prev sudah filtered success_only
 
     avg = (api_score + cmd_score + email_score) / 3.0
     # map -1..1 -> 0..100
@@ -161,7 +166,7 @@ def get_daily_stats(
 
     api = _daily_counts(db, ApiLog, "timestamp", start_dt, end_dt)
     cmd = _daily_counts(db, CommandLog, "timestamp", start_dt, end_dt)
-    email = _daily_counts(db, CameraEmailNotificationLog, "sent_at", start_dt, end_dt)
+    email = _daily_counts(db, CameraEmailNotificationLog, "sent_at", start_dt, end_dt, success_only=True)
 
     logger.debug("get_daily_stats: start=%s end=%s api_days=%d cmd_days=%d email_days=%d",
                  start_dt.isoformat(), end_dt.isoformat(), len(api), len(cmd), len(email))
@@ -212,7 +217,8 @@ def get_top_cameras_by_email(
         )
         .filter(
             CameraEmailNotificationLog.sent_at >= start_dt,
-            CameraEmailNotificationLog.sent_at <= end_dt
+            CameraEmailNotificationLog.sent_at <= end_dt,
+            CameraEmailNotificationLog.success == True  # Only count successful emails
         )
         .group_by(CameraEmailNotificationLog.camera_name)
         .order_by(func.count(CameraEmailNotificationLog.id).desc())
@@ -240,12 +246,12 @@ def get_summary(
         # Totals current
         api_now = _total_count(db, ApiLog, "timestamp", start_dt, end_dt)
         cmd_now = _total_count(db, CommandLog, "timestamp", start_dt, end_dt)
-        email_now = _total_count(db, CameraEmailNotificationLog, "sent_at", start_dt, end_dt)
+        email_now = _total_count(db, CameraEmailNotificationLog, "sent_at", start_dt, end_dt, success_only=True)
 
         # Totals previous
         api_prev = _total_count(db, ApiLog, "timestamp", prev_start, prev_end)
         cmd_prev = _total_count(db, CommandLog, "timestamp", prev_start, prev_end)
-        email_prev = _total_count(db, CameraEmailNotificationLog, "sent_at", prev_start, prev_end)
+        email_prev = _total_count(db, CameraEmailNotificationLog, "sent_at", prev_start, prev_end, success_only=True)
 
         logger.info("Totals - now: api=%d cmd=%d email=%d | prev: api=%d cmd=%d email=%d",
                     api_now, cmd_now, email_now, api_prev, cmd_prev, email_prev)

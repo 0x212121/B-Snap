@@ -166,24 +166,41 @@
       if (data.total_pages <= 1) return;
 
       const { page: currentPage, total_pages: totalPages } = data;
+      const window = 2;
+      const links = [];
 
-      const createLink = (text, pageNum, isActive = false, isDisabled = false) => {
-        if (isDisabled) return `<span class="px-4 py-2 text-gray-400">...</span>`;
-        const classes = `px-3 py-1 rounded ${isActive ? 'bg-blue-600 text-white font-bold' : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`;
-        return `<a href="#" data-page="${pageNum}" class="${classes}">${text}</a>`;
-      };
+      // First & Prev
+      if (currentPage > 1) {
+        links.push(`<a href="#" onclick="event.preventDefault(); fetchLogs(1)" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">First</a>`);
+        links.push(`<a href="#" onclick="event.preventDefault(); fetchLogs(${currentPage - 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">«</a>`);
+      }
 
-      if (currentPage > 1) paginationControls.innerHTML += createLink('Prev', currentPage - 1);
+      // Left ellipsis
+      if (currentPage > window + 2) {
+        links.push('<span class="px-3 py-1">...</span>');
+      }
 
-      for (let i = 1; i <= totalPages; i++) {
-        if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-          paginationControls.innerHTML += createLink(i, i, i === currentPage);
-        } else if (i === currentPage - 2 || i === currentPage + 2) {
-          paginationControls.innerHTML += createLink('...', null, false, true);
+      // Page numbers
+      for (let i = Math.max(1, currentPage - window); i <= Math.min(totalPages, currentPage + window); i++) {
+        if (i === currentPage) {
+          links.push(`<span class="px-3 py-1 bg-blue-600 text-white rounded font-bold">${i}</span>`);
+        } else {
+          links.push(`<a href="#" onclick="event.preventDefault(); fetchLogs(${i})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">${i}</a>`);
         }
       }
 
-      if (currentPage < totalPages) paginationControls.innerHTML += createLink('Next', currentPage + 1);
+      // Right ellipsis
+      if (currentPage < totalPages - window - 1) {
+        links.push('<span class="px-3 py-1">...</span>');
+      }
+
+      // Next & Last
+      if (currentPage < totalPages) {
+        links.push(`<a href="#" onclick="event.preventDefault(); fetchLogs(${currentPage + 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">»</a>`);
+        links.push(`<a href="#" onclick="event.preventDefault(); fetchLogs(${totalPages})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">Last</a>`);
+      }
+
+      paginationControls.innerHTML = links.join(' ');
     }
 
     function updatePaginationInfo(data) {
@@ -207,15 +224,7 @@
       onChange: selectedDates => { if (selectedDates.length === 2) fetchLogs(1); }
     });
 
-    paginationControls.addEventListener('click', e => {
-      const target = e.target.closest('a');
-      if (target && target.dataset.page) {
-        e.preventDefault();
-        fetchLogs(parseInt(target.dataset.page));
-      }
-    });
-
-    fetchLogs();
+    fetchLogs(1);
   });
 
   function showExtraModal(button) {

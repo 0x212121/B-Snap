@@ -14,9 +14,11 @@ from app.models.task_timing import TaskTiming
 from app.routes.auth import admin_access_required
 from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
 from app.utils.template_helper import templates
-
+import logging
 
 router = APIRouter(tags=["Observability"])
+logger = logging.getLogger("main")
+storage_logger = logging.getLogger("storage")
 
 
 @router.get("/stats", response_class=HTMLResponse)
@@ -302,8 +304,7 @@ async def get_storage_status(
         try:
             metric = record_storage_metric(db)
         except Exception as e:
-            import logging
-            logging.getLogger("storage").warning("Could not record storage metric: %s", e)
+            storage_logger.warning("Could not record storage metric: %s", e)
     
     if not metric:
         # Still no metric (error occurred), return empty status
@@ -425,14 +426,11 @@ async def trigger_storage_check(
     """
     from app.utils.storage_monitor import record_storage_metric
     from app.utils.audit_logger import log_audit
-    import logging
-    
-    logger = logging.getLogger("storage")
-    logger.info("Manual storage check triggered by %s", current_admin.username)
+    storage_logger.info("Manual storage check triggered by %s", current_admin.username)
     
     try:
         metric = record_storage_metric(db)
-        logger.info("Storage metric recorded: %.1f%% usage", metric.usage_percent)
+        storage_logger.info("Storage metric recorded: %.1f%% usage", metric.usage_percent)
         
         # Log audit (separate try-except to not fail if audit fails)
         try:

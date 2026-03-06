@@ -11,6 +11,7 @@ from sqlalchemy import text
 from app.models.user import User
 from app.models.config import Configuration
 from app.utils.auth_token import is_valid_web_token
+from app.utils.remember_me import validate_remember_token, get_cookie_settings
 from app.db.database import SessionLocal
 
 logger = logging.getLogger("auth")
@@ -130,7 +131,58 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                 else:
                     logger.warning("No user found for session token.")
 
-            # Step 5: Final fallback – force re-authentication
+            # Step 5: Remember Me - Check for persistent login token
+            remember_token = request.cookies.get(get_cookie_settings()["key"])
+            if remember_token:
+                user = validate_remember_token(db, remember_token)
+                if user:
+                    # Valid remember token - create new session
+                    if user.role == "admin":
+                        val = db.query(Configuration).filter_by(key="debug_mode").first()
+                        request.state.debug_mode = (val and val.value == "1")
+                    else:
+                        request.state.debug_mode = False
+                    
+                    # Generate new session token
+                    tokens = self.parse_tokens(user.web_tokens)
+                    new_token, expires_at = self.generate_new_token()
+                    tokens.append({
+                        "token": new_token,
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "expires_at": expires_at
+                    })
+                    user.web_tokens = tokens
+                    db.commit()
+                    
+                    # Set session
+                    session["user_id"] = user.id
+                    session["user_role"] = user.role
+                    session["user_name"] = user.username
+                    session["user_groupid"] = user.group_id
+                    
+                    logger.info(f"Session restored via Remember Me for user={user.username}")
+                    
+                    response = await call_next(request)
+                    response.set_cookie(
+                        "session_token",
+                        new_token,
+                        httponly=True,
+                        max_age=60 * 60 * 24 * 7,
+                        samesite="lax",
+                        secure=request.url.scheme == "https"
+                    )
+                    return response
+                else:
+                    # Invalid remember token - clear it
+                    logger.warning("Invalid remember token found, clearing cookie")
+                    response = RedirectResponse("/login?reason=session_expired", status_code=303)
+                    response.delete_cookie("session_token")
+                    response.delete_cookie("session")
+                    cookie_settings = get_cookie_settings()
+                    response.delete_cookie(cookie_settings["key"])
+                    return response
+
+            # Step 6: Final fallback – force re-authentication
             session.clear()
             response = RedirectResponse("/login?reason=session_expired", status_code=303)
             response.delete_cookie("session_token")
