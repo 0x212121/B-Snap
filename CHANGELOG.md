@@ -6,6 +6,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- **Toast Notification System** - Real-time user feedback with WebSocket:
+  - **4 Notification Types**: Success (✅), Error (❌), Warning (⚠️), Info (ℹ️)
+  - **6 Positions**: top-right, top-left, top-center, bottom-right, bottom-left, bottom-center
+  - **Action Buttons**: Interactive notifications with clickable actions
+  - **WebSocket Integration**: Real-time delivery without page refresh
+  - **Dark Mode Support**: Seamless theme switching
+  - **Progress Bar**: Visual countdown for auto-dismiss
+  - **Persistent Notifications**: Stay until user dismisses
+  - **Pre-built System Notifications**:
+    - Camera online/offline alerts
+    - Snapshot saved notifications
+    - Storage warning/critical alerts
+  - **Demo Page**: `/demo/toast/` for testing all features
+  - **Integrated Pages**:
+    - ✅ Snapshot Gallery - Capture/delete notifications
+    - ✅ Camera Management - CRUD operation notifications
+    - ✅ Settings/Config - Save confirmation notifications
+  - **Service Layer**: `NotificationService` for easy backend integration
+  - **Client-Side API**: JavaScript `Toast.*` methods for frontend usage
+
 - **Logs Viewer Redesign** - Modern, feature-rich log viewing interface:
   - **Smart Log Parsing** - Parses log format `[timestamp] [LEVEL] [logger] [pid=X] message`
   - **Real-time Filtering**:

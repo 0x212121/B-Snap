@@ -24,6 +24,7 @@ from app.schemas.camera import CameraUpdatePayload
 from app.utils.audit_logger import log_audit
 from app.utils.healthcheck import ping_camera_by_id
 from app.utils.template_helper import templates
+from app.utils.notification_service import NotificationService
 from app.utils.video import record_video_and_save_db
 from app.utils.status_utils import get_status_classes
 from app.core.logging_config import setup_logging
@@ -216,6 +217,16 @@ async def add_camera_submit(
             extra="via Camera Management"
         )
         
+        # Toast notification
+        await NotificationService.success(
+            message=f"Camera '{name}' added successfully",
+            title="Camera Created",
+            actions=[
+                {"label": "View Camera", "url": f"/cameras"},
+                {"label": "Take Snapshot", "url": f"/snap_gallery?camera={name}"}
+            ]
+        )
+        
         if status != "Deactivated" and status != "Standalone":
             logger.debug("Camera status is '%s', pinging camera for healthcheck.", status)
             ping_camera_by_id(new_cam.id)
@@ -355,6 +366,15 @@ async def edit_camera_submit(
                 db.commit()
                 logger.info("Health record for camera '%s' set to Offline due to deactivation.", cam.hostname)
         
+        # Toast notification
+        await NotificationService.success(
+            message=f"Camera '{name}' updated successfully",
+            title="Camera Updated",
+            actions=[
+                {"label": "View Camera", "url": f"/cameras"}
+            ]
+        )
+        
         return {"status": "success", "message": "Camera updated successfully"}
 
     except ValueError:
@@ -456,6 +476,13 @@ async def delete_camera(request: Request, camera_id: str, db: Session = Depends(
             ip=request.client.host,
             extra=f"via Camera Management\nIP: {cam.ip}"
         )
+        
+        # Toast notification
+        await NotificationService.success(
+            message=f"Camera '{cam.hostname}' and all associated files deleted",
+            title="Camera Deleted"
+        )
+        
         return JSONResponse(status_code=200, content={"status": "success", "message": f"Camera '{cam.hostname}' and all associated files deleted."})
 
     except Exception as e:

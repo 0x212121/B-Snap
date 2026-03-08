@@ -1,550 +1,318 @@
-from datetime import datetime
-import io
+"""Snapshot Service with Toast Notifications.
+
+This module provides snapshot operations with integrated toast notifications
+for real-time user feedback.
+"""
+
+import logging
 import os
-from typing import Optional
-import cv2
-import subprocess
-from io import BytesIO
-from PIL import Image
-import requests
+from datetime import datetime, timezone
+from typing import Optional, Dict, Any
+
 from sqlalchemy.orm import Session
-from sqlalchemy import func, select
-from onvif import ONVIFCamera
-from requests.auth import HTTPBasicAuth, HTTPDigestAuth
-from app.core.config import get_config
-from pathlib import Path
-from typing import List
-from app.utils.network_utils import is_reachable
-from app.utils.image_utils import add_watermark
-from app.utils.camera_onvif import get_rtsp_url
-from app.utils import check_stats
+
 from app.models.camera import Camera
 from app.models.snapshot import Snapshot
-from app.core.logging_config import setup_logging
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+from app.utils.notification_service import NotificationService
+
+logger = logging.getLogger("snapshot_service")
 
 
-STATIC_DIR = os.path.join("static", "snapshots")
-_BASE_SNAP_DIR = Path(STATIC_DIR).resolve()
-
-# setup_logging()
-import logging
-logger = logging.getLogger("snapshot")
-
-logger.info("Snapshot logger initialized, writing to snapshot.log")
-
-for h in logger.handlers:
-    logger.info("Handler attached: %s", h)
-
-def get_image_resolution(image_bytes: bytes) -> str:
-    with Image.open(BytesIO(image_bytes)) as img:
-        width, height = img.size
-    return f"{width}x{height}"
-
-
-def save_snapshot_file(camera_id: str, image_bytes: bytes) -> tuple[str, str]:
-    now = datetime.now()
-    date_str = now.strftime("%Y-%m-%d")
-    time_str = now.strftime("%H-%M-%S")
-    dir_path = os.path.join(STATIC_DIR, camera_id, date_str)
-    os.makedirs(dir_path, exist_ok=True)
+def take_snapshot(camera: Camera, db: Session) -> Dict[str, Any]:
+    """Take a snapshot from a camera.
     
-    file_name = f"{time_str}.jpg"
-    full_path = os.path.join(dir_path, file_name)
+    This is the legacy function used by scheduler and other parts of the app.
     
-    with open(full_path, "wb") as f:
-        f.write(image_bytes)
+    Args:
+        camera: The camera object to take snapshot from
+        db: Database session
         
-    resolution = get_image_resolution(image_bytes)
-    relative_path = os.path.relpath(full_path, start=STATIC_DIR)
-    universal_relative_path = relative_path.replace("\\", "/")
-    
-    return universal_relative_path, resolution
-
-
-def maybe_flip_image(image_path: str, is_flipped: bool):
-    if not is_flipped:
-        return
-
-    try:
-        img = cv2.imread(image_path)
-        if img is None:
-            raise RuntimeError(f"Failed to load image for flipping: {image_path}")
-        flipped = cv2.flip(img, -1)
-        cv2.imwrite(image_path, flipped)
-        logger.info("Flipped image: %s", image_path)
-    except Exception as e:
-        logger.error("Failed to flip image %s: %s", image_path, e)
-
-
-def take_snapshot(camera: Camera, db: Session) -> dict:
-    if not is_reachable(camera.ip):
-        msg = f"⚠️ [{camera.hostname}] unreachable (ping failed)"
-        logger.warning(msg)
-        return error_response(camera.hostname, "Camera offline", camera.ip)
-
-    # 1. Coba oneshot snapshot dulu (HTTP single frame)
-    result = try_oneshot_snapshot(camera, db)
-    if result["status"] == "success":
-        # Bersihkan snapshot lama hanya untuk kamera ini
-        clean_old_snapshots_camera(camera.hostname, db)
-        return result
-
-    # 2. Coba HTTP via ONVIF
-    result = try_http_snapshot(camera, db)
-    if result["status"] == "success":
-        clean_old_snapshots_camera(camera.hostname, db)
-        return result
-
-    # 3. Coba RTSP
-    logger.warning("Falling back to RTSP for %s", camera.hostname)
-    result = try_rtsp_snapshot(camera, db)
-    if result["status"] == "success":
-        clean_old_snapshots_camera(camera.hostname, db)
-        return result
-
-    # 4. Coba FFmpeg
-    logger.warning("Falling back to FFmpeg for %s", camera.hostname)
-    result = try_ffmpeg_snapshot(camera, db)
-    if result["status"] == "success":
-        clean_old_snapshots_camera(camera.hostname, db)
-
-    return result
-
-
-
-def try_oneshot_snapshot(camera: Camera, db: Session) -> dict:
+    Returns:
+        Dict with keys:
+        - status: "success" or "error"
+        - file_path: Path to saved snapshot (if success)
+        - resolution: Image resolution (if success)
+        - message: Error message (if error)
     """
-    Ambil snapshot dari kamera yang hanya punya HTTP oneshot image (JPEG single frame).
-    """
-    WATERMARK_TEXT = get_config("watermark_text", default="Property of Company")
-    if not camera.snapshot_url:
-        return error_response(camera.hostname, "No oneshot snapshot URL configured")
-
-    try:
-        response = requests.get(camera.snapshot_url, auth=HTTPDigestAuth(camera.username, camera.password), timeout=10)
-        if response.status_code == 401:
-            response = requests.get(camera.snapshot_url, auth=HTTPBasicAuth(camera.username, camera.password), timeout=10)
-        response.raise_for_status()
-
-        image_bytes = response.content
-        if not image_bytes:
-            raise RuntimeError("HTTP response was empty, no image data received.")
-
-        # Validasi image
-        with Image.open(io.BytesIO(image_bytes)) as img:
-            img.verify()
-
-        relative_path, resolution = save_snapshot_file(str(camera.id), image_bytes)
-        full_path = os.path.join(STATIC_DIR, *relative_path.split('/'))
-        maybe_flip_image(full_path, is_flipped=camera.is_flipped)
-        add_watermark(full_path, text=WATERMARK_TEXT, opacity=0.5)
-        check_stats.check_stats(camera)
-
-        logger.info("✅ [%s] Oneshot HTTP snapshot -> %s", camera.hostname, relative_path)
-        return {
-            "status": "success",
-            "message": f"Snapshot taken from {camera.hostname} (HTTP oneshot)",
-            "camera_name": camera.hostname,
-            "file_path": relative_path,
-            "resolution": resolution,
-            "camera_ip": camera.ip
-        }
-
-    except Exception as e:
-        logger.warning("⚠️ Oneshot snapshot failed for %s: %s", camera.hostname, e, exc_info=True)
-        return error_response(camera.hostname, f"Oneshot snapshot failed: {str(e)}")
-
-
-def try_http_snapshot(camera: Camera, db: Session) -> dict:
-    WATERMARK_TEXT = get_config("watermark_text", default="Property of Company")
+    import cv2
+    import uuid
+    from pathlib import Path
     
-    # Inisialisasi variabel di luar try block
-    onvif_cam = None
-
     try:
-        # Perbaikan: Menggunakan requests.Session() untuk manajemen koneksi yang lebih baik
-        with requests.Session() as session:
-            onvif_cam = ONVIFCamera(camera.ip, camera.port, camera.username, camera.password)
-            media = onvif_cam.create_media_service()
-            profile = media.GetProfiles()[0]
-            uri = media.GetSnapshotUri({"ProfileToken": profile.token}).Uri
-
-            # Perbaikan: Menggunakan session.get() dan raise_for_status()
-            response = session.get(uri, auth=HTTPDigestAuth(camera.username, camera.password), timeout=10)
-            if response.status_code == 401:
-                logger.warning("⚠️ Digest failed with status 401, trying Basic...")
-                response = session.get(uri, auth=HTTPBasicAuth(camera.username, camera.password), timeout=10)
-            
-            response.raise_for_status()
-            
-            image_bytes = response.content
-            
-            # --- VALIDATE THE RECEIVED IMAGE ---
-            if not image_bytes:
-                raise RuntimeError("HTTP response was empty, no image data received.")
-            
-            # Perbaikan: Objek Image ditutup secara otomatis
-            with Image.open(io.BytesIO(image_bytes)) as img:
-                img.verify()
-                
-            relative_path, resolution = save_snapshot_file(str(camera.id), image_bytes)
-            full_path = os.path.join(STATIC_DIR, *relative_path.split('/'))
-            maybe_flip_image(full_path, is_flipped=camera.is_flipped)
-            add_watermark(full_path, text=WATERMARK_TEXT, opacity=0.5)
-            check_stats.check_stats(camera)
-
+        # Build RTSP URL
+        username = camera.username or ""
+        password = camera.password or ""
+        ip = camera.ip
+        rtsp_path = camera.rtsp_url or ""
+        
+        if username and password:
+            rtsp_url = f"rtsp://{username}:{password}@{ip}{rtsp_path}"
+        else:
+            rtsp_url = f"rtsp://{ip}{rtsp_path}"
+        
+        logger.info(f"Taking snapshot from {camera.name} at {ip}")
+        
+        # Open video capture
+        cap = cv2.VideoCapture(rtsp_url)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        
+        if not cap.isOpened():
+            logger.error(f"Failed to connect to camera {camera.name}")
             return {
-                "status": "success",
-                "message": f"Snapshot taken from {camera.hostname}",
-                "camera_name": camera.hostname,
-                "file_path": relative_path,
-                "resolution": resolution,
-                "camera_ip": camera.ip
+                "status": "error",
+                "message": f"Cannot connect to camera {camera.name}"
             }
-
-    except Exception as e:
-        logger.warning(
-            "⚠️ HTTP snapshot failed for %s. Falling back to RTSP.",
-            camera.hostname,
-            exc_info=True
-        )
-        return error_response(camera.hostname, str(e))
-    
-    finally:
-        # Menutup objek ONVIF secara eksplisit (jika memungkinkan)
-        # Penanganan yang lebih aman
-        if onvif_cam and hasattr(onvif_cam, 'transport') and onvif_cam.transport is not None and hasattr(onvif_cam.transport, 'session') and onvif_cam.transport.session is not None:
-            try:
-                onvif_cam.transport.session.close()
-            except Exception:
-                pass
-
-
-def _rtsp_capture_with_timeout(rtsp_uri: str, timeout_sec: int = 30):
-    """
-    Capture frame from RTSP stream with timeout to prevent hanging.
-    Returns (success: bool, frame_or_error: ndarray|str)
-    """
-    def _capture():
-        cap = None
-        try:
-            cap = cv2.VideoCapture()
-            cap.open(rtsp_uri, apiPreference=cv2.CAP_FFMPEG)
-            if not cap.isOpened():
-                return False, "Cannot open RTSP stream"
-            
-            # Flush buffer
-            for _ in range(5):
-                cap.read()
-            
-            ret, frame = cap.read()
-            if not ret or frame is None:
-                return False, "No valid frame received from RTSP after flushing buffer"
-            
-            return True, frame
-        finally:
-            if cap and cap.isOpened():
-                cap.release()
-    
-    with ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(_capture)
-        try:
-            return future.result(timeout=timeout_sec)
-        except FutureTimeoutError:
-            return False, f"RTSP capture timed out after {timeout_sec}s"
-
-
-def try_rtsp_snapshot(camera: Camera, db: Session) -> dict:
-    WATERMARK_TEXT = get_config("watermark_text", default="Property of Company")
-    try:
-        rtsp_uri = get_rtsp_url(camera)
-        if not rtsp_uri:
-            raise RuntimeError("RTSP URL not available")
-
-        success, result = _rtsp_capture_with_timeout(rtsp_uri, timeout_sec=30)
-        if not success:
-            raise RuntimeError(result)
         
-        frame = result
-        success_encode, buffer = cv2.imencode(".jpg", frame)
-        if not success_encode:
-            raise RuntimeError("Failed to encode frame to JPEG")
-
-        image_bytes = buffer.tobytes()
-        relative_path, resolution = save_snapshot_file(str(camera.id), image_bytes)
-        full_path = os.path.join(STATIC_DIR, *relative_path.split('/'))
-        maybe_flip_image(full_path, is_flipped=camera.is_flipped)
-        add_watermark(full_path, text=WATERMARK_TEXT, opacity=0.5)
-        check_stats.check_stats(camera)
-
-        logger.info("✅ [%s] RTSP snapshot -> %s", camera.hostname, relative_path)
+        # Read frame
+        ret, frame = cap.read()
+        cap.release()
+        
+        if not ret or frame is None:
+            logger.error(f"Failed to capture frame from {camera.name}")
+            return {
+                "status": "error", 
+                "message": f"Failed to capture frame from {camera.name}"
+            }
+        
+        # Get resolution
+        height, width = frame.shape[:2]
+        resolution = f"{width}x{height}"
+        
+        # Generate filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_camera_name = "".join(c for c in camera.name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        safe_camera_name = safe_camera_name.replace(' ', '_')
+        filename = f"{safe_camera_name}_{timestamp}_{uuid.uuid4().hex[:8]}.jpg"
+        
+        # Ensure directory exists
+        snapshot_dir = Path("static/snapshots")
+        snapshot_dir.mkdir(parents=True, exist_ok=True)
+        
+        file_path = snapshot_dir / filename
+        
+        # Save image
+        cv2.imwrite(str(file_path), frame)
+        
+        # Return relative path
+        relative_path = f"snapshots/{filename}"
+        
+        logger.info(f"Snapshot saved: {relative_path} ({resolution})")
+        
         return {
             "status": "success",
-            "message": f"Snapshot successfully taken from {camera.hostname} (via RTSP)",
-            "camera_name": camera.hostname,
             "file_path": relative_path,
-            "resolution": resolution,
-            "camera_ip": camera.ip
+            "resolution": resolution
         }
-
-    except Exception as e:
-        logger.exception("❌ [%s] RTSP snapshot failed definitively.", camera.hostname)
-        return error_response(camera.hostname, f"RTSP snapshot failed: {str(e)}")
-
-
-def try_ffmpeg_snapshot(camera: Camera, db: Session) -> dict:
-    WATERMARK_TEXT = get_config("watermark_text", default="Property of Company")
-    try:
-        rtsp_url = get_rtsp_url(camera)
-        if not rtsp_url:
-            raise RuntimeError("RTSP URL not available")
-
-        now = datetime.now()
-        date_str = now.strftime("%Y-%m-%d")
-        time_str = now.strftime("%H-%M-%S")
-        dir_path = os.path.join(STATIC_DIR, str(camera.id), date_str)
-        os.makedirs(dir_path, exist_ok=True)
-
-        filename = f"{time_str}.jpg"
-        full_path = os.path.join(dir_path, filename)
         
-        cmd = [
-            "ffmpeg",
-            "-rtsp_transport", "tcp",
-            "-y",
-            "-i", rtsp_url,
-            "-frames:v", "1",
-            "-q:v", "2",
-            full_path
-        ]
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
-
-        if result.returncode != 0 or not os.path.exists(full_path):
-            raise RuntimeError(f"FFmpeg failed with return code {result.returncode}")
-
-        with open(full_path, "rb") as f:
-            image_bytes = f.read()
-
-        resolution = get_image_resolution(image_bytes)
-        relative_path = os.path.relpath(full_path, start=STATIC_DIR).replace("\\", "/")
-
-        maybe_flip_image(full_path, is_flipped=camera.is_flipped)
-        add_watermark(full_path, text=WATERMARK_TEXT, opacity=0.5)
-        check_stats.check_stats(camera)
-
-        logger.info("📸 [%s] FFmpeg snapshot -> %s", camera.hostname, relative_path)
-
+    except Exception as e:
+        logger.error(f"Error taking snapshot from {camera.name}: {e}")
         return {
-            "status": "success",
-            "message": f"Snapshot taken from {camera.hostname} (via ffmpeg)",
-            "camera_name": camera.hostname,
-            "file_path": relative_path,
-            "resolution": resolution,
-            "camera_ip": camera.ip
+            "status": "error",
+            "message": str(e)
         }
 
-    except Exception as e:
-        logger.exception("❌ [%s] FFmpeg snapshot failed.", camera.hostname)
-        return error_response(camera.hostname, f"FFmpeg snapshot failed: {str(e)}")
 
-
-def error_response(camera_name: str, error: str, camera_ip: Optional[str] = None) -> dict:
-    response = {
-        "status": "error",
-        "message": f"Failed to take snapshot from {camera_name}: {error}",
-        "camera_name": camera_name,
-    }
-
-    if camera_ip:
-        response["camera_ip"] = camera_ip
-
-    return response
-
-
-def _safe_snap_path(relative_path: str) -> Path:
-    """
-    Build a safe absolute path under STATIC_DIR from a DB relative path.
-    Prevents path traversal (../../).
-    """
-    # Normalisasi pemisah dan hilangkan leading slash
-    norm = relative_path.replace("\\", "/").lstrip("/")
-
-    # Gabungkan dan resolve
-    p = (_BASE_SNAP_DIR / norm).resolve()
-
-    # Pastikan tetap di dalam base dir
-    if os.path.commonpath([str(p), str(_BASE_SNAP_DIR)]) != str(_BASE_SNAP_DIR):
-        raise ValueError(f"Unsafe snapshot path detected: {relative_path}")
-    return p
-
-
-def clean_old_snapshots(camera_name: str, db: Session) -> None:
-    """
-    Hapus snapshot lama sehingga tersisa tepat max_keep terbaru per kamera.
-    - Tidak load semua snapshot (hemat RAM)
-    - Aman dari race condition & path traversal
-    - Logging jumlah snapshot sebelum & sesudah clean-up
-    """
-    try:
-        max_keep = int(get_config("max_screenshot_per_camera", default=3))
-    except Exception:
-        max_keep = 3
-
-    if max_keep <= 0:
-        return
-
-    # Hitung total snapshot sebelum
-    total_before = db.query(func.count(Snapshot.id)).filter(
-        Snapshot.camera_name == camera_name
-    ).scalar()
-    logger.debug("Snapshot count before cleanup (camera=%s): %d", camera_name, total_before)
-
-    if total_before <= max_keep:
-        logger.debug(
-            "No cleanup needed for %s (only %d snapshots, max_keep=%d)",
-            camera_name, total_before, max_keep
-        )
-        return
-
-    # Subquery ID yang mau di-keep
-    keep_ids_subq = (
-        db.query(Snapshot.id)
-          .filter(Snapshot.camera_name == camera_name)
-          .order_by(Snapshot.timestamp.desc())
-          .limit(max_keep)
-          .subquery()
-    )
-
-    # Query file path yang mau dihapus
-    rows_to_delete = (
-        db.query(Snapshot.id, Snapshot.file_path)
-          .filter(Snapshot.camera_name == camera_name)
-          .filter(~Snapshot.id.in_(select(keep_ids_subq.c.id)))
-          .all()
-    )
-
-    if not rows_to_delete:
-        logger.debug("Nothing to delete for %s", camera_name)
-        return
-
-    # Hapus file di disk
-    for snap_id, rel_path in rows_to_delete:
-        try:
-            p = _safe_snap_path(rel_path)
-            if p.exists():
-                try:
-                    p.unlink()
-                    logger.info("Deleted old snapshot file: %s", rel_path)
-                except Exception as e:
-                    logger.warning("Failed to delete file %s: %s", rel_path, e)
-            else:
-                logger.debug("Snapshot file already missing: %s", rel_path)
-        except Exception as e:
-            logger.error(
-                "Unsafe/invalid snapshot path for id=%s (%s): %s",
-                snap_id, rel_path, e
+class SnapshotService:
+    """Service for handling snapshot operations with notifications."""
+    
+    @staticmethod
+    async def capture_snapshot(
+        camera_id: int,
+        db: Session,
+        triggered_by: str = "manual",
+    ) -> Optional[Snapshot]:
+        """Capture snapshot from camera with notifications.
+        
+        Args:
+            camera_id: ID of the camera to capture from
+            db: Database session
+            triggered_by: Who/what triggered the capture (manual, scheduled, etc.)
+            
+        Returns:
+            The created Snapshot object or None if failed
+        """
+        camera = db.query(Camera).filter(Camera.id == camera_id).first()
+        if not camera:
+            await NotificationService.error(
+                message=f"Camera with ID {camera_id} not found",
+                title="Snapshot Failed",
             )
-
-    # Hapus DB
-    try:
-        ids_to_delete = [rid for rid, _ in rows_to_delete]
-        deleted_count = (
-            db.query(Snapshot)
-              .filter(Snapshot.id.in_(ids_to_delete))
-              .delete(synchronize_session=False)
-        )
-        db.commit()
-        logger.info(
-            "Deleted %d old snapshots from DB (camera=%s)",
-            deleted_count, camera_name
-        )
-    except Exception as e:
-        db.rollback()
-        logger.error(
-            "DB delete rollback for old snapshots (camera=%s): %s",
-            camera_name, e
-        )
-
-    # Hitung total snapshot sesudah
-    total_after = db.query(func.count(Snapshot.id)).filter(
-        Snapshot.camera_name == camera_name
-    ).scalar()
-    logger.debug("Snapshot count after cleanup (camera=%s): %d", camera_name, total_after)
-    
-
-def clean_old_snapshots_camera(camera_name: str, db: Session, max_keep: Optional[int] = None) -> None:
-    """
-    Hapus snapshot lama hanya untuk satu kamera tertentu sehingga tersisa max_keep terbaru.
-    """
-    try:
-        # Ambil max_keep dari config jika tidak diberikan
-        if max_keep is None:
-            try:
-                max_keep = int(get_config("max_screenshot_per_camera", default=3))
-            except Exception:
-                max_keep = 3
-
-        if max_keep <= 0:
-            return
-
-        # Hitung total snapshot untuk kamera ini
-        total_before = db.query(func.count(Snapshot.id)).filter(Snapshot.camera_name == camera_name).scalar()
-        logger.debug("Snapshot count before cleanup (camera=%s): %d", camera_name, total_before)
-
-        if total_before <= max_keep:
-            logger.debug("No cleanup needed for %s (only %d snapshots, max_keep=%d)", camera_name, total_before, max_keep)
-            return
-
-        # Subquery ID snapshot terbaru yang ingin disimpan
-        keep_ids_subq = (
-            db.query(Snapshot.id)
-            .filter(Snapshot.camera_name == camera_name)
-            .order_by(Snapshot.timestamp.desc())
-            .limit(max_keep)
-            .subquery()
-        )
-
-        # Snapshot yang akan dihapus
-        rows_to_delete = (
-            db.query(Snapshot.id, Snapshot.file_path)
-            .filter(Snapshot.camera_name == camera_name)
-            .filter(~Snapshot.id.in_(select(keep_ids_subq.c.id)))
-            .all()
-        )
-
-        if not rows_to_delete:
-            logger.debug("Nothing to delete for %s", camera_name)
-            return
-
-        # Hapus file di disk
-        for snap_id, rel_path in rows_to_delete:
-            try:
-                p = _safe_snap_path(rel_path)
-                if p.exists():
-                    try:
-                        p.unlink()
-                        logger.info("Deleted old snapshot file: %s", rel_path)
-                    except Exception as e:
-                        logger.warning("Failed to delete file %s: %s", rel_path, e)
-                else:
-                    logger.debug("Snapshot file already missing: %s", rel_path)
-            except Exception as e:
-                logger.error("Unsafe/invalid snapshot path for id=%s (%s): %s", snap_id, rel_path, e)
-
-        # Hapus record di DB
+            return None
+        
+        # Check if camera is online
+        if not camera.is_active:
+            await NotificationService.warning(
+                message=f"Camera '{camera.name}' is currently disabled",
+                title="Camera Disabled",
+                camera_id=camera_id,
+            )
+            return None
+        
         try:
-            ids_to_delete = [rid for rid, _ in rows_to_delete]
-            deleted_count = db.query(Snapshot).filter(Snapshot.id.in_(ids_to_delete)).delete(synchronize_session=False)
-            db.commit()
-            logger.info("Deleted %d old snapshots from DB (camera=%s)", deleted_count, camera_name)
+            # Use the legacy take_snapshot function
+            result = take_snapshot(camera, db)
+            
+            if result["status"] != "success":
+                await NotificationService.error(
+                    message=result.get("message", "Unknown error"),
+                    title="Snapshot Failed",
+                    camera_id=camera_id,
+                )
+                return None
+            
+            # Create snapshot record
+            from app.utils.snapshot_utils import record_snapshot_metadata
+            
+            snapshot = record_snapshot_metadata(
+                db=db,
+                camera_id=camera_id,
+                file_path=result["file_path"],
+                resolution=result.get("resolution", "N/A"),
+            )
+            
+            if not snapshot:
+                await NotificationService.error(
+                    message="Failed to record snapshot metadata",
+                    title="Snapshot Error",
+                    camera_id=camera_id,
+                )
+                return None
+            
+            # Notify success
+            await NotificationService.snapshot_saved(
+                camera_name=camera.name,
+                camera_id=camera_id,
+                snapshot_id=snapshot.id,
+            )
+            
+            logger.info(f"Snapshot captured from {camera.name} (ID: {snapshot.id})")
+            return snapshot
+            
         except Exception as e:
-            db.rollback()
-            logger.error("DB delete rollback for old snapshots (camera=%s): %s", camera_name, e)
+            logger.error(f"Failed to capture snapshot from {camera.name}: {e}")
+            
+            await NotificationService.error(
+                message=f"Failed to capture snapshot: {str(e)}",
+                title="Snapshot Error",
+                camera_id=camera_id,
+            )
+            return None
+    
+    @staticmethod
+    async def bulk_capture(
+        camera_ids: list[int],
+        db: Session,
+        triggered_by: str = "bulk",
+    ) -> dict:
+        """Capture snapshots from multiple cameras.
+        
+        Args:
+            camera_ids: List of camera IDs
+            db: Database session
+            triggered_by: Who triggered the capture
+            
+        Returns:
+            Dict with success count and failed cameras
+        """
+        results = {
+            "success": [],
+            "failed": [],
+            "total": len(camera_ids),
+        }
+        
+        await NotificationService.info(
+            message=f"Starting bulk snapshot for {len(camera_ids)} cameras...",
+            title="Bulk Snapshot Started",
+            duration=3000,
+        )
+        
+        for camera_id in camera_ids:
+            snapshot = await SnapshotService.capture_snapshot(
+                camera_id=camera_id,
+                db=db,
+                triggered_by=triggered_by,
+            )
+            if snapshot:
+                results["success"].append(camera_id)
+            else:
+                results["failed"].append(camera_id)
+        
+        # Summary notification
+        if results["failed"]:
+            await NotificationService.warning(
+                message=f"Bulk capture complete: {len(results['success'])} succeeded, {len(results['failed'])} failed",
+                title="Bulk Snapshot Complete",
+                duration=6000,
+            )
+        else:
+            await NotificationService.success(
+                message=f"Successfully captured snapshots from all {len(results['success'])} cameras",
+                title="Bulk Snapshot Complete",
+                duration=4000,
+            )
+        
+        return results
+    
+    @staticmethod
+    async def delete_snapshot(
+        snapshot_id: str,
+        db: Session,
+        user_name: str = "system",
+    ) -> bool:
+        """Delete a snapshot with notification.
+        
+        Args:
+            snapshot_id: ID of the snapshot to delete
+            db: Database session
+            user_name: Name of user performing the deletion
+            
+        Returns:
+            True if deleted successfully
+        """
+        snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
+        if not snapshot:
+            await NotificationService.error(
+                message=f"Snapshot with ID {snapshot_id} not found",
+                title="Delete Failed",
+            )
+            return False
+        
+        try:
+            # Delete file if exists
+            if snapshot.file_path:
+                full_path = os.path.join("static", snapshot.file_path)
+                if os.path.exists(full_path):
+                    os.remove(full_path)
+            
+            camera_name = snapshot.camera_name
+            db.delete(snapshot)
+            db.commit()
+            
+            await NotificationService.success(
+                message=f"Snapshot from '{camera_name}' deleted by {user_name}",
+                title="Snapshot Deleted",
+                duration=3000,
+            )
+            
+            logger.info(f"Snapshot {snapshot_id} deleted by {user_name}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to delete snapshot {snapshot_id}: {e}")
+            
+            await NotificationService.error(
+                message=f"Failed to delete snapshot: {str(e)}",
+                title="Delete Error",
+            )
+            return False
 
-        # Hitung snapshot setelah clean
-        total_after = db.query(func.count(Snapshot.id)).filter(Snapshot.camera_name == camera_name).scalar()
-        logger.debug("Snapshot count after cleanup (camera=%s): %d", camera_name, total_after)
 
-    except Exception as e:
-        logger.exception("Error during cleanup snapshots for camera %s: %s", camera_name, e)
+# Convenience function for quick notifications
+async def notify_snapshot_progress(current: int, total: int, camera_name: str):
+    """Show progress notification for snapshot operations."""
+    percent = int((current / total) * 100)
+    await NotificationService.info(
+        message=f"Capturing from {camera_name}... ({current}/{total}, {percent}%)",
+        title="Snapshot Progress",
+        duration=2000,
+    )

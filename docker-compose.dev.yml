@@ -1,0 +1,77 @@
+services:
+  b-snap:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: b-snap:local
+    container_name: bsnap-app
+    ports:
+      - "8080:8080"
+    privileged: true
+    cap_add:
+      - NET_RAW
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    volumes:
+      - ./static/snapshots:/static/snapshots
+      - ./static/videos:/static/videos
+      - ./logs:/logs
+      - shared_tmp:/tmp/shared
+    restart: unless-stopped
+
+  scheduler:
+    image: b-snap:local
+    container_name: bsnap-scheduler
+    env_file:
+      - .env
+    working_dir: /
+    depends_on:
+      - b-snap
+    volumes:
+      - ./static/snapshots:/static/snapshots
+      - ./logs:/logs
+      - shared_tmp:/tmp/shared
+    restart: unless-stopped
+    command: python -m app.jobs.scheduler_main
+  
+  notifier:
+    image: b-snap:local
+    container_name: bsnap-notifier
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    command: python -m ws.notifier
+
+  postgres: 
+    image: postgres:17.5
+    container_name: bsnap-postgres
+    environment:
+      POSTGRES_DB: bsnap_db
+      POSTGRES_USER: bsnap_user
+      POSTGRES_PASSWORD: bsnap_pass
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: bsnap-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: wijaya.indra2196@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  shared_tmp:

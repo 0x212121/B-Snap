@@ -22,6 +22,10 @@ if config.config_file_name is not None:
 
 # Metadata for 'autogenerate'
 from app.db.database import Base
+
+# Import all models to register them with Base.metadata
+import app.models  # noqa: F401
+
 target_metadata = Base.metadata
 
 

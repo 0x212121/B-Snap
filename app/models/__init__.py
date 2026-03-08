@@ -1,3 +1,6 @@
+# Models package
+# Import all models here for easy access
+
 from .camera import Camera
 from .camera_group import CameraGroup
 from .user import User
@@ -14,3 +17,44 @@ from .whitelist import WhatsappWhitelist
 from .task_timing import TaskTiming
 from .audit_log import AuditLog
 from .storage_metric import StorageMetric, StorageAlert
+from .notification import Notification
+
+# Additional models
+from .recipient import GroupRecipient
+from .log import CommandLog, ApiLog
+from .email_retry_queue import EmailRetryQueue
+from .remember_token import RememberToken
+from .camera_email_notification_log import (
+    CameraEmailNotificationLog,
+    CameraEmailNotificationRecipient
+)
+from .health_check_status import HealthCheckStatus
+
+__all__ = [
+    "Camera",
+    "CameraGroup",
+    "User",
+    "NVR",
+    "Snapshot",
+    "SnapshotLog",
+    "Video",
+    "CameraDailyStats",
+    "CameraStatusChangeLog",
+    "CameraHealth",
+    "Configuration",
+    "NotificationQueue",
+    "WhatsappWhitelist",
+    "TaskTiming",
+    "AuditLog",
+    "StorageMetric",
+    "StorageAlert",
+    "Notification",
+    "GroupRecipient",
+    "CommandLog",
+    "ApiLog",
+    "EmailRetryQueue",
+    "RememberToken",
+    "CameraEmailNotificationLog",
+    "CameraEmailNotificationRecipient",
+    "HealthCheckStatus",
+]

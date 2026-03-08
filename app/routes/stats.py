@@ -437,7 +437,7 @@ async def trigger_storage_check(
             log_audit(
                 db=db,
                 user=current_admin.username,
-                action="STORAGE_CHECK_MANUAL",
+                action="storage_check_manual",
                 target="storage_monitor",
                 ip=request.client.host if request.client else None,
                 extra={"usage_percent": metric.usage_percent, "alert_level": metric.alert_level}

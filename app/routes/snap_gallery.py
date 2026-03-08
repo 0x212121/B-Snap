@@ -17,8 +17,9 @@ from app.models.user import User
 from app.models.whitelist import WhatsappWhitelist
 from app.routes.auth import operator_access_required
 from app.utils.audit_logger import log_audit
-from app.utils.snapshot_service import take_snapshot
+from app.utils.snapshot_service import SnapshotService
 from app.utils.snapshot_utils import record_snapshot_metadata
+from app.utils.notification_service import NotificationService
 from app.utils.timezone_helper import to_current_timezone
 
 router = APIRouter(tags=["Snapshots"])
@@ -86,7 +87,7 @@ def get_user_by_phone(db: Session, phone: str):
 
 
 @router.post("/snap/{camera_identifier}")
-def snapshot_handler(
+async def snapshot_handler(
     request: Request,
     camera_identifier: str,
     db: Session = Depends(get_db),
@@ -157,31 +158,20 @@ def snapshot_handler(
                 content={"status": "error", "detail": f"Camera status '{camera.status}' is not allowed"}
             )
 
-        # --- Snapshot process ---
-        result = take_snapshot(camera, db)
+        # --- Snapshot process dengan Toast Notification ---
+        snapshot = await SnapshotService.capture_snapshot(
+            camera_id=int(camera.id),
+            db=db,
+            triggered_by="manual"
+        )
 
-        if result["status"] == "success":
-            snapshot_log = SnapshotLog(
-                id=str(uuid4()),
-                camera_id=camera.id,
-                camera_name=camera.hostname,
-            )
-            db.add(snapshot_log)
-
-            snapshot = record_snapshot_metadata(
-                db=db,
-                camera_id=camera.id,
-                file_path=result["file_path"],
-                resolution=result.get("resolution", "N/A"),
-            )
-            result["snapshot_id"] = snapshot.id
-
+        if snapshot:
+            # Update camera status jika Maintenance
             if camera.status == "Maintenance":
                 camera.status = "Active"
                 db.add(camera)
                 db.commit()
                 db.refresh(camera)
-                result["status_update"] = "Camera status updated from Maintenance to Active"
 
             log_audit(
                 db=db,
@@ -189,8 +179,16 @@ def snapshot_handler(
                 action="create_snapshot_success",
                 target=camera.hostname,
                 ip=request.client.host,
-                extra=f"{extra} | file={result['file_path']} | resolution={result.get('resolution', 'N/A')}"
+                extra=f"{extra} | file={snapshot.file_path} | resolution={snapshot.resolution}"
             )
+            
+            result = {
+                "status": "success",
+                "file_path": snapshot.file_path,
+                "snapshot_id": snapshot.id,
+                "resolution": snapshot.resolution,
+                "status_update": "Camera status updated from Maintenance to Active" if camera.status == "Active" else None
+            }
             return JSONResponse(status_code=200, content=result)
         else:
             log_audit(
@@ -199,9 +197,12 @@ def snapshot_handler(
                 action="create_snapshot_failed",
                 target=camera.hostname,
                 ip=request.client.host,
-                extra=f"{extra} | reason={result.get('message', 'unknown error')}"
+                extra=f"{extra} | reason=Snapshot capture failed"
             )
-            return JSONResponse(status_code=500, content=result)
+            return JSONResponse(
+                status_code=500, 
+                content={"status": "error", "message": "Failed to capture snapshot"}
+            )
 
     except Exception as e:
         log_audit(
@@ -222,49 +223,32 @@ def snapshot_handler(
 
 
 @router.delete("/snap/{snapshot_id}", response_class=JSONResponse)
-def delete_snapshot(
+async def delete_snapshot(
     request: Request,
     snapshot_id: str,
     db: Session = Depends(get_db),
     current_operator: User = Depends(operator_access_required)
 ):
-    # This function remains the same.
-    snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
-    if not snapshot:
-        logger.warning("Snapshot not found: %s", snapshot_id)
-        raise HTTPException(status_code=404, detail="Snapshot not found")
-
-    file_path = os.path.join(SNAPSHOT_BASE_DIR, "snapshots", snapshot.file_path)
-
-    if os.path.isfile(file_path):
-        try:
-            os.remove(file_path)
-            logger.info("Snapshot file deleted: %s", file_path)
-        except Exception as e:
-            logger.error("Failed to delete snapshot file: %s", e)
-
-    try:
-        db.delete(snapshot)
-        db.commit()
-        logger.info("Snapshot record deleted from DB: %s", snapshot_id)
-
-        target_time = to_current_timezone(snapshot.timestamp, db)
-        formatted_time = target_time.strftime('%d %B %Y, %H:%M:%S GMT%z')
-
-        log_audit(
-            db=db,
-            user=request.session["user_name"],
-            action="delete_snapshot",
-            target=f"{snapshot.camera_name} | {formatted_time}",
-            ip=request.client.host,
-            extra="via dashboard"
+    """Delete snapshot dengan toast notification."""
+    user_name = request.session.get("user_name", "Unknown")
+    
+    # Gunakan SnapshotService untuk delete dengan notifikasi
+    success = await SnapshotService.delete_snapshot(
+        snapshot_id=snapshot_id,  # UUID string, not int
+        db=db,
+        user_name=user_name
+    )
+    
+    if success:
+        return JSONResponse(
+            status_code=200, 
+            content={"status": "success", "message": "Snapshot deleted"}
         )
-    except Exception as e:
-        logger.error("Failed to delete DB record for snapshot %s: %s", snapshot_id, e)
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Failed to delete snapshot record")
-
-    return JSONResponse(status_code=200, content={"status": "success", "message": "Snapshot deleted"})
+    else:
+        raise HTTPException(
+            status_code=500, 
+            detail="Failed to delete snapshot"
+        )
 
 
 @router.get("/snap_gallery")

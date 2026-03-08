@@ -55,8 +55,6 @@
 </style>
 
 <div class="container mx-auto px-4 py-8">
-  <div id="toast" class="fixed top-5 right-5 z-50 hidden bg-green-500 text-white px-4 py-2 rounded shadow-md transition-all duration-300"></div>
-  
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">
       {{ icon_camera("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }}Snapshot Gallery</h1>
@@ -189,7 +187,7 @@
       
     } catch (error) {
       console.error("Failed to update gallery:", error);
-      showToast("Error updating gallery.", true);
+      Toast.error("Error updating gallery.", { title: "Error" });
     } finally {
       grid.style.opacity = '1';
       isLoading = false;
@@ -227,26 +225,28 @@
   
   /**
   * Deletes a single snapshot by its ID.
+  * Global function untuk dipanggil dari HTML onclick
   */
-  function deleteSnapshot(snapshotId, element) { // atau deleteVideo(videoId, element)
-    const card = element.closest('.snapshot-card'); // atau .video-card
+  function deleteSnapshot(snapshotId, element) {
+    const card = element.closest('.snapshot-card');
     
-    showGlobalConfirm("Are you sure you want to delete this item?", () => {
+    showGlobalConfirm("Are you sure you want to delete this snapshot?", () => {
       card.style.opacity = '0.5';
-      // Logika fetch Anda untuk menghapus item
-      fetch(`/snap/${snapshotId}`, { method: 'DELETE' }) // atau /videos/${videoId}
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === "success") {
-          showToast("Item deleted successfully");
+      
+      fetch(`/snap/${snapshotId}`, { method: 'DELETE' })
+      .then(async res => {
+        const data = await res.json();
+        if (res.ok && data.status === "success") {
+          Toast.success("Snapshot deleted successfully", { title: "Deleted", duration: 3000 });
           card.remove();
         } else {
-          showToast(data.detail || "Failed to delete item", true);
+          Toast.error(data.detail || "Failed to delete snapshot", { title: "Error", duration: 5000 });
           card.style.opacity = '1';
         }
       })
       .catch(err => {
-        showToast("Error during deletion.", true);
+        console.error("Delete error:", err);
+        Toast.error("Error during deletion.", { title: "Error", duration: 5000 });
         card.style.opacity = '1';
       });
     }, {
@@ -255,6 +255,54 @@
       confirmClasses: 'bg-red-600 hover:bg-red-700'
     });
   }
+  
+  /**
+  * Show modal for snapshot image
+  * Global function untuk dipanggil dari HTML onclick
+  */
+  function showModal(src, cameraName = '', timestamp = '') {
+    const modal = document.getElementById("modal");
+    const img = document.getElementById("modal-img");
+    const info = document.getElementById("modal-info");
+    const downloadBtn = document.getElementById("download-btn");
+    
+    img.src = src;
+    info.textContent = `${cameraName} • ${timestamp}`;
+    modal.classList.remove("hidden");
+    
+    // Set download link href and filename
+    downloadBtn.href = src;
+    downloadBtn.download = `snapshot_${cameraName}_${timestamp.replace(/[\s:]/g, '-')}.jpg`;
+  }
+  
+  /**
+  * Hide modal
+  * Global function untuk dipanggil dari HTML onclick
+  */
+  function hideModal() {
+    document.getElementById("modal").classList.add("hidden");
+  }
+  
+  /**
+  * Initialize lazy loading for images
+  */
+  function initializeLazyLoading() {
+    const lazyImages = document.querySelectorAll('img.lazy-img:not(.loaded)');
+    const observer = new IntersectionObserver((entries, obs) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          img.src = img.src; // This triggers the load
+          img.addEventListener('load', () => {
+            img.classList.add('loaded');
+          }, { once: true });
+          obs.unobserve(img);
+        }
+      });
+    }, { rootMargin: "0px 0px 200px 0px" }); // Start loading images 200px before they enter the viewport
+    lazyImages.forEach(img => observer.observe(img));
+  }
+  
   // --- Event Listeners Setup ---
   document.addEventListener("DOMContentLoaded", () => {
     initTomSelect();
@@ -268,7 +316,7 @@
         hasMore = true;
         fetchAndUpdateGallery({ camera: selectedCamera, q: e.target.value });
       }, 350);
-    })});
+    });
     
     document.getElementById("filterTampered")?.addEventListener("change", () => {
       const selectedCamera = tom?.getValue() || "";
@@ -313,8 +361,11 @@
           const res = await fetch(`/snap/${encodeURIComponent(camera)}`, { method: "POST" });
           const data = await res.json();
           
-          if (data.status === "success") {
-            showToast("Snapshot taken!");
+          if (res.ok && data.status === "success") {
+            Toast.success(`Snapshot captured from '${camera}'`, { 
+              title: "Snapshot Success",
+              duration: 4000
+            });
             window.scrollTo({ top: 0, behavior: "smooth" });
             
             pageOffset = 0;
@@ -326,7 +377,10 @@
               tampered: document.getElementById("filterTampered").checked
             });
           } else {
-            showToast(data.message || "Snapshot failed", true);
+            Toast.error(data.message || data.detail || "Snapshot failed", { 
+              title: "Snapshot Failed",
+              duration: 5000
+            });
           }
         }
         
@@ -334,63 +388,17 @@
           if (!confirm(`Are you sure you want to delete all snapshots for ${camera}? This cannot be undone.`)) {
             return;
           }
-          showToast("Delete-all functionality not yet implemented.", true);
+          Toast.warning("Delete-all functionality not yet implemented.", { title: "Info" });
         }
         
       } catch (error) {
         console.error(`Error performing action '${action}':`, error);
-        showToast(`An error occurred.`, true);
+        Toast.error(`An error occurred while performing ${action}.`, { title: "Error", duration: 5000 });
       } finally {
         target.disabled = false;
         target.style.opacity = '1';
       }
     });
-    
-    // --- Utility and UI Functions ---
-    
-    function showToast(msg, isError = false) {
-      const toast = document.getElementById("toast");
-      toast.textContent = msg;
-      toast.className = `fixed top-5 right-5 z-50 px-4 py-2 rounded shadow-md transition-all duration-300 ${isError ? "bg-red-500" : "bg-green-500"} text-white`;
-      toast.classList.remove("hidden");
-      setTimeout(() => toast.classList.add("hidden"), 3000);
-    }
-    
-    function showModal(src, cameraName = '', timestamp = '') {
-      const modal = document.getElementById("modal");
-      const img = document.getElementById("modal-img");
-      const info = document.getElementById("modal-info");
-      const downloadBtn = document.getElementById("download-btn");
-      
-      img.src = src;
-      info.textContent = `${cameraName} • ${timestamp}`;
-      modal.classList.remove("hidden");
-      
-      // Set download link href and filename
-      downloadBtn.href = src;
-      downloadBtn.download = `snapshot_${cameraName}_${timestamp.replace(/[\s:]/g, '-')}.jpg`;
-    }
-    
-    function hideModal() {
-      document.getElementById("modal").classList.add("hidden");
-    }
-    
-    function initializeLazyLoading() {
-      const lazyImages = document.querySelectorAll('img.lazy-img:not(.loaded)');
-      const observer = new IntersectionObserver((entries, obs) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const img = entry.target;
-            img.src = img.src; // This triggers the load
-            img.addEventListener('load', () => {
-              img.classList.add('loaded');
-            }, { once: true });
-            obs.unobserve(img);
-          }
-        });
-      }, { rootMargin: "0px 0px 200px 0px" }); // Start loading images 200px before they enter the viewport
-      lazyImages.forEach(img => observer.observe(img));
-    }  
-    
-  </script>
-  {% endblock %}
+  });
+</script>
+{% endblock %}

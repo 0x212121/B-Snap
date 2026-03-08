@@ -10,7 +10,7 @@ router = APIRouter()
 # Pastikan logger dikonfigurasi dengan baik di aplikasi utama Anda
 logger = logging.getLogger("uvicorn.error") # Menggunakan logger uvicorn agar pasti muncul
 
-DATABASE_URL = os.getenv("DATABASE_URL").replace("postgresql+psycopg2", "postgresql")
+DATABASE_URL = os.getenv("DATABASE_URL", "").replace("postgresql+psycopg2", "postgresql")
 WAKE_UP_CHANNEL = "new_message_in_queue"
 POLLING_INTERVAL = 5  # Detik. Atur sesuai kebutuhan Anda.
 

@@ -239,16 +239,16 @@ def get_camera_snapshot(camera_id: int, timeout: int = 10) -> bytes:
 
 ```bash
 # Build and start all services
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f app
+docker compose logs -f app
 
 # Run migrations
-docker-compose exec app alembic upgrade head
+docker compose exec app alembic upgrade head
 
 # Rebuild after changes
-docker-compose build --no-cache
+docker compose build --no-cache
 ```
 
 Services:

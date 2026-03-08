@@ -90,142 +90,133 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const searchInput = document.getElementById('search-input');
-    const actionFilter = document.getElementById('action-filter');
-    const dateRangeInput = document.getElementById('date-range');
+  // Global state
+  let currentPage = 1;
+  let debounceTimer;
+
+  async function fetchLogs(page = 1) {
+    currentPage = page;
+    const loadingOverlay = document.getElementById('loading-overlay');
     const tableBody = document.querySelector('#audit-table tbody');
     const paginationControls = document.getElementById('pagination-controls');
     const paginationInfo = document.getElementById('pagination-info');
-    const loadingOverlay = document.getElementById('loading-overlay');
-    let debounceTimer;
+    const searchInput = document.getElementById('search-input');
+    const actionFilter = document.getElementById('action-filter');
+    const dateRangeInput = document.getElementById('date-range');
+    const perPageSelect = document.getElementById('perPageSelect');
 
-    async function fetchLogs(page = 1) {
-      loadingOverlay.style.display = 'flex';
-      const perPageValue = perPageSelect.value;
-      const params = new URLSearchParams({
-        page: page,
-        per_page: perPageValue,
-        search: searchInput.value,
-        action: actionFilter.value,
-        start_date: dateRangeInput.value.split(" to ")[0] || '',
-        end_date: dateRangeInput.value.split(" to ")[1] || ''
-      });
+    loadingOverlay.style.display = 'flex';
+    const perPageValue = perPageSelect.value;
+    const params = new URLSearchParams({
+      page: page,
+      per_page: perPageValue,
+      search: searchInput.value,
+      action: actionFilter.value,
+      start_date: dateRangeInput.value.split(" to ")[0] || '',
+      end_date: dateRangeInput.value.split(" to ")[1] || ''
+    });
 
-      try {
-        const response = await fetch(`/api/audit-logs?${params.toString()}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-        renderTable(data.logs);
-        renderPagination(data);
-        updatePaginationInfo(data);
-      } catch (error) {
-        console.error("Failed to fetch audit logs:", error);
-        tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500 py-4">Failed to load data.</td></tr>`;
-      } finally {
-        loadingOverlay.style.display = 'none';
-      }
+    try {
+      const response = await fetch(`/api/audit-logs?${params.toString()}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      renderTable(data.logs);
+      renderPagination(data);
+      updatePaginationInfo(data);
+    } catch (error) {
+      console.error("Failed to fetch audit logs:", error);
+      tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500 py-4">Failed to load data.</td></tr>`;
+    } finally {
+      loadingOverlay.style.display = 'none';
+    }
+  }
+
+  function renderTable(logs) {
+    const tableBody = document.querySelector('#audit-table tbody');
+    const timezone = document.body.dataset.timezone || dayjs.tz.guess();
+    tableBody.innerHTML = '';
+    if (logs.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-gray-500 py-4">No logs found.</td></tr>`;
+      return;
     }
 
-    function renderTable(logs) {
-      const timezone = document.body.dataset.timezone || dayjs.tz.guess();
-      tableBody.innerHTML = '';
-      if (logs.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-gray-500 py-4">No logs found.</td></tr>`;
-        return;
-      }
+    logs.forEach(log => {
+      const color = log.action.includes('create') ? 'bg-green-500' :
+                    log.action.includes('update') ? 'bg-yellow-500' :
+                    log.action.includes('delete') ? 'bg-red-500' :
+                    log.action.includes('login')  ? 'bg-blue-500' :
+                    log.action.includes('logout') ? 'bg-indigo-500' : 'bg-gray-500';
 
-      logs.forEach(log => {
-        const color = log.action.includes('create') ? 'bg-green-500' :
-                      log.action.includes('update') ? 'bg-yellow-500' :
-                      log.action.includes('delete') ? 'bg-red-500' :
-                      log.action.includes('login')  ? 'bg-blue-500' :
-                      log.action.includes('logout') ? 'bg-indigo-500' : 'bg-gray-500';
+      const extraData = log.extra ? log.extra.replace(/"/g, '&quot;') : '';
+      const extraButton = log.extra
+        ? `<button class="text-blue-600 hover:underline text-xs" data-extra="${extraData}" onclick="showExtraModal(this)">View</button>`
+        : `<span class="text-gray-400">-</span>`;
 
-        const extraData = log.extra ? log.extra.replace(/"/g, '&quot;') : '';
-        const extraButton = log.extra
-          ? `<button class="text-blue-600 hover:underline text-xs" data-extra="${extraData}" onclick="showExtraModal(this)">View</button>`
-          : `<span class="text-gray-400">-</span>`;
+      const row = `
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+          <td class="px-4 py-2 text-gray-800 dark:text-gray-200 whitespace-nowrap">${log.timestamp}</td>
+          <td class="px-4 py-2 text-gray-700 dark:text-gray-300">${log.user}</td>
+          <td class="px-4 py-2"><span class="px-2 py-1 rounded text-white text-xs ${color}">${log.action}</span></td>
+          <td class="px-4 py-2 text-gray-700 dark:text-gray-300">${log.target}</td>
+          <td class="px-4 py-2 text-gray-700 dark:text-gray-300">${log.ip || '-'}</td>
+          <td class="px-4 py-2 text-sm">${extraButton}</td>
+        </tr>
+      `;
+      tableBody.insertAdjacentHTML('beforeend', row);
+    });
+  }
 
-        const row = `
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-            <td class="px-4 py-2 text-gray-800 dark:text-gray-200 whitespace-nowrap">${log.timestamp}</td>
-            <td class="px-4 py-2 text-gray-700 dark:text-gray-300">${log.user}</td>
-            <td class="px-4 py-2"><span class="px-2 py-1 rounded text-white text-xs ${color}">${log.action}</span></td>
-            <td class="px-4 py-2 text-gray-700 dark:text-gray-300">${log.target}</td>
-            <td class="px-4 py-2 text-gray-700 dark:text-gray-300">${log.ip || '-'}</td>
-            <td class="px-4 py-2 text-sm">${extraButton}</td>
-          </tr>
-        `;
-        tableBody.insertAdjacentHTML('beforeend', row);
-      });
+  function renderPagination(data) {
+    const paginationControls = document.getElementById('pagination-controls');
+    paginationControls.innerHTML = '';
+    if (data.total_pages <= 1) return;
+
+    const { page: currentPageNum, total_pages: totalPages } = data;
+    const window = 2;
+    const links = [];
+
+    // First & Prev
+    if (currentPageNum > 1) {
+      links.push(`<a href="#" onclick="event.preventDefault(); fetchLogs(1)" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">First</a>`);
+      links.push(`<a href="#" onclick="event.preventDefault(); fetchLogs(${currentPageNum - 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">«</a>`);
     }
 
-    function renderPagination(data) {
-      paginationControls.innerHTML = '';
-      if (data.total_pages <= 1) return;
-
-      const { page: currentPage, total_pages: totalPages } = data;
-      const window = 2;
-      const links = [];
-
-      // First & Prev
-      if (currentPage > 1) {
-        links.push(`<a href="#" onclick="event.preventDefault(); fetchLogs(1)" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">First</a>`);
-        links.push(`<a href="#" onclick="event.preventDefault(); fetchLogs(${currentPage - 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">«</a>`);
-      }
-
-      // Left ellipsis
-      if (currentPage > window + 2) {
-        links.push('<span class="px-3 py-1">...</span>');
-      }
-
-      // Page numbers
-      for (let i = Math.max(1, currentPage - window); i <= Math.min(totalPages, currentPage + window); i++) {
-        if (i === currentPage) {
-          links.push(`<span class="px-3 py-1 bg-blue-600 text-white rounded font-bold">${i}</span>`);
-        } else {
-          links.push(`<a href="#" onclick="event.preventDefault(); fetchLogs(${i})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">${i}</a>`);
-        }
-      }
-
-      // Right ellipsis
-      if (currentPage < totalPages - window - 1) {
-        links.push('<span class="px-3 py-1">...</span>');
-      }
-
-      // Next & Last
-      if (currentPage < totalPages) {
-        links.push(`<a href="#" onclick="event.preventDefault(); fetchLogs(${currentPage + 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">»</a>`);
-        links.push(`<a href="#" onclick="event.preventDefault(); fetchLogs(${totalPages})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">Last</a>`);
-      }
-
-      paginationControls.innerHTML = links.join(' ');
+    // Left ellipsis
+    if (currentPageNum > window + 2) {
+      links.push('<span class="px-3 py-1">...</span>');
     }
 
-    function updatePaginationInfo(data) {
-      if (data.total_logs > 0) {
-        paginationInfo.textContent = `Showing ${(data.page - 1) * data.per_page + 1} to ${Math.min(data.page * data.per_page, data.total_logs)} of ${data.total_logs} results`;
+    // Page numbers
+    for (let i = Math.max(1, currentPageNum - window); i <= Math.min(totalPages, currentPageNum + window); i++) {
+      if (i === currentPageNum) {
+        links.push(`<span class="px-3 py-1 bg-blue-600 text-white rounded font-bold">${i}</span>`);
       } else {
-        paginationInfo.textContent = '';
+        links.push(`<a href="#" onclick="event.preventDefault(); fetchLogs(${i})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">${i}</a>`);
       }
     }
 
-    searchInput.addEventListener('input', () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => fetchLogs(1), 500);
-    });
+    // Right ellipsis
+    if (currentPageNum < totalPages - window - 1) {
+      links.push('<span class="px-3 py-1">...</span>');
+    }
 
-    actionFilter.addEventListener('change', () => fetchLogs(1));
-    perPageSelect.addEventListener('change', () => fetchLogs(1));
+    // Next & Last
+    if (currentPageNum < totalPages) {
+      links.push(`<a href="#" onclick="event.preventDefault(); fetchLogs(${currentPageNum + 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">»</a>`);
+      links.push(`<a href="#" onclick="event.preventDefault(); fetchLogs(${totalPages})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">Last</a>`);
+    }
 
-    flatpickr("#date-range", {
-      mode: "range", dateFormat: "Y-m-d",
-      onChange: selectedDates => { if (selectedDates.length === 2) fetchLogs(1); }
-    });
+    paginationControls.innerHTML = links.join(' ');
+  }
 
-    fetchLogs(1);
-  });
+  function updatePaginationInfo(data) {
+    const paginationInfo = document.getElementById('pagination-info');
+    if (data.total_logs > 0) {
+      paginationInfo.textContent = `Showing ${(data.page - 1) * data.per_page + 1} to ${Math.min(data.page * data.per_page, data.total_logs)} of ${data.total_logs} results`;
+    } else {
+      paginationInfo.textContent = '';
+    }
+  }
 
   function showExtraModal(button) {
     const raw = button.dataset.extra;
@@ -242,13 +233,38 @@
   }
 
   function exportToCSV() {
+    const searchInput = document.getElementById('search-input');
+    const actionFilter = document.getElementById('action-filter');
+    const dateRangeInput = document.getElementById('date-range');
     const params = new URLSearchParams({
-      search: document.getElementById('search-input').value,
-      action: document.getElementById('action-filter').value,
-      start_date: document.getElementById('date-range').value.split(" to ")[0] || '',
-      end_date: document.getElementById('date-range').value.split(" to ")[1] || ''
+      search: searchInput.value,
+      action: actionFilter.value,
+      start_date: dateRangeInput.value.split(" to ")[0] || '',
+      end_date: dateRangeInput.value.split(" to ")[1] || ''
     });
     window.location.href = `/api/audit-logs/export?${params.toString()}`;
   }
+
+  // Initialize on DOM ready
+  document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById('search-input');
+    const actionFilter = document.getElementById('action-filter');
+    const perPageSelect = document.getElementById('perPageSelect');
+
+    searchInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => fetchLogs(1), 500);
+    });
+
+    actionFilter.addEventListener('change', () => fetchLogs(1));
+    perPageSelect.addEventListener('change', () => fetchLogs(1));
+
+    flatpickr("#date-range", {
+      mode: "range", dateFormat: "Y-m-d",
+      onChange: selectedDates => { if (selectedDates.length === 2) fetchLogs(1); }
+    });
+
+    fetchLogs(1);
+  });
 </script>
 {% endblock %}

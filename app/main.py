@@ -27,10 +27,15 @@ from app.middleware.session_restore import RestoreSessionMiddleware
 from app.core.config_initializer import seed_config
 from app.core.logging_config import setup_logging
 from app.db.database import Base, engine, SessionLocal
+
+# Import all models to register them with Base.metadata
+# This MUST happen before Base.metadata.create_all() is called
+import app.models  # noqa: F401 - imports all models via __init__.py
 from app.routes import (
     admin, auth, audit, cameras, config, dev_docs, docs, health, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
-    user_management, videos, whitelist, group_recipients, email_logs, wa_webhook
+    user_management, videos, whitelist, group_recipients, email_logs, wa_webhook,
+    notifications, toast_demo
 )
 from app.routes import insights
 from app.ws.routes import notification_listener, router as ws_router
@@ -85,9 +90,15 @@ async def lifespan(app: FastAPI):
         logger.info("Alembic schema version stamped to head.")
     else:
         logger.info("Tables already exist, running Alembic upgrade...")
-        alembic_cfg = Config("alembic.ini")
-        command.upgrade(alembic_cfg, "head")
-        logger.info("Alembic migrations applied.")
+        try:
+            alembic_cfg = Config("alembic.ini")
+            command.upgrade(alembic_cfg, "head")
+            logger.info("Alembic migrations applied.")
+        except Exception as e:
+            logger.error(f"Alembic migration failed: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            raise
 
     db = SessionLocal()
     try:
@@ -195,6 +206,9 @@ app.include_router(group_recipients.router)
 app.include_router(email_logs.router)
 app.include_router(wa_webhook.router)
 app.include_router(insights.router)
+app.include_router(notifications.router)
+# Demo routes - remove in production
+app.include_router(toast_demo.router)
 
 # ====================================================================
 # 7. CORE APP ROUTES & HANDLERS

@@ -14,6 +14,7 @@ from app.utils.template_helper import templates
 from app.core.logging_config import set_debug_mode
 from app.utils.audit_logger import log_audit
 from app.utils.auth import verify_password
+from app.utils.notification_service import NotificationService
 from io import BytesIO
 
 router = APIRouter(tags=["Config"])
@@ -225,6 +226,15 @@ async def config_save(
     db.commit()
 
     set_debug_mode(debug_mode)
+    
+    # Toast notification
+    await NotificationService.success(
+        message="Configuration saved successfully",
+        title="Settings Saved",
+        actions=[
+            {"label": "View Config", "url": "/config"}
+        ]
+    )
 
     return JSONResponse(status_code=200, content={"message": "Configuration saved successfully."})
 
