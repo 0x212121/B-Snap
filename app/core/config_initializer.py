@@ -28,7 +28,12 @@ DEFAULT_CONFIG = {
     "smtp_user": "",
     "smtp_pass": "",
     "email_from": "",
-    "email_cc": ""
+    "email_cc": "",
+    # GoWA (WhatsApp Gateway) defaults
+    "gowa_enabled": "0",
+    "gowa_base_url": "http://localhost:3000",
+    "gowa_api_key": "",
+    "gowa_default_receiver": ""
 }
 
 def seed_config(db: Session):

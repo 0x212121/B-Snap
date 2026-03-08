@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – Config{% endblock %}
-{% from "_icons.html" import icon_config, icon_globe, icon_camera, icon_bug, icon_paint, icon_folder, icon_download, icon_trash, icon_play, icon_database, icon_email %}
+{% from "_icons.html" import icon_config, icon_globe, icon_camera, icon_bug, icon_paint, icon_folder, icon_download, icon_trash, icon_play, icon_database, icon_email, icon_whatsapp %}
 
 {% block content %}
 <div class="container mx-auto p-4 text-gray-900 dark:text-gray-100 rounded-lg shadow">
@@ -249,6 +249,109 @@
     </div>
   </div>
 
+  <!-- WhatsApp Gateway Configuration -->
+  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_whatsapp("w-8 h-8 text-green-600 inline") }} WhatsApp Gateway (GoWA)</h2>
+    
+    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 mb-6">
+      <div>
+        <label for="gowa_enabled" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Enable WhatsApp Notifications
+        </label>
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          Send alerts and status reports via WhatsApp using GoWA gateway
+        </p>
+      </div>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" id="gowa_enabled" name="gowa_enabled"
+        value="1"
+        {% if configs.get('gowa_enabled') == '1' %}checked{% endif %}
+        class="sr-only peer">
+        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300
+        dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600
+        peer-checked:after:translate-x-full peer-checked:after:border-white
+        after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+        after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5
+        after:transition-all dark:border-gray-500 peer-checked:bg-green-600"></div>
+      </label>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="gowa-config-section" style="{% if configs.get('gowa_enabled') != '1' %}display: none;{% endif %}">
+      <div>
+        <label for="gowa_base_url" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">GoWA Base URL</label>
+        <input type="url" id="gowa_base_url" name="gowa_base_url" value="{{ configs.get('gowa_base_url', 'http://localhost:3000') }}" 
+          placeholder="http://localhost:3000"
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">GoWA API endpoint (e.g., http://localhost:3000)</p>
+      </div>
+      <div>
+        <label for="gowa_api_key" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">API Key (Optional)</label>
+        <input type="password" id="gowa_api_key" name="gowa_api_key" value="{{ configs.get('gowa_api_key', '') }}" 
+          placeholder="Leave empty if no auth"
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          Only needed if GoWA runs with <code>-e AUTH_TOKEN=your_token</code>. 
+          <a href="#" onclick="document.getElementById('gowa-setup-help').classList.toggle('hidden'); return false;" class="text-blue-600 hover:underline">How to setup?</a>
+        </p>
+      </div>
+      <div>
+        <label for="gowa_default_receiver" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Default Receiver(s)</label>
+        <input type="text" id="gowa_default_receiver" name="gowa_default_receiver" value="{{ configs.get('gowa_default_receiver', '') }}" 
+          placeholder="6281234567890, 6289876543210"
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Phone number(s) for reports, comma separated (e.g., 6281234567890)</p>
+      </div>
+      <div class="flex items-end">
+        <button type="button" id="testWaBtn" 
+          class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Test Connection
+        </button>
+      </div>
+    </div>
+    
+    <!-- GoWA Setup Help -->
+    <div id="gowa-setup-help" class="hidden mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm">
+      <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">🚀 GoWA Setup Guide</h4>
+      
+      <div class="space-y-3 text-blue-700 dark:text-blue-300">
+        <div>
+          <p class="font-medium">1. Run GoWA with Docker:</p>
+          <code class="block bg-blue-100 dark:bg-blue-800 p-2 rounded mt-1 text-xs">
+            docker run -d --name gowa -p 3000:3000 aldinokemal/go-whatsapp-web-multidevice
+          </code>
+          <p class="mt-1 text-xs">Or with authentication (optional):</p>
+          <code class="block bg-blue-100 dark:bg-blue-800 p-2 rounded mt-1 text-xs">
+            docker run -d --name gowa -p 3000:3000 -e AUTH_TOKEN=your_secret_key aldinokemal/go-whatsapp-web-multidevice
+          </code>
+        </div>
+        
+        <div>
+          <p class="font-medium">2. Scan QR Code:</p>
+          <p class="text-xs">Open <code>http://your-server:3000</code> and scan QR code with WhatsApp</p>
+        </div>
+        
+        <div>
+          <p class="font-medium">3. Configure Webhook (Optional - for Bot):</p>
+          <p class="text-xs">Set webhook URL to: <code>{{ request.base_url }}webhook/gowa</code></p>
+        </div>
+        
+        <div>
+          <p class="font-medium">4. Save Configuration:</p>
+          <p class="text-xs">Enter GoWA URL above, click Test Connection, then Save</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+      <p class="text-sm text-green-800 dark:text-green-200">
+        <span class="font-medium">💡 Info:</span> Daily camera reports are sent at 08:00 AM. 
+        Storage alerts are sent every 2 hours when critical.
+        <a href="https://github.com/aldinokemal/go-whatsapp-web-multidevice" target="_blank" class="underline hover:text-green-600">GoWA Documentation →</a>
+      </p>
+    </div>
+  </div>
+
   <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
     <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_paint("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Appearance</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -423,6 +526,75 @@
       }
     });
 
+    // WhatsApp Gateway Toggle
+    const gowaEnabled = document.getElementById('gowa_enabled');
+    const gowaConfigSection = document.getElementById('gowa-config-section');
+    
+    if (gowaEnabled && gowaConfigSection) {
+      gowaEnabled.addEventListener('change', function() {
+        gowaConfigSection.style.display = this.checked ? 'grid' : 'none';
+      });
+    }
+    
+    // Test WA Connection
+    const testWaBtn = document.getElementById('testWaBtn');
+    if (testWaBtn) {
+      testWaBtn.addEventListener('click', async function() {
+        const baseUrl = document.getElementById('gowa_base_url')?.value || '';
+        if (!baseUrl) {
+          showToast('❌ Please enter GoWA Base URL first', 'error');
+          return;
+        }
+        
+        testWaBtn.disabled = true;
+        const originalText = testWaBtn.innerHTML;
+        testWaBtn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Testing...`;
+        
+        try {
+          const response = await fetch('/api/wa/status');
+          const contentType = response.headers.get('content-type') || '';
+          
+          // Check if response is JSON
+          if (!contentType.includes('application/json')) {
+            const text = await response.text();
+            // Check common error patterns
+            if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+              showToast('❌ GoWA returned HTML instead of JSON. Is GoWA running?', 'error');
+              console.error('GoWA Error: Received HTML response', text.substring(0, 200));
+            } else {
+              showToast('❌ Invalid response from GoWA', 'error');
+            }
+            return;
+          }
+          
+          const result = await response.json();
+          
+          if (response.ok && result.status === 'success') {
+            const data = result.data || {};
+            const connected = data.connected ? '✅ Connected' : '❌ Not Connected';
+            const loggedIn = data.logged_in ? '✅ Logged In' : '❌ Not Logged In';
+            showToast(`${connected} | ${loggedIn}`, 'success');
+          } else {
+            const msg = result.message || result.error || 'Failed to connect to GoWA';
+            showToast(`❌ ${msg}`, 'error');
+            if (result.error && result.error.includes('Connection refused')) {
+              showToast('💡 Make sure GoWA is running and URL is correct', 'error');
+            }
+          }
+        } catch (error) {
+          if (error.message.includes('Unexpected token') || error.message.includes('is not valid JSON')) {
+            showToast('❌ GoWA not responding. Check: 1) Is GoWA running? 2) Is URL correct?', 'error');
+            console.error('GoWA JSON Parse Error:', error);
+          } else {
+            showToast(`❌ Error: ${error.message}`, 'error');
+          }
+        } finally {
+          testWaBtn.disabled = false;
+          testWaBtn.innerHTML = originalText;
+        }
+      });
+    }
+    
     // Run Cleanup Now button handler
     const runCleanupBtn = document.getElementById('runCleanupBtn');
     const cleanupResult = document.getElementById('cleanupResult');

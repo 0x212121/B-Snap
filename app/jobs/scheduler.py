@@ -13,6 +13,7 @@ from app.utils.email_notifier import send_recovery_alert, send_tamper_alert, sen
 from app.utils.snapshot_locker import get_camera_lock
 from app.utils.snapshot_service import take_snapshot
 from app.utils.healthcheck import ping_all_devices
+from app.utils.wa_gateway import WAGatewayService, format_phone_number
 from app.core.config import get_config
 from app.models.audit_log import AuditLog
 from app.models.camera_daily_stats import CameraDailyStats
@@ -305,6 +306,28 @@ def start_scheduler():
         check_storage_job,
         IntervalTrigger(hours=1),
         id='storage_check',
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=300
+    )
+    
+    # WhatsApp daily report - cameras without snapshot
+    scheduler.add_job(
+        send_wa_camera_no_snapshot_report,
+        trigger='cron',
+        hour=8,
+        minute=0,
+        id='wa_daily_report',
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=300
+    )
+    
+    # WhatsApp storage alert check - every 2 hours
+    scheduler.add_job(
+        send_wa_storage_alert,
+        trigger=IntervalTrigger(hours=2),
+        id='wa_storage_alert',
         max_instances=1,
         coalesce=True,
         misfire_grace_time=300
@@ -604,5 +627,166 @@ def cleanup_email_retry_queue():
     except Exception as e:
         db.rollback()
         logger.error("[CLEANUP ERROR] Failed to cleanup email retry queue: %s", e, exc_info=True)
+    finally:
+        db.close()
+
+
+# ----------------------------
+# WhatsApp Report Jobs
+# ----------------------------
+def send_wa_camera_no_snapshot_report():
+    """
+    Send WhatsApp report for cameras without recent snapshots.
+    Runs daily to notify about camera issues.
+    """
+    db: Session = SessionLocal()
+    try:
+        wa_service = WAGatewayService(db)
+        
+        # Check if WA is configured
+        if not wa_service.config.is_configured():
+            logger.debug("[WA Report] GoWA not configured, skipping")
+            return
+        
+        # Get default receiver
+        receiver = wa_service.config.default_receiver
+        if not receiver:
+            logger.warning("[WA Report] No default receiver configured")
+            return
+        
+        # Find cameras without snapshots in last 24 hours
+        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+        
+        # Get all active cameras
+        cameras = db.query(Camera).filter(Camera.is_active == True).all()
+        
+        no_snapshot_cameras = []
+        for cam in cameras:
+            # Check if camera has snapshot in last 24h
+            recent_snapshot = (
+                db.query(SnapshotLog)
+                .filter(SnapshotLog.camera_id == cam.id)
+                .filter(SnapshotLog.created_at >= yesterday)
+                .first()
+            )
+            if not recent_snapshot:
+                no_snapshot_cameras.append(cam)
+        
+        # Get unhealthy cameras
+        unhealthy = (
+            db.query(CameraHealth)
+            .options(joinedload(CameraHealth.camera))
+            .filter(CameraHealth.status != "healthy")
+            .all()
+        )
+        
+        if not no_snapshot_cameras and not unhealthy:
+            logger.info("[WA Report] All cameras healthy, no report needed")
+            return
+        
+        # Build message
+        lines = ["📊 *B-SNAP Daily Camera Status Report*\n"]
+        lines.append(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
+        
+        if no_snapshot_cameras:
+            lines.append(f"⚠️ *Cameras without snapshots (24h):* {len(no_snapshot_cameras)}")
+            for cam in no_snapshot_cameras[:10]:  # Limit to 10
+                lines.append(f"• {cam.name} ({cam.ip})")
+            if len(no_snapshot_cameras) > 10:
+                lines.append(f"_...and {len(no_snapshot_cameras) - 10} more_")
+            lines.append("")
+        
+        if unhealthy:
+            lines.append(f"🔴 *Unhealthy cameras:* {len(unhealthy)}")
+            for h in unhealthy[:10]:
+                cam_name = h.camera.name if h.camera else "Unknown"
+                lines.append(f"• {cam_name}: {h.status}")
+            if len(unhealthy) > 10:
+                lines.append(f"_...and {len(unhealthy) - 10} more_")
+            lines.append("")
+        
+        lines.append("\n_Reply with 'help' for available commands_")
+        
+        message = "\n".join(lines)
+        
+        # Send to all configured receivers (comma separated)
+        receivers = [r.strip() for r in receiver.split(",") if r.strip()]
+        for phone in receivers:
+            phone = format_phone_number(phone)
+            result = wa_service.send_text(phone, message)
+            if result["success"]:
+                logger.info(f"[WA Report] Sent to {phone}")
+            else:
+                logger.error(f"[WA Report] Failed to send to {phone}: {result.get('error')}")
+                
+    except Exception as e:
+        logger.error(f"[WA Report] Error: {e}", exc_info=True)
+    finally:
+        db.close()
+
+
+def send_wa_storage_alert():
+    """
+    Send WhatsApp alert when storage is critical.
+    Complements email storage alerts.
+    """
+    from app.utils.storage_monitor import get_disk_usage, check_storage_thresholds, StorageAlert
+    from app.models.storage_metric import StorageMetric
+    
+    db: Session = SessionLocal()
+    try:
+        wa_service = WAGatewayService(db)
+        
+        if not wa_service.config.is_configured():
+            return
+        
+        receiver = wa_service.config.default_receiver
+        if not receiver:
+            return
+        
+        # Get current usage
+        total, used, free, percent = get_disk_usage("/")
+        free_gb = free / (1024**3)
+        
+        # Check thresholds
+        alert_level, alert_msg = check_storage_thresholds(percent, free_gb, db)
+        
+        # Only send for warning or critical
+        if alert_level not in ["warning", "critical"]:
+            return
+        
+        # Check if already alerted recently (prevent spam)
+        recent_alert = (
+            db.query(StorageAlert)
+            .filter(StorageAlert.level == alert_level)
+            .filter(StorageAlert.resolved_at.is_(None))
+            .first()
+        )
+        
+        if not recent_alert:
+            return
+        
+        emoji = "🔴" if alert_level == "critical" else "🟡"
+        message = f"""{emoji} *B-SNAP Storage Alert*
+
+{alert_msg}
+
+💾 Disk Usage: {percent:.1f}%
+🆓 Free Space: {free_gb:.1f} GB
+
+_Please clean up old snapshots or expand storage._
+"""
+        
+        receivers = [r.strip() for r in receiver.split(",") if r.strip()]
+        for phone in receivers:
+            phone = format_phone_number(phone)
+            result = wa_service.send_text(phone, message)
+            if result["success"]:
+                logger.info(f"[WA Storage Alert] Sent to {phone}")
+            else:
+                logger.error(f"[WA Storage Alert] Failed to send to {phone}")
+                
+    except Exception as e:
+        logger.error(f"[WA Storage Alert] Error: {e}", exc_info=True)
     finally:
         db.close()

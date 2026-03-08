@@ -39,6 +39,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Prevents accidental sends
   - **Better Visual Hierarchy**: Clearer section separation with consistent styling
 
+- **WhatsApp Gateway Integration** - GoWA (Aldinokemal) support for notifications and bot:
+  - **Configuration** (`/config`):
+    - Enable/disable WA notifications
+    - GoWA base URL (e.g., `http://localhost:3000`)
+    - **API Key (Optional)**: Only if GoWA runs with `-e AUTH_TOKEN=xxx`
+    - Default receiver phone number(s), comma separated
+    - Test connection button
+    - Built-in setup guide
+  - **Scheduled Reports**:
+    - Daily camera status report (08:00 AM) - cameras without snapshots
+    - Storage alerts every 2 hours when critical
+  - **WhatsApp Bot** (`/webhook/gowa`):
+    - Commands: `help`, `status`, `cameras`, `health`, `snapshot`, `report`
+    - Real-time system status via chat
+    - Camera health check via WA
+    - Daily report summary
+  - **Services** (`app/utils/wa_gateway.py`):
+    - `WAGatewayService` - Send text, image, document
+    - `WABotHandler` - Command parsing and response
+    - Phone number formatting helper
+
 ### Fixed
 - **Email Sent Counter Bug** - Fixed email statistics counting failed emails as sent:
   - Updated `_total_count()` and `_daily_counts()` helpers to support `success_only` filter
