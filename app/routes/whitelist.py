@@ -1,7 +1,7 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import JSONResponse
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from sqlalchemy.orm import Session, joinedload
 from datetime import datetime, timezone
 
@@ -21,7 +21,7 @@ logger = logging.getLogger("management")
 
 
 # ============================================================
-# GET WHITELIST with pagination + search + group info
+# GET WHITELIST with pagination + search + group info + stats
 # ============================================================
 @router.get("/api/whitelist")
 def get_whitelist(
@@ -64,12 +64,28 @@ def get_whitelist(
             "added_at": e.added_at or datetime.now(timezone.utc),
         })
 
+    # Calculate stats
+    total_entries = db.query(WhatsappWhitelist).count()
+    active_count = db.query(WhatsappWhitelist).filter(WhatsappWhitelist.is_active == True).count()
+    inactive_count = total_entries - active_count
+    
+    # Role distribution
+    admin_count = db.query(WhatsappWhitelist).filter(WhatsappWhitelist.role == RoleEnum.admin).count()
+    user_count = db.query(WhatsappWhitelist).filter(WhatsappWhitelist.role == RoleEnum.user).count()
+
     return {
         "data": results,
         "total": total,
         "page": page,
         "limit": limit,
         "total_pages": (total + limit - 1) // limit,
+        "stats": {
+            "total": total_entries,
+            "active": active_count,
+            "inactive": inactive_count,
+            "admins": admin_count,
+            "users": user_count,
+        }
     }
 
 
