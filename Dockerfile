@@ -5,12 +5,14 @@ LABEL org.opencontainers.image.version="1.8.2"
 LABEL org.opencontainers.image.authors="Indra W. <wijaya.indra2196@gmail.com>"
 LABEL org.opencontainers.image.source="https://github.com/0x212121/b-snap"
 
-# Install ffmpeg + Liberation Sans font
+# Install ffmpeg + Liberation Sans font + curl for healthcheck + dos2unix for line endings
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ffmpeg \
         fonts-liberation \
         fontconfig \
+        curl \
+        dos2unix \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -24,11 +26,12 @@ RUN pip install reportlab
 # Test ffmpeg install
 RUN ffprobe -version
 
-COPY . /
+COPY . /app
 
-# After COPY . /app
-# COPY start.sh /app/start.sh
-RUN chmod +x /app/start.sh
+# Convert Windows line endings to Unix (CRLF to LF) and ensure executable permissions
+RUN dos2unix /app/start.sh && \
+    chmod +x /app/start.sh && \
+    dos2unix /app/gunicorn.conf.py 2>/dev/null || true
 
 EXPOSE 8080
 

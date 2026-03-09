@@ -46,8 +46,13 @@ from app.ws.manager import websocket_connections
 from functools import lru_cache
 from alembic.config import Config
 from alembic import command
+from pathlib import Path
 
 from app.utils.template_helper import templates
+
+# Get project root for alembic config
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+ALEMBIC_INI_PATH = os.getenv("ALEMBIC_INI_PATH", str(PROJECT_ROOT / "alembic.ini"))
 
 # ====================================================================
 # 2. INITIAL SETUP & CONFIGURATION
@@ -78,47 +83,75 @@ templates.env.globals["version"] = __version__
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Lifespan startup: Initializing database...")
-    inspector = inspect(engine)
-    tables = inspector.get_table_names()
+    
+    # Wait a bit for database to be fully ready in containerized environments
+    max_retries = 5
+    retry_delay = 2
+    
+    for attempt in range(max_retries):
+        try:
+            inspector = inspect(engine)
+            tables = inspector.get_table_names()
+            logger.info(f"Database connected. Found tables: {tables}")
+            break
+        except Exception as e:
+            logger.warning(f"Database not ready (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                await asyncio.sleep(retry_delay)
+            else:
+                logger.error("Database connection failed after all retries")
+                raise
 
     if not tables:
         logger.info("No tables found, creating all from Base metadata...")
         Base.metadata.create_all(bind=engine)
 
-        alembic_cfg = Config("alembic.ini")
+        alembic_cfg = Config(ALEMBIC_INI_PATH)
         command.stamp(alembic_cfg, "head")
         logger.info("Alembic schema version stamped to head.")
     else:
         logger.info("Tables already exist, running Alembic upgrade...")
         try:
-            alembic_cfg = Config("alembic.ini")
+            alembic_cfg = Config(ALEMBIC_INI_PATH)
             command.upgrade(alembic_cfg, "head")
             logger.info("Alembic migrations applied.")
         except Exception as e:
             logger.error(f"Alembic migration failed: {e}")
             import traceback
             logger.error(traceback.format_exc())
-            raise
+            # Don't raise - allow app to start even if migration fails
+            # This prevents worker boot failure due to migration issues
 
     db = SessionLocal()
     try:
         seed_config(db)
         logger.info("Database seeded with initial configuration.")
+    except Exception as e:
+        logger.error(f"Database seeding failed: {e}")
+        # Don't raise - allow app to start
     finally:
         db.close()
 
     # Start WS notification listener
-    task = asyncio.create_task(notification_listener(websocket_connections))
-    app.state.notification_listener_task = task
+    try:
+        task = asyncio.create_task(notification_listener(websocket_connections))
+        app.state.notification_listener_task = task
+        logger.info("WebSocket notification listener started.")
+    except Exception as e:
+        logger.error(f"Failed to start notification listener: {e}")
+        # Create a dummy task so the finally block doesn't fail
+        app.state.notification_listener_task = None
 
     try:
+        logger.info("Application startup complete.")
         yield
     finally:
-        app.state.notification_listener_task.cancel()
-        try:
-            await app.state.notification_listener_task
-        except asyncio.CancelledError:
-            logger.info("Notification listener task successfully cancelled.")
+        if app.state.notification_listener_task:
+            app.state.notification_listener_task.cancel()
+            try:
+                await app.state.notification_listener_task
+            except asyncio.CancelledError:
+                logger.info("Notification listener task successfully cancelled.")
 
 # ====================================================================
 # 4. FASTAPI APP INSTANCE & MIDDLEWARE

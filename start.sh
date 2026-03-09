@@ -63,22 +63,23 @@ wait_for_db() {
     if [[ -n "${DATABASE_URL:-}" ]]; then
         log_info "Waiting for database..."
         
-        # Extract host from DATABASE_URL (basic parsing)
         local max_attempts=30
         local attempt=1
         
         while [ $attempt -le $max_attempts ]; do
-            if python3 -c "
+            if python3 << EOF 2>/dev/null
 import sys
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 try:
-    engine = create_engine('$DATABASE_URL')
+    engine = create_engine('$DATABASE_URL', connect_args={'connect_timeout': 5})
     with engine.connect() as conn:
-        conn.execute('SELECT 1')
+        conn.execute(text('SELECT 1'))
+        conn.commit()
     sys.exit(0)
 except Exception as e:
     sys.exit(1)
-" 2>/dev/null; then
+EOF
+            then
                 log_success "Database is ready"
                 return 0
             fi
@@ -151,6 +152,11 @@ check_environment() {
     # Check database URL
     if [[ -z "${DATABASE_URL:-}" ]]; then
         log_warning "DATABASE_URL not set, using SQLite"
+    else
+        # Show masked DATABASE_URL for debugging
+        local masked_url
+        masked_url=$(echo "$DATABASE_URL" | sed -E 's/(:\/\/[^:]+:)[^@]+(@)/\1***\2/')
+        log_info "DATABASE_URL: $masked_url"
     fi
     
     log_success "Environment check passed"
@@ -196,7 +202,7 @@ start_scheduler() {
 start_notifier() {
     log_info "Starting ${APP_NAME} notifier..."
     cd "${APP_DIR}"
-    exec python3 -m ws.notifier
+    exec python3 -m app.ws.notifier
 }
 
 # Print usage

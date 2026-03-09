@@ -1,0 +1,25 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Force shell scripts to use LF line endings
+*.sh text eol=lf
+
+# Force Python files to use LF line endings
+*.py text eol=lf
+
+# Force config files to use LF line endings
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.ini text eol=lf
+*.toml text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.tar binary
+*.gz binary
