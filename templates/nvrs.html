@@ -149,32 +149,7 @@
   </div>
 </div>
 
-<!-- Notifikasi -->
-<div id="notification-container" class="fixed top-5 right-5 z-[100] w-full max-w-sm"></div>
-
-<!-- 
-IMPORTANT: Make sure to include the Preline UI script in your base.html 
-template for the password toggle to work.
-<script src="./path/to/preline.js"></script> 
-or from CDN:
-<script src="https://cdn.jsdelivr.net/npm/preline@2.3.0/dist/preline.min.js"></script>
--->
 <script>
-  function showNotification({ status, message }) {
-    const container = document.getElementById('notification-container');
-    const notif = document.createElement('div');
-    const statusClass = status === 'success' ? 'bg-green-500' : 'bg-red-500';
-    const icon = status === 'success' ? '✅' : '❌';
-    notif.className = `flex items-center p-4 mb-4 rounded-lg shadow-lg text-white transform transition-all duration-300 ease-in-out opacity-0 translate-y-[-20px] ${statusClass}`;
-    notif.innerHTML = `<span class="mr-3 text-lg">${icon}</span> <span class="font-medium">${message}</span>`;
-    container.appendChild(notif);
-    requestAnimationFrame(() => notif.classList.remove('opacity-0', 'translate-y-[-20px]'));
-    setTimeout(() => {
-      notif.classList.add('opacity-0');
-      notif.addEventListener('transitionend', () => notif.remove());
-    }, 3500);
-  }
-  
   document.addEventListener('DOMContentLoaded', function() {
     
     let cameraGroups = [];
@@ -193,14 +168,15 @@ or from CDN:
           body: body
         });
         const data = await response.json();
-        showNotification({
-          status: response.ok ? 'success' : 'error',
-          message: data.detail || data.message || 'An error occurred.'
-        });
+        if (response.ok) {
+          Toast.success(data.detail || data.message || 'Operation successful.', { title: 'Success' });
+        } else {
+          Toast.error(data.detail || data.message || 'An error occurred.', { title: 'Error' });
+        }
         return { ok: response.ok, data: data };
       } catch (error) {
         console.error('API POST Error:', error);
-        showNotification({ status: 'error', message: 'Network or server error.' });
+        Toast.error('Network or server error.', { title: 'Error' });
         return { ok: false, data: null };
       }
     }
@@ -242,7 +218,7 @@ or from CDN:
         
       } catch (err) {
         console.error("Failed to load page:", err);
-        showNotification({ status: 'error', message: 'Failed to load NVR data.' });
+        Toast.error('Failed to load NVR data.', { title: 'Error' });
       } finally {
         tbody.style.opacity = "1";
       }
@@ -368,7 +344,7 @@ or from CDN:
         
       } catch(error) {
         console.error('Error fetching NVR for edit:', error);
-        showNotification({ status: 'error', message: 'Failed to load NVR data.' });
+        Toast.error('Failed to load NVR data.', { title: 'Error' });
       }
     };
     
@@ -414,15 +390,14 @@ or from CDN:
     const warningMessage = urlParams.get('upload_warning');
 
     if (successMessage) {
-      showNotification({ status: 'success', message: successMessage });
+        Toast.success(successMessage, { title: 'Success' });
       // Hapus parameter dari URL agar notifikasi tidak muncul lagi saat refresh
       window.history.replaceState({}, document.title, "/nvrs");
     } else if (errorMessage) {
-      showNotification({ status: 'error', message: errorMessage });
+        Toast.error(errorMessage, { title: 'Error' });
       window.history.replaceState({}, document.title, "/nvrs");
     } else if (warningMessage) {
-      // Anda bisa membuat status 'warning' jika mau, atau gunakan 'error'
-      showNotification({ status: 'error', message: warningMessage });
+        Toast.error(warningMessage, { title: 'Warning' });
       window.history.replaceState({}, document.title, "/nvrs");
     }
   }
@@ -444,14 +419,18 @@ or from CDN:
       fetch(deleteUrl, { method: 'POST' })
       .then(res => res.json())
       .then(data => {
-        showNotification({ status: data.status, message: data.message });
+        if (data.status === 'success') {
+          Toast.success(data.message, { title: 'Success' });
+        } else {
+          Toast.error(data.message, { title: 'Error' });
+        }
         if (data.status === 'success') {
           const currentPage = new URLSearchParams(window.location.search).get('page') || 1;
           loadPage(currentPage);
         }
       })
       .catch(err => {
-        showNotification({ status: 'error', message: 'Failed to delete item.' });
+        Toast.error('Failed to delete item.', { title: 'Error' });
       });
     }, {
       title: `⚠️ Delete ${itemType}`,

@@ -1,10 +1,16 @@
-from fastapi import APIRouter, Depends, Request
+from typing import Optional
+from fastapi import APIRouter, Depends, Request, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.user import User
 from app.routes.auth import admin_access_required
-from app.utils.changelog_parser import parse_changelog_md
+from app.utils.changelog_parser import (
+    parse_changelog_md, 
+    search_changelog, 
+    paginate_changelog,
+    get_changelog_stats
+)
 from app.utils.template_helper import templates
 
 router = APIRouter(tags=["Admin"])
@@ -24,15 +30,47 @@ async def whitelist_admin_page(
 
 
 @router.get("/api/changelog")
-async def changelog_api():
-    data = parse_changelog_md()
-    return JSONResponse(content=data)
+async def changelog_api(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(5, ge=1, le=20),
+    search: Optional[str] = Query(None),
+):
+    """Get changelog with pagination and search."""
+    changelog = parse_changelog_md()
+    
+    # Apply search filter
+    if search:
+        changelog = search_changelog(changelog, search)
+    
+    # Get stats before pagination
+    stats = get_changelog_stats(changelog)
+    
+    # Paginate
+    paginated, current_page, total_pages = paginate_changelog(changelog, page, per_page)
+    
+    return JSONResponse({
+        "versions": paginated,
+        "stats": stats,
+        "pagination": {
+            "page": current_page,
+            "per_page": per_page,
+            "total_pages": total_pages,
+            "total_items": len(changelog),
+        }
+    })
 
 
 @router.get("/changelog", response_class=HTMLResponse)
-async def changelog_html(request: Request):
-    changelog_data = parse_changelog_md()
+async def changelog_html(
+    request: Request,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(5, ge=1, le=20),
+    search: Optional[str] = Query(None),
+):
+    """Render changelog page with pagination support."""
     return templates.TemplateResponse("changelog.html", {
         "request": request,
-        "changelog": changelog_data
+        "page": page,
+        "per_page": per_page,
+        "search": search or "",
     })

@@ -6,6 +6,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- **UI/UX Redesign** - Modernized admin interfaces with consistent design language:
+  - **Audit Logs Page** (`/audit-logs`):
+    - **5 Stats Cards**: Total Logs, Today's Logs, Unique Users, Top Action, with color-coded icons
+    - **Advanced Filtering**: Search by user/target, action type dropdown, date range picker
+    - **Quick Date Buttons**: Today, Yesterday, Last 7 Days
+    - **Active Filter Tags**: Visual indicators with remove buttons
+    - **Modern Table Design**: Alternating rows, hover effects, avatar initials
+    - **Action Badges**: Color-coded with icons (create, update, delete, login, logout)
+    - **Enhanced Pagination**: Icon-based navigation (First, Prev, Next, Last)
+    - **JSON Syntax Highlighting**: In detail modal with copy button
+    - **Export to CSV**: Download filtered or all logs
+  
+  - **WhatsApp Whitelist Page** (`/admin/whitelist`):
+    - **5 Stats Cards**: Total, Active, Inactive, Admins, Users
+    - **Modern Table**: Avatar initials, role badges with icons, toggle switches for status
+    - **Modal-based Forms**: Add/Edit entries in styled modals with backdrop blur
+    - **Improved UX**: Real-time search, toast notifications, reset filters
+  
+  - **Email Logs Page** (`/email-logs`):
+    - **5 Stats Cards**: Total Emails, Success, Failed, Success Rate, Today
+    - **Export Functionality**: Export Filtered or Export All to CSV
+    - **Advanced Filtering**: Camera search, status filter, reason filter, date range
+    - **Visual Badges**: Status badges with icons, reason badges with emoji
+    - **Error Details Modal**: Click to view full error messages
+
+### Fixed
+- **Snapshot Gallery 500 Errors** - Fixed UUID string conversion bug:
+  - `Snapshot.id` is UUID (string) but was being converted to `int` causing errors
+  - Fixed in `app/routes/snap_gallery.py` and `app/utils/snapshot_service.py`
+  - Capture snapshot and delete snapshot now work correctly
+
+- **Toast Notification Integration** - Replaced old notification system:
+  - **Snapshot Gallery**: Uses `Toast.success()` and `Toast.error()` from `/static/js/toast.js`
+  - Fixed JavaScript scope issues - functions now global for HTML onclick handlers
+
+### Changed
+- **Audit Logs Pagination** - Fixed pagination click handlers:
+  - Moved `fetchLogs` to global scope for HTML onclick access
+  - Pagination now fully functional
+
 - **Toast Notification System** - Real-time user feedback with WebSocket:
   - **4 Notification Types**: Success (✅), Error (❌), Warning (⚠️), Info (ℹ️)
   - **6 Positions**: top-right, top-left, top-center, bottom-right, bottom-left, bottom-center

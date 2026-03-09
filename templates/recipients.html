@@ -161,7 +161,6 @@
 </div>
 </div>
 
-<div id="notification-container" class="fixed top-5 right-5 z-[100] w-full max-w-sm"></div>
 
 <!-- Modal Edit (Compact) -->
 <div id="editModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
@@ -246,15 +245,6 @@
   let pendingSendData = null; // Store form data for confirmed send
   
   /* ================== Utils ================== */
-  function showNotification({ status, message }) {
-    const container = document.getElementById("notification-container");
-    const notif = document.createElement("div");
-    const color = status === "success" ? "bg-green-500" : (status === "info" ? "bg-blue-500" : "bg-red-500");
-    notif.className = `flex items-center p-3 rounded text-white text-sm shadow ${color}`;
-    notif.innerHTML = `<span class='mr-2'>${status === "success" ? "✅" : status === "info" ? "ℹ️" : "❌"}</span> ${message}`;
-    container.appendChild(notif);
-    setTimeout(() => notif.remove(), 3500);
-  }
   
   async function safeJSON(res) {
     const ct = res.headers.get('content-type') || '';
@@ -390,8 +380,7 @@
       console.error("Error loadRecipients:", err);
       if (tbody) tbody.innerHTML =
       `<tr><td colspan="5" class="px-3 py-4 text-center text-red-500 text-xs">Failed to load data.</td></tr>`;
-      if (typeof showNotification === "function")
-      showNotification({ status: "error", message: "Failed to load recipients." });
+      Toast.error("Failed to load recipients.", { title: 'Error' });
     } finally {
       if (tbody) tbody.style.opacity = "1";
     }
@@ -510,18 +499,18 @@
       const resp = await fetch("/recipients/add", { method: "POST", body: formData });
       const data = await safeJSON(resp);
       if (data.status === "success") {
-        showNotification({ status: "success", message: data.message || "Recipient added" });
+        Toast.success(data.message || "Recipient added", { title: 'Success' });
         e.target.reset();
         document.getElementById("locations").innerHTML = "";
         syncLocationsHeight();
         currentPage = 1;
         await loadRecipients(1);
       } else {
-        showNotification({ status: "error", message: data.message || "Failed to add recipient" });
+        Toast.error(data.message || "Failed to add recipient", { title: 'Error' });
       }
     } catch (err) {
       console.error(err);
-      showNotification({ status: "error", message: "Server error while adding recipient" });
+      Toast.error("Server error while adding recipient", { title: 'Error' });
     }
   });
   
@@ -545,15 +534,15 @@
       const resp = await fetch(`/recipients/edit/${id}`, { method: "POST", body: formData });
       const data = await safeJSON(resp);
       if (data.status === "success") {
-        showNotification({ status: "success", message: data.message || "Recipient updated" });
+        Toast.success(data.message || "Recipient updated", { title: 'Success' });
         closeEditModal();
         await loadRecipients(currentPage);
       } else {
-        showNotification({ status: "error", message: data.message || "Failed to update recipient" });
+        Toast.error(data.message || "Failed to update recipient", { title: 'Error' });
       }
     } catch (err) {
       console.error(err);
-      showNotification({ status: "error", message: "Server error while updating recipient" });
+      Toast.error("Server error while updating recipient", { title: 'Error' });
     }
   });
   
@@ -562,16 +551,16 @@
       const resp = await fetch(`/recipients/delete/${id}`, { method: "POST" });
       const data = await safeJSON(resp);
       if (data.status === "success") {
-        showNotification({ status: "success", message: data.message || "Recipient deleted" });
+        Toast.success(data.message || "Recipient deleted", { title: 'Success' });
         const maxIdx = (currentPage - 1) * perPage;
         if (allRecipients.length === 1 && currentPage > 1) currentPage -= 1;
         await loadRecipients(currentPage);
       } else {
-        showNotification({ status: "error", message: data.message || "Failed to delete" });
+        Toast.error(data.message || "Failed to delete", { title: 'Error' });
       }
     } catch (err) {
       console.error(err);
-      showNotification({ status: "error", message: "Server error while deleting recipient" });
+      Toast.error("Server error while deleting recipient", { title: 'Error' });
     }
   }
   function confirmDeleteRecipient(id, email) {
@@ -605,7 +594,7 @@
     const location = testLocationSelect.value;
     
     if (!groupId) {
-      showNotification({ status: "error", message: "Select a group first" });
+      Toast.error("Select a group first", { title: 'Error' });
       return;
     }
     
@@ -639,13 +628,13 @@
       const resp = await fetch("/api/recipients/test-send", { method: "POST", body: formData });
       const data = await safeJSON(resp);
       if (data.status === "success") {
-        showNotification({ status: "success", message: data.message || "Test emails sent" });
+        Toast.success(data.message || "Test emails sent", { title: 'Success' });
       } else {
-        showNotification({ status: "error", message: data.message || "Failed to send test emails" });
+        Toast.error(data.message || "Failed to send test emails", { title: 'Error' });
       }
     } catch (err) {
       console.error("Error test send:", err);
-      showNotification({ status: "error", message: "Server error while sending emails" });
+      Toast.error("Server error while sending emails", { title: 'Error' });
     } finally {
       btnTestSend.disabled = false;
       btnTestSend.innerHTML = old;

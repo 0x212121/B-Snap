@@ -1,7 +1,11 @@
 from typing import Optional
+import io
+import csv
+from datetime import datetime, timedelta
 from fastapi import Request, APIRouter, Depends, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from sqlalchemy.orm import joinedload, Session
+from sqlalchemy import func
 from math import ceil
 import pytz
 
@@ -9,6 +13,8 @@ from app.db.database import get_db
 from app.utils.timezone_helper import get_current_timezone, format_datetime_with_tz
 from app.models.camera_email_notification_log import CameraEmailNotificationLog
 from app.utils.template_helper import templates
+from app.routes.auth import admin_access_required
+from app.models.user import User
 
 router = APIRouter(tags=["Email Logs"])
 
@@ -17,15 +23,39 @@ router = APIRouter(tags=["Email Logs"])
 def view_email_logs(
     request: Request,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required),
+):
+    """Render email logs page with modern UI."""
+    tz_name = get_current_timezone(db)
+    
+    return templates.TemplateResponse(
+        "email_logs.html",
+        {
+            "request": request,
+            "timezone": tz_name,
+        },
+    )
+
+
+@router.get("/api/email-logs", response_class=JSONResponse)
+def get_email_logs_api(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required),
     camera_name: Optional[str] = Query(None),
     success: Optional[str] = Query(None),
+    reason: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
 ):
+    """Get email logs with filtering, pagination and stats."""
     query = db.query(CameraEmailNotificationLog).options(
         joinedload(CameraEmailNotificationLog.recipients)
     )
 
+    # Apply filters
     if camera_name:
         query = query.filter(CameraEmailNotificationLog.camera_name.ilike(f"%{camera_name}%"))
 
@@ -38,9 +68,19 @@ def view_email_logs(
 
     if success_bool is not None:
         query = query.filter(CameraEmailNotificationLog.success == success_bool)
+    
+    if reason:
+        query = query.filter(CameraEmailNotificationLog.reason.ilike(f"%{reason}%"))
+    
+    if start_date:
+        query = query.filter(CameraEmailNotificationLog.sent_at >= start_date)
+    
+    if end_date:
+        end_date_dt = datetime.fromisoformat(end_date) + timedelta(days=1)
+        query = query.filter(CameraEmailNotificationLog.sent_at < end_date_dt)
 
     total = query.count()
-    total_pages = ceil(total / per_page)
+    total_pages = ceil(total / per_page) if total > 0 else 1
 
     logs = (
         query.order_by(CameraEmailNotificationLog.sent_at.desc())
@@ -49,42 +89,161 @@ def view_email_logs(
         .all()
     )
 
-    # === Ambil timezone sekali saja ===
+    # Get timezone
     tz_name = get_current_timezone(db)
     local_tz = pytz.timezone(tz_name)
 
+    # Format logs
+    logs_data = []
     for log in logs:
-        # sent_at
+        # Format sent_at
         if log.sent_at:
             if log.sent_at.tzinfo is None:
                 log.sent_at = pytz.utc.localize(log.sent_at)
-            log.local_sent_at = format_datetime_with_tz(log.sent_at.astimezone(local_tz))
+            local_sent_at = format_datetime_with_tz(log.sent_at.astimezone(local_tz))
         else:
-            log.local_sent_at = "N/A"
+            local_sent_at = "N/A"
 
-        # incident_started_at
+        # Format incident_started_at
         if log.incident_started_at:
             if log.incident_started_at.tzinfo is None:
                 log.incident_started_at = pytz.utc.localize(log.incident_started_at)
-            log.local_incident_started_at = format_datetime_with_tz(
+            local_incident_started_at = format_datetime_with_tz(
                 log.incident_started_at.astimezone(local_tz)
             )
         else:
-            log.local_incident_started_at = "N/A"
+            local_incident_started_at = "N/A"
 
-        # reason (safe fallback)
-        log.safe_reason = log.reason or "-"
+        logs_data.append({
+            "id": log.id,
+            "camera_name": log.camera_name or "-",
+            "incident_started_at": local_incident_started_at,
+            "sent_at": local_sent_at,
+            "recipients": [r.recipient_email for r in log.recipients] if log.recipients else [],
+            "reason": log.reason or "-",
+            "success": log.success,
+            "error_message": log.error_message or None,
+            "type": log.type or "alert",
+        })
 
-    return templates.TemplateResponse(
-        "email_logs.html",
-        {
-            "request": request,
-            "logs": logs,
-            "camera_name": camera_name,
-            "success": success,
-            "page": page,
-            "per_page": per_page,
-            "total": total,
-            "total_pages": total_pages,
-        },
+    # Calculate stats
+    total_all = db.query(CameraEmailNotificationLog).count()
+    success_count = db.query(CameraEmailNotificationLog).filter(
+        CameraEmailNotificationLog.success == True
+    ).count()
+    failed_count = total_all - success_count
+    success_rate = round((success_count / total_all * 100), 1) if total_all > 0 else 0
+    
+    # Today's count
+    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_count = db.query(CameraEmailNotificationLog).filter(
+        CameraEmailNotificationLog.sent_at >= today_start
+    ).count()
+
+    return {
+        "logs": logs_data,
+        "page": page,
+        "per_page": per_page,
+        "total": total,
+        "total_pages": total_pages,
+        "timezone": tz_name,
+        "stats": {
+            "total": total_all,
+            "success": success_count,
+            "failed": failed_count,
+            "success_rate": success_rate,
+            "today": today_count,
+        }
+    }
+
+
+@router.get("/api/email-logs/export")
+def export_email_logs_csv(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required),
+    camera_name: Optional[str] = Query(None),
+    success: Optional[str] = Query(None),
+    reason: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+):
+    """Export email logs to CSV."""
+    query = db.query(CameraEmailNotificationLog).options(
+        joinedload(CameraEmailNotificationLog.recipients)
+    )
+
+    # Apply same filters as API
+    if camera_name:
+        query = query.filter(CameraEmailNotificationLog.camera_name.ilike(f"%{camera_name}%"))
+
+    success_bool = None
+    if success:
+        if success.lower() in ["true", "1", "yes"]:
+            success_bool = True
+        elif success.lower() in ["false", "0", "no"]:
+            success_bool = False
+
+    if success_bool is not None:
+        query = query.filter(CameraEmailNotificationLog.success == success_bool)
+    
+    if reason:
+        query = query.filter(CameraEmailNotificationLog.reason.ilike(f"%{reason}%"))
+    
+    if start_date:
+        query = query.filter(CameraEmailNotificationLog.sent_at >= start_date)
+    
+    if end_date:
+        end_date_dt = datetime.fromisoformat(end_date) + timedelta(days=1)
+        query = query.filter(CameraEmailNotificationLog.sent_at < end_date_dt)
+
+    logs = query.order_by(CameraEmailNotificationLog.sent_at.desc()).all()
+
+    # Get timezone
+    tz_name = get_current_timezone(db)
+    local_tz = pytz.timezone(tz_name)
+
+    # Create CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Camera Name", "Incident Started", "Sent At", "Recipients", 
+        "Type", "Reason", "Status", "Error Message"
+    ])
+
+    for log in logs:
+        # Format timestamps
+        if log.sent_at:
+            if log.sent_at.tzinfo is None:
+                log.sent_at = pytz.utc.localize(log.sent_at)
+            sent_at_str = log.sent_at.astimezone(local_tz).strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            sent_at_str = "N/A"
+
+        if log.incident_started_at:
+            if log.incident_started_at.tzinfo is None:
+                log.incident_started_at = pytz.utc.localize(log.incident_started_at)
+            incident_str = log.incident_started_at.astimezone(local_tz).strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            incident_str = "N/A"
+
+        recipients = ", ".join([r.recipient_email for r in log.recipients]) if log.recipients else "-"
+        
+        writer.writerow([
+            log.camera_name or "-",
+            incident_str,
+            sent_at_str,
+            recipients,
+            log.type or "alert",
+            log.reason or "-",
+            "Success" if log.success else "Failed",
+            log.error_message or "-",
+        ])
+
+    output.seek(0)
+    
+    return StreamingResponse(
+        output,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=email_logs_export.csv"}
     )

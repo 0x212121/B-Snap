@@ -1,61 +1,510 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – Changelog{% endblock %}
-{% from "_icons.html" import icon_newspaper %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-6 py-10 bg-white dark:bg-gray-900 rounded-xl shadow">
-  <h1 class="text-3xl font-bold mb-8 text-gray-900 dark:text-white flex items-center gap-2">
-    {{ icon_newspaper("w-8 h-8 text-emerald-500 inline") }} <span>B-Snap Changelog</span>
-  </h1>
-
-  {% for version in changelog %}
-  <div x-data="{ open: {{ loop.first|lower }} }" class="mb-6 border border-gray-300 dark:border-gray-700 rounded-md">
-    <button @click="open = !open"
-      class="w-full flex justify-between items-center px-4 py-3 text-left bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">
-      <span class="font-semibold text-blue-600 dark:text-blue-400">
-        {% if version.version == "Unreleased" %}
-          🚀 Upcoming <span class="text-sm text-gray-500">(in progress)</span>
-        {% else %}
-          v{{ version.version }} <span class="text-sm text-gray-500">({{ version.date }})</span>
-        {% endif %}
-      </span>
-      <svg :class="{ 'rotate-180': open }" class="w-5 h-5 transform transition-transform duration-200"
-        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-      </svg>
-    </button>
-
-    <div x-show="open" x-collapse class="px-6 py-4 space-y-4 bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-200">
-
-      {% for section, label, color in [
-        ('added', '🟢 Added', 'green-600'),
-        ('changed', '🟡 Changed', 'yellow-500'),
-        ('fixed', '🔧 Fixed', 'blue-500'),
-        ('other', '📄 Other', 'gray-500')
-      ] %}
-        {% if version[section] %}
-        <div>
-          <h3 class="flex items-center gap-2 text-{{ color }} font-semibold">{{ label }}</h3>
-          <ul class="list-disc ml-6 mt-1 space-y-1">
-            {% for item in version[section] %}
-            <li>
-              {{ item.text }}
-              {% if item.subitems %}
-              <ul class="list-[circle] ml-6 mt-1 space-y-1">
-                {% for sub in item.subitems %}
-                  <li>{{ sub }}</li>
-                {% endfor %}
-              </ul>
-              {% endif %}
-            </li>
-            {% endfor %}
-          </ul>
+<!-- Header Section -->
+<div class="mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+        <div class="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
+          <svg class="w-7 h-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+          </svg>
         </div>
-        {% endif %}
-      {% endfor %}
+        Changelog
+      </h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        Track all changes, updates, and improvements to B-Snap
+      </p>
+    </div>
+    <a href="https://github.com/0x212121/b-snap/blob/main/CHANGELOG.md" target="_blank" 
+       class="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition">
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+      </svg>
+      View on GitHub
+    </a>
+  </div>
+</div>
 
+<!-- Stats Cards -->
+<div id="stats-section" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Versions</p>
+        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-versions">-</p>
+      </div>
+      <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+        </svg>
+      </div>
     </div>
   </div>
-  {% endfor %}
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Features Added</p>
+        <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="stat-added">-</p>
+      </div>
+      <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Bug Fixes</p>
+        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1" id="stat-fixed">-</p>
+      </div>
+      <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Latest Version</p>
+        <p class="text-xl font-bold text-purple-600 dark:text-purple-400 mt-1" id="stat-latest">-</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400" id="stat-latest-date">-</p>
+      </div>
+      <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+        <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- Search & Filter Section -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+  <div class="flex flex-col lg:flex-row gap-4">
+    <!-- Search -->
+    <div class="relative flex-1">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+      </div>
+      <input type="text" id="searchInput" placeholder="Search changelog..." value="{{ search }}"
+        class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+    </div>
+    
+    <!-- Per Page -->
+    <div class="flex gap-2 items-center">
+      <div class="relative w-40">
+        <select id="perPageSelect" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition appearance-none">
+          <option value="3">3 per page</option>
+          <option value="5" selected>5 per page</option>
+          <option value="10">10 per page</option>
+          <option value="20">20 per page</option>
+        </select>
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+          <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </div>
+      </div>
+      
+      <button onclick="resetSearch()" class="p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Clear search">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div id="loading-state" class="hidden flex-col items-center justify-center py-16">
+  <svg class="animate-spin h-10 w-10 text-emerald-600 mb-4" fill="none" viewBox="0 0 24 24">
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  </svg>
+  <span class="text-gray-600 dark:text-gray-300 font-medium">Loading changelog...</span>
+</div>
+
+<!-- Changelog Content -->
+<div id="changelog-content" class="space-y-4">
+  <!-- Versions will be injected here -->
+</div>
+
+<!-- Empty State -->
+<div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+  <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
+    <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+    </svg>
+  </div>
+  <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No results found</h3>
+  <p class="text-gray-500 dark:text-gray-400 max-w-sm">Try adjusting your search terms to find what you're looking for.</p>
+  <button onclick="resetSearch()" class="mt-4 text-emerald-600 hover:text-emerald-700 font-medium">Clear search</button>
+</div>
+
+<!-- Pagination -->
+<div id="pagination-controls" class="flex items-center justify-between mt-6 px-2">
+  <div class="text-sm text-gray-500 dark:text-gray-400" id="page-info"></div>
+  <div class="flex items-center gap-1" id="pagination-buttons"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+  /* Version Card Styles */
+  .version-card {
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden;
+  }
+  
+  .version-header {
+    @apply w-full flex items-center justify-between px-6 py-4 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+  }
+  
+  .version-content {
+    @apply px-6 py-4 space-y-4;
+  }
+  
+  /* Category Badge Styles */
+  .category-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+  
+  /* Markdown Content Styles */
+  .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+    @apply font-semibold text-gray-900 dark:text-white mt-4 mb-2;
+  }
+  .markdown-content h1 { @apply text-xl; }
+  .markdown-content h2 { @apply text-lg; }
+  .markdown-content h3 { @apply text-base; }
+  
+  .markdown-content p {
+    @apply text-gray-700 dark:text-gray-300 mb-2;
+  }
+  
+  .markdown-content ul {
+    @apply list-disc ml-5 space-y-1 mb-3;
+  }
+  
+  .markdown-content ol {
+    @apply list-decimal ml-5 space-y-1 mb-3;
+  }
+  
+  .markdown-content code {
+    @apply px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono text-gray-800 dark:text-gray-200;
+  }
+  
+  .markdown-content pre {
+    @apply p-3 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-x-auto mb-3;
+  }
+  
+  .markdown-content pre code {
+    @apply bg-transparent p-0;
+  }
+  
+  .markdown-content a {
+    @apply text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline;
+  }
+  
+  .markdown-content strong {
+    @apply font-semibold text-gray-900 dark:text-white;
+  }
+  
+  .markdown-content blockquote {
+    @apply pl-4 border-l-4 border-gray-300 dark:border-gray-600 italic text-gray-600 dark:text-gray-400;
+  }
+</style>
+
+<script>
+  let currentPage = {{ page }};
+  let perPage = {{ per_page }};
+  let currentSearch = "{{ search }}";
+  let totalPages = 1;
+  
+  // Category configurations
+  const categories = {
+    added: { label: 'Added', icon: '✨', color: 'green', bg: 'bg-green-100', text: 'text-green-700', dark_bg: 'dark:bg-green-900/30', dark_text: 'dark:text-green-400', border: 'border-green-200', dark_border: 'dark:border-green-800' },
+    changed: { label: 'Changed', icon: '🔧', color: 'amber', bg: 'bg-amber-100', text: 'text-amber-700', dark_bg: 'dark:bg-amber-900/30', dark_text: 'dark:text-amber-400', border: 'border-amber-200', dark_border: 'dark:border-amber-800' },
+    fixed: { label: 'Fixed', icon: '🐛', color: 'blue', bg: 'bg-blue-100', text: 'text-blue-700', dark_bg: 'dark:bg-blue-900/30', dark_text: 'dark:text-blue-400', border: 'border-blue-200', dark_border: 'dark:border-blue-800' },
+    deprecated: { label: 'Deprecated', icon: '⚠️', color: 'orange', bg: 'bg-orange-100', text: 'text-orange-700', dark_bg: 'dark:bg-orange-900/30', dark_text: 'dark:text-orange-400', border: 'border-orange-200', dark_border: 'dark:border-orange-800' },
+    removed: { label: 'Removed', icon: '🗑️', color: 'red', bg: 'bg-red-100', text: 'text-red-700', dark_bg: 'dark:bg-red-900/30', dark_text: 'dark:text-red-400', border: 'border-red-200', dark_border: 'dark:border-red-800' },
+    security: { label: 'Security', icon: '🔒', color: 'purple', bg: 'bg-purple-100', text: 'text-purple-700', dark_bg: 'dark:bg-purple-900/30', dark_text: 'dark:text-purple-400', border: 'border-purple-200', dark_border: 'dark:border-purple-800' },
+    other: { label: 'Other', icon: '📝', color: 'gray', bg: 'bg-gray-100', text: 'text-gray-700', dark_bg: 'dark:bg-gray-700', dark_text: 'dark:text-gray-300', border: 'border-gray-200', dark_border: 'dark:border-gray-600' }
+  };
+  
+  function updateStats(stats) {
+    document.getElementById('stat-versions').textContent = stats?.total_versions?.toLocaleString() || '0';
+    document.getElementById('stat-added').textContent = stats?.total_added?.toLocaleString() || '0';
+    document.getElementById('stat-fixed').textContent = stats?.total_fixed?.toLocaleString() || '0';
+    document.getElementById('stat-latest').textContent = stats?.latest_version || '-';
+    document.getElementById('stat-latest-date').textContent = stats?.latest_date || '';
+  }
+  
+  function formatMarkdown(text) {
+    // Convert **bold** to HTML
+    text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Convert *italic* to HTML
+    text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    // Convert `code` to HTML
+    text = text.replace(/`(.+?)`/g, '<code>$1</code>');
+    // Convert [text](url) to HTML links
+    text = text.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline">$1</a>');
+    return text;
+  }
+  
+  function renderCategoryItems(items, categoryKey) {
+    if (!items || items.length === 0) return '';
+    
+    const cat = categories[categoryKey] || categories.other;
+    
+    return `
+      <div class="border-l-4 ${cat.border} ${cat.dark_border} pl-4">
+        <h3 class="flex items-center gap-2 ${cat.text} ${cat.dark_text} font-semibold mb-2">
+          <span class="${cat.bg} ${cat.dark_bg} px-2 py-0.5 rounded-full text-xs">${cat.icon} ${cat.label}</span>
+        </h3>
+        <ul class="space-y-2">
+          ${items.map(item => `
+            <li class="text-gray-700 dark:text-gray-300">
+              <span class="${cat.text} ${cat.dark_text}">•</span> 
+              <span class="markdown-content">${formatMarkdown(item.text)}</span>
+              ${item.subitems && item.subitems.length > 0 ? `
+                <ul class="ml-5 mt-1 space-y-1">
+                  ${item.subitems.map(sub => `<li class="text-gray-600 dark:text-gray-400 text-sm">◦ ${formatMarkdown(sub)}</li>`).join('')}
+                </ul>
+              ` : ''}
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    `;
+  }
+  
+  function renderVersion(version, index) {
+    const isUnreleased = version.version === 'Unreleased';
+    const versionId = `version-${index}`;
+    
+    // Build sections
+    let sectionsHtml = '';
+    ['added', 'changed', 'fixed', 'deprecated', 'removed', 'security', 'other'].forEach(key => {
+      if (version[key] && version[key].length > 0) {
+        sectionsHtml += renderCategoryItems(version[key], key);
+      }
+    });
+    
+    return `
+      <div class="version-card" x-data="{ open: ${isUnreleased || index === 0 ? 'true' : 'false'} }">
+        <button @click="open = !open" class="version-header">
+          <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-10 h-10 rounded-full ${isUnreleased ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}">
+              ${isUnreleased 
+                ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>'
+                : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>'
+              }
+            </div>
+            <div class="text-left">
+              <span class="font-bold ${isUnreleased ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'} text-lg">
+                ${isUnreleased ? '🚀 Upcoming' : 'v' + version.version}
+              </span>
+              ${version.date && version.date !== 'Unreleased' 
+                ? `<span class="text-sm text-gray-500 dark:text-gray-400 ml-2">${version.date}</span>` 
+                : '<span class="text-sm text-emerald-600 dark:text-emerald-400 ml-2">(in progress)</span>'
+              }
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            ${!isUnreleased ? `
+              <span class="hidden sm:flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                ${version.raw_date || ''}
+              </span>
+            ` : ''}
+            <svg :class="{ 'rotate-180': open }" class="w-5 h-5 text-gray-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </div>
+        </button>
+        
+        <div x-show="open" x-collapse class="version-content">
+          ${sectionsHtml || '<p class="text-gray-500 italic">No changes documented for this version.</p>'}
+        </div>
+      </div>
+    `;
+  }
+  
+  function renderPagination(pagination) {
+    const paginationButtons = document.getElementById('pagination-buttons');
+    const pageInfo = document.getElementById('page-info');
+    
+    paginationButtons.innerHTML = '';
+    totalPages = pagination.total_pages || 1;
+    
+    if (totalPages <= 1) {
+      pageInfo.textContent = pagination.total_items > 0 
+        ? `Showing all ${pagination.total_items} versions` 
+        : '';
+      return;
+    }
+
+    pageInfo.textContent = `Page ${pagination.page} of ${pagination.total_pages} (${pagination.total_items} versions)`;
+
+    // First & Prev
+    if (pagination.page > 1) {
+      paginationButtons.insertAdjacentHTML('beforeend', `
+        <button onclick="loadChangelog(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+        </button>
+        <button onclick="loadChangelog(${pagination.page - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+      `);
+    }
+
+    // Page numbers
+    const window = 2;
+    
+    if (pagination.page > window + 2) {
+      paginationButtons.insertAdjacentHTML('beforeend', `<span class="px-2 text-gray-400">...</span>`);
+    }
+
+    for (let i = Math.max(1, pagination.page - window); i <= Math.min(totalPages, pagination.page + window); i++) {
+      if (i === pagination.page) {
+        paginationButtons.insertAdjacentHTML('beforeend', `
+          <button class="w-9 h-9 bg-emerald-600 text-white rounded-lg font-medium shadow-sm">${i}</button>
+        `);
+      } else {
+        paginationButtons.insertAdjacentHTML('beforeend', `
+          <button onclick="loadChangelog(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>
+        `);
+      }
+    }
+
+    if (pagination.page < totalPages - window - 1) {
+      paginationButtons.insertAdjacentHTML('beforeend', `<span class="px-2 text-gray-400">...</span>`);
+    }
+
+    // Next & Last
+    if (pagination.page < totalPages) {
+      paginationButtons.insertAdjacentHTML('beforeend', `
+        <button onclick="loadChangelog(${pagination.page + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+        <button onclick="loadChangelog(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+        </button>
+      `);
+    }
+  }
+  
+  async function loadChangelog(page = 1) {
+    currentPage = page;
+    
+    const loadingState = document.getElementById('loading-state');
+    const contentDiv = document.getElementById('changelog-content');
+    const emptyState = document.getElementById('empty-state');
+    const paginationControls = document.getElementById('pagination-controls');
+    
+    loadingState.classList.remove('hidden');
+    loadingState.classList.add('flex');
+    contentDiv.innerHTML = '';
+    emptyState.classList.add('hidden');
+    emptyState.classList.remove('flex');
+    
+    const params = new URLSearchParams({
+      page: page,
+      per_page: perPage
+    });
+    
+    if (currentSearch) params.append('search', currentSearch);
+    
+    try {
+      const res = await fetch(`/api/changelog?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      
+      // Update stats
+      updateStats(data.stats);
+      
+      // Render versions
+      if (data.versions && data.versions.length > 0) {
+        data.versions.forEach((version, index) => {
+          contentDiv.insertAdjacentHTML('beforeend', renderVersion(version, index));
+        });
+        emptyState.classList.add('hidden');
+        emptyState.classList.remove('flex');
+        paginationControls.classList.remove('hidden');
+      } else {
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+        paginationControls.classList.add('hidden');
+      }
+      
+      // Render pagination
+      renderPagination(data.pagination);
+      
+      // Update URL
+      const url = new URL(window.location);
+      url.searchParams.set('page', page);
+      url.searchParams.set('per_page', perPage);
+      if (currentSearch) url.searchParams.set('search', currentSearch);
+      else url.searchParams.delete('search');
+      window.history.pushState({}, '', url);
+      
+    } catch (err) {
+      console.error('Failed to load changelog:', err);
+      contentDiv.innerHTML = `
+        <div class="text-center py-12 text-red-500">
+          <svg class="w-12 h-12 mx-auto mb-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg>
+          <p class="font-medium">Failed to load changelog</p>
+          <button onclick="loadChangelog(${page})" class="mt-2 text-sm text-blue-600 hover:text-blue-700">Retry</button>
+        </div>
+      `;
+    } finally {
+      loadingState.classList.add('hidden');
+      loadingState.classList.remove('flex');
+    }
+  }
+  
+  function resetSearch() {
+    currentSearch = '';
+    document.getElementById('searchInput').value = '';
+    loadChangelog(1);
+  }
+  
+  // Event listeners
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    clearTimeout(window.searchDebounce);
+    window.searchDebounce = setTimeout(() => {
+      currentSearch = e.target.value.trim();
+      loadChangelog(1);
+    }, 400);
+  });
+  
+  document.getElementById('perPageSelect').addEventListener('change', (e) => {
+    perPage = parseInt(e.target.value, 10) || 5;
+    loadChangelog(1);
+  });
+  
+  // Initialize
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('perPageSelect').value = perPage;
+    loadChangelog(currentPage);
+  });
+  
+  // Expose globals
+  window.loadChangelog = loadChangelog;
+  window.resetSearch = resetSearch;
+</script>
 {% endblock %}

@@ -349,8 +349,7 @@
     </div>
   </div>
 
-  <!-- Global Notification -->
-  <div id="notification-container" class="fixed top-5 right-5 z-[100] w-full max-w-sm"></div>
+
 </div>
 {% endblock %}
 
@@ -424,25 +423,6 @@
     passwordInput.required = true;
   }
 
-  /* ================= Notification ================= */
-  function showNotification({ status = "info", message = "" }) {
-    const container = document.getElementById("notification-container");
-    if (!container) return;
-    const bg = status === "success" ? "bg-green-600"
-            : status === "error" ? "bg-red-600"
-            : "bg-blue-600";
-    const icon = status === "success" ? "✅" : status === "error" ? "❌" : "ℹ️";
-    const el = document.createElement("div");
-    el.className = `flex items-center p-4 mb-3 rounded-lg shadow-lg text-white transform transition-all duration-300 ease-in-out opacity-0 -translate-y-2 ${bg}`;
-    el.innerHTML = `<span class="mr-3 text-lg">${icon}</span><span class="font-medium">${message}</span>`;
-    container.appendChild(el);
-    requestAnimationFrame(() => el.classList.remove("opacity-0","-translate-y-2"));
-    setTimeout(() => {
-      el.classList.add("opacity-0");
-      el.addEventListener("transitionend", () => el.remove(), { once: true });
-    }, 3500);
-  }
-
   /* ================= Flash helper ================= */
   const FLASH_KEY = "users.flash";
   function setFlashNextPage(status, message) {
@@ -454,7 +434,12 @@
       if (!raw) return;
       sessionStorage.removeItem(FLASH_KEY);
       const { status, message } = JSON.parse(raw);
-      if (message) showNotification({ status: status || "info", message });
+      if (message) {
+        const toastStatus = status || "info";
+        if (toastStatus === "success") Toast.success(message, { title: 'Success' });
+        else if (toastStatus === "error") Toast.error(message, { title: 'Error' });
+        else Toast.info(message, { title: 'Info' });
+      }
     } catch {}
   }
 
@@ -555,10 +540,10 @@
       const data = await res.json();
       toggleModal('generateTokenModal', false);
       showGeneratedToken(activeUserId, data.token, data.token_expires_at, data.api_tokens, username);
-      showNotification({ status: "success", message: "Token generated" });
+      Toast.success("Token generated", { title: 'Success' });
     } catch (e) {
       if (errorP) { errorP.textContent = `Error: ${e.message}`; errorP.classList.remove('hidden'); }
-      showNotification({ status: "error", message: "Failed to generate token" });
+      Toast.error("Failed to generate token", { title: 'Error' });
     } finally {
       spinner?.classList.add('hidden'); if (btn) btn.disabled = false;
     }
@@ -592,10 +577,10 @@
       })
         .then(res => res.ok ? res.json() : res.json().then(e=>{throw new Error(e.detail||"Failed to revoke")}))
         .then(() => {
-          showNotification({ status:"success", message:"Token revoked" });
+          Toast.success("Token revoked", { title: 'Success' });
           setTimeout(()=>location.reload(), 800);
         })
-        .catch(e => showNotification({ status:"error", message:e.message || "Failed to revoke" }));
+        .catch(e => Toast.error(e.message || "Failed to revoke", { title: 'Error' }));
     }, { title:'⚠️ Revoke Token', confirmText:'Yes, Revoke', confirmClasses:'bg-red-600 hover:bg-red-700' });
   }
 
@@ -668,8 +653,8 @@
     const params = new URLSearchParams(window.location.search);
     const success = params.get("success");
     const error = params.get("error");
-    if (success) showNotification({ status:"success", message: success });
-    if (error) showNotification({ status:"error", message: error });
+    if (success) Toast.success(success, { title: 'Success' });
+    if (error) Toast.error(error, { title: 'Error' });
     if (!success && !error) popFlashNextPage();
   });
 
@@ -692,6 +677,6 @@
   window.openGenerateTokenModal = openGenerateTokenModal;
   window.handleRevokeClick = handleRevokeClick;
   window.toggleModal = toggleModal;
-  window.showNotification = showNotification;
+
 </script>
 {% endblock %}

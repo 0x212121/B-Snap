@@ -184,6 +184,25 @@
       }});
       L.control.cameraStats = function(opts) { return new L.Control.cameraStats(opts); };
       L.control.cameraStats({ position: "bottomright" }).addTo(map);
+    
+    // Last refresh time control (bottom left)
+    L.Control.LastRefresh = L.Control.extend({
+      onAdd: function() {
+        const container = L.DomUtil.create('div', 'leaflet-control-last-refresh bg-black/60 text-white text-xs px-3 py-1.5 rounded backdrop-blur-sm pointer-events-none');
+        container.innerHTML = `
+          <div class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 animate-spin" id="refresh-icon" fill="none" viewBox="0 0 24 24" style="animation-duration: 3s;">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span id="last-refresh-time">Loading...</span>
+          </div>
+        `;
+        return container;
+      }
+    });
+    L.control.lastRefresh = function(opts) { return new L.Control.LastRefresh(opts); };
+    L.control.lastRefresh({ position: "bottomleft" }).addTo(map);
       
     const markerClusterGroup = L.markerClusterGroup({
       iconCreateFunction: function (cluster) {
@@ -417,6 +436,26 @@
     }
 
     /**
+     * Updates the last refresh time display
+     */
+    function updateLastRefreshTime() {
+      const timeElement = document.getElementById('last-refresh-time');
+      if (!timeElement) return;
+      
+      const timezone = document.body.dataset.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: timezone
+      });
+      
+      timeElement.textContent = `Updated: ${timeString}`;
+    }
+    
+    /**
      * Fetches data from the server and updates the map.
      * Replaces the old refreshMapData function.
      */
@@ -440,8 +479,15 @@
             masterCameraData = uniqueData; // Update the master data source
             
             renderMarkers(); // Call the render function to display the new data
+            updateLastRefreshTime(); // Update the timestamp
         })
-        .catch(err => { console.error("Map data fetch error:", err); });
+        .catch(err => { 
+            console.error("Map data fetch error:", err);
+            const timeElement = document.getElementById('last-refresh-time');
+            if (timeElement) {
+              timeElement.textContent = 'Update failed';
+            }
+        });
     }
     
     // Initial data load and periodic refresh

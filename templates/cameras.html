@@ -198,8 +198,6 @@
   </div>
 </div>
 
-<div id="notification-container" class="fixed top-5 right-5 z-[100] w-full max-w-sm"></div>
-
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     
@@ -230,27 +228,26 @@
         // Cek apakah responsnya adalah JSON
         if (contentType && contentType.includes("application/json")) {
           const data = await response.json();
-          showNotification({
-            status: response.ok ? 'success' : 'error',
-            message: data.detail || data.message || 'An error occurred.'
-          });
+          const message = data.detail || data.message || 'An error occurred.';
+          if (response.ok) {
+            Toast.success(message, { title: 'Success' });
+          } else {
+            Toast.error(message, { title: 'Error' });
+          }
           return { ok: response.ok, data: data };
         } else {
           // Jika bukan JSON (kemungkinan besar halaman error HTML/teks)
           const textResponse = await response.text();
           // Tampilkan potongan teks error agar lebih informatif
           const errorMessage = textResponse.substring(0, 150) + "..."; 
-          showNotification({
-            status: 'error',
-            message: errorMessage
-          });
+          Toast.error(errorMessage, { title: 'Error' });
           console.error('Non-JSON Response:', textResponse);
           return { ok: false, data: { detail: textResponse } };
         }
       } catch (error) {
         // Blok ini sekarang hanya untuk error jaringan sejati (misal: server mati)
         console.error('Network Fetch Error:', error);
-        showNotification({ status: 'error', message: 'Network connection failed.' });
+        Toast.error('Network connection failed.', { title: 'Error' });
         return { ok: false, data: null };
       }
     }
@@ -288,7 +285,7 @@
         
       } catch (err) {
         console.error("Failed to load page:", err);
-        showNotification({ status: 'error', message: 'Failed to load camera data.' });
+        Toast.error('Failed to load camera data.', { title: 'Error' });
       } finally {
         tbody.style.opacity = "1";
       }
@@ -458,9 +455,7 @@
         
       } catch (error) {
         console.error('Error fetching camera for edit:', error);
-        if (typeof showNotification === 'function') {
-          showNotification({ status: 'error', message: 'Failed to load camera data.' });
-        }
+        Toast.error('Failed to load camera data.', { title: 'Error' });
       }
     };
     
@@ -512,11 +507,11 @@
     const errorMessage = urlParams.get('upload_error');
 
     if (successMessage) {
-      showNotification({ status: 'success', message: successMessage });
+      Toast.success(successMessage, { title: 'Success' });
       // Hapus parameter dari URL agar notifikasi tidak muncul lagi saat refresh
       window.history.replaceState({}, document.title, "/cameras");
     } else if (errorMessage) {
-      showNotification({ status: 'error', message: errorMessage });
+      Toast.error(errorMessage, { title: 'Error' });
       window.history.replaceState({}, document.title, "/cameras");
     }
   }
@@ -541,14 +536,16 @@
       fetch(deleteUrl, { method: 'POST' })
       .then(res => res.json())
       .then(data => {
-        showNotification({ status: data.status, message: data.message });
         if (data.status === 'success') {
+          Toast.success(data.message, { title: 'Success' });
           const currentPage = new URLSearchParams(window.location.search).get('page') || 1;
           loadPage(currentPage);
+        } else {
+          Toast.error(data.message, { title: 'Error' });
         }
       })
       .catch(err => {
-        showNotification({ status: 'error', message: 'Failed to delete item.' });
+        Toast.error('Failed to delete item.', { title: 'Error' });
       });
     }, {
       title: `⚠️ Delete ${itemType}`,
@@ -561,14 +558,15 @@
     fetch(`/capture_video/${encodeURIComponent(cameraId)}`, { method: 'POST' })
     .then(res => res.json())
     .then(data => {
-      const notifContainer = document.getElementById('notification-container');
-      const notif = document.createElement('div');
-      notif.textContent = data.message;
-      notif.className = (data.status === 'success' ? 'bg-green-500' : 'bg-red-500') + ' text-white p-3 rounded';
-      notifContainer.appendChild(notif);
-      setTimeout(() => notif.remove(), 3000);
+      if (data.status === 'success') {
+        Toast.success(data.message, { title: 'Success' });
+      } else {
+        Toast.error(data.message, { title: 'Error' });
+      }
     })
-    .catch(err => alert('Failed to start video capture.'));
+    .catch(err => {
+      Toast.error('Failed to start video capture.', { title: 'Error' });
+    });
   };
   
   let currentSort = { column: null, direction: 'asc' };
@@ -668,19 +666,15 @@
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        // Gaya notifikasi kamu, cukup panggil showNotification
         if (data.type === "record_complete") {
           const fileSizeMB = (data.file_size / (1024 * 1024)).toFixed(2);
           const fileUrl = `/static/videos/${encodeURIComponent(data.file_path)}`;
-          showNotification({
-            status: 'success',
-            message: `
-              🎥 <strong>${data.camera_name}</strong> (${data.group}) finished recording.<br>
-              ⏱️ Duration: ${data.duration.toFixed(1)}s<br>
-              📦 Size: ${fileSizeMB} MB<br>
-              🔗 <a href="${fileUrl}" target="_blank" class="underline">View Video</a>
-            `
-          });
+          Toast.success(`
+            🎥 <strong>${data.camera_name}</strong> (${data.group}) finished recording.<br>
+            ⏱️ Duration: ${data.duration.toFixed(1)}s<br>
+            📦 Size: ${fileSizeMB} MB<br>
+            🔗 <a href="${fileUrl}" target="_blank" class="underline">View Video</a>
+          `, { title: 'Success' });
         }
       } catch (err) {
         console.error("❌ WebSocket JSON parse error", err);
@@ -696,21 +690,7 @@
     };
   }
   
-  function showNotification({ status, message }) {
-    const container = document.getElementById('notification-container');
-    const notif = document.createElement('div');
-    const statusClass = status === 'success' ? 'bg-green-500' : 'bg-red-500';
-    const icon = status === 'success' ? '✅' : '❌';
-    notif.className = `flex items-center p-4 mb-4 rounded-lg shadow-lg text-white transform transition-all duration-300 ease-in-out opacity-0 translate-y-[-20px] ${statusClass}`;
-    notif.innerHTML = `<span class="mr-3 text-lg">${icon}</span> <span class="font-medium">${message}</span>`;
-    container.appendChild(notif);
-    requestAnimationFrame(() => notif.classList.remove('opacity-0', 'translate-y-[-20px]'));
-    setTimeout(() => {
-      notif.classList.add('opacity-0');
-      notif.addEventListener('transitionend', () => notif.remove());
-    }, 3500);
-  }
-  
+
   function setValueSafe(id, value) {
     const el = document.getElementById(id);
     if (el) el.value = value;
