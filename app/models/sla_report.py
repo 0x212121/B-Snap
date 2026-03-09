@@ -82,7 +82,7 @@ class ScheduledReport(Base):
     
     # Metadata
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    created_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     # Relationships
     creator = relationship("User", backref="scheduled_reports")

@@ -102,13 +102,22 @@ async def lifespan(app: FastAPI):
                 logger.error("Database connection failed after all retries")
                 raise
 
-    if not tables:
-        logger.info("No tables found, creating all from Base metadata...")
+    # Always create missing tables (for new models that don't have migrations yet)
+    logger.info("Creating any missing tables from Base metadata...")
+    try:
         Base.metadata.create_all(bind=engine)
-
-        alembic_cfg = Config(ALEMBIC_INI_PATH)
-        command.stamp(alembic_cfg, "head")
-        logger.info("Alembic schema version stamped to head.")
+        logger.info("Table creation check complete.")
+    except Exception as e:
+        logger.error(f"Failed to create tables: {e}")
+    
+    if not tables:
+        logger.info("No existing tables found, stamping Alembic version...")
+        try:
+            alembic_cfg = Config(ALEMBIC_INI_PATH)
+            command.stamp(alembic_cfg, "head")
+            logger.info("Alembic schema version stamped to head.")
+        except Exception as e:
+            logger.error(f"Failed to stamp Alembic version: {e}")
     else:
         logger.info("Tables already exist, running Alembic upgrade...")
         try:

@@ -396,17 +396,16 @@ CONFIG_HANDLERS = {
 def start_scheduler():
     init_thread_pool()
     
-    # Remove existing jobs to prevent duplicate key errors on restart
+    # Clear apscheduler_jobs table to prevent duplicate key errors
     # This is necessary when the scheduler container restarts
     try:
-        for job in scheduler.get_jobs():
-            try:
-                scheduler.remove_job(job.id)
-                logger.info("[Scheduler] Removed existing job: %s", job.id)
-            except Exception as e:
-                logger.warning("[Scheduler] Could not remove job %s: %s", job.id, e)
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("DELETE FROM apscheduler_jobs"))
+            conn.commit()
+            logger.info("[Scheduler] Cleared apscheduler_jobs table")
     except Exception as e:
-        logger.warning("[Scheduler] Error clearing existing jobs: %s", e)
+        logger.warning("[Scheduler] Could not clear apscheduler_jobs table: %s", e)
     
     # Load all config with new interval settings and cron expressions
     config = {

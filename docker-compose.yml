@@ -14,9 +14,9 @@ services:
       postgres:
         condition: service_started
     volumes:
-      - ./static/snapshots:/static/snapshots
-      - ./static/videos:/static/videos
-      - ./logs:/logs
+      - ./static/snapshots:/app/static/snapshots
+      - ./static/videos:/app/static/videos
+      - ./logs:/app/logs
       - shared_tmp:/tmp/shared
     restart: unless-stopped
     healthcheck:
@@ -37,9 +37,9 @@ services:
     depends_on:
       - b-snap
     volumes:
-      - ./static/snapshots:/static/snapshots
-      # - ./app/data.db:/app/app/data.db
-      - ./logs:/logs
+      - ./static/snapshots:/app/static/snapshots
+      - ./static/videos:/app/static/videos
+      - ./logs:/app/logs
       - shared_tmp:/tmp/shared
 
     restart: unless-stopped

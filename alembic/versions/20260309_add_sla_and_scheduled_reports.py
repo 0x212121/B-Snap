@@ -86,7 +86,7 @@ def upgrade() -> None:
             sa.Column('last_sent_at', sa.DateTime(timezone=True), nullable=True),
             sa.Column('next_scheduled_at', sa.DateTime(timezone=True), nullable=True),
             sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
-            sa.Column('created_by', sa.String(36), sa.ForeignKey('users.id'), nullable=True)
+            sa.Column('created_by', sa.Integer, sa.ForeignKey('users.id'), nullable=True)
         )
         
         op.create_index('ix_scheduled_reports_is_active', 'scheduled_reports', ['is_active'])

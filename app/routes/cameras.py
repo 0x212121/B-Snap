@@ -446,19 +446,43 @@ async def delete_camera(request: Request, camera_id: str, db: Session = Depends(
         VIDEO_PATH = get_video_directory()
         
         logger.info("Deleting %s associated snapshot files for camera '%s'...", len(cam.snapshots), cam.hostname)
+        deleted_count = 0
+        failed_count = 0
         for snapshot in cam.snapshots:
-            file_path = os.path.join(SNAPSHOT_PATH, snapshot.file_path)
+            # Handle both old format (snapshots/filename.jpg) and new format (filename.jpg)
+            file_name = os.path.basename(snapshot.file_path)
+            file_path = os.path.join(SNAPSHOT_PATH, file_name)
+            
             if os.path.exists(file_path):
-                os.remove(file_path)
-                logger.debug("Deleted snapshot file: %s", file_path)
+                try:
+                    os.remove(file_path)
+                    deleted_count += 1
+                    logger.debug("Deleted snapshot file: %s", file_path)
+                except Exception as file_err:
+                    failed_count += 1
+                    logger.warning("Failed to delete snapshot file '%s': %s", file_path, file_err)
+            else:
+                logger.warning("Snapshot file not found: %s", file_path)
 
         # 2. Hapus file videos
         logger.info("Deleting %s associated video files for camera '%s'...", len(cam.videos), cam.hostname)
         for video in cam.videos:
-            file_path = os.path.join(VIDEO_PATH, video.file_path)
+            # Handle both old format (videos/filename.mp4) and new format (filename.mp4)
+            file_name = os.path.basename(video.file_path)
+            file_path = os.path.join(VIDEO_PATH, file_name)
+            
             if os.path.exists(file_path):
-                os.remove(file_path)
-                logger.debug("Deleted video file: %s", file_path)
+                try:
+                    os.remove(file_path)
+                    deleted_count += 1
+                    logger.debug("Deleted video file: %s", file_path)
+                except Exception as file_err:
+                    failed_count += 1
+                    logger.warning("Failed to delete video file '%s': %s", file_path, file_err)
+            else:
+                logger.warning("Video file not found: %s", file_path)
+        
+        logger.info("File cleanup complete: %s deleted, %s failed", deleted_count, failed_count)
 
         # --- HAPUS DATA DARI DATABASE ---
         # Karena kita sudah menggunakan `cascade="all, delete-orphan"` di model `Camera`,
@@ -490,6 +514,87 @@ async def delete_camera(request: Request, camera_id: str, db: Session = Depends(
         logger.error("Failed to delete camera '%s' or its files. Error: %s", camera_id, e, exc_info=True)
         # Penting: Rollback hanya membatalkan operasi database, bukan penghapusan file.
         return JSONResponse(status_code=500, content={"status": "error", "message": "Failed to delete camera and its files."})
+
+
+@router.post("/admin/cleanup-orphaned-files", response_class=JSONResponse)
+async def cleanup_orphaned_files(request: Request, db: Session = Depends(get_db)):
+    """
+    Cleanup orphaned snapshot and video files that don't have associated database records.
+    This is useful for cleaning up files left behind after camera deletions.
+    """
+    from app.models.snapshot import Snapshot
+    from app.models.video import Video
+    
+    logger.info("Starting cleanup of orphaned files...")
+    
+    try:
+        SNAPSHOT_PATH = get_snapshot_directory()
+        VIDEO_PATH = get_video_directory()
+        
+        # Get all valid file paths from database
+        valid_snapshot_files = {s.file_path for s in db.query(Snapshot.file_path).all()}
+        valid_video_files = {v.file_path for v in db.query(Video.file_path).all()}
+        
+        deleted_snapshots = []
+        deleted_videos = []
+        errors = []
+        
+        # Check for orphaned snapshot files
+        if os.path.exists(SNAPSHOT_PATH):
+            for filename in os.listdir(SNAPSHOT_PATH):
+                if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+                    # Check both full path and basename formats
+                    if filename not in valid_snapshot_files and f"snapshots/{filename}" not in valid_snapshot_files:
+                        file_path = os.path.join(SNAPSHOT_PATH, filename)
+                        try:
+                            os.remove(file_path)
+                            deleted_snapshots.append(filename)
+                            logger.info("Deleted orphaned snapshot: %s", filename)
+                        except Exception as e:
+                            errors.append(f"Failed to delete {filename}: {str(e)}")
+        
+        # Check for orphaned video files
+        if os.path.exists(VIDEO_PATH):
+            for filename in os.listdir(VIDEO_PATH):
+                if filename.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):
+                    # Check both full path and basename formats
+                    if filename not in valid_video_files and f"videos/{filename}" not in valid_video_files:
+                        file_path = os.path.join(VIDEO_PATH, filename)
+                        try:
+                            os.remove(file_path)
+                            deleted_videos.append(filename)
+                            logger.info("Deleted orphaned video: %s", filename)
+                        except Exception as e:
+                            errors.append(f"Failed to delete {filename}: {str(e)}")
+        
+        total_deleted = len(deleted_snapshots) + len(deleted_videos)
+        
+        log_audit(
+            db=db,
+            user=request.session.get("user_name", "unknown"),
+            action="cleanup_orphaned_files",
+            target="system",
+            ip=request.client.host,
+            extra=f"Deleted {total_deleted} orphaned files ({len(deleted_snapshots)} snapshots, {len(deleted_videos)} videos)"
+        )
+        
+        return JSONResponse(status_code=200, content={
+            "status": "success",
+            "message": f"Cleanup complete. Deleted {total_deleted} orphaned files.",
+            "details": {
+                "deleted_snapshots": deleted_snapshots,
+                "deleted_videos": deleted_videos,
+                "errors": errors
+            }
+        })
+        
+    except Exception as e:
+        logger.error("Failed to cleanup orphaned files: %s", e, exc_info=True)
+        return JSONResponse(status_code=500, content={
+            "status": "error",
+            "message": f"Failed to cleanup orphaned files: {str(e)}"
+        })
+
 
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 ALLOWED_FILE_TYPES = ["text/csv"]
