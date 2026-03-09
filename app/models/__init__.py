@@ -29,6 +29,8 @@ from .camera_email_notification_log import (
     CameraEmailNotificationRecipient
 )
 from .health_check_status import HealthCheckStatus
+from .job_execution_log import JobExecutionLog
+from .sla_report import SLAReport, ScheduledReport
 
 __all__ = [
     "Camera",
@@ -57,4 +59,7 @@ __all__ = [
     "CameraEmailNotificationLog",
     "CameraEmailNotificationRecipient",
     "HealthCheckStatus",
+    "JobExecutionLog",
+    "SLAReport",
+    "ScheduledReport",
 ]

@@ -17,12 +17,68 @@
 
     <h1 class="text-3xl font-bold mb-4 text-gray-800 dark:text-gray-200">Historical Uptime/Downtime</h1>
 
-    <div class="mb-6">
-        <a href="/health" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-            Back to Current Status
-        </a>
+    <!-- Action Buttons Section -->
+    <div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-750 rounded-xl p-4 border border-blue-100 dark:border-gray-700">
+        <div class="flex flex-wrap items-center gap-3">
+            <a href="/health" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Back to Current Status
+            </a>
+            
+            <div class="w-px h-8 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+            
+            <span class="text-sm font-medium text-gray-600 dark:text-gray-400 mr-2">Reports:</span>
+            
+            <a id="sla-report-link" href="/health/sla-report" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z"></path></svg>
+                SLA Report
+            </a>
+            
+            <a href="/health/history/export?format=csv" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Export CSV
+            </a>
+            
+            <button onclick="generateReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                PDF Report
+            </button>
+        </div>
     </div>
+
+    <script>
+    // Set SLA Report link with default date range (last 30 days)
+    (function() {
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const formatDate = (d) => d.toISOString().split('T')[0];
+        
+        const slaLink = document.getElementById('sla-report-link');
+        if (slaLink) {
+            slaLink.href = `/health/sla-report?start_date=${formatDate(thirtyDaysAgo)}&end_date=${formatDate(today)}`;
+        }
+    })();
+    
+    function generateReport() {
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const formatDate = (d) => d.toISOString().split('T')[0];
+        
+        const startDate = prompt('Enter start date (YYYY-MM-DD):', formatDate(thirtyDaysAgo));
+        if (!startDate) return;
+        const endDate = prompt('Enter end date (YYYY-MM-DD):', formatDate(today));
+        if (!endDate) return;
+        
+        // Open report in new window
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/health/history/report?start_date=${startDate}&end_date=${endDate}&format=pdf`;
+        form.target = '_blank';
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    }
+    </script>
 
     <div class="mb-8 bg-gray-100 dark:bg-gray-900/50 rounded-xl">
         <form method="GET" action="{{ request.url_for('health_history') }}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">

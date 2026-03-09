@@ -341,5 +341,5 @@ py-spy top -- python app/main.py
 
 ---
 
-**Version**: 1.12.0  
-**Last Updated**: 2026
+**Version**: 1.14.0  
+**Last Updated**: 2026-03-09

@@ -1,0 +1,547 @@
+{% extends "base.html" %}
+{% block title %}B-SNAP – Job Management{% endblock %}
+
+{% block content %}
+<!-- Header Section -->
+<div class="mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+        <div class="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+          <svg class="w-7 h-7 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        Job Management
+      </h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        Monitor and manage background scheduled jobs
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="refreshData()" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="stats-container">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Runs (24h)</p>
+        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-total-runs">-</p>
+      </div>
+      <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Success Rate</p>
+        <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="stat-success-rate">-</p>
+      </div>
+      <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Failed</p>
+        <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1" id="stat-failed">-</p>
+      </div>
+      <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+        <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Jobs</p>
+        <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1" id="stat-active-jobs">-</p>
+      </div>
+      <div class="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+        <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Jobs Table -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Scheduled Jobs</h3>
+    <div class="flex items-center gap-2 text-sm text-gray-500">
+      <span>Auto-refresh:</span>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" id="auto-refresh" class="sr-only peer" checked>
+        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+      </label>
+    </div>
+  </div>
+  
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm text-left">
+      <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
+        <tr>
+          <th class="px-6 py-3 font-semibold">Job Name</th>
+          <th class="px-6 py-3 font-semibold">Schedule</th>
+          <th class="px-6 py-3 font-semibold">Last Run</th>
+          <th class="px-6 py-3 font-semibold">Next Run</th>
+          <th class="px-6 py-3 font-semibold text-center">24h Stats</th>
+          <th class="px-6 py-3 font-semibold text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="jobs-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+        <!-- Populated by JS -->
+      </tbody>
+    </table>
+  </div>
+  
+  <div id="empty-state" class="hidden flex-col items-center justify-center py-12">
+    <svg class="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    <p class="text-gray-500">No jobs found</p>
+  </div>
+</div>
+
+<!-- Job History Modal -->
+<div id="history-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white" id="history-modal-title">Job History</h3>
+        <p class="text-sm text-gray-500" id="history-modal-subtitle">Recent executions</p>
+      </div>
+      <button onclick="closeHistoryModal()" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="overflow-auto p-6">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
+          <tr>
+            <th class="px-4 py-2 text-left font-semibold">Time</th>
+            <th class="px-4 py-2 text-left font-semibold">Duration</th>
+            <th class="px-4 py-2 text-left font-semibold">Status</th>
+            <th class="px-4 py-2 text-left font-semibold">Records</th>
+          </tr>
+        </thead>
+        <tbody id="history-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Schedule Modal -->
+<div id="schedule-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white" id="schedule-modal-title">Update Schedule</h3>
+        <p class="text-sm text-gray-500" id="schedule-modal-subtitle">Configure cron expression</p>
+      </div>
+      <button onclick="closeScheduleModal()" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="p-6 space-y-4">
+      <!-- Cron Expression Input -->
+      <div>
+        <label for="cron-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Cron Expression <span class="text-gray-500 font-normal">(5 parts: minute hour day month weekday)</span>
+        </label>
+        <input type="text" id="cron-input" 
+          class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+          placeholder="e.g., 0 8 * * *">
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Leave empty to use interval fallback
+        </p>
+      </div>
+      
+      <!-- Examples -->
+      <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 border border-indigo-200 dark:border-indigo-800">
+        <p class="text-xs font-medium text-indigo-800 dark:text-indigo-300 mb-2">Examples:</p>
+        <ul class="text-xs text-indigo-700 dark:text-indigo-400 space-y-1">
+          <li><code class="font-mono bg-indigo-100 dark:bg-indigo-800 px-1 rounded">0 8 * * *</code> = Every day at 08:00</li>
+          <li><code class="font-mono bg-indigo-100 dark:bg-indigo-800 px-1 rounded">0 8,13,23 * * *</code> = At 08:00, 13:00, 23:00</li>
+          <li><code class="font-mono bg-indigo-100 dark:bg-indigo-800 px-1 rounded">*/30 * * * *</code> = Every 30 minutes</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+      <button onclick="closeScheduleModal()" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition">
+        Cancel
+      </button>
+      <button onclick="saveSchedule()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition">
+        Save Schedule
+      </button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let autoRefreshInterval;
+  let currentJobs = [];
+  let currentEditingJobId = null;
+  
+  function formatDuration(ms) {
+    if (!ms) return '-';
+    if (ms < 1000) return `${ms}ms`;
+    if (ms < 60000) return `${(ms/1000).toFixed(1)}s`;
+    return `${(ms/60000).toFixed(1)}m`;
+  }
+  
+  function formatTime(isoString) {
+    if (!isoString) return 'Never';
+    const date = new Date(isoString);
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+  
+  function getStatusBadge(status) {
+    const badges = {
+      success: '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">✓ Success</span>',
+      fail: '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">✗ Failed</span>',
+      running: '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">⟳ Running</span>',
+      timeout: '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">⏱ Timeout</span>',
+    };
+    return badges[status] || `<span class="text-gray-500">${status}</span>`;
+  }
+  
+  async function loadJobs() {
+    try {
+      const res = await fetch('/admin/jobs/api/jobs');
+      if (!res.ok) throw new Error('Failed to load jobs');
+      const data = await res.json();
+      
+      currentJobs = data.jobs;
+      renderJobs(data.jobs);
+      
+      // Update stats
+      const activeJobs = data.jobs.filter(j => j.next_run_time).length;
+      document.getElementById('stat-active-jobs').textContent = activeJobs;
+    } catch (err) {
+      console.error('Failed to load jobs:', err);
+      Toast.error('Failed to load jobs', { title: 'Error' });
+    }
+  }
+  
+  async function loadStats() {
+    try {
+      const res = await fetch('/admin/jobs/api/jobs/stats?hours=24');
+      if (!res.ok) throw new Error('Failed to load stats');
+      const data = await res.json();
+      
+      document.getElementById('stat-total-runs').textContent = data.overall.total_runs;
+      document.getElementById('stat-success-rate').textContent = data.overall.success_rate + '%';
+      document.getElementById('stat-failed').textContent = data.overall.fail_count;
+    } catch (err) {
+      console.error('Failed to load stats:', err);
+    }
+  }
+  
+  // Editable job IDs that support cron scheduling
+  const editableJobs = ['scheduled_snapshot', 'health_check', 'storage_check', 'cleanup_audit_logs', 'email_retry'];
+  
+  function renderJobs(jobs) {
+    const tbody = document.getElementById('jobs-table-body');
+    const emptyState = document.getElementById('empty-state');
+    
+    if (jobs.length === 0) {
+      tbody.innerHTML = '';
+      emptyState.classList.remove('hidden');
+      emptyState.classList.add('flex');
+      return;
+    }
+    
+    emptyState.classList.add('hidden');
+    emptyState.classList.remove('flex');
+    
+    tbody.innerHTML = jobs.map(job => {
+      const stats = job.stats_24h;
+      const statsHtml = stats.total_runs ? `
+        <div class="text-xs">
+          <div class="text-gray-600 dark:text-gray-400">${stats.total_runs} runs</div>
+          <div class="text-green-600">${stats.success_count} ✓</div>
+          ${stats.fail_count > 0 ? `<div class="text-red-600">${stats.fail_count} ✗</div>` : ''}
+        </div>
+      ` : '<span class="text-gray-400 text-xs">No data</span>';
+      
+      // Show cron badge if exists
+      const cronBadge = job.cron_expression ? `
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 mt-1" title="Cron: ${job.cron_expression}">
+          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          ${job.cron_expression}
+        </span>
+      ` : '';
+      
+      const canEditSchedule = editableJobs.includes(job.id);
+      
+      // Schedule display with edit button
+      const scheduleDisplay = canEditSchedule ? `
+        <div class="flex items-center gap-2">
+          <span class="text-gray-600 dark:text-gray-400 text-sm">${job.trigger}</span>
+          <button onclick="editSchedule('${job.id}', '${job.name}', '${job.cron_expression || ''}')" 
+            class="p-1 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded transition"
+            title="${job.cron_expression ? 'Edit Cron Schedule' : 'Set Cron Schedule'}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+          </button>
+        </div>
+        ${cronBadge}
+      ` : `
+        <span class="text-gray-600 dark:text-gray-400 text-sm">${job.trigger}</span>
+        ${cronBadge}
+      `;
+      
+      return `
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <div>
+                <div class="font-medium text-gray-900 dark:text-white">${job.name}</div>
+                <div class="text-xs text-gray-500 font-mono">${job.id}</div>
+              </div>
+            </div>
+          </td>
+          <td class="px-6 py-4">
+            ${scheduleDisplay}
+          </td>
+          <td class="px-6 py-4">
+            ${job.last_run?.started_at ? `
+              <div class="flex items-center gap-2">
+                <span class="text-gray-600 dark:text-gray-400">${formatTime(job.last_run.started_at)}</span>
+                ${getStatusBadge(job.last_run.status)}
+              </div>
+            ` : '<span class="text-gray-400 text-sm">Never</span>'}
+          </td>
+          <td class="px-6 py-4">
+            ${job.next_run_time ? `
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                ${formatTime(job.next_run_time)}
+              </span>
+            ` : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400">Paused</span>'}
+          </td>
+          <td class="px-6 py-4 text-center">${statsHtml}</td>
+          <td class="px-6 py-4">
+            <div class="flex items-center justify-center gap-2">
+              <button onclick="runJob('${job.id}')" class="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition" title="Run now">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </button>
+              <button onclick="showHistory('${job.id}', '${job.name}')" class="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition" title="View history">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+  
+  function editSchedule(jobId, jobName, currentCron) {
+    currentEditingJobId = jobId;
+    
+    // Update modal title
+    document.getElementById('schedule-modal-title').textContent = `Update Schedule: ${jobName}`;
+    
+    // Set current value
+    document.getElementById('cron-input').value = currentCron || '';
+    
+    // Show modal
+    document.getElementById('schedule-modal').classList.remove('hidden');
+  }
+  
+  function closeScheduleModal() {
+    document.getElementById('schedule-modal').classList.add('hidden');
+    currentEditingJobId = null;
+  }
+  
+  function saveSchedule() {
+    if (!currentEditingJobId) return;
+    
+    const cronValue = document.getElementById('cron-input').value.trim();
+    
+    // Validate basic format
+    if (cronValue) {
+      const parts = cronValue.split(/\s+/);
+      if (parts.length !== 5) {
+        Toast.error('Invalid cron expression. Must have exactly 5 parts.', { title: 'Validation Error' });
+        return;
+      }
+    }
+    
+    closeScheduleModal();
+    updateJobSchedule(currentEditingJobId, cronValue);
+  }
+  
+  async function updateJobSchedule(jobId, cronExpression) {
+    try {
+      const res = await fetch(`/admin/jobs/api/jobs/${jobId}/schedule?cron_expression=${encodeURIComponent(cronExpression)}`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      
+      if (data.status === 'success') {
+        Toast.success(data.message, { title: 'Success' });
+        setTimeout(loadJobs, 500);
+      } else {
+        Toast.error(data.message, { title: 'Error' });
+      }
+    } catch (err) {
+      Toast.error('Failed to update schedule', { title: 'Error' });
+    }
+  }
+  
+  async function runJob(jobId) {
+    try {
+      const res = await fetch(`/admin/jobs/api/jobs/${jobId}/run`, { method: 'POST' });
+      const data = await res.json();
+      
+      if (data.status === 'success') {
+        Toast.success(data.message, { title: 'Success' });
+        setTimeout(loadJobs, 1000);
+      } else {
+        Toast.error(data.message, { title: 'Error' });
+      }
+    } catch (err) {
+      Toast.error('Failed to trigger job', { title: 'Error' });
+    }
+  }
+  
+  async function showHistory(jobId, jobName) {
+    document.getElementById('history-modal-title').textContent = jobName;
+    document.getElementById('history-modal').classList.remove('hidden');
+    
+    try {
+      const res = await fetch(`/admin/jobs/api/jobs/${jobId}/history?limit=50`);
+      if (!res.ok) throw new Error('Failed to load history');
+      const data = await res.json();
+      
+      const tbody = document.getElementById('history-table-body');
+      if (data.history.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">No history found</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = data.history.map(h => `
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+          <td class="px-4 py-2 text-gray-600 dark:text-gray-400">${formatTime(h.started_at)}</td>
+          <td class="px-4 py-2 text-gray-600 dark:text-gray-400">${formatDuration(h.duration_ms)}</td>
+          <td class="px-4 py-2">${getStatusBadge(h.status)}</td>
+          <td class="px-4 py-2 text-gray-600 dark:text-gray-400">${h.records_processed || '-'}</td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      console.error('Failed to load history:', err);
+      Toast.error('Failed to load history', { title: 'Error' });
+    }
+  }
+  
+  function closeHistoryModal() {
+    document.getElementById('history-modal').classList.add('hidden');
+  }
+  
+  function refreshData() {
+    loadJobs();
+    loadStats();
+  }
+  
+  function setupAutoRefresh() {
+    const checkbox = document.getElementById('auto-refresh');
+    checkbox.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        autoRefreshInterval = setInterval(refreshData, 30000); // 30 seconds
+      } else {
+        clearInterval(autoRefreshInterval);
+      }
+    });
+    
+    // Start auto-refresh by default
+    autoRefreshInterval = setInterval(refreshData, 30000);
+  }
+  
+  // Close history modal on backdrop click
+  document.getElementById('history-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) {
+      closeHistoryModal();
+    }
+  });
+  
+  // Close schedule modal on backdrop click
+  document.getElementById('schedule-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) {
+      closeScheduleModal();
+    }
+  });
+  
+  // Close modals on escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeHistoryModal();
+      closeScheduleModal();
+    }
+  });
+  
+  // Allow Enter key to save in cron input
+  document.getElementById('cron-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveSchedule();
+    }
+  });
+  
+  // Initialize
+  document.addEventListener('DOMContentLoaded', () => {
+    loadJobs();
+    loadStats();
+    setupAutoRefresh();
+  });
+</script>
+{% endblock %}

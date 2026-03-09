@@ -29,6 +29,7 @@ nav_items = [
             {"label": "✅ WA Whitelist", "href": "/admin/whitelist", "roles": ["admin"]},
             {"label": "📨 Email Recipient", "href": "/recipients", "roles": ["admin"]},
             {"label": "⚙️ Config", "href": "/config", "roles": ["admin"]},
+            {"label": "⏰ Job Management", "href": "/admin/jobs", "roles": ["admin"]},
         ],
     },
     {

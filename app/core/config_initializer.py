@@ -3,40 +3,77 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.models.config import Configuration
 
 DEFAULT_CONFIG = {
+    # Snapshot settings
     "snapshot_interval_minutes": "480",
-    "healthcheck_interval_minutes": "15",
     "snapshot_concurrent_workers": "5",
     "max_screenshot_per_camera": "20",
-    "watermark_text": "Property of ...",
+    "snapshot_batch_size": "50",
+    "snapshot_batch_delay_seconds": "5",
+    
+    # Health check settings
+    "healthcheck_interval_minutes": "15",
+    
+    # Map settings
     "map_title": "CCTV Maps",
-    "snapshot_batch_size": "50",  # Default value for batch size
-    "snapshot_batch_delay_seconds": "5", # Default value for batch delay
-    # Log retention defaults
+    "watermark_text": "Property of ...",
+    
+    # Log retention settings
     "retention_audit_logs_days": "180",
     "retention_api_logs_days": "90",
     "retention_command_logs_days": "90",
     "retention_camera_stats_days": "90",
     "retention_email_logs_days": "90",
-    # Storage monitoring defaults
+    "retention_job_logs_days": "30",  # New: job execution log retention
+    
+    # Storage monitoring settings
     "storage_critical_percent": "95",
     "storage_warning_percent": "85",
     "storage_info_percent": "75",
     "storage_critical_free_gb": "5",
-    # SMTP defaults (empty - user must configure)
+    "storage_check_interval_hours": "1",  # New: configurable storage check interval
+    
+    # SMTP settings
     "smtp_host": "",
     "smtp_port": "587",
     "smtp_user": "",
     "smtp_pass": "",
     "email_from": "",
     "email_cc": "",
-    # GoWA (WhatsApp Gateway) defaults
+    
+    # Email retry settings
+    "email_retry_interval_minutes": "1",  # New: configurable email retry interval
+    "email_retry_max_attempts": "5",
+    
+    # Cleanup job settings
+    "storage_check_interval_hours": "1",  # New: storage check interval
+    "cleanup_interval_days": "1",  # New: configurable cleanup interval
+    "cleanup_retry_queue_interval_days": "1",  # New: retry queue cleanup interval
+    "retention_job_logs_days": "30",  # New: job execution logs retention
+    
+    # Job Cron Schedules (NEW) - Cron expressions override interval settings
+    # Format: "minute hour day month weekday" (e.g., "0 8,13,23 * * *" = jam 8, 13, 23)
+    "snapshot_cron": "",  # Empty = use interval, e.g., "0 8,13,23 * * *" for specific times
+    "healthcheck_cron": "",  # Empty = use interval
+    "storage_check_cron": "",  # Empty = use interval
+    "cleanup_cron": "0 2 * * *",  # Default: 2 AM daily
+    "email_retry_cron": "",  # Empty = use interval
+    
+    # WhatsApp Gateway settings
     "gowa_enabled": "0",
     "gowa_base_url": "http://localhost:3000",
     "gowa_api_key": "",
-    "gowa_default_receiver": ""
+    "gowa_default_receiver": "",
+    "wa_daily_report_hour": "8",  # New: WA daily report hour (0-23)
+    "wa_daily_report_minute": "0",  # New: WA daily report minute (0-59)
+    "wa_storage_alert_interval_hours": "2",  # New: WA storage alert interval
 }
 
+
 def seed_config(db: Session):
+    """Initialize default configuration values in database.
+    
+    Only inserts missing keys, never overwrites existing values.
+    """
     try:
         for key, value in DEFAULT_CONFIG.items():
             existing = db.query(Configuration).filter_by(key=key).first()

@@ -196,6 +196,138 @@
   </div>
 
   <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">
+      <svg class="w-8 h-8 text-gray-900 dark:text-gray-100 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg> Job Scheduling
+    </h2>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+      Configure intervals for background scheduled jobs. Use <strong>Cron Expression</strong> for precise scheduling (e.g., <code>0 8,13,23 * * *</code> for 08:00, 13:00, 23:00 daily). Leave cron empty to use interval instead.
+    </p>
+    
+    <!-- Cron Expression Section -->
+    <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 mb-6 border border-indigo-200 dark:border-indigo-800">
+      <h3 class="text-sm font-semibold text-indigo-800 dark:text-indigo-300 mb-3 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+        </svg>
+        Advanced Cron Scheduling
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Snapshot Cron -->
+        <div>
+          <label for="snapshot_cron" class="block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Snapshot Schedule (Cron)</label>
+          <input type="text" id="snapshot_cron" name="snapshot_cron" 
+            value="{{ configs.get('snapshot_cron', '') }}" 
+            placeholder="e.g., 0 8,13,23 * * *"
+            class="w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
+          <p class="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
+            <span class="font-semibold">Examples:</span><br>
+            <code>0 8 * * *</code> = Every day at 08:00<br>
+            <code>0 8,13,23 * * *</code> = At 08:00, 13:00, 23:00<br>
+            <code>*/30 * * * *</code> = Every 30 minutes
+          </p>
+        </div>
+        
+        <!-- Healthcheck Cron -->
+        <div>
+          <label for="healthcheck_cron" class="block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Healthcheck Schedule (Cron)</label>
+          <input type="text" id="healthcheck_cron" name="healthcheck_cron" 
+            value="{{ configs.get('healthcheck_cron', '') }}" 
+            placeholder="e.g., */15 * * * *"
+            class="w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
+          <p class="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
+            Default (empty): uses interval below<br>
+            <code>*/15 * * * *</code> = Every 15 minutes
+          </p>
+        </div>
+        
+        <!-- Storage Check Cron -->
+        <div>
+          <label for="storage_check_cron" class="block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Storage Check Schedule (Cron)</label>
+          <input type="text" id="storage_check_cron" name="storage_check_cron" 
+            value="{{ configs.get('storage_check_cron', '') }}" 
+            placeholder="e.g., 0 * * * *"
+            class="w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
+          <p class="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
+            <code>0 * * * *</code> = Every hour<br>
+            <code>0 */6 * * *</code> = Every 6 hours
+          </p>
+        </div>
+        
+        <!-- Cleanup Cron -->
+        <div>
+          <label for="cleanup_cron" class="block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Cleanup Schedule (Cron)</label>
+          <input type="text" id="cleanup_cron" name="cleanup_cron" 
+            value="{{ configs.get('cleanup_cron', '0 2 * * *') }}" 
+            placeholder="e.g., 0 2 * * *"
+            class="w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
+          <p class="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
+            Default: <code>0 2 * * *</code> (2 AM daily)
+          </p>
+        </div>
+        
+        <!-- Email Retry Cron -->
+        <div>
+          <label for="email_retry_cron" class="block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Email Retry Schedule (Cron)</label>
+          <input type="text" id="email_retry_cron" name="email_retry_cron" 
+            value="{{ configs.get('email_retry_cron', '') }}" 
+            placeholder="e.g., */5 * * * *"
+            class="w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
+          <p class="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
+            <code>*/5 * * * *</code> = Every 5 minutes
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Interval Fallback Section -->
+    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Fallback Intervals (used when cron is empty)</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <label for="storage_check_interval_hours" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Storage Check Interval (hours)</label>
+        <input type="number" id="storage_check_interval_hours" name="storage_check_interval_hours" 
+          value="{{ configs.get('storage_check_interval_hours', '1') }}" 
+          min="1" max="24" required
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How often to check storage usage. Default: 1 hour</p>
+      </div>
+      <div>
+        <label for="cleanup_interval_days" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Cleanup Interval (days)</label>
+        <input type="number" id="cleanup_interval_days" name="cleanup_interval_days" 
+          value="{{ configs.get('cleanup_interval_days', '1') }}" 
+          min="1" max="7" required
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How often to run cleanup jobs. Default: 1 day</p>
+      </div>
+      <div>
+        <label for="email_retry_interval_minutes" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Email Retry Interval (minutes)</label>
+        <input type="number" id="email_retry_interval_minutes" name="email_retry_interval_minutes" 
+          value="{{ configs.get('email_retry_interval_minutes', '1') }}" 
+          min="1" max="60" required
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How often to retry failed emails. Default: 1 minute</p>
+      </div>
+      <div>
+        <label for="retention_job_logs_days" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Job Logs Retention (days)</label>
+        <input type="number" id="retention_job_logs_days" name="retention_job_logs_days" 
+          value="{{ configs.get('retention_job_logs_days', '30') }}" 
+          min="7" max="365" required
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How long to keep job execution logs. Default: 30 days</p>
+      </div>
+    </div>
+    <div class="mt-4 flex gap-2">
+      <a href="/admin/jobs/" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg shadow transition-colors duration-200">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+        </svg>
+        Open Job Dashboard
+      </a>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
     <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_email("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Email (SMTP) Configuration</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>

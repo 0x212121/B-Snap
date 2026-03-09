@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}B-SNAP – SLA Compliance Report{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+
+    <h1 class="text-3xl font-bold mb-4 text-gray-800 dark:text-gray-200">SLA Compliance Report</h1>
+
+    <div class="mb-6 flex flex-wrap gap-3">
+        <a href="/health/history" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Health History
+        </a>
+        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            Print Report
+        </button>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Report Period</h3>
+            <p class="text-2xl font-bold text-gray-800 dark:text-gray-200 mt-2">{{ start_date.strftime('%d %b') }} - {{ end_date.strftime('%d %b %Y') }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Total Cameras</h3>
+            <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-2">{{ summary.total_cameras }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Average Uptime</h3>
+            <p class="text-2xl font-bold {% if summary.average_uptime >= sla_threshold %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %} mt-2">{{ "%.2f"|format(summary.average_uptime) }}%</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">SLA Threshold</h3>
+            <p class="text-2xl font-bold text-gray-800 dark:text-gray-200 mt-2">{{ sla_threshold }}%</p>
+        </div>
+    </div>
+
+    <!-- Compliance Summary -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow mb-8">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Compliance Summary</h2>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 dark:bg-green-900 mb-3">
+                        <span class="text-2xl font-bold text-green-600 dark:text-green-400">{{ summary.compliance.pass }}</span>
+                    </div>
+                    <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400">Pass</h4>
+                    <p class="text-xs text-gray-500 mt-1">≥ {{ sla_threshold }}% uptime</p>
+                </div>
+                <div class="text-center">
+                    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-yellow-100 dark:bg-yellow-900 mb-3">
+                        <span class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ summary.compliance.warning }}</span>
+                    </div>
+                    <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400">Warning</h4>
+                    <p class="text-xs text-gray-500 mt-1">{{ sla_threshold - 1 }}% - {{ sla_threshold }}% uptime</p>
+                </div>
+                <div class="text-center">
+                    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 dark:bg-red-900 mb-3">
+                        <span class="text-2xl font-bold text-red-600 dark:text-red-400">{{ summary.compliance.fail }}</span>
+                    </div>
+                    <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400">Fail</h4>
+                    <p class="text-xs text-gray-500 mt-1">&lt; {{ sla_threshold - 1 }}% uptime</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Highlights -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {% if summary.best_performer %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-green-500">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">Best Performer</h3>
+            <p class="text-xl font-bold text-gray-800 dark:text-gray-200">{{ summary.best_performer.camera_name }}</p>
+            <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{{ "%.2f"|format(summary.best_performer.uptime_percentage) }}%</p>
+            <p class="text-sm text-gray-500 mt-1">{{ summary.best_performer.location or 'No location' }}</p>
+        </div>
+        {% endif %}
+        {% if summary.worst_performer %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-red-500">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">Needs Attention</h3>
+            <p class="text-xl font-bold text-gray-800 dark:text-gray-200">{{ summary.worst_performer.camera_name }}</p>
+            <p class="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{{ "%.2f"|format(summary.worst_performer.uptime_percentage) }}%</p>
+            <p class="text-sm text-gray-500 mt-1">{{ summary.worst_performer.location or 'No location' }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Incident Summary -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow mb-8">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Incident Summary</h2>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/30 rounded-lg">
+                    <div>
+                        <p class="text-sm font-medium text-red-800 dark:text-red-400">Critical</p>
+                        <p class="text-xs text-red-600 dark:text-red-500">≥ 1 hour downtime</p>
+                    </div>
+                    <span class="text-2xl font-bold text-red-600 dark:text-red-400">{{ summary.total_incidents.critical }}</span>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
+                    <div>
+                        <p class="text-sm font-medium text-orange-800 dark:text-orange-400">Major</p>
+                        <p class="text-xs text-orange-600 dark:text-orange-500">10 min - 1 hour</p>
+                    </div>
+                    <span class="text-2xl font-bold text-orange-600 dark:text-orange-400">{{ summary.total_incidents.major }}</span>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                    <div>
+                        <p class="text-sm font-medium text-blue-800 dark:text-blue-400">Minor</p>
+                        <p class="text-xs text-blue-600 dark:text-blue-500">&lt; 10 minutes</p>
+                    </div>
+                    <span class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ summary.total_incidents.minor }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Device Details</h2>
+            <span class="text-sm text-gray-500 dark:text-gray-400">{{ sla_data|length }} cameras</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Camera</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Location</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Group</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Uptime %</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Downtime (h)</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Incidents</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Severity</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for camera in sla_data %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200">{{ camera.camera_name }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ camera.location or '-' }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ camera.group_name }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center font-medium {% if camera.uptime_percentage >= sla_threshold %}text-green-600 dark:text-green-400{% elif camera.uptime_percentage >= sla_threshold - 1 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                            {{ "%.2f"|format(camera.uptime_percentage) }}%
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-400">{{ "%.2f"|format(camera.total_downtime_seconds / 3600) }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-400">{{ camera.incident_count }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center">
+                            <div class="flex justify-center gap-1">
+                                {% if camera.severity_critical > 0 %}
+                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-600 text-xs font-bold" title="Critical">{{ camera.severity_critical }}</span>
+                                {% endif %}
+                                {% if camera.severity_major > 0 %}
+                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-600 text-xs font-bold" title="Major">{{ camera.severity_major }}</span>
+                                {% endif %}
+                                {% if camera.severity_minor > 0 %}
+                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-xs font-bold" title="Minor">{{ camera.severity_minor }}</span>
+                                {% endif %}
+                                {% if camera.incident_count == 0 %}
+                                <span class="text-gray-400">-</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if camera.compliance_status == 'Pass' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300{% elif camera.compliance_status == 'Warning' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300{% else %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300{% endif %}">
+                                {{ camera.compliance_status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+        <p>Generated by B-SNAP Monitoring System on {{ now().strftime('%d %B %Y %H:%M') if now is defined else 'N/A' }}</p>
+        <p class="mt-1">This report is confidential and intended for authorized personnel only.</p>
+    </div>
+</div>
+{% endblock %}
