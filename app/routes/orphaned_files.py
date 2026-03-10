@@ -119,17 +119,63 @@ def scan_orphaned_files(
 ):
     """Run orphaned file scan and sync to database."""
     try:
-        result = run_orphaned_scan(db)
-        return JSONResponse({
-            'disk_files': result['disk_files'],
-            'db_records': result['db_records'],
-            'orphaned_found': result['orphaned_found'],
-            'new_records': result['new_records'],
-            'total_orphaned': result['total_orphaned'],
-            'storage_summary': result['storage_summary']
-        })
+        logger.info("[OrphanedScan] Starting scan...")
+        
+        # Run scan step by step with error handling
+        try:
+            scanner = FolderScanner()
+            manager = OrphanedFileManager()
+            
+            # Step 1: Scan folder
+            logger.info("[OrphanedScan] Step 1: Scanning folder...")
+            orphaned_list, disk_count, db_count = scanner.scan_for_orphaned(db)
+            logger.info("[OrphanedScan] Found %d orphaned files on disk", len(orphaned_list))
+            
+            # Step 2: Sync to table
+            logger.info("[OrphanedScan] Step 2: Syncing to table...")
+            new_count, total_orphaned = scanner.sync_to_orphaned_table(db)
+            logger.info("[OrphanedScan] Sync complete: %d new, %d total", new_count, total_orphaned)
+            
+            # Step 3: Get storage summary
+            logger.info("[OrphanedScan] Step 3: Getting storage summary...")
+            summary = manager.get_storage_summary(db)
+            logger.info("[OrphanedScan] Summary: %s", summary)
+            
+            response_data = {
+                'disk_files': int(disk_count),
+                'db_records': int(db_count),
+                'orphaned_found': int(len(orphaned_list)),
+                'new_records': int(new_count),
+                'total_orphaned': int(total_orphaned),
+                'storage_summary': summary
+            }
+            
+            logger.info("[OrphanedScan] Returning response: %s", response_data)
+            return JSONResponse(content=response_data)
+            
+        except Exception as inner_e:
+            logger.error("[OrphanedScan] Error during scan steps: %s", inner_e, exc_info=True)
+            # Even if there's an error, try to return a valid response
+            return JSONResponse(
+                status_code=500,
+                content={
+                    'status': 'error',
+                    'message': str(inner_e),
+                    'disk_files': 0,
+                    'db_records': 0,
+                    'orphaned_found': 0,
+                    'new_records': 0,
+                    'total_orphaned': 0,
+                    'storage_summary': {
+                        'total_count': 0,
+                        'total_size_bytes': 0,
+                        'total_size_mb': 0,
+                        'by_camera': []
+                    }
+                }
+            )
     except Exception as e:
-        logger.error("[OrphanedScan] Error: %s", e, exc_info=True)
+        logger.error("[OrphanedScan] Critical error: %s", e, exc_info=True)
         import traceback
         logger.error(traceback.format_exc())
         return JSONResponse(
@@ -211,6 +257,31 @@ def cleanup_all_orphaned(
         logger.error("[OrphanedCleanup] Error: %s", e, exc_info=True)
         import traceback
         logger.error(traceback.format_exc())
+        return JSONResponse(
+            status_code=500,
+            content={'status': 'error', 'message': str(e)}
+        )
+
+
+@router.get("/api/orphaned-files/test-scan")
+def test_scan(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """Simple test endpoint for scan."""
+    try:
+        scanner = FolderScanner()
+        disk_files = scanner.get_all_files_on_disk()
+        db_paths = scanner.get_all_db_file_paths(db)
+        
+        return JSONResponse({
+            'disk_file_count': len(disk_files),
+            'db_record_count': len(db_paths),
+            'status': 'ok'
+        })
+    except Exception as e:
+        logger.error("[TestScan] Error: %s", e)
         return JSONResponse(
             status_code=500,
             content={'status': 'error', 'message': str(e)}
