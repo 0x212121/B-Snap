@@ -669,12 +669,15 @@
         if (data.type === "record_complete") {
           const fileSizeMB = (data.file_size / (1024 * 1024)).toFixed(2);
           const fileUrl = `/static/videos/${encodeURIComponent(data.file_path)}`;
-          Toast.success(`
-            🎥 <strong>${data.camera_name}</strong> (${data.group}) finished recording.<br>
-            ⏱️ Duration: ${data.duration.toFixed(1)}s<br>
-            📦 Size: ${fileSizeMB} MB<br>
-            🔗 <a href="${fileUrl}" target="_blank" class="underline">View Video</a>
-          `, { title: 'Success' });
+          Toast.success(
+            `🎥 ${data.camera_name} (${data.group}) finished recording.\n` +
+            `⏱️ Duration: ${data.duration.toFixed(1)}s | 📦 Size: ${fileSizeMB} MB`,
+            { 
+              title: 'Recording Complete',
+              actions: [{ label: 'View Video', url: fileUrl }],
+              duration: 8000
+            }
+          );
         }
       } catch (err) {
         console.error("❌ WebSocket JSON parse error", err);
