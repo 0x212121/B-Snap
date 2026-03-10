@@ -6,6 +6,7 @@ from PIL import Image
 import numpy as np
 from sqlalchemy.orm import Session
 from uuid import uuid4
+from typing import Tuple, List
 
 from app.models.camera import Camera
 from app.models.snapshot import Snapshot
@@ -159,3 +160,73 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
         logger.info("[SNAPSHOT OK] %s – %.2f", camera.hostname, blur_score)
 
     return snapshot
+
+
+def check_orphaned_snapshots(db: Session) -> Tuple[int, int]:
+    """Check and mark orphaned snapshots (snapshots with camera_id that no longer exists).
+    
+    This function queries all snapshots where camera_id is not null and checks
+    if the referenced camera still exists in the database. If not, the snapshot
+    is marked as orphaned (is_orphaned = True).
+    
+    Args:
+        db: Database session
+        
+    Returns:
+        Tuple of (newly_orphaned_count, total_orphaned_count)
+    """
+    # Get all active camera IDs
+    active_camera_ids = {cam.id for cam in db.query(Camera.id).all()}
+    
+    # Find snapshots that need to be checked
+    # We check snapshots where:
+    # 1. camera_id is not null (has a camera reference)
+    # 2. Either is_orphaned is False or camera_id not in active cameras
+    snapshots = db.query(Snapshot).filter(
+        Snapshot.camera_id.isnot(None)
+    ).all()
+    
+    newly_orphaned = 0
+    already_orphaned = 0
+    
+    for snapshot in snapshots:
+        if snapshot.camera_id not in active_camera_ids:
+            if not snapshot.is_orphaned:
+                snapshot.is_orphaned = True
+                newly_orphaned += 1
+                logger.info("[ORPHANED] Snapshot %s marked as orphaned (camera_id: %s not found)", 
+                           snapshot.id, snapshot.camera_id)
+            else:
+                already_orphaned += 1
+        else:
+            # Camera exists, ensure is_orphaned is False
+            if snapshot.is_orphaned:
+                snapshot.is_orphaned = False
+                logger.info("[RESTORED] Snapshot %s marked as not orphaned (camera_id: %s found)", 
+                           snapshot.id, snapshot.camera_id)
+    
+    if newly_orphaned > 0:
+        db.commit()
+        logger.info("[ORPHAN CHECK] Marked %d snapshots as orphaned", newly_orphaned)
+    
+    total_orphaned = db.query(Snapshot).filter(Snapshot.is_orphaned == True).count()
+    
+    return newly_orphaned, total_orphaned
+
+
+def get_orphaned_snapshots(db: Session, limit: int = None) -> List[Snapshot]:
+    """Get all orphaned snapshots.
+    
+    Args:
+        db: Database session
+        limit: Optional limit on number of results
+        
+    Returns:
+        List of orphaned Snapshot objects
+    """
+    query = db.query(Snapshot).filter(Snapshot.is_orphaned == True).order_by(Snapshot.timestamp.desc())
+    
+    if limit:
+        query = query.limit(limit)
+    
+    return query.all()

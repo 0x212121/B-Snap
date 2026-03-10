@@ -25,4 +25,5 @@ class Snapshot(Base):
     tamper_reason = Column(String, nullable=True)
     blur_score = Column(Float, nullable=True)
     entropy_score = Column(Float, nullable=True)
+    is_orphaned = Column(Boolean, default=False, server_default="0")
     camera = relationship("Camera", back_populates="snapshots")

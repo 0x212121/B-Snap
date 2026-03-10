@@ -23,6 +23,9 @@
       {% if image.is_tampered %}
         <span class="badge font-medium bg-red-500 text-white">🔴 Tampered: {{ image.tamper_reason }}</span>
       {% endif %}
+      {% if image.is_orphaned %}
+        <span class="badge font-medium bg-amber-500 text-white" title="Camera has been deleted">⚠️ Orphaned</span>
+      {% endif %}
       </p>
     </div>
   </div>

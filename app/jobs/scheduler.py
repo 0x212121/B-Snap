@@ -23,7 +23,7 @@ from app.models.audit_log import AuditLog
 from app.models.camera_daily_stats import CameraDailyStats
 from app.models.snapshot_log import SnapshotLog
 from app.models.job_execution_log import JobExecutionLog
-from app.utils.snapshot_utils import record_snapshot_metadata
+from app.utils.snapshot_utils import record_snapshot_metadata, check_orphaned_snapshots
 from sqlalchemy.orm import Session
 from app.models.task_timing import TaskTiming
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -541,6 +541,17 @@ def start_scheduler():
         misfire_grace_time=300,
         replace_existing=True
     )
+    
+    # Orphaned snapshots check - runs every hour
+    scheduler.add_job(
+        logged_job("orphaned_snapshots_check", "Orphaned Snapshots Check")(check_orphaned_snapshots_job),
+        trigger=IntervalTrigger(hours=1),
+        id='orphaned_snapshots_check',
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=300,
+        replace_existing=True
+    )
 
     scheduler.start()
     logger.info("[Scheduler] Started with %d jobs", len(scheduler.get_jobs()))
@@ -653,6 +664,29 @@ def delete_old_audit_logs():
     except Exception as e:
         db.rollback()
         logger.error("[delete_old_audit_logs] Error: %s", e, exc_info=True)
+        raise
+    finally:
+        db.close()
+
+
+# ----------------------------
+# Orphaned Snapshots Job
+# ----------------------------
+def check_orphaned_snapshots_job():
+    """Job to check and mark orphaned snapshots."""
+    db: Session = SessionLocal()
+    try:
+        newly_orphaned, total_orphaned = check_orphaned_snapshots(db)
+        logger.info(
+            "[Orphaned Check] Newly orphaned: %d, Total orphaned: %d",
+            newly_orphaned, total_orphaned
+        )
+        return {
+            "records_processed": newly_orphaned,
+            "total_orphaned": total_orphaned
+        }
+    except Exception as e:
+        logger.error("[Orphaned Check] Error: %s", e, exc_info=True)
         raise
     finally:
         db.close()

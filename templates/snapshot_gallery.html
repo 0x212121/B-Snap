@@ -86,6 +86,25 @@
         <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Show Tampered Only</span>
       </label>
       
+      <!-- Orphaned Filter Toggle -->
+      <label for="filterOrphaned" class="inline-flex items-center cursor-pointer">
+        <input type="checkbox" id="filterOrphaned" class="sr-only peer" {% if orphaned_only %}checked{% endif %}>
+        <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-red-600 dark:peer-checked:bg-red-600"></div>
+        <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300 flex items-center gap-2">
+          Show Orphaned Only
+          {% if orphaned_count > 0 %}
+            <span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{{ orphaned_count }}</span>
+          {% endif %}
+        </span>
+      </label>
+      
+      <!-- Manual Check Button -->
+      <button type="button" id="checkOrphanedBtn"
+        class="px-3 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 text-sm flex items-center gap-1"
+        title="Manually check for orphaned snapshots">
+        <span>🧹</span> Check Orphaned
+      </button>
+      
     </div>
     
     <!-- Action Buttons -->
@@ -158,6 +177,9 @@
     
     const tamperedOnly = document.getElementById("filterTampered")?.checked;
     if (tamperedOnly) urlParams.set('tampered', 'true');
+    
+    const orphanedOnly = document.getElementById("filterOrphaned")?.checked;
+    if (orphanedOnly) urlParams.set('orphaned', 'true');
     
     urlParams.set('offset', pageOffset);
     urlParams.set('limit', pageLimit);
@@ -326,12 +348,56 @@
       fetchAndUpdateGallery({ camera: selectedCamera, q: searchQuery });
     });
     
+    document.getElementById("filterOrphaned")?.addEventListener("change", () => {
+      const selectedCamera = tom?.getValue() || "";
+      const searchQuery = document.getElementById("searchInput")?.value || "";
+      pageOffset = 0;
+      hasMore = true;
+      fetchAndUpdateGallery({ camera: selectedCamera, q: searchQuery });
+    });
+    
+    // Manual check orphaned button
+    document.getElementById("checkOrphanedBtn")?.addEventListener("click", async () => {
+      const btn = document.getElementById("checkOrphanedBtn");
+      btn.disabled = true;
+      btn.innerHTML = "<span>⏳</span> Checking...";
+      
+      try {
+        const response = await fetch("/snapshots/check-orphaned", { method: "POST" });
+        const data = await response.json();
+        
+        if (response.ok && data.status === "success") {
+          Toast.success(data.message, { title: "Orphaned Check Complete", duration: 4000 });
+          // Refresh the gallery to show updated orphaned status
+          const selectedCamera = tom?.getValue() || "";
+          const searchQuery = document.getElementById("searchInput")?.value || "";
+          pageOffset = 0;
+          hasMore = true;
+          fetchAndUpdateGallery({ camera: selectedCamera, q: searchQuery });
+        } else {
+          Toast.error(data.message || "Failed to check orphaned snapshots", { title: "Error", duration: 5000 });
+        }
+      } catch (error) {
+        console.error("Check orphaned error:", error);
+        Toast.error("Error checking orphaned snapshots", { title: "Error", duration: 5000 });
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = "<span>🧹</span> Check Orphaned";
+      }
+    });
+    
     
     document.getElementById("clearFilterBtn")?.addEventListener("click", () => {
       document.getElementById("searchInput").value = '';
       tom.clear(); 
       
-      const tampered = document.getElementById("filterTampered")?.checked;
+      // Reset all filters
+      const tamperedCheckbox = document.getElementById("filterTampered");
+      if (tamperedCheckbox) tamperedCheckbox.checked = false;
+      
+      const orphanedCheckbox = document.getElementById("filterOrphaned");
+      if (orphanedCheckbox) orphanedCheckbox.checked = false;
+      
       pageOffset = 0;
       hasMore = true;
       
