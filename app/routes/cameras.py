@@ -217,15 +217,7 @@ async def add_camera_submit(
             extra="via Camera Management"
         )
         
-        # Toast notification
-        await NotificationService.success(
-            message=f"Camera '{name}' added successfully",
-            title="Camera Created",
-            actions=[
-                {"label": "View Camera", "url": f"/cameras"},
-                {"label": "Take Snapshot", "url": f"/snap_gallery?camera={name}"}
-            ]
-        )
+        # Note: Toast notification is handled by frontend
         
         if status != "Deactivated" and status != "Standalone":
             logger.debug("Camera status is '%s', pinging camera for healthcheck.", status)
@@ -366,14 +358,7 @@ async def edit_camera_submit(
                 db.commit()
                 logger.info("Health record for camera '%s' set to Offline due to deactivation.", cam.hostname)
         
-        # Toast notification
-        await NotificationService.success(
-            message=f"Camera '{name}' updated successfully",
-            title="Camera Updated",
-            actions=[
-                {"label": "View Camera", "url": f"/cameras"}
-            ]
-        )
+        # Note: Toast notification is handled by frontend
         
         return {"status": "success", "message": "Camera updated successfully"}
 
@@ -500,11 +485,7 @@ async def delete_camera(request: Request, camera_id: str, db: Session = Depends(
             extra=f"via Camera Management\nIP: {cam.ip}"
         )
         
-        # Toast notification
-        await NotificationService.success(
-            message=f"Camera '{cam.hostname}' and all associated files deleted",
-            title="Camera Deleted"
-        )
+        # Note: Toast notification is handled by frontend
         
         return JSONResponse(status_code=200, content={"status": "success", "message": f"Camera '{cam.hostname}' and all associated files deleted."})
 

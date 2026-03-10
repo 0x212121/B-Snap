@@ -24,7 +24,10 @@ from app.utils.timezone_helper import to_current_timezone
 
 router = APIRouter(tags=["Snapshots"])
 
-SNAPSHOT_BASE_DIR = "static"
+# Base directory for snapshots - must match the physical folder structure
+# Files are stored at: static/snapshots/<camera_id>/<date>/<filename>
+# URL access: /static/snapshots/<camera_id>/<date>/<filename>
+SNAPSHOT_BASE_DIR = "static/snapshots"
 
 logger = logging.getLogger("snapshot")
 

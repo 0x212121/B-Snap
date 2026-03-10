@@ -452,35 +452,9 @@
         document.getElementById('snapshotModal').classList.remove('hidden');
         
         const filename = `snapshot_${displayName}_${data.timestamp.replace(/[\s:]/g, '-')}.jpg`;
-        downloadBtn.setAttribute('download', filename); 
-        
-        downloadBtn.onclick = (event) => {
-          event.preventDefault();
-          const canvas = document.createElement('canvas');
-          const img = new Image();
-          img.crossOrigin = "anonymous"; 
-          img.src = data.url; 
-          img.onload = function () {
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            ctx.font = '24px sans-serif';
-            ctx.fillStyle = 'white';
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2;
-            ctx.textAlign = 'right';
-            ctx.strokeText(displayName, canvas.width - 20, 40);
-            ctx.fillText(displayName, canvas.width - 20, 40);
-            ctx.strokeText(data.timestamp, canvas.width - 20, 70);
-            ctx.fillText(data.timestamp, canvas.width - 20, 70);
-            const link = document.createElement('a');
-            link.href = canvas.toDataURL("image/jpeg");
-            link.download = filename; 
-            link.click();
-          };
-          img.onerror = () => showAlertModal("Failed to load image for download.");
-        };
+        // Simple direct download (same as snap_gallery)
+        downloadBtn.href = data.url;
+        downloadBtn.download = filename;
       } else {
         showAlertModal(data.detail || "No snapshot found");
       }

@@ -102,6 +102,15 @@ def _take_snapshot_from_url(camera: Camera, url: str) -> Dict[str, Any]:
         # Save image
         cv2.imwrite(str(file_path), frame)
         
+        # Add watermark
+        try:
+            from app.utils.image_utils import add_watermark
+            from app.core.config import get_config_value
+            watermark_text = get_config_value("watermark_text", "Property of B-SNAP")
+            add_watermark(str(file_path), watermark_text)
+        except Exception as e:
+            logger.warning(f"Failed to add watermark: {e}")
+        
         # Return relative path including folder structure (without 'snapshots/' prefix since SNAPSHOT_BASE_DIR already includes it)
         relative_path = f"{camera.id}/{today}/{filename}"
         
@@ -202,6 +211,15 @@ def take_snapshot(camera: Camera, db: Session) -> Dict[str, Any]:
         # Save image
         cv2.imwrite(str(file_path), frame)
         
+        # Add watermark
+        try:
+            from app.utils.image_utils import add_watermark
+            from app.core.config import get_config
+            watermark_text = get_config("watermark_text", "Property of B-SNAP")
+            add_watermark(str(file_path), watermark_text)
+        except Exception as e:
+            logger.warning(f"Failed to add watermark: {e}")
+        
         # Return relative path including folder structure (without 'snapshots/' prefix since SNAPSHOT_BASE_DIR already includes it)
         relative_path = f"{camera.id}/{today}/{filename}"
         
@@ -242,19 +260,12 @@ class SnapshotService:
         """
         camera = db.query(Camera).filter(Camera.id == camera_id).first()
         if not camera:
-            await NotificationService.error(
-                message=f"Camera with ID {camera_id} not found",
-                title="Snapshot Failed",
-            )
+            # Note: Error notification is handled by frontend
             return None
         
         # Check if camera is active (status should be Active, Restricted, or Maintenance)
         if camera.status not in ["Active", "Restricted", "Maintenance"]:
-            await NotificationService.warning(
-                message=f"Camera '{camera.hostname}' is currently disabled (status: {camera.status})",
-                title="Camera Disabled",
-                camera_id=camera_id,
-            )
+            # Note: Warning notification is handled by frontend
             return None
         
         try:
@@ -262,11 +273,7 @@ class SnapshotService:
             result = take_snapshot(camera, db)
             
             if result["status"] != "success":
-                await NotificationService.error(
-                    message=result.get("message", "Unknown error"),
-                    title="Snapshot Failed",
-                    camera_id=camera_id,
-                )
+                # Note: Error notification is handled by frontend
                 return None
             
             # Create snapshot record
@@ -280,31 +287,17 @@ class SnapshotService:
             )
             
             if not snapshot:
-                await NotificationService.error(
-                    message="Failed to record snapshot metadata",
-                    title="Snapshot Error",
-                    camera_id=camera_id,
-                )
+                # Note: Error notification is handled by frontend
                 return None
             
-            # Notify success
-            await NotificationService.snapshot_saved(
-                camera_name=camera.hostname,
-                camera_id=camera_id,
-                snapshot_id=snapshot.id,
-            )
+            # Note: Success notification is handled by frontend
             
             logger.info(f"Snapshot captured from {camera.hostname} (ID: {snapshot.id})")
             return snapshot
             
         except Exception as e:
             logger.error(f"Failed to capture snapshot from {camera.hostname}: {e}")
-            
-            await NotificationService.error(
-                message=f"Failed to capture snapshot: {str(e)}",
-                title="Snapshot Error",
-                camera_id=camera_id,
-            )
+            # Note: Error notification is handled by frontend
             return None
     
     @staticmethod
@@ -346,19 +339,7 @@ class SnapshotService:
             else:
                 results["failed"].append(camera_id)
         
-        # Summary notification
-        if results["failed"]:
-            await NotificationService.warning(
-                message=f"Bulk capture complete: {len(results['success'])} succeeded, {len(results['failed'])} failed",
-                title="Bulk Snapshot Complete",
-                duration=6000,
-            )
-        else:
-            await NotificationService.success(
-                message=f"Successfully captured snapshots from all {len(results['success'])} cameras",
-                title="Bulk Snapshot Complete",
-                duration=4000,
-            )
+        # Note: Notifications are handled by caller (frontend or scheduler)
         
         return results
     
@@ -380,10 +361,7 @@ class SnapshotService:
         """
         snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
         if not snapshot:
-            await NotificationService.error(
-                message=f"Snapshot with ID {snapshot_id} not found",
-                title="Delete Failed",
-            )
+            # Note: Error notification is handled by frontend
             return False
         
         try:
@@ -397,22 +375,14 @@ class SnapshotService:
             db.delete(snapshot)
             db.commit()
             
-            await NotificationService.success(
-                message=f"Snapshot from '{camera_name}' deleted by {user_name}",
-                title="Snapshot Deleted",
-                duration=3000,
-            )
+            # Note: Success notification is handled by frontend
             
             logger.info(f"Snapshot {snapshot_id} deleted by {user_name}")
             return True
             
         except Exception as e:
             logger.error(f"Failed to delete snapshot {snapshot_id}: {e}")
-            
-            await NotificationService.error(
-                message=f"Failed to delete snapshot: {str(e)}",
-                title="Delete Error",
-            )
+            # Note: Error notification is handled by frontend
             return False
 
 

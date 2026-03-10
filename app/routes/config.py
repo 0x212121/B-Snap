@@ -227,14 +227,7 @@ async def config_save(
 
     set_debug_mode(debug_mode)
     
-    # Toast notification
-    await NotificationService.success(
-        message="Configuration saved successfully",
-        title="Settings Saved",
-        actions=[
-            {"label": "View Config", "url": "/config"}
-        ]
-    )
+    # Note: Toast notification is handled by frontend
 
     return JSONResponse(status_code=200, content={"message": "Configuration saved successfully."})
 
