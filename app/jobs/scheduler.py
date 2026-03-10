@@ -894,7 +894,7 @@ def send_wa_camera_no_snapshot_report():
             return {"records_processed": 0}
         
         yesterday = datetime.now(timezone.utc) - timedelta(days=1)
-        cameras = db.query(Camera).filter(Camera.is_active == True).all()
+        cameras = db.query(Camera).filter(Camera.status.in_(["Active", "Restricted", "Maintenance"])).all()
         
         no_snapshot_cameras = []
         for cam in cameras:

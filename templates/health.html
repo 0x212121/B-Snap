@@ -391,13 +391,32 @@
     
     fetch(`/snap/${encodeURIComponent(cameraId)}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    })
-    .then(res => {
-      if (!res.ok) {
-        return res.json().then(err => { throw new Error(err.detail || 'Network response was not ok'); });
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       }
-      return res.json();
+    })
+    .then(async res => {
+      let data;
+      const contentType = res.headers.get('content-type') || '';
+      
+      // Try to parse JSON response
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        // If HTML response (like login page), extract error
+        const text = await res.text();
+        if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+          throw new Error('Session expired. Please login again.');
+        }
+        throw new Error('Unexpected response from server');
+      }
+      
+      if (!res.ok) {
+        throw new Error(data.detail || data.message || `Error ${res.status}: ${res.statusText}`);
+      }
+      
+      return data;
     })
     .then(data => {
       if (data.status === 'success' && data.file_path) {

@@ -117,7 +117,7 @@ Type any command to get started!"""
         """System status command."""
         try:
             # Count cameras
-            total_cameras = self.db.query(Camera).filter(Camera.is_active == True).count()
+            total_cameras = self.db.query(Camera).filter(Camera.status.in_(["Active", "Restricted", "Maintenance"])).count()
             
             # Count unhealthy cameras
             unhealthy = (
@@ -154,8 +154,8 @@ _Last updated: {datetime.now().strftime('%H:%M:%S')}_"""
         try:
             cameras = (
                 self.db.query(Camera)
-                .filter(Camera.is_active == True)
-                .order_by(Camera.name)
+                .filter(Camera.status.in_(["Active", "Restricted", "Maintenance"]))
+                .order_by(Camera.hostname)
                 .limit(20)
                 .all()
             )
@@ -216,8 +216,8 @@ _Last updated: {datetime.now().strftime('%H:%M:%S')}_"""
         try:
             camera = (
                 self.db.query(Camera)
-                .filter(Camera.name.ilike(f"%{camera_name}%"))
-                .filter(Camera.is_active == True)
+                .filter(Camera.hostname.ilike(f"%{camera_name}%"))
+                .filter(Camera.status.in_(["Active", "Restricted", "Maintenance"]))
                 .first()
             )
             
@@ -230,7 +230,7 @@ _Last updated: {datetime.now().strftime('%H:%M:%S')}_"""
 
 IP: {camera.ip}
 Location: {camera.location or 'N/A'}
-Status: {'🟢 Active' if camera.is_active else '🔴 Inactive'}
+Status: {'🟢 Active' if camera.status in ['Active', 'Restricted', 'Maintenance'] else '🔴 Inactive'}
 
 _Snapshot feature coming soon!_"""
             

@@ -262,7 +262,18 @@ def root_redirect():
 
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    # Check if request expects JSON (API call)
+    accept_header = request.headers.get("accept", "")
+    is_json_request = "application/json" in accept_header or request.url.path.startswith("/api/") or request.url.path.startswith("/snap/")
+    
     if exc.detail == "SESSION_INVALIDATED":
+        # For API calls, return JSON error
+        if is_json_request:
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"status": "error", "detail": "Session invalidated", "code": "SESSION_INVALIDATED"}
+            )
+        # For web pages, redirect to login
         response = RedirectResponse(
             url="/login?reason=invalid_session",
             status_code=status.HTTP_303_SEE_OTHER
@@ -272,10 +283,22 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
         return response
 
     if exc.status_code == status.HTTP_403_FORBIDDEN:
+        if is_json_request:
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={"status": "error", "detail": exc.detail}
+            )
         return templates.TemplateResponse(
             "unauthorized.html",
             {"request": request, "detail": exc.detail},
             status_code=exc.status_code
+        )
+    
+    # Default: return JSON for API calls, plain text for others
+    if is_json_request:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"status": "error", "detail": exc.detail}
         )
 
     return Response(content=f"An error occurred: {exc.detail}", status_code=exc.status_code)

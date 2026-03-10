@@ -449,9 +449,8 @@ async def delete_camera(request: Request, camera_id: str, db: Session = Depends(
         deleted_count = 0
         failed_count = 0
         for snapshot in cam.snapshots:
-            # Handle both old format (snapshots/filename.jpg) and new format (filename.jpg)
-            file_name = os.path.basename(snapshot.file_path)
-            file_path = os.path.join(SNAPSHOT_PATH, file_name)
+            # file_path format: "<camera_id>/<date>/<filename>" (relative to SNAPSHOT_BASE_DIR)
+            file_path = os.path.join(SNAPSHOT_PATH, snapshot.file_path)
             
             if os.path.exists(file_path):
                 try:
@@ -539,19 +538,21 @@ async def cleanup_orphaned_files(request: Request, db: Session = Depends(get_db)
         deleted_videos = []
         errors = []
         
-        # Check for orphaned snapshot files
+        # Check for orphaned snapshot files (walk through subdirectories)
         if os.path.exists(SNAPSHOT_PATH):
-            for filename in os.listdir(SNAPSHOT_PATH):
-                if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
-                    # Check both full path and basename formats
-                    if filename not in valid_snapshot_files and f"snapshots/{filename}" not in valid_snapshot_files:
-                        file_path = os.path.join(SNAPSHOT_PATH, filename)
-                        try:
-                            os.remove(file_path)
-                            deleted_snapshots.append(filename)
-                            logger.info("Deleted orphaned snapshot: %s", filename)
-                        except Exception as e:
-                            errors.append(f"Failed to delete {filename}: {str(e)}")
+            for root, dirs, files in os.walk(SNAPSHOT_PATH):
+                for filename in files:
+                    if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+                        full_path = os.path.join(root, filename)
+                        # Get relative path from SNAPSHOT_PATH (e.g., "<camera_id>/<date>/<filename>")
+                        rel_path = os.path.relpath(full_path, SNAPSHOT_PATH)
+                        if rel_path not in valid_snapshot_files:
+                            try:
+                                os.remove(full_path)
+                                deleted_snapshots.append(rel_path)
+                                logger.info("Deleted orphaned snapshot: %s", rel_path)
+                            except Exception as e:
+                                errors.append(f"Failed to delete {rel_path}: {str(e)}")
         
         # Check for orphaned video files
         if os.path.exists(VIDEO_PATH):

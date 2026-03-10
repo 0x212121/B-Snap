@@ -61,9 +61,11 @@ def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[
 
 
     # Format data for the template
+    # Note: s.file_path contains path like "<camera_id>/<date>/<filename>"
+    # SNAPSHOT_BASE_DIR = "static/snapshots", so URL = /static/snapshots/<camera_id>/<date>/<filename>
     return [
         {
-            "url": f"/{SNAPSHOT_BASE_DIR}/snapshots/{s.file_path}",
+            "url": f"/{SNAPSHOT_BASE_DIR}/{s.file_path}",
             "camera": s.camera_name,
             "ip": s.camera_ip,
             "time": to_current_timezone(s.timestamp, db).strftime('%d %b %Y %H:%M:%S %Z'),
@@ -160,7 +162,7 @@ async def snapshot_handler(
 
         # --- Snapshot process dengan Toast Notification ---
         snapshot = await SnapshotService.capture_snapshot(
-            camera_id=int(camera.id),
+            camera_id=camera.id,
             db=db,
             triggered_by="manual"
         )

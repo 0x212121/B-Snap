@@ -8,6 +8,7 @@ import logging
 import os
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
+from urllib.parse import urlparse, urlunparse, quote
 
 from sqlalchemy.orm import Session
 
@@ -16,6 +17,108 @@ from app.models.snapshot import Snapshot
 from app.utils.notification_service import NotificationService
 
 logger = logging.getLogger("snapshot_service")
+
+
+def _take_snapshot_from_url(camera: Camera, url: str) -> Dict[str, Any]:
+    """Take snapshot from a direct HTTP URL (e.g., http://camera_ip/cgi-bin/snapshot.cgi).
+    
+    Args:
+        camera: The camera object
+        url: Direct snapshot URL
+        
+    Returns:
+        Dict with status, file_path, resolution (if success) or message (if error)
+    """
+    import cv2
+    import uuid
+    from pathlib import Path
+    from urllib.parse import quote
+    
+    try:
+        # Add authentication if username/password provided and URL is HTTP/HTTPS
+        if url.startswith(('http://', 'https://')) and camera.username:
+            parsed = list(urlparse(url))
+            # Insert credentials into URL
+            auth = f"{quote(camera.username)}:{quote(camera.password or '')}@"
+            # Find where netloc starts and insert auth
+            if '@' not in parsed[1]:  # Check if auth not already in URL
+                parsed[1] = auth + parsed[1]
+            url = urlunparse(parsed)
+        
+        # Try to open as video capture (works for both HTTP MJPEG streams and direct image URLs)
+        cap = cv2.VideoCapture(url)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        
+        if not cap.isOpened():
+            # If direct capture fails, try downloading as image
+            import requests
+            from io import BytesIO
+            import numpy as np
+            
+            try:
+                resp = requests.get(url, timeout=10, auth=(camera.username, camera.password) if camera.username else None)
+                resp.raise_for_status()
+                img_array = np.frombuffer(resp.content, np.uint8)
+                frame = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+                
+                if frame is None:
+                    raise ValueError("Failed to decode image from URL")
+                    
+                cap.release()  # Release the failed capture
+            except Exception as e:
+                logger.error(f"Failed to download snapshot from URL {url}: {e}")
+                return {
+                    "status": "error",
+                    "message": f"Cannot access snapshot URL for {camera.hostname}: {str(e)}"
+                }
+        else:
+            # Read frame from video capture
+            ret, frame = cap.read()
+            cap.release()
+            
+            if not ret or frame is None:
+                return {
+                    "status": "error",
+                    "message": f"Failed to capture frame from {camera.hostname}"
+                }
+        
+        # Get resolution
+        height, width = frame.shape[:2]
+        resolution = f"{width}x{height}"
+        
+        # Generate filename with folder structure: snapshots/<camera_id>/<date>/<filename>
+        today = datetime.now().strftime("%Y%m%d")
+        timestamp = datetime.now().strftime("%H%M%S")
+        safe_camera_name = "".join(c for c in camera.hostname if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        safe_camera_name = safe_camera_name.replace(' ', '_')
+        filename = f"{safe_camera_name}_{timestamp}_{uuid.uuid4().hex[:8]}.jpg"
+        
+        # Create folder structure: snapshots/<camera_id>/<date>/
+        snapshot_dir = Path("static/snapshots") / camera.id / today
+        snapshot_dir.mkdir(parents=True, exist_ok=True)
+        
+        file_path = snapshot_dir / filename
+        
+        # Save image
+        cv2.imwrite(str(file_path), frame)
+        
+        # Return relative path including folder structure (without 'snapshots/' prefix since SNAPSHOT_BASE_DIR already includes it)
+        relative_path = f"{camera.id}/{today}/{filename}"
+        
+        logger.info(f"Snapshot saved from direct URL: snapshots/{relative_path} ({resolution})")
+        
+        return {
+            "status": "success",
+            "file_path": relative_path,
+            "resolution": resolution
+        }
+        
+    except Exception as e:
+        logger.error(f"Error taking snapshot from URL for {camera.hostname}: {e}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
 
 
 def take_snapshot(camera: Camera, db: Session) -> Dict[str, Any]:
@@ -39,28 +142,33 @@ def take_snapshot(camera: Camera, db: Session) -> Dict[str, Any]:
     from pathlib import Path
     
     try:
-        # Build RTSP URL
-        username = camera.username or ""
-        password = camera.password or ""
-        ip = camera.ip
-        rtsp_path = camera.rtsp_url or ""
+        # Check if camera has direct snapshot URL first
+        if camera.snapshot_url:
+            logger.info(f"Taking snapshot from {camera.hostname} using direct URL: {camera.snapshot_url}")
+            return _take_snapshot_from_url(camera, camera.snapshot_url)
         
-        if username and password:
-            rtsp_url = f"rtsp://{username}:{password}@{ip}{rtsp_path}"
-        else:
-            rtsp_url = f"rtsp://{ip}{rtsp_path}"
+        # Otherwise, use RTSP via ONVIF helper
+        from app.utils.camera_onvif import get_rtsp_url
+        rtsp_url = get_rtsp_url(camera)
         
-        logger.info(f"Taking snapshot from {camera.name} at {ip}")
+        if not rtsp_url:
+            logger.error(f"Failed to get RTSP URL for camera {camera.hostname}")
+            return {
+                "status": "error",
+                "message": f"Cannot determine RTSP URL for camera {camera.hostname}. Check camera settings."
+            }
+        
+        logger.info(f"Taking snapshot from {camera.hostname} at {rtsp_url}")
         
         # Open video capture
         cap = cv2.VideoCapture(rtsp_url)
         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         
         if not cap.isOpened():
-            logger.error(f"Failed to connect to camera {camera.name}")
+            logger.error(f"Failed to connect to camera {camera.hostname}")
             return {
                 "status": "error",
-                "message": f"Cannot connect to camera {camera.name}"
+                "message": f"Cannot connect to camera {camera.hostname}"
             }
         
         # Read frame
@@ -68,24 +176,25 @@ def take_snapshot(camera: Camera, db: Session) -> Dict[str, Any]:
         cap.release()
         
         if not ret or frame is None:
-            logger.error(f"Failed to capture frame from {camera.name}")
+            logger.error(f"Failed to capture frame from {camera.hostname}")
             return {
                 "status": "error", 
-                "message": f"Failed to capture frame from {camera.name}"
+                "message": f"Failed to capture frame from {camera.hostname}"
             }
         
         # Get resolution
         height, width = frame.shape[:2]
         resolution = f"{width}x{height}"
         
-        # Generate filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        safe_camera_name = "".join(c for c in camera.name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        # Generate filename with folder structure: snapshots/<camera_id>/<date>/<filename>
+        today = datetime.now().strftime("%Y%m%d")
+        timestamp = datetime.now().strftime("%H%M%S")
+        safe_camera_name = "".join(c for c in camera.hostname if c.isalnum() or c in (' ', '-', '_')).rstrip()
         safe_camera_name = safe_camera_name.replace(' ', '_')
         filename = f"{safe_camera_name}_{timestamp}_{uuid.uuid4().hex[:8]}.jpg"
         
-        # Ensure directory exists
-        snapshot_dir = Path("static/snapshots")
+        # Create folder structure: snapshots/<camera_id>/<date>/
+        snapshot_dir = Path("static/snapshots") / camera.id / today
         snapshot_dir.mkdir(parents=True, exist_ok=True)
         
         file_path = snapshot_dir / filename
@@ -93,10 +202,10 @@ def take_snapshot(camera: Camera, db: Session) -> Dict[str, Any]:
         # Save image
         cv2.imwrite(str(file_path), frame)
         
-        # Return relative path
-        relative_path = f"snapshots/{filename}"
+        # Return relative path including folder structure (without 'snapshots/' prefix since SNAPSHOT_BASE_DIR already includes it)
+        relative_path = f"{camera.id}/{today}/{filename}"
         
-        logger.info(f"Snapshot saved: {relative_path} ({resolution})")
+        logger.info(f"Snapshot saved: snapshots/{relative_path} ({resolution})")
         
         return {
             "status": "success",
@@ -105,7 +214,7 @@ def take_snapshot(camera: Camera, db: Session) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        logger.error(f"Error taking snapshot from {camera.name}: {e}")
+        logger.error(f"Error taking snapshot from {camera.hostname}: {e}")
         return {
             "status": "error",
             "message": str(e)
@@ -117,14 +226,14 @@ class SnapshotService:
     
     @staticmethod
     async def capture_snapshot(
-        camera_id: int,
+        camera_id: str,
         db: Session,
         triggered_by: str = "manual",
     ) -> Optional[Snapshot]:
         """Capture snapshot from camera with notifications.
         
         Args:
-            camera_id: ID of the camera to capture from
+            camera_id: ID of the camera to capture from (UUID string)
             db: Database session
             triggered_by: Who/what triggered the capture (manual, scheduled, etc.)
             
@@ -139,10 +248,10 @@ class SnapshotService:
             )
             return None
         
-        # Check if camera is online
-        if not camera.is_active:
+        # Check if camera is active (status should be Active, Restricted, or Maintenance)
+        if camera.status not in ["Active", "Restricted", "Maintenance"]:
             await NotificationService.warning(
-                message=f"Camera '{camera.name}' is currently disabled",
+                message=f"Camera '{camera.hostname}' is currently disabled (status: {camera.status})",
                 title="Camera Disabled",
                 camera_id=camera_id,
             )
@@ -180,16 +289,16 @@ class SnapshotService:
             
             # Notify success
             await NotificationService.snapshot_saved(
-                camera_name=camera.name,
+                camera_name=camera.hostname,
                 camera_id=camera_id,
                 snapshot_id=snapshot.id,
             )
             
-            logger.info(f"Snapshot captured from {camera.name} (ID: {snapshot.id})")
+            logger.info(f"Snapshot captured from {camera.hostname} (ID: {snapshot.id})")
             return snapshot
             
         except Exception as e:
-            logger.error(f"Failed to capture snapshot from {camera.name}: {e}")
+            logger.error(f"Failed to capture snapshot from {camera.hostname}: {e}")
             
             await NotificationService.error(
                 message=f"Failed to capture snapshot: {str(e)}",
