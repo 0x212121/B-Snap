@@ -611,8 +611,8 @@ async def upload_csv(request: Request, db: Session = Depends(get_db), file: Uplo
             return RedirectResponse(url="/cameras?upload_error=CSV+file+don't+have+rows", status_code=303)
 
         for i, row in enumerate(rows):
-            # ... sisa logika pemrosesan CSV Anda tetap sama
             row_num = i + 2 # +2 karena header dan 0-based index
+            hostname = None
             try:
                 hostname = row.get("hostname", "").strip()
                 if not hostname:
@@ -620,13 +620,52 @@ async def upload_csv(request: Request, db: Session = Depends(get_db), file: Uplo
                     failed_rows.append(f"Baris {row_num}: Hostname empty")
                     continue
                 
-                # ... (sisa logika untuk membuat atau update kamera)
+                # Check if camera already exists
+                existing_cam = db.query(DBCamera).filter(DBCamera.hostname == hostname).first()
+                if existing_cam:
+                    logger.warning("Skipping row %s: Camera '%s' already exists.", row_num, hostname)
+                    failed_rows.append(f"Baris {row_num}: Camera '{hostname}' already exists")
+                    continue
                 
+                # Create new camera
+                new_cam = DBCamera()
+                new_cam.hostname = hostname
+                new_cam.ip = row.get("ip", "").strip() or None
+                new_cam.port = int(row.get("port", 80)) if row.get("port") else 80
+                new_cam.username = row.get("username", "").strip() or None
+                new_cam.password = row.get("password", "").strip() or None
+                new_cam.location = row.get("location", "").strip() or None
+                new_cam.asset_no = row.get("asset_no", "").strip() or None
+                new_cam.status = row.get("status", "Active").strip() or "Active"
+                new_cam.note = row.get("note", "").strip() or None
+                
+                # Handle group_id if provided
+                group_name = row.get("group", "").strip()
+                if group_name:
+                    group = db.query(CameraGroup).filter(CameraGroup.name == group_name).first()
+                    if group:
+                        new_cam.group_id = group.id
+                
+                # Handle coordinates
+                lat_str = row.get("latitude", "").strip()
+                lon_str = row.get("longitude", "").strip()
+                if lat_str:
+                    try:
+                        new_cam.latitude = float(lat_str)
+                    except ValueError:
+                        pass
+                if lon_str:
+                    try:
+                        new_cam.longitude = float(lon_str)
+                    except ValueError:
+                        pass
+                
+                db.add(new_cam)
                 success_count += 1
+                logger.info("Row %s: Created camera '%s' successfully.", row_num, hostname)
 
             except Exception as e:
                 failed_rows.append(f"Row {row_num} ({hostname or 'N/A'}): {e}")
-                db.rollback()
                 logger.error("Failed to process row %s. Error: %s", row_num, e)
 
         db.commit()

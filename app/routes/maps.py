@@ -34,19 +34,19 @@ def format_uptime(start_time: datetime, end_time: datetime) -> str:
 class CameraLocation(BaseModel):
     id: str
     hostname: str
-    ip: str
+    ip: Optional[str] = None
     lat: Optional[float] = None
     lng: Optional[float] = None
-    asset_no: str | None = None
+    asset_no: Optional[str] = None
     status: str
     last_online: str
     uptime: str
-    restricted: str | None
-    cam_group: int | None
-    user_group: str
-    user_group_id: int | None
-    coordinate: str | None
-    note: str | None = ""
+    restricted: Optional[str] = None
+    cam_group: Optional[int] = None
+    user_group: Optional[str] = "N/A"
+    user_group_id: Optional[int] = None
+    coordinate: Optional[str] = None
+    note: Optional[str] = ""
 
     class Config:
         from_attributes = True
@@ -225,19 +225,19 @@ async def get_camera_locations(
 
         camera_data = {
             "id": cam.id,
-            "hostname": cam.hostname,
-            "ip": cam.ip,
+            "hostname": cam.hostname or "",
+            "ip": cam.ip or "",
             "lat": cam.latitude,
             "lng": cam.longitude,
             "asset_no": cam.asset_no,
-            "status": status_str,
-            "last_online": formatted_last_online,
-            "uptime": uptime_str,
+            "status": status_str or "Unknown",
+            "last_online": formatted_last_online or "N/A",
+            "uptime": uptime_str or "N/A",
             "restricted": restriction_status,
             "cam_group": cam.group_id,
-            "user_group": group_name,
+            "user_group": group_name or "N/A",
             "user_group_id": group_id,
-            "coordinate": coordinate,
+            "coordinate": coordinate if cam.latitude and cam.longitude else None,
             "note": cam.note if cam.note else "",
         }
         result.append(camera_data)
