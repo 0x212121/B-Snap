@@ -411,14 +411,13 @@ async def get_camera_groups(request: Request, db: Session = Depends(get_db)):
 @router.post("/cameras/delete/{camera_id}", response_class=JSONResponse)
 async def delete_camera(request: Request, camera_id: str, db: Session = Depends(get_db)):
     """
-    Deletes a camera by its ID, and also deletes all associated files
-    (snapshots and videos) from the file system.
+    Deletes a camera by its ID. Snapshot records and files are preserved
+    and marked as orphaned. Only video files are deleted from file system.
     """
     logger.info("Attempting to delete camera with ID: %s", camera_id)
     
-    # Load the camera object along with its related videos and snapshots
+    # Load the camera object along with its related videos
     cam = db.query(DBCamera).options(
-        joinedload(DBCamera.snapshots),
         joinedload(DBCamera.videos)
     ).filter(DBCamera.id == camera_id).first()
     
@@ -427,29 +426,16 @@ async def delete_camera(request: Request, camera_id: str, db: Session = Depends(
         return JSONResponse(status_code=404, content={"status": "error", "message": "Camera not found"})
 
     try:
-        SNAPSHOT_PATH = get_snapshot_directory()
         VIDEO_PATH = get_video_directory()
+        hostname = cam.hostname  # Save hostname before delete
         
-        logger.info("Deleting %s associated snapshot files for camera '%s'...", len(cam.snapshots), cam.hostname)
+        # 1. Mark snapshots as orphaned before camera delete
+        # This is done via event listener in camera model
+        
+        # 2. Delete video files from disk
+        logger.info("Deleting %s associated video files for camera '%s'...", len(cam.videos), hostname)
         deleted_count = 0
         failed_count = 0
-        for snapshot in cam.snapshots:
-            # file_path format: "<camera_id>/<date>/<filename>" (relative to SNAPSHOT_BASE_DIR)
-            file_path = os.path.join(SNAPSHOT_PATH, snapshot.file_path)
-            
-            if os.path.exists(file_path):
-                try:
-                    os.remove(file_path)
-                    deleted_count += 1
-                    logger.debug("Deleted snapshot file: %s", file_path)
-                except Exception as file_err:
-                    failed_count += 1
-                    logger.warning("Failed to delete snapshot file '%s': %s", file_path, file_err)
-            else:
-                logger.warning("Snapshot file not found: %s", file_path)
-
-        # 2. Hapus file videos
-        logger.info("Deleting %s associated video files for camera '%s'...", len(cam.videos), cam.hostname)
         for video in cam.videos:
             # Handle both old format (videos/filename.mp4) and new format (filename.mp4)
             file_name = os.path.basename(video.file_path)
@@ -466,34 +452,33 @@ async def delete_camera(request: Request, camera_id: str, db: Session = Depends(
             else:
                 logger.warning("Video file not found: %s", file_path)
         
-        logger.info("File cleanup complete: %s deleted, %s failed", deleted_count, failed_count)
+        logger.info("Video file cleanup complete: %s deleted, %s failed", deleted_count, failed_count)
 
         # --- HAPUS DATA DARI DATABASE ---
-        # Karena kita sudah menggunakan `cascade="all, delete-orphan"` di model `Camera`,
-        # cukup panggil `db.delete(cam)`. SQLAlchemy akan menangani penghapusan
-        # semua relasi terkait di database.
+        # Snapshots are NOT deleted (passive_deletes=True).
+        # They will be marked as orphaned via event listener and camera_id set to NULL.
         db.delete(cam)
         db.commit()
-        logger.info("Camera '%s' and all associated database records deleted successfully.", cam.hostname)
+        logger.info("Camera '%s' deleted successfully. Snapshots preserved as orphaned.", hostname)
 
         log_audit(
             db=db,
             user=request.session.get("user_name", "unknown"),
             action="delete_camera",
-            target=cam.hostname,
+            target=hostname,
             ip=request.client.host,
-            extra=f"via Camera Management\nIP: {cam.ip}"
+            extra=f"via Camera Management\nCamera ID: {camera_id}"
         )
         
-        # Note: Toast notification is handled by frontend
-        
-        return JSONResponse(status_code=200, content={"status": "success", "message": f"Camera '{cam.hostname}' and all associated files deleted."})
+        return JSONResponse(status_code=200, content={
+            "status": "success", 
+            "message": f"Camera '{hostname}' deleted. Snapshots preserved as orphaned, {deleted_count} video files deleted."
+        })
 
     except Exception as e:
         db.rollback()
-        logger.error("Failed to delete camera '%s' or its files. Error: %s", camera_id, e, exc_info=True)
-        # Penting: Rollback hanya membatalkan operasi database, bukan penghapusan file.
-        return JSONResponse(status_code=500, content={"status": "error", "message": "Failed to delete camera and its files."})
+        logger.error("Failed to delete camera '%s'. Error: %s", camera_id, e, exc_info=True)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Failed to delete camera."})
 
 
 @router.post("/admin/cleanup-orphaned-files", response_class=JSONResponse)

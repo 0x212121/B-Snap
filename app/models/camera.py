@@ -1,5 +1,5 @@
 from app.db.database import Base
-from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey
+from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey, event, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import expression
 import uuid
@@ -34,7 +34,7 @@ class Camera(Base):
     snapshot_logs = relationship("SnapshotLog", back_populates="camera", cascade="all, delete-orphan")
     health = relationship("CameraHealth", back_populates="camera", uselist=False, cascade="all, delete-orphan")
     daily_stats = relationship("CameraDailyStats", back_populates="camera", cascade="all, delete-orphan")
-    snapshots = relationship("Snapshot", back_populates="camera", cascade="all, delete-orphan")
+    snapshots = relationship("Snapshot", back_populates="camera", passive_deletes=True)
     videos = relationship("Video", back_populates="camera", cascade="all, delete-orphan")
 
     email_logs = relationship(
@@ -42,4 +42,14 @@ class Camera(Base):
         back_populates="camera",
         cascade="all, delete-orphan",
         passive_deletes=True
+    )
+
+
+# Event listener to mark snapshots as orphaned before camera delete
+@event.listens_for(Camera, 'before_delete')
+def mark_snapshots_orphaned(mapper, connection, target):
+    """Mark all snapshots as orphaned before camera is deleted."""
+    connection.execute(
+        text("UPDATE snapshots SET is_orphaned = TRUE WHERE camera_id = :camera_id"),
+        {"camera_id": target.id}
     )

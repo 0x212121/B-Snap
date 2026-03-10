@@ -31,6 +31,7 @@ from .camera_email_notification_log import (
 from .health_check_status import HealthCheckStatus
 from .job_execution_log import JobExecutionLog
 from .sla_report import SLAReport, ScheduledReport
+from .orphaned_file import OrphanedFile
 
 __all__ = [
     "Camera",
@@ -62,4 +63,5 @@ __all__ = [
     "JobExecutionLog",
     "SLAReport",
     "ScheduledReport",
+    "OrphanedFile",
 ]
