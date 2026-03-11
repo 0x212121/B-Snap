@@ -118,72 +118,68 @@ def scan_orphaned_files(
     current_admin: User = Depends(admin_access_required)
 ):
     """Run orphaned file scan and sync to database."""
+    import traceback
+    
     try:
-        logger.info("[OrphanedScan] Starting scan...")
+        logger.info("[OrphanedScan] Starting scan by user: %s", current_admin.username)
         
-        # Run scan step by step with error handling
-        try:
-            scanner = FolderScanner()
-            manager = OrphanedFileManager()
-            
-            # Step 1: Scan folder
-            logger.info("[OrphanedScan] Step 1: Scanning folder...")
-            orphaned_list, disk_count, db_count = scanner.scan_for_orphaned(db)
-            logger.info("[OrphanedScan] Found %d orphaned files on disk", len(orphaned_list))
-            
-            # Step 2: Sync to table
-            logger.info("[OrphanedScan] Step 2: Syncing to table...")
-            new_count, total_orphaned = scanner.sync_to_orphaned_table(db)
-            logger.info("[OrphanedScan] Sync complete: %d new, %d total", new_count, total_orphaned)
-            
-            # Step 3: Get storage summary
-            logger.info("[OrphanedScan] Step 3: Getting storage summary...")
-            summary = manager.get_storage_summary(db)
-            logger.info("[OrphanedScan] Summary: %s", summary)
-            
-            response_data = {
-                'disk_files': int(disk_count),
-                'db_records': int(db_count),
-                'orphaned_found': int(len(orphaned_list)),
-                'new_records': int(new_count),
-                'total_orphaned': int(total_orphaned),
-                'storage_summary': summary
-            }
-            
-            logger.info("[OrphanedScan] Returning response: %s", response_data)
-            return JSONResponse(content=response_data)
-            
-        except Exception as inner_e:
-            logger.error("[OrphanedScan] Error during scan steps: %s", inner_e, exc_info=True)
-            # Even if there's an error, try to return a valid response
-            return JSONResponse(
-                status_code=500,
-                content={
-                    'status': 'error',
-                    'message': str(inner_e),
-                    'disk_files': 0,
-                    'db_records': 0,
-                    'orphaned_found': 0,
-                    'new_records': 0,
-                    'total_orphaned': 0,
-                    'storage_summary': {
-                        'total_count': 0,
-                        'total_size_bytes': 0,
-                        'total_size_mb': 0,
-                        'by_camera': []
+        scanner = FolderScanner()
+        manager = OrphanedFileManager()
+        
+        # Step 1: Scan folder
+        logger.info("[OrphanedScan] Step 1: Scanning folder...")
+        orphaned_list, disk_count, db_count = scanner.scan_for_orphaned(db)
+        logger.info("[OrphanedScan] Found %d orphaned files on disk", len(orphaned_list))
+        
+        # Step 2: Sync to table
+        logger.info("[OrphanedScan] Step 2: Syncing to table...")
+        new_count, total_orphaned = scanner.sync_to_orphaned_table(db)
+        logger.info("[OrphanedScan] Sync complete: %d new, %d total", new_count, total_orphaned)
+        
+        # Step 3: Get storage summary
+        logger.info("[OrphanedScan] Step 3: Getting storage summary...")
+        summary = manager.get_storage_summary(db)
+        logger.info("[OrphanedScan] Summary: %s", summary)
+        
+        # PASTIKAN SEMUA DATA ADALAH STANDARD PYTHON TYPES (int, str, etc)
+        # Bukan numpy.int64 atau lainnya
+        response_data = {
+            'disk_files': int(disk_count) if disk_count is not None else 0,
+            'db_records': int(db_count) if db_count is not None else 0,
+            'orphaned_found': int(len(orphaned_list)),
+            'new_records': int(new_count) if new_count is not None else 0,
+            'total_orphaned': int(total_orphaned) if total_orphaned is not None else 0,
+            'storage_summary': {
+                'total_count': int(summary.get('total_count', 0)),
+                'total_size_bytes': int(summary.get('total_size_bytes', 0)),
+                'total_size_mb': float(summary.get('total_size_mb', 0.0)),
+                'by_camera': [
+                    {
+                        'camera_id': str(c.get('camera_id', 'unknown')),
+                        'count': int(c.get('count', 0)),
+                        'size_mb': float(c.get('size_mb', 0.0))
                     }
-                }
-            )
+                    for c in summary.get('by_camera', [])
+                ]
+            }
+        }
+        
+        logger.info("[OrphanedScan] Returning response: %s", response_data)
+        return JSONResponse(content=response_data)
+        
     except Exception as e:
-        logger.error("[OrphanedScan] Critical error: %s", e, exc_info=True)
-        import traceback
+        logger.error("[OrphanedScan] CRITICAL ERROR: %s", e)
         logger.error(traceback.format_exc())
+        # Return error detail untuk debug
         return JSONResponse(
             status_code=500,
-            content={'status': 'error', 'message': str(e)}
+            content={
+                'status': 'error',
+                'message': str(e),
+                'traceback': traceback.format_exc()
+            }
         )
-
-
+    
 @router.get("/api/orphaned-files/summary")
 def get_orphaned_summary(
     request: Request,

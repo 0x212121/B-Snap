@@ -36,14 +36,16 @@ class FolderScanner:
         self.base_dir = Path(base_dir)
         
     def get_all_files_on_disk(self) -> List[Path]:
-        """Get all snapshot files on disk."""
         files = []
         if not self.base_dir.exists():
-            logger.warning("[FolderScanner] Base dir does not exist: %s", self.base_dir)
             return files
             
         for ext in ['*.jpg', '*.jpeg', '*.png']:
-            files.extend(self.base_dir.rglob(ext))
+            try:
+                files.extend(self.base_dir.rglob(ext))
+            except (PermissionError, OSError) as e:
+                logger.error("[FolderScanner] Error scanning %s: %s", ext, e)
+                continue  # Skip extension yang error
         
         return files
     
@@ -53,105 +55,147 @@ class FolderScanner:
         return set(r[0] for r in records if r[0])
     
     def scan_for_orphaned(self, db: Session) -> Tuple[List[Dict], int, int]:
-        """Scan for orphaned files.
-        
-        Returns:
-            Tuple of (orphaned_files_list, total_disk_files, total_db_records)
-        """
-        # Get files from disk
-        disk_files = self.get_all_files_on_disk()
-        total_disk = len(disk_files)
-        
-        # Get paths from DB
-        db_paths = self.get_all_db_file_paths(db)
-        total_db = len(db_paths)
-        
-        # Find orphaned (exist on disk but not in DB)
-        orphaned = []
-        for file_path in disk_files:
-            # Convert absolute path to relative path (stored in DB)
+        """Scan for orphaned files."""
+        try:
+            # Get files from disk
+            disk_files = self.get_all_files_on_disk()
+            total_disk = len(disk_files)
+            logger.info("[FolderScanner] Total files on disk: %d", total_disk)
+            
+            # Get paths from DB
             try:
-                rel_path = file_path.relative_to(self.base_dir).as_posix()
-            except ValueError:
-                # File outside base dir, skip
-                continue
-                
-            if rel_path not in db_paths:
-                # Try to extract camera_id from path
-                # Path format: <camera_id>/<date>/<filename>
-                parts = rel_path.split('/')
-                camera_id = parts[0] if len(parts) > 1 else None
-                
-                orphaned.append({
-                    'absolute_path': str(file_path),
-                    'relative_path': rel_path,
-                    'camera_id': camera_id,
-                    'size': file_path.stat().st_size if file_path.exists() else 0,
-                    'modified': datetime.fromtimestamp(
-                        file_path.stat().st_mtime, 
-                        tz=timezone.utc
-                    ) if file_path.exists() else None
-                })
-        
-        logger.info(
-            "[FolderScanner] Found %d orphaned files (disk: %d, db: %d)",
-            len(orphaned), total_disk, total_db
-        )
-        
-        return orphaned, total_disk, total_db
-    
-    def sync_to_orphaned_table(self, db: Session) -> Tuple[int, int]:
-        """Sync scan results to OrphanedFile table.
-        
-        Returns:
-            Tuple of (new_records, total_orphaned)
-        """
-        orphaned, _, _ = self.scan_for_orphaned(db)
-        
-        # Get existing paths
-        existing_paths = set(
-            r[0] for r in db.query(OrphanedFile.file_path).all()
-        )
-        
-        new_count = 0
-        for item in orphaned:
-            if item['relative_path'] not in existing_paths:
-                orphaned_record = OrphanedFile(
-                    file_path=item['relative_path'],
-                    file_size=item['size'],
-                    camera_id=item['camera_id'],
-                    status='pending'
-                )
-                db.add(orphaned_record)
-                new_count += 1
-        
-        # Mark records as resolved if file no longer exists on disk
-        all_records = db.query(OrphanedFile).filter(
-            OrphanedFile.status.in_(['pending', 'reviewed'])
-        ).all()
-        
-        current_disk_paths = {o['relative_path'] for o in orphaned}
-        resolved_count = 0
-        
-        for record in all_records:
-            if record.file_path not in current_disk_paths:
-                record.status = 'resolved'
-                record.notes = 'File no longer exists on disk'
-                resolved_count += 1
-        
-        db.commit()
-        
-        total_orphaned = db.query(OrphanedFile).filter(
-            OrphanedFile.status.in_(['pending', 'reviewed'])
-        ).count()
-        
-        logger.info(
-            "[FolderScanner] Sync complete: %d new, %d resolved, %d total",
-            new_count, resolved_count, total_orphaned
-        )
-        
-        return new_count, total_orphaned
+                db_paths = self.get_all_db_file_paths(db)
+                total_db = len(db_paths)
+                logger.info("[FolderScanner] Total records in DB: %d", total_db)
+            except Exception as e:
+                logger.error("[FolderScanner] Error getting DB paths: %s", e)
+                raise Exception(f"Database error: {e}")
+            
+            # Find orphaned
+            orphaned = []
+            for file_path in disk_files:
+                try:
+                    # Convert absolute path to relative path
+                    rel_path = file_path.relative_to(self.base_dir).as_posix()
+                    
+                    if rel_path not in db_paths:
+                        # Try to extract camera_id from path
+                        parts = rel_path.split('/')
+                        camera_id = parts[0] if len(parts) > 1 else None
+                        
+                        # Get file stats dengan error handling
+                        try:
+                            stat = file_path.stat()
+                            size = stat.st_size
+                            modified = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+                        except (OSError, IOError) as e:
+                            logger.warning("[FolderScanner] Cannot stat file %s: %s", file_path, e)
+                            size = 0
+                            modified = None
+                        
+                        orphaned.append({
+                            'absolute_path': str(file_path),
+                            'relative_path': rel_path,
+                            'camera_id': camera_id,
+                            'size': size,
+                            'modified': modified
+                        })
+                except ValueError as e:
+                    logger.warning("[FolderScanner] Path error for %s: %s", file_path, e)
+                    continue
+                except Exception as e:
+                    logger.error("[FolderScanner] Unexpected error processing %s: %s", file_path, e)
+                    continue
+            
+            logger.info(
+                "[FolderScanner] Found %d orphaned files",
+                len(orphaned)
+            )
+            
+            return orphaned, total_disk, total_db
+            
+        except Exception as e:
+            logger.error("[FolderScanner] Error in scan_for_orphaned: %s", e)
+            raise
 
+
+    def sync_to_orphaned_table(self, db: Session) -> Tuple[int, int]:
+        """Sync scan results to OrphanedFile table."""
+        try:
+            orphaned, _, _ = self.scan_for_orphaned(db)
+            
+            # Get existing paths
+            try:
+                existing_paths = set(
+                    r[0] for r in db.query(OrphanedFile.file_path).all()
+                )
+            except Exception as e:
+                logger.error("[FolderScanner] Error querying existing paths: %s", e)
+                existing_paths = set()
+            
+            new_count = 0
+            for item in orphaned:
+                if item['relative_path'] not in existing_paths:
+                    try:
+                        orphaned_record = OrphanedFile(
+                            file_path=item['relative_path'],
+                            file_size=item['size'],
+                            camera_id=item['camera_id'],
+                            status='pending'
+                        )
+                        db.add(orphaned_record)
+                        new_count += 1
+                    except Exception as e:
+                        logger.error("[FolderScanner] Error creating record for %s: %s", 
+                                item['relative_path'], e)
+                        continue
+            
+            # Commit dengan error handling
+            try:
+                db.commit()
+                logger.info("[FolderScanner] Committed %d new records", new_count)
+            except Exception as e:
+                logger.error("[FolderScanner] Commit error: %s", e)
+                db.rollback()
+                raise Exception(f"Database commit failed: {e}")
+            
+            # Mark resolved records
+            try:
+                all_records = db.query(OrphanedFile).filter(
+                    OrphanedFile.status.in_(['pending', 'reviewed'])
+                ).all()
+                
+                current_disk_paths = {o['relative_path'] for o in orphaned}
+                resolved_count = 0
+                
+                for record in all_records:
+                    if record.file_path not in current_disk_paths:
+                        record.status = 'resolved'
+                        record.notes = 'File no longer exists on disk'
+                        resolved_count += 1
+                
+                db.commit()
+                logger.info("[FolderScanner] Marked %d records as resolved", resolved_count)
+            except Exception as e:
+                logger.error("[FolderScanner] Error marking resolved: %s", e)
+                db.rollback()
+                # Jangan raise, ini tidak critical
+            
+            # Get total count
+            try:
+                total_orphaned = db.query(OrphanedFile).filter(
+                    OrphanedFile.status.in_(['pending', 'reviewed'])
+                ).count()
+            except Exception as e:
+                logger.error("[FolderScanner] Error counting total: %s", e)
+                total_orphaned = 0
+            
+            return new_count, total_orphaned
+            
+        except Exception as e:
+            logger.error("[FolderScanner] Error in sync_to_orphaned_table: %s", e)
+            db.rollback()
+            raise
 
 # ============================================================================
 # PENDEKATAN 2: ORPHANED FILE MANAGER
@@ -185,10 +229,25 @@ class OrphanedFileManager:
     
     def get_storage_summary(self, db: Session) -> Dict:
         """Get summary of orphaned file storage."""
-        from sqlalchemy import func
+        from sqlalchemy import func, inspect  # ← import inspect di sini
         from sqlalchemy.exc import SQLAlchemyError
         
         try:
+            # Check if table exists first (opsional tapi recommended)
+            try:
+                inspector = inspect(db.bind)
+                if not inspector.has_table("orphaned_files"):
+                    logger.warning("[OrphanedManager] Table 'orphaned_files' not found")
+                    return {
+                        'total_count': 0,
+                        'total_size_bytes': 0,
+                        'total_size_mb': 0,
+                        'by_camera': []
+                    }
+            except Exception as e:
+                logger.debug("[OrphanedManager] Could not inspect tables: %s", e)
+                # Continue anyway, mungkin table ada tapi inspect gagal
+            
             # Query for total count
             total_count = db.query(OrphanedFile).filter(
                 OrphanedFile.status.in_(['pending', 'reviewed'])
@@ -232,7 +291,7 @@ class OrphanedFileManager:
                 'total_size_bytes': 0,
                 'total_size_mb': 0,
                 'by_camera': []
-            }
+            }   
     
     def _cleanup_empty_folders(self, file_path: Path) -> None:
         """Remove empty parent folders after file deletion.
