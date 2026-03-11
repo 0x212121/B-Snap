@@ -1,658 +1,1111 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – Email Recipients{% endblock %}
-{% from "_icons.html" import icon_envelope_open, icon_envelope, icon_plus, icon_pencil, icon_trash, icon_airplane, icon_download, icon_warning %}
+{% from "_icons.html" import icon_envelope_open, icon_envelope, icon_plus, icon_pencil, icon_trash, icon_airplane, icon_download %}
+
+{% block head %}
+<!-- SweetAlert2 CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-4">
-  
-  <!-- === SMTP Configuration Warning === -->
-  {% if not smtp_status.configured %}
-  <div class="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-3 mb-4 rounded-r-lg">
-    <div class="flex items-start">
-      <div class="flex-shrink-0">
-        <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-        </svg>
-      </div>
-      <div class="ml-3">
-        <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">SMTP Not Configured</h3>
-        <div class="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
-          <p>{{ smtp_status.message }}</p>
-          <p class="mt-1">Email notifications will not be sent until SMTP is configured.</p>
-        </div>
-        <div class="mt-2">
-          <a href="/config" class="text-sm font-medium text-yellow-800 dark:text-yellow-200 underline hover:text-yellow-600">
-            Configure SMTP Settings →
-          </a>
-        </div>
+<div class="container mx-auto px-4 py-4 max-w-7xl">
+
+  <!-- Header -->
+  <div class="mb-4 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+        {{ icon_envelope_open("w-7 h-7 text-yellow-500") }}
+        Email Recipients
+      </h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage B-SNAP email distribution lists</p>
+    </div>
+    <button onclick="toggleSection('addFormContent')" 
+      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-colors">
+      {{ icon_plus("w-4 h-4") }} Add New
+    </button>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-blue-500">
+      <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Total Recipients</div>
+      <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="stat-total">-</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-green-500">
+      <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Groups</div>
+      <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="stat-groups">-</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-purple-500">
+      <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Locations</div>
+      <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="stat-locations">-</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-yellow-500">
+      <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Last Updated</div>
+      <div class="text-sm font-medium text-gray-800 dark:text-gray-100 mt-1" id="stat-updated">Just now</div>
+    </div>
+  </div>
+
+  <!-- === Section 1: Add Recipient (Collapsible) === -->
+  <div id="addSection" class="bg-white dark:bg-gray-800 shadow-lg rounded-lg mb-4 overflow-hidden">
+    <div id="addFormContent" class="hidden">
+      <div class="p-4">
+        <form id="addForm" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <!-- Left Column -->
+          <div class="lg:col-span-5 space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address <span class="text-red-500">*</span></label>
+              <input type="email" id="email" name="email" required placeholder="recipient@example.com"
+                class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 transition-all">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nickname</label>
+              <input type="text" id="nickname" name="nickname" placeholder="John Doe"
+                class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 transition-all">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Group <span class="text-red-500">*</span></label>
+              <select id="group_id" name="group_id" required
+                class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 pr-8 transition-all">
+                <option value="">Select Group...</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Right Column -->
+          <div class="lg:col-span-5">
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Locations</label>
+            <select id="locations" name="locations" multiple
+              class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 min-h-[140px]">
+            </select>
+            <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">Hold Ctrl/Cmd to select multiple. Auto-filtered by group.</p>
+          </div>
+
+          <!-- Action Column -->
+          <div class="lg:col-span-2 flex items-end">
+            <button type="submit"
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center justify-center gap-2 shadow-sm transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+              {{ icon_plus("w-4 h-4") }} Add Recipient
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
-  {% else %}
-  <div class="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-400 p-3 mb-4 rounded-r-lg">
-    <div class="flex items-center">
-      <div class="flex-shrink-0">
-        <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-        </svg>
-      </div>
-      <div class="ml-3">
-        <p class="text-sm font-medium text-green-800 dark:text-green-200">{{ smtp_status.message }}</p>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-  
-  <!-- === Section 1: Add Recipient (Compact) === -->
-  <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-4">
-    <div class="px-3 py-2 border-b dark:border-gray-700 flex items-center gap-2 font-semibold text-sm text-gray-800 dark:text-gray-100">
-      {{ icon_envelope_open("w-5 h-5 text-yellow-400") }}
-      Add Recipient
-    </div>
-    <div class="px-3 py-2">
-      <form id="addForm" class="grid grid-cols-1 md:grid-cols-2 gap-2 items-stretch">
-        <div id="leftStack" class="grid grid-cols-1 gap-2">
-          <div>
-            <label for="email" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Email *</label>
-            <input type="email" id="email" name="email" required placeholder="email@example.com"
-            class="mt-0.5 w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs px-2 py-1.5">
-          </div>
-          <div>
-            <label for="nickname" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Nickname</label>
-            <input type="text" id="nickname" name="nickname" placeholder="Optional"
-            class="mt-0.5 w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs px-2 py-1.5">
-          </div>
-          <div>
-            <label for="group_id" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Group *</label>
-            <select id="group_id" name="group_id" required
-            class="mt-0.5 w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs px-2 py-1.5 pr-6">
-            <option value="">-- Select Group --</option>
+
+  <!-- === Section 2: Recipients List & Test Email === -->
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    
+    <!-- Recipients Table -->
+    <div class="xl:col-span-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
+      <div class="px-4 py-3 border-b dark:border-gray-700 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <h3 class="font-semibold text-gray-800 dark:text-gray-100">Recipients</h3>
+          <span id="recipient-count" class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-2 py-1 rounded-full">0</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 dark:text-gray-400">Show:</label>
+          <select id="perPageSelect"
+            class="rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-xs px-2 py-1">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
           </select>
         </div>
-        <div class="md:hidden">
-          <button type="submit"
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1 shadow-sm">
-          {{ icon_plus("w-4 h-4 text-gray-100 inline") }} Add
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+          <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300">
+            <tr>
+              <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Email</th>
+              <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Nickname</th>
+              <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Group</th>
+              <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Locations</th>
+              <th class="px-3 py-2 text-center font-medium text-xs uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="recipients-body" class="divide-y divide-gray-100 dark:divide-gray-700">
+            <tr>
+              <td colspan="5" class="px-4 py-8 text-center">
+                <div class="flex flex-col items-center gap-2 text-gray-400">
+                  <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                  <span class="text-sm">Loading recipients...</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div id="pagination-controls" class="flex justify-center items-center gap-1 px-4 py-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30"></div>
+    </div>
+
+    <!-- Test Email Panel -->
+    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
+      <div class="px-4 py-3 border-b dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700/50 dark:to-gray-700/30">
+        <h3 class="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+          {{ icon_envelope("w-5 h-5 text-blue-500") }}
+          Send Test Email
+        </h3>
+      </div>
+      
+      <div class="p-4 space-y-4">
+        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
+          <p class="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+            Send a test email to verify your configuration. Select a group and optionally filter by location.
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Target Group <span class="text-red-500">*</span></label>
+          <select id="test_group" 
+            class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2 transition-all">
+            <option value="">Select Group...</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Location</label>
+          <select id="test_location" 
+            class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2 transition-all">
+            <option value="">All Locations</option>
+          </select>
+        </div>
+
+        <div class="pt-2">
+          <button id="btnTestSend"
+            class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow-md transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ icon_airplane("w-5 h-5") }}
+            <span>Send Test Email</span>
+          </button>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-2 gap-2 pt-2 border-t dark:border-gray-700">
+          <div class="text-center p-2 bg-gray-50 dark:bg-gray-700/30 rounded">
+            <div class="text-xs text-gray-500 dark:text-gray-400">Recipients</div>
+            <div class="text-lg font-bold text-gray-800 dark:text-gray-100" id="test-recipient-count">-</div>
+          </div>
+          <div class="text-center p-2 bg-gray-50 dark:bg-gray-700/30 rounded">
+            <div class="text-xs text-gray-500 dark:text-gray-400">Last Test</div>
+            <div class="text-xs font-medium text-gray-600 dark:text-gray-300 mt-1" id="test-last-send">Never</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
+    <div class="px-6 py-4 border-b dark:border-gray-700 flex items-center justify-between">
+      <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+        {{ icon_pencil("w-5 h-5 text-yellow-500") }}
+        Edit Recipient
+      </h3>
+      <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    
+    <form id="editForm" class="p-6 space-y-4">
+      <input type="hidden" name="id" id="edit_id">
+      
+      <div>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email <span class="text-red-500">*</span></label>
+        <input type="email" id="edit_email" name="email" required
+          class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2">
+      </div>
+      
+      <div>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nickname</label>
+        <input type="text" id="edit_nickname" name="nickname"
+          class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2">
+      </div>
+      
+      <div>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Group <span class="text-red-500">*</span></label>
+        <select id="edit_group_id" name="group_id" required
+          class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2 pr-8"></select>
+      </div>
+      
+      <div>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Locations</label>
+        <select id="edit_locations" name="locations" multiple size="4"
+          class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2"></select>
+      </div>
+      
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeEditModal()"
+          class="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors">
+          Cancel
+        </button>
+        <button type="submit"
+          class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
+          {{ icon_download("w-4 h-4") }} Save Changes
         </button>
       </div>
-    </div>
-    <div id="rightLocations" class="flex flex-col">
-      <label for="locations" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Locations</label>
-      <select id="locations" name="locations" multiple
-      class="mt-0.5 w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs px-2 py-1 flex-1 min-h-[5rem]">
-    </select>
-    <div class="hidden md:flex justify-end pt-1.5">
-      <button type="submit"
-      class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-1 shadow-sm">
-      {{ icon_plus("w-4 h-4 text-gray-100 inline") }} Add
-    </button>
-  </div>
-</div>
-</form>
-<p class="mt-1 text-[10px] text-gray-500 dark:text-gray-400">Locations will adjust to the selected group/division.</p>
-</div>
-</div>
-
-<!-- === Section 2: Recipients List (Compact) === -->
-<div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-4">
-  <div class="flex items-center justify-between px-3 py-2 border-b dark:border-gray-700">
-    <div>
-      <h3 class="font-semibold text-sm text-gray-800 dark:text-gray-100">Recipients List</h3>
-      <p class="text-[10px] text-gray-500 dark:text-gray-400">List receiver B-SNAP Email</p>
-    </div>
-    <div class="flex items-center gap-2">
-      <label for="perPageSelect" class="text-xs text-gray-700 dark:text-gray-300">Per page</label>
-      <select id="perPageSelect"
-      class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 text-xs px-2 py-1 pr-6">
-      <option value="10">10</option>
-      <option value="20" selected>20</option>
-      <option value="50">50</option>
-      <option value="100">100</option>
-    </select>
-  </div>
-</div>
-<div class="overflow-x-auto">
-  <table class="w-full text-xs text-left text-gray-700 dark:text-gray-300">
-    <thead class="bg-gray-100 dark:bg-gray-700 dark:text-gray-200">
-      <tr>
-        <th id="th-email" class="px-3 py-1.5 cursor-pointer select-none hover:text-blue-600 font-medium"
-        onclick="sortRecipientsByEmail()">Email ↑</th>
-        <th class="px-3 py-1.5 font-medium">Nickname</th>
-        <th class="px-3 py-1.5 font-medium">Group</th>
-        <th class="px-3 py-1.5 font-medium">Locations</th>
-        <th class="px-3 py-1.5 text-center font-medium">Actions</th>
-      </tr>
-    </thead>
-    <tbody id="recipients-body">
-      <tr><td colspan="5" class="px-3 py-3 text-center text-gray-500 dark:text-gray-400">Loading...</td></tr>
-    </tbody>
-  </table>
-</div>
-<div id="pagination-controls" class="flex justify-center items-center gap-1 px-3 py-2 text-xs"></div>
-</div>
-
-<!-- === Section 3: Send Test Email (Compact) === -->
-<div class="bg-white dark:bg-gray-800 shadow rounded-lg">
-  <div class="flex items-center gap-2 border-b dark:border-gray-700 px-3 py-2">
-    {{ icon_envelope("w-5 h-5 text-yellow-400") }}
-    <h3 class="font-semibold text-sm text-gray-800 dark:text-gray-100">Send Test Email</h3>
-  </div>
-  <div class="p-3 grid grid-cols-1 md:grid-cols-3 gap-2">
-    <div>
-      <label for="test_group" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Group</label>
-      <select id="test_group" class="mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-xs px-2 py-1.5 pr-6">
-        <option value="">-- Select Group --</option>
-      </select>
-    </div>
-    <div>
-      <label for="test_location" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Location (optional)</label>
-      <select id="test_location" class="mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-xs px-2 py-1.5 pr-6">
-        <option value="">-- All Locations --</option>
-      </select>
-    </div>
-    <div class="flex items-end">
-      <button id="btnTestSend"
-      class="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors">
-      {{ icon_airplane("w-4 h-4 text-yellow-300 inline") }}
-      Send Test Email
-    </button>
-  </div>
-</div>
-</div>
-</div>
-
-
-<!-- Modal Edit (Compact) -->
-<div id="editModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-md p-4 text-gray-800 dark:text-gray-100">
-    <h3 class="text-base font-semibold mb-3 flex items-center gap-2">{{ icon_pencil("w-5 h-5 text-yellow-500") }} Edit Recipient</h3>
-    <form id="editForm" class="space-y-2">
-      <input type="hidden" name="id" id="edit_id">
-      <div>
-        <label for="edit_email" class="block text-xs font-medium">Email *</label>
-        <input type="email" id="edit_email" name="email" required
-        class="mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-xs px-2 py-1.5">
-      </div>
-      <div>
-        <label for="edit_nickname" class="block text-xs font-medium">Nickname</label>
-        <input type="text" id="edit_nickname" name="nickname"
-        class="mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-xs px-2 py-1.5">
-      </div>
-      <div>
-        <label for="edit_group_id" class="block text-xs font-medium">Group *</label>
-        <select id="edit_group_id" name="group_id" required
-        class="mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-xs px-2 py-1.5 pr-6"></select>
-      </div>
-      <div>
-        <label for="edit_locations" class="block text-xs font-medium">Locations</label>
-        <select id="edit_locations" name="locations" multiple size="3"
-        class="mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-xs px-2 py-1 pr-6"></select>
-      </div>
-      <div class="flex justify-end gap-2 pt-2">
-        <button type="button" onclick="closeEditModal()"
-        class="px-3 py-1.5 rounded bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-xs">Cancel</button>
-        <button type="submit"
-        class="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1">
-        {{ icon_download("w-3.5 h-3.5 text-gray-100 inline") }} Save
-      </button>
-    </div>
-  </form>
-</div>
-</div>
-
-<!-- Confirmation Modal for Test Email -->
-<div id="confirmModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-sm p-4 text-gray-800 dark:text-gray-100 transform transition-all">
-    <div class="flex items-center gap-3 mb-3">
-      <div class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-        {{ icon_airplane("w-6 h-6 text-blue-600 dark:text-blue-400") }}
-      </div>
-      <div>
-        <h3 class="text-base font-semibold">Send Test Email</h3>
-        <p class="text-xs text-gray-500 dark:text-gray-400">Confirm action</p>
-      </div>
-    </div>
-    <div class="bg-gray-50 dark:bg-gray-700/50 rounded p-2.5 mb-3 text-xs">
-      <p class="text-gray-600 dark:text-gray-300">Are you sure you want to send test email to recipients in:</p>
-      <p class="font-medium text-gray-900 dark:text-gray-100 mt-1">
-        Group: <span id="confirmGroupName" class="text-blue-600 dark:text-blue-400">-</span>
-      </p>
-      <p class="font-medium text-gray-900 dark:text-gray-100">
-        Location: <span id="confirmLocationName" class="text-blue-600 dark:text-blue-400">All</span>
-      </p>
-    </div>
-    <div class="flex justify-end gap-2">
-      <button type="button" onclick="closeConfirmModal()"
-      class="px-3 py-1.5 rounded bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-xs transition-colors">
-        Cancel
-      </button>
-      <button type="button" id="confirmSendBtn"
-      class="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors">
-        {{ icon_airplane("w-4 h-4 text-yellow-300 inline") }} Yes, Send
-      </button>
-    </div>
+    </form>
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<!-- SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
-  /* ================== State ================== */
-  let allRecipients = [];     // untuk client-side pagination
-  let currentPage = 1;
-  let perPage = 20;
-  let totalPages = 1;
-  let pendingSendData = null; // Store form data for confirmed send
+// ============================================================
+// THEME MANAGEMENT
+// ============================================================
+const ThemeManager = {
+  currentTheme: 'light',
   
-  /* ================== Utils ================== */
-  
-  async function safeJSON(res) {
-    const ct = res.headers.get('content-type') || '';
-    if (ct.includes('application/json')) return res.json();
-    const text = await res.text();
-    try { return JSON.parse(text); } catch { return { status: "error", message: text || `HTTP ${res.status}` }; }
-  }
-  
-  /* ================== Confirmation Modal ================== */
-  function openConfirmModal(groupId, groupName, location) {
-    document.getElementById('confirmGroupName').textContent = groupName || '-';
-    document.getElementById('confirmLocationName').textContent = location || 'All';
-    document.getElementById('confirmModal').classList.remove('hidden');
-  }
-  
-  function closeConfirmModal() {
-    document.getElementById('confirmModal').classList.add('hidden');
-    pendingSendData = null;
-  }
-  
-  /* ================== Height sync ================== */
-  function syncLocationsHeight() {
-    const left = document.getElementById('leftStack');
-    const select = document.getElementById('locations');
-    if (!left || !select) return;
-    const isMdUp = window.matchMedia('(min-width: 768px)').matches;
-    if (!isMdUp) { select.style.height = ''; return; }
-    const h = left.getBoundingClientRect().height;
-    select.style.height = Math.max(90, Math.floor(h)) + 'px';
-  }
-  window.addEventListener('resize', syncLocationsHeight);
-  
-  /* ================== Pagination UI ================== */
-  function buildPagination(container, page, total, serverPaged = false) {
-    container.innerHTML = '';
-    if (!total || total <= 1) return;
+  init() {
+    this.detectTheme();
     
-    const makeLink = (label, targetPage, disabled = false, active = false) => {
-      const el = document.createElement(active ? 'span' : 'a');
-      el.textContent = label;
-      el.className = active
-      ? 'px-2 py-0.5 bg-blue-600 text-white rounded text-xs font-bold'
-      : 'px-2 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white';
-      if (!active && !disabled) {
-        el.href = '#';
-        el.onclick = (e) => {
-          e.preventDefault();
-          if (serverPaged && typeof loadRecipients === 'function') {
-            loadRecipients(targetPage, window.perPage);
-          } else if (typeof renderRecipients === 'function') {
-            renderRecipients(targetPage);
-          }
-        };
-      }
-      return el;
-    };
-    
-    const windowSize = 2;
-    
-    if (page > 1) {
-      container.appendChild(makeLink('First', 1));
-      container.appendChild(makeLink('«', page - 1));
-    }
-    if (page > windowSize + 2) container.appendChild(document.createTextNode('...'));
-    for (let i = Math.max(1, page - windowSize); i <= Math.min(total, page + windowSize); i++) {
-      container.appendChild(makeLink(String(i), i, false, i === page));
-    }
-    if (page < total - windowSize - 1) container.appendChild(document.createTextNode('...'));
-    if (page < total) {
-      container.appendChild(makeLink('»', page + 1));
-      container.appendChild(makeLink('Last', total));
-    }
-  }
-  
-  /* ================== Load & Render ================== */
-  async function loadRecipients(targetPage = 1, overridePerPage = null) {
-    const tbody = document.getElementById("recipients-body");
-    const paginationContainer = document.getElementById("pagination-controls");
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    const urlPerPageRaw = urlParams.get("per_page");
-    const urlPerPage = urlPerPageRaw ? parseInt(urlPerPageRaw, 10) : null;
-    const selectedPerPage = (overridePerPage && !Number.isNaN(overridePerPage))
-    ? overridePerPage
-    : (urlPerPage || window.perPage || 10);
-    
-    window.perPage = selectedPerPage;
-    window.currentPage = targetPage;
-    
-    const perSel = document.getElementById("perPageSelect");
-    if (perSel) perSel.value = window.perPage;
-    
-    if (tbody) tbody.style.opacity = "0.6";
-    
-    try {
-      const resp = await fetch(`/api/recipients?page=${window.currentPage}&per_page=${window.perPage}`);
-      const data = await safeJSON(resp);
-      if (!data || data.status !== "success") {
-        throw new Error(data ? data.message : "Invalid response");
-      }
-      
-      const { recipients, groups, locations_by_group, pagination } = data.data || {};
-      window.locationsByGroup = locations_by_group || {};
-      
-      // Populate group selects
-      const selects = [document.getElementById("group_id"), document.getElementById("edit_group_id"), document.getElementById("test_group")];
-      selects.forEach(sel => {
-        if (!sel) return;
-        const keepFirst = sel.querySelector("option")?.outerHTML || '<option value="">-- Select Group --</option>';
-        sel.innerHTML = keepFirst;
-        (groups || []).forEach(g => sel.insertAdjacentHTML("beforeend", `<option value="${g.id}">${g.name}</option>`));
+    // Listen for system theme changes
+    if (window.matchMedia) {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      mediaQuery.addEventListener('change', (e) => {
+        this.setTheme(e.matches ? 'dark' : 'light');
       });
-      
-      window.allRecipients = recipients || [];
-      window.totalPages = pagination?.total_pages || 1;
-      window.currentPage = pagination?.page || window.currentPage;
-      
-      renderRecipients(window.currentPage, true);
-      
-      if (paginationContainer) {
-        buildPagination(paginationContainer, window.currentPage, window.totalPages, true);
-      }
-      
-      sortAscending = true;
-      sortRecipientsByEmail();
-      
-      const url = new URL(window.location);
-      url.searchParams.set("page", window.currentPage);
-      url.searchParams.set("per_page", window.perPage);
-      window.history.pushState({ page: window.currentPage, perPage: window.perPage }, "", url);
-      
-    } catch (err) {
-      console.error("Error loadRecipients:", err);
-      if (tbody) tbody.innerHTML =
-      `<tr><td colspan="5" class="px-3 py-4 text-center text-red-500 text-xs">Failed to load data.</td></tr>`;
-      Toast.error("Failed to load recipients.", { title: 'Error' });
-    } finally {
-      if (tbody) tbody.style.opacity = "1";
     }
+    
+    // Observe class changes on html element (Tailwind dark mode)
+    this.observeHtmlClass();
+  },
+  
+  detectTheme() {
+    if (document.documentElement.classList.contains('dark')) {
+      this.setTheme('dark');
+    } else if (document.documentElement.classList.contains('light')) {
+      this.setTheme('light');
+    } else {
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      this.setTheme(prefersDark ? 'dark' : 'light');
+    }
+  },
+  
+  setTheme(theme) {
+    this.currentTheme = theme;
+    window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
+  },
+  
+  observeHtmlClass() {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          const hasDark = document.documentElement.classList.contains('dark');
+          const newTheme = hasDark ? 'dark' : 'light';
+          if (newTheme !== this.currentTheme) {
+            this.setTheme(newTheme);
+          }
+        }
+      });
+    });
+    
+    observer.observe(document.documentElement, { attributes: true });
+  },
+  
+  toggle() {
+    const newTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(newTheme);
+    this.setTheme(newTheme);
+  },
+  
+  isDark() {
+    return this.currentTheme === 'dark';
+  }
+};
+
+// ============================================================
+// SWEETALERT2 HELPERS (tanpa updateDefaults)
+// ============================================================
+function getSwalOptions(options = {}) {
+  const isDark = ThemeManager.isDark();
+  
+  return {
+    background: isDark ? '#1F2937' : '#FFFFFF',
+    color: isDark ? '#F3F4F6' : '#1F2937',
+    confirmButtonColor: '#3B82F6',
+    cancelButtonColor: '#6B7280',
+    reverseButtons: true,
+    allowOutsideClick: false,
+    ...options
+  };
+}
+
+function showSwal(options) {
+  return Swal.fire(getSwalOptions(options));
+}
+
+function showToast(status, message) {
+  const isDark = ThemeManager.isDark();
+  
+  const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    background: isDark ? '#1F2937' : '#FFFFFF',
+    color: isDark ? '#F3F4F6' : '#1F2937',
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer);
+      toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+  });
+  
+  const icons = {
+    success: 'success',
+    error: 'error',
+    warning: 'warning',
+    info: 'info'
+  };
+  
+  Toast.fire({
+    icon: icons[status] || 'info',
+    title: message
+  });
+}
+
+// ============================================================
+// GLOBAL STATE
+// ============================================================
+const AppState = {
+  allRecipients: [],
+  currentPage: 1,
+  perPage: 20,
+  totalPages: 1,
+  lastTestSend: null,
+  locationsByGroup: {}
+};
+
+// ============================================================
+// DOM ELEMENTS CACHE
+// ============================================================
+const Elements = {
+  addForm: null,
+  editForm: null,
+  groupSelect: null,
+  editGroupSelect: null,
+  testGroupSelect: null,
+  testLocationSelect: null,
+  locationsSelect: null,
+  editLocationsSelect: null,
+  perPageSelect: null,
+  btnTestSend: null,
+  recipientsBody: null,
+  paginationControls: null,
+  editModal: null,
+  statTotal: null,
+  statGroups: null,
+  statLocations: null,
+  recipientCount: null,
+  testRecipientCount: null,
+  testLastSend: null
+};
+
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+function toggleTheme() {
+  ThemeManager.toggle();
+}
+
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('hidden');
+}
+
+async function safeJSON(res) {
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('application/json')) return res.json();
+  const text = await res.text();
+  try { 
+    return JSON.parse(text); 
+  } catch { 
+    return { status: "error", message: text || `HTTP ${res.status}` }; 
+  }
+}
+
+// ============================================================
+// NATIVE MODAL FUNCTIONS
+// ============================================================
+function openEditModal(id, email, nickname, groupId, locationsCsv = "") {
+  const { editModal, editGroupSelect, editLocationsSelect } = Elements;
+  if (!editModal) return;
+  
+  document.getElementById("edit_id").value = id;
+  document.getElementById("edit_email").value = email;
+  document.getElementById("edit_nickname").value = nickname;
+  
+  if (editGroupSelect) editGroupSelect.value = groupId;
+  
+  const pre = locationsCsv.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+  populateLocations(groupId, editLocationsSelect, pre);
+  
+  editModal.classList.remove("hidden");
+}
+
+function closeEditModal() {
+  if (Elements.editModal) {
+    Elements.editModal.classList.add("hidden");
+  }
+}
+
+// ============================================================
+// LOCATION FUNCTIONS
+// ============================================================
+function populateLocations(groupId, selectEl, preselected = []) {
+  if (!selectEl) return;
+  
+  selectEl.innerHTML = "";
+  const map = AppState.locationsByGroup || {};
+  
+  if (!groupId || !map[groupId] || !map[groupId].length) {
+    selectEl.insertAdjacentHTML("beforeend", `<option disabled selected>No locations available</option>`);
+    return;
   }
   
-  /* ================== Render ================== */
-  function renderRecipients(page = 1, serverPaged = false) {
-    window.currentPage = page;
-    const tbody = document.getElementById("recipients-body");
-    const pag = document.getElementById("pagination-controls");
-    if (!tbody) return;
-    
-    tbody.innerHTML = "";
-    
-    let rows = [];
-    if (serverPaged) {
-      rows = window.allRecipients || [];
-    } else {
-      const start = (page - 1) * perPage;
-      rows = (window.allRecipients || []).slice(start, start + perPage);
-      window.totalPages = Math.max(1, Math.ceil((window.allRecipients || []).length / perPage));
+  map[groupId].forEach(loc => {
+    const opt = document.createElement("option");
+    opt.value = loc;
+    opt.textContent = loc;
+    if (preselected.includes((loc || '').toLowerCase())) opt.selected = true;
+    selectEl.appendChild(opt);
+  });
+}
+
+function updateTestRecipientCount() {
+  const { testGroupSelect, testLocationSelect, testRecipientCount } = Elements;
+  if (!testRecipientCount) return;
+  
+  const groupId = testGroupSelect?.value;
+  const location = testLocationSelect?.value;
+  
+  if (!groupId) {
+    testRecipientCount.textContent = '-';
+    return 0;
+  }
+  
+  let count = 0;
+  AppState.allRecipients.forEach(r => {
+    if (r.group_id == groupId) {
+      if (!location || !r.locations || r.locations.toLowerCase().includes(location.toLowerCase())) {
+        count++;
+      }
     }
+  });
+  
+  testRecipientCount.textContent = count;
+  return count;
+}
+
+// ============================================================
+// PAGINATION
+// ============================================================
+function buildPagination(container, page, total, serverPaged = false) {
+  if (!container) return;
+  container.innerHTML = '';
+  
+  if (!total || total <= 1) return;
+
+  const makeBtn = (label, targetPage, disabled = false, active = false) => {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    btn.disabled = disabled;
+    btn.className = active
+      ? 'px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-semibold min-w-[36px]'
+      : 'px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed min-w-[36px] transition-colors';
     
-    if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="5" class="px-3 py-4 text-center text-gray-500 dark:text-gray-400 text-xs">No recipients found.</td></tr>`;
-    } else {
-      rows.forEach(r => {
-        const safeEmail = (r.email || '').replace(/'/g, "\\'");
-        const safeNickname = (r.nickname || '').replace(/'/g, "\\'");
-        const safeLoc = (r.locations || '').replace(/'/g, "\\'");
-        tbody.insertAdjacentHTML("beforeend", `
-        <tr id="recipient-row-${r.id}" class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-          <td class="px-3 py-1.5 col-email text-xs">${r.email}</td>
-          <td class="px-3 py-1.5 col-nickname text-xs">${r.nickname || "-"}</td>
-          <td class="px-3 py-1.5 col-group text-xs">${r.group_name || "-"}</td>
-          <td class="px-3 py-1.5 col-locations text-xs">${r.locations || "-"}</td>
-          <td class="px-3 py-1.5 text-center space-x-1">
-            <button type="button"
-              onclick="openEditModal(${r.id}, '${safeEmail}', '${safeNickname}', '${r.group_id}', '${safeLoc}')"
-              title="Edit recipient"
-              class="inline-flex items-center justify-center p-1 rounded transition-colors duration-150 hover:bg-yellow-100 dark:hover:bg-yellow-800/50">
-              {{ icon_pencil("w-4 h-4 text-yellow-600") }}
-            </button>
-            <button type="button"
-              onclick="confirmDeleteRecipient(${r.id}, '${safeEmail}')"
-              title="Delete recipient"
-              class="inline-flex items-center justify-center p-1 rounded transition-colors duration-150 hover:bg-red-100 dark:hover:bg-red-800/50">
-              {{ icon_trash("w-4 h-4 text-red-600") }}
-            </button>
+    if (!active && !disabled) {
+      btn.onclick = () => serverPaged ? loadRecipients(targetPage) : renderRecipients(targetPage);
+    }
+    return btn;
+  };
+
+  const windowSize = 2;
+  
+  const info = document.createElement('span');
+  info.className = 'text-xs text-gray-500 dark:text-gray-400 mr-2';
+  info.textContent = `Page ${page} of ${total}`;
+  container.appendChild(info);
+
+  if (page > 1) container.appendChild(makeBtn('←', page - 1));
+  
+  if (page > windowSize + 2) {
+    container.appendChild(makeBtn('1', 1));
+    const dots = document.createElement('span');
+    dots.textContent = '...';
+    dots.className = 'text-gray-400 px-1';
+    container.appendChild(dots);
+  }
+  
+  for (let i = Math.max(1, page - windowSize); i <= Math.min(total, page + windowSize); i++) {
+    container.appendChild(makeBtn(String(i), i, false, i === page));
+  }
+  
+  if (page < total - windowSize - 1) {
+    const dots = document.createElement('span');
+    dots.textContent = '...';
+    dots.className = 'text-gray-400 px-1';
+    container.appendChild(dots);
+    container.appendChild(makeBtn(String(total), total));
+  }
+  
+  if (page < total) container.appendChild(makeBtn('→', page + 1));
+}
+
+// ============================================================
+// DATA LOADING
+// ============================================================
+async function loadRecipients(initialPage = 1, overridePerPage = null) {
+  const { recipientsBody, paginationControls, perPageSelect } = Elements;
+  const urlParams = new URLSearchParams(window.location.search);
+
+  const urlPerPageRaw = urlParams.get('per_page');
+  const urlPerPage = urlPerPageRaw ? parseInt(urlPerPageRaw, 10) : null;
+  const selectedPerPage = overridePerPage || urlPerPage || AppState.perPage;
+
+  AppState.perPage = selectedPerPage;
+  const urlPageRaw = urlParams.get('page');
+  AppState.currentPage = urlPageRaw ? parseInt(urlPageRaw, 10) : initialPage;
+
+  if (perPageSelect) perPageSelect.value = AppState.perPage;
+  if (recipientsBody) recipientsBody.style.opacity = "0.6";
+
+  try {
+    const resp = await fetch(`/api/recipients?page=${AppState.currentPage}&per_page=${AppState.perPage}`);
+    const data = await safeJSON(resp);
+
+    if (!data || data.status !== "success") {
+      throw new Error(data?.message || 'Invalid response');
+    }
+
+    const { recipients, groups, locations_by_group, pagination, stats } = data.data || {};
+    AppState.locationsByGroup = locations_by_group || {};
+    AppState.allRecipients = Array.isArray(recipients) ? recipients : [];
+    AppState.totalPages = pagination?.total_pages || 1;
+    AppState.currentPage = pagination?.page || AppState.currentPage;
+
+    // Update stats
+    if (Elements.statTotal) Elements.statTotal.textContent = stats?.total_recipients || AppState.allRecipients.length;
+    if (Elements.statGroups) Elements.statGroups.textContent = stats?.total_groups || groups?.length || 0;
+    if (Elements.statLocations) Elements.statLocations.textContent = stats?.total_locations || 0;
+
+    // Populate selects
+    const groupSelects = [Elements.groupSelect, Elements.editGroupSelect, Elements.testGroupSelect];
+    groupSelects.forEach(sel => {
+      if (!sel) return;
+      const currentVal = sel.value;
+      sel.innerHTML = '<option value="">Select Group...</option>';
+      (groups || []).forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.id;
+        opt.textContent = g.name;
+        sel.appendChild(opt);
+      });
+      if (currentVal) sel.value = currentVal;
+    });
+
+    if (Elements.recipientCount) {
+      Elements.recipientCount.textContent = pagination?.total || AppState.allRecipients.length;
+    }
+
+    renderRecipients(AppState.currentPage, true);
+    buildPagination(paginationControls, AppState.currentPage, AppState.totalPages, true);
+
+    // Update URL
+    const url = new URL(window.location);
+    url.searchParams.set('page', AppState.currentPage);
+    url.searchParams.set('per_page', AppState.perPage);
+    window.history.pushState({ page: AppState.currentPage, perPage: AppState.perPage }, '', url);
+
+    updateTestRecipientCount();
+    
+  } catch (err) {
+    console.error("Error loadRecipients:", err);
+    if (recipientsBody) {
+      recipientsBody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-red-500"><div class="flex flex-col items-center gap-2"><span class="text-2xl">⚠️</span><span>Failed to load data</span></div></td></tr>`;
+    }
+    showToast('error', 'Failed to load recipients.');
+  } finally {
+    if (recipientsBody) recipientsBody.style.opacity = "1";
+  }
+}
+
+function renderRecipients(page = 1, serverPaged = false) {
+  AppState.currentPage = page;
+  const { recipientsBody, paginationControls } = Elements;
+  
+  if (!recipientsBody) return;
+  recipientsBody.innerHTML = "";
+
+  let rows = [];
+  if (serverPaged) {
+    rows = AppState.allRecipients;
+  } else {
+    const start = (page - 1) * AppState.perPage;
+    rows = AppState.allRecipients.slice(start, start + AppState.perPage);
+    AppState.totalPages = Math.max(1, Math.ceil(AppState.allRecipients.length / AppState.perPage));
+  }
+
+  if (!rows.length) {
+    recipientsBody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400"><div class="flex flex-col items-center gap-2"><span class="text-3xl">📭</span><span>No recipients found</span></div></td></tr>`;
+  } else {
+    rows.forEach(r => {
+      const safeNickname = (r.nickname || "").replace(/'/g, "\\'");
+      const safeLocations = (r.locations || "").replace(/'/g, "\\'");
+      const safeEmail = (r.email || "").replace(/'/g, "\\'");
+      
+      recipientsBody.insertAdjacentHTML("beforeend", `
+        <tr class="border-b dark:border-gray-700 hover:bg-blue-50/50 dark:hover:bg-gray-700/50 transition-colors group">
+          <td class="px-3 py-2">
+            <div class="font-medium text-gray-900 dark:text-gray-100 text-sm">${r.email}</div>
+          </td>
+          <td class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300">${r.nickname || '<span class="text-gray-400 italic">-</span>'}</td>
+          <td class="px-3 py-2">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+              ${r.group_name || "-"}
+            </span>
+          </td>
+          <td class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 max-w-[200px] truncate" title="${r.locations || ''}">
+            ${r.locations || '<span class="text-gray-400">All locations</span>'}
+          </td>
+          <td class="px-3 py-2 text-center">
+            <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button onclick="openEditModal(${r.id}, '${safeEmail}', '${safeNickname}', '${r.group_id}', '${safeLocations}')"
+                class="p-1.5 text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded transition-colors" title="Edit">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+              </button>
+              <button onclick="confirmDeleteRecipient(${r.id}, '${safeEmail}')" 
+                class="p-1.5 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 rounded transition-colors" title="Delete">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              </button>
+            </div>
           </td>
         </tr>`);
+    });
+  }
+
+  buildPagination(paginationControls, AppState.currentPage, AppState.totalPages, serverPaged);
+}
+
+// ============================================================
+// CRUD OPERATIONS
+// ============================================================
+async function handleAddSubmit(e) {
+  e.preventDefault();
+  const { addForm } = Elements;
+  const submitBtn = addForm.querySelector('button[type="submit"]');
+  const originalText = submitBtn.innerHTML;
+  
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = `<svg class="animate-spin w-4 h-4 mr-2 inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Adding...`;
+  
+  try {
+    const formData = new FormData(addForm);
+    const resp = await fetch("/recipients/add", { method: "POST", body: formData });
+    const data = await safeJSON(resp);
+    
+    if (data.status === "success") {
+      showToast('success', data.message || "Recipient added successfully");
+      addForm.reset();
+      if (Elements.locationsSelect) Elements.locationsSelect.innerHTML = "";
+      AppState.currentPage = 1;
+      await loadRecipients(1);
+      toggleSection('addFormContent');
+    } else {
+      await showSwal({
+        icon: 'error',
+        title: 'Failed to Add',
+        text: data.message || "Failed to add recipient",
+        confirmButtonColor: '#EF4444'
       });
     }
+  } catch (err) {
+    console.error(err);
+    await showSwal({
+      icon: 'error',
+      title: 'Server Error',
+      text: 'Server error while adding recipient',
+      confirmButtonColor: '#EF4444'
+    });
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalText;
+  }
+}
+
+async function handleEditSubmit(e) {
+  e.preventDefault();
+  const { editForm } = Elements;
+  const formData = new FormData(editForm);
+  const id = formData.get("id");
+  
+  try {
+    const resp = await fetch(`/recipients/edit/${id}`, { method: "POST", body: formData });
+    const data = await safeJSON(resp);
     
-    if (pag) {
-      buildPagination(pag, window.currentPage, window.totalPages || 1, serverPaged);
+    if (data.status === "success") {
+      showToast('success', data.message || "Recipient updated");
+      closeEditModal();
+      await loadRecipients(AppState.currentPage);
+    } else {
+      await showSwal({
+        icon: 'error',
+        title: 'Update Failed',
+        text: data.message || "Failed to update recipient",
+        confirmButtonColor: '#EF4444'
+      });
     }
-  }
-  
-  
-  /* ================== Sorting ================== */
-  let sortAscending = true;
-  
-  function sortRecipientsByEmail() {
-    if (!Array.isArray(window.allRecipients)) return;
-    window.allRecipients.sort((a, b) => {
-      const emailA = (a.email || '').toLowerCase();
-      const emailB = (b.email || '').toLowerCase();
-      if (emailA < emailB) return sortAscending ? -1 : 1;
-      if (emailA > emailB) return sortAscending ? 1 : -1;
-      return 0;
-    });
-    sortAscending = !sortAscending;
-    renderRecipients(window.currentPage, true);
-    updateSortIndicator();
-  }
-  
-  function updateSortIndicator() {
-    const header = document.getElementById('th-email');
-    if (!header) return;
-    header.innerHTML = `Email ${sortAscending ? '↑' : '↓'}`;
-  }
-  
-  /* ================== Dependent selects ================== */
-  function populateLocations(groupId, selectEl, preselected = []) {
-    selectEl.innerHTML = "";
-    const map = window.locationsByGroup || {};
-    if (!groupId || !map[groupId] || !map[groupId].length) {
-      selectEl.insertAdjacentHTML("beforeend", `<option disabled selected class="text-xs">-- No locations --</option>`);
-      syncLocationsHeight();
-      return;
-    }
-    map[groupId].forEach(loc => {
-      const opt = document.createElement("option");
-      opt.value = loc;
-      opt.textContent = loc;
-      opt.className = "text-xs";
-      if (preselected.includes((loc || '').toLowerCase())) opt.selected = true;
-      selectEl.appendChild(opt);
-    });
-    syncLocationsHeight();
-  }
-  
-  document.getElementById("group_id")?.addEventListener("change", e => {
-    populateLocations(e.target.value, document.getElementById("locations"));
-  });
-  document.getElementById("edit_group_id")?.addEventListener("change", e => {
-    populateLocations(e.target.value, document.getElementById("edit_locations"));
-  });
-  
-  /* ================== Add/Edit/Delete/Test ================== */
-  document.getElementById("addForm")?.addEventListener("submit", async e => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    try {
-      const resp = await fetch("/recipients/add", { method: "POST", body: formData });
-      const data = await safeJSON(resp);
-      if (data.status === "success") {
-        Toast.success(data.message || "Recipient added", { title: 'Success' });
-        e.target.reset();
-        document.getElementById("locations").innerHTML = "";
-        syncLocationsHeight();
-        currentPage = 1;
-        await loadRecipients(1);
-      } else {
-        Toast.error(data.message || "Failed to add recipient", { title: 'Error' });
-      }
-    } catch (err) {
-      console.error(err);
-      Toast.error("Server error while adding recipient", { title: 'Error' });
-    }
-  });
-  
-  function openEditModal(id, email, nickname, groupId, locationsCsv = "") {
-    document.getElementById("edit_id").value = id;
-    document.getElementById("edit_email").value = email;
-    document.getElementById("edit_nickname").value = nickname;
-    document.getElementById("edit_group_id").value = groupId;
-    const pre = locationsCsv.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
-    populateLocations(groupId, document.getElementById("edit_locations"), pre);
-    document.getElementById("editModal").classList.remove("hidden");
-  }
-  function closeEditModal() {
-    document.getElementById("editModal").classList.add("hidden");
-  }
-  document.getElementById("editForm").addEventListener("submit", async e => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const id = formData.get("id");
-    try {
-      const resp = await fetch(`/recipients/edit/${id}`, { method: "POST", body: formData });
-      const data = await safeJSON(resp);
-      if (data.status === "success") {
-        Toast.success(data.message || "Recipient updated", { title: 'Success' });
-        closeEditModal();
-        await loadRecipients(currentPage);
-      } else {
-        Toast.error(data.message || "Failed to update recipient", { title: 'Error' });
-      }
-    } catch (err) {
-      console.error(err);
-      Toast.error("Server error while updating recipient", { title: 'Error' });
-    }
-  });
-  
-  async function deleteRecipient(id) {
-    try {
-      const resp = await fetch(`/recipients/delete/${id}`, { method: "POST" });
-      const data = await safeJSON(resp);
-      if (data.status === "success") {
-        Toast.success(data.message || "Recipient deleted", { title: 'Success' });
-        const maxIdx = (currentPage - 1) * perPage;
-        if (allRecipients.length === 1 && currentPage > 1) currentPage -= 1;
-        await loadRecipients(currentPage);
-      } else {
-        Toast.error(data.message || "Failed to delete", { title: 'Error' });
-      }
-    } catch (err) {
-      console.error(err);
-      Toast.error("Server error while deleting recipient", { title: 'Error' });
-    }
-  }
-  function confirmDeleteRecipient(id, email) {
-    showGlobalConfirm(`Delete recipient ${email}?`, () => deleteRecipient(id), {
-      title: "Delete Recipient",
-      confirmText: "Delete",
-      confirmClasses: "bg-red-600 hover:bg-red-700"
+  } catch (err) {
+    console.error(err);
+    await showSwal({
+      icon: 'error',
+      title: 'Server Error',
+      text: 'Server error while updating recipient',
+      confirmButtonColor: '#EF4444'
     });
   }
-  
-  const testGroupSelect = document.getElementById("test_group");
-  const testLocationSelect = document.getElementById("test_location");
-  const btnTestSend = document.getElementById("btnTestSend");
-  
-  testGroupSelect?.addEventListener("change", e => {
-    const gid = e.target.value;
-    testLocationSelect.innerHTML = '<option value="">-- All Locations --</option>';
-    const map = window.locationsByGroup || {};
-    (map[gid] || []).forEach(loc => {
-      const opt = document.createElement("option");
-      opt.value = loc;
-      opt.textContent = loc;
-      opt.className = "text-xs";
-      testLocationSelect.appendChild(opt);
-    });
-  });
-  
-  // Modified: Show confirmation modal before sending
-  btnTestSend?.addEventListener("click", async () => {
-    const groupId = testGroupSelect.value;
-    const location = testLocationSelect.value;
+}
+
+async function deleteRecipient(id) {
+  try {
+    const resp = await fetch(`/recipients/delete/${id}`, { method: "POST" });
+    const data = await safeJSON(resp);
     
-    if (!groupId) {
-      Toast.error("Select a group first", { title: 'Error' });
-      return;
-    }
-    
-    // Get selected group name
-    const groupName = testGroupSelect.options[testGroupSelect.selectedIndex].text;
-    const locationName = location ? testLocationSelect.options[testLocationSelect.selectedIndex].text : null;
-    
-    // Store data for confirmed send
-    pendingSendData = { groupId, location };
-    
-    // Show confirmation modal
-    openConfirmModal(groupId, groupName, locationName);
-  });
-  
-  // Handle confirmed send
-  document.getElementById('confirmSendBtn')?.addEventListener('click', async () => {
-    if (!pendingSendData) return;
-    
-    closeConfirmModal();
-    
-    const formData = new FormData();
-    formData.append("group_id", pendingSendData.groupId);
-    if (pendingSendData.location) formData.append("location", pendingSendData.location);
-    
-    const btnTestSend = document.getElementById("btnTestSend");
-    btnTestSend.disabled = true;
-    const old = btnTestSend.innerHTML;
-    btnTestSend.innerHTML = `{{ icon_airplane("w-4 h-4 text-yellow-300 inline animate-pulse") }} Sending...`;
-    
-    try {
-      const resp = await fetch("/api/recipients/test-send", { method: "POST", body: formData });
-      const data = await safeJSON(resp);
-      if (data.status === "success") {
-        Toast.success(data.message || "Test emails sent", { title: 'Success' });
-      } else {
-        Toast.error(data.message || "Failed to send test emails", { title: 'Error' });
+    if (data.status === "success") {
+      showToast('success', data.message || "Recipient deleted");
+      if (AppState.allRecipients.length === 1 && AppState.currentPage > 1) {
+        AppState.currentPage -= 1;
       }
-    } catch (err) {
-      console.error("Error test send:", err);
-      Toast.error("Server error while sending emails", { title: 'Error' });
-    } finally {
-      btnTestSend.disabled = false;
-      btnTestSend.innerHTML = old;
-      pendingSendData = null;
+      await loadRecipients(AppState.currentPage);
+    } else {
+      await showSwal({
+        icon: 'error',
+        title: 'Delete Failed',
+        text: data.message || "Failed to delete",
+        confirmButtonColor: '#EF4444'
+      });
+    }
+  } catch (err) {
+    console.error(err);
+    await showSwal({
+      icon: 'error',
+      title: 'Server Error',
+      text: 'Server error while deleting recipient',
+      confirmButtonColor: '#EF4444'
+    });
+  }
+}
+
+async function confirmDeleteRecipient(id, email) {
+  const { isConfirmed } = await showSwal({
+    title: 'Delete Recipient?',
+    html: `Are you sure you want to delete <strong>${email}</strong>?<br>This action cannot be undone.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Delete',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#EF4444',
+    cancelButtonColor: '#6B7280'
+  });
+
+  if (isConfirmed) {
+    await deleteRecipient(id);
+  }
+}
+
+// ============================================================
+// TEST EMAIL WITH CONFIRMATION
+// ============================================================
+async function handleTestSendClick() {
+  const { testGroupSelect, testLocationSelect } = Elements;
+  
+  if (!testGroupSelect?.value) {
+    await showSwal({
+      icon: 'warning',
+      title: 'Select Group',
+      text: 'Please select a group first',
+      confirmButtonColor: '#F59E0B'
+    });
+    testGroupSelect?.focus();
+    return;
+  }
+
+  const groupId = testGroupSelect.value;
+  const location = testLocationSelect?.value || '';
+  const groupName = testGroupSelect.options[testGroupSelect.selectedIndex].text;
+  
+  // Calculate recipient count
+  let recipientCount = 0;
+  const targetRecipients = [];
+  
+  AppState.allRecipients.forEach(r => {
+    if (r.group_id == groupId) {
+      if (!location || !r.locations || r.locations.toLowerCase().includes(location.toLowerCase())) {
+        recipientCount++;
+        targetRecipients.push(r.email);
+      }
     }
   });
+
+  if (recipientCount === 0) {
+    await showSwal({
+      icon: 'warning',
+      title: 'No Recipients',
+      text: 'No recipients found for the selected criteria',
+      confirmButtonColor: '#F59E0B'
+    });
+    return;
+  }
+
+  const isDark = ThemeManager.isDark();
+
+  // Show confirmation dialog
+  const { isConfirmed } = await showSwal({
+    title: 'Send Test Email?',
+    icon: 'question',
+    html: `
+      <div class="text-left space-y-3 text-sm" style="color: ${isDark ? '#F3F4F6' : '#1F2937'}">
+        <div style="background: ${isDark ? '#374151' : '#EFF6FF'}; border: 1px solid ${isDark ? '#4B5563' : '#BFDBFE'}; border-radius: 0.5rem; padding: 0.75rem;">
+          <div style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px solid ${isDark ? '#4B5563' : '#BFDBFE'};">
+            <span style="color: ${isDark ? '#9CA3AF' : '#4B5563'}">Group:</span>
+            <span style="font-weight: 600; color: ${isDark ? '#F3F4F6' : '#1F2937'}">${groupName}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px solid ${isDark ? '#4B5563' : '#BFDBFE'};">
+            <span style="color: ${isDark ? '#9CA3AF' : '#4B5563'}">Location:</span>
+            <span style="font-weight: 600; color: ${isDark ? '#F3F4F6' : '#1F2937'}">${location || 'All Locations'}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 0.25rem 0;">
+            <span style="color: ${isDark ? '#9CA3AF' : '#4B5563'}">Recipients:</span>
+            <span style="font-weight: 700; color: #3B82F6; font-size: 1.125rem;">${recipientCount}</span>
+          </div>
+        </div>
+        <div style="background: ${isDark ? '#451A03' : '#FFFBEB'}; border: 1px solid ${isDark ? '#92400E' : '#FCD34D'}; border-radius: 0.5rem; padding: 0.75rem;">
+          <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+            <svg style="width: 1.25rem; height: 1.25rem; color: #F59E0B; flex-shrink: 0; margin-top: 0.125rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <p style="font-size: 0.75rem; color: ${isDark ? '#FCD34D' : '#92400E'}; margin: 0;">
+              This will send actual emails to the recipients. Please verify the configuration before proceeding.
+            </p>
+          </div>
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Send Now',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#3B82F6',
+    cancelButtonColor: '#6B7280',
+    width: '480px'
+  });
+
+  if (isConfirmed) {
+    await executeTestSend({ groupId, location, groupName, recipientCount, targetRecipients });
+  }
+}
+
+async function executeTestSend({ groupId, location, groupName, recipientCount, targetRecipients }) {
+  const isDark = ThemeManager.isDark();
   
-  /* ================== Per-page select ================== */
-  document.getElementById('perPageSelect').addEventListener('change', e => {
-    perPage = parseInt(e.target.value, 10) || 20;
-    currentPage = 1;
-    loadRecipients(currentPage, perPage);
+  // Show loading
+  Swal.fire({
+    title: 'Sending Test Email...',
+    html: `Please wait while we send to <strong>${recipientCount}</strong> recipient(s)`,
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    showConfirmButton: false,
+    background: isDark ? '#1F2937' : '#FFFFFF',
+    color: isDark ? '#F3F4F6' : '#1F2937',
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
+
+  const formData = new FormData();
+  formData.append("group_id", groupId);
+  if (location) formData.append("location", location);
+
+  try {
+    const resp = await fetch("/api/recipients/test-send", { method: "POST", body: formData });
+    const data = await safeJSON(resp);
+    
+    AppState.lastTestSend = new Date();
+    if (Elements.testLastSend) {
+      Elements.testLastSend.textContent = AppState.lastTestSend.toLocaleTimeString();
+    }
+
+    if (data.status === "success") {
+      const recipients = data.data?.recipients || [];
+      
+      // Build recipient list HTML
+      let recipientsHtml = '';
+      if (recipients.length > 0) {
+        const displayList = recipients.slice(0, 10);
+        const remaining = recipients.length - 10;
+        
+        recipientsHtml = `
+          <div style="margin-top: 1rem; background: ${isDark ? '#064E3B' : '#F0FDF4'}; border-radius: 0.5rem; padding: 0.75rem; max-height: 12rem; overflow-y: auto; text-align: left;">
+            <div style="font-size: 0.75rem; font-weight: 600; color: ${isDark ? '#6EE7B7' : '#065F46'}; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+              <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              Successfully sent to:
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              ${displayList.map(r => `
+                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: ${isDark ? '#6EE7B7' : '#059669'};">
+                  <span style="width: 0.375rem; height: 0.375rem; border-radius: 9999px; background: #10B981;"></span>
+                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${r}</span>
+                </div>
+              `).join('')}
+              ${remaining > 0 ? `<div style="font-size: 0.75rem; color: ${isDark ? '#6EE7B7' : '#059669'}; margin-top: 0.5rem;">...and ${remaining} more</div>` : ''}
+            </div>
+          </div>
+        `;
+      }
+      
+      await showSwal({
+        icon: 'success',
+        title: 'Test Email Sent!',
+        html: `
+          <div style="color: ${isDark ? '#F3F4F6' : '#1F2937'}">
+            <p style="color: ${isDark ? '#D1D5DB' : '#4B5563'}; margin-bottom: 0.5rem;">${data.message || `Successfully sent to ${recipients.length} recipient(s)`}</p>
+            ${recipientsHtml}
+          </div>
+        `,
+        confirmButtonColor: '#10B981',
+        width: '480px'
+      });
+      
+      showToast('success', 'Test email sent successfully');
+    } else {
+      await showSwal({
+        icon: 'error',
+        title: 'Failed to Send',
+        text: data.message || "An error occurred while sending test emails.",
+        confirmButtonColor: '#EF4444'
+      });
+      
+      showToast('error', data.message || 'Failed to send test email');
+    }
+  } catch (err) {
+    console.error("Error test send:", err);
+    await showSwal({
+      icon: 'error',
+      title: 'Connection Error',
+      text: 'Could not connect to the server. Please check your connection and try again.',
+      confirmButtonColor: '#EF4444'
+    });
+    showToast('error', 'Server error while sending emails');
+  }
+}
+
+function handleTestGroupChange() {
+  const { testGroupSelect, testLocationSelect } = Elements;
+  if (!testGroupSelect || !testLocationSelect) return;
+  
+  const gid = testGroupSelect.value;
+  testLocationSelect.innerHTML = '<option value="">All Locations</option>';
+  
+  const map = AppState.locationsByGroup || {};
+  (map[gid] || []).forEach(loc => {
+    const opt = document.createElement("option");
+    opt.value = loc;
+    opt.textContent = loc;
+    testLocationSelect.appendChild(opt);
   });
   
-  /* ================== Init ================== */
-  document.addEventListener("DOMContentLoaded", () => {
-    loadRecipients(1);
-    syncLocationsHeight();
-  });
+  updateTestRecipientCount();
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+function initElements() {
+  Elements.addForm = document.getElementById("addForm");
+  Elements.editForm = document.getElementById("editForm");
+  Elements.groupSelect = document.getElementById("group_id");
+  Elements.editGroupSelect = document.getElementById("edit_group_id");
+  Elements.testGroupSelect = document.getElementById("test_group");
+  Elements.testLocationSelect = document.getElementById("test_location");
+  Elements.locationsSelect = document.getElementById("locations");
+  Elements.editLocationsSelect = document.getElementById("edit_locations");
+  Elements.perPageSelect = document.getElementById("perPageSelect");
+  Elements.btnTestSend = document.getElementById("btnTestSend");
+  Elements.recipientsBody = document.getElementById("recipients-body");
+  Elements.paginationControls = document.getElementById("pagination-controls");
+  Elements.editModal = document.getElementById("editModal");
+  Elements.statTotal = document.getElementById("stat-total");
+  Elements.statGroups = document.getElementById("stat-groups");
+  Elements.statLocations = document.getElementById("stat-locations");
+  Elements.recipientCount = document.getElementById("recipient-count");
+  Elements.testRecipientCount = document.getElementById("test-recipient-count");
+  Elements.testLastSend = document.getElementById("test-last-send");
+}
+
+function initEventListeners() {
+  if (Elements.addForm) {
+    Elements.addForm.addEventListener("submit", handleAddSubmit);
+  }
+  
+  if (Elements.editForm) {
+    Elements.editForm.addEventListener("submit", handleEditSubmit);
+  }
+  
+  if (Elements.groupSelect) {
+    Elements.groupSelect.addEventListener("change", (e) => {
+      populateLocations(e.target.value, Elements.locationsSelect);
+    });
+  }
+  
+  if (Elements.editGroupSelect) {
+    Elements.editGroupSelect.addEventListener("change", (e) => {
+      populateLocations(e.target.value, Elements.editLocationsSelect);
+    });
+  }
+  
+  if (Elements.testGroupSelect) {
+    Elements.testGroupSelect.addEventListener("change", handleTestGroupChange);
+  }
+  
+  if (Elements.testLocationSelect) {
+    Elements.testLocationSelect.addEventListener("change", updateTestRecipientCount);
+  }
+  
+  if (Elements.btnTestSend) {
+    Elements.btnTestSend.addEventListener("click", handleTestSendClick);
+  }
+  
+  if (Elements.perPageSelect) {
+    Elements.perPageSelect.addEventListener("change", (e) => {
+      AppState.perPage = parseInt(e.target.value, 10) || 20;
+      AppState.currentPage = 1;
+      loadRecipients(1);
+    });
+  }
+  
+  if (Elements.editModal) {
+    Elements.editModal.addEventListener("click", (e) => {
+      if (e.target === e.currentTarget) closeEditModal();
+    });
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Initialize theme first
+  ThemeManager.init();
+  
+  // Then initialize app
+  initElements();
+  initEventListeners();
+  loadRecipients(1);
+});
 </script>
 {% endblock %}
