@@ -2,322 +2,554 @@
 {% block title %}Orphaned Files - B-SNAP{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-  <div class="flex justify-between items-center mb-6">
+
+<div class="container mx-auto px-6 py-8 space-y-6">
+  
+  <!-- HEADER -->
+  <div class="flex justify-between items-center">
+    
     <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
       🧹 Orphaned Snapshot Files
     </h1>
+    
     <div class="flex gap-2">
-      <button id="btnScan" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-        🔍 Scan Files
-      </button>
-      <button id="btnDryRun" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
-        🧪 Dry Run
-      </button>
-      <button id="btnCleanup" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-        🗑️ Cleanup All
-      </button>
-      <button id="btnCleanupDisk" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700" title="Force cleanup directly from disk">
-        💥 Force Cleanup
-      </button>
-    </div>
-  </div>
+      
+      <button id="btnScan"
+      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+      🔍 Scan
+    </button>
+    
+    <button id="btnDryRun"
+    class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700">
+    🧪 Dry Run
+  </button>
+  
+  <button id="btnCleanup"
+  class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+  🗑 Cleanup All
+</button>
 
-  <!-- Summary Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-      <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Orphaned Files</h3>
-      <p class="text-2xl font-bold text-gray-900 dark:text-white" id="totalCount">
-        {{ summary.total_count }}
-      </p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-      <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Size</h3>
-      <p class="text-2xl font-bold text-red-600 dark:text-red-400" id="totalSize">
-        {{ summary.total_size_mb or 0 }} MB
-      </p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-      <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Affected Cameras</h3>
-      <p class="text-2xl font-bold text-gray-900 dark:text-white" id="cameraCount">
-        {{ summary.by_camera|length }}
-      </p>
-    </div>
-  </div>
+<button id="btnCleanupDisk"
+class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+💥 Force Cleanup
+</button>
 
-  <!-- Breakdown by Camera -->
-  {% if summary.by_camera %}
-  <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
-    <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">By Camera</h3>
-    <div class="overflow-x-auto">
-      <table class="min-w-full text-sm">
-        <thead>
-          <tr class="border-b dark:border-gray-700">
-            <th class="text-left py-2 text-gray-600 dark:text-gray-400">Camera ID</th>
-            <th class="text-right py-2 text-gray-600 dark:text-gray-400">Files</th>
-            <th class="text-right py-2 text-gray-600 dark:text-gray-400">Size (MB)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for cam in summary.by_camera %}
-          <tr class="border-b dark:border-gray-700">
-            <td class="py-2 font-mono text-gray-900 dark:text-gray-300">{{ cam.camera_id }}</td>
-            <td class="py-2 text-right text-gray-900 dark:text-gray-300">{{ cam.count }}</td>
-            <td class="py-2 text-right text-red-600 dark:text-red-400">{{ cam.size_mb }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Files List -->
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
-    <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Orphaned Files</h3>
-      <select id="filterStatus" class="px-3 py-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-        <option value="">All Pending</option>
-        <option value="pending">Pending</option>
-        <option value="reviewed">Reviewed</option>
-        <option value="deleted">Deleted</option>
-      </select>
-    </div>
-    <div id="filesList" class="p-4">
-      <!-- Will be loaded via AJAX -->
-      <p class="text-center text-gray-500 dark:text-gray-400">Loading...</p>
-    </div>
-  </div>
+</div>
 </div>
 
-<!-- Cleanup Confirmation Modal -->
-<div id="cleanupModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-  <div class="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
-    <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">⚠️ Confirm Cleanup</h3>
-    <p class="text-gray-600 dark:text-gray-400 mb-2">
-      This will delete <strong>ALL</strong> pending orphaned files from disk, regardless of age.
-    </p>
-    <p class="text-sm text-amber-600 dark:text-amber-400 mb-4">
-      💡 Use "🧪 Dry Run" first to see what will be deleted.
-    </p>
-    <div class="flex gap-2 justify-end">
-      <button onclick="closeCleanupModal()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
-        Cancel
-      </button>
-      <button onclick="confirmCleanup()" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-        🗑️ Delete All Files
-      </button>
-    </div>
+
+<!-- SUMMARY -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+    <p class="text-sm text-gray-500">Total Files</p>
+    <p id="totalCount" class="text-3xl font-bold">{{ summary.total_count }}</p>
   </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+    <p class="text-sm text-gray-500">Total Size</p>
+    <p id="totalSize" class="text-3xl font-bold text-red-500">
+      {{ summary.total_size_mb or 0 }} MB
+    </p>
+  </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+    <p class="text-sm text-gray-500">Affected Cameras</p>
+    <p id="cameraCount" class="text-3xl font-bold">
+      {{ summary.by_camera|length }}
+    </p>
+  </div>
+  
 </div>
+
+
+
+<!-- FILE LIST -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+  
+  <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+    
+    <div class="flex items-center gap-4">
+      
+      <h3 class="font-semibold text-lg text-gray-900 dark:text-white">
+        Orphaned Files
+      </h3>
+      
+      <span id="selectedCount"
+      class="text-sm text-gray-500">
+      0 selected
+    </span>
+    
+  </div>
+  
+  <div class="flex gap-2">
+    
+    <button id="bulkDeleteBtn"
+    class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700">
+    Delete Selected
+  </button>
+  
+  <select id="filterStatus"
+  class="px-3 py-1 border rounded dark:bg-gray-700 dark:border-gray-600">
+  
+  <option value="">All Pending</option>
+  <option value="pending">Pending</option>
+  <option value="reviewed">Reviewed</option>
+  <option value="deleted">Deleted</option>
+  
+</select>
+
+</div>
+
+</div>
+
+
+<div id="filesList"
+class="max-h-[500px] overflow-y-auto">
+
+<div class="p-8 text-center text-gray-500">
+  Loading files...
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- MODAL -->
+<div id="appModal"
+class="fixed inset-0 hidden items-center justify-center bg-black/40 backdrop-blur-sm z-50">
+
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4">
+  
+  <div class="px-6 py-4 border-b dark:border-gray-700 flex justify-between">
+    
+    <h3 id="modalTitle"
+    class="font-semibold text-lg text-gray-900 dark:text-white">
+    Confirm
+  </h3>
+  
+  <button onclick="Modal.close()">✕</button>
+  
+</div>
+
+<div id="modalBody"
+class="px-6 py-5 text-gray-600 dark:text-gray-300"></div>
+
+<div class="px-6 py-4 border-t dark:border-gray-700 flex justify-end gap-3">
+  
+  <button onclick="Modal.close()"
+  class="px-4 py-2 bg-gray-300 rounded">
+  Cancel
+</button>
+
+<button id="modalConfirmBtn"
+class="px-4 py-2 bg-red-600 text-white rounded">
+Confirm
+</button>
+
+</div>
+
+</div>
+</div>
+
 {% endblock %}
+
+
 
 {% block scripts %}
 <script>
-  // Load files on page load
-  document.addEventListener('DOMContentLoaded', () => {
-    loadFiles();
-  });
-
-  // Filter change
-  document.getElementById('filterStatus')?.addEventListener('change', () => {
-    loadFiles();
-  });
-
-  // Scan button
-  document.getElementById('btnScan')?.addEventListener('click', async () => {
-    const btn = document.getElementById('btnScan');
+  
+  document.addEventListener("DOMContentLoaded",()=>{
+    loadFiles()
+  })
+  
+  document.getElementById("btnScan")?.addEventListener("click", async () => {
+    
+    const btn = document.getElementById("btnScan");
+    
     btn.disabled = true;
-    btn.innerHTML = '⏳ Scanning...';
-
-    try {
-      const res = await fetch('/api/orphaned-files/scan', { method: 'POST' });
-      const data = await res.json();
-
-      if (res.ok) {
-        Toast.success(
-          `Found ${data.orphaned_found} orphaned files (${data.new_records} new)`,
-          { title: 'Scan Complete' }
-        );
-        loadFiles();
-        updateSummary();
-      } else {
-        Toast.error(data.detail || 'Scan failed', { title: 'Error' });
-      }
-    } catch (err) {
-      Toast.error('Error scanning files', { title: 'Error' });
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = '🔍 Scan Files';
-    }
-  });
-
-  // Dry Run button - show both table and disk results
-  document.getElementById('btnDryRun')?.addEventListener('click', async () => {
-    const btn = document.getElementById('btnDryRun');
-    btn.disabled = true;
-    btn.innerHTML = '⏳ Checking...';
+    btn.innerHTML = "⏳ Scanning...";
     
     try {
-      // Check table-based cleanup
-      const res1 = await fetch('/api/orphaned-files/cleanup?dry_run=true', { method: 'POST' });
+      
+      const res = await fetch("/api/orphaned-files/scan",{method:"POST"});
+      const data = await res.json();
+      
+      if(res.ok){
+        
+        Toast.success(
+        `Found ${data.orphaned_found} orphaned files (${data.new_records} new)`,
+        {title:"Scan Complete"}
+        );
+        
+        loadFiles();
+        updateSummary();
+        
+      } else {
+        
+        Toast.error(data.detail || "Scan failed",{title:"Error"});
+        
+      }
+      
+    } catch {
+      
+      Toast.error("Error scanning files",{title:"Error"});
+      
+    }
+    
+    btn.disabled = false;
+    btn.innerHTML = "🔍 Scan";
+    
+  });
+  
+  document.getElementById("btnDryRun")?.addEventListener("click", async () => {
+    
+    const btn = document.getElementById("btnDryRun");
+    
+    btn.disabled = true;
+    btn.innerHTML = "⏳ Checking...";
+    
+    try {
+      
+      const res1 = await fetch('/api/orphaned-files/cleanup?dry_run=true',{method:"POST"});
       const data1 = await res1.json();
       
-      // Check disk-based cleanup
-      const res2 = await fetch('/api/orphaned-files/cleanup-disk?dry_run=true', { method: 'POST' });
+      const res2 = await fetch('/api/orphaned-files/cleanup-disk?dry_run=true',{method:"POST"});
       const data2 = await res2.json();
       
-      if (res1.ok && res2.ok) {
-        const message = `Table: ${data1.would_delete} files (${data1.would_free_mb} MB) | Disk: ${data2.would_delete} files (${data2.would_free_mb} MB)`;
+      if(res1.ok && res2.ok){
         
-        Toast.info(message, { title: 'Dry Run Results', duration: 7000 });
-      } else {
-        Toast.error('Dry run failed', { title: 'Error' });
-      }
-    } catch (err) {
-      Toast.error('Error during dry run', { title: 'Error' });
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = '🧪 Dry Run';
-    }
-  });
-
-  // Cleanup button
-  document.getElementById('btnCleanup')?.addEventListener('click', () => {
-    document.getElementById('cleanupModal').classList.remove('hidden');
-    document.getElementById('cleanupModal').classList.add('flex');
-  });
-
-  function closeCleanupModal() {
-    document.getElementById('cleanupModal').classList.add('hidden');
-    document.getElementById('cleanupModal').classList.remove('flex');
-  }
-
-  async function confirmCleanup() {
-    closeCleanupModal();
-
-    try {
-      // max_age_days=0 artinya hapus SEMUA pending files (tanpa filter umur)
-      const res = await fetch('/api/orphaned-files/cleanup?dry_run=false&max_age_days=0', { method: 'POST' });
-      const data = await res.json();
-
-      if (res.ok) {
-        Toast.success(
-          `Deleted ${data.deleted} files (${data.failed} failed)`,
-          { title: 'Cleanup Complete' }
+        Toast.info(
+        `Table: ${data1.would_delete} files (${data1.would_free_mb} MB)
+Disk: ${data2.would_delete} files (${data2.would_free_mb} MB)`,
+        {title:"Dry Run Results",duration:7000}
         );
-        loadFiles();
-        updateSummary();
+        
       } else {
-        Toast.error(data.message || data.detail || 'Cleanup failed', { title: 'Error' });
+        
+        Toast.error("Dry run failed",{title:"Error"});
+        
       }
-    } catch (err) {
-      Toast.error('Error during cleanup', { title: 'Error' });
-    }
-  }
-
-  // Force Cleanup from Disk button
-  document.getElementById('btnCleanupDisk')?.addEventListener('click', async () => {
-    if (!confirm('⚠️ FORCE CLEANUP from disk?\n\nThis will scan disk and delete ALL files not in database.\n\nUse this when normal cleanup doesn\'t work.')) {
-      return;
+      
+    } catch {
+      
+      Toast.error("Error during dry run",{title:"Error"});
+      
     }
     
-    const btn = document.getElementById('btnCleanupDisk');
-    btn.disabled = true;
-    btn.innerHTML = '⏳ Cleaning...';
+    btn.disabled = false;
+    btn.innerHTML = "🧪 Dry Run";
     
-    try {
-      const res = await fetch('/api/orphaned-files/cleanup-disk?dry_run=false', { method: 'POST' });
+  });
+  
+  document.getElementById("btnCleanup")?.addEventListener("click", () => {
+    
+    Modal.confirm({
+      
+      titleText:"⚠ Cleanup All",
+      
+      bodyText:`
+      This will delete <b>ALL pending orphaned files</b> from disk.
+      <br><br>
+      Use Dry Run first to preview deletion.
+    `,
+      
+      confirmText:"Delete All",
+      
+      onConfirm:confirmCleanup
+      
+    });
+    
+  });
+  
+  async function confirmCleanup(){
+    
+    try{
+      
+      const res = await fetch(
+      '/api/orphaned-files/cleanup?dry_run=false&max_age_days=0',
+      {method:"POST"}
+      );
+      
       const data = await res.json();
-
-      if (res.ok) {
+      
+      if(res.ok){
+        
         Toast.success(
-          `Force cleanup complete!\nDeleted: ${data.deleted} files\nFreed: ${data.mb_freed} MB`,
-          { title: 'Force Cleanup Complete', duration: 5000 }
+        `Deleted ${data.deleted} files (${data.failed} failed)`,
+        {title:"Cleanup Complete"}
         );
+        
         loadFiles();
         updateSummary();
-      } else {
-        Toast.error(data.message || data.detail || 'Force cleanup failed', { title: 'Error' });
+        
+      }else{
+        
+        Toast.error(data.message || "Cleanup failed",{title:"Error"});
+        
       }
-    } catch (err) {
-      Toast.error('Error during force cleanup', { title: 'Error' });
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = '💥 Force Cleanup';
+      
+    }catch{
+      
+      Toast.error("Error during cleanup",{title:"Error"});
+      
     }
-  });
-
-  async function loadFiles() {
-    const status = document.getElementById('filterStatus')?.value || '';
-    const container = document.getElementById('filesList');
-
-    try {
-      const res = await fetch(`/orphaned-files/data?status=${status}`);
-      const data = await res.json();
-
-      if (res.ok) {
-        container.innerHTML = data.html;
-      } else {
-        container.innerHTML = '<p class="text-red-500">Failed to load files</p>';
-      }
-    } catch (err) {
-      container.innerHTML = '<p class="text-red-500">Error loading files</p>';
-    }
+    
   }
-
-  async function updateSummary() {
-    try {
-      const res = await fetch('/api/orphaned-files/summary');
-      const data = await res.json();
-
-      if (res.ok) {
-        document.getElementById('totalCount').textContent = data.total_count;
-        document.getElementById('totalSize').textContent = data.total_size_mb + ' MB';
-        document.getElementById('cameraCount').textContent = data.by_camera.length;
-      }
-    } catch (err) {
-      console.error('Failed to update summary', err);
+  
+  document.getElementById("filterStatus")?.addEventListener("change",loadFiles)
+  
+  
+  
+  /* LOAD FILES */
+  
+  async function loadFiles(){
+    
+    const status=document.getElementById("filterStatus")?.value||""
+    const container=document.getElementById("filesList")
+    
+    container.innerHTML=`<div class="p-6 text-center">Loading...</div>`
+    
+    try{
+      
+      const res=await fetch(`/orphaned-files/data?status=${status}`)
+      const data=await res.json()
+      
+      container.innerHTML=data.html
+      
+      attachCheckboxListeners()
+      
+    }catch{
+      
+      container.innerHTML=`<p class="p-6 text-red-500">Failed loading</p>`
+      
     }
+    
   }
-
-  // Global functions for inline actions
-  window.deleteFile = async function(fileId, btn) {
-    if (!confirm('Delete this file from disk?')) return;
-
-    btn.disabled = true;
-    try {
-      const res = await fetch(`/api/orphaned-files/${fileId}/delete`, { method: 'POST' });
-      const data = await res.json();
-
-      if (res.ok) {
-        Toast.success('File deleted', { title: 'Success' });
-        btn.closest('.file-row')?.remove();
-        updateSummary();
-      } else {
-        Toast.error(data.detail || 'Delete failed', { title: 'Error' });
-        btn.disabled = false;
-      }
-    } catch (err) {
-      Toast.error('Error deleting file', { title: 'Error' });
-      btn.disabled = false;
+  
+  
+  
+  /* CHECKBOX SYSTEM */
+  
+  function attachCheckboxListeners(){
+    
+    const boxes=document.querySelectorAll(".file-checkbox")
+    
+    boxes.forEach(b=>{
+      b.addEventListener("change",updateSelectedCounter)
+    })
+    
+    updateSelectedCounter()
+    
+  }
+  
+  
+  
+  function updateSelectedCounter(){
+    
+    const selected=document.querySelectorAll(".file-checkbox:checked")
+    
+    document.getElementById("selectedCount").textContent=
+    selected.length+" selected"
+    
+  }
+  
+  
+  
+  /* BULK DELETE */
+  
+  document.getElementById("bulkDeleteBtn")?.addEventListener("click",()=>{
+    
+    const ids=[...document.querySelectorAll(".file-checkbox:checked")]
+    .map(x=>x.dataset.id)
+    
+    if(ids.length===0){
+      
+      Toast.info("No files selected",{title:"Info"})
+      return
+      
     }
-  };
-
-  window.reviewFile = async function(fileId, btn) {
-    try {
-      const res = await fetch(`/api/orphaned-files/${fileId}/review`, { method: 'POST' });
-      const data = await res.json();
-
-      if (res.ok) {
-        Toast.success('File marked as reviewed', { title: 'Success' });
-        btn.closest('.file-row')?.classList.add('opacity-50');
-      } else {
-        Toast.error(data.detail || 'Review failed', { title: 'Error' });
-      }
-    } catch (err) {
-      Toast.error('Error reviewing file', { title: 'Error' });
+    
+    Modal.confirm({
+      titleText:"Delete Selected Files",
+      bodyText:`Delete ${ids.length} files from disk?`,
+      confirmText:"Delete",
+      onConfirm:()=>bulkDelete(ids)
+    })
+    
+  })
+  
+  
+  async function bulkDelete(ids){
+    
+    for(const id of ids){
+      
+      await fetch(`/api/orphaned-files/${id}/delete`,{method:"POST"})
+      
     }
-  };
+    
+    Toast.success("Files deleted",{title:"Success"})
+    
+    loadFiles()
+    updateSummary()
+    
+  }
+  
+  
+  
+  /* SINGLE DELETE */
+  
+  window.deleteFile=function(fileId,btn){
+    
+    Modal.confirm({
+      titleText:"Delete File",
+      bodyText:"Delete this file from disk?",
+      confirmText:"Delete",
+      onConfirm:()=>executeDelete(fileId,btn)
+    })
+    
+  }
+  
+  
+  
+  async function executeDelete(fileId,btn){
+    
+    btn.disabled=true
+    
+    try{
+      
+      const res=await fetch(`/api/orphaned-files/${fileId}/delete`,{method:"POST"})
+      const data=await res.json()
+      
+      if(res.ok){
+        
+        Toast.success("File deleted",{title:"Success"})
+        btn.closest(".file-row")?.remove()
+        updateSummary()
+        
+      }else{
+        
+        Toast.error(data.detail||"Delete failed",{title:"Error"})
+        btn.disabled=false
+        
+      }
+      
+    }catch{
+      
+      Toast.error("Error deleting file",{title:"Error"})
+      btn.disabled=false
+      
+    }
+    
+  }
+  
+  
+  
+  /* FORCE CLEANUP */
+  
+  document.getElementById("btnCleanupDisk")?.addEventListener("click",()=>{
+    
+    Modal.confirm({
+      titleText:"⚠ Force Cleanup",
+      bodyText:"Delete ALL files not in database?",
+      confirmText:"Force Cleanup",
+      onConfirm:runForceCleanup
+    })
+    
+  })
+  
+  
+  async function runForceCleanup(){
+    
+    const btn=document.getElementById("btnCleanupDisk")
+    
+    btn.disabled=true
+    btn.innerHTML="Cleaning..."
+    
+    try{
+      
+      const res=await fetch("/api/orphaned-files/cleanup-disk",{method:"POST"})
+      const data=await res.json()
+      
+      Toast.success(`Deleted ${data.deleted} files`,{title:"Cleanup Complete"})
+      
+      loadFiles()
+      updateSummary()
+      
+    }catch{
+      
+      Toast.error("Cleanup failed",{title:"Error"})
+      
+    }
+    
+    btn.disabled=false
+    btn.innerHTML="💥 Force Cleanup"
+    
+  }
+  
+  
+  
+  /* SUMMARY UPDATE */
+  
+  async function updateSummary(){
+    
+    try{
+      
+      const res=await fetch("/api/orphaned-files/summary")
+      const data=await res.json()
+      
+      document.getElementById("totalCount").textContent=data.total_count
+      document.getElementById("totalSize").textContent=data.total_size_mb+" MB"
+      document.getElementById("cameraCount").textContent=data.by_camera.length
+      
+    }catch{}
+    
+  }
+  
+  
+  
+  /* MODAL SYSTEM */
+  
+  const Modal=(()=>{
+    
+    let callback=null
+    
+    const modal=document.getElementById("appModal")
+    const title=document.getElementById("modalTitle")
+    const body=document.getElementById("modalBody")
+    const confirmBtn=document.getElementById("modalConfirmBtn")
+    
+    function open({titleText,bodyText,confirmText="Confirm",onConfirm}){
+      
+      title.textContent=titleText
+      body.innerHTML=bodyText
+      confirmBtn.textContent=confirmText
+      
+      callback=onConfirm
+      
+      modal.classList.remove("hidden")
+      modal.classList.add("flex")
+      
+    }
+    
+    function close(){
+      
+      modal.classList.add("hidden")
+      modal.classList.remove("flex")
+      
+    }
+    
+    confirmBtn.onclick=()=>{
+      close()
+      if(callback)callback()
+    }
+    
+    return {confirm:open,close}
+    
+  })()
+  
 </script>
 {% endblock %}

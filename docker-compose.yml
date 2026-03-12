@@ -1,7 +1,7 @@
 services:
   b-snap:
     build: .
-    image: b-snap:local
+    image: b-snap:ultra
     container_name: bsnap-app
     ports:
       - "8080:8080"
@@ -29,7 +29,7 @@ services:
 
   scheduler:
     build: .
-    image: b-snap:local
+    image: b-snap:ultra
     container_name: bsnap-scheduler
     env_file:
       - .env
@@ -47,7 +47,7 @@ services:
   
   notifier:
     build: .
-    image: b-snap:local
+    image: b-snap:ultra
     container_name: bsnap-notifier
     env_file:
       - .env

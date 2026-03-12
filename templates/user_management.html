@@ -3,680 +3,921 @@
 {% from "_icons.html" import icon_users, icon_plus %}
 
 {% block content %}
-<div class="container mx-auto max-w-8xl px-4 sm:px-6 lg:px-8 py-8">
+
+<div class="mb-6">
+  
   <!-- Header -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
     <div>
-      <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-        {{ icon_users("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} User Management
+      <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+          {{ icon_users("w-7 h-7 text-blue-600 dark:text-blue-400") }}
+        </div>
+        User Management
       </h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage users, roles, and permissions.</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        Manage users, roles, and permissions
+      </p>
     </div>
-    <div class="flex-shrink-0">
-      <button id="showFormBtn" onclick="toggleUserForm(true)"
-        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 shadow-sm">
-        {{ icon_plus("h-5 w-5 text-white inline") }} New User
+    
+    <button onclick="openAddUserModal()" 
+      class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+      {{ icon_plus("w-5 h-5") }}
+      Add User
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Users</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-total">0</p>
+        </div>
+        <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+          <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Admins</p>
+          <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1" id="stat-admins">0</p>
+        </div>
+        <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+          <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Operators</p>
+          <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1" id="stat-operators">0</p>
+        </div>
+        <div class="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+          <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Viewers</p>
+          <p class="text-2xl font-bold text-gray-600 dark:text-gray-400 mt-1" id="stat-viewers">0</p>
+        </div>
+        <div class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+          <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+    <div class="flex flex-col lg:flex-row gap-4">
+      <div class="relative flex-1">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+        <input type="text" id="searchInput" placeholder="Search users by username, role, or group..."
+          class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+      </div>
+      
+      <div class="flex gap-2 items-center">
+        <div class="relative w-36">
+          <select id="perPageSelect" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+            <option value="10">10 / page</option>
+            <option value="20" selected>20 / page</option>
+            <option value="50">50 / page</option>
+            <option value="100">100 / page</option>
+          </select>
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </div>
+        </div>
+        
+        <button onclick="resetFilters()" class="p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Reset filters">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Info -->
+  <div class="flex items-center justify-between mb-3 px-2">
+    <div id="results-info" class="text-sm text-gray-600 dark:text-gray-400"></div>
+    <div id="loading-indicator" class="hidden items-center gap-2 text-sm text-gray-500">
+      <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Loading...
+    </div>
+  </div>
+
+  <!-- Table Container -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
+    <div id="loading-overlay" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
+      <div class="flex flex-col items-center gap-3">
+        <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="text-gray-600 dark:text-gray-300 font-medium">Loading users...</span>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table id="userTable" class="min-w-full text-sm text-left">
+        <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
+          <tr>
+            <th class="px-4 py-3.5 font-semibold">User</th>
+            <th class="px-4 py-3.5 font-semibold">Role</th>
+            <th class="px-4 py-3.5 font-semibold">Group</th>
+            <th class="px-4 py-3.5 font-semibold">Last Logon</th>
+            <th class="px-4 py-3.5 font-semibold text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+      </table>
+    </div>
+    
+    <!-- Empty State -->
+    <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center">
+      <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
+        <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        </svg>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No users found</h3>
+      <p class="text-gray-500 dark:text-gray-400 max-w-sm">Add a new user to get started or adjust your search filters.</p>
+      <button onclick="openAddUserModal()" class="mt-4 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        Add your first user
       </button>
     </div>
   </div>
 
-  <!-- Quick Stats -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-      <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Users</h4>
-      <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ users|length }}</p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-      <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Admins</h4>
-      <p class="text-3xl font-bold text-gray-900 dark:text-white">
-        {{ users|selectattr('role','equalto','admin')|list|length }}
-      </p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-      <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Operators</h4>
-      <p class="text-3xl font-bold text-gray-900 dark:text-white">
-        {{ users|selectattr('role','equalto','operator')|list|length }}
-      </p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-      <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Viewers</h4>
-      <p class="text-3xl font-bold text-gray-900 dark:text-white">
-        {{ users|selectattr('role','equalto','viewer')|list|length }}
-      </p>
-    </div>
+  <!-- Pagination -->
+  <div id="pagination-controls" class="flex items-center justify-between mt-4 px-2">
+    <div class="text-sm text-gray-500 dark:text-gray-400" id="page-info"></div>
+    <div class="flex items-center gap-1" id="pagination-buttons"></div>
   </div>
-
-  <!-- === Modal: Add/Edit User === -->
-  <div id="userFormModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-2xl w-full max-w-lg transform transition-all opacity-0 -translate-y-4">
-      <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-        <h3 id="formTitle" class="text-xl font-bold text-gray-800 dark:text-gray-200">Add New User</h3>
-        <button type="button" onclick="hideUserModal()" class="text-gray-400 hover:text-gray-200 transition-colors">✕</button>
-      </div>
-
-      <form id="userForm" method="post" action="/users/create" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
-          <div>
-            <label for="usernameInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
-            <input id="usernameInput" name="username" required
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
-
-          <div>
-            <label id="passwordLabel" for="passwordInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
-            <input id="passwordInput" type="password" name="password" required
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
-
-          <div>
-            <label for="roleSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
-            <select id="roleSelect" name="role"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-              <option value="viewer">Viewer</option>
-              <option value="operator">Operator</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="groupSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Group</label>
-            <select id="groupSelect" name="group_name" required
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-              <option value="ALL">ALL</option>
-              <option value="CMD">CMD</option>
-              <option value="CPHD">CPHD</option>
-              <option value="ESD">ESD</option>
-              <option value="HR">HR</option>
-              <option value="HSES">HSES</option>
-              <option value="IT">IT</option>
-              <option value="MDD">MDD</option>
-              <option value="MOD">MOD</option>
-              <option value="MSD">MSD</option>
-              <option value="SCD">SCD</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-3 pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
-          <button type="button" id="cancelEditBtn" onclick="resetForm(); hideUserModal();"
-            class="hidden px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500 rounded-md text-sm font-semibold">
-            Cancel
-          </button>
-          <button id="submitBtn" type="submit"
-            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-semibold flex items-center gap-2">
-            {{ icon_plus("w-5 h-5 text-white inline") }} Add User
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Table Section -->
-  <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-    <!-- Search & Per Page -->
-    <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
-      <div class="flex items-center justify-between w-full md:w-full gap-4">
-        <div class="relative w-full md:w-72">
-          <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-            </svg>
-          </span>
-          <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search users..."
-            class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500">
-        </div>
-        <div class="flex items-center gap-2">
-          <label for="perPageSelect" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Items per page</label>
-          <select id="perPageSelect"
-            class="block rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-1.5 pr-8">
-            <option value="10">10</option>
-            <option value="20" selected>20</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Bulk Delete -->
-      <div id="bulkActionContainer" class="hidden w-full md:w-auto flex-shrink-0">
-        <button onclick="confirmBulkDelete()"
-          class="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-          </svg>
-          Delete Selected (<span id="selectedCount">0</span>)
-        </button>
-      </div>
-    </div>
-
-    <!-- Table -->
-    <div class="overflow-x-auto">
-      <table id="userTable" class="w-full text-sm text-left border-collapse">
-        <thead class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-          <tr>
-            <th class="p-4 w-4">
-              <input type="checkbox" id="selectAllCheckbox" onchange="toggleAllCheckboxes(this.checked)"
-                class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
-            </th>
-            <th class="p-4 font-semibold">User Details</th>
-            <th class="p-4 font-semibold">Role</th>
-            <th class="p-4 font-semibold">Group</th>
-            <th class="p-4 font-semibold">API Token</th>
-            <th class="p-4 font-semibold">Token Expiry Date</th>
-            <th class="p-4 font-semibold">MFA Status</th>
-            <th class="p-4 font-semibold">Last Logon</th>
-            <th class="p-4 font-semibold text-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-          {% for user in users %}
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-            <td class="p-4 w-4">
-              {% if request.session['user_id'] == user.id %}
-              <input type="checkbox" disabled class="cursor-not-allowed rounded border-gray-300 dark:border-gray-600 text-gray-400 dark:bg-gray-700">
-              {% else %}
-              <input type="checkbox" name="userIds" value="{{ user.id }}" onchange="updateSelectionState()"
-                class="user-checkbox rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:bg-gray-900 dark:ring-offset-gray-800">
-              {% endif %}
-            </td>
-
-            <td class="p-4 whitespace-nowrap">
-              <div class="font-medium text-gray-900 dark:text-white">{{ user.username }}</div>
-            </td>
-
-            <td class="p-4 whitespace-nowrap">
-              {% if user.role == 'admin' %}
-              <span class="px-2 py-1 text-xs font-semibold leading-5 text-red-800 bg-red-100 dark:text-red-100 dark:bg-red-800/50 rounded-full">{{ user.role }}</span>
-              {% elif user.role == 'operator' %}
-              <span class="px-2 py-1 text-xs font-semibold leading-5 text-yellow-800 bg-yellow-100 dark:text-yellow-100 dark:bg-yellow-800/50 rounded-full">{{ user.role }}</span>
-              {% else %}
-              <span class="px-2 py-1 text-xs font-semibold leading-5 text-green-800 bg-green-100 dark:text-green-100 dark:bg-green-800/50 rounded-full">{{ user.role }}</span>
-              {% endif %}
-            </td>
-
-            <td class="p-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{{ user.group.name if user.group else '-' }}</td>
-
-            <!-- Tokens -->
-            <td id="token-cell-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
-              {% if user.api_tokens %}
-              <ul class="space-y-1">
-                {% for token in user.api_tokens %}
-                <li class="flex items-center justify-between gap-2">
-                  <span>{{ token.token[:8] }}...{{ token.token[-4:] }}</span>
-                  <button onclick="handleRevokeClick(this)"
-                          data-user-id="{{ user.id }}"
-                          data-token="{{ token.token }}"
-                          data-username="{{ user.username | escape }}"
-                          class="text-red-500 hover:text-red-700 text-xs font-semibold">Revoke</button>
-                </li>
-                {% endfor %}
-              </ul>
-              {% else %}<span>-</span>{% endif %}
-            </td>
-
-            <td id="token-expiry-cell-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
-              {% if user.api_tokens %}
-              <ul class="space-y-1">
-                {% for token in user.api_tokens %}
-                <li>{{ token.expires_at | to_localtime }}</li>
-                {% endfor %}
-              </ul>
-              {% else %}<span>-</span>{% endif %}
-            </td>
-
-            <td class="p-4 whitespace-nowrap">
-              {% if user.is_2fa_enabled %}
-              <span class="px-2 py-1 text-xs font-semibold leading-5 text-green-800 bg-green-100 dark:text-green-100 dark:bg-green-800/50 rounded-full">Enabled</span>
-              {% else %}
-              <span class="px-2 py-1 text-xs font-semibold leading-5 text-gray-600 bg-gray-100 dark:text-gray-300 dark:bg-gray-700 rounded-full">Disabled</span>
-              {% endif %}
-            </td>
-
-            <td id="last-logon-{{ user.id }}" class="p-4 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
-              {{ user.last_login | to_localtime }}
-            </td>
-
-            <td class="p-4 whitespace-nowrap text-center space-x-2">
-              <!-- Edit -->
-              <button onclick='editUser({{ user.id }}, {{ user.username | tojson }}, {{ user.role | tojson }}, {{ (user.group.name if user.group else "") | tojson }})'
-                title="Edit user {{ user.username }}"
-                class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-yellow-200 dark:hover:bg-yellow-800/50">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-yellow-500">
-                  <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" />
-                </svg>
-              </button>
-
-              <!-- Generate Token -->
-              <button onclick='openGenerateTokenModal({{ user.id }}, {{ user.username | tojson }})'
-                title="Generate token for {{ user.username }}"
-                class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-green-200 dark:hover:bg-green-800/50">
-                <svg viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-green-600 dark:text-green-400">
-                  <path fill-rule="evenodd" clip-rule="evenodd" d="M16 5.5C16 8.53757 13.5376 11 10.5 11H7V13H5V15L4 16H0V12L5.16351 6.83649C5.0567 6.40863 5 5.96094 5 5.5C5 2.46243 7.46243 0 10.5 0C13.5376 0 16 2.46243 16 5.5ZM13 4C13 4.55228 12.5523 5 12 5C11.4477 5 11 4.55228 11 4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z"/>
-                </svg>
-              </button>
-
-              {% if request.session['user_id'] != user.id %}
-                {% if user.is_2fa_enabled %}
-                <!-- Reset MFA -->
-                <button onclick='confirmResetMfa({{ user.id }}, {{ user.username | tojson }})'
-                  title="Reset MFA for {{ user.username }}"
-                  class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-orange-200 dark:hover:bg-orange-800/50">
-                  <svg fill="currentColor" class="w-5 h-5 text-orange-500 dark:text-orange-400" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                    <polygon points="11 23.18 9 21.179 7.589 22.589 11 26 17 20 15.59 18.59 11 23.18"/>
-                    <path d="M28,30H24V28h4V16H24V8a4.0045,4.0045,0,0,0-4-4V2a6.0067,6.0067,0,0,1,6,6v6h2a2.0021,2.0021,0,0,1,2,2V28A2.0021,2.0021,0,0,1,28,30Z"/>
-                    <path d="M20,14H18V8A6,6,0,0,0,6,8v6H4a2,2,0,0,0-2,2V28a2,2,0,0,0,2,2H20a2,2,0,0,0,2-2V16A2,2,0,0,0,20,14ZM8,8a4,4,0,0,1,8,0v6H8Z"/>
-                  </svg>
-                </button>
-                {% endif %}
-
-                <!-- Delete -->
-                <button onclick="confirmUserDelete(this)"
-                  data-user-id="{{ user.id }}"
-                  data-username="{{ user.username | escape }}"
-                  title="Delete user {{ user.username }}"
-                  class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-red-200 dark:hover:bg-red-800/50">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-red-600">
-                    <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
-                  </svg>
-                </button>
-
-                <form id="deleteForm{{ user.id }}" method="post" action="/users/delete/{{ user.id }}" class="hidden"></form>
-                <form id="resetMfaForm{{ user.id }}" method="post" action="/users/reset-mfa/{{ user.id }}" class="hidden"></form>
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Pagination -->
-    <div id="pagination-controls" class="flex justify-center items-center gap-2 px-4 py-4 text-sm"></div>
-  </div>
-
-  <!-- === Modal: Generate Token === -->
-  <div id="generateTokenModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-md p-6 text-gray-800 dark:text-gray-100">
-      <h3 class="text-lg font-semibold mb-2">Generate API Token</h3>
-      <p class="text-sm mb-4 text-gray-500 dark:text-gray-400">
-        Generate a new API token for <span id="tokenUsername" class="font-semibold text-gray-800 dark:text-gray-100"></span>.
-      </p>
-      <div class="space-y-3">
-        <label for="expirySelect" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Expires in (days)</label>
-        <select id="expirySelect" class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2 pr-8">
-          <option value="7">7 days</option>
-          <option value="30">30 days</option>
-          <option value="90">90 days</option>
-          <option value="0">Never expires</option>
-        </select>
-        <p id="generateTokenError" class="text-xs text-red-500 hidden"></p>
-        <div class="flex justify-end gap-2 pt-3">
-          <button type="button" onclick="toggleModal('generateTokenModal', false)"
-            class="px-3 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-sm">Cancel</button>
-          <button id="generateTokenBtn"
-            class="px-3 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold flex items-center gap-2">
-            <svg id="generateSpinner" class="hidden animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-            </svg>
-            Generate
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- === Modal: Show Generated Token === -->
-  <div id="showTokenModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-md p-6 text-gray-800 dark:text-gray-100">
-      <h3 class="text-lg font-semibold mb-2">Token Generated</h3>
-      <p class="text-sm mb-4 text-gray-500 dark:text-gray-400">Copy and store this token safely.</p>
-      <div class="flex items-center gap-2">
-        <input id="generatedTokenInput" readonly class="flex-1 px-3 py-2 text-sm font-mono rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-        <button id="copyTokenBtn" class="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-3 py-2 text-sm flex items-center gap-1">
-          <svg id="copyIcon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2M8 16h8a2 2 0 002-2V8m-6 8l4-4m0 0l-4-4m4 4H8" />
-          </svg>
-          <svg id="checkIcon" xmlns="http://www.w3.org/2000/svg" class="hidden h-4 w-4 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8.364 8.364a1 1 0 01-1.414 0l-4.242-4.242a1 1 0 011.414-1.414l3.535 3.536 7.657-7.657a1 1 0 011.414 0z" clip-rule="evenodd" />
-          </svg>
-        </button>
-      </div>
-      <div class="flex justify-end pt-4">
-        <button type="button" onclick="toggleModal('showTokenModal', false)"
-          class="px-3 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-sm">Close</button>
-      </div>
-    </div>
-  </div>
-
 
 </div>
+
 {% endblock %}
 
 {% block scripts %}
+<style>
+  /* Role Badge Styles */
+  .role-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+  .role-admin { @apply bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400; }
+  .role-operator { @apply bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400; }
+  .role-viewer { @apply bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300; }
+  
+  /* Alternating Row Colors */
+  #userTable tbody tr:nth-child(even) {
+    @apply bg-gray-50/50 dark:bg-gray-800/30;
+  }
+  
+  /* Hover effect */
+  #userTable tbody tr:hover {
+    @apply bg-blue-50/50 dark:bg-blue-900/10;
+  }
+  
+  /* Smooth transitions */
+  #userTable tbody tr {
+    @apply transition-colors duration-150;
+  }
+</style>
+
 <script>
-  /* ================= Grab DOM ================= */
-  const modal = document.getElementById('userFormModal');
-  const formTitle = document.getElementById('formTitle');
-  const userForm = document.getElementById('userForm');
-  const submitBtn = document.getElementById('submitBtn');
-  const cancelEditBtn = document.getElementById('cancelEditBtn');
-  const usernameInput = document.getElementById('usernameInput');
-  const passwordInput = document.getElementById('passwordInput');
-  const passwordLabel = document.getElementById('passwordLabel');
-  const roleSelect = document.getElementById('roleSelect');
-  const groupSelect = document.getElementById('groupSelect');
-  const submitBtnDefaultHTML = submitBtn.innerHTML;
-  const selectedCountSpan = document.getElementById('selectedCount');
-
-  /* ================= Modal Add/Edit ================= */
-  function showUserModal() {
-    modal.classList.remove('hidden');
-    requestAnimationFrame(() => {
-      modal.querySelector('.transform').classList.remove('opacity-0','-translate-y-4');
-    });
-  }
-  function hideUserModal() {
-    const content = modal.querySelector('.transform');
-    content.classList.add('opacity-0','-translate-y-4');
-    content.addEventListener('transitionend', () => modal.classList.add('hidden'), { once: true });
-  }
-  function toggleUserForm(show){ show ? showUserModal() : hideUserModal(); }
-  modal.addEventListener('click', e => { if (e.target === modal) hideUserModal(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) hideUserModal(); });
-
-  function editUser(id, username, role, groupName) {
-    showUserModal();
-    formTitle.textContent = `Edit User: ${username}`;
-    userForm.action = `/users/update/${id}`;
-    submitBtn.innerHTML = 'Update User';
-    submitBtn.classList.remove('bg-blue-600','hover:bg-blue-700');
-    submitBtn.classList.add('bg-yellow-600','hover:bg-yellow-700');
-    cancelEditBtn.classList.remove('hidden');
-
-    usernameInput.value = username;
-    usernameInput.readOnly = true;
-    usernameInput.classList.add('bg-gray-100','dark:bg-gray-600','cursor-not-allowed');
-
-    passwordLabel.textContent = 'New Password (leave blank to keep current)';
-    passwordInput.required = false;
-    passwordInput.value = '';
-
-    roleSelect.value = role;
-    if (groupName) groupSelect.value = groupName;
-  }
-
-  function resetForm() {
-    formTitle.textContent = 'Add New User';
-    userForm.action = '/users/create';
-    userForm.reset();
-
-    submitBtn.innerHTML = submitBtnDefaultHTML;
-    submitBtn.classList.remove('bg-yellow-600','hover:bg-yellow-700');
-    submitBtn.classList.add('bg-blue-600','hover:bg-blue-700');
-
-    cancelEditBtn.classList.add('hidden');
-    usernameInput.readOnly = false;
-    usernameInput.classList.remove('bg-gray-100','dark:bg-gray-600','cursor-not-allowed');
-
-    passwordLabel.textContent = 'Password';
-    passwordInput.required = true;
-  }
-
-  /* ================= Flash helper ================= */
-  const FLASH_KEY = "users.flash";
-  function setFlashNextPage(status, message) {
-    try { sessionStorage.setItem(FLASH_KEY, JSON.stringify({ status, message })); } catch {}
-  }
-  function popFlashNextPage() {
-    try {
-      const raw = sessionStorage.getItem(FLASH_KEY);
-      if (!raw) return;
-      sessionStorage.removeItem(FLASH_KEY);
-      const { status, message } = JSON.parse(raw);
-      if (message) {
-        const toastStatus = status || "info";
-        if (toastStatus === "success") Toast.success(message, { title: 'Success' });
-        else if (toastStatus === "error") Toast.error(message, { title: 'Error' });
-        else Toast.info(message, { title: 'Info' });
-      }
-    } catch {}
-  }
-
-  /* ================= Delete (single) ================= */
-  function confirmUserDelete(btn) {
-    const userId = btn.dataset.userId;
-    const username = btn.dataset.username;
-    const msg = `Are you sure you want to delete the user '${username}'? This action cannot be undone.`;
-    showGlobalConfirm(msg, () => {
-      setFlashNextPage('info', `Deleting ${username}...`);
-      document.getElementById(`deleteForm${userId}`).submit();
-    }, { title:'⚠️ Confirm User Deletion', confirmText:'Yes, Delete', confirmClasses:'bg-red-600 hover:bg-red-700' });
-  }
-
-  /* ================= Table filter & selection ================= */
-  function filterTable() {
-    const filter = (document.getElementById('searchInput').value || "").toUpperCase();
-    const rows = document.querySelectorAll('#userTable tbody tr');
-    rows.forEach(tr => {
-      const tds = tr.getElementsByTagName('td');
-      const text = ((tds[1]?.textContent||"") + (tds[2]?.textContent||"") + (tds[3]?.textContent||"")).toUpperCase();
-      tr.style.display = text.includes(filter) ? "" : "none";
-    });
-    renderTablePage(1);
-  }
-
-  function updateSelectionState() {
-    const selected = document.querySelectorAll('.user-checkbox:checked').length;
-    if (selectedCountSpan) selectedCountSpan.textContent = selected;
-    document.getElementById('bulkActionContainer').classList.toggle('hidden', selected === 0);
-    const all = document.querySelectorAll('.user-checkbox').length;
-    const master = document.getElementById('selectAllCheckbox');
-    master.checked = all > 0 && selected === all;
-    master.indeterminate = selected > 0 && selected < all;
-  }
-
-  function toggleAllCheckboxes(checked) {
-    document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = checked);
-    updateSelectionState();
-  }
-
-  document.querySelectorAll('.user-checkbox').forEach(cb => cb.addEventListener('change', updateSelectionState));
-
-  function confirmBulkDelete() {
-    const selected = [...document.querySelectorAll('.user-checkbox:checked')].map(cb => cb.value);
-    if (!selected.length) return;
-    const msg = `Are you sure you want to delete ${selected.length} selected users? This action cannot be undone.`;
-    showGlobalConfirm(msg, () => {
-      setFlashNextPage('info', `Deleting ${selected.length} user(s)...`);
-      const form = document.createElement('form');
-      form.method = 'post'; form.action = '/users/delete/bulk';
-      selected.forEach(id => {
-        const input = document.createElement('input');
-        input.type='hidden'; input.name='user_ids'; input.value=id; form.appendChild(input);
-      });
-      document.body.appendChild(form);
-      form.submit();
-    }, { title:'⚠️ Bulk Delete Users', confirmText:'Yes, Delete Selected', confirmClasses:'bg-red-600 hover:bg-red-700' });
-  }
-
-  /* ================= Token management ================= */
-  let activeUserId = null;
-
-  function toggleModal(modalId, show) {
-    const m = document.getElementById(modalId);
-    if (m) m.classList.toggle('hidden', !show);
-  }
-
-  function escapeHTML(str){return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
-
-  function openGenerateTokenModal(userId, username) {
-    activeUserId = userId;
-    const el = document.getElementById('tokenUsername');
-    if (el) el.textContent = username;
-    document.getElementById('generateTokenError')?.classList.add('hidden');
-    const btn = document.getElementById('generateTokenBtn');
-    if (btn) btn.onclick = handleTokenGeneration;
-    toggleModal('generateTokenModal', true);
-  }
-
-  async function handleTokenGeneration() {
-    const expiryDays = document.getElementById('expirySelect').value;
-    const errorP = document.getElementById('generateTokenError');
-    const spinner = document.getElementById('generateSpinner');
-    const btn = document.getElementById('generateTokenBtn');
-    const username = document.getElementById('tokenUsername')?.textContent || '';
-
-    spinner?.classList.remove('hidden'); if (btn) btn.disabled = true; errorP?.classList.add('hidden');
-    try {
-      const res = await fetch('/api/users/generate-token', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ user_id: activeUserId, expires_in_days: parseInt(expiryDays) })
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.detail || `Server ${res.status}`);
-      }
-      const data = await res.json();
-      toggleModal('generateTokenModal', false);
-      showGeneratedToken(activeUserId, data.token, data.token_expires_at, data.api_tokens, username);
-      Toast.success("Token generated", { title: 'Success' });
-    } catch (e) {
-      if (errorP) { errorP.textContent = `Error: ${e.message}`; errorP.classList.remove('hidden'); }
-      Toast.error("Failed to generate token", { title: 'Error' });
-    } finally {
-      spinner?.classList.add('hidden'); if (btn) btn.disabled = false;
-    }
-  }
-
-  function showGeneratedToken(userId, token, expiresStr, apiTokens, username) {
-    const out = document.getElementById('generatedTokenInput');
-    if (out) out.value = token;
-    toggleModal('showTokenModal', true);
-    updateTokenCells(userId, username, apiTokens);
-    const copyBtn = document.getElementById('copyTokenBtn');
-    const copyIcon = document.getElementById('copyIcon');
-    const checkIcon = document.getElementById('checkIcon');
-    if (copyBtn) {
-      copyIcon?.classList.remove('hidden'); checkIcon?.classList.add('hidden');
-      copyBtn.onclick = () => {
-        navigator.clipboard.writeText(token).then(() => {
-          copyIcon?.classList.add('hidden'); checkIcon?.classList.remove('hidden');
-          setTimeout(() => { copyIcon?.classList.remove('hidden'); checkIcon?.classList.add('hidden'); }, 2000);
-        });
-      };
-    }
-  }
-
-  function handleRevokeClick(btnEl) {
-    const { userId, token, username } = btnEl.dataset;
-    const msg = `Are you sure you want to revoke this token for user '${username}'?`;
-    showGlobalConfirm(msg, () => {
-      fetch(`/users/${userId}/revoke-token`, {
-        method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ token })
-      })
-        .then(res => res.ok ? res.json() : res.json().then(e=>{throw new Error(e.detail||"Failed to revoke")}))
-        .then(() => {
-          Toast.success("Token revoked", { title: 'Success' });
-          setTimeout(()=>location.reload(), 800);
-        })
-        .catch(e => Toast.error(e.message || "Failed to revoke", { title: 'Error' }));
-    }, { title:'⚠️ Revoke Token', confirmText:'Yes, Revoke', confirmClasses:'bg-red-600 hover:bg-red-700' });
-  }
-
-  function updateTokenCells(userId, username, apiTokens) {
-    const tokenCell = document.getElementById(`token-cell-${userId}`);
-    const expiryCell = document.getElementById(`token-expiry-cell-${userId}`);
-    if (!tokenCell || !expiryCell) return;
-    if (!apiTokens || !apiTokens.length) {
-      tokenCell.innerHTML='<span>-</span>'; expiryCell.innerHTML='<span>-</span>'; return;
-    }
-    const uname = escapeHTML(username);
-    tokenCell.innerHTML = `<ul class="space-y-1">${
-      apiTokens.map(t=>`
-        <li class="flex items-center justify-between gap-2">
-          <span>${t.token.substring(0,8)}...${t.token.slice(-4)}</span>
-          <button onclick="handleRevokeClick(this)" data-user-id="${userId}" data-token="${t.token}" data-username="${uname}"
-                  class="text-red-500 hover:text-red-700 text-xs font-semibold">Revoke</button>
-        </li>`).join('')
-    }</ul>`;
-    expiryCell.innerHTML = `<ul class="space-y-1">${
-      apiTokens.map(t=>`<li>${t.expires_at_gmt8 || 'Never'}</li>`).join('')
-    }</ul>`;
-  }
-
-  /* ================= Pagination ================= */
+  // ====== STATE ======
+  let cameraGroups = [];
   let currentPage = 1;
   let perPage = 20;
+  let totalPages = 1;
+  let currentSearch = "";
+  let currentStats = {};
+  let currentUserId = null; // For edit modal
 
-  function renderTablePage(page = 1) {
-    const rows = document.querySelectorAll("#userTable tbody tr");
-    const totalPages = Math.max(1, Math.ceil(rows.length / perPage));
-    currentPage = Math.max(1, Math.min(page, totalPages));
-    rows.forEach((r, i) => r.style.display = (i >= (currentPage-1)*perPage && i < currentPage*perPage) ? "" : "none");
-    buildPagination(totalPages);
+  // ====== UTIL ======
+  function escapeHTML(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   }
 
-  function buildPagination(total) {
-    const container = document.getElementById("pagination-controls");
-    container.innerHTML = "";
-    if (total <= 1) return;
-
-    const link = (label, p, active=false) => {
-      const el = document.createElement(active ? "span" : "a");
-      el.textContent = label;
-      el.className = active
-        ? "px-3 py-1 bg-blue-600 text-white rounded font-bold"
-        : "px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white cursor-pointer";
-      if (!active) el.onclick = () => renderTablePage(p);
-      return el;
-    };
-
-    if (currentPage > 1) container.append(link("First",1), link("«", currentPage-1));
-    const windowSize = 2;
-    if (currentPage > windowSize + 2) container.append(document.createTextNode("..."));
-    for (let i = Math.max(1,currentPage-windowSize); i <= Math.min(total,currentPage+windowSize); i++) {
-      container.append(link(String(i), i, i===currentPage));
+  async function safeParseJSONResponse(res) {
+    const ct = res.headers.get('content-type') || '';
+    if (ct.includes('application/json')) {
+      return await res.json();
     }
-    if (currentPage < total - windowSize - 1) container.append(document.createTextNode("..."));
-    if (currentPage < total) container.append(link("»", currentPage+1), link("Last", total));
+    const text = await res.text();
+    try { return JSON.parse(text); } catch { return { detail: text }; }
   }
 
-  document.getElementById("perPageSelect").addEventListener("change", e => {
+  // ====== GROUPS ======
+  async function loadGroups() {
+    try {
+      const res = await fetch('/api/camera_groups');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const groups = await res.json();
+      cameraGroups = Array.isArray(groups) ? groups : [];
+    } catch (err) {
+      console.error('Failed to load camera groups:', err);
+    }
+  }
+
+  // ====== STATS ======
+  function updateStats(stats) {
+    currentStats = stats || {};
+    document.getElementById('stat-total').textContent = (currentStats.total || 0).toLocaleString();
+    document.getElementById('stat-admins').textContent = (currentStats.admins || 0).toLocaleString();
+    document.getElementById('stat-operators').textContent = (currentStats.operators || 0).toLocaleString();
+    document.getElementById('stat-viewers').textContent = (currentStats.viewers || 0).toLocaleString();
+  }
+
+  // ====== ROLE BADGE ======
+  function getRoleBadge(role) {
+    const roleClass = role === 'admin' ? 'role-admin' : role === 'operator' ? 'role-operator' : 'role-viewer';
+    const iconPath = role === 'admin' 
+      ? 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'
+      : role === 'operator'
+      ? 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z'
+      : 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z';
+    
+    return `
+      <span class="role-badge ${roleClass}">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path>
+        </svg>
+        ${role}
+      </span>
+    `;
+  }
+
+  // ====== PAGINATION ======
+  function renderPagination(data) {
+    const paginationButtons = document.getElementById('pagination-buttons');
+    const pageInfo = document.getElementById('page-info');
+    
+    paginationButtons.innerHTML = '';
+    totalPages = data.total_pages || 1;
+    
+    if (totalPages <= 1) {
+      pageInfo.textContent = '';
+      return;
+    }
+
+    pageInfo.textContent = `Page ${data.page} of ${totalPages}`;
+
+    // First & Prev
+    if (data.page > 1) {
+      paginationButtons.insertAdjacentHTML('beforeend', `
+        <button onclick="loadUsers(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+        </button>
+        <button onclick="loadUsers(${data.page - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+      `);
+    }
+
+    // Page numbers
+    const window = 2;
+    
+    if (data.page > window + 2) {
+      paginationButtons.insertAdjacentHTML('beforeend', `<span class="px-2 text-gray-400">...</span>`);
+    }
+
+    for (let i = Math.max(1, data.page - window); i <= Math.min(totalPages, data.page + window); i++) {
+      if (i === data.page) {
+        paginationButtons.insertAdjacentHTML('beforeend', `
+          <button class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium shadow-sm">${i}</button>
+        `);
+      } else {
+        paginationButtons.insertAdjacentHTML('beforeend', `
+          <button onclick="loadUsers(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>
+        `);
+      }
+    }
+
+    if (data.page < totalPages - window - 1) {
+      paginationButtons.insertAdjacentHTML('beforeend', `<span class="px-2 text-gray-400">...</span>`);
+    }
+
+    // Next & Last
+    if (data.page < totalPages) {
+      paginationButtons.insertAdjacentHTML('beforeend', `
+        <button onclick="loadUsers(${data.page + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+        <button onclick="loadUsers(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+        </button>
+      `);
+    }
+  }
+
+  // ====== LOAD USERS ======
+  async function loadUsers(page = 1) {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const tableBody = document.querySelector('#userTable tbody');
+    const emptyState = document.getElementById('empty-state');
+    const paginationControls = document.getElementById('pagination-controls');
+    const resultsInfo = document.getElementById('results-info');
+    
+    const params = new URLSearchParams({
+      page: page,
+      limit: perPage
+    });
+    if (currentSearch) params.append('search', currentSearch);
+
+    loadingOverlay.style.display = 'flex';
+    loadingIndicator.classList.remove('hidden');
+    loadingIndicator.classList.add('flex');
+
+    try {
+      const res = await fetch(`/api/users?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await res.json();
+
+      const data = result.data || [];
+      currentPage = result.page || page;
+      
+      // Update stats
+      updateStats(result.stats);
+      
+      // Update results info
+      if (result.total > 0) {
+        const start = (currentPage - 1) * perPage + 1;
+        const end = Math.min(currentPage * perPage, result.total);
+        resultsInfo.innerHTML = `Showing <span class="font-medium text-gray-900 dark:text-white">${start}-${end}</span> of <span class="font-medium text-gray-900 dark:text-white">${result.total.toLocaleString()}</span> users`;
+      } else {
+        resultsInfo.textContent = '';
+      }
+
+      tableBody.innerHTML = '';
+      if (data.length === 0) {
+        document.getElementById('userTable').parentElement.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+        paginationControls.classList.add('hidden');
+      } else {
+        document.getElementById('userTable').parentElement.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+        emptyState.classList.remove('flex');
+        paginationControls.classList.remove('hidden');
+        
+        data.forEach(user => {
+          const initials = (user.username || 'U').substring(0, 2).toUpperCase();
+          const groupName = user.group ? user.group.name : 'No Group';
+          const lastLogin = user.last_login ? new Date(user.last_login).toLocaleString() : 'Never';
+          const isCurrentUser = user.id === parseInt('{{ request.session.get("user_id", 0) }}');
+          
+          tableBody.insertAdjacentHTML('beforeend', `
+            <tr class="group">
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold">
+                    ${initials}
+                  </div>
+                  <div>
+                    <p class="font-semibold text-gray-900 dark:text-white">${escapeHTML(user.username)}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">ID: ${user.id}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3">${getRoleBadge(user.role)}</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                  ${escapeHTML(groupName)}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-gray-500 text-xs">
+                ${lastLogin}
+              </td>
+              <td class="px-4 py-3 text-center">
+                <div class="flex items-center justify-center gap-1">
+                  <!-- Edit -->
+                  <button onclick="showEditUserModal(${user.id}, '${escapeHTML(user.username)}', '${user.role}', '${user.group ? user.group.id : ''}', ${user.is_2fa_enabled || false})"
+                    title="Edit user ${escapeHTML(user.username)}"
+                    class="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                  </button>
+                  
+                  <!-- Generate Token -->
+                  <button onclick="openGenerateTokenModal(${user.id}, '${escapeHTML(user.username)}')"
+                    title="Generate token for ${escapeHTML(user.username)}"
+                    class="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                    </svg>
+                  </button>
+                  
+                  ${!isCurrentUser ? `
+                    ${user.is_2fa_enabled ? `
+                    <!-- Reset MFA -->
+                    <button onclick="confirmResetMfa(${user.id}, '${escapeHTML(user.username)}')"
+                      title="Reset MFA for ${escapeHTML(user.username)}"
+                      class="p-2 text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                      </svg>
+                    </button>
+                    ` : ''}
+                    
+                    <!-- Delete -->
+                    <button onclick="confirmUserDelete(${user.id}, '${escapeHTML(user.username)}')"
+                      title="Delete user ${escapeHTML(user.username)}"
+                      class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    </button>
+                  ` : ''}
+                </div>
+              </td>
+            </tr>
+          `);
+        });
+      }
+
+      renderPagination(result);
+
+      // Sync URL
+      const url = new URL(window.location);
+      url.searchParams.set('page', currentPage);
+      url.searchParams.set('per_page', perPage);
+      if (currentSearch) url.searchParams.set('search', currentSearch); 
+      else url.searchParams.delete('search');
+      window.history.pushState({ page: currentPage, perPage }, '', url);
+
+    } catch (err) {
+      console.error('Failed to load users:', err);
+      if (typeof Toast !== 'undefined') {
+        Toast.error('Failed to load users data', { title: 'Error' });
+      }
+    } finally {
+      loadingOverlay.style.display = 'none';
+      loadingIndicator.classList.add('hidden');
+      loadingIndicator.classList.remove('flex');
+    }
+  }
+
+  // ====== MODALS ======
+  function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.remove();
+  }
+
+  function openAddUserModal() {
+    const modalHtml = `
+    <div id="add-user-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-gray-900 dark:text-white">Add New User</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Create a new user account</p>
+            </div>
+          </div>
+          <button onclick="closeModal('add-user-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        
+        <form id="add-user-form" class="p-6 space-y-4">
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Username <span class="text-red-500">*</span></label>
+            <input type="text" name="username" required placeholder="johndoe"
+              class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+          </div>
+          
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Password <span class="text-red-500">*</span></label>
+            <input type="password" name="password" required placeholder="••••••••"
+              class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Role <span class="text-red-500">*</span></label>
+              <select name="role" required class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                <option value="viewer">Viewer</option>
+                <option value="operator">Operator</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Group</label>
+              <select name="group_id" class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                <option value="">No Group</option>
+                ${cameraGroups.map(g => `<option value="${g.id}">${escapeHTML(g.name)}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          
+          <div class="flex justify-end gap-3 pt-4">
+            <button type="button" onclick="closeModal('add-user-modal')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 rounded-lg font-medium transition">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition">Create User</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    document.getElementById('add-user-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const payload = {
+        username: form.username.value.trim(),
+        password: form.password.value,
+        role: form.role.value,
+        group_id: form.group_id.value ? parseInt(form.group_id.value) : null
+      };
+      
+      try {
+        const res = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if (res.ok) {
+          closeModal('add-user-modal');
+          if (typeof Toast !== 'undefined') {
+            Toast.success('User created successfully', { title: 'Success' });
+          }
+          loadUsers(1);
+        } else {
+          const data = await safeParseJSONResponse(res);
+          if (typeof Toast !== 'undefined') {
+            Toast.error(data.detail || 'Failed to create user', { title: 'Error' });
+          }
+        }
+      } catch (err) {
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Network error', { title: 'Error' });
+        }
+      }
+    };
+  }
+
+  async function showEditUserModal(userId, username, role, groupId, is2faEnabled) {
+    if (!cameraGroups.length) await loadGroups();
+    
+    const modalHtml = `
+    <div id="edit-user-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+              <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-gray-900 dark:text-white">Edit User</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">${escapeHTML(username)}</p>
+            </div>
+          </div>
+          <button onclick="closeModal('edit-user-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        
+        <form id="edit-user-form" class="p-6 space-y-4">
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
+            <input type="text" value="${escapeHTML(username)}" disabled
+              class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed">
+          </div>
+          
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">New Password <span class="text-xs text-gray-500">(leave blank to keep current)</span></label>
+            <input type="password" name="password" placeholder="••••••••"
+              class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition">
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
+              <select name="role" class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition">
+                <option value="viewer" ${role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                <option value="operator" ${role === 'operator' ? 'selected' : ''}>Operator</option>
+                <option value="admin" ${role === 'admin' ? 'selected' : ''}>Admin</option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Group</label>
+              <select name="group_id" class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition">
+                <option value="">No Group</option>
+                ${cameraGroups.map(g => `<option value="${g.id}" ${String(g.id) === String(groupId) ? 'selected' : ''}>${escapeHTML(g.name)}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          
+          <div class="flex justify-end gap-3 pt-4">
+            <button type="button" onclick="closeModal('edit-user-modal')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 rounded-lg font-medium transition">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium shadow-sm transition">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    document.getElementById('edit-user-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const payload = {
+        password: form.password.value || null,
+        role: form.role.value,
+        group_id: form.group_id.value ? parseInt(form.group_id.value) : null
+      };
+      
+      try {
+        const res = await fetch(`/api/users/${userId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if (res.ok) {
+          closeModal('edit-user-modal');
+          if (typeof Toast !== 'undefined') {
+            Toast.success('User updated successfully', { title: 'Success' });
+          }
+          loadUsers(currentPage);
+        } else {
+          const data = await safeParseJSONResponse(res);
+          if (typeof Toast !== 'undefined') {
+            Toast.error(data.detail || 'Failed to update user', { title: 'Error' });
+          }
+        }
+      } catch (err) {
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Network error', { title: 'Error' });
+        }
+      }
+    };
+  }
+
+  // ====== ACTIONS ======
+  function confirmUserDelete(userId, username) {
+    const message = `Are you sure you want to delete user '${username}'? This action cannot be undone.`;
+    showGlobalConfirm(message, async () => {
+      try {
+        const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const data = await safeParseJSONResponse(res);
+          throw new Error(data.detail || 'Failed to delete user');
+        }
+        if (typeof Toast !== 'undefined') {
+          Toast.success(`Deleted ${username}`, { title: 'Deleted' });
+        }
+        loadUsers(currentPage);
+      } catch (err) {
+        if (typeof Toast !== 'undefined') {
+          Toast.error(`Delete failed: ${err.message}`, { title: 'Error' });
+        }
+      }
+    }, {
+      title: '⚠️ Delete User',
+      confirmText: 'Yes, Delete',
+      confirmClasses: 'bg-red-600 hover:bg-red-700'
+    });
+  }
+
+  function confirmResetMfa(userId, username) {
+    const message = `Are you sure you want to reset MFA for '${username}'?`;
+    showGlobalConfirm(message, async () => {
+      try {
+        const res = await fetch(`/api/users/${userId}/reset-mfa`, { method: 'POST' });
+        if (!res.ok) {
+          const data = await safeParseJSONResponse(res);
+          throw new Error(data.detail || 'Failed to reset MFA');
+        }
+        if (typeof Toast !== 'undefined') {
+          Toast.success(`MFA reset for ${username}`, { title: 'Success' });
+        }
+        loadUsers(currentPage);
+      } catch (err) {
+        if (typeof Toast !== 'undefined') {
+          Toast.error(`Reset failed: ${err.message}`, { title: 'Error' });
+        }
+      }
+    }, {
+      title: '⚠️ Reset MFA',
+      confirmText: 'Yes, Reset',
+      confirmClasses: 'bg-orange-600 hover:bg-orange-700'
+    });
+  }
+
+  // Token Management (keep existing functionality but adapt to dynamic table)
+  function openGenerateTokenModal(userId, username) {
+    // Keep the existing token modal logic, just update the cell references after generation
+    const modalHtml = `
+    <div id="generate-token-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-gray-900 dark:text-white">Generate API Token</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">${escapeHTML(username)}</p>
+            </div>
+          </div>
+          <button onclick="closeModal('generate-token-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Token Expiry</label>
+            <select id="tokenExpiry" class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition">
+              <option value="7">7 days</option>
+              <option value="30" selected>30 days</option>
+              <option value="90">90 days</option>
+              <option value="365">1 year</option>
+            </select>
+          </div>
+          
+          <div id="token-result" class="hidden">
+            <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Generated Token <span class="text-xs text-red-500">(copy now, won't be shown again)</span></label>
+            <div class="flex gap-2">
+              <input type="text" id="generated-token" readonly 
+                class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white font-mono text-sm">
+              <button onclick="copyToken()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition" title="Copy">
+                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <div class="flex justify-end gap-3 pt-4">
+            <button type="button" onclick="closeModal('generate-token-modal')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 rounded-lg font-medium transition">Close</button>
+            <button type="button" onclick="generateToken(${userId})" id="generate-token-btn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium shadow-sm transition">Generate</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  }
+
+  async function generateToken(userId) {
+    const expiryDays = document.getElementById('tokenExpiry').value;
+    const btn = document.getElementById('generate-token-btn');
+    const resultDiv = document.getElementById('token-result');
+    const tokenInput = document.getElementById('generated-token');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2 inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Generating...';
+    
+    try {
+      const res = await fetch('/api/users/generate-token', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_id: userId, expires_in_days: parseInt(expiryDays) })
+      });
+      
+      if (!res.ok) throw new Error('Failed to generate token');
+      
+      const data = await res.json();
+      tokenInput.value = data.token;
+      resultDiv.classList.remove('hidden');
+      btn.classList.add('hidden');
+      
+      if (typeof Toast !== 'undefined') {
+        Toast.success('Token generated successfully', { title: 'Success' });
+      }
+    } catch (err) {
+      if (typeof Toast !== 'undefined') {
+        Toast.error(err.message, { title: 'Error' });
+      }
+      btn.disabled = false;
+      btn.textContent = 'Generate';
+    }
+  }
+
+  function copyToken() {
+    const tokenInput = document.getElementById('generated-token');
+    tokenInput.select();
+    document.execCommand('copy');
+    
+    if (typeof Toast !== 'undefined') {
+      Toast.success('Token copied to clipboard', { title: 'Copied', duration: 2000 });
+    }
+  }
+
+  function resetFilters() {
+    currentSearch = '';
+    document.getElementById('searchInput').value = '';
+    loadUsers(1);
+  }
+
+  // ====== EVENTS ======
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    clearTimeout(window.searchDebounce);
+    window.searchDebounce = setTimeout(() => {
+      currentSearch = e.target.value.trim();
+      loadUsers(1);
+    }, 350);
+  });
+
+  document.getElementById('perPageSelect').addEventListener('change', (e) => {
     perPage = parseInt(e.target.value, 10) || 20;
-    renderTablePage(1);
+    loadUsers(1);
   });
 
-  /* ================= Init ================= */
-  document.addEventListener("DOMContentLoaded", () => {
-    renderTablePage(1);
-    const params = new URLSearchParams(window.location.search);
-    const success = params.get("success");
-    const error = params.get("error");
-    if (success) Toast.success(success, { title: 'Success' });
-    if (error) Toast.error(error, { title: 'Error' });
-    if (!success && !error) popFlashNextPage();
+  // Close modal on escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeModal('add-user-modal');
+      closeModal('edit-user-modal');
+      closeModal('generate-token-modal');
+    }
   });
 
-  // Flash on submit (UX kecil)
-  userForm?.addEventListener("submit", () => {
-    const isUpdate = userForm.action.includes("/users/update/");
-    setFlashNextPage("info", isUpdate ? "Updating user..." : "Creating user...");
+  // Init
+  document.addEventListener('DOMContentLoaded', async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const p = urlParams.get('per_page');
+    const s = urlParams.get('search');
+    const pg = urlParams.get('page');
+
+    if (p) {
+      perPage = parseInt(p, 10) || 20;
+      document.getElementById('perPageSelect').value = perPage;
+    }
+    if (s) {
+      currentSearch = s;
+      document.getElementById('searchInput').value = s;
+    }
+
+    await loadGroups();
+    await loadUsers(pg ? parseInt(pg, 10) : 1);
   });
 
-  /* ================= Expose globals for inline handlers ================= */
-  window.toggleUserForm = toggleUserForm;
-  window.hideUserModal = hideUserModal;
-  window.editUser = editUser;
-  window.resetForm = resetForm;
-  window.filterTable = filterTable;
-  window.updateSelectionState = updateSelectionState;
-  window.toggleAllCheckboxes = toggleAllCheckboxes;
-  window.confirmBulkDelete = confirmBulkDelete;
+  // Expose functions globally
+  window.openAddUserModal = openAddUserModal;
+  window.showEditUserModal = showEditUserModal;
+  window.closeModal = closeModal;
   window.confirmUserDelete = confirmUserDelete;
+  window.confirmResetMfa = confirmResetMfa;
   window.openGenerateTokenModal = openGenerateTokenModal;
-  window.handleRevokeClick = handleRevokeClick;
-  window.toggleModal = toggleModal;
-
+  window.generateToken = generateToken;
+  window.copyToken = copyToken;
+  window.loadUsers = loadUsers;
+  window.resetFilters = resetFilters;
 </script>
 {% endblock %}

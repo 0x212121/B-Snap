@@ -1,10 +1,20 @@
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 import re
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+CHANGELOG_FILE = BASE_DIR / "CHANGELOG.md"
 
 
-def parse_changelog_md(filepath: str = "CHANGELOG.md") -> List[Dict]:
+def parse_changelog_md(filepath: str = None) -> List[Dict]:
     """Parse CHANGELOG.md into structured data."""
+
+    filepath = filepath or CHANGELOG_FILE
+
+    if not Path(filepath).exists():
+        return []
+
     changelog = []
     current_version = None
     current_section = None

@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta, timezone
 import logging
 from app.core.logging_config import setup_logging
-from typing import List
-from fastapi import APIRouter, HTTPException, Request, Form, Depends
+from typing import List, Optional
+from fastapi import APIRouter, HTTPException, Request, Form, Depends, Query
 from fastapi.responses import JSONResponse, RedirectResponse
 from passlib.hash import bcrypt
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.models.camera_group import CameraGroup
 from app.models.user import User
 from app.db.database import get_db
@@ -14,16 +14,58 @@ from app.utils.audit_logger import log_audit
 import secrets
 from urllib.parse import quote
 from sqlalchemy.orm import joinedload, Session
+from sqlalchemy import func, or_
 import json
 from app.utils.template_helper import templates
 from app.utils.timezone_helper import to_current_timezone
-from datetime import datetime
 
 router = APIRouter(tags=["User Management"])
 
 setup_logging()
 logger = logging.getLogger("management")
 
+
+# ============== PYDANTIC MODELS ==============
+
+class TokenRequest(BaseModel):
+    user_id: int
+    expires_in_days: int
+
+
+class UserCreateRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=6)
+    role: str = Field(default="viewer")
+    group_id: Optional[int] = None
+
+
+class UserUpdateRequest(BaseModel):
+    password: Optional[str] = None
+    role: str
+    group_id: Optional[int] = None
+
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    role: str
+    group: Optional[dict] = None
+    is_2fa_enabled: bool
+    last_login: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class UsersListResponse(BaseModel):
+    data: List[UserResponse]
+    total: int
+    page: int
+    total_pages: int
+    stats: dict
+
+
+# ============== HELPER FUNCTIONS ==============
 
 def register_timezone_filter(db: Session):
     """
@@ -34,12 +76,11 @@ def register_timezone_filter(db: Session):
         if not dt:
             return "Never"
         try:
-            # Convert string -> datetime jika perlu
             if isinstance(dt, str):
                 try:
                     dt_parsed = datetime.fromisoformat(dt.replace("Z", "+00:00"))
                 except ValueError:
-                    return dt  # Jika gagal parse, tampilkan mentah
+                    return dt
             else:
                 dt_parsed = dt
             local_dt = to_current_timezone(dt_parsed, db)
@@ -53,28 +94,316 @@ def register_timezone_filter(db: Session):
 
 def safe_parse_datetime(val):
     try:
-        # Ensure value is a string before parsing
         if isinstance(val, str):
             return datetime.fromisoformat(val)
     except (ValueError, TypeError):
-        # Return None if parsing fails or input is not a string
         return None
     return None
 
 
-# Pydantic model for the token generation request body
-class TokenRequest(BaseModel):
-    user_id: int
-    expires_in_days: int
+def user_to_dict(user: User, db: Session) -> dict:
+    """Convert User model to dict for JSON response"""
+    return {
+        "id": user.id,
+        "username": user.username,
+        "role": user.role,
+        "group": {
+            "id": user.group.id,
+            "name": user.group.name
+        } if user.group else None,
+        "is_2fa_enabled": bool(user.otp_secret and user.is_2fa_enabled),
+        "last_login": user.last_login.isoformat() if user.last_login else None
+    }
 
+
+# ============== NEW REST API ENDPOINTS (For AJAX/Fetch) ==============
+
+@router.get("/api/users", response_model=UsersListResponse)
+async def api_list_users(
+    request: Request,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    search: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    REST API endpoint for fetching users with pagination and search.
+    Returns JSON for the new user_management.html
+    """
+    try:
+        query = db.query(User).options(joinedload(User.group))
+        
+        # Search functionality
+        if search:
+            search_filter = f"%{search}%"
+            query = query.filter(
+                or_(
+                    User.username.ilike(search_filter),
+                    User.role.ilike(search_filter),
+                    CameraGroup.name.ilike(search_filter)
+                )
+            ).outerjoin(CameraGroup, User.group_id == CameraGroup.id)
+        
+        # Get total count
+        total = query.count()
+        
+        # Pagination
+        offset = (page - 1) * limit
+        users = query.offset(offset).limit(limit).all()
+        
+        # Calculate stats
+        total_users = db.query(User).count()
+        admins = db.query(User).filter(User.role == "admin").count()
+        operators = db.query(User).filter(User.role == "operator").count()
+        viewers = db.query(User).filter(User.role == "viewer").count()
+        
+        total_pages = (total + limit - 1) // limit
+        
+        return {
+            "data": [user_to_dict(u, db) for u in users],
+            "total": total,
+            "page": page,
+            "total_pages": total_pages,
+            "stats": {
+                "total": total_users,
+                "admins": admins,
+                "operators": operators,
+                "viewers": viewers
+            }
+        }
+        
+    except Exception as e:
+        logger.exception(f"Failed to fetch users via API: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load users")
+
+
+@router.post("/api/users")
+async def api_create_user(
+    request: Request,
+    user_data: UserCreateRequest,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    REST API endpoint for creating a new user.
+    Receives JSON instead of Form data.
+    """
+    try:
+        username_clean = user_data.username.strip().lower()
+
+        # Check existing
+        existing_user = db.query(User).filter_by(username=username_clean).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Username already exists")
+
+        # Validate group if provided
+        group_id = user_data.group_id
+        if group_id:
+            group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
+            if not group:
+                raise HTTPException(status_code=400, detail="Group not found")
+
+        # Create user
+        user = User(
+            username=username_clean,
+            password=bcrypt.hash(user_data.password),
+            role=user_data.role,
+            group_id=group_id
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        log_audit(
+            db=db,
+            user=request.session.get("user_name"),
+            action="create_user",
+            target=f"{username_clean} as {user_data.role}",
+            ip=request.client.host,
+            extra="via API"
+        )
+
+        return user_to_dict(user, db)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Failed to create user via API: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create user")
+
+
+@router.put("/api/users/{user_id}")
+async def api_update_user(
+    request: Request,
+    user_id: int,
+    user_data: UserUpdateRequest,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    REST API endpoint for updating a user.
+    """
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Track changes for audit
+        changes = []
+        if user.role != user_data.role:
+            changes.append(f"role: '{user.role}' -> '{user_data.role}'")
+            user.role = user_data.role
+
+        # Update group
+        if user_data.group_id is not None:
+            if user_data.group_id != user.group_id:
+                group = db.query(CameraGroup).filter(CameraGroup.id == user_data.group_id).first()
+                if not group:
+                    raise HTTPException(status_code=400, detail="Group not found")
+                old_group = user.group.name if user.group else None
+                changes.append(f"group: '{old_group}' -> '{group.name}'")
+                user.group_id = user_data.group_id
+        else:
+            if user.group_id is not None:
+                old_group = user.group.name if user.group else None
+                changes.append(f"group: '{old_group}' -> None")
+                user.group_id = None
+
+        # Update password if provided
+        if user_data.password:
+            user.password = bcrypt.hash(user_data.password)
+            changes.append("password: [CHANGED]")
+
+        db.commit()
+        db.refresh(user)
+
+        # Update session if updating own role
+        if user.id == request.session.get("user_id"):
+            request.session["user_role"] = user.role
+
+        if changes:
+            log_audit(
+                db=db,
+                user=request.session.get("user_name"),
+                action="update_user",
+                target=user.username,
+                ip=request.client.host,
+                extra="\n".join(changes)
+            )
+
+        return user_to_dict(user, db)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Failed to update user via API: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update user")
+
+
+@router.delete("/api/users/{user_id}")
+async def api_delete_user(
+    request: Request,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    REST API endpoint for deleting a user.
+    """
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        if user.id == current_admin.id:
+            raise HTTPException(status_code=400, detail="Cannot delete your own account")
+
+        user_details = {
+            "id": user.id,
+            "username": user.username,
+            "role": user.role
+        }
+
+        db.delete(user)
+        db.commit()
+
+        log_audit(
+            db=db,
+            user=request.session.get("user_name"),
+            action="delete_user",
+            target=user_details["username"],
+            ip=request.client.host,
+            extra=json.dumps(user_details)
+        )
+
+        return {"message": "User deleted successfully", "deleted": user_details}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Failed to delete user via API: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete user")
+
+
+@router.post("/api/users/{user_id}/reset-mfa")
+async def api_reset_mfa(
+    request: Request,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    REST API endpoint for resetting MFA (returns JSON instead of redirect).
+    """
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        if not user.is_2fa_enabled:
+            raise HTTPException(status_code=400, detail="MFA is not enabled for this user")
+
+        username = user.username
+        user.otp_secret = None
+        user.is_2fa_enabled = False
+        
+        db.commit()
+
+        log_audit(
+            db=db,
+            user=request.session.get("user_name"),
+            action="reset_mfa",
+            target=username,
+            ip=request.client.host,
+            extra="MFA reset via API"
+        )
+
+        return {"message": f"MFA reset successfully for {username}"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Failed to reset MFA via API: {e}")
+        raise HTTPException(status_code=500, detail="Failed to reset MFA")
+
+
+# ============== OLD FORM-BASED ENDPOINTS (Backward Compatibility) ==============
 
 @router.get("/users")
 async def manage_users(request: Request, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
+    """
+    Original HTML page endpoint. Now just renders the template without data 
+    (data loaded via AJAX from /api/users)
+    """
     try:
         register_timezone_filter(db)
-        users = db.query(User).options(joinedload(User.group)).all()
-        groups = db.query(CameraGroup).order_by(CameraGroup.name).all()
-        return templates.TemplateResponse("user_management.html", {"request": request, "users": users, "groups": groups})
+        # Return empty template - data will be loaded via fetch API
+        return templates.TemplateResponse("user_management.html", {
+            "request": request, 
+            "users": [],  # Empty, will be populated by JS
+            "groups": []
+        })
     except Exception as e:
         logger.exception(f"Failed to render user management page: {e}")
         raise HTTPException(status_code=500, detail="Failed to load user management page. Check server logs.")
@@ -90,9 +419,7 @@ async def create_user(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    """
-    Handles the creation of a new user.
-    """
+    """Legacy form submission endpoint (kept for backward compatibility)"""
     username_clean = username.strip().lower()
 
     existing_user = db.query(User).filter_by(username=username_clean).first()
@@ -123,7 +450,7 @@ async def create_user(
         action="create_user",
         target=f"{username_clean} as {role} in group {group_name}",
         ip=request.client.host,
-        extra="via dashboard"
+        extra="via dashboard (legacy form)"
     )
 
     msg = quote("User created successfully")
@@ -137,15 +464,12 @@ async def delete_bulk_users(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    """
-    Handles the bulk deletion of multiple users.
-    """
+    """Legacy bulk delete endpoint"""
     if not user_ids:
         msg = quote("No users selected for deletion.")
         return RedirectResponse(url=f"/users?status=error&message={msg}", status_code=303)
 
     users_to_delete = db.query(User).filter(User.id.in_(user_ids)).all()
-
     final_users_to_delete = [user for user in users_to_delete if user.id != current_admin.id]
 
     if not final_users_to_delete:
@@ -179,9 +503,7 @@ async def delete_bulk_users(
 
 @router.post("/users/delete/{user_id}")
 async def delete_user(request: Request, user_id: int, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
-    """
-    Handles the deletion of a single user.
-    """
+    """Legacy single delete endpoint"""
     user = db.query(User).get(user_id)
 
     if user:
@@ -224,9 +546,7 @@ async def update_user(
     password: str = Form(None),
     current_admin: User = Depends(admin_access_required)
 ):
-    """
-    Handles updating an existing user's details.
-    """
+    """Legacy form update endpoint"""
     user_to_update = db.query(User).filter(User.id == user_id).first()
 
     if not user_to_update:
@@ -265,7 +585,6 @@ async def update_user(
         if user_to_update.id == request.session.get("user_id"):
             request.session["user_role"] = role
 
-        # Audit log hanya menampilkan data yang berubah
         changes = []
         if before_details["role"] != after_details["role"]:
             changes.append(f"- role: '{before_details['role']}' -> '{after_details['role']}'")
@@ -304,8 +623,7 @@ async def api_generate_token(
     current_admin: User = Depends(admin_access_required)
 ):
     """
-    Generates a new API token for a user, safely sorts existing tokens,
-    and returns the new token with a properly formatted list of all tokens.
+    Generates a new API token for a user (already JSON API)
     """
     user = db.query(User).filter(User.id == token_request.user_id).first()
     if not user:
@@ -327,9 +645,9 @@ async def api_generate_token(
     current_tokens = user.api_tokens or []
     current_tokens.append(new_entry)
 
-    # Mengurutkan token berdasarkan objek datetime agar lebih andal
     current_tokens.sort(
-        key=lambda t: datetime.fromisoformat(t.get("created_at")) if t.get("created_at") else datetime.min, reverse=True
+        key=lambda t: datetime.fromisoformat(t.get("created_at")) if t.get("created_at") else datetime.min, 
+        reverse=True
     )
     user.api_tokens = current_tokens[:5]
 
@@ -341,7 +659,6 @@ async def api_generate_token(
             formatted = []
             for t in tokens:
                 expires_dt = safe_parse_datetime(t.get("expires_at"))
-                # Added %Z to display timezone abbreviation
                 formatted.append({
                     "token": t["token"],
                     "expires_at_gmt8": to_current_timezone(expires_dt, db_session).strftime("%d/%m/%Y - %H:%M:%S %Z") if expires_dt else "Never"
@@ -357,7 +674,6 @@ async def api_generate_token(
             extra=f"Token expires at {expires_at or 'Never'}"
         )
 
-        # Added %Z to display timezone abbreviation
         expires_str = to_current_timezone(expires_at, db).strftime("%d/%m/%Y - %H:%M:%S %Z") if expires_at else "Never"
         
         return JSONResponse(status_code=200, content={
@@ -371,6 +687,7 @@ async def api_generate_token(
         logger.error(f"Error during token generation for user {user.id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to process token generation. Check server logs.")
 
+
 @router.post("/users/reset-mfa/{user_id}")
 async def reset_user_mfa(
     request: Request,
@@ -378,9 +695,7 @@ async def reset_user_mfa(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    """
-    Handles resetting a user's MFA configuration.
-    """
+    """Legacy MFA reset (Form submission)"""
     user_to_update = db.query(User).filter(User.id == user_id).first()
 
     if not user_to_update:
@@ -419,7 +734,7 @@ async def reset_user_mfa(
 
 @router.post("/users/{user_id}/revoke-token")
 def revoke_token(
-    request: Request, # <-- Tambahkan Request untuk mendapatkan IP
+    request: Request,
     user_id: int,
     token_data: dict,
     db: Session = Depends(get_db),
@@ -436,11 +751,9 @@ def revoke_token(
     if not token_to_revoke:
         raise HTTPException(status_code=400, detail="Missing token")
     
-    # FIX: Ensure current_tokens is a list to prevent TypeError if api_tokens is None.
     current_tokens = user.api_tokens or []
     original_count = len(current_tokens)
     
-    # Create the new list of tokens, excluding the one to be revoked
     user.api_tokens = [t for t in current_tokens if t.get("token") != token_to_revoke]
     
     if len(user.api_tokens) == original_count:
@@ -453,7 +766,7 @@ def revoke_token(
             user=current_admin.username,
             action="revoke_api_token",
             target=user.username,
-            ip=request.client.host, # <-- Mencatat IP yang benar
+            ip=request.client.host,
             extra=f"Revoked token: {token_to_revoke[:8]}..."
         )
         return {"message": "Token revoked successfully"}
