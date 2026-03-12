@@ -1,101 +1,121 @@
+<!-- video_gallery.html - Tailwind Modern -->
 {% extends "base.html" %}
 {% block title %}B-SNAP – Video Gallery{% endblock %}
-{% from "_icons.html" import icon_video_camera, icon_arrow_down %}
+{% from "_icons.html" import icon_video_camera %}
+
 {% block content %}
 <style>
-  #videoGrid {
-    transition: opacity 0.3s ease-in-out;
+  /* Hanya TomSelect override yang tidak bisa pure Tailwind */
+  .ts-control {
+    @apply bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm !important;
   }
-  
-  /* TomSelect Dark Mode Fix */
-  /* Ensure these styles override default TomSelect styles for dark mode */
-  .dark .ts-control {
-    background-color: #1f2937 !important; /* Equivalent to dark:bg-gray-800 */
-    border-color: #4b5563 !important;   /* Equivalent to dark:border-gray-600 */
-    color: #f3f4f6 !important;          /* Text color for selected item/placeholder */
+  .ts-control:focus {
+    @apply border-blue-500 ring-2 ring-blue-500/20 !important;
   }
-  
-  .dark .ts-wrapper.focus .ts-control,
-  .dark .ts-wrapper.focus.input-active .ts-control {
-    border-color: #3b82f6 !important; /* Equivalent to focus:ring-blue-500 */
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5) !important; /* Equivalent to focus:ring-blue-500 */
+  .ts-dropdown {
+    @apply bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl mt-1 !important;
   }
-  
-  .dark .ts-control input {
-    color: #f3f4f6 !important; /* Ensures the typed input text is white */
-  }
-  
-  .dark .ts-dropdown {
-    background-color: #1f2937 !important; /* Dropdown background */
-    border-color: #4b5563 !important;     /* Dropdown border */
-  }
-  
   .dark .ts-dropdown .option {
-    color: #f3f4f6 !important; /* Dropdown option text color */
+    @apply text-slate-200 hover:bg-slate-700 !important;
+  }
+  .dark .ts-dropdown .active {
+    @apply bg-slate-700 text-white !important;
   }
   
-  .dark .ts-dropdown .option.active {
-    background-color: #374151 !important; /* Hover/active option background */
-    color: #f3f4f6 !important;
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
   }
-  
-  /* Specific targeting for selected items if they appear with dark text */
-  .dark .item {
-    color: #f3f4f6 !important;
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-slate-600 rounded-full;
   }
 </style>
 
-<div class="container mx-auto px-4 py-8">
-  
-  
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">{{ icon_video_camera("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Video Gallery</h1>
-  </div>
-  
-  <form id="filterForm" class="flex flex-wrap justify-center items-center gap-4 mb-6" onsubmit="return false;">
-    <input id="searchInput" type="text" placeholder="Search Camera Name..."
-    class="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-64 focus:outline-none focus:ring focus:ring-blue-200" />
-    
-    <select id="cameraSelect" name="camera"
-    class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-[20rem] sm:w-[24rem] focus:outline-none">
-    <option value="">🎥 All Cameras</option>
-    {% for cname in camera_names | sort %}
-    <option value="{{ cname }}" {% if cname == selected_camera %}selected{% endif %}>{{ cname }}</option>
-    {% endfor %}
-  </select>
-  
-  <button type="button" id="clearFilterBtn"
-  class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear Filter</button>
-</form>
+<div class="min-h-screen bg-slate-50 dark:bg-gray-800 pb-12">
+  <!-- Header: Title Rata dengan Search (Inline Layout) -->
+  <header class="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray dark:border-gray-800 px-6 py-4">
+    <div class="max-w-[1400px] mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <!-- Title -->
+      <div class="flex items-center gap-3 shrink-0">
+        <div class="p-2 bg-purple-600 rounded-lg text-white">
+          {{ icon_video_camera("w-6 h-6") }}
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Video Gallery</h1>
+      </div>
 
-<div id="videoGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-6">
-  {% include '_video_grid.html' %}
+      <!-- Controls: Inline -->
+      <div class="flex flex-wrap items-center gap-3 flex-1 lg:justify-end">
+        <!-- Search -->
+        <div class="relative flex-1 min-w-[200px] max-w-xs">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Search camera..." 
+            class="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+          />
+        </div>
+
+        <!-- Camera Select -->
+        <div class="w-full sm:w-64">
+          <select id="cameraSelect" class="w-full">
+            <option value="">All Cameras</option>
+            {% for cname in camera_names | sort %}
+            <option value="{{ cname }}" {% if cname == selected_camera %}selected{% endif %}>{{ cname }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Clear Button -->
+        <button id="clearFilterBtn" class="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          Clear
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Video Grid -->
+  <main class="max-w-[1400px] mx-auto px-6 py-8">
+    <div id="videoGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% include '_video_grid.html' %}
+    </div>
+
+    <!-- Infinite Scroll Sentinel -->
+    <div id="scrollSentinel" class="hidden h-20 mt-8 flex items-center justify-center text-gray-500 dark:text-slate-400 text-sm gap-2">
+      <svg class="animate-spin h-5 w-5 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Loading more videos...
+    </div>
+  </main>
 </div>
 
-<div id="modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50 p-4" onclick="hideModal()">
-  <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl w-full" onclick="event.stopPropagation()">
-    <video id="modal-video" src="" class="rounded w-full max-h-[75vh]" controls autoplay></video>
-    <div id="modal-info" class="text-center mt-2 text-gray-800 dark:text-white"></div>
-    <div class="flex justify-center md:justify-end mt-4 space-x-4">
-      <a id="download-btn" href="#" download class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-        Download
-      </a>
-      <button onclick="hideModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded inline-flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-        Close
-      </button>
+<!-- Video Modal - Fix Playback -->
+<div id="modal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target === this) hideModal()">
+  <div class="bg-white dark:bg-slate-800 rounded-xl max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-gray-200 dark:border-slate-700 w-full" onclick="event.stopPropagation()">
+    <div class="relative bg-black flex items-center justify-center min-h-[200px]">
+      <!-- Hapus autoplay attribute, gunakan JS saja -->
+      <video id="modal-video" class="w-full max-h-[70vh] object-contain" controls playsinline></video>
+    </div>
+    <div class="p-4 flex items-center justify-between border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+      <div>
+        <h3 id="modal-info" class="font-semibold text-gray-900 dark:text-white"></h3>
+      </div>
+      <div class="flex gap-2">
+        <a id="download-btn" href="#" download class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Download
+        </a>
+        <button onclick="hideModal()" class="px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg text-sm font-semibold transition-colors">
+          Close
+        </button>
+      </div>
     </div>
   </div>
-</div>
-<div class="flex justify-center mt-6">
-  <button id="loadMoreBtn"
-    class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm shadow flex items-center gap-2"
-    onclick="loadMoreVideos()">
-    {{ icon_arrow_down("h-5 w-5 inline-block") }}
-    <span class="label">Load More</span>
-  </button>
-</div>
 </div>
 {% endblock %}
 
@@ -103,183 +123,253 @@
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 <script>
-  let tom;
-  let debounceTimer;
-  let currentPage = 1;
-  let isLoading = false;
-  
-  async function fetchAndUpdateGallery(params = {}) {
-    const grid = document.getElementById("videoGrid");
-    grid.style.opacity = '0.5';
-    
-    const urlParams = new URLSearchParams();
-    if (params.camera) urlParams.set('camera', params.camera);
-    if (params.q) urlParams.set('q', params.q);
-    
-    try {
-      const response = await fetch(`/video-gallery-data?${urlParams}`);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      grid.innerHTML = data.html;
-    } catch (error) {
-      console.error("Failed to update video gallery:", error);
-      Toast.error("Error updating gallery.", { title: "Error" });
-    } finally {
-      grid.style.opacity = '1';
-    }
-  }
-  
+  /**
+   * STATE MANAGEMENT - Anti duplikat & Race condition
+   */
+  const VideoState = {
+    tomSelect: null,
+    isLoading: false,
+    hasMore: true,
+    currentPage: 1,
+    currentFilter: { camera: "", q: "" },
+    observer: null,
+    lastRequestId: 0
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    initTomSelect();
+    setupEventListeners();
+    setupInfiniteScroll();
+  });
+
   function initTomSelect() {
-    if (tom) tom.destroy();
-    tom = new TomSelect("#cameraSelect", {
-      maxOptions: 100,
+    VideoState.tomSelect = new TomSelect("#cameraSelect", {
+      placeholder: "Select camera...",
       allowEmptyOption: true,
-      placeholder: 'Select a camera...',
       onChange: (value) => {
-        currentPage = 1;
-        fetchAndUpdateGallery({ camera: value, q: document.getElementById("searchInput").value });
+        VideoState.currentFilter.camera = value || "";
+        resetAndLoad();
       }
     });
   }
-  
-  function deleteVideo(videoId, element) {
-    const card = element.closest('.video-card');
-    
-    showGlobalConfirm("Are you sure you want to delete this item?", () => {
-      card.style.opacity = '0.5';
-      // Logika fetch Anda untuk menghapus item
-      fetch(`/videos/${videoId}`, { method: 'DELETE' })
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === "success") {
-          Toast.success("Item deleted successfully", { title: "Deleted" });
-          card.remove();
-        } else {
-          Toast.error(data.detail || "Failed to delete item", { title: "Error" });
-          card.style.opacity = '1';
-        }
-      })
-      .catch(err => {
-        Toast.error("Error during deletion.", { title: "Error" });
-        card.style.opacity = '1';
-      });
-    }, {
-      title: '⚠️ Confirm Deletion',
-      confirmText: 'Yes, Delete',
-      confirmClasses: 'bg-red-600 hover:bg-red-700'
-    });
-  }
-  
-  document.addEventListener("DOMContentLoaded", () => {
-    initTomSelect();
-    
-    document.getElementById("searchInput")?.addEventListener("input", (e) => {
+
+  function setupEventListeners() {
+    // Search dengan debounce
+    let debounceTimer;
+    document.getElementById("searchInput").addEventListener("input", (e) => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        currentPage = 1;
-        const selectedCamera = tom.getValue();
-        fetchAndUpdateGallery({ camera: selectedCamera, q: e.target.value });
-      }, 350);
+        VideoState.currentFilter.q = e.target.value;
+        resetAndLoad();
+      }, 300);
     });
-    
-    document.getElementById("clearFilterBtn")?.addEventListener("click", () => {
-      currentPage = 1;
-      document.getElementById("searchInput").value = '';
-      tom.clear();
-      fetchAndUpdateGallery(); // fetch all videos again
-    });
-  });
-  
 
-  
-  function showModal(videoUrl, cameraName, timestamp) {
+    // Clear filters
+    document.getElementById("clearFilterBtn").addEventListener("click", () => {
+      document.getElementById("searchInput").value = "";
+      VideoState.tomSelect.clear();
+      VideoState.currentFilter = { camera: "", q: "" };
+      resetAndLoad();
+    });
+  }
+
+  /**
+   * INFINITE SCROLL - Fix duplikat
+   */
+  function setupInfiniteScroll() {
+    const sentinel = document.getElementById("scrollSentinel");
+    
+    VideoState.observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !VideoState.isLoading && VideoState.hasMore && VideoState.currentPage > 1) {
+        loadMore();
+      }
+    }, { rootMargin: "100px", threshold: 0.1 });
+
+    VideoState.observer.observe(sentinel);
+  }
+
+  function resetAndLoad() {
+    VideoState.currentPage = 1;
+    VideoState.hasMore = true;
+    VideoState.lastRequestId++;
+    document.getElementById("videoGrid").innerHTML = "";
+    const sentinel = document.getElementById("scrollSentinel");
+    sentinel.classList.add("hidden");
+    fetchVideos(false);
+  }
+
+  function loadMore() {
+    if (VideoState.isLoading || !VideoState.hasMore) return;
+    VideoState.currentPage++;
+    fetchVideos(true);
+  }
+
+  /**
+   * FETCH LOGIC - Proteksi ketat
+   */
+  async function fetchVideos(append = false) {
+    VideoState.isLoading = true;
+    const requestId = ++VideoState.lastRequestId;
+    
+    const grid = document.getElementById("videoGrid");
+    const sentinel = document.getElementById("scrollSentinel");
+    
+    if (!append) grid.style.opacity = "0.5";
+    sentinel.classList.remove("hidden");
+    sentinel.classList.add("flex");
+
+    const params = new URLSearchParams();
+    params.set("page", VideoState.currentPage);
+    if (VideoState.currentFilter.camera) params.set("camera", VideoState.currentFilter.camera);
+    if (VideoState.currentFilter.q) params.set("q", VideoState.currentFilter.q);
+
+    try {
+      const res = await fetch(`/video-gallery-data?${params}`);
+      const data = await res.json();
+      
+      // Cancel check
+      if (requestId !== VideoState.lastRequestId) return;
+
+      if (!append) {
+        grid.innerHTML = data.html;
+      } else {
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = data.html;
+        const newItems = Array.from(tempDiv.querySelectorAll("[data-video-card]"));
+        
+        if (newItems.length === 0) {
+          VideoState.hasMore = false;
+        } else {
+          const fragment = document.createDocumentFragment();
+          newItems.forEach(item => fragment.appendChild(item));
+          grid.appendChild(fragment);
+          
+          // Cek apakah return < limit (misal limit 15)
+          if (newItems.length < 15) VideoState.hasMore = false;
+        }
+      }
+
+      // Initial load check
+      if (!append) {
+        const count = (data.html.match(/data-video-card/g) || []).length;
+        if (count === 0 || count < 15) VideoState.hasMore = false;
+      }
+
+    } catch (err) {
+      console.error("Fetch error:", err);
+      Toast.error("Failed to load videos", { title: "Error" });
+    } finally {
+      if (requestId === VideoState.lastRequestId) {
+        VideoState.isLoading = false;
+        grid.style.opacity = "1";
+        if (!VideoState.hasMore) sentinel.classList.add("hidden");
+      }
+    }
+  }
+
+  /**
+   * DELETE VIDEO
+   */
+  function deleteVideo(videoId, element) {
+    const card = element.closest("[data-video-card]");
+    
+    showGlobalConfirm("Delete this video?", async () => {
+      try {
+        const res = await fetch(`/videos/${videoId}`, { method: "DELETE" });
+        const data = await res.json();
+        
+        if (data.status === "success") {
+          card.style.transform = "scale(0.95)";
+          card.style.opacity = "0";
+          setTimeout(() => {
+            card.remove();
+            // Adjust offset
+            if (VideoState.currentPage > 1) VideoState.currentPage--;
+          }, 200);
+          Toast.success("Video deleted", { title: "Success" });
+        } else {
+          throw new Error(data.detail);
+        }
+      } catch (err) {
+        Toast.error(err.message || "Delete failed", { title: "Error" });
+        card.style.opacity = "1";
+      }
+    }, {
+      title: "Confirm Delete",
+      confirmText: "Delete",
+      confirmClasses: "bg-red-600 text-white"
+    });
+  }
+
+  /**
+   * MODAL VIDEO
+   */
+// Ganti fungsi showModal dan hideModal dengan versi fix:
+
+function showModal(videoUrl, cameraName, timestamp) {
     const modal = document.getElementById("modal");
     const video = document.getElementById("modal-video");
     const info = document.getElementById("modal-info");
     const downloadBtn = document.getElementById("download-btn");
     
-    // Clear previous state
+    // 1. Reset video state
     video.pause();
-    video.innerHTML = ""; // remove previous <source>
-    video.removeAttribute("src");
+    video.removeAttribute('src');
+    video.load(); // Force reset
     
-    // Add new source
-    const source = document.createElement("source");
-    source.src = videoUrl;
-    source.type = "video/mp4";
-    video.appendChild(source);
+    // 2. Set source langsung (lebih reliable daripada appendChild source)
+    video.src = videoUrl;
+    
+    // 3. Load dan play
     video.load();
     
-    // Autoplay when video is ready
-    video.onloadeddata = () => {
-      video.play().catch(err => {
-        console.error("Video play failed:", err);
-        Toast.error("Failed to play video", { title: "Error" });
-      });
+    // 4. Tunggu metadata loaded baru play (lebih reliable daripada loadeddata)
+    video.onloadedmetadata = () => {
+        video.play().catch(err => {
+            console.log("Autoplay prevented (normal jika browser block autoplay):", err);
+        });
     };
     
+    // 5. Handle error
+    video.onerror = (e) => {
+        console.error("Video error:", e);
+        Toast.error("Failed to load video", { title: "Error" });
+    };
+    
+    // 6. Set info dan download
     info.textContent = `${cameraName} • ${timestamp}`;
     downloadBtn.href = videoUrl;
     downloadBtn.download = `video_${cameraName}_${timestamp.replace(/[\s,:]/g, '-')}.mp4`;
     
+    // 7. Show modal
     modal.classList.remove("hidden");
-    document.body.style.overflow = 'hidden';
-  }
-  
-  
-  
-  
-  function hideModal() {
-    const modal = document.getElementById("modal");
-    const video = document.getElementById("modal-video");
-    video.pause();
-    video.removeAttribute("src");
-    video.innerHTML = "";
-    modal.classList.add("hidden");
-    document.body.style.overflow = 'auto'; // Restore scrolling
-  }
-  
-  async function loadMoreVideos() {
-  if (isLoading) return;
-  isLoading = true;
-  currentPage++;
-
-  const grid = document.getElementById("videoGrid");
-  const btn = document.getElementById("loadMoreBtn");
-  const label = btn.querySelector(".label");
-  label.textContent = "Loading...";
-  btn.disabled = true;
-
-  const camera = tom.getValue();
-  const q = document.getElementById("searchInput").value;
-  const params = new URLSearchParams({ page: currentPage });
-  if (camera) params.set('camera', camera);
-  if (q) params.set('q', q);
-
-  try {
-    const response = await fetch(`/video-gallery-data?${params}`);
-    const data = await response.json();
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = data.html;
-    const newCards = tempDiv.querySelectorAll(".video-card");
-
-    if (newCards.length === 0) {
-      label.textContent = "No more videos";
-      btn.disabled = true;
-    } else {
-      newCards.forEach(card => grid.appendChild(card));
-      label.textContent = "Load More";
-      btn.disabled = false;
-    }
-  } catch (err) {
-    console.error("Error loading more videos:", err);
-    Toast.error("Failed to load more videos.", { title: "Error" });
-    label.textContent = "Load More";
-    btn.disabled = false;
-  } finally {
-    isLoading = false;
-  }
+    modal.classList.add("flex");
+    document.body.style.overflow = "hidden";
 }
 
+function hideModal() {
+    const modal = document.getElementById("modal");
+    const video = document.getElementById("modal-video");
+    
+    // Pause dan cleanup yang proper
+    video.pause();
+    video.src = ""; // Hapus source untuk stop buffering
+    video.load(); // Reset video element
+    video.onloadedmetadata = null; // Cleanup event listener
+    video.onerror = null;
+    
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+    document.body.style.overflow = "";
+}
+// Keyboard shortcut
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") hideModal();
+  });
+
+  // Expose globals
+  window.deleteVideo = deleteVideo;
+  window.showModal = showModal;
+  window.hideModal = hideModal;
 </script>
 {% endblock %}

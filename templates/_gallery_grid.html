@@ -1,45 +1,82 @@
-<!-- 
-  This template contains only the grid items.
-  It's rendered by the /gallery-data endpoint and injected into the main page.
--->
+<!-- _gallery_grid.html - Pure Tailwind -->
 {% for image in images %}
-<div class="snapshot-card relative bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden group transform transition duration-300 hover:scale-105" data-camera="{{ image.camera }}">
-  <!-- Image -->
-  <img src="{{ image.url }}" alt="Snapshot for {{ image.camera }}"
-    onclick="showModal('{{ image.url }}', '{{ image.camera }}', '{{ image.time }}')"
-    class="w-full h-48 object-cover cursor-pointer rounded-t-xl lazy-img"
-    loading="lazy" />
-  
-  <!-- Card Content -->
-  <div class="p-4 text-center">
-    <h2 class="font-semibold text-lg text-gray-800 dark:text-white truncate">{{ image.camera }}</h2>
-    <div class="text-sm text-gray-500 dark:text-gray-400 mt-2 space-y-1 text-left">
-      <p><span class="font-medium text-gray-600 dark:text-gray-300">📍 IP:</span> {{ image.ip }}</p>
-      <p><span class="font-medium text-gray-600 dark:text-gray-300">🕒 Time:</span> {{ image.time }}</p>
-      <p><span class="font-medium text-gray-600 dark:text-gray-300">🏷️ Group:</span> {{ image.group }}</p>
-      <p><span class="font-medium text-gray-600 dark:text-gray-300">📁 Size:</span> {{ image.file_size }} kB</p>
-      <p><span class="font-medium text-gray-600 dark:text-gray-300">🖼️ Res:</span> {{ image.resolution }}</p>
-      <p>
-      {% if image.is_tampered %}
-        <span class="badge font-medium bg-red-500 text-white">🔴 Tampered: {{ image.tamper_reason }}</span>
-      {% endif %}
-      {% if image.is_orphaned %}
-        <span class="badge font-medium bg-amber-500 text-white" title="Camera has been deleted">⚠️ Orphaned</span>
-      {% endif %}
-      </p>
-    </div>
+<div data-card class="group bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/20 transition-all duration-300 hover:-translate-y-1" data-id="{{ image.id }}" data-camera="{{ image.camera }}">
+  <!-- Image: No Overlay -->
+  <div class="relative aspect-[16/10] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-700 dark:to-slate-800 overflow-hidden">
+    <img 
+      src="{{ image.url }}" 
+      alt="{{ image.camera }}" 
+      class="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-105"
+      loading="lazy"
+      onclick="showModal('{{ image.url }}', '{{ image.camera }}', '{{ image.time }}')"
+    >
   </div>
 
-  <!-- Delete Button -->
-  <button onclick="event.stopPropagation(); deleteSnapshot('{{ image.id }}', this)"
-    class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded hover:bg-red-700 opacity-0 group-hover:opacity-100 transition">
-    🗑️
-  </button>
+  <!-- Content: Status Badges di sini (No Overlay) -->
+  <div class="p-4 space-y-3">
+    <!-- Status Row -->
+    <div class="flex flex-wrap gap-2">
+      {% if image.is_tampered %}
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-100 dark:border-red-800">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        {{ image.tamper_reason }}
+      </span>
+      {% endif %}
+      
+      {% if image.is_orphaned %}
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-100 dark:border-amber-800">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Orphaned
+      </span>
+      {% endif %}
+    </div>
+
+    <!-- Title -->
+    <h3 class="font-bold text-gray-900 dark:text-white truncate text-lg" title="{{ image.camera }}">{{ image.camera }}</h3>
+
+    <!-- Meta Grid -->
+    <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-600 dark:text-slate-400 pt-2 border-t border-gray-100 dark:border-slate-700">
+      <div class="flex items-center gap-2 truncate" title="IP: {{ image.ip }}">
+        <svg class="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg>
+        <span class="truncate">{{ image.ip }}</span>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+        <span>{{ image.file_size }} kB</span>
+      </div>
+      
+      <div class="flex items-center gap-2 col-span-2">
+        <svg class="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span class="truncate">{{ image.time }}</span>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <span>{{ image.resolution }}</span>
+      </div>
+      
+      <div class="flex items-center gap-2 truncate" title="Group: {{ image.group }}">
+        <svg class="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        <span class="truncate">{{ image.group }}</span>
+      </div>
+    </div>
+
+    <!-- Delete Action: Bottom inline, bukan overlay -->
+    <div class="pt-3 flex justify-end">
+      <button onclick="deleteSnapshot('{{ image.id }}', this)" class="group/btn inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors border border-transparent hover:border-red-100 dark:hover:border-red-800">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        Delete
+      </button>
+    </div>
+  </div>
 </div>
-
-
 {% endfor %}
-  {% if not images %} 
-    <p class="text-center text-gray-500 dark:text-gray-400 col-span-full">No snapshots found for the selected criteria.</p>
-  {% endif %}
+
+{% if not images %}
+<div class="col-span-full text-center py-16 text-gray-500 dark:text-slate-400">
+  <div class="text-5xl mb-4 opacity-30">📷</div>
+  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">No snapshots found</h3>
+  <p class="text-sm">Adjust your filters or take a new snapshot</p>
 </div>
+{% endif %}

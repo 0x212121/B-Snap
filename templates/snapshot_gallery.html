@@ -1,122 +1,148 @@
+<!-- snapshot_gallery.html - Tailwind Version -->
 {% extends "base.html" %}
 {% block title %}B-SNAP – Gallery{% endblock %}
 {% from "_icons.html" import icon_camera %}
+
 {% block content %}
+<!-- TomSelect & Custom Utilities -->
 <style>
-  /* Add a subtle transition for the loading state */
-  #snapshotGrid {
-    transition: opacity 0.3s ease-in-out;
+  /* Hanya override TomSelect yang tidak bisa pure Tailwind */
+  .ts-control {
+    @apply bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm !important;
   }
-  .lazy-img {
-    filter: blur(10px);
-    transition: filter 0.3s ease-out;
+  .ts-control:focus {
+    @apply border-blue-500 ring-2 ring-blue-500/20 !important;
   }
-  .lazy-img.loaded {
-    filter: blur(0);
+  .ts-dropdown {
+    @apply bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl mt-1 !important;
   }
-  
-  /* --- TomSelect Dark Mode Fix for Snapshot Gallery --- */
-  /* Ensure these styles override default TomSelect styles for dark mode */
-  .dark .ts-control {
-    background-color: #1f2937 !important; /* Equivalent to dark:bg-gray-800 */
-    border-color: #4b5563 !important;   /* Equivalent to dark:border-gray-600 */
-    color: #f3f4f6 !important;          /* Text color for selected item/placeholder */
-  }
-  
-  .dark .ts-wrapper.focus .ts-control,
-  .dark .ts-wrapper.focus.input-active .ts-control {
-    border-color: #3b82f6 !important; /* Equivalent to focus:ring-blue-500 */
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5) !important; /* Equivalent to focus:ring-blue-500 */
-  }
-  
-  .dark .ts-control input {
-    color: #f3f4f6 !important; /* Ensures the typed input text is white */
-  }
-  
-  .dark .ts-dropdown {
-    background-color: #1f2937 !important; /* Dropdown background */
-    border-color: #4b5563 !important;     /* Dropdown border */
-  }
-  
   .dark .ts-dropdown .option {
-    color: #f3f4f6 !important; /* Dropdown option text color */
+    @apply text-slate-200 hover:bg-slate-700 !important;
+  }
+  .dark .ts-dropdown .active {
+    @apply bg-slate-700 text-white !important;
   }
   
-  .dark .ts-dropdown .option.active {
-    background-color: #374151 !important; /* Hover/active option background */
-    color: #f3f4f6 !important;
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
   }
-  
-  /* Specific targeting for selected items if they appear with dark text */
-  .dark .item {
-    color: #f3f4f6 !important;
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
   }
-  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-slate-600 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-slate-500;
+  }
 </style>
 
-<div class="container mx-auto px-4 py-8">
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">
-      {{ icon_camera("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }}Snapshot Gallery</h1>
-    </div>
-    
-    <form id="filterForm" class="flex flex-col md:flex-row justify-between gap-4 mb-6" onsubmit="return false;">
-      <!-- Filter Controls -->
-      <div class="flex flex-wrap items-center gap-4">
-        <!-- Search input -->
-        <input id="searchInput" type="text" placeholder="Search Camera Name..."
-        class="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-64 focus:outline-none focus:ring focus:ring-blue-200" />
-        
-        <!-- Camera select -->
-        <select id="cameraSelect" name="camera"
-        class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm w-[20rem] sm:w-[24rem] focus:outline-none">
-        <option value="">🎥 All Cameras</option>
-        {% for cname in camera_names | sort %}
-        <option value="{{ cname }}" {% if cname == selected_camera %}selected{% endif %}>{{ cname }}</option>
-        {% endfor %}
-      </select>
-      
-      <!-- Clear filter -->
-      <button type="button" id="clearFilterBtn"
-      class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear Filter</button>
-      
-      <label for="filterTampered" class="inline-flex items-center cursor-pointer">
-        <input type="checkbox" id="filterTampered" class="sr-only peer">
-        <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
-        <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Show Tampered Only</span>
-      </label>
-      
-    </div>
-    
-    <!-- Action Buttons -->
-    <div id="actionButtonsContainer" class="flex flex-wrap gap-4 items-center">
-      {% if selected_camera %}
-      {% if camera_exists %}
-      <button type="button"
-      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
-      data-action="snapshot" data-camera="{{ selected_camera }}">📸 Snapshot</button>
-      {% endif %}
-      <button type="button"
-      class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
-      data-action="delete-all" data-camera="{{ selected_camera }}">🗑️ Delete All</button>
-      {% endif %}
-    </div>
-  </form>
-  
-  
-  <div id="snapshotGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
-    {% include "_gallery_grid.html" %}
-  </div>
-  
-  <div id="modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
-    <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl max-h-[80vh]">
-      <div class="relative">
-        <img id="modal-img" src="" class="rounded w-full object-contain max-h-[70vh]" />
-        <div id="modal-info" class="absolute top-0 right-0 bg-black bg-opacity-60 text-white text-sm px-3 py-1 rounded shadow"></div>
+<div class="min-h-screen bg-slate-50 dark:bg-gray-800 pb-12">
+  <!-- Header: Inline Layout (Title rata dengan Search) -->
+  <header class="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 px-6 py-4">
+    <div class="max-w-[1400px] mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <!-- Title -->
+      <div class="flex items-center gap-3 shrink-0">
+        <div class="p-2 bg-blue-600 rounded-lg text-white">
+          {{ icon_camera("w-6 h-6") }}
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Snapshot Gallery</h1>
       </div>
-      <div class="flex justify-end mt-2 space-x-4">
-        <a id="download-btn" href="#" download class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">⬇️ Download</a>
-        <button onclick="hideModal()" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded">✖ Close</button>
+
+      <!-- Controls: Search, Select, Buttons -->
+      <div class="flex flex-wrap items-center gap-3 flex-1 lg:justify-end">
+        <!-- Search -->
+        <div class="relative flex-1 min-w-[200px] max-w-xs">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Search camera..." 
+            class="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+          />
+        </div>
+
+        <!-- Camera Select -->
+        <div class="w-full sm:w-64">
+          <select id="cameraSelect" class="w-full">
+            <option value="">All Cameras</option>
+            {% for cname in camera_names | sort %}
+            <option value="{{ cname }}" {% if cname == selected_camera %}selected{% endif %}>{{ cname }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Clear Button -->
+        <button id="clearFilterBtn" class="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          Clear
+        </button>
+
+        <!-- Toggle Tampered -->
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" id="filterTampered" class="sr-only peer">
+          <div class="w-10 h-5 bg-gray-300 dark:bg-slate-600 rounded-full peer-checked:bg-blue-600 transition-colors relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-4 after:h-4 after:bg-white after:rounded-full after:transition-transform after:shadow-sm peer-checked:after:translate-x-5"></div>
+          <span class="text-sm text-gray-600 dark:text-slate-400 font-medium">Tampered Only</span>
+        </label>
+
+        <!-- Action Buttons -->
+        <div id="actionButtonsContainer" class="contents">
+          {% if selected_camera %}
+            {% if camera_exists %}
+              <button data-action="snapshot" data-camera="{{ selected_camera }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm shadow-blue-600/20 transition-all hover:-translate-y-0.5 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Snapshot
+              </button>
+            {% endif %}
+            <button data-action="delete-all" data-camera="{{ selected_camera }}" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold shadow-sm shadow-red-600/20 transition-all hover:-translate-y-0.5 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              Delete All
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Grid -->
+  <main class="max-w-[1400px] mx-auto px-6 py-8">
+    <div id="snapshotGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {% include "_gallery_grid.html" %}
+    </div>
+
+    <!-- Loading Sentinel -->
+    <div id="scrollSentinel" class="hidden h-20 mt-8 flex items-center justify-center text-gray-500 dark:text-slate-400 text-sm gap-2">
+      <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Loading more snapshots...
+    </div>
+  </main>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target === this) hideModal()">
+  <div class="bg-white dark:bg-slate-800 rounded-xl max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-gray-200 dark:border-slate-700" onclick="event.stopPropagation()">
+    <div class="relative bg-black flex items-center justify-center">
+      <img id="modal-img" src="" class="max-w-full max-h-[70vh] object-contain" alt="Full snapshot">
+    </div>
+    <div class="p-4 flex items-center justify-between border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+      <div>
+        <h3 id="modal-camera" class="font-semibold text-gray-900 dark:text-white"></h3>
+        <p id="modal-time" class="text-sm text-gray-500 dark:text-slate-400 mt-0.5"></p>
+      </div>
+      <div class="flex gap-2">
+        <a id="download-btn" href="#" download class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Download
+        </a>
+        <button onclick="hideModal()" class="px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg text-sm font-semibold transition-colors">
+          Close
+        </button>
       </div>
     </div>
   </div>
@@ -127,281 +153,225 @@
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 <script>
-  let tom;
-  let debounceTimer;
-  
-  /**
-  * Main function to fetch and update the gallery content via AJAX.
-  * Fetches both the image grid and the action buttons from the /gallery-data endpoint.
-  */
-  const pageLimit = 15;
-  let pageOffset = pageLimit;
-  let isLoading = false;
-  let hasMore = true;
-  
-  async function fetchAndUpdateGallery(params = {}, append = false) {
-    // ⛔ FIX: Only check !hasMore when appending data for infinite scroll.
-    if (isLoading || (append && !hasMore)) return;
-    
-    isLoading = true;
-    const grid = document.getElementById("snapshotGrid");
-    const actionButtonsContainer = document.getElementById("actionButtonsContainer");
-    if (!append) {
-      grid.style.opacity = '0.5';
-      pageOffset = 0; // reset offset hanya jika bukan append
-      hasMore = true;
-    }
-    
-    const urlParams = new URLSearchParams();
-    if (params.camera) urlParams.set('camera', params.camera);
-    if (params.q) urlParams.set('q', params.q);
-    
-    const tamperedOnly = document.getElementById("filterTampered")?.checked;
-    if (tamperedOnly) urlParams.set('tampered', 'true');
-    
-    urlParams.set('offset', pageOffset);
-    urlParams.set('limit', pageLimit);
-    
-    try {
-      const response = await fetch(`/gallery-data?${urlParams}`);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      
-      if (append) {
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = data.html;
-        [...tempDiv.children].forEach(child => grid.appendChild(child));
-      } else {
-        grid.innerHTML = data.html;
-        actionButtonsContainer.innerHTML = data.buttons_html;
-      }
-      
-      initializeLazyLoading();
-      
-      const numItems = (data.html.match(/snapshot-card/g) || []).length;
-      if (data.html.trim() === "" || numItems < pageLimit) {
-        hasMore = false;
-      } else {
-        pageOffset += pageLimit;
-      }
-      
-    } catch (error) {
-      console.error("Failed to update gallery:", error);
-      Toast.error("Error updating gallery.", { title: "Error" });
-    } finally {
-      grid.style.opacity = '1';
-      isLoading = false;
-    }
-  }
-  
-  let scrollTimer;
-  window.addEventListener('scroll', () => {
-    if (scrollTimer) clearTimeout(scrollTimer);
-    scrollTimer = setTimeout(() => {
-      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
-        const selectedCamera = tom?.getValue() || "";
-        const searchQuery = document.getElementById("searchInput")?.value || "";
-        fetchAndUpdateGallery({ camera: selectedCamera, q: searchQuery }, true);
-      }
-    }, 200); // delay 200ms
-  });
-  
-  /**
-  * Initializes TomSelect for the camera dropdown.
-  */
-  function initTomSelect() {
-    if (tom) tom.destroy();
-    tom = new TomSelect("#cameraSelect", {
-      maxOptions: 100, // Increased max options
-      allowEmptyOption: true,
-      placeholder: 'Select a camera...',
-      sortField: { field: "text", direction: "asc" },
-      onChange: (value) => {
-        const searchQuery = document.getElementById("searchInput").value;
-        fetchAndUpdateGallery({ camera: value, q: searchQuery });
-      }
-    });
-  }
-  
-  /**
-  * Deletes a single snapshot by its ID.
-  * Global function untuk dipanggil dari HTML onclick
-  */
-  function deleteSnapshot(snapshotId, element) {
-    const card = element.closest('.snapshot-card');
-    
-    showGlobalConfirm("Are you sure you want to delete this snapshot?", () => {
-      card.style.opacity = '0.5';
-      
-      fetch(`/snap/${snapshotId}`, { method: 'DELETE' })
-      .then(async res => {
-        const data = await res.json();
-        if (res.ok && data.status === "success") {
-          Toast.success("Snapshot deleted successfully", { title: "Deleted", duration: 3000 });
-          card.remove();
-        } else {
-          Toast.error(data.detail || "Failed to delete snapshot", { title: "Error", duration: 5000 });
-          card.style.opacity = '1';
-        }
-      })
-      .catch(err => {
-        console.error("Delete error:", err);
-        Toast.error("Error during deletion.", { title: "Error", duration: 5000 });
-        card.style.opacity = '1';
-      });
-    }, {
-      title: '⚠️ Confirm Deletion',
-      confirmText: 'Yes, Delete',
-      confirmClasses: 'bg-red-600 hover:bg-red-700'
-    });
-  }
-  
-  /**
-  * Show modal for snapshot image
-  * Global function untuk dipanggil dari HTML onclick
-  */
-  function showModal(src, cameraName = '', timestamp = '') {
-    const modal = document.getElementById("modal");
-    const img = document.getElementById("modal-img");
-    const info = document.getElementById("modal-info");
-    const downloadBtn = document.getElementById("download-btn");
-    
-    img.src = src;
-    info.textContent = `${cameraName} • ${timestamp}`;
-    modal.classList.remove("hidden");
-    
-    // Set download link href and filename
-    downloadBtn.href = src;
-    downloadBtn.download = `snapshot_${cameraName}_${timestamp.replace(/[\s:]/g, '-')}.jpg`;
-  }
-  
-  /**
-  * Hide modal
-  * Global function untuk dipanggil dari HTML onclick
-  */
-  function hideModal() {
-    document.getElementById("modal").classList.add("hidden");
-  }
-  
-  /**
-  * Initialize lazy loading for images
-  */
-  function initializeLazyLoading() {
-    const lazyImages = document.querySelectorAll('img.lazy-img:not(.loaded)');
-    const observer = new IntersectionObserver((entries, obs) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const img = entry.target;
-          img.src = img.src; // This triggers the load
-          img.addEventListener('load', () => {
-            img.classList.add('loaded');
-          }, { once: true });
-          obs.unobserve(img);
-        }
-      });
-    }, { rootMargin: "0px 0px 200px 0px" }); // Start loading images 200px before they enter the viewport
-    lazyImages.forEach(img => observer.observe(img));
-  }
-  
-  // --- Event Listeners Setup ---
+  // State Management (sama seperti sebelumnya)
+  const GalleryState = {
+    tomSelect: null,
+    isLoading: false,
+    hasMore: true,
+    offset: 0,
+    limit: 15,
+    currentFilter: { camera: "", q: "", tampered: false },
+    observer: null,
+    lastRequestId: 0
+  };
+
   document.addEventListener("DOMContentLoaded", () => {
     initTomSelect();
-    initializeLazyLoading();
-    
-    document.getElementById("searchInput")?.addEventListener("input", (e) => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        const selectedCamera = tom?.getValue() || "";
-        pageOffset = 0;
-        hasMore = true;
-        fetchAndUpdateGallery({ camera: selectedCamera, q: e.target.value });
-      }, 350);
-    });
-    
-    document.getElementById("filterTampered")?.addEventListener("change", () => {
-      const selectedCamera = tom?.getValue() || "";
-      const searchQuery = document.getElementById("searchInput")?.value || "";
-      pageOffset = 0;
-      hasMore = true;
-      fetchAndUpdateGallery({ camera: selectedCamera, q: searchQuery });
-    });
-    
-    
-    document.getElementById("clearFilterBtn")?.addEventListener("click", () => {
-      document.getElementById("searchInput").value = '';
-      tom.clear(); 
-      
-      // Reset tampered filter
-      const tamperedCheckbox = document.getElementById("filterTampered");
-      if (tamperedCheckbox) tamperedCheckbox.checked = false;
-      
-      pageOffset = 0;
-      hasMore = true;
-      
-      fetchAndUpdateGallery({ camera: "", q: "" });
-    });
-    
-    
-    // Event delegation for dynamically added action buttons
-    document.getElementById("actionButtonsContainer").addEventListener("click", async (e) => {
-      const target = e.target.closest("[data-action]");
-      if (!target) return;
-      
-      // ⛔ FIX: cek disabled sebelum mengubah state tombol
-      if (target.disabled) return;
-      
-      const action = target.dataset.action;
-      const camera = target.dataset.camera;
-      
-      if (!camera) return;
-      
-      // ✅ baru di-set disable setelah validasi
-      target.disabled = true;
-      target.style.opacity = '0.7';
-      
-      try {
-        if (action === "snapshot") {
-          const res = await fetch(`/snap/${encodeURIComponent(camera)}`, { method: "POST" });
-          const data = await res.json();
-          
-          if (res.ok && data.status === "success") {
-            Toast.success(`Snapshot captured from '${camera}'`, { 
-              title: "Snapshot Success",
-              duration: 4000
-            });
-            window.scrollTo({ top: 0, behavior: "smooth" });
-            
-            pageOffset = 0;
-            hasMore = true;
-            
-            fetchAndUpdateGallery({
-              camera: tom.getValue() || "",
-              q: document.getElementById("searchInput").value || "",
-              tampered: document.getElementById("filterTampered").checked
-            });
-          } else {
-            Toast.error(data.message || data.detail || "Snapshot failed", { 
-              title: "Snapshot Failed",
-              duration: 5000
-            });
-          }
-        }
-        
-        if (action === "delete-all") {
-          if (!confirm(`Are you sure you want to delete all snapshots for ${camera}? This cannot be undone.`)) {
-            return;
-          }
-          Toast.warning("Delete-all functionality not yet implemented.", { title: "Info" });
-        }
-        
-      } catch (error) {
-        console.error(`Error performing action '${action}':`, error);
-        Toast.error(`An error occurred while performing ${action}.`, { title: "Error", duration: 5000 });
-      } finally {
-        target.disabled = false;
-        target.style.opacity = '1';
+    setupEventListeners();
+    setupInfiniteScroll();
+    resetAndLoad();
+  });
+
+  function initTomSelect() {
+    GalleryState.tomSelect = new TomSelect("#cameraSelect", {
+      placeholder: "Select camera...",
+      allowEmptyOption: true,
+      onChange: (value) => {
+        GalleryState.currentFilter.camera = value || "";
+        resetAndLoad();
       }
     });
-  });
+  }
+
+  function setupEventListeners() {
+    let debounceTimer;
+    document.getElementById("searchInput").addEventListener("input", (e) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        GalleryState.currentFilter.q = e.target.value;
+        resetAndLoad();
+      }, 300);
+    });
+
+    document.getElementById("filterTampered").addEventListener("change", (e) => {
+      GalleryState.currentFilter.tampered = e.target.checked;
+      resetAndLoad();
+    });
+
+    document.getElementById("clearFilterBtn").addEventListener("click", () => {
+      document.getElementById("searchInput").value = "";
+      document.getElementById("filterTampered").checked = false;
+      GalleryState.tomSelect.clear();
+      GalleryState.currentFilter = { camera: "", q: "", tampered: false };
+      resetAndLoad();
+    });
+
+    document.getElementById("actionButtonsContainer").addEventListener("click", handleActionClick);
+  }
+
+  function setupInfiniteScroll() {
+    const sentinel = document.getElementById("scrollSentinel");
+    GalleryState.observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !GalleryState.isLoading && GalleryState.hasMore && GalleryState.offset > 0) {
+        loadMore();
+      }
+    }, { rootMargin: "100px", threshold: 0.1 });
+    GalleryState.observer.observe(sentinel);
+  }
+
+  function resetAndLoad() {
+    GalleryState.offset = 0;
+    GalleryState.hasMore = true;
+    GalleryState.lastRequestId++;
+    document.getElementById("snapshotGrid").innerHTML = "";
+    const sentinel = document.getElementById("scrollSentinel");
+    sentinel.classList.add("hidden");
+    fetchGallery(false);
+  }
+
+  function loadMore() {
+    if (GalleryState.isLoading || !GalleryState.hasMore) return;
+    fetchGallery(true);
+  }
+
+  async function fetchGallery(append = false) {
+    GalleryState.isLoading = true;
+    const requestId = ++GalleryState.lastRequestId;
+    
+    const grid = document.getElementById("snapshotGrid");
+    const sentinel = document.getElementById("scrollSentinel");
+    const actionContainer = document.getElementById("actionButtonsContainer");
+    
+    if (!append) grid.style.opacity = "0.5";
+    sentinel.classList.remove("hidden");
+    sentinel.classList.add("flex");
+
+    const params = new URLSearchParams();
+    if (GalleryState.currentFilter.camera) params.set("camera", GalleryState.currentFilter.camera);
+    if (GalleryState.currentFilter.q) params.set("q", GalleryState.currentFilter.q);
+    if (GalleryState.currentFilter.tampered) params.set("tampered", "true");
+    params.set("offset", GalleryState.offset);
+    params.set("limit", GalleryState.limit);
+
+    try {
+      const res = await fetch(`/gallery-data?${params}`);
+      const data = await res.json();
+      
+      if (requestId !== GalleryState.lastRequestId) return;
+
+      if (!append) {
+        grid.innerHTML = data.html;
+        actionContainer.innerHTML = data.buttons_html;
+      } else {
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = data.html;
+        const newItems = Array.from(tempDiv.querySelectorAll("[data-card]"));
+        
+        if (newItems.length === 0) {
+          GalleryState.hasMore = false;
+        } else {
+          const fragment = document.createDocumentFragment();
+          newItems.forEach(item => fragment.appendChild(item));
+          grid.appendChild(fragment);
+          
+          GalleryState.offset += newItems.length;
+          if (newItems.length < GalleryState.limit) GalleryState.hasMore = false;
+        }
+      }
+
+      if (!append) {
+        const count = (data.html.match(/data-card/g) || []).length;
+        if (count < GalleryState.limit) GalleryState.hasMore = false;
+        else GalleryState.offset = count;
+      }
+
+    } catch (err) {
+      console.error("Fetch error:", err);
+      Toast.error("Failed to load snapshots", { title: "Error" });
+    } finally {
+      if (requestId === GalleryState.lastRequestId) {
+        GalleryState.isLoading = false;
+        grid.style.opacity = "1";
+        if (!GalleryState.hasMore) sentinel.classList.add("hidden");
+      }
+    }
+  }
+
+  function deleteSnapshot(id, element) {
+    const card = element.closest("[data-card]");
+    showGlobalConfirm("Delete this snapshot?", async () => {
+      try {
+        const res = await fetch(`/snap/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (res.ok && data.status === "success") {
+          card.style.transform = "scale(0.95)";
+          card.style.opacity = "0";
+          setTimeout(() => card.remove(), 200);
+          GalleryState.offset = Math.max(0, GalleryState.offset - 1);
+          Toast.success("Deleted", { title: "Success" });
+        } else {
+          throw new Error(data.detail);
+        }
+      } catch (err) {
+        Toast.error(err.message, { title: "Error" });
+      }
+    }, { title: "Confirm", confirmText: "Delete", confirmClasses: "bg-red-600 text-white" });
+  }
+
+  function showModal(src, camera, time) {
+    document.getElementById("modal-img").src = src;
+    document.getElementById("modal-camera").textContent = camera;
+    document.getElementById("modal-time").textContent = time;
+    document.getElementById("download-btn").href = src;
+    document.getElementById("download-btn").download = `snap_${camera}_${time.replace(/[\s:]/g,"-")}.jpg`;
+    document.getElementById("modal").classList.remove("hidden");
+    document.getElementById("modal").classList.add("flex");
+    document.body.style.overflow = "hidden";
+  }
+
+  function hideModal() {
+    const modal = document.getElementById("modal");
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+    document.body.style.overflow = "";
+    setTimeout(() => document.getElementById("modal-img").src = "", 200);
+  }
+
+  async function handleActionClick(e) {
+    const btn = e.target.closest("[data-action]");
+    if (!btn || btn.disabled) return;
+    
+    const action = btn.dataset.action;
+    const camera = btn.dataset.camera;
+    btn.disabled = true;
+    const originalContent = btn.innerHTML;
+    btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...`;
+
+    try {
+      if (action === "snapshot") {
+        const res = await fetch(`/snap/${encodeURIComponent(camera)}`, { method: "POST" });
+        const data = await res.json();
+        if (res.ok && data.status === "success") {
+          Toast.success(`Snapshot captured`, { title: "Success" });
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          resetAndLoad();
+        } else {
+          Toast.error(data.detail || "Failed", { title: "Error" });
+        }
+      } else if (action === "delete-all") {
+        if (!confirm(`Delete ALL snapshots for ${camera}?`)) return;
+        Toast.warning("Not implemented", { title: "Info" });
+      }
+    } catch (err) {
+      Toast.error("Error occurred", { title: "Error" });
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalContent;
+    }
+  }
+
+  window.deleteSnapshot = deleteSnapshot;
+  window.showModal = showModal;
+  window.hideModal = hideModal;
 </script>
 {% endblock %}

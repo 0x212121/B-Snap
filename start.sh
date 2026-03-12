@@ -44,8 +44,8 @@ log_error() {
 # Configuration
 APP_NAME="B-Snap"
 APP_DIR="/app"
-LOG_DIR="${APP_DIR}/logs"
-STATIC_DIR="${APP_DIR}/static"
+LOG_DIR="/logs"
+STATIC_DIR="/static"
 MODE="${1:-web}"
 
 # Create necessary directories

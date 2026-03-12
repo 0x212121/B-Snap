@@ -13,8 +13,10 @@ __pycache__/
 .env.*
 .git
 .gitignore
+.github/
 README.md
 app/data.db
 docker-compose*
 logs
 app/*.exe
+app/logs

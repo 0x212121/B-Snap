@@ -1,7 +1,7 @@
 FROM python:3.13.6-slim
 
 LABEL maintainer="Indra W. <wijaya.indra2196@gmail.com>"
-LABEL org.opencontainers.image.version="1.8.2"
+LABEL org.opencontainers.image.version="1.13.0"
 LABEL org.opencontainers.image.authors="Indra W. <wijaya.indra2196@gmail.com>"
 LABEL org.opencontainers.image.source="https://github.com/0x212121/b-snap"
 
@@ -35,5 +35,4 @@ RUN dos2unix /app/start.sh && \
 
 EXPOSE 8080
 
-# Gunicorn for multi-core performance
 CMD ["/app/start.sh"]

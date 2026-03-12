@@ -1,22 +1,14 @@
-<!-- templates/_action_buttons.html -->
-<!-- This partial template is rendered by the /gallery-data endpoint -->
-<!-- and injected into the main page to update the action buttons. -->
-
+<!-- _action_buttons.html - Tailwind Version -->
 {% if selected_camera %}
-    <!-- 
-      The Snapshot button is only shown if the camera exists in the database.
-      This prevents users from trying to take a snapshot with a deleted camera.
-    -->
-    {% if camera_exists %}
-        <button type="button" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
-          data-action="snapshot" data-camera="{{ selected_camera }}">📸 Snapshot</button>
-    {% endif %}
-
-    <!-- 
-      The Delete All button is always shown if a camera is selected from the dropdown.
-      This allows deleting all snapshots associated with a camera name, even if the camera itself was deleted.
-      NOTE: The backend logic for this button may need to be implemented.
-    -->
-    <button type="button" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
-      data-action="delete-all" data-camera="{{ selected_camera }}">🗑️ Delete All</button>
+  {% if camera_exists %}
+    <button data-action="snapshot" data-camera="{{ selected_camera }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm shadow-blue-600/20 transition-all hover:-translate-y-0.5 flex items-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Take Snapshot
+    </button>
+  {% endif %}
+  
+  <button data-action="delete-all" data-camera="{{ selected_camera }}" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold shadow-sm shadow-red-600/20 transition-all hover:-translate-y-0.5 flex items-center gap-2">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+    Delete All
+  </button>
 {% endif %}
