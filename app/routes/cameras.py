@@ -41,7 +41,7 @@ async def manage(request: Request):
     return templates.TemplateResponse("cameras.html", {"request": request})
 
 
-@router.get("/cameras/data", response_class=HTMLResponse)
+@router.get("/cameras/data", response_class=JSONResponse)
 async def manage_data(
     request: Request,
     db: Session = Depends(get_db),
@@ -52,6 +52,35 @@ async def manage_data(
     logger.debug("Received request for camera data. Page: %s, Search: %s, Per_page: %s", page, search, per_page)
 
     query = db.query(DBCamera).options(joinedload(DBCamera.group))
+    
+    # Calculate stats before applying pagination
+    stats_query = db.query(DBCamera)
+    if search:
+        search_term = f"%{search}%"
+        stats_query = stats_query.join(CameraGroup, DBCamera.group_id == CameraGroup.id, isouter=True).filter(
+            or_(
+                DBCamera.hostname.ilike(search_term),
+                DBCamera.ip.ilike(search_term),
+                DBCamera.location.ilike(search_term),
+                DBCamera.asset_no.ilike(search_term),
+                CameraGroup.name.ilike(search_term),
+                DBCamera.status.ilike(search_term)
+            )
+        )
+    
+    total_count = stats_query.count()
+    active_count = stats_query.filter(DBCamera.status == 'Active').count()
+    deactivated_count = stats_query.filter(DBCamera.status == 'Deactivated').count()
+    maintenance_count = stats_query.filter(DBCamera.status == 'Maintenance').count()
+    
+    stats = {
+        "total": total_count,
+        "active": active_count,
+        "deactivated": deactivated_count,
+        "maintenance": maintenance_count
+    }
+
+    # Apply filters to main query
     if search:
         search_term = f"%{search}%"
         query = query.join(CameraGroup, DBCamera.group_id == CameraGroup.id, isouter=True).filter(
@@ -71,10 +100,10 @@ async def manage_data(
     total_pages = (total + per_page - 1) // per_page if total > 0 else 1
 
     ICONS = {
-        "pencil": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-yellow-500"><path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" /></svg>',
-        "video": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-green-600 dark:text-green-400"><path d="M4.5 4.5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h8.25a3 3 0 0 0 3-3v-9a3 3 0 0 0-3-3H4.5ZM19.94 18.75l-2.69-2.69V7.94l2.69-2.69c.944-.945 2.56-.276 2.56 1.06v11.38c0 1.336-1.616 2.005-2.56 1.06Z" /></svg>',
-        "camera": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-green-600 dark:text-green-400"><path d="M12 9a3.75 3.75 0 1 0 0 7.5A3.75 3.75 0 0 0 12 9Z" /><path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 0 1 5.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 0 1-3 3h-15a3 3 0 0 1-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 0 0 1.11-.71l.822-1.315a2.942 2.942 0 0 1 2.332-1.39ZM6.75 12.75a5.25 5.25 0 1 1 10.5 0 5.25 5.25 0 0 1-10.5 0Zm12-1.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" /></svg>',
-        "trash": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-red-600"><path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" /></svg>'
+        "pencil": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" /></svg>',
+        "video": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M4.5 4.5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h8.25a3 3 0 0 0 3-3v-9a3 3 0 0 0-3-3H4.5ZM19.94 18.75l-2.69-2.69V7.94l2.69-2.69c.944-.945 2.56-.276 2.56 1.06v11.38c0 1.336-1.616 2.005-2.56 1.06Z" /></svg>',
+        "camera": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 9a3.75 3.75 0 1 0 0 7.5A3.75 3.75 0 0 0 12 9Z" /><path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 0 1 5.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 0 1-3 3h-15a3 3 0 0 1-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 0 0 1.11-.71l.822-1.315a2.942 2.942 0 0 1 2.332-1.39ZM6.75 12.75a5.25 5.25 0 1 1 10.5 0 5.25 5.25 0 0 1-10.5 0Zm12-1.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" /></svg>',
+        "trash": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" /></svg>'
     }
 
     rows_html = ""
@@ -84,75 +113,57 @@ async def manage_data(
         status_label = cam.status or "Unknown"
 
         rows_html += f"""
-            <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm text-gray-700 dark:text-gray-300">
-                <td class="p-3 font-semibold">{cam.hostname}</td>
-                <td class="p-3">{cam.ip}</td>
-                <td class="p-3">{cam.port}</td>
-                <td class="p-3">{cam.username}</td>
-                <td class="p-3">{gps_loc}</td>
-                <td class="p-3">{cam.asset_no}</td>
-                <td class="p-3">{cam.location or ''}</td>
-                <td class="p-3">{cam.group.name if cam.group else ''}</td>
-                <td class="p-3">
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full {status_classes}">
+            <tr class="group border-b dark:border-gray-700 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors duration-150 text-sm text-gray-700 dark:text-gray-300">
+                <td class="px-4 py-3.5 font-semibold text-gray-900 dark:text-white">{cam.hostname}</td>
+                <td class="px-4 py-3.5 font-mono text-gray-600 dark:text-gray-400">{cam.ip}</td>
+                <td class="px-4 py-3.5">{cam.port}</td>
+                <td class="px-4 py-3.5">{cam.username}</td>
+                <td class="px-4 py-3.5 text-xs">{gps_loc}</td>
+                <td class="px-4 py-3.5">{cam.asset_no or ''}</td>
+                <td class="px-4 py-3.5">{cam.location or ''}</td>
+                <td class="px-4 py-3.5">{cam.group.name if cam.group else ''}</td>
+                <td class="px-4 py-3.5">
+                    <span class="px-2.5 py-1 text-xs font-semibold rounded-full {status_classes}">
                         {status_label}
                     </span>
                 </td>
-                <td class="p-3 space-x-1 whitespace-nowrap">
-                    <button onclick="showEditCameraModal('{cam.id}')"
-                        title="Edit camera"
-                        class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-yellow-200 dark:hover:bg-yellow-800/50">
-                        {ICONS['pencil']}
-                    </button>
-                    <form method="post" class="inline" onsubmit="event.preventDefault(); confirmDelete('{cam.id}', '{cam.hostname}')">
-                        <button type="submit"
+                <td class="px-4 py-3.5 text-center">
+                    <div class="flex items-center justify-center gap-1">
+                        <button onclick="showEditCameraModal('{cam.id}')"
+                            title="Edit camera"
+                            class="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">
+                            {ICONS['pencil']}
+                        </button>
+                        <button onclick="confirmDelete('{cam.id}', '{cam.hostname}')"
                             title="Delete camera"
-                            class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-red-200 dark:hover:bg-red-800/50">
+                            class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
                             {ICONS['trash']}
                         </button>
-                    </form>
-                    <button onclick="captureVideo('{cam.id}')"
-                        title="Capture video (5s)"
-                        class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-green-200 dark:hover:bg-green-800/50">
-                        {ICONS['video']}
-                    </button>
-                    <button onclick='viewSnapshot({json.dumps(cam.hostname)})'
-                        title="View snapshot"
-                        class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-green-200 dark:hover:bg-green-800/50">
-                        {ICONS['camera']}
-                    </button>
+                        <button onclick="captureVideo('{cam.id}')"
+                            title="Capture video (5s)"
+                            class="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition">
+                            {ICONS['video']}
+                        </button>
+                        <button onclick='viewSnapshot({json.dumps(cam.hostname)})'
+                            title="View snapshot"
+                            class="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 transition">
+                            {ICONS['camera']}
+                        </button>
+                    </div>
                 </td>
             </tr>
         """
 
-    pagination_html = ""
-    if total_pages > 1:
-        links = []
-        window = 2
-        
-        if page > 1:
-            links.append(f'<a href="#" onclick="event.preventDefault(); loadPage(1)" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">First</a>')
-            links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({page - 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">«</a>')
-
-        if page > window + 2:
-            links.append('<span class="px-3 py-1">...</span>')
-
-        for i in range(max(1, page - window), min(total_pages, page + window) + 1):
-            if i == page:
-                links.append(f'<span class="px-3 py-1 bg-blue-600 text-white rounded font-bold">{i}</span>')
-            else:
-                links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({i})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">{i}</a>')
-        
-        if page < total_pages - window - 1:
-             links.append('<span class="px-3 py-1">...</span>')
-
-        if page < total_pages:
-            links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({page + 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">»</a>')
-            links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({total_pages})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">Last</a>')
-        
-        pagination_html = " ".join(links)
-
-    return HTMLResponse(content=f"{rows_html}|||{pagination_html}")
+    return JSONResponse(content={
+        "stats": stats,
+        "total": total,
+        "rows": rows_html,
+        "pagination": {
+            "total_pages": total_pages,
+            "per_page": per_page,
+            "current_page": page
+        }
+    })
 
 
 @router.post("/cameras/add_camera", response_class=JSONResponse)

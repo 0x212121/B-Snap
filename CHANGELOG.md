@@ -44,216 +44,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Keyboard Shortcuts** - Enter to save, Escape to close
   - **Consistent UI** - Matches other modals (history modal) in the application
 
-## [1.14.0] - 2026-03-09
-### Added
-- **Executive PDF Report Generator** (`POST /health/history/report`) - Professional health reports for management and compliance:
-  - **Cover Page** with logo and report period
-  - **Executive Summary** with total uptime, biggest incidents, SLA compliance
-  - **Charts Support** - Embed uptime trend and outage heatmap charts
-  - **Device Details Table** with sorting and filtering (top 50 in PDF)
-  - **SLA Compliance Summary** with Pass/Fail/Warning status
-  - **Multiple Formats** - PDF, Excel, CSV export options
-  - **Quick Export** - CSV/Excel export from health history page (`/health/history/export`)
-  
-- **SLA & Compliance Dashboard** (`/health/sla-report`) - Enterprise-grade SLA monitoring:
-  - **SLA Compliance Report** - Per-device compliance tracking with configurable threshold (default: 99.5%)
-  - **MTTR Calculation** - Mean Time To Recovery in seconds
-  - **MTBF Calculation** - Mean Time Between Failures in seconds
-  - **Incident Severity Classification** - Critical (≥1h), Major (10m-1h), Minor (<10m)
-  - **Compliance Status** - Pass/Fail/Warning indicators with visual badges
-  - **Performance Highlights** - Best and worst performer identification
-  - **Summary Statistics** - Total cameras, average uptime, incident counts
-  - **Print-friendly** - Optimized layout for printed reports
-  
-- **Scheduled Reports** (API) - Automated report generation:
-  - **New Models**: `SLAReport` and `ScheduledReport`
-  - **Schedule Configuration** - Daily, weekly, monthly frequency
-  - **Report Parameters** - Lookback days, SLA threshold, format selection
-  - **Recipient Management** - Multiple email recipients support
-  - **API Endpoints** - List, create, delete scheduled reports
-  - **Database Migration**: `20260309_add_sla_reports`
+# Changelog
+
+All notable changes to this project will be documented in this file.  
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.13.0] - 2026-03-09
+
 ### Added
-- **Job Management Dashboard** (`/admin/jobs`) - Complete job scheduling and monitoring system:
-  - **4 Stats Cards**: Total Runs (24h), Success Rate, Failed Jobs, Active Jobs
-  - **Jobs Table**: Schedule, Last Run, Next Run, 24h Statistics
-  - **Manual Job Execution**: Run now button with immediate scheduling
-  - **Job History Modal**: View last 50 executions with duration and status
-  - **Auto-refresh**: Toggle-able 30-second auto-refresh
-  - **Cron Schedule Display**: Visual badge showing current cron expression
-  - **Quick Schedule Edit**: Edit cron directly from dashboard
-  
-- **Job Execution Tracking** - Database-backed job execution logging:
-  - **New Model**: `JobExecutionLog` with timing, status, error details
-  - **Automatic Logging**: All jobs wrapped with execution decorator
-  - **Statistics**: Per-job and overall statistics (success rate, total runs)
-  - **History API**: Query execution history with filters
-  - **Log Retention**: Configurable retention period (default: 30 days)
-  
-- **Cron Scheduling** - Flexible cron-based job scheduling:
-  - **Config Keys**: `snapshot_cron`, `healthcheck_cron`, `storage_check_cron`, `cleanup_cron`, `email_retry_cron`
-  - **Cron Expression Support**: Standard 5-part cron (minute hour day month weekday)
-  - **Examples**: `0 8,13,23 * * *` for 08:00, 13:00, 23:00 daily
-  - **Fallback Intervals**: Cron takes precedence; interval used as fallback
-  - **Dynamic Updates**: Changes applied on next config reload without restart
-  
-- **Persistent Job Storage** - SQLAlchemyJobStore for cross-container job visibility:
-  - **Database Storage**: Jobs stored in `apscheduler_jobs` table
-  - **Web App Access**: Web UI can read jobs from scheduler container
-  - **Migration**: `20260309_add_apscheduler_jobs_table`
 
-- **Settings UI - Job Scheduling Section** - New configuration panel:
-  - **Cron Inputs**: Text fields for all job cron expressions with examples
-  - **Interval Fallbacks**: Number inputs for interval-based scheduling
-  - **Visual Design**: Indigo-themed section with helpful tooltips
-  - **Quick Link**: Direct link to Job Dashboard
-  - **Navigation**: "⏰ Job Management" added to sidebar
+#### Job Management & Scheduling
+- **Job Management Dashboard** (`/admin/jobs`) for monitoring and controlling scheduled background jobs.
+- **Job execution tracking** using `JobExecutionLog` with history, duration, and status logging.
+- **Cron-based scheduling system** supporting dynamic cron updates via configuration.
+- **Persistent job storage** using `SQLAlchemyJobStore` (`apscheduler_jobs` table).
+- **Settings UI section for Job Scheduling** with cron configuration and interval fallbacks.
 
-- **UI/UX Redesign** - Modernized admin interfaces with consistent design language:
-  - **Audit Logs Page** (`/audit-logs`):
-    - **5 Stats Cards**: Total Logs, Today's Logs, Unique Users, Top Action, with color-coded icons
-    - **Advanced Filtering**: Search by user/target, action type dropdown, date range picker
-    - **Quick Date Buttons**: Today, Yesterday, Last 7 Days
-    - **Active Filter Tags**: Visual indicators with remove buttons
-    - **Modern Table Design**: Alternating rows, hover effects, avatar initials
-    - **Action Badges**: Color-coded with icons (create, update, delete, login, logout)
-    - **Enhanced Pagination**: Icon-based navigation (First, Prev, Next, Last)
-    - **JSON Syntax Highlighting**: In detail modal with copy button
-    - **Export to CSV**: Download filtered or all logs
-  
-  - **WhatsApp Whitelist Page** (`/admin/whitelist`):
-    - **5 Stats Cards**: Total, Active, Inactive, Admins, Users
-    - **Modern Table**: Avatar initials, role badges with icons, toggle switches for status
-    - **Modal-based Forms**: Add/Edit entries in styled modals with backdrop blur
-    - **Improved UX**: Real-time search, toast notifications, reset filters
-  
-  - **Email Logs Page** (`/email-logs`):
-    - **5 Stats Cards**: Total Emails, Success, Failed, Success Rate, Today
-    - **Export Functionality**: Export Filtered or Export All to CSV
-    - **Advanced Filtering**: Camera search, status filter, reason filter, date range
-    - **Visual Badges**: Status badges with icons, reason badges with emoji
-    - **Error Details Modal**: Click to view full error messages
+#### Reporting & SLA Monitoring
+- **Executive PDF Report Generator** (`POST /health/history/report`)
+  - Professional health reports with executive summary
+  - PDF, Excel, and CSV export formats
+  - Charts and device uptime summaries
+- **SLA & Compliance Dashboard** (`/health/sla-report`)
+  - SLA compliance monitoring (default 99.5%)
+  - MTTR and MTBF metrics
+  - Incident severity classification (Critical / Major / Minor)
+  - Performance highlights and compliance indicators
+- **Scheduled Reports API**
+  - Automated report generation (daily, weekly, monthly)
+  - Email delivery to multiple recipients
+  - New models: `SLAReport`, `ScheduledReport`
+
+#### Notifications
+- **Real-time Toast Notification System**
+  - Success, error, warning, and info notifications
+  - WebSocket-based delivery
+  - Dark mode support
+  - Action buttons and persistent notifications
+  - Demo page available at `/demo/toast/`
+
+#### WhatsApp Integration
+- **GoWA WhatsApp Gateway support**
+  - WhatsApp notifications and scheduled system reports
+  - Daily camera status report and storage alerts
+  - WhatsApp bot commands: `help`, `status`, `cameras`, `health`, `snapshot`, `report`
+  - Services: `WAGatewayService`, `WABotHandler`
+
+#### UI / UX Improvements
+- **Audit Logs page redesign** (`/audit-logs`)
+  - Stats cards, advanced filtering, and CSV export
+  - Improved pagination and JSON detail viewer
+- **WhatsApp Whitelist page improvements** (`/admin/whitelist`)
+  - Stats overview, role badges, toggle switches, modal forms
+- **Email Logs dashboard improvements** (`/email-logs`)
+  - Status metrics, filtering, CSV export, and error details modal
+- **Logs Viewer redesign**
+  - Smart log parsing, live filtering, log statistics, and auto-refresh
+- **Recipients UI improvements**
+  - More compact layout and confirmation modal for test email sending
 
 ### Fixed
-- **Scheduler Database Job Store Conflict** - Fixed `ConflictingIdError` on restart:
-  - Error: `duplicate key value violates unique constraint "apscheduler_jobs_pkey"`
-  - Cause: SQLAlchemyJobStore persists jobs to database but `add_job()` lacked `replace_existing=True`
-  - Fix: Added `replace_existing=True` to all 8 `scheduler.add_job()` calls in `start_scheduler()`
-  - Scheduler now handles restarts gracefully with persistent job storage
 
-- **Migration Table Exists Error** - Fixed `apscheduler_jobs` table already exists:
-  - Error: Migration failed when table created by SQLAlchemyJobStore already exists
-  - Fix: Added `table_exists()` and `index_exists()` checks in migration
-  - Migration: `20260309_add_apscheduler_jobs_table.py` now idempotent
-
-- **Snapshot Gallery 500 Errors** - Fixed UUID string conversion bug:
-  - `Snapshot.id` is UUID (string) but was being converted to `int` causing errors
-  - Fixed in `app/routes/snap_gallery.py` and `app/utils/snapshot_service.py`
-  - Capture snapshot and delete snapshot now work correctly
-
-- **Toast Notification Integration** - Replaced old notification system:
-  - **Snapshot Gallery**: Uses `Toast.success()` and `Toast.error()` from `/static/js/toast.js`
-  - Fixed JavaScript scope issues - functions now global for HTML onclick handlers
+- Fixed **scheduler restart conflict (`ConflictingIdError`)** when jobs already exist in database.
+- Fixed **migration error** when `apscheduler_jobs` table already exists.
+- Fixed **Snapshot Gallery 500 errors** caused by incorrect UUID-to-int conversion.
+- Fixed **toast notification JavaScript scope issues** for global handlers.
+- Fixed **audit logs pagination click handlers**.
+- Fixed **email statistics counting failed emails as sent**.
+- Fixed **missing logger registrations** that prevented logs from being written correctly.
 
 ### Changed
-- **Audit Logs Pagination** - Fixed pagination click handlers:
-  - Moved `fetchLogs` to global scope for HTML onclick access
-  - Pagination now fully functional
 
-- **Toast Notification System** - Real-time user feedback with WebSocket:
-  - **4 Notification Types**: Success (✅), Error (❌), Warning (⚠️), Info (ℹ️)
-  - **6 Positions**: top-right, top-left, top-center, bottom-right, bottom-left, bottom-center
-  - **Action Buttons**: Interactive notifications with clickable actions
-  - **WebSocket Integration**: Real-time delivery without page refresh
-  - **Dark Mode Support**: Seamless theme switching
-  - **Progress Bar**: Visual countdown for auto-dismiss
-  - **Persistent Notifications**: Stay until user dismisses
-  - **Pre-built System Notifications**:
-    - Camera online/offline alerts
-    - Snapshot saved notifications
-    - Storage warning/critical alerts
-  - **Demo Page**: `/demo/toast/` for testing all features
-  - **Integrated Pages**:
-    - ✅ Snapshot Gallery - Capture/delete notifications
-    - ✅ Camera Management - CRUD operation notifications
-    - ✅ Settings/Config - Save confirmation notifications
-  - **Service Layer**: `NotificationService` for easy backend integration
-  - **Client-Side API**: JavaScript `Toast.*` methods for frontend usage
-
-- **Logs Viewer Redesign** - Modern, feature-rich log viewing interface:
-  - **Smart Log Parsing** - Parses log format `[timestamp] [LEVEL] [logger] [pid=X] message`
-  - **Real-time Filtering**:
-    - Search within log messages (debounced, 300ms)
-    - Filter by log level (ERROR, WARNING, INFO, DEBUG)
-    - Filter by logger name (dropdown populated dynamically)
-  - **Auto-refresh Mode** - Toggle live update every 5 seconds with visual indicator
-  - **Color-coded Log Levels**:
-    - 🔴 ERROR - Red badge with bold text
-    - 🟡 WARNING - Yellow badge
-    - 🔵 INFO - Blue badge
-    - ⚪ DEBUG - Gray badge
-  - **Log Statistics Panel**:
-    - Total line count
-    - Entry count per log level
-    - File size and last modified info
-  - **Improved Navigation**:
-    - Sidebar with log file list (main, snapshot, healthcheck, scheduler, management)
-    - Quick scroll to Top/Bottom buttons
-    - Auto-scroll when near bottom
-  - **File Operations**:
-    - Download log files
-    - Clear filters button
-    - Active filter indicator
-
-- **Recipients UI Improvements** - More compact layout and confirmation modal:
-  - **Compact Design**: Reduced padding, smaller fonts, tighter spacing throughout
-  - **Confirmation Modal**: Tailwind-styled modal when sending test email
-    - Shows selected group and location
-    - Cancel / Confirm options
-    - Prevents accidental sends
-  - **Better Visual Hierarchy**: Clearer section separation with consistent styling
-
-- **WhatsApp Gateway Integration** - GoWA (Aldinokemal) support for notifications and bot:
-  - **Configuration** (`/config`):
-    - Enable/disable WA notifications
-    - GoWA base URL (e.g., `http://localhost:3000`)
-    - **API Key (Optional)**: Only if GoWA runs with `-e AUTH_TOKEN=xxx`
-    - Default receiver phone number(s), comma separated
-    - Test connection button
-    - Built-in setup guide
-  - **Scheduled Reports**:
-    - Daily camera status report (08:00 AM) - cameras without snapshots
-    - Storage alerts every 2 hours when critical
-  - **WhatsApp Bot** (`/webhook/gowa`):
-    - Commands: `help`, `status`, `cameras`, `health`, `snapshot`, `report`
-    - Real-time system status via chat
-    - Camera health check via WA
-    - Daily report summary
-  - **Services** (`app/utils/wa_gateway.py`):
-    - `WAGatewayService` - Send text, image, document
-    - `WABotHandler` - Command parsing and response
-    - Phone number formatting helper
-
-### Fixed
-- **Email Sent Counter Bug** - Fixed email statistics counting failed emails as sent:
-  - Updated `_total_count()` and `_daily_counts()` helpers to support `success_only` filter
-  - Updated `_total_count()` calls for email to use `success_only=True`
-  - Updated `_daily_counts()` calls for email chart to use `success_only=True`
-  - Updated `get_top_cameras_by_email()` to filter `success=True`
-  - Email stats now only count successfully sent emails
-
-- **Logging Configuration Bug** - Fixed missing logger registrations causing logs to not be written to files:
-  - Registered missing loggers in `LOGGING_CONFIG`:
-    - `storage_monitor` - Storage monitoring logs
-    - `storage` - Storage stats API logs  
-    - `websocket` - WebSocket connection logs
-    - `auth` - Authentication middleware logs
-    - `ping` - Ping utility logs
-    - `app.insights` - Insights/reporting logs
-  - Fixed import pattern in `storage_monitor.py` - removed duplicate imports inside functions
-  - Fixed logger references in `stats.py` - using module-level loggers
-  - All loggers now correctly write to `main.log` with proper formatting
+- Replaced legacy notification system with **real-time toast notifications**.
+- **Logs viewer interface redesigned** with improved filtering and navigation.
+- **Recipients UI redesigned** with compact layout and confirmation modal.
 
 ## [1.12.0] - 2026-03-06
 

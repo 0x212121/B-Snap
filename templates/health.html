@@ -1,71 +1,223 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – Devices Status{% endblock %}
-{% from "_icons.html" import icon_chart_bar %}
+{% from "_icons.html" import icon_chart_bar, icon_arrow_path, icon_video_camera, icon_server, icon_no_symbol, icon_search, icon_camera, icon_play, icon_face_frown %}
+
 {% block content %}
-<h1 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">{{ icon_chart_bar("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Devices Status</h1>
-
-<div class="mb-4 flex flex-col md:flex-row md:space-x-8">
-  <p class="text-lg">
-    Camera Online: <strong id="camera-online-count">0</strong>
-    | Camera Offline: <strong id="camera-offline-count">0</strong>
-  </p>
-  <p class="text-lg">
-    NVR Online: <strong id="nvr-online-count">0</strong>
-    | NVR Offline: <strong id="nvr-offline-count">0</strong>
-  </p>
-</div>
-
-<div class="flex flex-wrap justify-between items-center mb-4 gap-2">
-  <div class="flex items-center gap-2">
-    <input type="text" id="searchInput" onkeyup="filterAndRenderTable()" placeholder="Search by Name or IP..."
-    class="py-2 pl-3 pr-6 border border-gray-300 dark:border-gray-600 rounded-md w-full sm:w-auto dark:bg-gray-700 dark:text-white">
-    <select id="typeFilter" onchange="filterAndRenderTable()" class="py-2 pl-3 pr-8 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white mr-10 w-auto min-w-fit">
-      <option value="All">All Types</option>
-      <option value="Camera">Camera</option>
-      <option value="NVR">NVR</option>
-    </select>
-    <select id="statusFilter" onchange="filterAndRenderTable()" class="py-2 pl-3 pr-8 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white w-auto min-w-fit">
-      <option value="All">All Statuses</option>
-      <option value="Online">Online</option>
-      <option value="Offline">Offline</option>
-      <option value="High Latency">High Latency</option>
-      <option value="Unknown">Unknown</option>
-    </select>
-  </div>
-  <div class="flex gap-2">
-    <button id="ping-all-btn" onclick="triggerAllHealthcheck()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">🔄 Ping All Devices</button>
-    <button onclick="refreshTable()" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">🔃 Refresh Table</button>
-    <a href="/health/history" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm flex items-center">📊 Historical Data</a>
+<!-- Header Section -->
+<div class="mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+          {{ icon_chart_bar("w-7 h-7 text-blue-600 dark:text-blue-400") }}
+        </div>
+        Devices Status
+      </h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        Monitor real-time health status of all cameras and NVR devices
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <button id="ping-all-btn" onclick="triggerAllHealthcheck()" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+        {{ icon_arrow_path("w-5 h-5") }}
+        Ping All Devices
+      </button>
+      <button onclick="refreshTable()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+        {{ icon_arrow_path("w-5 h-5") }}
+        Refresh Table
+      </button>
+      <a href="/health/history" class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+        {{ icon_chart_bar("w-5 h-5") }}
+        Historical Data
+      </a>
+    </div>
   </div>
 </div>
 
-<div id="healthCheckStatus" class="mb-4 p-3 border rounded-md hidden">
-  <p>Health check is running...</p>
-  <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-    <div id="progressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+<!-- Stats Cards -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Camera Online</p>
+        <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="camera-online-count">0</p>
+      </div>
+      <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+        {{ icon_video_camera("w-6 h-6 text-green-600 dark:text-green-400") }}
+      </div>
+    </div>
   </div>
-  <p id="progressText" class="text-sm mt-1">0/0 devices completed</p>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Camera Offline</p>
+        <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1" id="camera-offline-count">0</p>
+      </div>
+      <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+        {{ icon_no_symbol("w-6 h-6 text-red-600 dark:text-red-400") }}
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">NVR Online</p>
+        <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="nvr-online-count">0</p>
+      </div>
+      <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+        {{ icon_server("w-6 h-6 text-green-600 dark:text-green-400") }}
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">NVR Offline</p>
+        <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1" id="nvr-offline-count">0</p>
+      </div>
+      <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+        {{ icon_server("w-6 h-6 text-red-600 dark:text-red-400") }}
+      </div>
+    </div>
+  </div>
 </div>
 
-<div class="overflow-x-auto bg-white dark:bg-gray-800 shadow-md rounded-lg">
-  <table id="healthCheckTable" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-    <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-200">
-      <tr>
-        <th class="p-3 text-left text-sm font-semibold tracking-wider cursor-pointer" onclick="sortAndRenderTable('hostname')">Hostname <span id="hostname-arrow" class="text-sm"></span></th>
-        <th class="p-3 text-left text-sm font-semibold tracking-wider cursor-pointer" onclick="sortAndRenderTable('ip')">IP <span id="ip-arrow" class="text-sm"></span></th>
-        <th class="p-3 text-left text-sm font-semibold tracking-wider cursor-pointer" onclick="sortAndRenderTable('type')">Type <span id="type-arrow" class="text-sm"></span></th>
-        <th class="p-3 text-left text-sm font-semibold tracking-wider cursor-pointer" onclick="sortAndRenderTable('dev_status')">Device Status <span id="device-arrow" class="text-sm"></span></th>
-        <th class="p-3 text-left text-sm font-semibold tracking-wider cursor-pointer" onclick="sortAndRenderTable('latency')">Latency (ms) <span id="latency-arrow" class="text-sm"></span></th>
-        <th class="p-3 text-left text-sm font-semibold tracking-wider cursor-pointer" onclick="sortAndRenderTable('checked')">Last Checked <span id="checked-arrow" class="text-sm"></span></th>
-        <th class="p-3 text-left text-sm font-semibold tracking-wider cursor-pointer" onclick="sortAndRenderTable('status')">Status / Since <span id="status-arrow" class="text-sm"></span></th>
-        <th class="p-3 text-left text-sm font-semibold tracking-wider">Actions</th>
-      </tr>
-    </thead>
-    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="healthTableBody">
-    </tbody>
-  </table>
+<!-- Health Check Progress -->
+<div id="healthCheckStatus" class="mb-4 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hidden">
+  <div class="flex items-center justify-between mb-2">
+    <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Health check is running...</p>
+    <p id="progressText" class="text-sm text-gray-500 dark:text-gray-400">0/0 devices completed</p>
+  </div>
+  <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+    <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+  </div>
 </div>
 
+<!-- Filter Section -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+  <div class="flex flex-col lg:flex-row gap-4">
+    <!-- Search -->
+    <div class="relative flex-1">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        {{ icon_search("h-5 w-5 text-gray-400") }}
+      </div>
+      <input type="text" id="searchInput" onkeyup="filterAndRenderTable()" placeholder="Search by Name or IP..."
+        class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+    </div>
+    
+    <!-- Filters -->
+    <div class="flex gap-2 flex-wrap lg:flex-nowrap">
+      <div class="relative w-40">
+        <select id="typeFilter" onchange="filterAndRenderTable()" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+          <option value="All">All Types</option>
+          <option value="Camera">Camera</option>
+          <option value="NVR">NVR</option>
+        </select>
+      </div>
+      
+      <div class="relative w-44">
+        <select id="statusFilter" onchange="filterAndRenderTable()" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+          <option value="All">All Statuses</option>
+          <option value="Online">Online</option>
+          <option value="Offline">Offline</option>
+          <option value="High Latency">High Latency</option>
+          <option value="Unknown">Unknown</option>
+        </select>
+      </div>
+      
+      <div class="relative w-36">
+        <select id="perPageSelect" onchange="changePerPage()" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+          <option value="10">10 / page</option>
+          <option value="20" selected>20 / page</option>
+          <option value="50">50 / page</option>
+          <option value="100">100 / page</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Results Info -->
+<div class="flex items-center justify-between mb-3 px-2">
+  <div id="results-info" class="text-sm text-gray-600 dark:text-gray-400"></div>
+  <div id="loading-indicator" class="hidden items-center gap-2 text-sm text-gray-500">
+    <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+    Loading...
+  </div>
+</div>
+
+<!-- Table Container -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
+  <div id="loading-overlay" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
+    <div class="flex flex-col items-center gap-3">
+      <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <span class="text-gray-600 dark:text-gray-300 font-medium">Loading devices...</span>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table id="healthCheckTable" class="min-w-full text-sm text-left">
+      <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
+        <tr>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortAndRenderTable('hostname')">
+            Hostname <span id="hostname-arrow" class="text-sm"></span>
+          </th>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortAndRenderTable('ip')">
+            IP <span id="ip-arrow" class="text-sm"></span>
+          </th>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortAndRenderTable('type')">
+            Type <span id="type-arrow" class="text-sm"></span>
+          </th>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortAndRenderTable('dev_status')">
+            Device Status <span id="device-arrow" class="text-sm"></span>
+          </th>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortAndRenderTable('latency')">
+            Latency (ms) <span id="latency-arrow" class="text-sm"></span>
+          </th>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortAndRenderTable('checked')">
+            Last Checked <span id="checked-arrow" class="text-sm"></span>
+          </th>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortAndRenderTable('status')">
+            Status / Since <span id="status-arrow" class="text-sm"></span>
+          </th>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="healthTableBody">
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Empty State -->
+  <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center">
+    <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
+      {{ icon_face_frown("w-12 h-12 text-gray-400") }}
+    </div>
+    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No devices found</h3>
+    <p class="text-gray-500 dark:text-gray-400 max-w-sm">Try adjusting your search filters or check if devices are registered.</p>
+    <button onclick="resetFilters()" class="mt-4 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
+      {{ icon_arrow_path("w-5 h-5") }}
+      Reset filters
+    </button>
+  </div>
+</div>
+
+<!-- Pagination -->
+<div id="pagination-controls" class="flex items-center justify-between mt-4 px-2">
+  <div class="text-sm text-gray-500 dark:text-gray-400" id="page-info"></div>
+  <div class="flex items-center gap-1" id="pagination-buttons"></div>
+</div>
+
+<!-- Snapshot Modal -->
 <div id="snapshotModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
   <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl max-h-[80vh]">
     <div class="relative">
@@ -80,6 +232,7 @@
   </div>
 </div>
 
+<!-- Alert Modal -->
 <div id="alertModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
     <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">⚠️ Alert</h2>
@@ -99,11 +252,17 @@
 
 <script>
   let fullDataset = []; 
+  let filteredData = [];
   let sortState = {
     column: 'hostname',
     direction: 'asc'
   };
   let healthCheckInterval;
+  
+  // Pagination State
+  let currentPage = 1;
+  let perPage = 20;
+  let totalPages = 1;
   
   function formatDuration(isoString) {
     if (!isoString) return "No Duration Data";
@@ -141,9 +300,7 @@
         hour12: false
       }).format(date);
       
-      // Ubah "17 July 2025 at 13:36:47" => "17 July 2025, 13:36:47"
       const cleaned = formatted.replace(" at ", ", ");
-      
       return cleaned + " " + serverTimezoneLabel;
     } catch (err) {
       console.warn("Invalid timezone fallback:", serverTimezone, err);
@@ -151,10 +308,24 @@
     }
   }
   
-  
   function renderTable(data) {
     const tableBody = document.getElementById('healthTableBody');
+    const emptyState = document.getElementById('empty-state');
+    const tableContainer = document.getElementById('healthCheckTable').parentElement;
+    
     tableBody.innerHTML = ''; 
+    
+    if (data.length === 0) {
+      tableContainer.classList.add('hidden');
+      emptyState.classList.remove('hidden');
+      emptyState.classList.add('flex');
+      return;
+    }
+    
+    tableContainer.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+    emptyState.classList.remove('flex');
+    
     const rowsHtml = data.map(device => {
       const checkedAt = device.checked || "-";
       let statusDisplay;
@@ -168,23 +339,37 @@
       device.status?.includes('Offline') ? 'bg-red-100 text-red-800' :
       device.status?.includes('High Latency') ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800';
       
-      const pingButton = `<button onclick='triggerHealth(this, "${device.id}", "${device.type.toLowerCase()}")' class="bg-gray-600 text-white px-2 py-1 rounded text-xs hover:bg-gray-700">🔄 Ping</button>`;
-      const viewButton = device.type === 'Camera' ? `<button class='bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600' onclick='viewSnapshot(${JSON.stringify(device.id)}, ${JSON.stringify(device.hostname)})'>📸 View</button>` : '';
-      const realtimeButton = device.type === 'Camera' && device.status !== 'Offline' ? `<button class='bg-teal-500 text-white px-2 py-1 rounded text-sm hover:bg-teal-600' onclick='viewRealtimeSnapshot(this, ${JSON.stringify(device.id)}, ${JSON.stringify(device.hostname)})'>📸 Realtime</button>` : '';
+      const pingButton = `<button onclick='triggerHealth(this, "${device.id}", "${device.type.toLowerCase()}")' class="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition" title="Ping Device">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M4.755 10.059a7.5 7.5 0 0 1 12.548-3.364l1.903 1.903h-3.183a.75.75 0 0 0 0 1.5h4.992a.75.75 0 0 0 .75-.75V4.356a.75.75 0 0 0-1.5 0v3.18l-1.9-1.9A9 9 0 0 0 3.306 9.67a.75.75 0 1 0 1.45.388Zm15.408 3.352a.75.75 0 0 0-.919.53 7.5 7.5 0 0 1-12.548 3.364l-1.902-1.903h3.183a.75.75 0 0 0 0-1.5H2.984a.75.75 0 0 0-.75.75v4.992a.75.75 0 0 0 1.5 0v-3.18l1.9 1.9a9 9 0 0 0 15.059-4.035.75.75 0 0 0-.53-.918Z" clip-rule="evenodd" /></svg>
+      </button>`;
+      
+      const viewButton = device.type === 'Camera' ? `<button class="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition" onclick='viewSnapshot(${JSON.stringify(device.id)}, ${JSON.stringify(device.hostname)})' title="View Snapshot">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 9a3.75 3.75 0 1 0 0 7.5A3.75 3.75 0 0 0 12 9Z" /><path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 0 1 5.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 0 1-3 3h-15a3 3 0 0 1-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 0 0 1.11-.71l.822-1.315a2.942 2.942 0 0 1 2.332-1.39ZM6.75 12.75a5.25 5.25 0 1 1 10.5 0 5.25 5.25 0 0 1-10.5 0Zm12-1.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" /></svg>
+      </button>` : '';
+      
+      const realtimeButton = device.type === 'Camera' && device.status !== 'Offline' ? `<button class="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 transition" onclick='viewRealtimeSnapshot(this, ${JSON.stringify(device.id)}, ${JSON.stringify(device.hostname)})' title="Realtime Snapshot">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clip-rule="evenodd" /></svg>
+      </button>` : '';
       
       return `
-      <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-        <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${device.hostname}</td>
-        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${device.ip}</td>
-        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${device.type}</td>
-        <td class="px-3 py-4 whitespace-nowrap text-sm ${device.dev_status === 'Active' ? 'text-green-600' : 'text-red-600'} dark:text-white">${device.dev_status}</td>
-        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${latency}</td>
-        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${formatReadableDate(checkedAt)}</td>
-        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+      <tr class="group hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors duration-150">
+        <td class="px-4 py-3.5 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${device.hostname}</td>
+        <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 font-mono">${device.ip}</td>
+        <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${device.type === 'Camera' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400'}">
+            ${device.type}
+          </span>
+        </td>
+        <td class="px-4 py-3.5 whitespace-nowrap text-sm ${device.dev_status === 'Active' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'} font-medium">${device.dev_status}</td>
+        <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${latency}</td>
+        <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${formatReadableDate(checkedAt)}</td>
+        <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
           <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${statusDisplay}</span>
         </td>
-        <td class="px-3 py-4 whitespace-nowrap text-left text-sm font-medium flex gap-1">
-          ${pingButton} ${viewButton} ${realtimeButton}
+        <td class="px-4 py-3.5 whitespace-nowrap text-center">
+          <div class="flex items-center justify-center gap-1">
+            ${pingButton} ${viewButton} ${realtimeButton}
+          </div>
         </td>
       </tr>
     `;
@@ -232,19 +417,112 @@
       sortState.column = column;
       sortState.direction = 'asc';
     }
+    currentPage = 1;
+    filterAndRenderTable();
+  }
+  
+  function renderPagination() {
+    const paginationButtons = document.getElementById('pagination-buttons');
+    const pageInfo = document.getElementById('page-info');
+    
+    paginationButtons.innerHTML = '';
+    totalPages = Math.ceil(filteredData.length / perPage) || 1;
+    
+    if (filteredData.length === 0) {
+      pageInfo.textContent = '';
+      return;
+    }
+
+    const start = (currentPage - 1) * perPage + 1;
+    const end = Math.min(currentPage * perPage, filteredData.length);
+    pageInfo.textContent = `Showing ${start}-${end} of ${filteredData.length} devices`;
+
+    if (totalPages <= 1) return;
+
+    if (currentPage > 1) {
+      paginationButtons.insertAdjacentHTML('beforeend', `
+        <button onclick="goToPage(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+        </button>
+        <button onclick="goToPage(${currentPage - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+      `);
+    }
+
+    const window = 2;
+    
+    if (currentPage > window + 2) {
+      paginationButtons.insertAdjacentHTML('beforeend', `<span class="px-2 text-gray-400">...</span>`);
+    }
+
+    for (let i = Math.max(1, currentPage - window); i <= Math.min(totalPages, currentPage + window); i++) {
+      if (i === currentPage) {
+        paginationButtons.insertAdjacentHTML('beforeend', `
+          <button class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium shadow-sm">${i}</button>
+        `);
+      } else {
+        paginationButtons.insertAdjacentHTML('beforeend', `
+          <button onclick="goToPage(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>
+        `);
+      }
+    }
+
+    if (currentPage < totalPages - window - 1) {
+      paginationButtons.insertAdjacentHTML('beforeend', `<span class="px-2 text-gray-400">...</span>`);
+    }
+
+    if (currentPage < totalPages) {
+      paginationButtons.insertAdjacentHTML('beforeend', `
+        <button onclick="goToPage(${currentPage + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+        <button onclick="goToPage(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+        </button>
+      `);
+    }
+  }
+  
+  function goToPage(page) {
+    currentPage = page;
+    filterAndRenderTable();
+  }
+  
+  function changePerPage() {
+    perPage = parseInt(document.getElementById('perPageSelect').value, 10);
+    currentPage = 1;
+    filterAndRenderTable();
+  }
+  
+  function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('typeFilter').value = 'All';
+    document.getElementById('statusFilter').value = 'All';
+    currentPage = 1;
     filterAndRenderTable();
   }
   
   function filterAndRenderTable() {
-    let filteredData = applyFilters();
+    filteredData = applyFilters();
     let sortedData = applySort(filteredData);
-    renderTable(sortedData);
+    
+    const start = (currentPage - 1) * perPage;
+    const paginatedData = sortedData.slice(start, start + perPage);
+    
+    renderTable(paginatedData);
+    renderPagination();
     updateSortArrows();
   }
   
-  
   async function refreshTable() {
-    console.log("Refreshing table data...");
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    
+    loadingOverlay.style.display = 'flex';
+    loadingIndicator.classList.remove('hidden');
+    loadingIndicator.classList.add('flex');
+    
     try {
       const response = await fetch('/health/status');
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -259,10 +537,15 @@
       document.getElementById('nvr-online-count').textContent = data.nvr_online_count;
       document.getElementById('nvr-offline-count').textContent = data.nvr_offline_count;
       
+      currentPage = 1;
       filterAndRenderTable();
     } catch (error) {
       console.error('Failed to refresh table:', error);
       showAlertModal('Failed to refresh device status.');
+    } finally {
+      loadingOverlay.style.display = 'none';
+      loadingIndicator.classList.add('hidden');
+      loadingIndicator.classList.remove('flex');
     }
   }
   
@@ -272,14 +555,13 @@
   });
   
   function triggerHealth(button, deviceId, type) {
-    const originalText = button.innerHTML;
+    const originalHTML = button.innerHTML;
     button.disabled = true;
-    button.innerHTML = '♻️ Checking...';
+    button.innerHTML = '<svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
     
     fetch(`/health/trigger/${deviceId}?type=${type}`, { method: 'POST' })
     .then(res => res.json())
     .then(data => {
-      console.log(data.status);
       setTimeout(refreshTable, 1500); 
     })
     .catch(err => {
@@ -289,7 +571,7 @@
     .finally(() => {
       setTimeout(() => {
         button.disabled = false;
-        button.innerHTML = originalText;
+        button.innerHTML = originalHTML;
       }, 2000);
     });
   }
@@ -307,7 +589,7 @@
     hideGlobalConfirm();
     const button = document.getElementById('ping-all-btn'); 
     button.disabled = true;
-    button.innerHTML = '🔄 Processing...';
+    button.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...';
     
     document.getElementById('healthCheckStatus').classList.remove('hidden');
     document.getElementById('progressBar').style.width = '0%';
@@ -319,7 +601,6 @@
       return res.json();
     })
     .then(data => {
-      console.log(data.status);
       setTimeout(checkHealthCheckProgress, 1000); 
     })
     .catch(error => {
@@ -327,7 +608,7 @@
       showAlertModal('Failed to trigger health check: ' + error.message);
       
       button.disabled = false;
-      button.innerHTML = '🔄 Ping All Devices';
+      button.innerHTML = 'Ping All Devices';
       document.getElementById('healthCheckStatus').classList.add('hidden');
     });
   }
@@ -354,10 +635,9 @@
           
           if (button) {
             button.disabled = false;
-            button.innerHTML = '🔄 Ping All Devices';
+            button.innerHTML = 'Ping All Devices';
           }
           
-          console.log("Health check completed. Refreshing table...");
           refreshTable();
         } else {
           document.getElementById('healthCheckStatus').classList.remove('hidden');
@@ -377,17 +657,16 @@
         const button = document.getElementById('ping-all-btn');
         if (button) {
           button.disabled = false;
-          button.innerHTML = '🔄 Ping All Devices';
+          button.innerHTML = 'Ping All Devices';
         }
       });
     }, 2000);
   }
   
-  // --- FUNGSI DIPERBAIKI ---
   function viewRealtimeSnapshot(button, cameraId, cameraName) {
-    const originalText = button.innerHTML;
+    const originalHTML = button.innerHTML;
     button.disabled = true;
-    button.innerHTML = '📸 Loading...';
+    button.innerHTML = '<svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
     
     fetch(`/snap/${encodeURIComponent(cameraId)}`, {
       method: 'POST',
@@ -400,11 +679,9 @@
       let data;
       const contentType = res.headers.get('content-type') || '';
       
-      // Try to parse JSON response
       if (contentType.includes('application/json')) {
         data = await res.json();
       } else {
-        // If HTML response (like login page), extract error
         const text = await res.text();
         if (text.includes('<!DOCTYPE') || text.includes('<html')) {
           throw new Error('Session expired. Please login again.');
@@ -420,7 +697,6 @@
     })
     .then(data => {
       if (data.status === 'success' && data.file_path) {
-        console.log('Realtime snapshot created. Now fetching its info to display.');
         viewSnapshot(cameraId, cameraName);
       } else {
         showAlertModal('Failed to take snapshot: ' + (data.message || data.detail || 'Unknown error from server'));
@@ -432,11 +708,10 @@
     })
     .finally(() => {
       button.disabled = false;
-      button.innerHTML = originalText;
+      button.innerHTML = originalHTML;
     });
   }
   
-  // --- FUNGSI DIPERBAIKI ---
   function viewSnapshot(cameraId, cameraName) { 
     fetch(`/snapshot/latest/${encodeURIComponent(cameraId)}/info`)
     .then(res => res.json())
@@ -452,7 +727,6 @@
         document.getElementById('snapshotModal').classList.remove('hidden');
         
         const filename = `snapshot_${displayName}_${data.timestamp.replace(/[\s:]/g, '-')}.jpg`;
-        // Simple direct download (same as snap_gallery)
         downloadBtn.href = data.url;
         downloadBtn.download = filename;
       } else {
@@ -478,6 +752,21 @@
     document.getElementById('alertModal').classList.add('hidden');
   }
   
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      hideSnapshotModal();
+      hideAlertModal();
+    }
+  });
+  
+  window.goToPage = goToPage;
+  window.changePerPage = changePerPage;
+  window.resetFilters = resetFilters;
 </script>
 
+<style>
+  #healthCheckTable tbody tr:nth-child(even) {
+    @apply bg-gray-50/50 dark:bg-gray-800/30;
+  }
+</style>
 {% endblock %}

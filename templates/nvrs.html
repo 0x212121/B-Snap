@@ -1,228 +1,581 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – NVR Management{% endblock %}
-{% from "_icons.html" import icon_clip_check, icon_search, icon_pencil, icon_trash, icon_camera, icon_video_camera, icon_server, icon_upload, icon_download %}
+{% from "_icons.html" import icon_server, icon_plus, icon_search, icon_check_circle, icon_x_circle, icon_warning, icon_map_pin, icon_pencil, icon_trash, icon_upload, icon_download, icon_arrow_path %}
+
 {% block content %}
-<div class="container mx-auto px-4 py-6">
-  <!-- Header buttons for adding and managing NVRs -->
-  <div class="flex flex-wrap items-center gap-4 mb-6">
-    <button onclick="showAddNVRModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 shadow-sm">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg> Add NVR
-    </button>
-    
-    <form method="post" enctype="multipart/form-data" action="/nvrs/upload_csv" class="flex items-center gap-2">
-      <input type="file" name="file" accept=".csv" class="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 rounded-md border text-sm">
-      <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-green-700 flex items-center gap-2 shadow-sm">
-        <span>{{ icon_upload("w-5 h-5 text-gray-100 inline") }}</span> Upload CSV
+<!-- Header Section -->
+<div class="mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+          {{ icon_server("w-7 h-7 text-blue-600 dark:text-blue-400") }}
+        </div>
+        NVR Management
+      </h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        Manage Network Video Recorders and their configurations
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="showAddNVRModal()" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+        {{ icon_plus("w-5 h-5") }}
+        Add NVR
       </button>
-    </form>
-    <a href="/nvrs/export_csv" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2">
-      <span>{{ icon_download("w-5 h-5 text-gray-100 inline") }}</span> Export CSV
-    </a>
-    <div class="flex items-center gap-2 ml-auto">
-      <label for="perPageSelect" class="text-sm font-medium text-gray-700 dark:text-gray-300">Items per page:</label>
-      <select id="perPageSelect" class="rounded-md pr-8 border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm py-2 px-3">
-        <option value="10">10</option>
-        <option value="20">20</option>
-        <option value="30">30</option>
-        <option value="50">50</option>
-        <option value="100">100</option>
-      </select>
     </div>
   </div>
-  
-  <!-- Main content area for listing NVRs -->
-  <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-      <h2 class="text-2xl font-bold text-gray-600 dark:text-gray-300">{{ icon_server("w-5 h-5 text-gray-600 dark:text-gray-100 inline") }} NVR Management</h2>
-      <form id="searchForm" class="flex gap-2 w-full md:w-auto">
-        <input name="search" id="searchInput" type="text" placeholder="Search by Name, IP, Location..." value="{{ search or '' }}" class="w-full md:w-72 px-4 py-2 rounded-md border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm font-semibold flex items-center gap-2 shadow-sm">
-          <span>{{ icon_search("w-5 h-5 text-gray-100 inline") }}</span> Search
-        </button>
-      </form>
-    </div>
-    
-    <div class="overflow-x-auto">
-      <table id="camera-table" class="min-w-full bg-white dark:bg-gray-800 rounded overflow-hidden">
-        <thead class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200">
-          <tr>
-            <th class="p-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wider cursor-pointer" onclick="sortTable(0)">Hostname <span id="id-arrow" class="text-xs"></span></th>
-            <th class="p-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wider cursor-pointer" onclick="sortTable(1)">IP <span id="ip-arrow" class="text-xs"></span></th>
-            <th class="p-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wider cursor-pointer" onclick="sortTable(2)">Username <span id="port-arrow" class="text-xs"></span></th>
-            <th class="p-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wider">Location</th>
-            <th class="p-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wider">Division</th>
-            <th class="p-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wider">Status</th>
-            <th class="p-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="camera-body">
-        </tbody>
-      </table>
-      
-      <div id="pagination-controls" class="flex justify-center items-center gap-2 mt-6 text-sm">
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total NVRs</p>
+        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-total">-</p>
+      </div>
+      <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+        {{ icon_server("w-6 h-6 text-blue-600 dark:text-blue-400") }}
       </div>
     </div>
   </div>
-</div> 
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active</p>
+        <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="stat-active">-</p>
+      </div>
+      <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+        {{ icon_check_circle("w-6 h-6 text-green-600 dark:text-green-400") }}
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Deactivated</p>
+        <p class="text-2xl font-bold text-gray-600 dark:text-gray-400 mt-1" id="stat-deactivated">-</p>
+      </div>
+      <div class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+        {{ icon_x_circle("w-6 h-6 text-gray-600 dark:text-gray-400") }}
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Restricted</p>
+        <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1" id="stat-restricted">-</p>
+      </div>
+      <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+        {{ icon_warning("w-6 h-6 text-red-600 dark:text-red-400") }}
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">With Coordinates</p>
+        <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1" id="stat-located">-</p>
+      </div>
+      <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+        {{ icon_map_pin("w-6 h-6 text-purple-600 dark:text-purple-400") }}
+      </div>
+    </div>
+  </div>
+</div>
 
-<!-- ====================================================== -->
-<!-- ================ MODAL ADD/EDIT NVR =============== -->
-<!-- ====================================================== -->
-<div id="nvrModal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-50 p-4">
-  <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-2xl w-full max-w-md mx-auto max-h-[90vh] flex flex-col transform transition-all opacity-0 -translate-y-4">
+<!-- Filter Section -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+  <div class="flex flex-col lg:flex-row gap-4">
+    <!-- Search -->
+    <div class="relative flex-1">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        {{ icon_search("h-5 w-5 text-gray-400") }}
+      </div>
+      <input type="text" id="searchInput" placeholder="Search by hostname, IP, location or division..."
+        class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+    </div>
+    
+    <!-- Per Page & Reset & CSV -->
+    <div class="flex gap-2 items-center flex-wrap">
+      <div class="relative w-36">
+        <select id="perPageSelect" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+          <option value="10">10 / page</option>
+          <option value="20" selected>20 / page</option>
+          <option value="50">50 / page</option>
+          <option value="100">100 / page</option>
+        </select>
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+          <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </div>
+      </div>
+      
+      <button onclick="resetFilters()" class="p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Reset filters">
+        {{ icon_arrow_path("h-5 w-5") }}
+      </button>
+      
+      <div class="h-8 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
+      
+      <form method="post" enctype="multipart/form-data" action="/nvrs/upload_csv" class="flex items-center gap-2">
+        <input type="file" name="file" accept=".csv" class="hidden" id="csvFileInput" onchange="this.form.submit()">
+        <button type="button" onclick="document.getElementById('csvFileInput').click()" class="inline-flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition duration-200 shadow-sm text-sm font-medium">
+          {{ icon_upload("w-4 h-4") }}
+          CSV
+        </button>
+      </form>
+      
+      <a href="/nvrs/export_csv" class="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition duration-200 shadow-sm text-sm font-medium">
+        {{ icon_download("w-4 h-4") }}
+        CSV
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Results Info -->
+<div class="flex items-center justify-between mb-3 px-2">
+  <div id="results-info" class="text-sm text-gray-600 dark:text-gray-400"></div>
+  <div id="loading-indicator" class="hidden items-center gap-2 text-sm text-gray-500">
+    <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+    Loading...
+  </div>
+</div>
+
+<!-- Table Container -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
+  <div id="loading-overlay" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
+    <div class="flex flex-col items-center gap-3">
+      <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <span class="text-gray-600 dark:text-gray-300 font-medium">Loading NVRs...</span>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm text-left" id="nvr-table">
+      <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
+        <tr>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Hostname</th>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap">IP Address</th>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Username</th>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Location</th>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Division</th>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap text-center">Status</th>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="camera-body">
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Empty State -->
+  <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center">
+    <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
+      {{ icon_server("w-12 h-12 text-gray-400") }}
+    </div>
+    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No NVRs found</h3>
+    <p class="text-gray-500 dark:text-gray-400 max-w-sm">Add a new NVR to get started or adjust your search filters.</p>
+    <button onclick="showAddNVRModal()" class="mt-4 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
+      {{ icon_plus("w-5 h-5") }}
+      Add your first NVR
+    </button>
+  </div>
+</div>
+
+<!-- Pagination -->
+<div id="pagination-controls" class="flex items-center justify-between mt-4 px-2">
+  <div class="text-sm text-gray-500 dark:text-gray-400" id="page-info"></div>
+  <div class="flex items-center gap-1" id="pagination-buttons"></div>
+</div>
+
+<!-- Modal Add/Edit NVR -->
+<div id="nvrModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-auto max-h-[90vh] flex flex-col transform transition-all opacity-0 -translate-y-4" id="modalContent">
     <!-- Header -->
-    <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-      <h2 id="modalTitle" class="text-xl font-bold text-gray-800 dark:text-gray-200">NVR</h2>
-      <button onclick="hideNVRmodal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">✕</button>
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+          {{ icon_server("w-5 h-5 text-blue-600 dark:text-blue-400") }}
+        </div>
+        <div>
+          <h3 id="modalTitle" class="text-lg font-bold text-gray-900 dark:text-white">NVR</h3>
+          <p id="modalSubtitle" class="text-sm text-gray-500 dark:text-gray-400">Manage NVR configuration</p>
+        </div>
+      </div>
+      <button onclick="hideNVRmodal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
     </div>
     
     <!-- Tabs -->
-    <div class="border-b border-gray-200 dark:border-gray-700 mb-4">
+    <div class="border-b border-gray-200 dark:border-gray-700 px-6">
       <nav id="modalTabs" class="-mb-px flex space-x-6" aria-label="Tabs">
-        <button type="button" class="tab-button group inline-flex items-center py-3 px-1 border-b-2 font-semibold text-sm" data-tab="basic">
-          <span class="text-blue-600 border-blue-600">Basic Info</span>
+        <button type="button" class="tab-button group inline-flex items-center py-3 px-1 border-b-2 border-blue-500 text-blue-600 font-semibold text-sm" data-tab="basic">
+          Basic Info
         </button>
-        <button type="button" class="tab-button group inline-flex items-center py-3 px-1 border-b-2 font-semibold text-sm" data-tab="location">
-          <span class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">Location & Asset</span>
+        <button type="button" class="tab-button group inline-flex items-center py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-sm" data-tab="location">
+          Location & Asset
         </button>
       </nav>
     </div>
     
     <!-- Form -->
-    <form id="cameraForm" class="space-y-4 overflow-y-auto flex-grow px-1">
+    <form id="cameraForm" class="space-y-4 overflow-y-auto flex-grow p-6">
       <input type="hidden" id="cameraId" name="id">
       
       <!-- Basic Info Tab -->
       <div id="tab-basic" class="tab-content space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="name">Hostname</label>
-          <!-- FIX: Corrected regex pattern -->
-          <input type="text" id="name" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" 
-          pattern="^[A-Za-z0-9_#\(\)\- ]+$" 
-          title="Only letters, numbers, underscore, hash, parentheses, space, and hyphen allowed">
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Hanya huruf, angka, garis bawah, dan tanda hubung.</p>
-        </div>
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="ip">IP Address</label><input type="text" id="ip" name="ip" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$" title="Please enter a valid IP address"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Format: xxx.xxx.xxx.xxx</p></div>
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="username">Username</label><input type="text" id="username" name="username" required class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></div>
-        
-        <!-- FIX: Replaced with Preline UI toggle password component -->
-        <div class="relative max-w-sm password-toggle-wrapper">
-          <label for="hs-toggle-password" class="block text-sm font-medium mb-1 dark:text-white">Password</label>
-          <input type="password" id="hs-toggle-password" name="password" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:border-blue-500 focus:ring-blue-500 pr-12" placeholder="Enter password">
-          <button type="button" class="toggle-password-btn absolute top-1/2 right-3 -translate-y-1/2 p-1 rounded-md focus:outline-none text-gray-400 dark:text-neutral-400 focus:text-blue-600 dark:focus:text-blue-500">
-            <!-- Eye icon -->
-            <svg class="eye-icon shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.522 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z" />
-            </svg>
-            <!-- Eye-off icon -->
-            <svg class="eye-off-icon hidden shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-7 0-10-7-10-7a16.06 16.06 0 013.062-4.938m3.197-2.197A9.956 9.956 0 0112 5c7 0 10 7 10 7a15.978 15.978 0 01-4.908 5.712M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
-            </svg>
-          </button>
-          <p id="password-help" class="text-xs text-gray-500 dark:text-gray-400 mt-1"></p>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="name">Hostname <span class="text-red-500">*</span></label>
+          <input type="text" id="name" name="name" required 
+                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                 pattern="^[A-Za-z0-9_#\(\)\- ]+$" 
+                 title="Only letters, numbers, underscore, hash, parentheses, space, and hyphen allowed">
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Only letters, numbers, underscore, and hyphen allowed.</p>
         </div>
         
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="ip">IP Address <span class="text-red-500">*</span></label>
+          <input type="text" id="ip" name="ip" required
+                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" 
+                 pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$" 
+                 title="Please enter a valid IP address">
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Format: xxx.xxx.xxx.xxx</p>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="username">Username <span class="text-red-500">*</span></label>
+          <input type="text" id="username" name="username" required
+                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+        </div>
+        
+        <div class="relative password-toggle-wrapper">
+          <label for="hs-toggle-password" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Password <span id="password-required" class="text-red-500">*</span></label>
+          <div class="relative">
+            <input type="password" id="hs-toggle-password" name="password" 
+                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition pr-10" 
+                   placeholder="Enter password">
+            <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
+              <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.522 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <svg id="eye-off-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-7 0-10-7-10-7a16.06 16.06 0 013.062-4.938m3.197-2.197A9.956 9.956 0 0112 5c7 0 10 7 10 7a15.978 15.978 0 01-4.908 5.712M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
+              </svg>
+            </button>
+          </div>
+          <p id="password-help" class="text-xs text-gray-500 dark:text-gray-400 mt-1">Password is required for new NVRs.</p>
+        </div>
       </div>
       
       <!-- Location Tab -->
       <div id="tab-location" class="tab-content space-y-4 hidden">
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="latitude">Latitude</label><input type="number" step="0.000001" id="latitude" name="latitude" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: -7.252</p></div>
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">Longitude</label><input type="number" step="0.000001" id="longitude" name="longitude" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: 112.753</p></div>
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="asset_no">Asset No.</label><input type="text" id="asset_no" name="asset_no" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></div>
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="location">Location</label><input type="text" id="location" name="location" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></div>
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="group_name">Division</label><select id="group_name" name="group_name" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="">-- Select Division --</option></select><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Grouping camera to filter in maps</p></div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="latitude">Latitude</label>
+            <input type="number" step="0.000001" id="latitude" name="latitude" 
+                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: -7.252</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">Longitude</label>
+            <input type="number" step="0.000001" id="longitude" name="longitude" 
+                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: 112.753</p>
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="asset_no">Asset No.</label>
+          <input type="text" id="asset_no" name="asset_no" 
+                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="location">Location</label>
+          <input type="text" id="location" name="location" 
+                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="group_name">Division</label>
+          <select id="group_name" name="group_name" 
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+            <option value="">-- Select Division --</option>
+          </select>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Grouping for map filtering</p>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="status">Status</label>
+          <select id="status" name="status" 
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+            <option value="Active">Active</option>
+            <option value="Deactivated">Deactivated</option>
+            <option value="Restricted">Restricted</option>
+          </select>
+        </div>
+        
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="note">Notes</label>
-          <textarea id="note" name="note" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"></textarea>
+          <textarea id="note" name="note" rows="3" 
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"></textarea>
         </div>
-        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="status">Status</label><select id="status" name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="Active">Active</option><option value="Deactivated">Deactivated</option><option value="Restricted">Restricted</option></select></div>
       </div>
     </form>
     
     <!-- Footer -->
-    <div class="flex justify-end space-x-3 pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
-      <button type="button" onclick="hideNVRmodal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200 rounded-md font-semibold text-sm">Cancel</button>
-      <button type="submit" form="cameraForm" id="modalSubmitButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold text-sm shadow-sm">Submit</button>
+    <div class="flex justify-end space-x-3 pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
+      <button type="button" onclick="hideNVRmodal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded-lg font-semibold text-sm transition">Cancel</button>
+      <button type="submit" form="cameraForm" id="modalSubmitButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm shadow-sm transition">Submit</button>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+  /* Status Badge Styles */
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+  .status-active { 
+    @apply bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400; 
+  }
+  .status-deactivated { 
+    @apply bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400; 
+  }
+  .status-restricted { 
+    @apply bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400; 
+  }
+  
+  /* Alternating Row Colors */
+  #nvr-table tbody tr:nth-child(even) {
+    @apply bg-gray-50/50 dark:bg-gray-800/30;
+  }
+  
+  /* Hover effect */
+  #nvr-table tbody tr:hover {
+    @apply bg-blue-50/50 dark:bg-blue-900/10;
+  }
+  
+  #nvr-table tbody tr {
+    @apply transition-colors duration-150;
+  }
+  
+  /* Tab animations */
+  .tab-button {
+    @apply transition-colors duration-200;
+  }
+  
+  /* Modal animation classes */
+  #modalContent {
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  }
+  #modalContent.opacity-0 {
+    opacity: 0;
+    transform: translateY(-1rem);
+  }
+  #modalContent.opacity-100 {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    
     let cameraGroups = [];
     let cameraGroupsLoaded = false;
+    let currentPage = 1;
+    let perPage = 20;
+    let totalPages = 1;
+    let currentSearch = "";
     
     const modalElement = document.getElementById('nvrModal');
+    const modalContent = document.getElementById('modalContent');
     const modalForm = document.getElementById('cameraForm');
     const modalTitle = document.getElementById('modalTitle');
+    const modalSubtitle = document.getElementById('modalSubtitle');
     const modalSubmitButton = document.getElementById('modalSubmitButton');
     const modalTabs = document.getElementById('modalTabs');
     
-    async function apiPost(url, body) {
-      try {
-        const response = await fetch(url, {
-          method: 'POST',
-          body: body
-        });
-        const data = await response.json();
-        if (response.ok) {
-          Toast.success(data.detail || data.message || 'Operation successful.', { title: 'Success' });
-        } else {
-          Toast.error(data.detail || data.message || 'An error occurred.', { title: 'Error' });
-        }
-        return { ok: response.ok, data: data };
-      } catch (error) {
-        console.error('API POST Error:', error);
-        Toast.error('Network or server error.', { title: 'Error' });
-        return { ok: false, data: null };
+    // Stats update function
+    function updateStats(stats) {
+      if (!stats) return;
+      document.getElementById('stat-total').textContent = (stats.total || 0).toLocaleString();
+      document.getElementById('stat-active').textContent = (stats.active || 0).toLocaleString();
+      document.getElementById('stat-deactivated').textContent = (stats.deactivated || 0).toLocaleString();
+      document.getElementById('stat-restricted').textContent = (stats.restricted || 0).toLocaleString();
+      document.getElementById('stat-located').textContent = (stats.located || 0).toLocaleString();
+    }
+    
+    // Results info update
+    function updateResultsInfo(page, total, perPage) {
+      const resultsInfo = document.getElementById('results-info');
+      if (total > 0) {
+        const start = (page - 1) * perPage + 1;
+        const end = Math.min(page * perPage, total);
+        resultsInfo.innerHTML = `Showing <span class="font-medium text-gray-900 dark:text-white">${start}-${end}</span> of <span class="font-medium text-gray-900 dark:text-white">${total.toLocaleString()}</span> entries`;
+      } else {
+        resultsInfo.textContent = '';
       }
     }
     
+    // Render pagination like whitelist.html
+    function renderPagination(page, total) {
+      const paginationButtons = document.getElementById('pagination-buttons');
+      const pageInfo = document.getElementById('page-info');
+      
+      paginationButtons.innerHTML = '';
+      totalPages = Math.ceil(total / perPage) || 1;
+      
+      if (totalPages <= 1) {
+        pageInfo.textContent = '';
+        return;
+      }
+      
+      pageInfo.textContent = `Page ${page} of ${totalPages}`;
+      
+      const window = 2;
+      
+      // First & Prev
+      if (page > 1) {
+        paginationButtons.insertAdjacentHTML('beforeend', `
+          <button onclick="loadPage(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+          </button>
+          <button onclick="loadPage(${page - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+          </button>
+        `);
+      }
+      
+      // Page numbers
+      if (page > window + 2) {
+        paginationButtons.insertAdjacentHTML('beforeend', `<span class="px-2 text-gray-400">...</span>`);
+      }
+      
+      for (let i = Math.max(1, page - window); i <= Math.min(totalPages, page + window); i++) {
+        if (i === page) {
+          paginationButtons.insertAdjacentHTML('beforeend', `
+            <button class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium shadow-sm">${i}</button>
+          `);
+        } else {
+          paginationButtons.insertAdjacentHTML('beforeend', `
+            <button onclick="loadPage(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>
+          `);
+        }
+      }
+      
+      if (page < totalPages - window - 1) {
+        paginationButtons.insertAdjacentHTML('beforeend', `<span class="px-2 text-gray-400">...</span>`);
+      }
+      
+      // Next & Last
+      if (page < totalPages) {
+        paginationButtons.insertAdjacentHTML('beforeend', `
+          <button onclick="loadPage(${page + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+          </button>
+          <button onclick="loadPage(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+          </button>
+        `);
+      }
+    }
+    
+    // Expose loadPage globally
     window.loadPage = async function(page = 1) {
-      const search = document.getElementById("searchInput").value;
-      const perPage = document.getElementById("perPageSelect").value;
+      const search = currentSearch;
       const tbody = document.getElementById('camera-body');
       const paginationContainer = document.getElementById('pagination-controls');
+      const loadingOverlay = document.getElementById('loading-overlay');
+      const loadingIndicator = document.getElementById('loading-indicator');
+      const emptyState = document.getElementById('empty-state');
+      const tableContainer = document.getElementById('nvr-table').parentElement;
+      
+      // Show loading
+      loadingOverlay.classList.remove('hidden');
+      loadingOverlay.classList.add('flex');
+      loadingIndicator.classList.remove('hidden');
+      loadingIndicator.classList.add('flex');
       
       try {
-        tbody.style.opacity = "0.5";
-        const res = await fetch(`/nvrs/data?page=${page}&search=${encodeURIComponent(search || '')}&per_page=${perPage}`);
+        const res = await fetch(`/nvrs/data?page=${page}&search=${encodeURIComponent(search)}&per_page=${perPage}`);
         
         if (res.status === 404) {
-          tbody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-gray-500">No NVRs found.</td></tr>`;
-          paginationContainer.innerHTML = '';
+          tbody.innerHTML = '';
+          emptyState.classList.remove('hidden');
+          emptyState.classList.add('flex');
+          tableContainer.classList.add('hidden');
+          paginationContainer.classList.add('hidden');
+          updateStats({total: 0, active: 0, deactivated: 0, restricted: 0, located: 0});
           return;
         }
         
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        
+        const text = await res.text();
+        const parts = text.split('|||');
+        const rowsHtml = parts[0] || '';
+        const paginationHtml = parts[1] || '';
+        const statsJson = parts[2] || '{}';
+        
+        const stats = JSON.parse(statsJson);
+        updateStats(stats);
+        
+        tbody.innerHTML = rowsHtml;
+        
+        if (rowsHtml.trim() === '' || rowsHtml.includes('No NVRs found')) {
+          document.getElementById('nvr-table').classList.add('hidden');
+          emptyState.classList.remove('hidden');
+          emptyState.classList.add('flex');
+        } else {
+          document.getElementById('nvr-table').classList.remove('hidden');
+          emptyState.classList.add('hidden');
+          emptyState.classList.remove('flex');
         }
         
-        const [rowsHtml, paginationHtml] = (await res.text()).split('|||');
+        // Use our custom pagination renderer instead of server HTML
+        renderPagination(page, stats.total || 0);
+        updateResultsInfo(page, stats.total || 0, perPage);
         
-        tbody.innerHTML = rowsHtml || `<tr><td colspan="11" class="p-6 text-center text-gray-500">No NVRs found.</td></tr>`;
-        paginationContainer.innerHTML = paginationHtml || '';
-        
+        // Update URL
         const url = new URL(window.location);
         url.searchParams.set('page', page);
         url.searchParams.set('per_page', perPage);
-        if (search) {
-          url.searchParams.set('search', search);
-        } else {
-          url.searchParams.delete('search');
-        }
+        if (search) url.searchParams.set('search', search);
+        else url.searchParams.delete('search');
         window.history.pushState({ page, perPage }, '', url);
+        currentPage = page;
         
       } catch (err) {
         console.error("Failed to load page:", err);
         Toast.error('Failed to load NVR data.', { title: 'Error' });
       } finally {
-        tbody.style.opacity = "1";
+        loadingOverlay.classList.add('hidden');
+        loadingOverlay.classList.remove('flex');
+        loadingIndicator.classList.add('hidden');
+        loadingIndicator.classList.remove('flex');
       }
-    }
+    };
     
     async function loadCameraGroups() {
       if (cameraGroupsLoaded) return;
@@ -247,14 +600,6 @@
       });
     }
     
-    function updatePerPageSelect() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const perPage = urlParams.get('per_page');
-      if (perPage) {
-        document.getElementById('perPageSelect').value = perPage;
-      }
-    }
-    
     function setupTabs() {
       modalTabs.addEventListener('click', (e) => {
         const button = e.target.closest('.tab-button');
@@ -263,42 +608,39 @@
         const targetTab = button.dataset.tab;
         
         modalElement.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-        modalElement.querySelectorAll('.tab-button span').forEach(s => {
-          s.classList.remove('text-blue-600', 'border-blue-600');
-          s.classList.add('border-transparent', 'text-gray-500');
+        modalElement.querySelectorAll('.tab-button').forEach(btn => {
+          btn.classList.remove('border-blue-500', 'text-blue-600');
+          btn.classList.add('border-transparent', 'text-gray-500');
         });
         
         modalElement.querySelector(`#tab-${targetTab}`).classList.remove('hidden');
-        button.querySelector('span').classList.add('text-blue-600', 'border-blue-600');
+        button.classList.remove('border-transparent', 'text-gray-500');
+        button.classList.add('border-blue-500', 'text-blue-600');
       });
     }
     
     function showModal() {
       modalElement.classList.remove('hidden');
-      requestAnimationFrame(() => {
-        const modalContent = modalElement.querySelector('.transform');
-        modalContent.classList.remove('opacity-0', '-translate-y-4');
-      });
+      modalContent.classList.remove('opacity-0', '-translate-y-4');
+      modalContent.classList.add('opacity-100', 'translate-y-0');
     }
     
-    function hideNVRmodal() {
-      const modalContent = modalElement.querySelector('.transform');
+    window.hideNVRmodal = function() {
+      modalContent.classList.remove('opacity-100', 'translate-y-0');
       modalContent.classList.add('opacity-0', '-translate-y-4');
-      modalContent.addEventListener('transitionend', () => {
+      setTimeout(() => {
         modalElement.classList.add('hidden');
-      }, { once: true });
-    }
+      }, 200);
+    };
     
     window.showAddNVRModal = async () => {
       modalForm.reset();
       modalTitle.textContent = 'Add New NVR';
+      modalSubtitle.textContent = 'Configure new Network Video Recorder';
       modalSubmitButton.textContent = 'Add NVR';
-      document.getElementById('password-help').textContent = 'Password is required.';
-      
-      const passwordInput = document.getElementById('hs-toggle-password');
-      if (passwordInput) {
-        passwordInput.required = true;
-      }
+      document.getElementById('password-help').textContent = 'Password is required for new NVRs.';
+      document.getElementById('password-required').classList.remove('hidden');
+      document.getElementById('hs-toggle-password').required = true;
       
       modalForm.onsubmit = handleAddCamera;
       await loadCameraGroups();
@@ -310,13 +652,11 @@
     window.showEditNVRModal = async (nvr_id) => {
       modalForm.reset();
       modalTitle.textContent = 'Edit NVR';
+      modalSubtitle.textContent = 'Update NVR configuration';
       modalSubmitButton.textContent = 'Save Changes';
       document.getElementById('password-help').textContent = 'Leave blank to keep current password.';
-      
-      const passwordInput = document.getElementById('hs-toggle-password');
-      if (passwordInput) {
-        passwordInput.required = false;
-      }
+      document.getElementById('password-required').classList.add('hidden');
+      document.getElementById('hs-toggle-password').required = false;
       
       modalForm.onsubmit = handleEditCamera;
       
@@ -330,7 +670,7 @@
         document.getElementById('name').value = nvr.hostname || '';
         document.getElementById('ip').value = nvr.ip || '';
         document.getElementById('username').value = nvr.username || '';
-        document.getElementById('hs-toggle-password').value = nvr.password || '';
+        document.getElementById('hs-toggle-password').value = '';
         document.getElementById('latitude').value = nvr.latitude || '';
         document.getElementById('longitude').value = nvr.longitude || '';
         document.getElementById('asset_no').value = nvr.asset_no || '';
@@ -348,8 +688,6 @@
       }
     };
     
-    window.hideNVRmodal = hideNVRmodal;
-    
     async function handleAddCamera(event) {
       event.preventDefault();
       const result = await apiPost('/nvrs/create', new FormData(modalForm));
@@ -365,106 +703,138 @@
       const result = await apiPost(`/nvrs/edit/${cameraId}`, new FormData(modalForm));
       if (result.ok) {
         hideNVRmodal();
-        const currentPage = new URLSearchParams(window.location.search).get('page') || 1;
         loadPage(currentPage);
       }
     }
     
-    document.getElementById('searchForm').addEventListener('submit', (e) => {
-      e.preventDefault();
+    async function apiPost(url, body) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          body: body
+        });
+        const data = await response.json();
+        if (response.ok) {
+          Toast.success(data.detail || data.message || 'Operation successful.', { title: 'Success' });
+        } else {
+          Toast.error(data.detail || data.message || 'An error occurred.', { title: 'Error' });
+        }
+        return { ok: response.ok, data: data };
+      } catch (error) {
+        console.error('API POST Error:', error);
+        Toast.error('Network or server error.', { title: 'Error' });
+        return { ok: false, data: null };
+      }
+    }
+    
+    // Search handling with debounce
+    let searchDebounce;
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => {
+        currentSearch = e.target.value.trim();
+        loadPage(1);
+      }, 350);
+    });
+    
+    document.getElementById('perPageSelect').addEventListener('change', (e) => {
+      perPage = parseInt(e.target.value, 10) || 20;
       loadPage(1);
     });
     
-    document.getElementById('perPageSelect').addEventListener('change', () => {
+    window.resetFilters = function() {
+      currentSearch = '';
+      document.getElementById('searchInput').value = '';
       loadPage(1);
-    });
+    };
+    
+    window.togglePassword = function() {
+      const input = document.getElementById('hs-toggle-password');
+      const eyeIcon = document.getElementById('eye-icon');
+      const eyeOffIcon = document.getElementById('eye-off-icon');
+      
+      if (input.type === 'password') {
+        input.type = 'text';
+        eyeIcon.classList.add('hidden');
+        eyeOffIcon.classList.remove('hidden');
+      } else {
+        input.type = 'password';
+        eyeIcon.classList.remove('hidden');
+        eyeOffIcon.classList.add('hidden');
+      }
+    };
     
     modalElement.addEventListener('click', (e) => {
       if (e.target === modalElement) hideNVRmodal();
     });
-
+    
+    // Escape key to close
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modalElement.classList.contains('hidden')) {
+        hideNVRmodal();
+      }
+    });
+    
     function showUploadStatus() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const successMessage = urlParams.get('upload_success');
-    const errorMessage = urlParams.get('upload_error');
-    const warningMessage = urlParams.get('upload_warning');
+      const urlParams = new URLSearchParams(window.location.search);
+      const successMessage = urlParams.get('upload_success');
+      const errorMessage = urlParams.get('upload_error');
+      const warningMessage = urlParams.get('upload_warning');
 
-    if (successMessage) {
+      if (successMessage) {
         Toast.success(successMessage, { title: 'Success' });
-      // Hapus parameter dari URL agar notifikasi tidak muncul lagi saat refresh
-      window.history.replaceState({}, document.title, "/nvrs");
-    } else if (errorMessage) {
+        window.history.replaceState({}, document.title, "/nvrs");
+      } else if (errorMessage) {
         Toast.error(errorMessage, { title: 'Error' });
-      window.history.replaceState({}, document.title, "/nvrs");
-    } else if (warningMessage) {
-        Toast.error(warningMessage, { title: 'Warning' });
-      window.history.replaceState({}, document.title, "/nvrs");
+        window.history.replaceState({}, document.title, "/nvrs");
+      } else if (warningMessage) {
+        Toast.warning(warningMessage, { title: 'Warning' });
+        window.history.replaceState({}, document.title, "/nvrs");
+      }
     }
-  }
-
-    showUploadStatus();
-
-    // Init
-    updatePerPageSelect();
-    loadPage(new URLSearchParams(window.location.search).get('page') || 1);
+    
+    // Initialize
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialPage = parseInt(urlParams.get('page')) || 1;
+    const initialPerPage = parseInt(urlParams.get('per_page')) || 20;
+    const initialSearch = urlParams.get('search') || '';
+    
+    if (initialPerPage) {
+      perPage = initialPerPage;
+      document.getElementById('perPageSelect').value = perPage;
+    }
+    if (initialSearch) {
+      currentSearch = initialSearch;
+      document.getElementById('searchInput').value = initialSearch;
+    }
+    
     setupTabs();
+    showUploadStatus();
+    loadPage(initialPage);
   });
   
   window.confirmDelete = (itemId, itemName) => {
-    const itemType = '{{ "NVR" if "nvrs" in request.path else "Camera" }}';
-    const message = `Are you sure you want to delete this ${itemType}: ${itemName}? This action cannot be undone.`;
+    const message = `Are you sure you want to delete this NVR: ${itemName}? This action cannot be undone.`;
     
     showGlobalConfirm(message, () => {
-      const deleteUrl = `/{{ "nvrs" if "nvrs" in request.path else "cameras" }}/delete/${itemId}`;
-      fetch(deleteUrl, { method: 'POST' })
+      fetch(`/nvrs/delete/${itemId}`, { method: 'POST' })
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {
           Toast.success(data.message, { title: 'Success' });
+          loadPage(currentPage);
         } else {
           Toast.error(data.message, { title: 'Error' });
         }
-        if (data.status === 'success') {
-          const currentPage = new URLSearchParams(window.location.search).get('page') || 1;
-          loadPage(currentPage);
-        }
       })
       .catch(err => {
-        Toast.error('Failed to delete item.', { title: 'Error' });
+        Toast.error('Failed to delete NVR.', { title: 'Error' });
       });
     }, {
-      title: `⚠️ Delete ${itemType}`,
+      title: `⚠️ Delete NVR`,
       confirmText: 'Yes, Delete',
       confirmClasses: 'bg-red-600 hover:bg-red-700'
     });
   };
-  
-  let currentSort = { column: null, direction: 'asc' };
-  function sortTable(columnIndex) {
-    const tbody = document.getElementById("camera-body");
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    
-    currentSort.direction = (currentSort.column === columnIndex && currentSort.direction === 'asc') ? 'desc' : 'asc';
-    currentSort.column = columnIndex;
-    
-    clearArrows();
-    updateArrow(columnIndex, currentSort.direction);
-    
-    rows.sort((a, b) => {
-      const aValue = a.cells[columnIndex].innerText.trim();
-      const bValue = b.cells[columnIndex].innerText.trim();
-      return currentSort.direction === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-    });
-    
-    tbody.innerHTML = ""; // Clear existing rows
-    rows.forEach(row => tbody.appendChild(row)); // Append sorted rows
-  }
-  function clearArrows() {
-    document.querySelectorAll('th span').forEach(arrow => arrow.textContent = '');
-  }
-  function updateArrow(index, dir) {
-    const ids = ['id-arrow', 'ip-arrow', 'port-arrow']; // Add more if needed
-    if(ids[index]) document.getElementById(ids[index]).textContent = dir === 'asc' ? '↑' : '↓';
-  }
 </script>
 {% endblock %}

@@ -1,6 +1,7 @@
 import csv
 import io
 import logging
+import json
 from typing import Optional
 from fastapi import APIRouter, File, HTTPException, Path, Query, Request, Depends, Form, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
@@ -56,11 +57,11 @@ async def get_nvrs_data(
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
     search: str = Query(None),
-    per_page: int = Query(10, ge=1),
+    per_page: int = Query(20, ge=1),
     current_admin: User = Depends(admin_access_required)
 ):
     query = db.query(NVR)
-
+    
     if search:
         search_term = f"%{search}%"
         query = query.join(CameraGroup, NVR.group_id == CameraGroup.id, isouter=True).filter(
@@ -73,74 +74,94 @@ async def get_nvrs_data(
                 NVR.status.ilike(search_term)
             )
         )
-
+    
     query = query.order_by(asc(NVR.hostname)).options(joinedload(NVR.group))
     total = query.count()
     nvrs = query.offset((page - 1) * per_page).limit(per_page).all()
-    total_pages = (total + per_page - 1) // per_page if total > 0 else 1
-
-    ICONS = {
-        "pencil": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-yellow-500"><path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" /></svg>',
-        "trash": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-red-600"><path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" /></svg>'
+    
+    # Calculate stats
+    base_query = db.query(NVR)
+    if search:
+        base_query = base_query.join(CameraGroup, NVR.group_id == CameraGroup.id, isouter=True).filter(
+            or_(
+                NVR.hostname.ilike(search_term),
+                NVR.ip.ilike(search_term),
+                NVR.location.ilike(search_term),
+                CameraGroup.name.ilike(search_term),
+            )
+        )
+    
+    stats = {
+        "total": total,
+        "active": base_query.filter(NVR.status == "Active").count(),
+        "deactivated": base_query.filter(NVR.status == "Deactivated").count(),
+        "restricted": base_query.filter(NVR.status == "Restricted").count(),
+        "located": base_query.filter(NVR.latitude.isnot(None), NVR.longitude.isnot(None)).count()
     }
-
+    
+    total_pages = (total + per_page - 1) // per_page if total > 0 else 1
+    
+    # Generate rows HTML with new styling
     rows_html = ""
     if not nvrs:
-        rows_html = '<tr><td colspan="8" class="p-4 text-center text-gray-500 dark:text-gray-400">No NVRs found.</td></tr>'
+        rows_html = '<tr><td colspan="7" class="p-4 text-center text-gray-500 dark:text-gray-400">No NVRs found.</td></tr>'
     else:
         for nvr in nvrs:
+            # Status badge class
+            status_class = "status-active" if nvr.status == "Active" else "status-deactivated" if nvr.status == "Deactivated" else "status-restricted"
+            
+            # Initials for avatar
+            initials = (nvr.hostname or "NVR")[:2].upper()
+            
             rows_html += f"""
-            <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm text-gray-700 dark:text-gray-300">
-                <td class="p-3 truncate">{nvr.hostname or ''}</td>
-                <td class="p-3 truncate">{nvr.ip or ''}</td>
-                <td class="p-3 truncate">{nvr.username or ''}</td>
-                <td class="p-3 truncate">{nvr.location or ''}</td>
-                <td class="p-3 truncate">{nvr.group.name if nvr.group else ''}</td>
-                <td class="p-3">
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full {'bg-green-100 text-green-800' if nvr.status == 'Active' else 'bg-red-100 text-red-800'}">
-                        {nvr.status or 'Unknown'}
-                    </span>
-                </td>
-                <td class="p-3 space-x-2 whitespace-nowrap">
-                    <button onclick="showEditNVRModal('{nvr.id}')"
-                        title="Edit NVR"
-                        class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-yellow-200 dark:hover:bg-yellow-800/50">
-                        {ICONS['pencil']}
-                    </button>
-                    <form method="post" class="inline" onsubmit="event.preventDefault(); confirmDelete('{nvr.id}', '{nvr.hostname}')">
-                        <button type="submit"
-                            title="Delete NVR"
-                            class="inline-flex items-center justify-center p-1.5 rounded transition-colors duration-150 hover:bg-red-200 dark:hover:bg-red-800/50">
-                            {ICONS['trash']}
-                        </button>
-                    </form>
-                </td>
+            <tr class="group">
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold">
+                    {initials}
+                  </div>
+                  <div>
+                    <p class="font-semibold text-gray-900 dark:text-white">{nvr.hostname or ''}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">{nvr.ip or ''}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3 text-gray-700 dark:text-gray-300 font-mono text-xs">{nvr.ip or ''}</td>
+              <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{nvr.username or ''}</td>
+              <td class="px-4 py-3 text-gray-700 dark:text-gray-300 max-w-xs truncate" title="{nvr.location or ''}">{nvr.location or '-'}</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                  {nvr.group.name if nvr.group else 'No Division'}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <span class="status-badge {status_class}">
+                  {nvr.status or 'Unknown'}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <div class="flex items-center justify-center gap-1">
+                  <button onclick="showEditNVRModal('{nvr.id}')"
+                          title="Edit"
+                          class="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                  </button>
+                  <button onclick="confirmDelete('{nvr.id}', '{nvr.hostname}')"
+                          title="Delete"
+                          class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
             </tr>
             """
-
-    # Pagination (tidak diubah)
-    pagination_html = ""
-    if total_pages > 1:
-        links = []
-        window = 2
-        if page > 1:
-            links.append(f'<a href="#" onclick="event.preventDefault(); loadPage(1)" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">First</a>')
-            links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({page - 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">«</a>')
-        if page > window + 2:
-            links.append('<span class="px-3 py-1">...</span>')
-        for i in range(max(1, page - window), min(total_pages, page + window) + 1):
-            if i == page:
-                links.append(f'<span class="px-3 py-1 bg-blue-600 text-white rounded font-bold">{i}</span>')
-            else:
-                links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({i})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">{i}</a>')
-        if page < total_pages - window - 1:
-            links.append('<span class="px-3 py-1">...</span>')
-        if page < total_pages:
-            links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({page + 1})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">»</a>')
-            links.append(f'<a href="#" onclick="event.preventDefault(); loadPage({total_pages})" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white">Last</a>')
-        pagination_html = " ".join(links)
-
-    return HTMLResponse(content=f"{rows_html}|||{pagination_html}")
+    
+    # Return with stats as third part
+    return HTMLResponse(content=f"{rows_html}|||{''}|||{json.dumps(stats)}")
 
 
 # This code running perfectly
