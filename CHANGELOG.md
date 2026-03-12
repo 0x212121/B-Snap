@@ -4,60 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Added
-- **Orphaned Files Management** (`/orphaned-files`) - Complete solution for managing orphaned snapshot files:
-  - **Folder Scanner** - Detects snapshot files on disk with no database record
-  - **OrphanedFile Table** - Tracks orphaned files with metadata (path, size, camera_id, status)
-  - **Dual Detection Methods**:
-    - **Database-triggered**: When camera deleted, snapshots marked `is_orphaned=true`
-    - **Disk Scanner**: Scheduled job scans folder vs DB records daily at 3 AM
-  - **Management UI**:
-    - **Storage Summary**: Total files, size in MB, breakdown by camera
-    - **File List**: View all orphaned files with status filters (pending/reviewed/deleted)
-    - **Scan Button**: Manual trigger to scan disk and sync to database
-    - **Dry Run**: Preview cleanup without deleting files
-    - **Cleanup All**: Bulk delete pending files with confirmation
-    - **Force Cleanup**: Direct disk cleanup bypassing table check
-    - **Review Function**: Mark files as reviewed for audit trail
-  - **Auto Cleanup**: Empty `camera_id/<date>/` folders removed after file deletion
-  - **API Endpoints**: `/api/orphaned-files/*` for scan, cleanup, summary, review
-  - **Menu Navigation**: Added "🧹 Orphaned Files" to Administration menu
-  - **Database Migrations**: 
-    - `20260310_orphaned_snapshots` - Added `is_orphaned` column to snapshots
-    - `20260311_add_orphaned_files` - New `orphaned_files` table
-    - `20260311_fix_snapshot_fk_cascade` - Changed FK from CASCADE to SET NULL
-
-### Fixed
-- **Job Management API** - Fixed missing `HTTPException` import in `app/routes/jobs.py` that caused API errors
-- **Job Stats JSON Serialization** - Fixed `Decimal` type not JSON serializable error in `/api/jobs/stats` endpoint by converting SQLAlchemy Decimal values to Python int/float
-- **SQLAlchemy Case Syntax** - Updated `case()` function calls in `JobExecutionLog.get_job_stats()` to use SQLAlchemy 2.0 syntax (positional arguments instead of list)
-- **CSV Upload Camera** - Fixed camera not being created when uploading CSV file. Previously only counted success but never actually created the camera records in database. Now properly creates cameras with all fields (hostname, ip, port, username, password, location, group, status, coordinates)
-- **Camera Locations API** - Fixed `/camera-locations` endpoint error 500 by making schema fields optional (ip, user_group, coordinate) to handle cameras with NULL values
-
-### Changed
-- **Job Schedule Modal** - Replaced browser native `prompt()` popup with modern Tailwind-styled modal:
-  - **Modern Design** - Backdrop blur, rounded corners, dark mode support
-  - **Input Field** - Styled text input with monospace font for cron expression
-  - **Examples Panel** - Visual guide with common cron patterns in indigo-themed box
-  - **Keyboard Shortcuts** - Enter to save, Escape to close
-  - **Consistent UI** - Matches other modals (history modal) in the application
-
-# Changelog
-
-All notable changes to this project will be documented in this file.  
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
 ## [1.13.0] - 2026-03-09
 
 ### Added
 
 #### Job Management & Scheduling
 - **Job Management Dashboard** (`/admin/jobs`) for monitoring and controlling scheduled background jobs.
-- **Job execution tracking** using `JobExecutionLog` with history, duration, and status logging.
-- **Cron-based scheduling system** supporting dynamic cron updates via configuration.
+- **Job execution tracking** using `JobExecutionLog` with execution history, duration, and status logging.
+- **Cron-based scheduling system** supporting dynamic cron updates.
 - **Persistent job storage** using `SQLAlchemyJobStore` (`apscheduler_jobs` table).
 - **Settings UI section for Job Scheduling** with cron configuration and interval fallbacks.
 
@@ -68,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Charts and device uptime summaries
 - **SLA & Compliance Dashboard** (`/health/sla-report`)
   - SLA compliance monitoring (default 99.5%)
-  - MTTR and MTBF metrics
+  - MTTR and MTBF calculations
   - Incident severity classification (Critical / Major / Minor)
   - Performance highlights and compliance indicators
 - **Scheduled Reports API**
@@ -91,6 +45,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - WhatsApp bot commands: `help`, `status`, `cameras`, `health`, `snapshot`, `report`
   - Services: `WAGatewayService`, `WABotHandler`
 
+#### Orphaned Files Management
+- **Orphaned Files Management UI** (`/orphaned-files`) for managing snapshot files without database records.
+- **Folder Scanner** to detect orphaned snapshot files on disk.
+- **OrphanedFile database table** to track orphaned files with metadata (path, size, camera_id, status).
+- **Dual detection methods**
+  - Database-triggered orphan marking when cameras are deleted.
+  - Scheduled disk scanner job comparing filesystem vs database records.
+- **Management UI Features**
+  - Storage summary showing total files and disk usage
+  - File list with status filters (pending, reviewed, deleted)
+  - Manual scan trigger
+  - Dry run preview before deletion
+  - Bulk cleanup with confirmation
+  - Force cleanup option
+  - File review flag for audit trail
+- **Automatic cleanup** of empty snapshot folders after deletion.
+- **API Endpoints** `/api/orphaned-files/*` for scanning, cleanup, summary, and review.
+- **Navigation**: Added **"🧹 Orphaned Files"** to Administration menu.
+- **Database migrations**
+  - `20260310_orphaned_snapshots`
+  - `20260311_add_orphaned_files`
+  - `20260311_fix_snapshot_fk_cascade`
+
 #### UI / UX Improvements
 - **Audit Logs page redesign** (`/audit-logs`)
   - Stats cards, advanced filtering, and CSV export
@@ -100,25 +77,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Email Logs dashboard improvements** (`/email-logs`)
   - Status metrics, filtering, CSV export, and error details modal
 - **Logs Viewer redesign**
-  - Smart log parsing, live filtering, log statistics, and auto-refresh
+  - Smart log parsing
+  - Real-time filtering
+  - Log statistics panel
+  - Auto-refresh capability
 - **Recipients UI improvements**
-  - More compact layout and confirmation modal for test email sending
+  - Compact layout
+  - Confirmation modal for test email sending
+
+---
 
 ### Fixed
 
 - Fixed **scheduler restart conflict (`ConflictingIdError`)** when jobs already exist in database.
 - Fixed **migration error** when `apscheduler_jobs` table already exists.
-- Fixed **Snapshot Gallery 500 errors** caused by incorrect UUID-to-int conversion.
-- Fixed **toast notification JavaScript scope issues** for global handlers.
-- Fixed **audit logs pagination click handlers**.
+- Fixed **Snapshot Gallery 500 errors** caused by incorrect UUID conversion.
+- Fixed **toast notification JavaScript scope issues**.
+- Fixed **audit log pagination handlers**.
 - Fixed **email statistics counting failed emails as sent**.
-- Fixed **missing logger registrations** that prevented logs from being written correctly.
+- Fixed **missing logger registrations** preventing logs from being written properly.
+
+Additional fixes:
+- Fixed **Job Management API** missing `HTTPException` import in `app/routes/jobs.py`.
+- Fixed **Job Stats JSON serialization error** caused by SQLAlchemy `Decimal` values.
+- Updated **SQLAlchemy `case()` syntax** to match SQLAlchemy 2.0 API.
+- Fixed **CSV camera upload bug** where cameras were counted but not actually created.
+- Fixed **Camera Locations API (`/camera-locations`)** 500 error caused by nullable fields.
+
+---
 
 ### Changed
 
 - Replaced legacy notification system with **real-time toast notifications**.
 - **Logs viewer interface redesigned** with improved filtering and navigation.
 - **Recipients UI redesigned** with compact layout and confirmation modal.
+
+Additional changes:
+- **Job Schedule Modal** replaced browser `prompt()` with modern Tailwind modal:
+  - Backdrop blur and rounded design
+  - Styled cron input field
+  - Cron examples panel
+  - Keyboard shortcuts (Enter to save, Escape to close)
+  - Consistent UI with other application modals.
 
 ## [1.12.0] - 2026-03-06
 
