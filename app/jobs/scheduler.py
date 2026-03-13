@@ -29,6 +29,7 @@ from sqlalchemy.orm import Session
 from app.models.task_timing import TaskTiming
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
+from ping3 import ping
 import psutil
 import os
 from time import monotonic, sleep
@@ -159,6 +160,51 @@ def logged_job(job_id: str, job_name: str):
 # Job Handlers
 # ----------------------------
 def run_snapshot(camera):
+    
+    # --- SHORT CIRCUIT: Ping Check ---
+    try:
+        # Ambil config dengan type-safe conversion
+        raw_config = get_config("snapshot_ping_check_enabled", "0")
+        ping_enabled = str(raw_config).strip() == "1" if raw_config else False
+        
+        if ping_enabled:
+            # Ambil timeout config
+            timeout_raw = get_config("snapshot_ping_timeout_ms", "3000")
+            try:
+                timeout_sec = float(str(timeout_raw)) / 1000.0
+                # Clamp antara 0.1s - 10s untuk safety
+                timeout_sec = max(0.1, min(timeout_sec, 10.0))
+            except (ValueError, TypeError):
+                timeout_sec = 3.0  # Default fallback
+            
+            response_time = ping(camera.ip, timeout=int(timeout_sec), unit='s')
+            
+            if response_time is None or response_time is False:
+                logger.warning(
+                    "[SKIP] Camera %s (%s) unreachable (ping timeout: %.1fs)", 
+                    camera.hostname, camera.ip, timeout_sec
+                )
+                return {
+                    "status": "skipped", 
+                    "reason": "host_unreachable",
+                    "camera": camera.hostname,
+                    "ping_time_ms": None
+                }
+                
+            logger.debug(
+                "[PING OK] Camera %s responded in %.2fms", 
+                camera.hostname, response_time * 1000
+            )
+            
+    except PermissionError:
+        logger.error("[PING PERMISSION] Jalankan dengan sudo atau setcap cap_net_raw+ep $(which python)")
+        # Lanjutkan tanpa pre-check jika permission denied
+        pass
+        
+    except Exception as e:
+        logger.warning("[PING ERROR] Camera %s: %s", camera.hostname, e)
+        # Lanjutkan ke snapshot sebagai fallback (fail-open)
+    
     with SessionLocal() as db:
         lock = get_camera_lock(str(camera.id))
         try:

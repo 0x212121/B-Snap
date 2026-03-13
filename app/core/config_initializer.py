@@ -9,6 +9,8 @@ DEFAULT_CONFIG = {
     "max_screenshot_per_camera": "20",
     "snapshot_batch_size": "50",
     "snapshot_batch_delay_seconds": "5",
+    "snapshot_ping_check_enabled": "true",
+    "snapshot_ping_timeout_ms": "3000",
     
     # Health check settings
     "healthcheck_interval_minutes": "15",
@@ -30,7 +32,6 @@ DEFAULT_CONFIG = {
     "storage_warning_percent": "85",
     "storage_info_percent": "75",
     "storage_critical_free_gb": "5",
-    "storage_check_interval_hours": "1",  # New: configurable storage check interval
     
     # SMTP settings
     "smtp_host": "",
@@ -47,8 +48,6 @@ DEFAULT_CONFIG = {
     # Cleanup job settings
     "storage_check_interval_hours": "1",  # New: storage check interval
     "cleanup_interval_days": "1",  # New: configurable cleanup interval
-    "cleanup_retry_queue_interval_days": "1",  # New: retry queue cleanup interval
-    "retention_job_logs_days": "30",  # New: job execution logs retention
     
     # Job Cron Schedules (NEW) - Cron expressions override interval settings
     # Format: "minute hour day month weekday" (e.g., "0 8,13,23 * * *" = jam 8, 13, 23)

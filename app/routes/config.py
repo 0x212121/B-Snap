@@ -64,6 +64,8 @@ async def config_save(
     max_screenshot_per_camera: int = Form(...),
     snapshot_batch_size: int = Form(...),
     snapshot_batch_delay_seconds: int = Form(...),
+    snapshot_ping_check_enabled: Optional[bool] = Form(False),
+    snapshot_ping_timeout_ms: int = Form(3000),
     watermark_text: str = Form(...),
     map_title: str = Form(...),
     timezone: str = Form(...),
@@ -94,6 +96,13 @@ async def config_save(
     if snapshot_batch_size > 150 or snapshot_batch_size < 1:
         # Mengembalikan JSONResponse dengan status 400 Bad Request
         return JSONResponse(status_code=400, content={"message": "Snapshot batch size must be between 1 and 150."})
+    
+    # Validasi ping timeout (100ms - 10 detik)
+    if snapshot_ping_timeout_ms < 100 or snapshot_ping_timeout_ms > 10000:
+        return JSONResponse(
+            status_code=400,
+            content={"message": "Ping timeout must be between 100 and 10000 milliseconds (0.1-10 seconds)."}
+        )
 
     # Validasi retention settings (7 hari - 10 tahun)
     retention_fields = {
@@ -167,6 +176,8 @@ async def config_save(
         "max_screenshot_per_camera": max_screenshot_per_camera,
         "snapshot_batch_size": snapshot_batch_size,
         "snapshot_batch_delay_seconds": snapshot_batch_delay_seconds,
+        "snapshot_ping_check_enabled": str(int(snapshot_ping_check_enabled)),
+        "snapshot_ping_timeout_ms": snapshot_ping_timeout_ms,
         "watermark_text": watermark_text,
         "map_title": map_title,
         "timezone": timezone,
