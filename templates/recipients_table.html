@@ -1,0 +1,142 @@
+<div class="bg-white shadow rounded-lg overflow-hidden">
+
+<table class="min-w-full text-sm">
+
+<thead class="bg-gray-50 border-b">
+
+<tr>
+
+<th class="px-4 py-3 text-left">Email</th>
+<th class="px-4 py-3 text-left">Nickname</th>
+<th class="px-4 py-3 text-left">Group</th>
+<th class="px-4 py-3 text-left">Locations</th>
+<th class="px-4 py-3 text-center">Actions</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for r in recipients %}
+
+<tr class="border-b hover:bg-gray-50">
+
+<td class="px-4 py-2">{{r.email}}</td>
+
+<td class="px-4 py-2">{{r.nickname or "-"}}</td>
+
+<td class="px-4 py-2">
+{{ r.group.name if r.group else "-" }}
+</td>
+
+<td class="px-4 py-2">
+{{r.locations or "-"}}
+</td>
+
+<td class="px-4 py-2 text-center">
+
+<button
+class="text-blue-600 hover:underline"
+onclick="openEditModal('{{r.id}}','{{r.email}}','{{r.nickname}}','{{r.group_id}}','{{r.locations}}')"
+>
+Edit
+</button>
+
+<button
+class="text-red-600 hover:underline ml-2"
+
+hx-post="/recipients/delete/{{r.id}}"
+hx-confirm="Delete recipient {{r.email}}?"
+hx-target="#table-container"
+hx-include="#filters"
+hx-swap="innerHTML"
+>
+
+Delete
+
+</button>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+
+
+<!-- PAGINATION -->
+
+<div class="flex items-center justify-between px-4 py-3 bg-gray-50">
+
+<div class="text-sm text-gray-600">
+
+Total recipients: {{total}}
+
+</div>
+
+
+<div class="flex gap-1">
+
+{% if page > 1 %}
+
+<button
+class="px-3 py-1 border rounded"
+
+hx-get="/recipients/table?page={{page-1}}"
+hx-target="#table-container"
+hx-include="#filters"
+>
+Prev
+</button>
+
+{% endif %}
+
+
+
+{% for p in range(1,total_pages+1) %}
+
+<button
+
+class="px-3 py-1 border rounded
+{% if p == page %}
+bg-blue-600 text-white
+{% endif %}
+"
+
+hx-get="/recipients/table?page={{p}}"
+hx-target="#table-container"
+hx-include="#filters"
+>
+
+{{p}}
+
+</button>
+
+{% endfor %}
+
+
+
+{% if page < total_pages %}
+
+<button
+class="px-3 py-1 border rounded"
+
+hx-get="/recipients/table?page={{page+1}}"
+hx-target="#table-container"
+hx-include="#filters"
+>
+Next
+</button>
+
+{% endif %}
+
+</div>
+
+</div>
+
+</div>

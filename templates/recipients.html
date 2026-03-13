@@ -9,7 +9,7 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-4 max-w-7xl">
-
+  
   <!-- Header -->
   <div class="mb-4 flex items-center justify-between">
     <div>
@@ -20,180 +20,211 @@
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage B-SNAP email distribution lists</p>
     </div>
     <button onclick="toggleSection('addFormContent')" 
-      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-colors">
-      {{ icon_plus("w-4 h-4") }} Add New
-    </button>
+    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-colors">
+    {{ icon_plus("w-4 h-4") }} Add New
+  </button>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-blue-500">
+    <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Total Recipients</div>
+    <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="stat-total">-</div>
   </div>
-
-  <!-- Stats Cards -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-blue-500">
-      <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Total Recipients</div>
-      <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="stat-total">-</div>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-green-500">
-      <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Groups</div>
-      <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="stat-groups">-</div>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-purple-500">
-      <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Locations</div>
-      <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="stat-locations">-</div>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-yellow-500">
-      <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Last Updated</div>
-      <div class="text-sm font-medium text-gray-800 dark:text-gray-100 mt-1" id="stat-updated">Just now</div>
-    </div>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-green-500">
+    <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Groups</div>
+    <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="stat-groups">-</div>
   </div>
-
-  <!-- === Section 1: Add Recipient (Collapsible) === -->
-  <div id="addSection" class="bg-white dark:bg-gray-800 shadow-lg rounded-lg mb-4 overflow-hidden">
-    <div id="addFormContent" class="hidden">
-      <div class="p-4">
-        <form id="addForm" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <!-- Left Column -->
-          <div class="lg:col-span-5 space-y-3">
-            <div>
-              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address <span class="text-red-500">*</span></label>
-              <input type="email" id="email" name="email" required placeholder="recipient@example.com"
-                class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 transition-all">
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nickname</label>
-              <input type="text" id="nickname" name="nickname" placeholder="John Doe"
-                class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 transition-all">
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Group <span class="text-red-500">*</span></label>
-              <select id="group_id" name="group_id" required
-                class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 pr-8 transition-all">
-                <option value="">Select Group...</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Right Column -->
-          <div class="lg:col-span-5">
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Locations</label>
-            <select id="locations" name="locations" multiple
-              class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 min-h-[140px]">
-            </select>
-            <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">Hold Ctrl/Cmd to select multiple. Auto-filtered by group.</p>
-          </div>
-
-          <!-- Action Column -->
-          <div class="lg:col-span-2 flex items-end">
-            <button type="submit"
-              class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center justify-center gap-2 shadow-sm transition-all transform hover:scale-[1.02] active:scale-[0.98]">
-              {{ icon_plus("w-4 h-4") }} Add Recipient
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-purple-500">
+    <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Total Locations</div>
+    <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="stat-locations">-</div>
   </div>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-yellow-500">
+    <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Last Updated</div>
+    <div class="text-sm font-medium text-gray-800 dark:text-gray-100 mt-1" id="stat-updated">Just now</div>
+  </div>
+</div>
 
-  <!-- === Section 2: Recipients List & Test Email === -->
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    
-    <!-- Recipients Table -->
-    <div class="xl:col-span-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
-      <div class="px-4 py-3 border-b dark:border-gray-700 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <h3 class="font-semibold text-gray-800 dark:text-gray-100">Recipients</h3>
-          <span id="recipient-count" class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-2 py-1 rounded-full">0</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <label class="text-xs text-gray-500 dark:text-gray-400">Show:</label>
-          <select id="perPageSelect"
-            class="rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-xs px-2 py-1">
-            <option value="10">10</option>
-            <option value="20" selected>20</option>
-            <option value="50">50</option>
-          </select>
-        </div>
-      </div>
-      
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left">
-          <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300">
-            <tr>
-              <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Email</th>
-              <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Nickname</th>
-              <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Group</th>
-              <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Locations</th>
-              <th class="px-3 py-2 text-center font-medium text-xs uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="recipients-body" class="divide-y divide-gray-100 dark:divide-gray-700">
-            <tr>
-              <td colspan="5" class="px-4 py-8 text-center">
-                <div class="flex flex-col items-center gap-2 text-gray-400">
-                  <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                  <span class="text-sm">Loading recipients...</span>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      
-      <div id="pagination-controls" class="flex justify-center items-center gap-1 px-4 py-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30"></div>
-    </div>
-
-    <!-- Test Email Panel -->
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
-      <div class="px-4 py-3 border-b dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700/50 dark:to-gray-700/30">
-        <h3 class="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-          {{ icon_envelope("w-5 h-5 text-blue-500") }}
-          Send Test Email
-        </h3>
-      </div>
-      
-      <div class="p-4 space-y-4">
-        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
-          <p class="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-            Send a test email to verify your configuration. Select a group and optionally filter by location.
-          </p>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Target Group <span class="text-red-500">*</span></label>
-          <select id="test_group" 
-            class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2 transition-all">
+<!-- === Section 1: Add Recipient (Collapsible) === -->
+<div id="addSection" class="bg-white dark:bg-gray-800 shadow-lg rounded-lg mb-4 overflow-hidden">
+  <div id="addFormContent" class="hidden">
+    <div class="p-4">
+      <form id="addForm" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <!-- Left Column -->
+        <div class="lg:col-span-5 space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address <span class="text-red-500">*</span></label>
+            <input type="email" id="email" name="email" required placeholder="recipient@example.com"
+            class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 transition-all">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nickname</label>
+            <input type="text" id="nickname" name="nickname" placeholder="John Doe"
+            class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 transition-all">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Group <span class="text-red-500">*</span></label>
+            <select id="group_id" name="group_id" required onchange="onGroupChange(this.value, 'locations')"
+            class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 pr-8 transition-all">
             <option value="">Select Group...</option>
           </select>
         </div>
-
-        <div>
-          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Location</label>
-          <select id="test_location" 
-            class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2 transition-all">
-            <option value="">All Locations</option>
-          </select>
-        </div>
-
-        <div class="pt-2">
-          <button id="btnTestSend"
-            class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow-md transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
-            {{ icon_airplane("w-5 h-5") }}
-            <span>Send Test Email</span>
-          </button>
-        </div>
-
-        <!-- Quick Stats -->
-        <div class="grid grid-cols-2 gap-2 pt-2 border-t dark:border-gray-700">
-          <div class="text-center p-2 bg-gray-50 dark:bg-gray-700/30 rounded">
-            <div class="text-xs text-gray-500 dark:text-gray-400">Recipients</div>
-            <div class="text-lg font-bold text-gray-800 dark:text-gray-100" id="test-recipient-count">-</div>
-          </div>
-          <div class="text-center p-2 bg-gray-50 dark:bg-gray-700/30 rounded">
-            <div class="text-xs text-gray-500 dark:text-gray-400">Last Test</div>
-            <div class="text-xs font-medium text-gray-600 dark:text-gray-300 mt-1" id="test-last-send">Never</div>
-          </div>
-        </div>
       </div>
+      
+      <!-- Right Column -->
+      <div class="lg:col-span-5">
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Locations</label>
+        <select id="locations" name="locations" multiple
+        class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 min-h-[140px]">
+      </select>
+      <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">Hold Ctrl/Cmd to select multiple. Auto-filtered by group.</p>
     </div>
+    
+    <!-- Action Column -->
+    <div class="lg:col-span-2 flex items-end">
+      <button type="submit"
+      class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center justify-center gap-2 shadow-sm transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+      {{ icon_plus("w-4 h-4") }} Add Recipient
+    </button>
   </div>
+</form>
+</div>
+</div>
+</div>
+
+<!-- === Section 2: Recipients List & Test Email === -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+  
+  <!-- Recipients Table -->
+  <div class="xl:col-span-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
+    <div class="px-4 py-3 border-b dark:border-gray-700 flex flex-wrap items-center justify-between gap-3">
+      
+      <div class="flex items-center gap-2">
+        <h3 class="font-semibold text-gray-800 dark:text-gray-100">Recipients</h3>
+        <span id="recipient-count"
+        class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-2 py-1 rounded-full">0</span>
+      </div>
+      
+      <div class="flex flex-wrap items-center gap-2">
+        
+        <!-- Search -->
+        <input
+        id="searchInput"
+        type="text"
+        placeholder="Search email or nickname..."
+        class="text-sm px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+        
+        <!-- Group Filter -->
+        <select id="filterGroup"
+        class="text-sm px-2 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+        <option value="">All Groups</option>
+      </select>
+      
+      <!-- Location Filter -->
+      <select id="filterLocation"
+      class="text-sm px-2 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+      <option value="">All Locations</option>
+    </select>
+    
+    <!-- Reset -->
+    <button id="btnResetFilter"
+    class="text-sm px-3 py-1.5 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+    Reset
+  </button>
+  
+  <!-- Per page -->
+  <select id="perPageSelect"
+  class="text-sm px-2 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+  <option value="10">10</option>
+  <option value="20" selected>20</option>
+  <option value="50">50</option>
+</select>
+
+</div>
+
+</div>
+
+<div class="overflow-x-auto">
+  <table class="w-full text-sm text-left">
+    <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300">
+      <tr>
+        <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Email</th>
+        <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Nickname</th>
+        <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Group</th>
+        <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Locations</th>
+        <th class="px-3 py-2 text-center font-medium text-xs uppercase tracking-wider">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="recipients-body" class="divide-y divide-gray-100 dark:divide-gray-700">
+      <tr>
+        <td colspan="5" class="px-4 py-8 text-center">
+          <div class="flex flex-col items-center gap-2 text-gray-400">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+            <span class="text-sm">Loading recipients...</span>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div id="pagination-controls" class="flex justify-center items-center gap-1 px-4 py-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30"></div>
+</div>
+
+<!-- Test Email Panel -->
+<div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
+  <div class="px-4 py-3 border-b dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700/50 dark:to-gray-700/30">
+    <h3 class="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+      {{ icon_envelope("w-5 h-5 text-blue-500") }}
+      Send Test Email
+    </h3>
+  </div>
+  
+  <div class="p-4 space-y-4">
+    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
+      <p class="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+        Send a test email to verify your configuration. Select a group and optionally filter by location.
+      </p>
+    </div>
+    
+    <div>
+      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Target Group <span class="text-red-500">*</span></label>
+      <select id="test_group" onchange="onTestGroupChange(this.value)"
+      class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2 transition-all">
+      <option value="">Select Group...</option>
+    </select>
+  </div>
+  
+  <div>
+    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Location</label>
+    <select id="test_location" 
+    class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2 transition-all">
+    <option value="">All Locations</option>
+  </select>
+</div>
+
+<div class="pt-2">
+  <button id="btnTestSend" onclick="sendTestEmail()"
+  class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow-md transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
+  {{ icon_airplane("w-5 h-5") }}
+  <span>Send Test Email</span>
+</button>
+</div>
+
+<!-- Quick Stats -->
+<div class="grid grid-cols-2 gap-2 pt-2 border-t dark:border-gray-700">
+  <div class="text-center p-2 bg-gray-50 dark:bg-gray-700/30 rounded">
+    <div class="text-xs text-gray-500 dark:text-gray-400">Recipients</div>
+    <div class="text-lg font-bold text-gray-800 dark:text-gray-100" id="test-recipient-count">-</div>
+  </div>
+  <div class="text-center p-2 bg-gray-50 dark:bg-gray-700/30 rounded">
+    <div class="text-xs text-gray-500 dark:text-gray-400">Last Test</div>
+    <div class="text-xs font-medium text-gray-600 dark:text-gray-300 mt-1" id="test-last-send">Never</div>
+  </div>
+</div>
+</div>
+</div>
+</div>
 </div>
 
 <!-- Edit Modal -->
@@ -215,39 +246,39 @@
       <div>
         <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email <span class="text-red-500">*</span></label>
         <input type="email" id="edit_email" name="email" required
-          class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2">
+        class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2">
       </div>
       
       <div>
         <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nickname</label>
         <input type="text" id="edit_nickname" name="nickname"
-          class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2">
+        class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2">
       </div>
       
       <div>
         <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Group <span class="text-red-500">*</span></label>
-        <select id="edit_group_id" name="group_id" required
-          class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2 pr-8"></select>
+        <select id="edit_group_id" name="group_id" required onchange="onGroupChange(this.value, 'edit_locations')"
+        class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2 pr-8"></select>
       </div>
       
       <div>
         <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Locations</label>
         <select id="edit_locations" name="locations" multiple size="4"
-          class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2"></select>
+        class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2"></select>
       </div>
       
       <div class="flex gap-3 pt-2">
         <button type="button" onclick="closeEditModal()"
-          class="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors">
-          Cancel
-        </button>
-        <button type="submit"
-          class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
-          {{ icon_download("w-4 h-4") }} Save Changes
-        </button>
-      </div>
-    </form>
+        class="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors">
+        Cancel
+      </button>
+      <button type="submit"
+      class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
+      {{ icon_download("w-4 h-4") }} Save Changes
+    </button>
   </div>
+</form>
+</div>
 </div>
 {% endblock %}
 
@@ -256,856 +287,654 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-// ============================================================
-// THEME MANAGEMENT
-// ============================================================
-const ThemeManager = {
-  currentTheme: 'light',
+// ===============================
+// SWEETALERT2 DARK MODE CONFIG
+// ===============================
+const configureSwalTheme = () => {
+  // Deteksi dark mode: cek class 'dark' di html atau preferensi sistem
+  const isDark = document.documentElement.classList.contains('dark') || 
+                 (!document.documentElement.classList.contains('light') && 
+                  window.matchMedia('(prefers-color-scheme: dark)').matches);
   
-  init() {
-    this.detectTheme();
-    
-    // Listen for system theme changes
-    if (window.matchMedia) {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      mediaQuery.addEventListener('change', (e) => {
-        this.setTheme(e.matches ? 'dark' : 'light');
-      });
+  // Set default konfigurasi SweetAlert2
+  Swal.defaults = Swal.defaults || {};
+  
+  Object.assign(Swal.defaults, {
+    background: isDark ? '#1f2937' : '#ffffff',        // gray-800 : white
+    color: isDark ? '#f3f4f6' : '#111827',             // gray-100 : gray-900
+    confirmButtonColor: '#2563eb',                     // blue-600
+    cancelButtonColor: isDark ? '#4b5563' : '#9ca3af', // gray-600 : gray-400
+    iconColor: isDark ? '#60a5fa' : '#3b82f6',         // blue-400 : blue-500
+    customClass: {
+      popup: isDark ? 'border border-gray-600' : '',
+      title: isDark ? 'text-gray-100' : 'text-gray-900',
+      htmlContainer: isDark ? 'text-gray-300' : 'text-gray-700',
+      input: isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900',
+      validationMessage: isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700',
+      confirmButton: isDark ? 'shadow-lg' : '',
+      cancelButton: isDark ? 'shadow-lg' : ''
     }
-    
-    // Observe class changes on html element (Tailwind dark mode)
-    this.observeHtmlClass();
-  },
-  
-  detectTheme() {
-    if (document.documentElement.classList.contains('dark')) {
-      this.setTheme('dark');
-    } else if (document.documentElement.classList.contains('light')) {
-      this.setTheme('light');
-    } else {
-      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      this.setTheme(prefersDark ? 'dark' : 'light');
-    }
-  },
-  
-  setTheme(theme) {
-    this.currentTheme = theme;
-    window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
-  },
-  
-  observeHtmlClass() {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class') {
-          const hasDark = document.documentElement.classList.contains('dark');
-          const newTheme = hasDark ? 'dark' : 'light';
-          if (newTheme !== this.currentTheme) {
-            this.setTheme(newTheme);
-          }
-        }
-      });
-    });
-    
-    observer.observe(document.documentElement, { attributes: true });
-  },
-  
-  toggle() {
-    const newTheme = this.currentTheme === 'light' ? 'dark' : 'light';
-    document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(newTheme);
-    this.setTheme(newTheme);
-  },
-  
-  isDark() {
-    return this.currentTheme === 'dark';
-  }
+  });
 };
 
-// ============================================================
-// SWEETALERT2 HELPERS (tanpa updateDefaults)
-// ============================================================
-function getSwalOptions(options = {}) {
-  const isDark = ThemeManager.isDark();
-  
-  return {
-    background: isDark ? '#1F2937' : '#FFFFFF',
-    color: isDark ? '#F3F4F6' : '#1F2937',
-    confirmButtonColor: '#3B82F6',
-    cancelButtonColor: '#6B7280',
-    reverseButtons: true,
-    allowOutsideClick: false,
-    ...options
-  };
+// Inisialisasi tema saat load
+configureSwalTheme();
+
+// Observer untuk deteksi perubahan tema real-time (jika user toggle dark mode)
+const themeObserver = new MutationObserver(() => {
+  configureSwalTheme();
+});
+
+themeObserver.observe(document.documentElement, {
+  attributes: true,
+  attributeFilter: ['class']
+});
+
+const API_URL = "/api/recipients"
+const TEST_SEND_API = "/api/recipients/test-send"
+const ADD_API = "/recipients/add"
+const EDIT_API_BASE = "/recipients/edit"
+const DELETE_API_BASE = "/recipients/delete"
+
+// Cache untuk data master (diisi dari /api/recipients)
+let masterData = {
+  groups: [],
+  locationsByGroup: {}, // {group_id: [locations]}
+  allLocations: new Set()
 }
 
-function showSwal(options) {
-  return Swal.fire(getSwalOptions(options));
-}
-
-function showToast(status, message) {
-  const isDark = ThemeManager.isDark();
-  
-  const Toast = Swal.mixin({
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 3000,
-    timerProgressBar: true,
-    background: isDark ? '#1F2937' : '#FFFFFF',
-    color: isDark ? '#F3F4F6' : '#1F2937',
-    didOpen: (toast) => {
-      toast.addEventListener('mouseenter', Swal.stopTimer);
-      toast.addEventListener('mouseleave', Swal.resumeTimer);
-    }
-  });
-  
-  const icons = {
-    success: 'success',
-    error: 'error',
-    warning: 'warning',
-    info: 'info'
-  };
-  
-  Toast.fire({
-    icon: icons[status] || 'info',
-    title: message
-  });
-}
-
-// ============================================================
-// GLOBAL STATE
-// ============================================================
-const AppState = {
-  allRecipients: [],
-  currentPage: 1,
+let state = {
+  page: 1,
   perPage: 20,
   totalPages: 1,
-  lastTestSend: null,
-  locationsByGroup: {}
-};
-
-// ============================================================
-// DOM ELEMENTS CACHE
-// ============================================================
-const Elements = {
-  addForm: null,
-  editForm: null,
-  groupSelect: null,
-  editGroupSelect: null,
-  testGroupSelect: null,
-  testLocationSelect: null,
-  locationsSelect: null,
-  editLocationsSelect: null,
-  perPageSelect: null,
-  btnTestSend: null,
-  recipientsBody: null,
-  paginationControls: null,
-  editModal: null,
-  statTotal: null,
-  statGroups: null,
-  statLocations: null,
-  recipientCount: null,
-  testRecipientCount: null,
-  testLastSend: null
-};
-
-// ============================================================
-// UTILITY FUNCTIONS
-// ============================================================
-function toggleTheme() {
-  ThemeManager.toggle();
+  search: "",
+  group: "",
+  location: ""
 }
 
-function toggleSection(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.classList.toggle('hidden');
+let searchTimer = null
+let lastTestEmailTime = null
+
+/* ===============================
+UTILS
+================================ */
+function toggleSection(elementId) {
+  const el = document.getElementById(elementId)
+  if (el) el.classList.toggle('hidden')
 }
 
-async function safeJSON(res) {
-  const ct = res.headers.get('content-type') || '';
-  if (ct.includes('application/json')) return res.json();
-  const text = await res.text();
-  try { 
-    return JSON.parse(text); 
-  } catch { 
-    return { status: "error", message: text || `HTTP ${res.status}` }; 
+function escapeHtml(text) {
+  if (!text) return ''
+  const div = document.createElement('div')
+  div.textContent = text
+  return div.innerHTML
+}
+
+function escapeRegex(text){
+  return text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')
+}
+
+function highlight(text){
+  if(!text) return "-"
+  const safeText = escapeHtml(String(text))
+  if(!state.search) return safeText
+  const safe = escapeRegex(state.search)
+  const regex = new RegExp(`(${safe})`,"gi")
+  return safeText.replace(regex,'<mark class="bg-yellow-200 dark:bg-yellow-700 text-inherit">$1</mark>')
+}
+
+/* ===============================
+MASTER DATA MANAGEMENT
+================================ */
+// Populate dropdown groups dari cache
+function populateGroupDropdowns() {
+  const selects = ['group_id', 'filterGroup', 'test_group', 'edit_group_id']
+  selects.forEach(id => {
+    const select = document.getElementById(id)
+    if (!select) return
+    
+    const currentVal = select.value
+    const isFilter = id === 'filterGroup' || id === 'test_group'
+    
+    select.innerHTML = isFilter ? '<option value="">All Groups</option>' : '<option value="">Select Group...</option>'
+    
+    masterData.groups.forEach(g => {
+      const opt = document.createElement('option')
+      opt.value = g.id
+      opt.textContent = g.name
+      select.appendChild(opt)
+    })
+    
+    if (currentVal && masterData.groups.find(g => g.id == currentVal)) {
+      select.value = currentVal
+    }
+  })
+  
+  document.getElementById('stat-groups').textContent = masterData.groups.length
+}
+
+// Populate dropdown locations (all atau filtered by group)
+function populateLocationDropdown(selectId, groupId = null, isFilter = false) {
+  const select = document.getElementById(selectId)
+  if (!select) return
+  
+  const currentVal = select.value
+  
+  select.innerHTML = isFilter ? '<option value="">All Locations</option>' : ''
+  
+  let locations = []
+  if (groupId && masterData.locationsByGroup[groupId]) {
+    locations = masterData.locationsByGroup[groupId]
+  } else if (!groupId) {
+    // Collect all unique locations
+    const allLocs = new Set()
+    Object.values(masterData.locationsByGroup).forEach(locs => {
+      locs.forEach(l => allLocs.add(l))
+    })
+    locations = Array.from(allLocs).sort()
+  }
+  
+  locations.forEach(loc => {
+    const opt = document.createElement('option')
+    opt.value = loc
+    opt.textContent = loc
+    select.appendChild(opt)
+  })
+  
+  if (currentVal && locations.includes(currentVal)) {
+    select.value = currentVal
+  }
+  
+  // Update stat total unique locations
+  const totalUnique = new Set(Object.values(masterData.locationsByGroup).flat()).size
+  document.getElementById('stat-locations').textContent = totalUnique
+}
+
+// Event handler ketika group berubah (untuk filter locations)
+function onGroupChange(groupId, targetSelectId) {
+  populateLocationDropdown(targetSelectId, groupId)
+}
+
+function onTestGroupChange(groupId) {
+  populateLocationDropdown('test_location', groupId, true)
+  updateTestEmailStats()
+}
+
+/* ===============================
+LOAD RECIPIENTS (Single source of truth)
+================================ */
+function showLoading(){
+  const tbody = document.getElementById("recipients-body")
+  tbody.innerHTML = `
+<tr>
+<td colspan="5" class="px-4 py-8 text-center">
+<div class="flex flex-col items-center gap-2 text-gray-400">
+<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+<span class="text-sm">Loading recipients...</span>
+</div>
+</td>
+</tr>`
+}
+
+function showError(){
+  const tbody = document.getElementById("recipients-body")
+  tbody.innerHTML = `
+<tr>
+<td colspan="5" class="px-4 py-8 text-center text-red-500">
+Failed to load recipients. Please refresh.
+</td>
+</tr>`
+}
+
+async function loadRecipients(){
+  const params = new URLSearchParams({
+    page: state.page,
+    per_page: state.perPage,
+    search: state.search,
+    group: state.group,
+    location: state.location
+  })
+
+  const url = `${API_URL}?${params}`
+  showLoading()
+
+  try {
+    const res = await fetch(url, {
+      headers: { "Cache-Control": "no-cache" }
+    })
+    
+    if(!res.ok) throw new Error("API request failed")
+    
+    const json = await res.json()
+    if(!json || !json.data) throw new Error("Invalid API response")
+    
+    const data = json.data
+    
+    // Update master data dari response
+    if (data.groups) {
+      masterData.groups = data.groups
+      populateGroupDropdowns()
+    }
+    
+    if (data.locations_by_group) {
+      masterData.locationsByGroup = data.locations_by_group
+      // Populate semua dropdown locations
+      populateLocationDropdown('locations', document.getElementById('group_id')?.value || null)
+      populateLocationDropdown('filterLocation', null, true)
+      populateLocationDropdown('test_location', document.getElementById('test_group')?.value || null, true)
+      populateLocationDropdown('edit_locations', document.getElementById('edit_group_id')?.value || null)
+    }
+    
+    state.totalPages = data.pagination?.total_pages || 1
+    
+    renderTable(data.recipients || [])
+    renderPagination()
+    
+    document.getElementById("recipient-count").textContent = data.pagination?.total || 0
+    document.getElementById("stat-total").textContent = data.pagination?.total || 0
+    document.getElementById("stat-updated").textContent = new Date().toLocaleTimeString()
+    
+  } catch(err) {
+    console.error(err)
+    showError()
   }
 }
 
-// ============================================================
-// NATIVE MODAL FUNCTIONS
-// ============================================================
-function openEditModal(id, email, nickname, groupId, locationsCsv = "") {
-  const { editModal, editGroupSelect, editLocationsSelect } = Elements;
-  if (!editModal) return;
+/* ===============================
+RENDER TABLE
+================================ */
+function renderTable(rows){
+  const tbody = document.getElementById("recipients-body")
+  tbody.innerHTML = ""
   
-  document.getElementById("edit_id").value = id;
-  document.getElementById("edit_email").value = email;
-  document.getElementById("edit_nickname").value = nickname;
+  if(!rows || rows.length === 0){
+    tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">No recipients found</td></tr>`
+    return
+  }
+
+  rows.forEach(r => {
+    const tr = document.createElement("tr")
+    tr.className = "hover:bg-gray-50 dark:hover:bg-gray-700/30 transition cursor-pointer"
+    
+    const locDisplay = r.locations || "-"
+    
+    tr.innerHTML = `
+<td class="px-3 py-2">${highlight(r.email)}</td>
+<td class="px-3 py-2">${highlight(r.nickname || "-")}</td>
+<td class="px-3 py-2">
+<span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+${escapeHtml(r.group_name || "-")}
+</span>
+</td>
+<td class="px-3 py-2">${escapeHtml(locDisplay)}</td>
+<td class="px-3 py-2 text-center flex gap-2 justify-center">
+<button class="text-blue-600 hover:text-blue-800 text-xs font-medium" onclick='openEditModal(${r.id}, ${JSON.stringify(r.email || "")}, ${JSON.stringify(r.nickname || "")}, ${JSON.stringify(r.group_id || "")}, ${JSON.stringify(r.locations || "")})'>Edit</button>
+<button class="text-red-600 hover:text-red-800 text-xs font-medium" onclick="deleteRecipient(${r.id})">Delete</button>
+</td>`
+    tbody.appendChild(tr)
+  })
+}
+
+/* ===============================
+PAGINATION
+================================ */
+function renderPagination(){
+  const container = document.getElementById("pagination-controls")
+  container.innerHTML = ""
   
-  if (editGroupSelect) editGroupSelect.value = groupId;
+  if(state.totalPages <= 1) return
   
-  const pre = locationsCsv.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
-  populateLocations(groupId, editLocationsSelect, pre);
+  const maxVisible = 5
+  const start = Math.max(1, state.page - 2)
+  const end = Math.min(state.totalPages, start + maxVisible - 1)
   
-  editModal.classList.remove("hidden");
+  const createBtn = (label, page, active = false) => {
+    const btn = document.createElement("button")
+    btn.textContent = label
+    btn.className = active
+      ? "px-3 py-1 bg-blue-600 text-white rounded text-sm"
+      : "px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300"
+    btn.onclick = () => {
+      state.page = page
+      loadRecipients()
+    }
+    return btn
+  }
+  
+  if(state.page > 1) container.appendChild(createBtn("Prev", state.page - 1))
+  
+  if(start > 1){
+    container.appendChild(createBtn(1, 1))
+    if(start > 2){
+      const dots = document.createElement("span")
+      dots.textContent = "..."
+      dots.className = "px-2 text-gray-500"
+      container.appendChild(dots)
+    }
+  }
+  
+  for(let i = start; i <= end; i++){
+    container.appendChild(createBtn(i, i, i === state.page))
+  }
+  
+  if(end < state.totalPages){
+    if(end < state.totalPages - 1){
+      const dots = document.createElement("span")
+      dots.textContent = "..."
+      dots.className = "px-2 text-gray-500"
+      container.appendChild(dots)
+    }
+    container.appendChild(createBtn(state.totalPages, state.totalPages))
+  }
+  
+  if(state.page < state.totalPages){
+    container.appendChild(createBtn("Next", state.page + 1))
+  }
+}
+
+/* ===============================
+ADD RECIPIENT
+================================ */
+document.getElementById("addForm").addEventListener("submit", async (e) => {
+  e.preventDefault()
+  
+  const form = e.target
+  const formData = new FormData(form)
+  
+  // Handle multiple locations
+  const locSelect = document.getElementById('locations')
+  const selectedLocs = Array.from(locSelect.selectedOptions).map(o => o.value)
+  
+  // Reset dan append array untuk backend (FastAPI akan terima sebagai list)
+  formData.delete('locations')
+  selectedLocs.forEach(loc => formData.append('locations', loc))
+  
+  try {
+    const res = await fetch(ADD_API, {
+      method: 'POST',
+      body: formData
+    })
+    
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.message || "Failed to add recipient")
+    }
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Success',
+      text: 'Recipient added successfully',
+      timer: 1500,
+      showConfirmButton: false
+    })
+    
+    form.reset()
+    document.getElementById('addFormContent').classList.add('hidden')
+    loadRecipients()
+    
+  } catch (err) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: err.message || 'Failed to add recipient'
+    })
+  }
+})
+
+/* ===============================
+EDIT RECIPIENT
+================================ */
+function openEditModal(id, email, nickname, group_id, locations) {
+  document.getElementById("edit_id").value = id
+  document.getElementById("edit_email").value = email || ""
+  document.getElementById("edit_nickname").value = nickname || ""
+  
+  const groupSelect = document.getElementById("edit_group_id")
+  groupSelect.value = group_id || ""
+  
+  // Populate locations untuk group ini
+  populateLocationDropdown('edit_locations', group_id)
+  
+  // Set selected locations
+  const locSelect = document.getElementById("edit_locations")
+  if (locations && locSelect) {
+    let locArray = []
+    if (Array.isArray(locations)) {
+      locArray = locations
+    } else if (typeof locations === 'string') {
+      locArray = locations.split(",").map(s => s.trim()).filter(Boolean)
+    }
+    
+    Array.from(locSelect.options).forEach(opt => {
+      opt.selected = locArray.includes(opt.value)
+    })
+  }
+  
+  document.getElementById("editModal").classList.remove("hidden")
 }
 
 function closeEditModal() {
-  if (Elements.editModal) {
-    Elements.editModal.classList.add("hidden");
+  document.getElementById("editModal").classList.add("hidden")
+}
+
+document.getElementById("editForm").addEventListener("submit", async (e) => {
+  e.preventDefault()
+  
+  const id = document.getElementById("edit_id").value
+  const formData = new FormData(e.target)
+  
+  // Handle multiple locations
+  const locSelect = document.getElementById('edit_locations')
+  const selectedLocs = Array.from(locSelect.selectedOptions).map(o => o.value)
+  
+  formData.delete('locations')
+  selectedLocs.forEach(loc => formData.append('locations', loc))
+  
+  try {
+    const res = await fetch(`${EDIT_API_BASE}/${id}`, {
+      method: 'POST',
+      body: formData
+    })
+    
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.message || "Update failed")
+    }
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Saved',
+      timer: 1500,
+      showConfirmButton: false
+    })
+    
+    closeEditModal()
+    loadRecipients()
+    
+  } catch (err) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Update failed',
+      text: err.message
+    })
+  }
+})
+
+/* ===============================
+DELETE RECIPIENT
+================================ */
+async function deleteRecipient(id) {
+  const confirm = await Swal.fire({
+    title: "Delete recipient?",
+    text: "This action cannot be undone",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Delete",
+    confirmButtonColor: "#dc2626",
+    cancelButtonText: "Cancel"
+  })
+  
+  if(!confirm.isConfirmed) return
+  
+  try {
+    const res = await fetch(`${DELETE_API_BASE}/${id}`, {
+      method: 'POST'
+    })
+    
+    if(!res.ok) throw new Error("Delete failed")
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Deleted',
+      timer: 1500,
+      showConfirmButton: false
+    })
+    
+    loadRecipients()
+    
+  } catch(err) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Failed to delete',
+      text: err.message
+    })
   }
 }
 
-// ============================================================
-// LOCATION FUNCTIONS
-// ============================================================
-function populateLocations(groupId, selectEl, preselected = []) {
-  if (!selectEl) return;
-  
-  selectEl.innerHTML = "";
-  const map = AppState.locationsByGroup || {};
-  
-  if (!groupId || !map[groupId] || !map[groupId].length) {
-    selectEl.insertAdjacentHTML("beforeend", `<option disabled selected>No locations available</option>`);
-    return;
-  }
-  
-  map[groupId].forEach(loc => {
-    const opt = document.createElement("option");
-    opt.value = loc;
-    opt.textContent = loc;
-    if (preselected.includes((loc || '').toLowerCase())) opt.selected = true;
-    selectEl.appendChild(opt);
-  });
-}
-
-function updateTestRecipientCount() {
-  const { testGroupSelect, testLocationSelect, testRecipientCount } = Elements;
-  if (!testRecipientCount) return;
-  
-  const groupId = testGroupSelect?.value;
-  const location = testLocationSelect?.value;
+/* ===============================
+TEST EMAIL
+================================ */
+async function sendTestEmail() {
+  const groupId = document.getElementById('test_group').value
+  const location = document.getElementById('test_location').value
   
   if (!groupId) {
-    testRecipientCount.textContent = '-';
-    return 0;
-  }
-  
-  let count = 0;
-  AppState.allRecipients.forEach(r => {
-    if (r.group_id == groupId) {
-      if (!location || !r.locations || r.locations.toLowerCase().includes(location.toLowerCase())) {
-        count++;
-      }
-    }
-  });
-  
-  testRecipientCount.textContent = count;
-  return count;
-}
-
-// ============================================================
-// PAGINATION
-// ============================================================
-function buildPagination(container, page, total, serverPaged = false) {
-  if (!container) return;
-  container.innerHTML = '';
-  
-  if (!total || total <= 1) return;
-
-  const makeBtn = (label, targetPage, disabled = false, active = false) => {
-    const btn = document.createElement('button');
-    btn.textContent = label;
-    btn.disabled = disabled;
-    btn.className = active
-      ? 'px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-semibold min-w-[36px]'
-      : 'px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed min-w-[36px] transition-colors';
-    
-    if (!active && !disabled) {
-      btn.onclick = () => serverPaged ? loadRecipients(targetPage) : renderRecipients(targetPage);
-    }
-    return btn;
-  };
-
-  const windowSize = 2;
-  
-  const info = document.createElement('span');
-  info.className = 'text-xs text-gray-500 dark:text-gray-400 mr-2';
-  info.textContent = `Page ${page} of ${total}`;
-  container.appendChild(info);
-
-  if (page > 1) container.appendChild(makeBtn('←', page - 1));
-  
-  if (page > windowSize + 2) {
-    container.appendChild(makeBtn('1', 1));
-    const dots = document.createElement('span');
-    dots.textContent = '...';
-    dots.className = 'text-gray-400 px-1';
-    container.appendChild(dots);
-  }
-  
-  for (let i = Math.max(1, page - windowSize); i <= Math.min(total, page + windowSize); i++) {
-    container.appendChild(makeBtn(String(i), i, false, i === page));
-  }
-  
-  if (page < total - windowSize - 1) {
-    const dots = document.createElement('span');
-    dots.textContent = '...';
-    dots.className = 'text-gray-400 px-1';
-    container.appendChild(dots);
-    container.appendChild(makeBtn(String(total), total));
-  }
-  
-  if (page < total) container.appendChild(makeBtn('→', page + 1));
-}
-
-// ============================================================
-// DATA LOADING
-// ============================================================
-async function loadRecipients(initialPage = 1, overridePerPage = null) {
-  const { recipientsBody, paginationControls, perPageSelect } = Elements;
-  const urlParams = new URLSearchParams(window.location.search);
-
-  const urlPerPageRaw = urlParams.get('per_page');
-  const urlPerPage = urlPerPageRaw ? parseInt(urlPerPageRaw, 10) : null;
-  const selectedPerPage = overridePerPage || urlPerPage || AppState.perPage;
-
-  AppState.perPage = selectedPerPage;
-  const urlPageRaw = urlParams.get('page');
-  AppState.currentPage = urlPageRaw ? parseInt(urlPageRaw, 10) : initialPage;
-
-  if (perPageSelect) perPageSelect.value = AppState.perPage;
-  if (recipientsBody) recipientsBody.style.opacity = "0.6";
-
-  try {
-    const resp = await fetch(`/api/recipients?page=${AppState.currentPage}&per_page=${AppState.perPage}`);
-    const data = await safeJSON(resp);
-
-    if (!data || data.status !== "success") {
-      throw new Error(data?.message || 'Invalid response');
-    }
-
-    const { recipients, groups, locations_by_group, pagination, stats } = data.data || {};
-    AppState.locationsByGroup = locations_by_group || {};
-    AppState.allRecipients = Array.isArray(recipients) ? recipients : [];
-    AppState.totalPages = pagination?.total_pages || 1;
-    AppState.currentPage = pagination?.page || AppState.currentPage;
-
-    // Update stats
-    if (Elements.statTotal) Elements.statTotal.textContent = stats?.total_recipients || AppState.allRecipients.length;
-    if (Elements.statGroups) Elements.statGroups.textContent = stats?.total_groups || groups?.length || 0;
-    if (Elements.statLocations) Elements.statLocations.textContent = stats?.total_locations || 0;
-
-    // Populate selects
-    const groupSelects = [Elements.groupSelect, Elements.editGroupSelect, Elements.testGroupSelect];
-    groupSelects.forEach(sel => {
-      if (!sel) return;
-      const currentVal = sel.value;
-      sel.innerHTML = '<option value="">Select Group...</option>';
-      (groups || []).forEach(g => {
-        const opt = document.createElement('option');
-        opt.value = g.id;
-        opt.textContent = g.name;
-        sel.appendChild(opt);
-      });
-      if (currentVal) sel.value = currentVal;
-    });
-
-    if (Elements.recipientCount) {
-      Elements.recipientCount.textContent = pagination?.total || AppState.allRecipients.length;
-    }
-
-    renderRecipients(AppState.currentPage, true);
-    buildPagination(paginationControls, AppState.currentPage, AppState.totalPages, true);
-
-    // Update URL
-    const url = new URL(window.location);
-    url.searchParams.set('page', AppState.currentPage);
-    url.searchParams.set('per_page', AppState.perPage);
-    window.history.pushState({ page: AppState.currentPage, perPage: AppState.perPage }, '', url);
-
-    updateTestRecipientCount();
-    
-  } catch (err) {
-    console.error("Error loadRecipients:", err);
-    if (recipientsBody) {
-      recipientsBody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-red-500"><div class="flex flex-col items-center gap-2"><span class="text-2xl">⚠️</span><span>Failed to load data</span></div></td></tr>`;
-    }
-    showToast('error', 'Failed to load recipients.');
-  } finally {
-    if (recipientsBody) recipientsBody.style.opacity = "1";
-  }
-}
-
-function renderRecipients(page = 1, serverPaged = false) {
-  AppState.currentPage = page;
-  const { recipientsBody, paginationControls } = Elements;
-  
-  if (!recipientsBody) return;
-  recipientsBody.innerHTML = "";
-
-  let rows = [];
-  if (serverPaged) {
-    rows = AppState.allRecipients;
-  } else {
-    const start = (page - 1) * AppState.perPage;
-    rows = AppState.allRecipients.slice(start, start + AppState.perPage);
-    AppState.totalPages = Math.max(1, Math.ceil(AppState.allRecipients.length / AppState.perPage));
-  }
-
-  if (!rows.length) {
-    recipientsBody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400"><div class="flex flex-col items-center gap-2"><span class="text-3xl">📭</span><span>No recipients found</span></div></td></tr>`;
-  } else {
-    rows.forEach(r => {
-      const safeNickname = (r.nickname || "").replace(/'/g, "\\'");
-      const safeLocations = (r.locations || "").replace(/'/g, "\\'");
-      const safeEmail = (r.email || "").replace(/'/g, "\\'");
-      
-      recipientsBody.insertAdjacentHTML("beforeend", `
-        <tr class="border-b dark:border-gray-700 hover:bg-blue-50/50 dark:hover:bg-gray-700/50 transition-colors group">
-          <td class="px-3 py-2">
-            <div class="font-medium text-gray-900 dark:text-gray-100 text-sm">${r.email}</div>
-          </td>
-          <td class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300">${r.nickname || '<span class="text-gray-400 italic">-</span>'}</td>
-          <td class="px-3 py-2">
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-              ${r.group_name || "-"}
-            </span>
-          </td>
-          <td class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 max-w-[200px] truncate" title="${r.locations || ''}">
-            ${r.locations || '<span class="text-gray-400">All locations</span>'}
-          </td>
-          <td class="px-3 py-2 text-center">
-            <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button onclick="openEditModal(${r.id}, '${safeEmail}', '${safeNickname}', '${r.group_id}', '${safeLocations}')"
-                class="p-1.5 text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded transition-colors" title="Edit">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-              </button>
-              <button onclick="confirmDeleteRecipient(${r.id}, '${safeEmail}')" 
-                class="p-1.5 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 rounded transition-colors" title="Delete">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-              </button>
-            </div>
-          </td>
-        </tr>`);
-    });
-  }
-
-  buildPagination(paginationControls, AppState.currentPage, AppState.totalPages, serverPaged);
-}
-
-// ============================================================
-// CRUD OPERATIONS
-// ============================================================
-async function handleAddSubmit(e) {
-  e.preventDefault();
-  const { addForm } = Elements;
-  const submitBtn = addForm.querySelector('button[type="submit"]');
-  const originalText = submitBtn.innerHTML;
-  
-  submitBtn.disabled = true;
-  submitBtn.innerHTML = `<svg class="animate-spin w-4 h-4 mr-2 inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Adding...`;
-  
-  try {
-    const formData = new FormData(addForm);
-    const resp = await fetch("/recipients/add", { method: "POST", body: formData });
-    const data = await safeJSON(resp);
-    
-    if (data.status === "success") {
-      showToast('success', data.message || "Recipient added successfully");
-      addForm.reset();
-      if (Elements.locationsSelect) Elements.locationsSelect.innerHTML = "";
-      AppState.currentPage = 1;
-      await loadRecipients(1);
-      toggleSection('addFormContent');
-    } else {
-      await showSwal({
-        icon: 'error',
-        title: 'Failed to Add',
-        text: data.message || "Failed to add recipient",
-        confirmButtonColor: '#EF4444'
-      });
-    }
-  } catch (err) {
-    console.error(err);
-    await showSwal({
-      icon: 'error',
-      title: 'Server Error',
-      text: 'Server error while adding recipient',
-      confirmButtonColor: '#EF4444'
-    });
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = originalText;
-  }
-}
-
-async function handleEditSubmit(e) {
-  e.preventDefault();
-  const { editForm } = Elements;
-  const formData = new FormData(editForm);
-  const id = formData.get("id");
-  
-  try {
-    const resp = await fetch(`/recipients/edit/${id}`, { method: "POST", body: formData });
-    const data = await safeJSON(resp);
-    
-    if (data.status === "success") {
-      showToast('success', data.message || "Recipient updated");
-      closeEditModal();
-      await loadRecipients(AppState.currentPage);
-    } else {
-      await showSwal({
-        icon: 'error',
-        title: 'Update Failed',
-        text: data.message || "Failed to update recipient",
-        confirmButtonColor: '#EF4444'
-      });
-    }
-  } catch (err) {
-    console.error(err);
-    await showSwal({
-      icon: 'error',
-      title: 'Server Error',
-      text: 'Server error while updating recipient',
-      confirmButtonColor: '#EF4444'
-    });
-  }
-}
-
-async function deleteRecipient(id) {
-  try {
-    const resp = await fetch(`/recipients/delete/${id}`, { method: "POST" });
-    const data = await safeJSON(resp);
-    
-    if (data.status === "success") {
-      showToast('success', data.message || "Recipient deleted");
-      if (AppState.allRecipients.length === 1 && AppState.currentPage > 1) {
-        AppState.currentPage -= 1;
-      }
-      await loadRecipients(AppState.currentPage);
-    } else {
-      await showSwal({
-        icon: 'error',
-        title: 'Delete Failed',
-        text: data.message || "Failed to delete",
-        confirmButtonColor: '#EF4444'
-      });
-    }
-  } catch (err) {
-    console.error(err);
-    await showSwal({
-      icon: 'error',
-      title: 'Server Error',
-      text: 'Server error while deleting recipient',
-      confirmButtonColor: '#EF4444'
-    });
-  }
-}
-
-async function confirmDeleteRecipient(id, email) {
-  const { isConfirmed } = await showSwal({
-    title: 'Delete Recipient?',
-    html: `Are you sure you want to delete <strong>${email}</strong>?<br>This action cannot be undone.`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, Delete',
-    cancelButtonText: 'Cancel',
-    confirmButtonColor: '#EF4444',
-    cancelButtonColor: '#6B7280'
-  });
-
-  if (isConfirmed) {
-    await deleteRecipient(id);
-  }
-}
-
-// ============================================================
-// TEST EMAIL WITH CONFIRMATION
-// ============================================================
-async function handleTestSendClick() {
-  const { testGroupSelect, testLocationSelect } = Elements;
-  
-  if (!testGroupSelect?.value) {
-    await showSwal({
+    Swal.fire({
       icon: 'warning',
       title: 'Select Group',
-      text: 'Please select a group first',
-      confirmButtonColor: '#F59E0B'
-    });
-    testGroupSelect?.focus();
-    return;
+      text: 'Please select a target group first'
+    })
+    return
   }
-
-  const groupId = testGroupSelect.value;
-  const location = testLocationSelect?.value || '';
-  const groupName = testGroupSelect.options[testGroupSelect.selectedIndex].text;
   
-  // Calculate recipient count
-  let recipientCount = 0;
-  const targetRecipients = [];
+  const btn = document.getElementById('btnTestSend')
+  btn.disabled = true
+  const originalContent = btn.innerHTML
+  btn.innerHTML = `<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div> Sending...`
   
-  AppState.allRecipients.forEach(r => {
-    if (r.group_id == groupId) {
-      if (!location || !r.locations || r.locations.toLowerCase().includes(location.toLowerCase())) {
-        recipientCount++;
-        targetRecipients.push(r.email);
-      }
-    }
-  });
-
-  if (recipientCount === 0) {
-    await showSwal({
-      icon: 'warning',
-      title: 'No Recipients',
-      text: 'No recipients found for the selected criteria',
-      confirmButtonColor: '#F59E0B'
-    });
-    return;
-  }
-
-  const isDark = ThemeManager.isDark();
-
-  // Show confirmation dialog
-  const { isConfirmed } = await showSwal({
-    title: 'Send Test Email?',
-    icon: 'question',
-    html: `
-      <div class="text-left space-y-3 text-sm" style="color: ${isDark ? '#F3F4F6' : '#1F2937'}">
-        <div style="background: ${isDark ? '#374151' : '#EFF6FF'}; border: 1px solid ${isDark ? '#4B5563' : '#BFDBFE'}; border-radius: 0.5rem; padding: 0.75rem;">
-          <div style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px solid ${isDark ? '#4B5563' : '#BFDBFE'};">
-            <span style="color: ${isDark ? '#9CA3AF' : '#4B5563'}">Group:</span>
-            <span style="font-weight: 600; color: ${isDark ? '#F3F4F6' : '#1F2937'}">${groupName}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px solid ${isDark ? '#4B5563' : '#BFDBFE'};">
-            <span style="color: ${isDark ? '#9CA3AF' : '#4B5563'}">Location:</span>
-            <span style="font-weight: 600; color: ${isDark ? '#F3F4F6' : '#1F2937'}">${location || 'All Locations'}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: 0.25rem 0;">
-            <span style="color: ${isDark ? '#9CA3AF' : '#4B5563'}">Recipients:</span>
-            <span style="font-weight: 700; color: #3B82F6; font-size: 1.125rem;">${recipientCount}</span>
-          </div>
-        </div>
-        <div style="background: ${isDark ? '#451A03' : '#FFFBEB'}; border: 1px solid ${isDark ? '#92400E' : '#FCD34D'}; border-radius: 0.5rem; padding: 0.75rem;">
-          <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
-            <svg style="width: 1.25rem; height: 1.25rem; color: #F59E0B; flex-shrink: 0; margin-top: 0.125rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-            </svg>
-            <p style="font-size: 0.75rem; color: ${isDark ? '#FCD34D' : '#92400E'}; margin: 0;">
-              This will send actual emails to the recipients. Please verify the configuration before proceeding.
-            </p>
-          </div>
-        </div>
-      </div>
-    `,
-    showCancelButton: true,
-    confirmButtonText: 'Yes, Send Now',
-    cancelButtonText: 'Cancel',
-    confirmButtonColor: '#3B82F6',
-    cancelButtonColor: '#6B7280',
-    width: '480px'
-  });
-
-  if (isConfirmed) {
-    await executeTestSend({ groupId, location, groupName, recipientCount, targetRecipients });
-  }
-}
-
-async function executeTestSend({ groupId, location, groupName, recipientCount, targetRecipients }) {
-  const isDark = ThemeManager.isDark();
-  
-  // Show loading
-  Swal.fire({
-    title: 'Sending Test Email...',
-    html: `Please wait while we send to <strong>${recipientCount}</strong> recipient(s)`,
-    allowOutsideClick: false,
-    allowEscapeKey: false,
-    showConfirmButton: false,
-    background: isDark ? '#1F2937' : '#FFFFFF',
-    color: isDark ? '#F3F4F6' : '#1F2937',
-    didOpen: () => {
-      Swal.showLoading();
-    }
-  });
-
-  const formData = new FormData();
-  formData.append("group_id", groupId);
-  if (location) formData.append("location", location);
-
   try {
-    const resp = await fetch("/api/recipients/test-send", { method: "POST", body: formData });
-    const data = await safeJSON(resp);
+    const formData = new FormData()
+    formData.append('group_id', groupId)
+    if (location) formData.append('location', location)
     
-    AppState.lastTestSend = new Date();
-    if (Elements.testLastSend) {
-      Elements.testLastSend.textContent = AppState.lastTestSend.toLocaleTimeString();
+    const res = await fetch(TEST_SEND_API, {
+      method: 'POST',
+      body: formData
+    })
+    
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.message || "Failed to send test email")
     }
-
-    if (data.status === "success") {
-      const recipients = data.data?.recipients || [];
-      
-      // Build recipient list HTML
-      let recipientsHtml = '';
-      if (recipients.length > 0) {
-        const displayList = recipients.slice(0, 10);
-        const remaining = recipients.length - 10;
-        
-        recipientsHtml = `
-          <div style="margin-top: 1rem; background: ${isDark ? '#064E3B' : '#F0FDF4'}; border-radius: 0.5rem; padding: 0.75rem; max-height: 12rem; overflow-y: auto; text-align: left;">
-            <div style="font-size: 0.75rem; font-weight: 600; color: ${isDark ? '#6EE7B7' : '#065F46'}; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-              <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-              Successfully sent to:
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-              ${displayList.map(r => `
-                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: ${isDark ? '#6EE7B7' : '#059669'};">
-                  <span style="width: 0.375rem; height: 0.375rem; border-radius: 9999px; background: #10B981;"></span>
-                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${r}</span>
-                </div>
-              `).join('')}
-              ${remaining > 0 ? `<div style="font-size: 0.75rem; color: ${isDark ? '#6EE7B7' : '#059669'}; margin-top: 0.5rem;">...and ${remaining} more</div>` : ''}
-            </div>
-          </div>
-        `;
-      }
-      
-      await showSwal({
-        icon: 'success',
-        title: 'Test Email Sent!',
-        html: `
-          <div style="color: ${isDark ? '#F3F4F6' : '#1F2937'}">
-            <p style="color: ${isDark ? '#D1D5DB' : '#4B5563'}; margin-bottom: 0.5rem;">${data.message || `Successfully sent to ${recipients.length} recipient(s)`}</p>
-            ${recipientsHtml}
-          </div>
-        `,
-        confirmButtonColor: '#10B981',
-        width: '480px'
-      });
-      
-      showToast('success', 'Test email sent successfully');
-    } else {
-      await showSwal({
-        icon: 'error',
-        title: 'Failed to Send',
-        text: data.message || "An error occurred while sending test emails.",
-        confirmButtonColor: '#EF4444'
-      });
-      
-      showToast('error', data.message || 'Failed to send test email');
-    }
+    
+    const json = await res.json()
+    lastTestEmailTime = new Date()
+    document.getElementById('test-last-send').textContent = lastTestEmailTime.toLocaleTimeString()
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Test Email Sent',
+      text: json.message || `Email sent to ${json.data?.recipients?.length || 0} recipient(s)`,
+      timer: 2000
+    })
+    
   } catch (err) {
-    console.error("Error test send:", err);
-    await showSwal({
+    Swal.fire({
       icon: 'error',
-      title: 'Connection Error',
-      text: 'Could not connect to the server. Please check your connection and try again.',
-      confirmButtonColor: '#EF4444'
-    });
-    showToast('error', 'Server error while sending emails');
+      title: 'Send Failed',
+      text: err.message
+    })
+  } finally {
+    btn.disabled = false
+    btn.innerHTML = originalContent
   }
 }
 
-function handleTestGroupChange() {
-  const { testGroupSelect, testLocationSelect } = Elements;
-  if (!testGroupSelect || !testLocationSelect) return;
+async function updateTestEmailStats() {
+  const groupId = document.getElementById('test_group').value
+  const location = document.getElementById('test_location').value
   
-  const gid = testGroupSelect.value;
-  testLocationSelect.innerHTML = '<option value="">All Locations</option>';
-  
-  const map = AppState.locationsByGroup || {};
-  (map[gid] || []).forEach(loc => {
-    const opt = document.createElement("option");
-    opt.value = loc;
-    opt.textContent = loc;
-    testLocationSelect.appendChild(opt);
-  });
-  
-  updateTestRecipientCount();
-}
-
-// ============================================================
-// INITIALIZATION
-// ============================================================
-function initElements() {
-  Elements.addForm = document.getElementById("addForm");
-  Elements.editForm = document.getElementById("editForm");
-  Elements.groupSelect = document.getElementById("group_id");
-  Elements.editGroupSelect = document.getElementById("edit_group_id");
-  Elements.testGroupSelect = document.getElementById("test_group");
-  Elements.testLocationSelect = document.getElementById("test_location");
-  Elements.locationsSelect = document.getElementById("locations");
-  Elements.editLocationsSelect = document.getElementById("edit_locations");
-  Elements.perPageSelect = document.getElementById("perPageSelect");
-  Elements.btnTestSend = document.getElementById("btnTestSend");
-  Elements.recipientsBody = document.getElementById("recipients-body");
-  Elements.paginationControls = document.getElementById("pagination-controls");
-  Elements.editModal = document.getElementById("editModal");
-  Elements.statTotal = document.getElementById("stat-total");
-  Elements.statGroups = document.getElementById("stat-groups");
-  Elements.statLocations = document.getElementById("stat-locations");
-  Elements.recipientCount = document.getElementById("recipient-count");
-  Elements.testRecipientCount = document.getElementById("test-recipient-count");
-  Elements.testLastSend = document.getElementById("test-last-send");
-}
-
-function initEventListeners() {
-  if (Elements.addForm) {
-    Elements.addForm.addEventListener("submit", handleAddSubmit);
+  if (!groupId) {
+    document.getElementById('test-recipient-count').textContent = '-'
+    return
   }
   
-  if (Elements.editForm) {
-    Elements.editForm.addEventListener("submit", handleEditSubmit);
-  }
-  
-  if (Elements.groupSelect) {
-    Elements.groupSelect.addEventListener("change", (e) => {
-      populateLocations(e.target.value, Elements.locationsSelect);
-    });
-  }
-  
-  if (Elements.editGroupSelect) {
-    Elements.editGroupSelect.addEventListener("change", (e) => {
-      populateLocations(e.target.value, Elements.editLocationsSelect);
-    });
-  }
-  
-  if (Elements.testGroupSelect) {
-    Elements.testGroupSelect.addEventListener("change", handleTestGroupChange);
-  }
-  
-  if (Elements.testLocationSelect) {
-    Elements.testLocationSelect.addEventListener("change", updateTestRecipientCount);
-  }
-  
-  if (Elements.btnTestSend) {
-    Elements.btnTestSend.addEventListener("click", handleTestSendClick);
-  }
-  
-  if (Elements.perPageSelect) {
-    Elements.perPageSelect.addEventListener("change", (e) => {
-      AppState.perPage = parseInt(e.target.value, 10) || 20;
-      AppState.currentPage = 1;
-      loadRecipients(1);
-    });
-  }
-  
-  if (Elements.editModal) {
-    Elements.editModal.addEventListener("click", (e) => {
-      if (e.target === e.currentTarget) closeEditModal();
-    });
+  // Hitung dari data yang ada di tabel atau fetch count
+  try {
+    const params = new URLSearchParams({
+      group: groupId,
+      location: location,
+      per_page: 1
+    })
+    const res = await fetch(`${API_URL}?${params}`)
+    if (!res.ok) throw new Error()
+    const json = await res.json()
+    const count = json.data?.pagination?.total || 0
+    document.getElementById('test-recipient-count').textContent = count
+  } catch (e) {
+    document.getElementById('test-recipient-count').textContent = '?'
   }
 }
 
+/* ===============================
+EVENT LISTENERS
+================================ */
+document.getElementById("perPageSelect").addEventListener("change", e => {
+  state.perPage = parseInt(e.target.value)
+  state.page = 1
+  loadRecipients()
+})
+
+document.getElementById("searchInput").addEventListener("input", e => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    state.search = e.target.value.trim()
+    state.page = 1
+    loadRecipients()
+  }, 400)
+})
+
+document.getElementById("filterGroup").addEventListener("change", e => {
+  state.group = e.target.value
+  state.page = 1
+  loadRecipients()
+})
+
+document.getElementById("filterLocation").addEventListener("change", e => {
+  state.location = e.target.value
+  state.page = 1
+  loadRecipients()
+})
+
+document.getElementById("btnResetFilter").addEventListener("click", () => {
+  state.search = ""
+  state.group = ""
+  state.location = ""
+  state.page = 1
+  
+  document.getElementById("searchInput").value = ""
+  document.getElementById("filterGroup").value = ""
+  document.getElementById("filterLocation").value = ""
+  
+  loadRecipients()
+})
+
+/* ===============================
+INIT
+================================ */
 document.addEventListener("DOMContentLoaded", () => {
-  // Initialize theme first
-  ThemeManager.init();
-  
-  // Then initialize app
-  initElements();
-  initEventListeners();
-  loadRecipients(1);
-});
+  loadRecipients()
+})
+
 </script>
 {% endblock %}
