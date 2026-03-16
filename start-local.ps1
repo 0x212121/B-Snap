@@ -16,7 +16,7 @@
 
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("web", "scheduler", "notifier", "migrate", "check", "help")]
+    [ValidateSet("web", "dev", "scheduler", "notifier", "migrate", "check", "help")]
     [string]$Mode = "web"
 )
 
@@ -113,13 +113,39 @@ except Exception as e:
 # Run database migrations
 function Run-Migrations {
     Write-Info "Running database migrations..."
+    
+    # First, ensure all tables exist by creating them from models
+    Write-Info "Ensuring database tables exist..."
+    python -c "from app.db.database import Base, engine; Base.metadata.create_all(bind=engine); print('Database tables created/updated')"
+    
+    # Check if alembic_version table exists
+    $dbUrl = [Environment]::GetEnvironmentVariable("DATABASE_URL", "Process")
+    if ($dbUrl) {
+        $checkVersionTable = python -c "
+import sys
+from sqlalchemy import create_engine, text
+try:
+    engine = create_engine('$dbUrl')
+    with engine.connect() as conn:
+        result = conn.execute(text(\"SELECT 1 FROM alembic_version\"))
+        sys.exit(0)
+except:
+    sys.exit(1)
+" 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Info "Alembic version table not found, stamping current version..."
+            alembic stamp head 2>$null
+        }
+    }
+    
+    # Then run alembic migrations
     try {
         alembic upgrade head
         Write-Success "Migrations completed"
     } catch {
-        Write-Warning "Migration failed, attempting to initialize database..."
-        python -c "from app.db.database import Base, engine; Base.metadata.create_all(bind=engine); print('Database tables created')"
+        Write-Warning "Migration upgrade had issues, attempting to stamp current version..."
         alembic stamp head 2>$null
+        Write-Success "Version stamped"
     }
 }
 
@@ -182,32 +208,19 @@ function Check-Environment {
 function Start-WebServer {
     Write-Info "Starting $AppName web server..."
 
-    $workers = [Environment]::GetEnvironmentVariable("WORKERS", "Process")
-    if (-not $workers) { $workers = "2" }
-
     $port = [Environment]::GetEnvironmentVariable("PORT", "Process")
     if (-not $port) { $port = "8080" }
 
-    $bind = [Environment]::GetEnvironmentVariable("BIND", "Process")
-    if (-not $bind) { $bind = "127.0.0.1:$port" }
-
-    $timeout = [Environment]::GetEnvironmentVariable("TIMEOUT", "Process")
-    if (-not $timeout) { $timeout = "60" }
+    $hostAddr = "127.0.0.1"
 
     Write-Info "Configuration:"
-    Write-Info "  Workers: $workers"
-    Write-Info "  Bind: $bind"
-    Write-Info "  Timeout: $timeout"
+    Write-Info "  Host: $hostAddr"
+    Write-Info "  Port: $port"
+    Write-Info "  Workers: Using uvicorn defaults (Gunicorn not supported on Windows)"
 
-    # Check if gunicorn config exists
-    $gunicornConfig = Join-Path $ProjectRoot "gunicorn.conf.py"
-    if (Test-Path $gunicornConfig) {
-        Write-Info "Using gunicorn.conf.py"
-        & gunicorn app.main:app -c $gunicornConfig
-    } else {
-        Write-Info "Using default gunicorn settings"
-        & gunicorn app.main:app --workers $workers --bind $bind --timeout $timeout --keep-alive 2 -k uvicorn.workers.UvicornWorker
-    }
+    Write-Info "Starting uvicorn server..."
+    # Using uvicorn directly - gunicorn not supported on Windows
+    & uvicorn app.main:app --host $hostAddr --port $port
 }
 
 # Start development server (uvicorn with reload)
@@ -239,7 +252,7 @@ function Print-Usage {
 Usage: .\start-local.ps1 [MODE]
 
 Modes:
-  web       Start web server with gunicorn (default)
+  web       Start web server with uvicorn (default)
   dev       Start development server with auto-reload
   scheduler Start scheduler service only
   notifier  Start notifier service only
@@ -285,6 +298,13 @@ function Main {
             Wait-ForDatabase | Out-Null
             Run-Migrations
             Start-WebServer
+        }
+        "dev" {
+            Check-Environment
+            Create-Directories
+            Wait-ForDatabase | Out-Null
+            Run-Migrations
+            Start-DevServer
         }
         "scheduler" {
             Check-Environment

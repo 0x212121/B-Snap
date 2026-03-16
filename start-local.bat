@@ -67,16 +67,15 @@ goto :usage
 
 :web
 echo [INFO] Starting web server...
+python -c "from app.db.database import Base, engine; Base.metadata.create_all(bind=engine); print('Database tables created/updated')"
 alembic upgrade head
-if exist "gunicorn.conf.py" (
-    gunicorn app.main:app -c gunicorn.conf.py
-) else (
-    gunicorn app.main:app --workers 2 --bind 127.0.0.1:8080 -k uvicorn.workers.UvicornWorker
-)
+echo [INFO] Starting uvicorn server...
+uvicorn app.main:app --host 127.0.0.1 --port 8080
 goto :end
 
 :dev
 echo [INFO] Starting development server...
+python -c "from app.db.database import Base, engine; Base.metadata.create_all(bind=engine); print('Database tables created/updated')"
 alembic upgrade head
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 goto :end

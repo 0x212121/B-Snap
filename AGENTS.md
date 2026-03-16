@@ -176,7 +176,7 @@ docker-compose down -v
 
 **Windows PowerShell:**
 ```powershell
-.\start-local.ps1 web       # Production-like server (gunicorn)
+.\start-local.ps1 web       # Production-like server (uvicorn)
 .\start-local.ps1 dev       # Development server (uvicorn + reload)
 .\start-local.ps1 scheduler # Start scheduler only
 .\start-local.ps1 migrate   # Run migrations only
@@ -185,10 +185,12 @@ docker-compose down -v
 
 **Windows CMD:**
 ```cmd
-start-local.bat web
-start-local.bat dev
+start-local.bat web       # Production-like server
+start-local.bat dev       # Development server with auto-reload
 start-local.bat scheduler
 ```
+
+> **Note**: Gunicorn tidak support Windows, jadi di Windows menggunakan `uvicorn` langsung.
 
 **Linux/Mac (Makefile):**
 ```bash
