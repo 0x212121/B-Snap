@@ -21,46 +21,195 @@
 
 ## 🚀 Quick Start
 
+Pilih salah satu metode eksekusi:
+
+| Metode | Use Case |
+|--------|----------|
+| [Docker](#1-run-with-docker) | Production deployment, consistent environment |
+| [Local Development](#2-run-without-docker-local-development) | Development, debugging, quick testing |
+
+---
+
+## 1. Run with Docker
+
 ### Prerequisites
-- Python 3.11+
-- PostgreSQL 14+ (atau SQLite untuk dev)
-- Node.js 18+ (untuk Tailwind CSS)
-- FFmpeg
+- Docker 20.10+
+- Docker Compose 2.0+
 
-### Installation
+### Steps
 
+1. **Clone repository**
+   ```bash
+   git clone https://github.com/0x212121/b-snap.git
+   cd b-snap
+   ```
+
+2. **Setup environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env: Set SECRET_KEY dan konfigurasi lainnya
+   ```
+
+3. **Build dan start services**
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Verify running**
+   ```bash
+   curl http://localhost:8080/version
+   ```
+
+5. **Access application**
+   - Web UI: http://localhost:8080
+   - pgAdmin: http://localhost:5050
+
+### Services (Docker)
+| Service | Port | Description |
+|---------|------|-------------|
+| b-snap | 8080 | Main web application |
+| scheduler | - | Background job scheduler |
+| notifier | - | WebSocket notification service |
+| postgres | 5432 | PostgreSQL database |
+| pgadmin | 5050 | Database admin UI |
+
+### Useful Commands
 ```bash
-# 1. Clone repository
-git clone https://github.com/0x212121/b-snap.git
-cd b-snap
+# View logs
+docker-compose logs -f app
 
-# 2. Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+# Run migrations manual
+docker-compose exec app alembic upgrade head
 
-# 3. Install dependencies
-make install-dev
-# atau: pip install -r requirements.txt && pip install -r requirements-dev.txt
+# Stop services
+docker-compose down
 
-# 4. Install pre-commit hooks
-make install-pre-commit
-
-# 5. Setup environment
-cp .env.example .env
-# Edit .env sesuai konfigurasi lokal
-
-# 6. Run database migrations
-make db-migrate
-
-# 7. Build Tailwind CSS
-npm install
-npm run build
-
-# 8. Start development server
-make dev
+# Full reset (data akan hilang)
+docker-compose down -v
 ```
 
-Akses aplikasi di: http://localhost:8000
+---
+
+## 2. Run without Docker (Local Development)
+
+### Prerequisites
+- Python 3.11+
+- Node.js 18+ (untuk Tailwind CSS build)
+- FFmpeg (executable di PATH atau di project root)
+- PostgreSQL 14+ (opsional, bisa pakai SQLite)
+
+### Steps
+
+1. **Clone repository**
+   ```bash
+   git clone https://github.com/0x212121/b-snap.git
+   cd b-snap
+   ```
+
+2. **Create virtual environment**
+   ```bash
+   python -m venv .venv
+   
+   # Windows
+   .venv\Scripts\activate
+   
+   # Linux/Mac
+   source .venv/bin/activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   pip install -e ".[dev]"
+   ```
+
+4. **Install Node dependencies (untuk CSS)**
+   ```bash
+   npm install
+   npm run build
+   ```
+
+5. **Setup environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env:
+   # - Set SECRET_KEY (wajib)
+   # - Database: Gunakan SQLite (default) atau PostgreSQL
+   ```
+
+6. **Run database migrations**
+   ```bash
+   alembic upgrade head
+   ```
+
+7. **Start application**
+   
+   **Windows (PowerShell):**
+   ```powershell
+   .\start-local.ps1 web
+   ```
+   
+   **Windows (CMD):**
+   ```cmd
+   start-local.bat web
+   ```
+   
+   **Linux/Mac:**
+   ```bash
+   # Using Makefile
+   make dev
+   
+   # Atau manual
+   uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+   ```
+
+8. **Verify running**
+   ```bash
+   curl http://localhost:8000/version
+   ```
+
+9. **Access application**
+   - Web UI: http://localhost:8000
+   - Auto-reload: Enabled (server restart saat file berubah)
+
+### Local Startup Options
+
+**Windows PowerShell:**
+```powershell
+.\start-local.ps1 web       # Production-like server (gunicorn)
+.\start-local.ps1 dev       # Development server (uvicorn + reload)
+.\start-local.ps1 scheduler # Start scheduler only
+.\start-local.ps1 migrate   # Run migrations only
+.\start-local.ps1 check     # Check environment
+```
+
+**Windows CMD:**
+```cmd
+start-local.bat web
+start-local.bat dev
+start-local.bat scheduler
+```
+
+**Linux/Mac (Makefile):**
+```bash
+make dev              # Development server
+make serve            # Production server
+make dev-worker       # Scheduler
+```
+
+### Database Options (Local)
+
+**SQLite (Default - simplest):**
+```env
+# .env
+DATABASE_URL=sqlite:///./data.db
+```
+
+**PostgreSQL (Production-like):**
+```env
+# .env
+DATABASE_URL=postgresql+psycopg2://user:password@localhost:5432/bsnap_db
+```
 
 ---
 
@@ -89,45 +238,41 @@ b-snap/
 ├── pyproject.toml         # Modern Python project config
 ├── pytest.ini            # Test configuration
 ├── Makefile              # Development commands
-└── docker-compose.yml    # Docker services
+├── docker-compose.yml    # Docker services
+├── start.sh              # Docker startup script
+├── start-local.ps1       # Windows local startup
+└── start-local.bat       # Windows CMD local startup
 ```
 
 ---
 
 ## 🔧 Development Commands
 
-Gunakan `Makefile` untuk commands yang umum:
+Gunakan `Makefile` (Linux/Mac) atau `start-local.ps1` (Windows) untuk commands:
 
 ```bash
-# Development
-make dev              # Run dev server with hot reload
-make install-dev      # Install dev dependencies
+# Development Server
+make dev                    # Run dev server with hot reload
+make serve                  # Run production server
 
 # Testing
-make test             # Run all tests
-make test-unit        # Run unit tests
-make test-integration # Run integration tests
-make test-coverage    # Run tests with coverage
+make test                   # Run all tests
+make test-unit              # Run unit tests only
+make test-integration       # Run integration tests
+make test-coverage          # Run tests with coverage
 
 # Code Quality
-make lint             # Run all linters
-make format           # Format code (black + ruff)
-make check-format     # Check formatting without changes
-make pre-commit       # Run pre-commit hooks
+make lint                   # Run all linters
+make format                 # Format code (black + ruff)
+make check-format           # Check formatting
 
 # Database
-make db-migrate       # Run migrations
-make db-makemigrations message="add users table"  # Create migration
-make db-reset         # Reset database
-
-# Docker
-make docker-build     # Build Docker image
-make docker-up        # Start containers
-make docker-down      # Stop containers
+make db-migrate             # Run migrations
+make db-makemigrations      # Create new migration
+make db-reset               # Reset database
 
 # Utilities
-make clean            # Clean build artifacts
-make help             # Show all commands
+make clean                  # Clean build artifacts
 ```
 
 ---
@@ -159,16 +304,7 @@ pytest --cov=app --cov-report=html
 pytest -m unit          # Unit tests only
 pytest -m integration   # Integration tests
 pytest -m "not slow"    # Skip slow tests
-
-# Parallel execution
-pytest -n auto          # Use all CPU cores
 ```
-
-### Writing Tests
-- Gunakan fixtures dari `conftest.py`
-- Mock external services (camera, email, etc.)
-- Gunakan marker `@pytest.mark.unit` atau `@pytest.mark.integration`
-- Target coverage: minimal 70%
 
 ---
 
@@ -198,13 +334,8 @@ from app.models.user import User
 ### Type Hints
 - Selalu gunakan type hints untuk function arguments dan return values
 - Gunakan `from __future__ import annotations` untuk Python 3.11+
-- Gunakan `Optional`, `Union`, `List` dari `typing` atau `|` syntax
 
-### Docstrings
-- Gunakan Google-style docstrings
-- Document semua public modules, classes, dan functions
-
-Example:
+### Docstrings (Google Style)
 ```python
 def get_camera_snapshot(camera_id: int, timeout: int = 10) -> bytes:
     """Capture snapshot from camera.
@@ -218,7 +349,6 @@ def get_camera_snapshot(camera_id: int, timeout: int = 10) -> bytes:
         
     Raises:
         CameraNotFoundError: If camera doesn't exist.
-        SnapshotTimeoutError: If capture times out.
     """
 ```
 
@@ -228,35 +358,10 @@ def get_camera_snapshot(camera_id: int, timeout: int = 10) -> bytes:
 
 1. **Never commit secrets**: Gunakan `.env` file
 2. **Validate inputs**: Gunakan Pydantic schemas
-3. **SQL Injection**: Gunakan SQLAlchemy ORM, jangan raw SQL
+3. **SQL Injection**: Gunakan SQLAlchemy ORM
 4. **XSS Protection**: Escape output di templates Jinja2
-5. **CSRF**: Session-based auth sudah include protection
-6. **Dependencies**: Jalankan `safety check` dan `bandit` secara regular
-
----
-
-## 🐳 Docker Development
-
-```bash
-# Build and start all services
-docker compose up -d
-
-# View logs
-docker compose logs -f app
-
-# Run migrations
-docker compose exec app alembic upgrade head
-
-# Rebuild after changes
-docker compose build --no-cache
-```
-
-Services:
-- `app`: Main web application
-- `scheduler`: Background job scheduler
-- `notifier`: WebSocket notification service
-- `postgres`: PostgreSQL database
-- `pgadmin`: Database admin UI
+5. **CSRF**: Session-based auth include protection
+6. **Dependencies**: Jalankan `safety check` dan `bandit`
 
 ---
 
@@ -276,9 +381,6 @@ alembic downgrade -1
 
 # View current version
 alembic current
-
-# History
-alembic history --verbose
 ```
 
 ---
@@ -299,10 +401,6 @@ alembic history --verbose
 1. Buat function di `app/jobs/`
 2. Register di `app/jobs/scheduler.py`
 
-### Add Static File
-1. Place di `static/` folder
-2. Reference di template: `/static/path/to/file`
-
 ---
 
 ## 🐛 Debugging
@@ -316,9 +414,6 @@ python -m pdb -m uvicorn app.main:app
 
 # Memory profiling
 python -m memray run app/main.py
-
-# CPU profiling
-py-spy top -- python app/main.py
 ```
 
 ---
@@ -333,13 +428,5 @@ py-spy top -- python app/main.py
 
 ---
 
-## 💬 Questions?
-
-- Check `docs/` directory untuk dokumentasi lengkap
-- Review `Backlog.md` untuk feature roadmap
-- Lihat `CHANGELOG.md` untuk update terbaru
-
----
-
 **Version**: 1.14.0  
-**Last Updated**: 2026-03-09
+**Last Updated**: 2026-03-16
