@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.models.camera import Camera
 from app.models.snapshot import Snapshot
 from app.utils.notification_service import NotificationService
+from app.utils.check_stats import check_stats
 
 logger = logging.getLogger("snapshot_service")
 
@@ -289,6 +290,9 @@ class SnapshotService:
             if not snapshot:
                 # Note: Error notification is handled by frontend
                 return None
+            
+            # Update camera daily stats
+            check_stats(camera)
             
             # Note: Success notification is handled by frontend
             

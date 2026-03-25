@@ -162,23 +162,85 @@
 <script>
   let chartInstance;
   
+  // Initial data from server-side rendering
+  const initialChartLabels = {{ chart_labels | tojson }};
+  const initialChartData = {{ chart_data | tojson }};
+  
   async function fetchStats(camera = "", days = 7) {
-    const res = await fetch(`/stats/data?camera=${camera}&days=${days}`);
-    const data = await res.json();
-    
-    updateChart(data.chart_labels, data.chart_data);
+    try {
+      const res = await fetch(`/stats/data?camera=${camera}&days=${days}`);
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const data = await res.json();
+      
+      if (data.chart_labels && data.chart_labels.length > 0) {
+        updateChart(data.chart_labels, data.chart_data);
+      } else {
+        // If no data from API, show empty chart with message
+        showNoDataMessage();
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      // Fallback to initial data if API fails
+      if (initialChartLabels && initialChartLabels.length > 0) {
+        updateChart(initialChartLabels, initialChartData);
+      } else {
+        showNoDataMessage();
+      }
+    }
   }
   
   async function fetchNoDataCameras(days = 7, selectedCamera = "") {
-    const res = await fetch(`/stats/no-data-cameras?days=${days}`);
-    const data = await res.json();
+    try {
+      const res = await fetch(`/stats/no-data-cameras?days=${days}`);
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const data = await res.json();
+      updateNoDataCameras(data.cameras, selectedCamera);
+    } catch (error) {
+      console.error('Error fetching no-data cameras:', error);
+    }
+  }
+  
+  function showNoDataMessage() {
+    const ctx = document.getElementById('snapshotChart').getContext('2d');
+    if (chartInstance) chartInstance.destroy();
     
-    updateNoDataCameras(data.cameras, selectedCamera);
+    chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['No Data'],
+        datasets: [{
+          label: 'Snapshots',
+          data: [0],
+          backgroundColor: 'rgba(200, 200, 200, 0.5)',
+          borderColor: 'rgba(200, 200, 200, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          title: {
+            display: true,
+            text: 'No snapshot data available for selected period'
+          }
+        },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, beginAtZero: true }
+        }
+      }
+    });
   }
   
   function updateChart(labels, values) {
     const ctx = document.getElementById('snapshotChart').getContext('2d');
     if (chartInstance) chartInstance.destroy();
+    
+    // Ensure we have arrays
+    if (!labels || labels.length === 0) {
+      showNoDataMessage();
+      return;
+    }
     
     chartInstance = new Chart(ctx, {
       type: 'bar',
@@ -186,7 +248,7 @@
         labels: labels,
         datasets: [{
           label: 'Snapshots',
-          data: values,
+          data: values || [],
           backgroundColor: 'rgba(59, 130, 246, 0.7)',
           borderColor: 'rgba(59, 130, 246, 1)',
           borderWidth: 1
@@ -194,9 +256,31 @@
       },
       options: {
         responsive: true,
+        plugins: {
+          title: {
+            display: false
+          },
+          legend: {
+            display: true,
+            position: 'top'
+          }
+        },
         scales: {
-          x: { stacked: true },
-          y: { stacked: true, beginAtZero: true }
+          x: { 
+            stacked: true,
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: { 
+            stacked: true, 
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Snapshot Count'
+            }
+          }
         }
       }
     });
@@ -239,10 +323,16 @@
     fetchNoDataCameras(e.target.value, selectedCamera);
   });
   
-  // Initial load
+  // Initial load - use server-rendered data first for immediate display
+  if (initialChartLabels && initialChartLabels.length > 0) {
+    updateChart(initialChartLabels, initialChartData);
+  } else {
+    showNoDataMessage();
+  }
+  
+  // Then fetch fresh data from API
   const initialSelectedCamera = document.getElementById("cameraDropdown").value;
   const initialSelectedPeriod = document.getElementById("periodDropdown").value;
-  fetchStats(initialSelectedCamera, initialSelectedPeriod);
   fetchNoDataCameras(initialSelectedPeriod, initialSelectedCamera);
   
   // Storage Monitor Functions

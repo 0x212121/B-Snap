@@ -25,10 +25,21 @@ storage_logger = logging.getLogger("storage")
 async def get_camera_stats(
     request: Request,
     camera: str = Query(None),
+    days: int = Query(7),  # Default to 7 days to match template default
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required) 
 ):
-    query = db.query(CameraDailyStats).filter(CameraDailyStats.snapshot_count > 0)  # ✅ hanya yang punya snapshot
+    # Calculate date range
+    now = datetime.now(timezone.utc).astimezone()
+    end_date = now.date()
+    start_date = end_date - timedelta(days=days)
+    
+    # Query with date range and snapshot count filter
+    query = db.query(CameraDailyStats).filter(
+        CameraDailyStats.snapshot_count > 0,
+        CameraDailyStats.date >= start_date,
+        CameraDailyStats.date <= end_date
+    )
 
     if camera:
         query = query.filter(CameraDailyStats.camera_name == camera)
@@ -118,7 +129,11 @@ async def get_camera_stats_data(
     end_date = now.date()
     start_date = end_date - timedelta(days=days)
 
-    query = db.query(CameraDailyStats).filter(CameraDailyStats.date >= start_date)
+    # Build base query with date range
+    query = db.query(CameraDailyStats).filter(
+        CameraDailyStats.date >= start_date,
+        CameraDailyStats.date <= end_date
+    )
 
     if camera:
         # ilike = case-insensitive (kompatibel PostgreSQL)
@@ -127,6 +142,7 @@ async def get_camera_stats_data(
     stats = query.order_by(CameraDailyStats.date).all()
 
     stats_grouped = defaultdict(list)
+    # Initialize all dates with 0 count
     snapshot_count_by_date = {
         (start_date + timedelta(days=i)).strftime('%Y-%m-%d'): 0
         for i in range((end_date - start_date).days + 1)
@@ -137,9 +153,11 @@ async def get_camera_stats_data(
         stats_grouped[stat.camera_name].append(stat)
         snapshot_count_by_date[date_str] += stat.snapshot_count
 
+    # Build chart data preserving date order
+    sorted_dates = sorted(snapshot_count_by_date.keys())
     chart_data = [
         {"date": d, "snapshot_count": snapshot_count_by_date[d]}
-        for d in sorted(snapshot_count_by_date)
+        for d in sorted_dates
     ]
 
     # Kamera yang punya data

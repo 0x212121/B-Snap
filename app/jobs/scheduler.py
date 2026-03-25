@@ -24,6 +24,7 @@ from app.models.camera_daily_stats import CameraDailyStats
 from app.models.snapshot_log import SnapshotLog
 from app.models.job_execution_log import JobExecutionLog
 from app.utils.snapshot_utils import record_snapshot_metadata, check_orphaned_snapshots
+from app.utils.check_stats import check_stats
 from app.utils.orphaned_scanner import run_orphaned_scan
 from sqlalchemy.orm import Session
 from app.models.task_timing import TaskTiming
@@ -232,6 +233,10 @@ def run_snapshot(camera):
                     db.add(snapshot_log)
 
                 db.commit()
+                
+                # Update camera daily stats
+                check_stats(camera)
+                
                 logger.info("[SUCCESS] Scheduled snapshot for %s, saved with ID %s", camera.hostname, snapshot.id)
                 return {"status": "success"}
 

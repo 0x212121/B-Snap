@@ -113,7 +113,7 @@
 🆕 Added:
 - [x] Add tampered reason and resolution to maps popup window - 30/07/2025
 - [x] Filter camera with no IP in /ip command
-- [ ] Add tampered and resolution in n8n bot
+- [x] Add tampered and resolution in n8n bot
 - [x] CCTV notes field/column, to show cctv details (like in services, SOED, and others)
 - [x] Bug scheduler failed
 - [x] Debug mode
@@ -134,9 +134,8 @@
 - [x] Notification Tampered Snapshot
 - [ ] Cameras filter by status
 - [x] Map tampilkan last update/refresh
-- [ ] Bug: can't show password on edit camera form
+- [ ] Bug: can't show password on edit camera modal form when eye icon is toggled, and not align
 - [ ] Bug: camera division not filled when imported cameras
 - [ ] Tidy up backlog
 - [ ] Snapshot log exposed credential
 - [ ] Camera snapshot stats blank
-- [ ] 
