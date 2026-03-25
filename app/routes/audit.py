@@ -8,7 +8,7 @@ from app.db.database import get_db
 from app.models.audit_log import AuditLog
 from app.models.user import User
 from app.routes.auth import admin_access_required
-from app.utils.timezone_helper import get_current_timezone, to_current_timezone
+from app.utils.timezone_helper import get_current_timezone, to_current_timezone, format_datetime_standard
 import io
 import csv
 from app.utils.template_helper import templates
@@ -16,9 +16,10 @@ from app.utils.template_helper import templates
 router = APIRouter()
 
 
-def format_datetime_local(dt, tz_name=None):
+def format_datetime_local(dt, tz_name=None, db=None):
     """
     Convert datetime object or string timestamp to configured timezone
+    Uses standard format: DD/MM/YYYY - HH:MM:SS TZ
     """
     if not dt:
         return ""
@@ -37,15 +38,8 @@ def format_datetime_local(dt, tz_name=None):
     else:
         return str(dt)
 
-    if dt_obj.tzinfo is None:
-        from datetime import timezone as dt_timezone
-        dt_obj = dt_obj.replace(tzinfo=dt_timezone.utc)
-
-    try:
-        tz = ZoneInfo(tz_name or "UTC")
-        return dt_obj.astimezone(tz).strftime("%d %B %Y, %H:%M:%S %Z")
-    except Exception:
-        return dt_obj.strftime("%d %B %Y, %H:%M:%S UTC")
+    # Use the standard format function
+    return format_datetime_standard(dt_obj, db=db)
 
 
 # Daftarkan filter agar bisa digunakan di template
@@ -132,7 +126,7 @@ async def get_audit_logs_api(
 
     logs_data = []
     for log in logs:
-        ts_local = to_current_timezone(log.timestamp, db).strftime('%d %b %Y %H:%M:%S %Z')
+        ts_local = format_datetime_standard(log.timestamp, db=db)
 
         logs_data.append({
             "timestamp": ts_local,
@@ -191,14 +185,15 @@ async def export_audit_logs_csv(
     writer.writerow(["Timestamp", "User", "Action", "Target", "IP Address", "Extra"])
     for log in logs:
         writer.writerow([
-            to_current_timezone(log.timestamp, db).strftime("%Y-%m-%d %H:%M:%S"),
+            format_datetime_standard(log.timestamp, db=db),
             log.user, log.action, log.target, log.ip, log.extra
         ])
     
-    output.seek(0)
+    csv_content = output.getvalue()
+    output.close()
     
     return StreamingResponse(
-        output,
-        media_type="text/csv",
+        io.BytesIO(csv_content.encode('utf-8')),
+        media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": "attachment; filename=audit_logs_export.csv"}
     )

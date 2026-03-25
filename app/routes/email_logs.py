@@ -10,7 +10,7 @@ from math import ceil
 import pytz
 
 from app.db.database import get_db
-from app.utils.timezone_helper import get_current_timezone, format_datetime_with_tz
+from app.utils.timezone_helper import get_current_timezone, format_datetime_standard
 from app.models.camera_email_notification_log import CameraEmailNotificationLog
 from app.utils.template_helper import templates
 from app.routes.auth import admin_access_required
@@ -199,10 +199,6 @@ def export_email_logs_csv(
 
     logs = query.order_by(CameraEmailNotificationLog.sent_at.desc()).all()
 
-    # Get timezone
-    tz_name = get_current_timezone(db)
-    local_tz = pytz.timezone(tz_name)
-
     # Create CSV
     output = io.StringIO()
     writer = csv.writer(output)
@@ -212,20 +208,9 @@ def export_email_logs_csv(
     ])
 
     for log in logs:
-        # Format timestamps
-        if log.sent_at:
-            if log.sent_at.tzinfo is None:
-                log.sent_at = pytz.utc.localize(log.sent_at)
-            sent_at_str = log.sent_at.astimezone(local_tz).strftime("%Y-%m-%d %H:%M:%S")
-        else:
-            sent_at_str = "N/A"
-
-        if log.incident_started_at:
-            if log.incident_started_at.tzinfo is None:
-                log.incident_started_at = pytz.utc.localize(log.incident_started_at)
-            incident_str = log.incident_started_at.astimezone(local_tz).strftime("%Y-%m-%d %H:%M:%S")
-        else:
-            incident_str = "N/A"
+        # Format timestamps using standard format
+        sent_at_str = format_datetime_standard(log.sent_at, db=db)
+        incident_str = format_datetime_standard(log.incident_started_at, db=db)
 
         recipients = ", ".join([r.recipient_email for r in log.recipients]) if log.recipients else "-"
         
@@ -240,10 +225,11 @@ def export_email_logs_csv(
             log.error_message or "-",
         ])
 
-    output.seek(0)
+    csv_content = output.getvalue()
+    output.close()
     
     return StreamingResponse(
-        output,
-        media_type="text/csv",
+        io.BytesIO(csv_content.encode('utf-8')),
+        media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": "attachment; filename=email_logs_export.csv"}
     )

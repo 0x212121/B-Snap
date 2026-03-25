@@ -47,6 +47,72 @@ def to_current_timezone(dt: datetime, db: Session) -> datetime:
 
 
 def format_datetime_with_tz(dt: datetime) -> str:
+    """Format datetime to standard display format with timezone."""
     if not dt or not dt.tzinfo:
         return "N/A"
     return dt.strftime("%d/%m/%Y - %H:%M:%S %Z")
+
+
+def format_datetime_standard(dt: datetime, db: Session = None) -> str:
+    """
+    Standard datetime formatter used across the application.
+    Converts to current timezone and formats consistently.
+    """
+    if not dt:
+        return "N/A"
+    
+    if db and (not dt.tzinfo or dt.tzinfo.utcoffset(dt) is None):
+        dt = to_current_timezone(dt, db)
+    elif not dt.tzinfo:
+        dt = pytz.utc.localize(dt)
+    
+    return dt.strftime("%d/%m/%Y - %H:%M:%S %Z")
+
+
+def format_date_standard(dt: datetime) -> str:
+    """Standard date-only formatter."""
+    if not dt:
+        return "N/A"
+    if isinstance(dt, str):
+        try:
+            dt = datetime.fromisoformat(dt)
+        except ValueError:
+            return dt
+    return dt.strftime("%d/%m/%Y")
+
+
+def format_datetime_iso(dt: datetime) -> str:
+    """ISO format for API responses (always in UTC)."""
+    if not dt:
+        return None
+    if not dt.tzinfo:
+        dt = pytz.utc.localize(dt)
+    return dt.isoformat()
+
+
+def parse_datetime_standard(dt_str: str) -> datetime:
+    """Parse datetime from various standard formats."""
+    if not dt_str:
+        return None
+    
+    formats = [
+        "%Y-%m-%dT%H:%M:%S.%f%z",
+        "%Y-%m-%dT%H:%M:%S%z",
+        "%Y-%m-%dT%H:%M:%S.%f",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d %H:%M:%S",
+        "%d/%m/%Y - %H:%M:%S",
+        "%d/%m/%Y %H:%M:%S",
+    ]
+    
+    for fmt in formats:
+        try:
+            return datetime.strptime(dt_str, fmt)
+        except ValueError:
+            continue
+    
+    # Try ISO format as fallback
+    try:
+        return datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
+    except ValueError:
+        return None

@@ -13,6 +13,7 @@ from app.models.audit_log import AuditLog
 from app.routes.auth import admin_access_required
 from app.models.user import User
 from app.utils.template_helper import templates
+from app.utils.timezone_helper import format_datetime_standard
 
 router = APIRouter(prefix="/audit-logs", tags=["Audit Logs"])
 
@@ -102,7 +103,7 @@ async def get_audit_logs_api(
         "logs": [
             {
                 "id": log.id,
-                "timestamp": log.timestamp.strftime("%Y-%m-%d %H:%M:%S") if log.timestamp else None,
+                "timestamp": format_datetime_standard(log.timestamp, db=db) if log.timestamp else None,
                 "user": log.user,
                 "action": log.action,
                 "target": log.target,

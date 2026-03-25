@@ -20,7 +20,7 @@ from app.utils.audit_logger import log_audit
 from app.utils.snapshot_service import SnapshotService
 from app.utils.snapshot_utils import record_snapshot_metadata
 from app.utils.notification_service import NotificationService
-from app.utils.timezone_helper import to_current_timezone
+from app.utils.timezone_helper import to_current_timezone, format_datetime_standard
 
 router = APIRouter(tags=["Snapshots"])
 
@@ -72,7 +72,7 @@ def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[
             "url": f"/{SNAPSHOT_BASE_DIR}/{s.file_path}",
             "camera": s.camera_name,
             "ip": s.camera_ip,
-            "time": to_current_timezone(s.timestamp, db).strftime('%d %b %Y %H:%M:%S %Z'),
+            "time": format_datetime_standard(s.timestamp, db=db),
             "group": s.camera_group,
             "id": s.id,
             "file_size": int(s.file_size / 1024) if s.file_size else 0,

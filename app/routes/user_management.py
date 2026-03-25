@@ -17,7 +17,7 @@ from sqlalchemy.orm import joinedload, Session
 from sqlalchemy import func, or_
 import json
 from app.utils.template_helper import templates
-from app.utils.timezone_helper import to_current_timezone
+from app.utils.timezone_helper import to_current_timezone, format_datetime_standard
 
 router = APIRouter(tags=["User Management"])
 
@@ -83,8 +83,7 @@ def register_timezone_filter(db: Session):
                     return dt
             else:
                 dt_parsed = dt
-            local_dt = to_current_timezone(dt_parsed, db)
-            return local_dt.strftime("%d/%m/%Y - %H:%M:%S %Z")
+            return format_datetime_standard(dt_parsed, db=db)
         except Exception as e:
             logging.getLogger("management").warning(f"Failed timezone filter parse: {dt} ({e})")
             return "Invalid Date"
@@ -661,7 +660,7 @@ async def api_generate_token(
                 expires_dt = safe_parse_datetime(t.get("expires_at"))
                 formatted.append({
                     "token": t["token"],
-                    "expires_at_gmt8": to_current_timezone(expires_dt, db_session).strftime("%d/%m/%Y - %H:%M:%S %Z") if expires_dt else "Never"
+                    "expires_at_gmt8": format_datetime_standard(expires_dt, db=db_session) if expires_dt else "Never"
                 })
             return formatted
 
@@ -674,7 +673,7 @@ async def api_generate_token(
             extra=f"Token expires at {expires_at or 'Never'}"
         )
 
-        expires_str = to_current_timezone(expires_at, db).strftime("%d/%m/%Y - %H:%M:%S %Z") if expires_at else "Never"
+        expires_str = format_datetime_standard(expires_at, db=db) if expires_at else "Never"
         
         return JSONResponse(status_code=200, content={
             "token": token,
