@@ -176,9 +176,11 @@ docker-compose down -v
 
 **Windows PowerShell:**
 ```powershell
-.\start-local.ps1 web       # Production-like server (uvicorn)
-.\start-local.ps1 dev       # Development server (uvicorn + reload)
+.\start-local.ps1 web       # Production-like server (uvicorn) - web only
+.\start-local.ps1 dev       # Development server (uvicorn + reload) - web only
+.\start-local.ps1 all       # Start all services (web + scheduler + notifier)
 .\start-local.ps1 scheduler # Start scheduler only
+.\start-local.ps1 notifier  # Start notifier only
 .\start-local.ps1 migrate   # Run migrations only
 .\start-local.ps1 check     # Check environment
 ```
@@ -190,7 +192,7 @@ start-local.bat dev       # Development server with auto-reload
 start-local.bat scheduler
 ```
 
-> **Note**: Gunicorn tidak support Windows, jadi di Windows menggunakan `uvicorn` langsung.
+> **Note**: Gunicorn tidak support Windows, jadi di Windows menggunakan `uvicorn` langsung. Gunakan mode `all` untuk menjalankan web server, scheduler, dan notifier dalam satu perintah.
 
 **Linux/Mac (Makefile):**
 ```bash

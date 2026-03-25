@@ -27,26 +27,38 @@ from sqlalchemy import text
 
 def get_jobs_from_db():
     """Read jobs directly from apscheduler_jobs table."""
-    with engine.connect() as conn:
-        result = conn.execute(text('SELECT id, next_run_time FROM apscheduler_jobs ORDER BY id'))
-        jobs = []
-        for row in result:
-            jobs.append({
-                'id': row.id,
-                'next_run_time': row.next_run_time
-            })
-        return jobs
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text('SELECT id, next_run_time FROM apscheduler_jobs ORDER BY id'))
+            jobs = []
+            for row in result:
+                jobs.append({
+                    'id': row.id,
+                    'next_run_time': row.next_run_time
+                })
+            return jobs
+    except Exception as e:
+        # Table doesn't exist yet (scheduler hasn't started)
+        import logging
+        logging.getLogger(__name__).debug("apscheduler_jobs table not found: %s", e)
+        return []
 
 def get_job_from_db(job_id: str):
     """Read a single job from apscheduler_jobs table."""
-    with engine.connect() as conn:
-        result = conn.execute(
-            text('SELECT id, next_run_time FROM apscheduler_jobs WHERE id = :job_id'),
-            {'job_id': job_id}
-        )
-        row = result.first()
-        if row:
-            return {'id': row.id, 'next_run_time': row.next_run_time}
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(
+                text('SELECT id, next_run_time FROM apscheduler_jobs WHERE id = :job_id'),
+                {'job_id': job_id}
+            )
+            row = result.first()
+            if row:
+                return {'id': row.id, 'next_run_time': row.next_run_time}
+            return None
+    except Exception as e:
+        # Table doesn't exist yet (scheduler hasn't started)
+        import logging
+        logging.getLogger(__name__).debug("apscheduler_jobs table not found: %s", e)
         return None
 
 

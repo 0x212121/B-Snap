@@ -133,4 +133,10 @@
 - [x] Whatsapp Whitelist Filter user and pagination
 - [x] Notification Tampered Snapshot
 - [ ] Cameras filter by status
-- [ ] Map tampilkan last update/refresh
+- [x] Map tampilkan last update/refresh
+- [ ] Bug: can't show password on edit camera form
+- [ ] Bug: camera division not filled when imported cameras
+- [ ] Tidy up backlog
+- [ ] Snapshot log exposed credential
+- [ ] Camera snapshot stats blank
+- [ ] 

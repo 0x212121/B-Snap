@@ -1,14 +1,24 @@
 import asyncio
 import asyncpg
 import os
+import sys
 from datetime import datetime, timezone
+
+# Fix Unicode encoding on Windows
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding='utf-8')
 
 PG_NOTIFY_CHANNEL = "camera_notifications"
 WAKE_UP_CHANNEL = "new_message_in_queue" # Channel sinyal untuk worker
 
 def log(msg: str):
     now = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
-    print(f"[{now}] {msg}", flush=True)
+    try:
+        print(f"[{now}] {msg}", flush=True)
+    except UnicodeEncodeError:
+        # Fallback: remove non-ASCII characters for Windows compatibility
+        safe_msg = msg.encode('ascii', 'ignore').decode('ascii')
+        print(f"[{now}] {safe_msg}", flush=True)
 
 async def pg_listen_forever():
     raw_dsn = os.getenv("DATABASE_URL")

@@ -62,6 +62,7 @@ if "%MODE%"=="scheduler" goto :scheduler
 if "%MODE%"=="notifier" goto :notifier
 if "%MODE%"=="migrate" goto :migrate
 if "%MODE%"=="check" goto :check
+if "%MODE%"=="all" goto :all
 echo [ERROR] Unknown mode: %MODE%
 goto :usage
 
@@ -104,12 +105,32 @@ echo.
 echo Usage: start-local.bat [MODE]
 echo.
 echo Modes:
-echo   web       Start web server with gunicorn (default)
+echo   web       Start web server with uvicorn (default)
 echo   dev       Start development server with auto-reload
-echo   scheduler Start scheduler service
-echo   notifier  Start notifier service
+echo   scheduler Start scheduler service only
+echo   notifier  Start notifier service only
+echo   all       Start all services (web + scheduler + notifier)
 echo   migrate   Run database migrations
 echo   check     Check environment
+echo.
+echo For 'all' mode, it's recommended to use PowerShell script instead:
+echo   .\start-local.ps1 all
+
+:all
+echo [INFO] Starting all services...
+echo [INFO] For better experience with 'all' mode, consider using PowerShell:
+echo [INFO]   .\start-local.ps1 all
+echo.
+echo [INFO] Starting scheduler in background...
+start "B-Snap Scheduler" cmd /c "python -m app.jobs.scheduler_main"
+echo [INFO] Starting notifier in background...
+start "B-Snap Notifier" cmd /c "python -m app.ws.notifier"
+timeout /t 3 /nobreak >nul
+echo [INFO] Starting web server (close this window to stop all services)...
+python -c "from app.db.database import Base, engine; Base.metadata.create_all(bind=engine); print('Database tables created/updated')"
+alembic upgrade head
+uvicorn app.main:app --host 127.0.0.1 --port 8080
+goto :end
 
 :end
 endlocal

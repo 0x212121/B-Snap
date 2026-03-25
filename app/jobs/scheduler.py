@@ -443,6 +443,33 @@ CONFIG_HANDLERS = {
 def start_scheduler():
     init_thread_pool()
     
+    # Ensure APScheduler tables exist before starting scheduler
+    # This prevents errors when the table doesn't exist yet (first run or fresh database)
+    try:
+        from sqlalchemy import inspect, text
+        
+        inspector = inspect(engine)
+        if not inspector.has_table('apscheduler_jobs'):
+            logger.info("[Scheduler] Creating APScheduler tables...")
+            # Create the table using SQLAlchemy's create_all via the jobstore's metadata
+            # This ensures compatibility with different database backends
+            from sqlalchemy import Column, String, Float, LargeBinary, Index, MetaData
+            from sqlalchemy import Table as SATable
+            
+            metadata = MetaData()
+            apscheduler_jobs = SATable(
+                'apscheduler_jobs',
+                metadata,
+                Column('id', String(191), primary_key=True),
+                Column('next_run_time', Float(25)),
+                Column('job_state', LargeBinary, nullable=False),
+                Index('ix_apscheduler_jobs_next_run_time', 'next_run_time')
+            )
+            metadata.create_all(engine)
+            logger.info("[Scheduler] APScheduler tables created")
+    except Exception as e:
+        logger.warning("[Scheduler] Could not create APScheduler tables: %s", e)
+    
     # Clear apscheduler_jobs table to prevent duplicate key errors
     # This is necessary when the scheduler container restarts
     try:

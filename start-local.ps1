@@ -4,21 +4,26 @@
 # This script starts the B-Snap application for local development without Docker.
 #
 # Usage:
-#   .\start-local.ps1 [web|worker|scheduler|notifier|migrate|check]
+#   .\start-local.ps1 [web|dev|scheduler|notifier|migrate|check|all]
 #
 # Modes:
 #   web       - Start web server only (default)
+#   dev       - Start development server with auto-reload
 #   scheduler - Start scheduler service only
 #   notifier  - Start notifier service only
+#   all       - Start all services (web + scheduler + notifier)
 #   migrate   - Run database migrations only
 #   check     - Run environment checks only
 # =============================================================================
 
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("web", "dev", "scheduler", "notifier", "migrate", "check", "help")]
+    [ValidateSet("web", "dev", "scheduler", "notifier", "migrate", "check", "all", "help")]
     [string]$Mode = "web"
 )
+
+# Global variable to track child processes for cleanup
+$script:ChildProcesses = @()
 
 # Colors for output
 function Write-Info { param($Message) Write-Host "[INFO] $Message" -ForegroundColor Cyan }
@@ -246,6 +251,126 @@ function Start-Notifier {
     & python -m app.ws.notifier
 }
 
+# Start all services
+function Start-AllServices {
+    Write-Info "Starting all $AppName services..."
+    
+    # Create log files for each service
+    $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+    $schedulerLog = Join-Path $LogDir "scheduler_$timestamp.log"
+    $schedulerErrLog = Join-Path $LogDir "scheduler_$timestamp.error.log"
+    $notifierLog = Join-Path $LogDir "notifier_$timestamp.log"
+    $notifierErrLog = Join-Path $LogDir "notifier_$timestamp.error.log"
+    
+    Write-Info "Service logs will be written to:"
+    Write-Info "  Scheduler: $schedulerLog (errors: $schedulerErrLog)"
+    Write-Info "  Notifier:  $notifierLog (errors: $notifierErrLog)"
+    Write-Info ""
+    
+    # Start scheduler in background
+    Write-Info "Starting scheduler service in background..."
+    $schedulerProcess = Start-Process -FilePath "python" -ArgumentList "-m", "app.jobs.scheduler_main" -RedirectStandardOutput $schedulerLog -RedirectStandardError $schedulerErrLog -PassThru -WindowStyle Hidden
+    $script:ChildProcesses += $schedulerProcess
+    Write-Success "Scheduler started (PID: $($schedulerProcess.Id))"
+    
+    # Give scheduler a moment to initialize
+    Start-Sleep -Seconds 3
+    
+    # Check if scheduler is still running
+    if ($schedulerProcess.HasExited) {
+        Write-Error "Scheduler failed to start. Check logs:"
+        Write-Error "  Output: $schedulerLog"
+        Write-Error "  Errors: $schedulerErrLog"
+        Stop-AllServices
+        exit 1
+    }
+    
+    # Start notifier in background
+    Write-Info "Starting notifier service in background..."
+    $notifierProcess = Start-Process -FilePath "python" -ArgumentList "-m", "app.ws.notifier" -RedirectStandardOutput $notifierLog -RedirectStandardError $notifierErrLog -PassThru -WindowStyle Hidden
+    $script:ChildProcesses += $notifierProcess
+    Write-Success "Notifier started (PID: $($notifierProcess.Id))"
+    
+    # Give notifier a moment to initialize
+    Start-Sleep -Seconds 2
+    
+    # Check if notifier is still running
+    if ($notifierProcess.HasExited) {
+        Write-Error "Notifier failed to start. Check logs:"
+        Write-Error "  Output: $notifierLog"
+        Write-Error "  Errors: $notifierErrLog"
+        Stop-AllServices
+        exit 1
+    }
+    
+    Write-Info ""
+    Write-Success "All background services started successfully!"
+    Write-Info ""
+    Write-Info "Starting web server (press Ctrl+C to stop all services)..."
+    Write-Info ""
+    
+    # Start web server in foreground
+    try {
+        $port = [Environment]::GetEnvironmentVariable("PORT", "Process")
+        if (-not $port) { $port = "8080" }
+        $hostAddr = "127.0.0.1"
+        
+        # Use Start-Process with -NoNewWindow so output appears in current console
+        $webProcess = Start-Process -FilePath "uvicorn" -ArgumentList "app.main:app", "--host", $hostAddr, "--port", $port -NoNewWindow -PassThru
+        $script:ChildProcesses += $webProcess
+        
+        # Wait for web process to exit
+        $webProcess.WaitForExit()
+    }
+    catch {
+        Write-Error "Web server encountered an error: $_"
+    }
+    finally {
+        Stop-AllServices
+    }
+}
+
+# Stop all background services
+function Stop-AllServices {
+    Write-Info ""
+    Write-Info "Stopping all services..."
+    
+    foreach ($process in $script:ChildProcesses) {
+        if ($process -and -not $process.HasExited) {
+            try {
+                Write-Info "Stopping process $($process.Id)..."
+                Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            }
+            catch {
+                # Process may have already exited
+            }
+        }
+    }
+    
+    # Also try to find and stop any remaining Python processes for our modules
+    Get-Process -Name "python" -ErrorAction SilentlyContinue | Where-Object {
+        $_.CommandLine -match "app\.jobs\.scheduler_main|app\.ws\.notifier"
+    } | ForEach-Object {
+        try {
+            Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+        }
+        catch {}
+    }
+    
+    Write-Success "All services stopped"
+}
+
+# Handle Ctrl+C / interrupt
+function Handle-Interrupt {
+    Write-Info ""
+    Write-Warning "Interrupted by user"
+    Stop-AllServices
+    exit 0
+}
+
+# Register Ctrl+C handler
+[Console]::TreatControlCAsInput = $false
+
 # Print usage
 function Print-Usage {
     Write-Host @"
@@ -256,6 +381,7 @@ Modes:
   dev       Start development server with auto-reload
   scheduler Start scheduler service only
   notifier  Start notifier service only
+  all       Start all services (web + scheduler + notifier)
   migrate   Run database migrations only
   check     Run environment checks only
   help      Show this help message
@@ -271,9 +397,12 @@ Environment Variables:
 
 Examples:
   .\start-local.ps1           # Start web server
-  .\start-local.ps1 web       # Start web server
-  .\start-local.ps1 dev       # Start development server
-  .\start-local.ps1 scheduler # Start scheduler
+  .\start-local.ps1           # Start web server only
+  .\start-local.ps1 all       # Start all services (web + scheduler + notifier)
+  .\start-local.ps1 web       # Start web server only
+  .\start-local.ps1 dev       # Start development server with auto-reload
+  .\start-local.ps1 scheduler # Start scheduler only
+  .\start-local.ps1 notifier  # Start notifier only
   .\start-local.ps1 migrate   # Run migrations only
 "@
 }
@@ -316,6 +445,19 @@ function Main {
             Check-Environment
             Create-Directories
             Start-Notifier
+        }
+        "all" {
+            Check-Environment
+            Create-Directories
+            Wait-ForDatabase | Out-Null
+            Run-Migrations
+            
+            # Set up interrupt handler
+            $null = Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action {
+                Stop-AllServices
+            }
+            
+            Start-AllServices
         }
         "migrate" {
             Wait-ForDatabase | Out-Null
