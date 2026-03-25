@@ -14,11 +14,12 @@ from app.core.logging_config import setup_logging
 from app.db.database import get_db
 from app.routes.auth import operator_access_required
 from app.utils.healthcheck import run_healthcheck_for_all, run_healthcheck_for_camera, run_healthcheck_for_nvr
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, Form
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, Form, HTTPException
 from app.models.nvr import NVR
 from app.models.camera_daily_stats import CameraDailyStats
 from app.models.health import CameraHealth as Health
 from app.models.camera import Camera as DBCamera
+from app.models.camera_group import CameraGroup
 from app.models.health_check_status import HealthCheckStatus
 from app.models.camera_status_change_log import CameraStatusChangeLog
 from app.models.user import User
@@ -357,12 +358,16 @@ async def health_history(
         "end_item": end_item,
     }
 
+    # Get all camera groups for the export modal
+    camera_groups = db.query(CameraGroup).order_by(CameraGroup.name).all()
+    
     return templates.TemplateResponse("health_history.html", {
         "request": request,
         "historical_data": historical_data,
         "pagination": pagination_data,
         "search_query": q,
-        "current_sort": sort
+        "current_sort": sort,
+        "camera_groups": camera_groups
     })
 
 # =============================================================================
@@ -567,97 +572,116 @@ async def export_health_history(
     if not start_date:
         start_date = end_date - timedelta(days=30)
     
-    # Query camera stats
-    cameras = db.query(DBCamera).options(
-        joinedload(DBCamera.daily_stats)
-    ).all()
-    
-    # Prepare data
-    rows = []
-    for camera in cameras:
-        period_stats = [
-            stat for stat in camera.daily_stats
-            if stat.date and start_date <= stat.date <= end_date
+    try:
+        # Query camera stats with group relationship loaded
+        cameras = db.query(DBCamera).options(
+            joinedload(DBCamera.daily_stats),
+            joinedload(DBCamera.group)
+        ).all()
+        
+        # Prepare data
+        rows = []
+        for camera in cameras:
+            period_stats = [
+                stat for stat in camera.daily_stats
+                if stat.date and start_date <= stat.date <= end_date
+            ]
+            
+            if not period_stats:
+                continue
+            
+            total_uptime = sum(s.total_uptime_seconds or 0 for s in period_stats)
+            total_downtime = sum(s.total_downtime_seconds or 0 for s in period_stats)
+            total_time = total_uptime + total_downtime
+            uptime_percentage = (total_uptime / total_time * 100) if total_time > 0 else 100.0
+            
+            rows.append({
+                "Camera Name": camera.hostname,
+                "Location": camera.location or "",
+                "Group": camera.group.name if camera.group else "Ungrouped",
+                "Period Start": start_date.isoformat(),
+                "Period End": end_date.isoformat(),
+                "Uptime %": round(uptime_percentage, 2),
+                "Total Uptime (hours)": round(total_uptime / 3600, 2),
+                "Total Downtime (hours)": round(total_downtime / 3600, 2),
+                "Days with Data": len(period_stats)
+            })
+        
+        # Sort by uptime percentage
+        rows.sort(key=lambda x: x["Uptime %"])
+        
+        # Define headers explicitly
+        headers = [
+            "Camera Name", "Location", "Group", "Period Start", "Period End",
+            "Uptime %", "Total Uptime (hours)", "Total Downtime (hours)", "Days with Data"
         ]
         
-        if not period_stats:
-            continue
-        
-        total_uptime = sum(s.total_uptime_seconds or 0 for s in period_stats)
-        total_downtime = sum(s.total_downtime_seconds or 0 for s in period_stats)
-        total_time = total_uptime + total_downtime
-        uptime_percentage = (total_uptime / total_time * 100) if total_time > 0 else 100.0
-        
-        rows.append({
-            "Camera Name": camera.hostname,
-            "Location": camera.location or "",
-            "Group": camera.group.name if camera.group else "Ungrouped",
-            "Period Start": start_date.isoformat(),
-            "Period End": end_date.isoformat(),
-            "Uptime %": round(uptime_percentage, 2),
-            "Total Uptime (hours)": round(total_uptime / 3600, 2),
-            "Total Downtime (hours)": round(total_downtime / 3600, 2),
-            "Days with Data": len(period_stats)
-        })
-    
-    # Sort by uptime percentage
-    rows.sort(key=lambda x: x["Uptime %"])
-    
-    if format == "csv":
-        import csv
-        output = BytesIO()
-        writer = csv.DictWriter(output, fieldnames=rows[0].keys() if rows else [])
-        writer.writeheader()
-        writer.writerows(rows)
-        output.seek(0)
-        
-        filename = f"health-history_{start_date}_{end_date}.csv"
-        return StreamingResponse(
-            output,
-            media_type="text/csv",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
-        )
-    
-    else:  # excel
-        try:
-            import pandas as pd
-            df = pd.DataFrame(rows)
-            output = BytesIO()
-            df.to_excel(output, index=False, sheet_name="Health History")
-            output.seek(0)
-            
-            filename = f"health-history_{start_date}_{end_date}.xlsx"
-            return StreamingResponse(
-                output,
-                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                headers={"Content-Disposition": f"attachment; filename={filename}"}
-            )
-        except ImportError:
-            # Fallback to CSV if pandas not available
+        if format == "csv":
             import csv
-            output = BytesIO()
-            writer = csv.DictWriter(output, fieldnames=rows[0].keys() if rows else [])
+            from io import StringIO
+            output = StringIO()
+            writer = csv.DictWriter(output, fieldnames=headers)
             writer.writeheader()
             writer.writerows(rows)
-            output.seek(0)
+            csv_content = output.getvalue()
+            output.close()
             
             filename = f"health-history_{start_date}_{end_date}.csv"
             return StreamingResponse(
-                output,
-                media_type="text/csv",
-                headers={"Content-Disposition": f"attachment; filename={filename}"}
+                BytesIO(csv_content.encode('utf-8')),
+                media_type="text/csv; charset=utf-8",
+                headers={"Content-Disposition": f'attachment; filename="{filename}"'}
             )
+        
+        else:  # excel
+            try:
+                import pandas as pd
+                if rows:
+                    df = pd.DataFrame(rows)
+                else:
+                    df = pd.DataFrame(columns=headers)
+                output = BytesIO()
+                df.to_excel(output, index=False, sheet_name="Health History")
+                output.seek(0)
+                
+                filename = f"health-history_{start_date}_{end_date}.xlsx"
+                return StreamingResponse(
+                    output,
+                    media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    headers={"Content-Disposition": f"attachment; filename={filename}"}
+                )
+            except ImportError:
+                # Fallback to CSV if pandas not available
+                import csv
+                from io import StringIO
+                output = StringIO()
+                writer = csv.DictWriter(output, fieldnames=headers)
+                writer.writeheader()
+                writer.writerows(rows)
+                csv_content = output.getvalue()
+                output.close()
+                
+                filename = f"health-history_{start_date}_{end_date}.csv"
+                return StreamingResponse(
+                    BytesIO(csv_content.encode('utf-8')),
+                    media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+                )
+    except Exception as e:
+        logger.error(f"Export health history failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
 
 
 @router.post("/health/history/report")
 async def generate_health_report(
     request: Request,
-    start_date: date,
-    end_date: date,
-    format: Literal["pdf", "excel", "csv"] = "pdf",
-    include_charts: bool = True,
-    recipients: Optional[List[str]] = None,
-    sla_threshold: float = 99.5,
+    start_date: date = Form(...),
+    end_date: date = Form(...),
+    format: Literal["pdf", "excel", "csv"] = Form("pdf"),
+    include_charts: bool = Form(True),
+    recipients: Optional[List[str]] = Form(None),
+    sla_threshold: float = Form(99.5),
+    groups: Optional[List[str]] = Form(None),
     db: Session = Depends(get_db),
     current_operator: User = Depends(operator_access_required)
 ):
@@ -670,8 +694,9 @@ async def generate_health_report(
     - Charts: uptime trend, outage heatmap, top worst performers
     - Detail table per device with sorting
     - SLA compliance summary with Pass/Fail status
+    - Filter by device groups
     """
-    # Get form data for chart images (if provided)
+    # Get form data for chart images (optional, not in form fields)
     form_data = await request.form()
     uptime_chart = form_data.get("uptime_chart")
     heatmap_chart = form_data.get("heatmap_chart")
@@ -679,11 +704,19 @@ async def generate_health_report(
     # Ensure end_date includes the full day
     end_datetime = datetime.combine(end_date, datetime.max.time())
     
-    # Get all cameras with stats
-    cameras = db.query(DBCamera).options(
+    # Get cameras with optional group filter
+    cameras_query = db.query(DBCamera).options(
         joinedload(DBCamera.daily_stats),
         joinedload(DBCamera.group)
-    ).all()
+    )
+    
+    # Filter by groups if specified
+    if groups and len(groups) > 0:
+        cameras_query = cameras_query.join(DBCamera.group).filter(
+            CameraGroup.name.in_(groups)
+        )
+    
+    cameras = cameras_query.all()
     
     # Calculate metrics for each camera
     report_data = []
@@ -751,19 +784,20 @@ async def generate_health_report(
         return _generate_pdf_report(
             start_date, end_date, report_data, compliance_summary,
             avg_uptime, worst_performer, best_performer, total_cameras,
-            sla_threshold, uptime_chart, heatmap_chart, include_charts
+            sla_threshold, uptime_chart, heatmap_chart, include_charts,
+            selected_groups=groups
         )
     elif format == "excel":
         return _generate_excel_report(
             start_date, end_date, report_data, compliance_summary,
             avg_uptime, worst_performer, best_performer, total_cameras,
-            sla_threshold
+            sla_threshold, selected_groups=groups
         )
     else:  # csv
         return _generate_csv_report(
             start_date, end_date, report_data, compliance_summary,
             avg_uptime, worst_performer, best_performer, total_cameras,
-            sla_threshold
+            sla_threshold, selected_groups=groups
         )
 
 
@@ -773,9 +807,12 @@ def _generate_pdf_report(
     worst_performer: dict, best_performer: dict,
     total_cameras: int, sla_threshold: float,
     uptime_chart: str = None, heatmap_chart: str = None,
-    include_charts: bool = True
+    include_charts: bool = True, selected_groups: List[str] = None
 ):
-    """Generate professional PDF health report."""
+    """Generate professional PDF health report with enhanced features."""
+    from reportlab.platypus import KeepTogether
+    from reportlab.lib.styles import ParagraphStyle
+    
     buf = BytesIO()
     doc = SimpleDocTemplate(
         buf,
@@ -791,7 +828,34 @@ def _generate_pdf_report(
     doc.subject = "Executive Health and SLA Compliance Report"
     
     styles = getSampleStyleSheet()
+    
+    # Custom styles for text wrapping
+    wrapped_style = ParagraphStyle(
+        'Wrapped',
+        parent=styles['Normal'],
+        fontSize=8,
+        leading=10,
+        wordWrap='CJK',
+    )
+    
     elems = []
+    
+    # Calculate derived metrics
+    total_incidents = sum(d["incident_count"] for d in report_data)
+    total_downtime_hours = sum(d["total_downtime_hours"] for d in report_data)
+    
+    # Top performers (top 5 with Pass status)
+    top_performers = sorted(
+        [d for d in report_data if d["compliance_status"] == "Pass"],
+        key=lambda x: x["uptime_percentage"],
+        reverse=True
+    )[:5]
+    
+    # Devices requiring attention - only Fail status, sorted by worst uptime
+    worst_performers = sorted(
+        [d for d in report_data if d["compliance_status"] == "Fail"],
+        key=lambda x: x["uptime_percentage"]
+    )[:5]
     
     # --- Cover Page ---
     logo_path = "static/icons/logo.png"
@@ -806,57 +870,183 @@ def _generate_pdf_report(
     elems.append(Spacer(1, 0.5 * cm))
     elems.append(Paragraph(f"Period: {start_date.strftime('%d %B %Y')} – {end_date.strftime('%d %B %Y')}", styles["Normal"]))
     elems.append(Paragraph(f"Generated: {datetime.now().strftime('%d %B %Y %H:%M')}", styles["Normal"]))
+    if selected_groups:
+        group_text = ", ".join(selected_groups) if len(selected_groups) <= 3 else f"{len(selected_groups)} groups selected"
+        elems.append(Paragraph(f"Device Groups: {group_text}", styles["Normal"]))
     elems.append(PageBreak())
     
-    # --- Executive Summary ---
+    # --- Executive Summary Section ---
     elems.append(Paragraph("Executive Summary", styles["Heading2"]))
     
-    summary_text = (
-        f"This report covers {total_cameras} cameras monitored by B-SNAP "
-        f"during the period {start_date.strftime('%d %B %Y')} to {end_date.strftime('%d %B %Y')}. "
-        f"The average uptime across all cameras is {avg_uptime:.2f}%. "
-        f"SLA compliance threshold is set at {sla_threshold}%."
-    )
-    elems.append(Paragraph(summary_text, styles["Normal"]))
-    elems.append(Spacer(1, 0.3 * cm))
-    
-    # Compliance Summary Table
-    elems.append(Paragraph("SLA Compliance Summary", styles["Heading3"]))
-    compliance_data = [
-        ["Status", "Count", "Percentage"],
-        ["Pass", str(compliance_summary.get("pass", 0)), 
-         f"{(compliance_summary.get('pass', 0) / total_cameras * 100):.1f}%" if total_cameras else "0%"],
-        ["Warning", str(compliance_summary.get("warning", 0)),
-         f"{(compliance_summary.get('warning', 0) / total_cameras * 100):.1f}%" if total_cameras else "0%"],
-        ["Fail", str(compliance_summary.get("fail", 0)),
-         f"{(compliance_summary.get('fail', 0) / total_cameras * 100):.1f}%" if total_cameras else "0%"],
+    # Key metrics summary table
+    summary_data = [
+        ["Metric", "Value"],
+        ["Total Devices Monitored", str(total_cameras)],
+        ["Report Period", f"{start_date.strftime('%d %b %Y')} - {end_date.strftime('%d %b %Y')}"],
+        ["Average Uptime", f"{avg_uptime:.2f}%"],
+        ["Total Incidents", str(total_incidents)],
+        ["Total Downtime", f"{total_downtime_hours:.2f} hours"],
+        ["SLA Threshold", f"{sla_threshold}%"],
     ]
     
-    comp_tbl = Table(compliance_data, colWidths=[5 * cm, 3 * cm, 3 * cm])
-    comp_tbl.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+    summary_tbl = Table(summary_data, colWidths=[6 * cm, 6 * cm])
+    summary_tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#374151")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("ALIGN", (0, 0), (-1, 0), "CENTER"),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("ALIGN", (1, 1), (-1, -1), "CENTER"),
-        ("TEXTCOLOR", (0, 1), (0, 1), colors.green),
-        ("TEXTCOLOR", (0, 2), (0, 2), colors.orange),
-        ("TEXTCOLOR", (0, 3), (0, 3), colors.red),
+        ("FONTSIZE", (0, 0), (-1, 0), 10),
+        ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor("#F3F4F6")),
+        ("ALIGN", (0, 1), (0, -1), "LEFT"),
+        ("ALIGN", (1, 1), (1, -1), "RIGHT"),
+        ("FONTNAME", (0, 1), (0, -1), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 1), (-1, -1), 9),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.grey),
+    ]))
+    elems.append(summary_tbl)
+    elems.append(Spacer(1, 0.5 * cm))
+    
+    summary_text = (
+        f"This report provides a comprehensive overview of {total_cameras} cameras monitored by B-SNAP "
+        f"during the period {start_date.strftime('%d %B %Y')} to {end_date.strftime('%d %B %Y')}. "
+        f"The overall system availability is {avg_uptime:.2f}%, with {total_incidents} incidents recorded "
+        f"resulting in {total_downtime_hours:.2f} hours of total downtime. "
+    )
+    if avg_uptime >= sla_threshold:
+        summary_text += f"<b>The system meets the SLA target of {sla_threshold}%.</b>"
+    else:
+        summary_text += f"<b>Attention required: System is below the SLA target of {sla_threshold}%.</b>"
+    
+    elems.append(Paragraph(summary_text, styles["Normal"]))
+    elems.append(Spacer(1, 0.5 * cm))
+    
+    # --- SLA Compliance Summary ---
+    elems.append(Paragraph("SLA Compliance Summary", styles["Heading2"]))
+    
+    pass_count = compliance_summary.get("pass", 0)
+    warning_count = compliance_summary.get("warning", 0)
+    fail_count = compliance_summary.get("fail", 0)
+    
+    # Helper function to create visual bar (max 10 blocks)
+    def make_bar(count, total):
+        if total == 0:
+            return ""
+        bar_len = int(count / total * 10)
+        return "■" * bar_len
+    
+    compliance_data = [
+        ["Status", "Count", "Percentage", "Visual"],
+        ["Pass", str(pass_count), 
+         f"{(pass_count / total_cameras * 100):.1f}%" if total_cameras else "0%",
+         make_bar(pass_count, total_cameras)],
+        ["Warning", str(warning_count),
+         f"{(warning_count / total_cameras * 100):.1f}%" if total_cameras else "0%",
+         make_bar(warning_count, total_cameras)],
+        ["Fail", str(fail_count),
+         f"{(fail_count / total_cameras * 100):.1f}%" if total_cameras else "0%",
+         make_bar(fail_count, total_cameras)],
+    ]
+    
+    comp_tbl = Table(compliance_data, colWidths=[3 * cm, 2.5 * cm, 2.5 * cm, 3 * cm])
+    comp_tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#374151")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("ALIGN", (1, 1), (2, -1), "CENTER"),
+        ("TEXTCOLOR", (0, 1), (0, 1), colors.HexColor("#059669")),
+        ("TEXTCOLOR", (0, 2), (0, 2), colors.HexColor("#D97706")),
+        ("TEXTCOLOR", (0, 3), (0, 3), colors.HexColor("#DC2626")),
+        ("TEXTCOLOR", (3, 1), (3, 1), colors.HexColor("#059669")),
+        ("TEXTCOLOR", (3, 2), (3, 2), colors.HexColor("#D97706")),
+        ("TEXTCOLOR", (3, 3), (3, 3), colors.HexColor("#DC2626")),
         ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
         ("BOX", (0, 0), (-1, -1), 0.5, colors.grey),
     ]))
     elems.append(comp_tbl)
     elems.append(Spacer(1, 0.5 * cm))
     
-    # Best/Worst Performers
-    elems.append(Paragraph("Performance Highlights", styles["Heading3"]))
-    if best_performer and worst_performer:
-        highlights = [
-            f"Best Performer: {best_performer['camera_name']} ({best_performer['uptime_percentage']:.2f}% uptime)",
-            f"Needs Attention: {worst_performer['camera_name']} ({worst_performer['uptime_percentage']:.2f}% uptime)",
-        ]
-        for h in highlights:
-            elems.append(Paragraph(f"• {h}", styles["Normal"]))
-    elems.append(Spacer(1, 0.5 * cm))
+    # --- Key Highlights ---
+    elems.append(Paragraph("Key Highlights", styles["Heading2"]))
+    
+    highlights = []
+    if best_performer:
+        highlights.append(f"<b>Best Overall Performance:</b> {best_performer['camera_name']} achieved {best_performer['uptime_percentage']:.2f}% uptime")
+    if worst_performer:
+        highlights.append(f"<b>Requires Attention:</b> {worst_performer['camera_name']} with {worst_performer['uptime_percentage']:.2f}% uptime ({worst_performer['incident_count']} incidents)")
+    if total_incidents > 0:
+        avg_incidents = total_incidents / total_cameras if total_cameras > 0 else 0
+        highlights.append(f"<b>Incident Rate:</b> Average of {avg_incidents:.1f} incidents per device")
+    
+    for highlight in highlights:
+        elems.append(Paragraph(f"• {highlight}", styles["Normal"]))
+    elems.append(Spacer(1, 0.3 * cm))
+    
+    # --- Top Performers ---
+    if top_performers:
+        elems.append(Paragraph("Top Performers", styles["Heading3"]))
+        top_data = [["Rank", "Device Name", "Uptime %", "Incidents", "Downtime (h)"]]
+        for idx, performer in enumerate(top_performers, 1):
+            top_data.append([
+                str(idx),
+                Paragraph(performer['camera_name'][:30], wrapped_style),
+                f"{performer['uptime_percentage']:.2f}%",
+                str(performer['incident_count']),
+                f"{performer['total_downtime_hours']:.2f}"
+            ])
+        
+        top_tbl = Table(top_data, colWidths=[1.5 * cm, 5 * cm, 2.5 * cm, 2 * cm, 2.5 * cm])
+        top_tbl.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#059669")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("ALIGN", (0, 1), (0, -1), "CENTER"),
+            ("ALIGN", (2, 1), (-1, -1), "CENTER"),
+            ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor("#ECFDF5")),
+            ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ("BOX", (0, 0), (-1, -1), 0.5, colors.grey),
+        ]))
+        elems.append(top_tbl)
+        elems.append(Spacer(1, 0.3 * cm))
+    
+    # --- Devices Requiring Attention ---
+    if worst_performers:
+        elems.append(Paragraph("Devices Requiring Attention", styles["Heading3"]))
+        worst_data = [["Rank", "Device Name", "Uptime %", "Incidents", "Downtime (h)"]]
+        for idx, performer in enumerate(worst_performers, 1):
+            worst_data.append([
+                str(idx),
+                Paragraph(performer['camera_name'][:30], wrapped_style),
+                f"{performer['uptime_percentage']:.2f}%",
+                str(performer['incident_count']),
+                f"{performer['total_downtime_hours']:.2f}"
+            ])
+        
+        worst_tbl = Table(worst_data, colWidths=[1.5 * cm, 5 * cm, 2.5 * cm, 2 * cm, 2.5 * cm])
+        worst_tbl.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#DC2626")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("ALIGN", (0, 1), (0, -1), "CENTER"),
+            ("ALIGN", (2, 1), (-1, -1), "CENTER"),
+            ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor("#FEF2F2")),
+            ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ("BOX", (0, 0), (-1, -1), 0.5, colors.grey),
+        ]))
+        elems.append(worst_tbl)
+        elems.append(Spacer(1, 0.5 * cm))
+    else:
+        # All devices meet SLA
+        elems.append(Paragraph("Devices Requiring Attention", styles["Heading3"]))
+        elems.append(Paragraph(
+            "<font color='#059669'><b>✓ All devices meet SLA requirements.</b></font> "
+            f"All {total_cameras} devices achieved uptime above {sla_threshold}% threshold.",
+            styles["Normal"]
+        ))
+        elems.append(Spacer(1, 0.5 * cm))
     
     # --- Charts (if provided) ---
     if include_charts:
@@ -873,65 +1063,97 @@ def _generate_pdf_report(
             except Exception:
                 logger.exception("Chart embedding failed")
         
+        if uptime_chart or heatmap_chart:
+            elems.append(PageBreak())
+            elems.append(Paragraph("Visual Analytics", styles["Heading2"]))
+            
         if uptime_chart:
-            elems.append(Paragraph("Charts", styles["Heading2"]))
-            add_chart(uptime_chart, "Uptime Trend")
+            add_chart(uptime_chart, "Uptime Trend Over Time")
         if heatmap_chart:
             add_chart(heatmap_chart, "Outage Heatmap")
         if uptime_chart or heatmap_chart:
-            elems.append(PageBreak())
+            elems.append(Spacer(1, 0.3 * cm))
     
     # --- Detailed Device Table ---
-    elems.append(Paragraph("Device Details", styles["Heading2"]))
+    elems.append(PageBreak())
+    elems.append(Paragraph("Complete Device Details", styles["Heading2"]))
     
-    # Table header
+    # Create smaller wrapped style for device details table
+    detail_wrapped_style = ParagraphStyle(
+        'DetailWrapped',
+        parent=styles['Normal'],
+        fontSize=7,
+        leading=9,
+        wordWrap='CJK',
+    )
+    
+    # Table header with new columns
     table_data = [[
-        "Camera Name", "Location", "Group", "Uptime %", 
-        "Downtime (h)", "Incidents", "SLA Status"
+        "Device Name", "Location", "Group", "Uptime %", 
+        "Downtime (h)", "Incidents", "MTTR (h)", "SLA Status"
     ]]
     
-    # Table rows (limit to top 50 for PDF)
-    for item in report_data[:50]:
-        status_color = {
-            "Pass": "green",
-            "Warning": "orange",
-            "Fail": "red"
-        }.get(item["compliance_status"], "black")
+    # Table rows with text wrapping for device names
+    for item in report_data:
+        mttr_hours = (item["mttr_seconds"] or 0) / 3600
+        
+        # Truncate long text to prevent overflow
+        device_name = item["camera_name"][:35] if len(item["camera_name"]) > 35 else item["camera_name"]
+        location = item["location"][:25] if item["location"] and len(item["location"]) > 25 else (item["location"] or "-")
+        group_name = item["group"][:15] if len(item["group"]) > 15 else item["group"]
         
         table_data.append([
-            item["camera_name"],
-            item["location"][:20] if item["location"] else "-",
-            item["group"],
+            Paragraph(device_name, detail_wrapped_style),
+            Paragraph(location, detail_wrapped_style),
+            Paragraph(group_name, detail_wrapped_style),
             f"{item['uptime_percentage']:.2f}%",
             f"{item['total_downtime_hours']:.2f}",
             str(item["incident_count"]),
+            f"{mttr_hours:.1f}",
             item["compliance_status"]
         ])
     
-    # Create table
-    device_tbl = Table(table_data, colWidths=[4 * cm, 3 * cm, 2.5 * cm, 2 * cm, 2 * cm, 1.5 * cm, 2 * cm])
-    device_tbl.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+    # Create table with adjusted column widths - total width ~17cm for A4
+    col_widths = [3.2 * cm, 2.5 * cm, 1.8 * cm, 1.7 * cm, 1.7 * cm, 1.4 * cm, 1.4 * cm, 1.8 * cm]
+    device_tbl = Table(table_data, colWidths=col_widths, repeatRows=1)
+    
+    # Build style with conditional formatting for each row's SLA status
+    table_style = [
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#374151")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("ALIGN", (0, 0), (-1, 0), "CENTER"),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, 0), 9),
-        ("FONTSIZE", (0, 1), (-1, -1), 8),
-        ("ALIGN", (3, 1), (5, -1), "CENTER"),
+        ("FONTSIZE", (0, 0), (-1, 0), 8),
+        ("FONTSIZE", (0, 1), (-1, -1), 7),
+        ("ALIGN", (3, 1), (6, -1), "CENTER"),
+        ("ALIGN", (7, 1), (7, -1), "CENTER"),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        # Alternating row colors
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F9FAFB")]),
         ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
         ("BOX", (0, 0), (-1, -1), 0.5, colors.grey),
-    ]))
+        # Allow table to split across pages
+        ("SPLITBYROW", (0, 0), (-1, -1), True),
+    ]
+    
+    # Add conditional formatting for each row based on compliance status
+    for idx, item in enumerate(report_data, start=1):
+        status_colors = {
+            "Pass": colors.HexColor("#059669"),
+            "Warning": colors.HexColor("#D97706"),
+            "Fail": colors.HexColor("#DC2626")
+        }
+        status_color = status_colors.get(item["compliance_status"], colors.black)
+        table_style.append(("TEXTCOLOR", (7, idx), (7, idx), status_color))
+        table_style.append(("FONTNAME", (7, idx), (7, idx), "Helvetica-Bold"))
+    
+    device_tbl.setStyle(TableStyle(table_style))
     elems.append(device_tbl)
     
-    if len(report_data) > 50:
-        elems.append(Spacer(1, 0.3 * cm))
-        elems.append(Paragraph(f"... and {len(report_data) - 50} more devices", styles["Normal"]))
-    
+    # Footer
     elems.append(Spacer(1, 0.5 * cm))
-    elems.append(Paragraph(
-        "Generated automatically by B-SNAP Monitoring System • Confidential",
-        styles["Normal"]
-    ))
+    footer_text = f"Generated automatically by B-SNAP Monitoring System • {datetime.now().strftime('%d %B %Y %H:%M')}"
+    elems.append(Paragraph(footer_text, styles["Normal"]))
     
     doc.build(elems)
     buf.seek(0)
@@ -944,11 +1166,21 @@ def _generate_pdf_report(
     )
 
 
+def _clean_ascii(text):
+    """Helper to clean text for ASCII output."""
+    if text is None:
+        return ""
+    if not isinstance(text, str):
+        return str(text)
+    return text.encode('ascii', 'replace').decode('ascii')
+
+
 def _generate_excel_report(
     start_date: date, end_date: date, report_data: list,
     compliance_summary: dict, avg_uptime: float,
     worst_performer: dict, best_performer: dict,
-    total_cameras: int, sla_threshold: float
+    total_cameras: int, sla_threshold: float,
+    selected_groups: List[str] = None
 ):
     """Generate Excel health report."""
     try:
@@ -982,6 +1214,21 @@ def _generate_excel_report(
             ]
         }
         
+        # Prepare device details data for Excel (exclude internal fields)
+        device_data = []
+        for item in report_data:
+            device_data.append({
+                "Camera Name": item["camera_name"],
+                "Location": item["location"],
+                "Group": item["group"],
+                "Uptime %": round(item["uptime_percentage"], 2),
+                "Total Uptime (h)": round(item["total_uptime_hours"], 2),
+                "Total Downtime (h)": round(item["total_downtime_hours"], 2),
+                "Incidents": item["incident_count"],
+                "MTTR (h)": round((item.get("mttr_seconds") or 0) / 3600, 1),
+                "SLA Status": item["compliance_status"]
+            })
+        
         # Create Excel with multiple sheets
         output = BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -989,22 +1236,30 @@ def _generate_excel_report(
             pd.DataFrame(summary_data).to_excel(writer, sheet_name="Summary", index=False)
             
             # Device details sheet
-            if report_data:
-                df_details = pd.DataFrame(report_data)
-                df_details.to_excel(writer, sheet_name="Device Details", index=False)
+            if device_data:
+                pd.DataFrame(device_data).to_excel(writer, sheet_name="Device Details", index=False)
         
         output.seek(0)
         filename = f"b-snap-health-report_{start_date}_{end_date}.xlsx"
         return StreamingResponse(
             output,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
         )
     except ImportError:
         # Fallback to CSV
         return _generate_csv_report(
             start_date, end_date, report_data, compliance_summary,
-            avg_uptime, worst_performer, best_performer, total_cameras, sla_threshold
+            avg_uptime, worst_performer, best_performer, total_cameras, sla_threshold,
+            selected_groups
+        )
+    except Exception as e:
+        logger.error(f"Excel generation failed: {e}")
+        # Fallback to CSV on any error
+        return _generate_csv_report(
+            start_date, end_date, report_data, compliance_summary,
+            avg_uptime, worst_performer, best_performer, total_cameras, sla_threshold,
+            selected_groups
         )
 
 
@@ -1012,55 +1267,64 @@ def _generate_csv_report(
     start_date: date, end_date: date, report_data: list,
     compliance_summary: dict, avg_uptime: float,
     worst_performer: dict, best_performer: dict,
-    total_cameras: int, sla_threshold: float
+    total_cameras: int, sla_threshold: float,
+    selected_groups: List[str] = None
 ):
     """Generate CSV health report."""
     import csv
+    from io import StringIO
     
-    output = BytesIO()
-    writer = csv.writer(output)
-    
-    # Write header info
-    writer.writerow(["B-SNAP Health Report"])
-    writer.writerow(["Period:", f"{start_date} to {end_date}"])
-    writer.writerow(["Total Cameras:", total_cameras])
-    writer.writerow(["Average Uptime %:", round(avg_uptime, 2)])
-    writer.writerow(["SLA Threshold %:", sla_threshold])
-    writer.writerow([])
-    
-    # Write compliance summary
-    writer.writerow(["SLA Compliance Summary"])
-    writer.writerow(["Status", "Count"])
-    writer.writerow(["Pass", compliance_summary.get("pass", 0)])
-    writer.writerow(["Warning", compliance_summary.get("warning", 0)])
-    writer.writerow(["Fail", compliance_summary.get("fail", 0)])
-    writer.writerow([])
-    
-    # Write device details
-    if report_data:
-        writer.writerow([
-            "Camera Name", "Location", "Group", "Uptime %",
-            "Total Uptime (h)", "Total Downtime (h)", "Incidents", "SLA Status"
-        ])
-        for item in report_data:
+    try:
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Write header info
+        writer.writerow(["B-SNAP Health Report"])
+        writer.writerow(["Period:", f"{start_date} to {end_date}"])
+        writer.writerow(["Total Cameras:", total_cameras])
+        writer.writerow(["Average Uptime %:", round(avg_uptime, 2)])
+        writer.writerow(["SLA Threshold %:", sla_threshold])
+        writer.writerow([])
+        
+        # Write compliance summary
+        writer.writerow(["SLA Compliance Summary"])
+        writer.writerow(["Status", "Count"])
+        writer.writerow(["Pass", compliance_summary.get("pass", 0)])
+        writer.writerow(["Warning", compliance_summary.get("warning", 0)])
+        writer.writerow(["Fail", compliance_summary.get("fail", 0)])
+        writer.writerow([])
+        
+        # Write device details
+        if report_data:
             writer.writerow([
-                item["camera_name"],
-                item["location"],
-                item["group"],
-                round(item["uptime_percentage"], 2),
-                round(item["total_uptime_hours"], 2),
-                round(item["total_downtime_hours"], 2),
-                item["incident_count"],
-                item["compliance_status"]
+                "Camera Name", "Location", "Group", "Uptime %",
+                "Total Uptime (h)", "Total Downtime (h)", "Incidents", "MTTR (h)", "SLA Status"
             ])
-    
-    output.seek(0)
-    filename = f"b-snap-health-report_{start_date}_{end_date}.csv"
-    return StreamingResponse(
-        output,
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
-    )
+            for item in report_data:
+                writer.writerow([
+                    item["camera_name"],
+                    item["location"],
+                    item["group"],
+                    round(item["uptime_percentage"], 2),
+                    round(item["total_uptime_hours"], 2),
+                    round(item["total_downtime_hours"], 2),
+                    item["incident_count"],
+                    round((item.get("mttr_seconds") or 0) / 3600, 1),
+                    item["compliance_status"]
+                ])
+        
+        csv_content = output.getvalue()
+        output.close()
+        
+        filename = f"b-snap-health-report_{start_date}_{end_date}.csv"
+        return StreamingResponse(
+            BytesIO(csv_content.encode('utf-8')),
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except Exception as e:
+        logger.error(f"CSV generation failed: {e}")
+        raise
 
 
 # =============================================================================

@@ -39,10 +39,92 @@
                 Export CSV
             </a>
             
-            <button onclick="generateReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
+            <button onclick="openExportModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                 PDF Report
             </button>
+        </div>
+    </div>
+    
+    <!-- Export Modal -->
+    <div id="exportModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-gray-800 dark:text-white">Export Health Report</h2>
+                    <button onclick="closeExportModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <form id="exportForm" method="POST" action="/health/history/report" target="_blank">
+                <div class="p-6 space-y-6">
+                    <!-- Date Range -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Date</label>
+                            <input type="date" id="exportStartDate" name="start_date" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Date</label>
+                            <input type="date" id="exportEndDate" name="end_date" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                    
+                    <!-- Device Groups -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Device Groups 
+                            <span class="text-gray-400 font-normal">(Leave empty for all groups)</span>
+                        </label>
+                        <div class="border border-gray-300 dark:border-gray-600 rounded-lg p-3 max-h-48 overflow-y-auto">
+                            {% if camera_groups %}
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                {% for group in camera_groups %}
+                                <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-1 rounded">
+                                    <input type="checkbox" name="groups" value="{{ group.name }}" 
+                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ group.name }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-sm text-gray-500 italic">No groups available</p>
+                            {% endif %}
+                        </div>
+                        <div class="mt-2 flex gap-2">
+                            <button type="button" onclick="selectAllGroups()" class="text-xs text-blue-600 hover:text-blue-800">Select All</button>
+                            <span class="text-gray-300">|</span>
+                            <button type="button" onclick="deselectAllGroups()" class="text-xs text-blue-600 hover:text-blue-800">Deselect All</button>
+                        </div>
+                    </div>
+                    
+                    <!-- SLA Threshold -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">SLA Threshold (%)</label>
+                        <input type="number" name="sla_threshold" value="99.5" min="0" max="100" step="0.1"
+                            class="w-32 px-3 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <!-- Hidden format field (always PDF) -->
+                    <input type="hidden" name="format" value="pdf">
+                    
+                </div>
+                
+                <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+                    <button type="button" onclick="closeExportModal()" 
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                        Cancel
+                    </button>
+                    <button type="submit" onclick="return validateExportForm()" 
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        Generate Report
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
     
@@ -59,25 +141,60 @@
             }
         })();
         
-        function generateReport() {
+        // Export Modal Functions
+        function openExportModal() {
             const today = new Date();
             const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
             const formatDate = (d) => d.toISOString().split('T')[0];
             
-            const startDate = prompt('Enter start date (YYYY-MM-DD):', formatDate(thirtyDaysAgo));
-            if (!startDate) return;
-            const endDate = prompt('Enter end date (YYYY-MM-DD):', formatDate(today));
-            if (!endDate) return;
-            
-            // Open report in new window
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/health/history/report?start_date=${startDate}&end_date=${endDate}&format=pdf`;
-            form.target = '_blank';
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
+            document.getElementById('exportStartDate').value = formatDate(thirtyDaysAgo);
+            document.getElementById('exportEndDate').value = formatDate(today);
+            document.getElementById('exportModal').classList.remove('hidden');
         }
+        
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+        }
+        
+        function selectAllGroups() {
+            document.querySelectorAll('input[name="groups"]').forEach(cb => cb.checked = true);
+        }
+        
+        function deselectAllGroups() {
+            document.querySelectorAll('input[name="groups"]').forEach(cb => cb.checked = false);
+        }
+        
+        function validateExportForm() {
+            const startDate = document.getElementById('exportStartDate').value;
+            const endDate = document.getElementById('exportEndDate').value;
+            
+            if (!startDate || !endDate) {
+                alert('Please select both start and end dates');
+                return false;
+            }
+            
+            if (new Date(startDate) > new Date(endDate)) {
+                alert('Start date must be before end date');
+                return false;
+            }
+            
+            closeExportModal();
+            return true;
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('exportModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeExportModal();
+            }
+        });
+        
+        // Keyboard shortcut to close modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeExportModal();
+            }
+        });
     </script>
     
     <div class="mb-8 bg-gray-100 dark:bg-gray-900/50 rounded-xl">
