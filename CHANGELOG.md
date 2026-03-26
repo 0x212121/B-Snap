@@ -8,6 +8,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Security & Compliance (Audit Remediation P0/P1)
+- **File Integrity Verification (SHA-256)** - P0 Critical Finding
+  - Added `file_hash` column to `snapshots` and `videos` tables
+  - Automatic SHA-256 hash calculation on file creation
+  - Integrity verification API: `GET /snap/{id}/verify`
+  - Migration: `20260326_add_file_hash_and_soft_delete.py`
+
+- **Soft Delete for Evidence Protection** - P0 Critical Finding
+  - Added `deleted_at` column to `snapshots` and `videos` tables
+  - Delete operations now perform soft delete by default (data recoverable)
+  - Admin-only hard delete with audit logging
+  - Restore functionality: `POST /snap/{id}/restore`, `POST /videos/{id}/restore`
+  - Bulk purge for old deleted items: `POST /admin/snapshots/purge`, `POST /admin/videos/purge`
+  - Admin endpoints to view deleted items: `GET /admin/snapshots/deleted`
+  - Prevents accidental/permanent deletion of critical CCTV evidence
+
+- **Camera Password Encryption (AES-256-GCM)** - P1 High Finding
+  - New encryption utility: `app/utils/encryption.py`
+  - AES-256-GCM encryption for camera passwords at rest
+  - Automatic encryption on save, decryption on read via property
+  - Environment variable: `ENCRYPTION_KEY` (generate with `openssl rand -hex 32`)
+  - Backward compatible with existing plain-text passwords
+  - Migration: Camera password column changed to TEXT to accommodate encrypted data
+
+- **NVR Password Encryption (AES-256-GCM)** - P1 High Finding
+  - Applied same AES-256-GCM encryption for NVR passwords
+  - Updated `app/models/nvr.py` with encrypted password property
+  - New admin endpoint: `GET /api/nvr/{id}/password` for password retrieval
+  - Password excluded from standard API responses
+  - Migration: NVR password column changed to TEXT for encrypted data
+
+- **API Security Enhancement** - P1 High Finding
+  - Removed password field from `GET /api/camera/{id}` response
+  - New admin-only endpoint: `GET /api/camera/{id}/password` for password retrieval
+  - All password access logged in audit trail (user, IP, timestamp)
+  - Prevents credential exposure through API responses
+
 #### Windows Service & Startup
 - **PowerShell startup script enhancement** (`start-local.ps1`)
   - Added `all` mode to start web + scheduler + notifier simultaneously

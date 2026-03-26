@@ -341,6 +341,19 @@ async def record_video_and_save_db(
         if not success_thumb:
             logger.warning("⚠️ Thumbnail generation failed for %s", output_path)
 
+    # P0-001: Calculate file hash for integrity verification
+    file_hash = None
+    try:
+        import hashlib
+        sha256_hash = hashlib.sha256()
+        with open(output_path, "rb") as f:
+            for byte_block in iter(lambda: f.read(4096), b""):
+                sha256_hash.update(byte_block)
+        file_hash = sha256_hash.hexdigest()
+        logger.info("SHA-256 hash calculated for video %s: %s...", filename, file_hash[:16])
+    except Exception as e:
+        logger.warning("Failed to calculate hash for video %s: %s", filename, e)
+
     video_data = {
         "id": str(uuid.uuid4()),
         "camera_id": camera.id,
@@ -351,7 +364,8 @@ async def record_video_and_save_db(
         "file_path": db_file_path,
         "file_size": metadata.get("size"),
         "duration": metadata.get("duration"),
-        "resolution": f"{metadata.get('width')}x{metadata.get('height')}"
+        "resolution": f"{metadata.get('width')}x{metadata.get('height')}",
+        "file_hash": file_hash,  # P0-001: Store file hash
     }
 
     def save_video_record_sync(data: Dict[str, Any], user_name: str, ip: str) -> bool:

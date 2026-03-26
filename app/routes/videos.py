@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import logging
 import os
 from typing import Optional, List, Dict, Any
@@ -13,7 +13,7 @@ from app.models.camera import Camera
 from app.models.camera_group import CameraGroup
 from app.models.user import User
 from app.models.video import Video
-from app.routes.auth import operator_access_required
+from app.routes.auth import admin_access_required, operator_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.timezone_helper import to_current_timezone, format_datetime_standard
 from app.utils.video import record_video_and_save_db
@@ -144,50 +144,157 @@ async def get_video_gallery_data(
 def delete_video(
     request: Request,
     video_id: str,
-    db: Session = Depends(get_db)
+    hard_delete: bool = Query(False, description="If True, permanently delete (admin only)"),
+    db: Session = Depends(get_db),
+    current_operator: User = Depends(operator_access_required),
 ):
+    """Delete a video (soft delete by default, hard delete for admin)."""
+    from datetime import datetime, timezone
+    
     video = db.query(Video).filter(Video.id == video_id).first()
     if not video:
         logger.warning("Video not found in DB: %s", video_id)
         raise HTTPException(status_code=404, detail="Video not found")
 
-    path_parts = video.file_path.replace('\\', '/').split('/')
-    full_file_path = os.path.join(VIDEO_FILESYSTEM_BASE, *path_parts)
-
-    if os.path.isfile(full_file_path):
-        try:
-            os.remove(full_file_path)
-            logger.info("Video file deleted: %s", full_file_path)
-        except Exception as e:
-            logger.error("Failed to delete video file %s: %s", full_file_path, e)
-    else:
-        logger.warning("Video file not found on disk: %s", full_file_path)
+    # P0-002: Check if user is admin for hard delete
+    user_role = request.session.get("user_role", "")
+    if hard_delete and user_role != "admin":
+        raise HTTPException(status_code=403, detail="Hard delete requires admin privileges")
 
     try:
         camera_name = video.camera_name
         v_timestamp = video.timestamp
+        
+        if hard_delete:
+            # P0-002: Hard delete - permanently remove file and record
+            path_parts = video.file_path.replace('\\', '/').split('/')
+            full_file_path = os.path.join(VIDEO_FILESYSTEM_BASE, *path_parts)
 
-        db.delete(video)
+            if os.path.isfile(full_file_path):
+                try:
+                    os.remove(full_file_path)
+                    logger.info("Video file hard deleted: %s", full_file_path)
+                except Exception as e:
+                    logger.error("Failed to hard delete video file %s: %s", full_file_path, e)
+
+            db.delete(video)
+            action = "hard_delete_video"
+            message = "Video permanently deleted"
+        else:
+            # P0-002: Soft delete - mark as deleted
+            video.soft_delete()
+            action = "soft_delete_video"
+            message = "Video moved to trash (soft deleted)"
+        
         db.commit()
-        logger.info("Video record deleted from DB: %s", video_id)
+        logger.info("Video %s: %s", action, video_id)
 
         log_audit(
             db=db,
             user=request.session.get("user_name", "Unknown"),
-            action="delete_video",
+            action=action,
             target=camera_name,
             ip=request.client.host,
-            extra=(f"Video timestamp: {format_wita(v_timestamp)}"
+            extra=(f"Video timestamp: {format_wita(v_timestamp)} | Hard delete: {hard_delete}"
                 if isinstance(v_timestamp, datetime) else
-                "No timestamp available"
+                f"Hard delete: {hard_delete}"
              )
         )
     except Exception as e:
-        logger.error("Failed to delete DB record for video %s: %s", video_id, e)
+        logger.error("Failed to delete video %s: %s", video_id, e)
         db.rollback()
-        raise HTTPException(status_code=500, detail="Failed to delete video record from database")
+        raise HTTPException(status_code=500, detail="Failed to delete video")
 
-    return JSONResponse(status_code=200, content={"status": "success", "message": "Video deleted successfully"})
+    return JSONResponse(status_code=200, content={"status": "success", "message": message})
+
+
+@router.post("/videos/{video_id}/restore", response_class=JSONResponse)
+def restore_video(
+    request: Request,
+    video_id: str,
+    db: Session = Depends(get_db),
+    current_operator: User = Depends(operator_access_required),
+):
+    """Restore a soft-deleted video."""
+    video = db.query(Video).filter(Video.id == video_id).first()
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    
+    if not video.is_deleted:
+        return JSONResponse(status_code=400, content={"status": "error", "message": "Video is not deleted"})
+    
+    try:
+        video.restore()
+        db.commit()
+        
+        log_audit(
+            db=db,
+            user=request.session.get("user_name", "Unknown"),
+            action="restore_video",
+            target=video.camera_name,
+            ip=request.client.host,
+            extra=f"Video ID: {video_id}"
+        )
+        
+        return JSONResponse(status_code=200, content={"status": "success", "message": "Video restored successfully"})
+    except Exception as e:
+        logger.error("Failed to restore video %s: %s", video_id, e)
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to restore video")
+
+
+@router.post("/admin/videos/purge", response_class=JSONResponse)
+def purge_deleted_videos(
+    request: Request,
+    days_old: int = Query(30, description="Purge videos soft-deleted more than N days ago"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required),
+):
+    """Admin only: Permanently delete videos that have been soft-deleted for specified days."""
+    from datetime import datetime, timezone, timedelta
+    
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_old)
+    
+    videos_to_purge = db.query(Video).filter(
+        Video.deleted_at.isnot(None),
+        Video.deleted_at < cutoff_date
+    ).all()
+    
+    purged_count = 0
+    for video in videos_to_purge:
+        try:
+            # Delete file
+            if video.file_path:
+                path_parts = video.file_path.replace('\\', '/').split('/')
+                full_file_path = os.path.join(VIDEO_FILESYSTEM_BASE, *path_parts)
+                if os.path.exists(full_file_path):
+                    os.remove(full_file_path)
+            
+            db.delete(video)
+            purged_count += 1
+        except Exception as e:
+            logger.error("Failed to purge video %s: %s", video.id, e)
+    
+    if purged_count > 0:
+        db.commit()
+        logger.info("Purged %d soft-deleted videos older than %d days by %s", 
+                    purged_count, days_old, request.session.get("user_name"))
+    
+    log_audit(
+        db=db,
+        user=request.session.get("user_name", "Unknown"),
+        action="purge_deleted_videos",
+        target="system",
+        ip=request.client.host,
+        extra=f"Purged {purged_count} videos older than {days_old} days"
+    )
+    
+    return JSONResponse(status_code=200, content={
+        "status": "success", 
+        "message": f"Purged {purged_count} videos",
+        "purged_count": purged_count,
+        "days_threshold": days_old
+    })
 
 
 @router.post("/videos/record/{camera_id}", response_class=JSONResponse)
@@ -218,3 +325,103 @@ async def start_recording_video(
         status_code=202,
         content={"message": f"Recording for {duration} seconds for camera {camera.hostname} has started."}
     )
+
+
+
+# ========== P0-002: Soft Delete Management Routes for Videos ==========
+
+@router.get("/admin/videos/deleted", response_class=JSONResponse)
+async def get_deleted_videos(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    search: str = Query(None, description="Filter by camera name"),
+    days: int = Query(0, description="Filter items older than N days (0 = all)"),
+):
+    """Admin only: Get list of soft-deleted videos."""
+    offset = (page - 1) * limit
+    
+    # Build base query
+    query = db.query(Video).filter(Video.deleted_at.isnot(None))
+    
+    # Apply camera name filter
+    if search:
+        query = query.filter(Video.camera_name.ilike(f"%{search}%"))
+    
+    # Apply days filter
+    if days and days > 0:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        query = query.filter(Video.deleted_at < cutoff)
+    
+    total = query.count()
+    
+    videos = query.order_by(Video.deleted_at.desc()).offset(offset).limit(limit).all()
+    
+    result = []
+    for v in videos:
+        result.append({
+            "id": v.id,
+            "camera": v.camera_name,
+            "deleted_at": format_datetime_standard(v.deleted_at, db=db),
+            "timestamp": format_datetime_standard(v.timestamp, db=db),
+            "file_path": v.file_path,
+            "duration": v.duration,
+            "file_size": int(v.file_size / 1024 / 1024) if v.file_size else 0,  # MB
+            "resolution": v.resolution,
+        })
+    
+    return JSONResponse({
+        "videos": result,
+        "total": total,
+        "page": page,
+        "total_pages": (total + limit - 1) // limit
+    })
+
+
+@router.delete("/admin/videos/{video_id}/purge", response_class=JSONResponse)
+async def purge_video(
+    request: Request,
+    video_id: str,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """Admin only: Permanently delete a soft-deleted video."""
+    from app.routes.cameras import delete_camera_entity
+    
+    video = db.query(Video).filter(Video.id == video_id, Video.deleted_at.isnot(None)).first()
+    if not video:
+        raise HTTPException(status_code=404, detail="Deleted video not found")
+    
+    try:
+        # Delete from filesystem
+        if video.file_path:
+            full_path = os.path.join(VIDEO_FILESYSTEM_BASE, video.file_path)
+            if os.path.exists(full_path):
+                os.remove(full_path)
+        
+        # Delete from database
+        db.delete(video)
+        db.commit()
+        
+        log_audit(
+            db=db,
+            user=request.session.get("user_name", "Unknown"),
+            action="purge_video",
+            target=video.camera_name,
+            ip=request.client.host,
+            extra=f"Permanently deleted video {video_id}"
+        )
+        
+        return JSONResponse(
+            status_code=200,
+            content={"status": "success", "message": "Video permanently deleted"}
+        )
+    except Exception as e:
+        db.rollback()
+        logger.error("Failed to purge video %s: %s", video_id, e)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to purge video"
+        )

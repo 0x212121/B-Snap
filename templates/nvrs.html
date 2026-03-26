@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – NVR Management{% endblock %}
-{% from "_icons.html" import icon_server, icon_plus, icon_search, icon_check_circle, icon_x_circle, icon_warning, icon_map_pin, icon_pencil, icon_trash, icon_upload, icon_download, icon_arrow_path %}
+{% from "_icons.html" import icon_server, icon_plus, icon_search, icon_check_circle, icon_x_circle, icon_warning, icon_map_pin, icon_pencil, icon_trash, icon_upload, icon_download, icon_arrow_path, icon_eye, icon_eye_slash %}
 
 {% block content %}
 <!-- Header Section -->
@@ -267,15 +267,10 @@
           <div class="relative">
             <input type="password" id="hs-toggle-password" name="password" required
                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition pr-10">
-            <button type="button" id="btnTogglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
-              <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.522 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z" />
-              </svg>
-              <svg id="eye-off-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-7 0-10-7-10-7a16.06 16.06 0 013.062-4.938m3.197-2.197A9.956 9.956 0 0112 5c7 0 10 7 10 7a15.978 15.978 0 01-4.908 5.712M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
-              </svg>
+            <button type="button" id="btnTogglePassword" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
+              tabindex="-1" onclick="togglePasswordVisibility('hs-toggle-password', this)">
+              <span class="eye-icon">{{ icon_eye("w-5 h-5") }}</span>
+              <span class="eye-off-icon hidden">{{ icon_eye_slash("w-5 h-5") }}</span>
             </button>
           </div>
           <p id="password-help" class="text-xs text-gray-500 dark:text-gray-400 mt-1">Required for new NVRs</p>
@@ -687,9 +682,23 @@
     
     try {
       await loadCameraGroups();
+      
+      // Fetch NVR details (without password for security)
       const response = await fetch(`/api/nvr/${nvr_id}`);
       if (!response.ok) throw new Error('NVR not found');
       const nvr = await response.json();
+      
+      // Fetch password separately from admin endpoint
+      let password = '';
+      try {
+        const pwdResponse = await fetch(`/api/nvr/${nvr_id}/password`);
+        if (pwdResponse.ok) {
+          const pwdData = await pwdResponse.json();
+          password = pwdData.password || '';
+        }
+      } catch (pwdError) {
+        console.warn('Could not fetch password:', pwdError);
+      }
       
       const fields = {
         'name': nvr.hostname,
@@ -709,6 +718,9 @@
           el.value = fields[field];
         }
       });
+      
+      // Set password value
+      if (passwordInput) passwordInput.value = password;
       
       populateGroupSelect(nvr.group ? nvr.group.name : "");
       switchTab('basic');
@@ -790,10 +802,10 @@
     }
   }
   
-  function togglePasswordVisibility() {
-    const input = getElement('hs-toggle-password');
-    const eyeIcon = getElement('eye-icon');
-    const eyeOffIcon = getElement('eye-off-icon');
+  function togglePasswordVisibility(inputId, button) {
+    const input = getElement(inputId);
+    const eyeIcon = button.querySelector('.eye-icon');
+    const eyeOffIcon = button.querySelector('.eye-off-icon');
     
     if (!input) return;
     
@@ -831,7 +843,11 @@
     if (btnCancel) btnCancel.addEventListener('click', hideModal);
     
     const btnTogglePass = getElement('btnTogglePassword');
-    if (btnTogglePass) btnTogglePass.addEventListener('click', togglePasswordVisibility);
+    if (btnTogglePass) {
+      btnTogglePass.addEventListener('click', function() {
+        togglePasswordVisibility('hs-toggle-password', this);
+      });
+    }
     
     const btnReset = getElement('btnResetFilters');
     if (btnReset) btnReset.addEventListener('click', resetFilters);

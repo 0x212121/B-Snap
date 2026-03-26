@@ -49,6 +49,10 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
     with open(abs_file_path, "rb") as f:
         image_bytes = f.read()
 
+    # === P0-001: Calculate file hash for integrity verification ===
+    import hashlib
+    file_hash = hashlib.sha256(image_bytes).hexdigest()
+
     # === analisis citra ===
     is_blur, blur_score = detect_blur(image_bytes)
     is_brightness_issue, brightness_reason = detect_brightness(image_bytes)
@@ -78,6 +82,7 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
         tamper_reason=", ".join(tamper_reasons) if tamper_reasons else None,
         blur_score=blur_score,
         entropy_score=to_native_float(occlusion_metrics["entropy"]),
+        file_hash=file_hash,  # P0-001: Store file hash
     )
 
     db.add(snapshot)

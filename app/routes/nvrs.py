@@ -354,20 +354,59 @@ async def get_nvrs_json(db: Session = Depends(get_db), current_admin: User = Dep
 
 
 @router.get("/api/nvr/{nvr_id}", response_class=JSONResponse)
-async def get_camera_details(request: Request, nvr_id: str, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
+async def get_nvr_details(request: Request, nvr_id: str, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
+    """Get NVR details (without password for security)."""
     nvr = db.query(NVR).options(joinedload(NVR.group)).filter(NVR.id == nvr_id).first()
     if not nvr:
         raise HTTPException(status_code=404, detail="NVR not found")
-        
+    
+    # Password excluded from standard response for security
     return {
         "id": nvr.id,
         "hostname": nvr.hostname,
         "ip": nvr.ip,
         "username": nvr.username,
-        "password": nvr.password,
+        # "password": nvr.password,  # REMOVED: Password not exposed in API
         "location": nvr.location,
         "note": nvr.note,
         "group": {"name": nvr.group.name} if nvr.group else None
+    }
+
+
+@router.get("/api/nvr/{nvr_id}/password", response_class=JSONResponse)
+async def get_nvr_password(
+    request: Request, 
+    nvr_id: str, 
+    db: Session = Depends(get_db), 
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    Admin only: Fetches the password for an NVR.
+    This endpoint is logged and should only be used when necessary.
+    """
+    logger.debug("Admin fetching password for NVR ID: %s", nvr_id)
+    nvr = db.query(NVR).filter(NVR.id == nvr_id).first()
+    if not nvr:
+        logger.warning("NVR '%s' not found for password retrieval.", nvr_id)
+        raise HTTPException(status_code=404, detail="NVR not found")
+    
+    # Log this sensitive access
+    log_audit(
+        db=db,
+        user=request.session.get("user_name", "unknown"),
+        action="view_nvr_password",
+        target=nvr.hostname,
+        ip=request.client.host,
+        extra=f"NVR ID: {nvr_id}"
+    )
+    logger.info("Admin %s retrieved password for NVR %s", 
+                request.session.get("user_name"), nvr.hostname)
+    
+    return {
+        "id": nvr.id,
+        "hostname": nvr.hostname,
+        "username": nvr.username,
+        "password": nvr.password  # Decrypted via property
     }
 
 

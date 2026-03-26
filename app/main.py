@@ -35,7 +35,7 @@ from app.routes import (
     admin, auth, audit, cameras, config, dev_docs, docs, health, jobs, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
     user_management, videos, whitelist, group_recipients, email_logs, wa_webhook,
-    notifications, toast_demo, orphaned_files
+    notifications, toast_demo
 )
 from app.routes import insights
 from app.ws.routes import notification_listener, router as ws_router
@@ -252,9 +252,6 @@ app.include_router(notifications.router)
 app.include_router(jobs.router)
 # Demo routes - remove in production
 app.include_router(toast_demo.router)
-
-# Orphaned files management
-app.include_router(orphaned_files.router)
 
 # ====================================================================
 # 7. CORE APP ROUTES & HANDLERS

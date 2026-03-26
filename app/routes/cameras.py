@@ -10,6 +10,7 @@ from datetime import datetime
 from io import StringIO
 from typing import Optional, Union
 
+from app.models.user import User
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, UploadFile, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from sqlalchemy import or_
@@ -19,7 +20,7 @@ from app.db.database import get_db
 from app.models.camera import Camera as DBCamera
 from app.models.camera_group import CameraGroup
 from app.models.health import CameraHealth
-from app.routes.auth import admin_access_required
+from app.routes.auth import admin_access_required, operator_access_required
 from app.schemas.camera import CameraUpdatePayload
 from app.utils.audit_logger import log_audit
 from app.utils.healthcheck import ping_camera_by_id
@@ -383,14 +384,20 @@ async def edit_camera_submit(
 
 
 @router.get("/api/camera/{camera_id}", response_class=JSONResponse)
-async def get_camera_details(request: Request, camera_id: str, db: Session = Depends(get_db)):
+async def get_camera_details(
+    request: Request, 
+    camera_id: str, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(operator_access_required)
+):
     """Fetches a single camera's details by ID."""
     logger.debug("Fetching details for camera ID: %s", camera_id)
     camera = db.query(DBCamera).options(joinedload(DBCamera.group)).filter(DBCamera.id == camera_id).first()
     if not camera:
         logger.warning("Details for camera ID '%s' not found.", camera_id)
         raise HTTPException(status_code=404, detail="Camera not found")
-        
+    
+    # P1-002: Password excluded from standard API response
     return {
         "id": camera.id,
         "hostname": camera.hostname,
@@ -398,7 +405,7 @@ async def get_camera_details(request: Request, camera_id: str, db: Session = Dep
         "ip": camera.ip,
         "port": camera.port,
         "username": camera.username,
-        "password": camera.password,
+        # "password": camera.password,  # REMOVED: Password not exposed in API
         "latitude": camera.latitude,
         "longitude": camera.longitude,
         "asset_no": camera.asset_no,
@@ -408,6 +415,44 @@ async def get_camera_details(request: Request, camera_id: str, db: Session = Dep
         "group": {"name": camera.group.name} if camera.group else None,
         "note": camera.note,
         "snapshot_url": camera.snapshot_url
+    }
+
+
+@router.get("/api/camera/{camera_id}/password", response_class=JSONResponse)
+async def get_camera_password(
+    request: Request, 
+    camera_id: str, 
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """
+    Admin only: Fetches the password for a camera.
+    This endpoint is logged and should only be used when necessary.
+    """
+    logger.debug("Admin fetching password for camera ID: %s", camera_id)
+    camera = db.query(DBCamera).filter(DBCamera.id == camera_id).first()
+    if not camera:
+        logger.warning("Camera '%s' not found for password retrieval.", camera_id)
+        raise HTTPException(status_code=404, detail="Camera not found")
+    
+    # Log this sensitive access
+    from app.utils.audit_logger import log_audit
+    log_audit(
+        db=db,
+        user=request.session.get("user_name", "unknown"),
+        action="view_camera_password",
+        target=camera.hostname,
+        ip=request.client.host,
+        extra=f"Camera ID: {camera_id}"
+    )
+    logger.info("Admin %s retrieved password for camera %s", 
+                request.session.get("user_name"), camera.hostname)
+    
+    return {
+        "id": camera.id,
+        "hostname": camera.hostname,
+        "username": camera.username,
+        "password": camera.password  # Decrypted via property
     }
 
 

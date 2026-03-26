@@ -3,7 +3,7 @@ import logging
 import re
 from typing import Optional, List, Dict, Any
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
@@ -15,7 +15,7 @@ from app.models.snapshot import Snapshot
 from app.models.snapshot_log import SnapshotLog
 from app.models.user import User
 from app.models.whitelist import WhatsappWhitelist
-from app.routes.auth import operator_access_required
+from app.routes.auth import admin_access_required, operator_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_service import SnapshotService
 from app.utils.snapshot_utils import record_snapshot_metadata
@@ -33,7 +33,8 @@ logger = logging.getLogger(__name__)
 
 
 def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[str] = None, search_query: Optional[str] = None,
-                            tampered_only: bool = False, offset: int = 0, limit: int = 15) -> List[Dict[str, Any]]:
+                            tampered_only: bool = False, offset: int = 0, limit: int = 15, 
+                            include_deleted: bool = False) -> List[Dict[str, Any]]:
     """
     Helper function to query and filter snapshots from the database.
     This function now correctly fetches all snapshots, even if the camera has been deleted.
@@ -47,6 +48,10 @@ def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[
         snapshot_query = db.query(Snapshot).filter(Snapshot.camera_group == user_group.name)
     else:
         snapshot_query = db.query(Snapshot)
+
+    # P0-002: Filter out soft-deleted snapshots unless explicitly requested
+    if not include_deleted:
+        snapshot_query = snapshot_query.filter(Snapshot.deleted_at.is_(None))
 
     # Apply filters if provided
     if camera_filter:
@@ -68,6 +73,8 @@ def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[
     for s in snapshots:
         # Use getattr for backward compatibility (if is_orphaned column doesn't exist yet)
         is_orphaned = getattr(s, 'is_orphaned', False)
+        # P0-002: Include soft delete status
+        is_deleted = getattr(s, 'is_deleted', False)
         result.append({
             "url": f"/{SNAPSHOT_BASE_DIR}/{s.file_path}",
             "camera": s.camera_name,
@@ -79,7 +86,8 @@ def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[
             "resolution": s.resolution,
             "is_tampered": s.is_tampered,
             "tamper_reason": s.tamper_reason,
-            "is_orphaned": is_orphaned
+            "is_orphaned": is_orphaned,
+            "is_deleted": is_deleted  # P0-002
         })
     return result
 
@@ -372,3 +380,181 @@ def get_tampered_snapshots_range(
     } for s in snapshots]
 
     return JSONResponse(content=result)
+
+
+# ========== P0-002: Soft Delete Management Routes ==========
+
+@router.get("/admin/snapshots/deleted", response_class=JSONResponse)
+async def get_deleted_snapshots(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    search: str = Query(None, description="Filter by camera name"),
+    days: int = Query(0, description="Filter items older than N days (0 = all)"),
+):
+    """Admin only: Get list of soft-deleted snapshots."""
+    offset = (page - 1) * limit
+    
+    # Build base query
+    query = db.query(Snapshot).filter(Snapshot.deleted_at.isnot(None))
+    
+    # Apply camera name filter
+    if search:
+        query = query.filter(Snapshot.camera_name.ilike(f"%{search}%"))
+    
+    # Apply days filter
+    if days and days > 0:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        query = query.filter(Snapshot.deleted_at < cutoff)
+    
+    total = query.count()
+    
+    snapshots = query.order_by(Snapshot.deleted_at.desc()).offset(offset).limit(limit).all()
+    
+    result = []
+    for s in snapshots:
+        result.append({
+            "id": s.id,
+            "camera": s.camera_name,
+            "deleted_at": format_datetime_standard(s.deleted_at, db=db),
+            "timestamp": format_datetime_standard(s.timestamp, db=db),
+            "file_path": s.file_path,
+            "file_hash": s.file_hash,
+            "file_size": int(s.file_size / 1024) if s.file_size else 0,
+            "resolution": s.resolution,
+            "is_tampered": s.is_tampered,
+        })
+    
+    return JSONResponse({
+        "snapshots": result,
+        "total": total,
+        "page": page,
+        "total_pages": (total + limit - 1) // limit
+    })
+
+
+@router.post("/snap/{snapshot_id}/restore", response_class=JSONResponse)
+async def restore_snapshot(
+    request: Request,
+    snapshot_id: str,
+    db: Session = Depends(get_db),
+    current_operator: User = Depends(operator_access_required)
+):
+    """Restore a soft-deleted snapshot."""
+    from app.utils.snapshot_service import SnapshotService
+    
+    user_name = request.session.get("user_name", "Unknown")
+    success = await SnapshotService.restore_snapshot(
+        snapshot_id=snapshot_id,
+        db=db,
+        user_name=user_name
+    )
+    
+    if success:
+        return JSONResponse(
+            status_code=200,
+            content={"status": "success", "message": "Snapshot restored successfully"}
+        )
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to restore snapshot (may not be deleted or not found)"
+        )
+
+
+@router.delete("/admin/snapshots/{snapshot_id}/purge", response_class=JSONResponse)
+async def purge_snapshot(
+    request: Request,
+    snapshot_id: str,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """Admin only: Permanently delete a soft-deleted snapshot."""
+    from app.utils.snapshot_service import SnapshotService
+    
+    user_name = request.session.get("user_name", "Unknown")
+    success = await SnapshotService.delete_snapshot(
+        snapshot_id=snapshot_id,
+        db=db,
+        user_name=user_name,
+        hard_delete=True
+    )
+    
+    if success:
+        return JSONResponse(
+            status_code=200,
+            content={"status": "success", "message": "Snapshot permanently deleted"}
+        )
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to purge snapshot"
+        )
+
+
+@router.post("/admin/snapshots/purge", response_class=JSONResponse)
+async def purge_old_deleted_snapshots(
+    request: Request,
+    days_old: int = Query(30, description="Purge snapshots soft-deleted more than N days ago"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """Admin only: Permanently delete snapshots that have been soft-deleted for specified days."""
+    from app.utils.snapshot_service import SnapshotService
+    
+    user_name = request.session.get("user_name", "Unknown")
+    purged_count = SnapshotService.purge_deleted_snapshots(
+        db=db,
+        days_old=days_old,
+        user_name=user_name
+    )
+    
+    return JSONResponse({
+        "status": "success",
+        "message": f"Purged {purged_count} snapshots",
+        "purged_count": purged_count,
+        "days_threshold": days_old
+    })
+
+
+@router.get("/snap/{snapshot_id}/verify", response_class=JSONResponse)
+async def verify_snapshot_integrity(
+    request: Request,
+    snapshot_id: str,
+    db: Session = Depends(get_db),
+    current_operator: User = Depends(operator_access_required)
+):
+    """Verify the integrity of a snapshot using its stored hash."""
+    snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
+    if not snapshot:
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+    
+    if not snapshot.file_hash:
+        return JSONResponse({
+            "status": "warning",
+            "message": "No hash stored for this snapshot (legacy data)",
+            "integrity_verified": None
+        })
+    
+    is_valid = snapshot.verify_integrity()
+    
+    return JSONResponse({
+        "status": "success" if is_valid else "failed",
+        "message": "Integrity verified" if is_valid else "Integrity check FAILED - file may be corrupted or tampered",
+        "integrity_verified": is_valid,
+        "stored_hash": snapshot.file_hash,
+        "snapshot_id": snapshot_id,
+        "camera": snapshot.camera_name
+    })
+
+
+@router.get("/admin/trash")
+async def admin_trash_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """Admin Trash Management page - view and manage soft-deleted snapshots/videos."""
+    return templates.TemplateResponse("admin_trash.html", {"request": request})

@@ -354,6 +354,7 @@ class SnapshotService:
         snapshot_id: str,
         db: Session,
         user_name: str = "system",
+        hard_delete: bool = False,  # P0-002: Soft delete by default
     ) -> bool:
         """Delete a snapshot with notification.
         
@@ -361,35 +362,121 @@ class SnapshotService:
             snapshot_id: ID of the snapshot to delete
             db: Database session
             user_name: Name of user performing the deletion
+            hard_delete: If True, permanently delete (admin only). Default is soft delete.
             
         Returns:
             True if deleted successfully
         """
+        from datetime import datetime, timezone
+        
         snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
         if not snapshot:
             # Note: Error notification is handled by frontend
             return False
         
         try:
-            # Delete file if exists
-            if snapshot.file_path:
-                full_path = os.path.join("static", snapshot.file_path)
-                if os.path.exists(full_path):
-                    os.remove(full_path)
-            
-            camera_name = snapshot.camera_name
-            db.delete(snapshot)
-            db.commit()
+            if hard_delete:
+                # P0-002: Hard delete - permanently remove file and record (admin only)
+                if snapshot.file_path:
+                    full_path = os.path.join("static", "snapshots", snapshot.file_path)
+                    if os.path.exists(full_path):
+                        os.remove(full_path)
+                
+                db.delete(snapshot)
+                db.commit()
+                logger.info(f"Snapshot {snapshot_id} HARD deleted by {user_name}")
+            else:
+                # P0-002: Soft delete - mark as deleted but preserve data
+                snapshot.soft_delete()
+                db.commit()
+                logger.info(f"Snapshot {snapshot_id} SOFT deleted by {user_name}")
             
             # Note: Success notification is handled by frontend
-            
-            logger.info(f"Snapshot {snapshot_id} deleted by {user_name}")
             return True
             
         except Exception as e:
             logger.error(f"Failed to delete snapshot {snapshot_id}: {e}")
             # Note: Error notification is handled by frontend
             return False
+    
+    @staticmethod
+    async def restore_snapshot(
+        snapshot_id: str,
+        db: Session,
+        user_name: str = "system",
+    ) -> bool:
+        """Restore a soft-deleted snapshot.
+        
+        Args:
+            snapshot_id: ID of the snapshot to restore
+            db: Database session
+            user_name: Name of user performing the restoration
+            
+        Returns:
+            True if restored successfully
+        """
+        snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
+        if not snapshot:
+            return False
+        
+        if not snapshot.is_deleted:
+            logger.warning(f"Snapshot {snapshot_id} is not deleted, nothing to restore")
+            return False
+        
+        try:
+            snapshot.restore()
+            db.commit()
+            logger.info(f"Snapshot {snapshot_id} restored by {user_name}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to restore snapshot {snapshot_id}: {e}")
+            return False
+    
+    @staticmethod
+    def purge_deleted_snapshots(
+        db: Session,
+        days_old: int = 30,
+        user_name: str = "system",
+    ) -> int:
+        """Permanently delete snapshots that have been soft-deleted for specified days.
+        
+        Args:
+            db: Database session
+            days_old: Delete snapshots soft-deleted more than this many days ago
+            user_name: Name of user performing the purge
+            
+        Returns:
+            Number of snapshots purged
+        """
+        from datetime import datetime, timezone, timedelta
+        
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_old)
+        
+        # Find snapshots to purge
+        snapshots_to_purge = db.query(Snapshot).filter(
+            Snapshot.deleted_at.isnot(None),
+            Snapshot.deleted_at < cutoff_date
+        ).all()
+        
+        purged_count = 0
+        for snapshot in snapshots_to_purge:
+            try:
+                # Delete file
+                if snapshot.file_path:
+                    full_path = os.path.join("static", "snapshots", snapshot.file_path)
+                    if os.path.exists(full_path):
+                        os.remove(full_path)
+                
+                db.delete(snapshot)
+                purged_count += 1
+            except Exception as e:
+                logger.error(f"Failed to purge snapshot {snapshot.id}: {e}")
+        
+        if purged_count > 0:
+            db.commit()
+            logger.info(f"Purged {purged_count} soft-deleted snapshots older than {days_old} days by {user_name}")
+        
+        return purged_count
 
 
 # Convenience function for quick notifications

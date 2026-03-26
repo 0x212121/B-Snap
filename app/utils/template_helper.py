@@ -30,7 +30,7 @@ nav_items = [
             {"label": "📨 Email Recipient", "href": "/recipients", "roles": ["admin"]},
             {"label": "⚙️ Config", "href": "/config", "roles": ["admin"]},
             {"label": "⏰ Job Management", "href": "/admin/jobs", "roles": ["admin"]},
-            {"label": "🧹 Orphaned Files", "href": "/orphaned-files", "roles": ["admin"]},
+            {"label": "🗑️ Trash Management", "href": "/admin/trash", "roles": ["admin"]},
         ],
     },
     {

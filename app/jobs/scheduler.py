@@ -25,7 +25,6 @@ from app.models.snapshot_log import SnapshotLog
 from app.models.job_execution_log import JobExecutionLog
 from app.utils.snapshot_utils import record_snapshot_metadata, check_orphaned_snapshots
 from app.utils.check_stats import check_stats
-from app.utils.orphaned_scanner import run_orphaned_scan
 from sqlalchemy.orm import Session
 from app.models.task_timing import TaskTiming
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -632,17 +631,6 @@ def start_scheduler():
         replace_existing=True
     )
     
-    # Orphaned files folder scan - runs daily at 3 AM
-    scheduler.add_job(
-        logged_job("orphaned_files_scan", "Orphaned Files Scan")(scan_orphaned_files_job),
-        trigger=CronTrigger(hour=3, minute=0),
-        id='orphaned_files_scan',
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=3600,
-        replace_existing=True
-    )
-
     scheduler.start()
     logger.info("[Scheduler] Started with %d jobs", len(scheduler.get_jobs()))
     return scheduler
@@ -777,30 +765,6 @@ def check_orphaned_snapshots_job():
         }
     except Exception as e:
         logger.error("[Orphaned Check] Error: %s", e, exc_info=True)
-        raise
-    finally:
-        db.close()
-
-
-def scan_orphaned_files_job():
-    """Job to scan filesystem for orphaned snapshot files."""
-    db: Session = SessionLocal()
-    try:
-        result = run_orphaned_scan(db)
-        logger.info(
-            "[Orphaned Scan] Disk: %d files, DB: %d records, Found: %d orphaned (%d new)",
-            result['disk_files'],
-            result['db_records'],
-            result['orphaned_found'],
-            result['new_records']
-        )
-        return {
-            "records_processed": result['new_records'],
-            "orphaned_found": result['orphaned_found'],
-            "total_orphaned": result['total_orphaned']
-        }
-    except Exception as e:
-        logger.error("[Orphaned Scan] Error: %s", e, exc_info=True)
         raise
     finally:
         db.close()

@@ -1,0 +1,782 @@
+{% extends "base.html" %}
+{% block title %}B-Snap – Trash Management{% endblock %}
+{% from "_icons.html" import icon_trash, icon_arrow_path, icon_eye, icon_download, icon_x_mark, icon_check_circle, icon_warning %}
+
+{% block content %}
+<!-- Header Section -->
+<div class="mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+        <div class="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl">
+          {{ icon_trash("w-7 h-7 text-red-600 dark:text-red-400") }}
+        </div>
+        Trash Management
+      </h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        Manage deleted snapshots and videos. Restore items or purge them permanently.
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="showPurgeModal()" class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+        {{ icon_trash("w-5 h-5") }}
+        Bulk Purge
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-3 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Deleted Snapshots</p>
+        <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1" id="stat-snapshots">0</p>
+      </div>
+      <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+        {{ icon_warning("w-6 h-6 text-red-600 dark:text-red-400") }}
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Deleted Videos</p>
+        <p class="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1" id="stat-videos">0</p>
+      </div>
+      <div class="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+        {{ icon_warning("w-6 h-6 text-orange-600 dark:text-orange-400") }}
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Size</p>
+        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1" id="stat-size">0 MB</p>
+      </div>
+      <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+        {{ icon_download("w-6 h-6 text-blue-600 dark:text-blue-400") }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4">
+  <div class="border-b border-gray-200 dark:border-gray-700">
+    <nav class="-mb-px flex" aria-label="Tabs">
+      <button type="button" class="tab-btn w-1/2 py-4 px-1 text-center border-b-2 border-blue-500 text-blue-600 font-medium text-sm" data-tab="snapshots" onclick="switchTab('snapshots')">
+        Deleted Snapshots
+      </button>
+      <button type="button" class="tab-btn w-1/2 py-4 px-1 text-center border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm" data-tab="videos" onclick="switchTab('videos')">
+        Deleted Videos
+      </button>
+    </nav>
+  </div>
+</div>
+
+<!-- Filter Section -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+  <div class="flex flex-col lg:flex-row gap-4">
+    <div class="relative flex-1">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+      <input type="text" id="searchInput" placeholder="Search by camera name..."
+        class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+    </div>
+    
+    <div class="flex gap-2 items-center">
+      <div class="relative w-40">
+        <select id="daysFilter" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+          <option value="0">All items</option>
+          <option value="7">> 7 days old</option>
+          <option value="30" selected>> 30 days old</option>
+          <option value="90">> 90 days old</option>
+        </select>
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+          <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </div>
+      </div>
+      
+      <button onclick="refreshData()" class="p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+        {{ icon_arrow_path("h-5 w-5") }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Results Info -->
+<div class="flex items-center justify-between mb-3 px-2">
+  <div id="results-info" class="text-sm text-gray-600 dark:text-gray-400"></div>
+  <div id="loading-indicator" class="hidden items-center gap-2 text-sm text-gray-500">
+    <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+    Loading...
+  </div>
+</div>
+
+<!-- Snapshots Table -->
+<div id="snapshots-panel" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm text-left" id="snapshots-table">
+      <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
+        <tr>
+          <th class="px-4 py-3.5 font-semibold">Snapshot</th>
+          <th class="px-4 py-3.5 font-semibold">Camera</th>
+          <th class="px-4 py-3.5 font-semibold">Deleted At</th>
+          <th class="px-4 py-3.5 font-semibold">Size</th>
+          <th class="px-4 py-3.5 font-semibold text-center">Integrity</th>
+          <th class="px-4 py-3.5 font-semibold text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="snapshots-body">
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Empty State -->
+  <div id="snapshots-empty" class="hidden flex-col items-center justify-center py-16 text-center">
+    <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
+      {{ icon_check_circle("w-12 h-12 text-green-500") }}
+    </div>
+    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No deleted snapshots</h3>
+    <p class="text-gray-500 dark:text-gray-400">Trash is empty. All snapshots are safe.</p>
+  </div>
+  
+  <!-- Pagination -->
+  <div id="snapshots-pagination" class="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+    <div class="text-sm text-gray-500" id="snapshots-page-info"></div>
+    <div class="flex items-center gap-1" id="snapshots-page-buttons"></div>
+  </div>
+</div>
+
+<!-- Videos Table -->
+<div id="videos-panel" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hidden">
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm text-left" id="videos-table">
+      <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
+        <tr>
+          <th class="px-4 py-3.5 font-semibold">Video</th>
+          <th class="px-4 py-3.5 font-semibold">Camera</th>
+          <th class="px-4 py-3.5 font-semibold">Deleted At</th>
+          <th class="px-4 py-3.5 font-semibold">Duration</th>
+          <th class="px-4 py-3.5 font-semibold">Size</th>
+          <th class="px-4 py-3.5 font-semibold text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="videos-body">
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Empty State -->
+  <div id="videos-empty" class="hidden flex-col items-center justify-center py-16 text-center">
+    <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
+      {{ icon_check_circle("w-12 h-12 text-green-500") }}
+    </div>
+    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No deleted videos</h3>
+    <p class="text-gray-500 dark:text-gray-400">Trash is empty. All videos are safe.</p>
+  </div>
+  
+  <!-- Pagination -->
+  <div id="videos-pagination" class="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+    <div class="text-sm text-gray-500" id="videos-page-info"></div>
+    <div class="flex items-center gap-1" id="videos-page-buttons"></div>
+  </div>
+</div>
+
+<!-- Bulk Purge Modal -->
+<div id="purgeModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-auto">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+          {{ icon_trash("w-5 h-5 text-red-600 dark:text-red-400") }}
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white">Bulk Purge</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Permanently delete old items</p>
+        </div>
+      </div>
+      <button onclick="hidePurgeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+        {{ icon_x_mark("w-5 h-5") }}
+      </button>
+    </div>
+    
+    <div class="p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Purge items older than:
+        </label>
+        <select id="purgeDays" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+          <option value="7">7 days</option>
+          <option value="30" selected>30 days</option>
+          <option value="90">90 days</option>
+          <option value="180">180 days</option>
+        </select>
+      </div>
+      
+      <div class="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+        <div class="flex items-start gap-3">
+          {{ icon_warning("w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5") }}
+          <div>
+            <p class="text-sm font-medium text-red-800 dark:text-red-200">Warning</p>
+            <p class="text-xs text-red-700 dark:text-red-300 mt-1">
+              This action will permanently delete files from storage and cannot be undone. 
+              Make sure you have backups if needed.
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <input type="checkbox" id="purgeSnapshots" class="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500" checked>
+        <label for="purgeSnapshots" class="text-sm text-gray-700 dark:text-gray-300">Include Snapshots</label>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <input type="checkbox" id="purgeVideos" class="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500" checked>
+        <label for="purgeVideos" class="text-sm text-gray-700 dark:text-gray-300">Include Videos</label>
+      </div>
+    </div>
+    
+    <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+      <button type="button" onclick="hidePurgeModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded-lg font-medium text-sm transition">Cancel</button>
+      <button type="button" onclick="executeBulkPurge()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm shadow-sm transition">
+        Purge Permanently
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Preview Modal -->
+<div id="previewModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4">
+  <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl max-h-[90vh] w-full">
+    <div class="absolute top-4 right-4 z-10">
+      <button onclick="hidePreviewModal()" class="bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition">
+        {{ icon_x_mark("w-5 h-5") }}
+      </button>
+    </div>
+    <div class="p-4">
+      <img id="preview-image" src="" class="rounded-lg w-full object-contain max-h-[70vh] hidden">
+      <video id="preview-video" controls class="rounded-lg w-full max-h-[70vh] hidden">
+        <source src="" type="video/mp4">
+      </video>
+      <div id="preview-info" class="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+        <p class="text-sm text-gray-700 dark:text-gray-300" id="preview-details"></p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentTab = 'snapshots';
+let currentPage = { snapshots: 1, videos: 1 };
+let perPage = 20;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+  loadSnapshots();
+  loadStats();
+  
+  // Search input
+  document.getElementById('searchInput').addEventListener('input', debounce(function() {
+    currentPage[currentTab] = 1;
+    if (currentTab === 'snapshots') loadSnapshots();
+    else loadVideos();
+  }, 350));
+  
+  // Days filter
+  document.getElementById('daysFilter').addEventListener('change', function() {
+    currentPage[currentTab] = 1;
+    if (currentTab === 'snapshots') loadSnapshots();
+    else loadVideos();
+  });
+});
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    if (btn.dataset.tab === tab) {
+      btn.classList.remove('border-transparent', 'text-gray-500');
+      btn.classList.add('border-blue-500', 'text-blue-600');
+    } else {
+      btn.classList.remove('border-blue-500', 'text-blue-600');
+      btn.classList.add('border-transparent', 'text-gray-500');
+    }
+  });
+  
+  // Show/hide panels
+  document.getElementById('snapshots-panel').classList.toggle('hidden', tab !== 'snapshots');
+  document.getElementById('videos-panel').classList.toggle('hidden', tab !== 'videos');
+  
+  // Load data if needed
+  if (tab === 'snapshots') loadSnapshots();
+  else loadVideos();
+}
+
+async function loadStats() {
+  try {
+    // This would be a new endpoint, for now we estimate
+    document.getElementById('stat-snapshots').textContent = '...';
+    document.getElementById('stat-videos').textContent = '...';
+  } catch (err) {
+    console.error('Failed to load stats:', err);
+  }
+}
+
+async function loadSnapshots(page = 1) {
+  showLoading(true);
+  const search = document.getElementById('searchInput').value;
+  const days = document.getElementById('daysFilter').value;
+  
+  try {
+    const res = await fetch(`/admin/snapshots/deleted?page=${page}&limit=${perPage}&search=${encodeURIComponent(search)}&days=${days}`);
+    if (!res.ok) throw new Error('Failed to load');
+    
+    const data = await res.json();
+    renderSnapshots(data.snapshots || [], data.total || 0, page);
+    document.getElementById('stat-snapshots').textContent = data.total || 0;
+    
+  } catch (err) {
+    console.error('Failed to load snapshots:', err);
+    if (typeof Toast !== 'undefined') Toast.error('Failed to load deleted snapshots', { title: 'Error' });
+  } finally {
+    showLoading(false);
+  }
+}
+
+function renderSnapshots(snapshots, total, page) {
+  const tbody = document.getElementById('snapshots-body');
+  const emptyState = document.getElementById('snapshots-empty');
+  const pagination = document.getElementById('snapshots-pagination');
+  
+  if (snapshots.length === 0) {
+    tbody.innerHTML = '';
+    emptyState.classList.remove('hidden');
+    emptyState.classList.add('flex');
+    pagination.classList.add('hidden');
+    document.getElementById('results-info').textContent = 'No items found';
+    return;
+  }
+  
+  emptyState.classList.add('hidden');
+  emptyState.classList.remove('flex');
+  pagination.classList.remove('hidden');
+  
+  tbody.innerHTML = snapshots.map(s => `
+    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+      <td class="px-4 py-3">
+        <div class="flex items-center gap-3">
+          <img src="/static/snapshots/${s.file_path}" alt="" class="w-12 h-9 object-cover rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-80" 
+               onclick="previewSnapshot('${s.file_path}', '${s.camera}', '${s.deleted_at}')" title="Click to preview">
+          <div>
+            <p class="font-medium text-gray-900 dark:text-white text-xs">${s.file_path.split('/').pop()}</p>
+            <p class="text-xs text-gray-500">${s.resolution || 'Unknown'}</p>
+          </div>
+        </div>
+      </td>
+      <td class="px-4 py-3 text-gray-700 dark:text-gray-300">${s.camera}</td>
+      <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs">${s.deleted_at}</td>
+      <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs">${s.file_size} KB</td>
+      <td class="px-4 py-3 text-center">
+        ${s.file_hash ? 
+          `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" title="Hash: ${s.file_hash.substring(0, 16)}...">Verified</span>` :
+          `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400">Legacy</span>`
+        }
+      </td>
+      <td class="px-4 py-3 text-center">
+        <div class="flex items-center justify-center gap-1">
+          <button onclick="restoreSnapshot('${s.id}')" title="Restore" class="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          </button>
+          <button onclick="purgeSnapshot('${s.id}', '${s.camera}')" title="Purge Permanently" class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  
+  renderPagination('snapshots', page, total);
+  
+  const start = (page - 1) * perPage + 1;
+  const end = Math.min(page * perPage, total);
+  document.getElementById('results-info').innerHTML = `Showing <span class="font-medium">${start}-${end}</span> of <span class="font-medium">${total}</span> deleted snapshots`;
+}
+
+async function loadVideos(page = 1) {
+  showLoading(true);
+  const search = document.getElementById('searchInput').value;
+  const days = document.getElementById('daysFilter').value;
+  
+  try {
+    const res = await fetch(`/admin/videos/deleted?page=${page}&limit=${perPage}&search=${encodeURIComponent(search)}&days=${days}`);
+    if (!res.ok) throw new Error('Failed to load');
+    
+    const data = await res.json();
+    renderVideos(data.videos || [], data.total || 0, page);
+    document.getElementById('stat-videos').textContent = data.total || 0;
+    
+  } catch (err) {
+    console.error('Failed to load videos:', err);
+    if (typeof Toast !== 'undefined') Toast.error('Failed to load deleted videos', { title: 'Error' });
+  } finally {
+    showLoading(false);
+  }
+}
+
+function renderVideos(videos, total, page) {
+  const tbody = document.getElementById('videos-body');
+  const emptyState = document.getElementById('videos-empty');
+  const pagination = document.getElementById('videos-pagination');
+  
+  if (videos.length === 0) {
+    tbody.innerHTML = '';
+    emptyState.classList.remove('hidden');
+    emptyState.classList.add('flex');
+    pagination.classList.add('hidden');
+    document.getElementById('results-info').textContent = 'No items found';
+    return;
+  }
+  
+  emptyState.classList.add('hidden');
+  emptyState.classList.remove('flex');
+  pagination.classList.remove('hidden');
+  
+  tbody.innerHTML = videos.map(v => `
+    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+      <td class="px-4 py-3">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-9 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 transition" 
+               onclick="previewVideo('${v.file_path}', '${v.camera}', '${v.deleted_at}', ${v.duration})">
+            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="font-medium text-gray-900 dark:text-white text-xs">${v.file_path.split('/').pop()}</p>
+            <p class="text-xs text-gray-500">${v.resolution || 'Unknown'}</p>
+          </div>
+        </div>
+      </td>
+      <td class="px-4 py-3 text-gray-700 dark:text-gray-300">${v.camera}</td>
+      <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs">${v.deleted_at}</td>
+      <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs">${v.duration ? v.duration + 's' : '-'}</td>
+      <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs">${v.file_size} MB</td>
+      <td class="px-4 py-3 text-center">
+        <div class="flex items-center justify-center gap-1">
+          <button onclick="restoreVideo('${v.id}')" title="Restore" class="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          </button>
+          <button onclick="purgeVideo('${v.id}', '${v.camera}')" title="Purge Permanently" class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  
+  renderPagination('videos', page, total);
+  
+  const start = (page - 1) * perPage + 1;
+  const end = Math.min(page * perPage, total);
+  document.getElementById('results-info').innerHTML = `Showing <span class="font-medium">${start}-${end}</span> of <span class="font-medium">${total}</span> deleted videos`;
+}
+
+function renderPagination(type, page, total) {
+  const container = document.getElementById(`${type}-page-buttons`);
+  const info = document.getElementById(`${type}-page-info`);
+  const totalPages = Math.ceil(total / perPage) || 1;
+  
+  currentPage[type] = page;
+  info.textContent = `Page ${page} of ${totalPages}`;
+  container.innerHTML = '';
+  
+  if (totalPages <= 1) return;
+  
+  const windowSize = 2;
+  const loadFunc = type === 'snapshots' ? 'loadSnapshots' : 'loadVideos';
+  
+  if (page > 1) {
+    container.innerHTML += `
+      <button onclick="${loadFunc}(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">«</button>
+      <button onclick="${loadFunc}(${page - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">‹</button>
+    `;
+  }
+  
+  for (let i = Math.max(1, page - windowSize); i <= Math.min(totalPages, page + windowSize); i++) {
+    if (i === page) {
+      container.innerHTML += `<button class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium">${i}</button>`;
+    } else {
+      container.innerHTML += `<button onclick="${loadFunc}(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>`;
+    }
+  }
+  
+  if (page < totalPages) {
+    container.innerHTML += `
+      <button onclick="${loadFunc}(${page + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">›</button>
+      <button onclick="${loadFunc}(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">»</button>
+    `;
+  }
+}
+
+async function restoreSnapshot(id) {
+  if (typeof showGlobalConfirm === 'function') {
+    showGlobalConfirm('Restore this snapshot? It will be available in the gallery again.', async () => {
+      try {
+        const res = await fetch(`/snap/${id}/restore`, { method: 'POST' });
+        const data = await res.json();
+        
+        if (res.ok) {
+          if (typeof Toast !== 'undefined') Toast.success('Snapshot restored successfully', { title: 'Success' });
+          loadSnapshots(currentPage.snapshots);
+          loadStats();
+        } else {
+          if (typeof Toast !== 'undefined') Toast.error(data.message || 'Failed to restore', { title: 'Error' });
+        }
+      } catch (err) {
+        console.error('Restore error:', err);
+        if (typeof Toast !== 'undefined') Toast.error('Network error', { title: 'Error' });
+      }
+    }, { title: 'Confirm Restore', confirmText: 'Restore', confirmClasses: 'bg-green-600 hover:bg-green-700' });
+  }
+}
+
+async function purgeSnapshot(id, cameraName) {
+  const message = `Permanently purge snapshot from "${cameraName}"? This cannot be undone.`;
+  
+  if (typeof showGlobalConfirm === 'function') {
+    showGlobalConfirm(message, async () => {
+      try {
+        const res = await fetch(`/admin/snapshots/${id}/purge`, { method: 'DELETE' });
+        const data = await res.json();
+        
+        if (res.ok) {
+          if (typeof Toast !== 'undefined') Toast.success('Snapshot purged permanently', { title: 'Success' });
+          loadSnapshots(currentPage.snapshots);
+          loadStats();
+        } else {
+          if (typeof Toast !== 'undefined') Toast.error(data.message || 'Failed to purge', { title: 'Error' });
+        }
+      } catch (err) {
+        console.error('Purge error:', err);
+        if (typeof Toast !== 'undefined') Toast.error('Network error', { title: 'Error' });
+      }
+    }, { title: '⚠️ Purge Permanently', confirmText: 'Purge', confirmClasses: 'bg-red-600 hover:bg-red-700' });
+  }
+}
+
+function showPurgeModal() {
+  const modal = document.getElementById('purgeModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function hidePurgeModal() {
+  const modal = document.getElementById('purgeModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+async function executeBulkPurge() {
+  const days = document.getElementById('purgeDays').value;
+  const includeSnapshots = document.getElementById('purgeSnapshots').checked;
+  const includeVideos = document.getElementById('purgeVideos').checked;
+  
+  if (!includeSnapshots && !includeVideos) {
+    if (typeof Toast !== 'undefined') Toast.warning('Please select at least one item type', { title: 'Warning' });
+    return;
+  }
+  
+  hidePurgeModal();
+  showLoading(true);
+  
+  try {
+    if (includeSnapshots) {
+      const res = await fetch(`/admin/snapshots/purge?days_old=${days}`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        if (typeof Toast !== 'undefined') Toast.success(`Purged ${data.purged_count} snapshots`, { title: 'Success' });
+      }
+    }
+    
+    if (includeVideos) {
+      const res = await fetch(`/admin/videos/purge?days_old=${days}`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        if (typeof Toast !== 'undefined') Toast.success(`Purged ${data.purged_count} videos`, { title: 'Success' });
+      }
+    }
+    
+    loadSnapshots();
+    loadStats();
+  } catch (err) {
+    console.error('Bulk purge error:', err);
+    if (typeof Toast !== 'undefined') Toast.error('Failed to complete purge', { title: 'Error' });
+  } finally {
+    showLoading(false);
+  }
+}
+
+function previewSnapshot(filePath, camera, deletedAt) {
+  const modal = document.getElementById('previewModal');
+  const img = document.getElementById('preview-image');
+  const video = document.getElementById('preview-video');
+  const details = document.getElementById('preview-details');
+  
+  img.src = `/static/snapshots/${filePath}`;
+  img.classList.remove('hidden');
+  video.classList.add('hidden');
+  video.pause();
+  
+  details.innerHTML = `
+    <strong>Camera:</strong> ${camera}<br>
+    <strong>Deleted:</strong> ${deletedAt}<br>
+    <strong>Path:</strong> ${filePath}
+  `;
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function previewVideo(filePath, camera, deletedAt, duration) {
+  const modal = document.getElementById('previewModal');
+  const img = document.getElementById('preview-image');
+  const video = document.getElementById('preview-video');
+  const details = document.getElementById('preview-details');
+  
+  video.src = `/static/videos/${filePath}`;
+  video.classList.remove('hidden');
+  img.classList.add('hidden');
+  
+  details.innerHTML = `
+    <strong>Camera:</strong> ${camera}<br>
+    <strong>Deleted:</strong> ${deletedAt}<br>
+    <strong>Duration:</strong> ${duration || 'Unknown'} seconds<br>
+    <strong>Path:</strong> ${filePath}
+  `;
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  video.play().catch(() => {});
+}
+
+async function restoreVideo(id) {
+  if (typeof showGlobalConfirm === 'function') {
+    showGlobalConfirm('Restore this video? It will be available in the video gallery again.', async () => {
+      try {
+        const res = await fetch(`/videos/${id}/restore`, { method: 'POST' });
+        const data = await res.json();
+        
+        if (res.ok) {
+          if (typeof Toast !== 'undefined') Toast.success('Video restored successfully', { title: 'Success' });
+          loadVideos(currentPage.videos);
+          loadStats();
+        } else {
+          if (typeof Toast !== 'undefined') Toast.error(data.message || 'Failed to restore', { title: 'Error' });
+        }
+      } catch (err) {
+        console.error('Restore error:', err);
+        if (typeof Toast !== 'undefined') Toast.error('Network error', { title: 'Error' });
+      }
+    }, { title: 'Confirm Restore', confirmText: 'Restore', confirmClasses: 'bg-green-600 hover:bg-green-700' });
+  }
+}
+
+async function purgeVideo(id, cameraName) {
+  const message = `Permanently purge video from "${cameraName}"? This cannot be undone.`;
+  
+  if (typeof showGlobalConfirm === 'function') {
+    showGlobalConfirm(message, async () => {
+      try {
+        const res = await fetch(`/admin/videos/${id}/purge`, { method: 'DELETE' });
+        const data = await res.json();
+        
+        if (res.ok) {
+          if (typeof Toast !== 'undefined') Toast.success('Video purged permanently', { title: 'Success' });
+          loadVideos(currentPage.videos);
+          loadStats();
+        } else {
+          if (typeof Toast !== 'undefined') Toast.error(data.message || 'Failed to purge', { title: 'Error' });
+        }
+      } catch (err) {
+        console.error('Purge error:', err);
+        if (typeof Toast !== 'undefined') Toast.error('Network error', { title: 'Error' });
+      }
+    }, { title: '⚠️ Purge Permanently', confirmText: 'Purge', confirmClasses: 'bg-red-600 hover:bg-red-700' });
+  }
+}
+
+function hidePreviewModal() {
+  const modal = document.getElementById('previewModal');
+  const video = document.getElementById('preview-video');
+  
+  video.pause();
+  video.src = '';
+  
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function showLoading(show) {
+  const indicator = document.getElementById('loading-indicator');
+  if (show) {
+    indicator.classList.remove('hidden');
+    indicator.classList.add('flex');
+  } else {
+    indicator.classList.add('hidden');
+    indicator.classList.remove('flex');
+  }
+}
+
+function refreshData() {
+  currentPage[currentTab] = 1;
+  if (currentTab === 'snapshots') loadSnapshots();
+  else loadVideos();
+  loadStats();
+}
+
+// Close modals on outside click
+document.addEventListener('click', function(e) {
+  if (e.target.id === 'previewModal') hidePreviewModal();
+  if (e.target.id === 'purgeModal') hidePurgeModal();
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    hidePreviewModal();
+    hidePurgeModal();
+  }
+});
+</script>
+{% endblock %}

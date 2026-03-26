@@ -285,16 +285,18 @@
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
           </div>
           
-          <div class="relative password-toggle-wrapper">
+          <div class="relative">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="hs-toggle-password">Password</label>
-            <input id="hs-toggle-password" type="password"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10 transition"
-              placeholder="Enter password" name="password" autocomplete="new-password">
-            <button type="button" class="toggle-password-btn absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
-              tabindex="-1" onclick="togglePasswordVisibility(this)">
-              <span class="eye-icon">{{ icon_eye("w-5 h-5") }}</span>
-              <span class="eye-off-icon hidden">{{ icon_eye_slash("w-5 h-5") }}</span>
-            </button>
+            <div class="relative">
+              <input id="hs-toggle-password" type="password"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10 transition"
+                placeholder="Enter password" name="password" autocomplete="new-password">
+              <button type="button" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
+                tabindex="-1" onclick="togglePasswordVisibility('hs-toggle-password', this)">
+                <span class="eye-icon">{{ icon_eye("w-5 h-5") }}</span>
+                <span class="eye-off-icon hidden">{{ icon_eye_slash("w-5 h-5") }}</span>
+              </button>
+            </div>
             <p id="password-help" class="text-xs text-gray-500 dark:text-gray-400 mt-1"></p>
           </div>
         </div>
@@ -454,8 +456,8 @@
     const modalTabs = document.getElementById('modalTabs');
     
     // Password visibility toggle
-    window.togglePasswordVisibility = function(button) {
-      const input = document.getElementById('hs-toggle-password');
+    window.togglePasswordVisibility = function(inputId, button) {
+      const input = document.getElementById(inputId);
       const eyeIcon = button.querySelector('.eye-icon');
       const eyeOffIcon = button.querySelector('.eye-off-icon');
       
@@ -729,9 +731,23 @@
       
       try {
         await loadCameraGroups();
+        
+        // Fetch camera details (without password for security)
         const response = await fetch(`/api/camera/${cameraId}`);
         if (!response.ok) throw new Error('Camera not found');
         const cam = await response.json();
+        
+        // Fetch password separately from admin endpoint
+        let password = '';
+        try {
+          const pwdResponse = await fetch(`/api/camera/${cameraId}/password`);
+          if (pwdResponse.ok) {
+            const pwdData = await pwdResponse.json();
+            password = pwdData.password || '';
+          }
+        } catch (pwdError) {
+          console.warn('Could not fetch password:', pwdError);
+        }
         
         setFieldValue('cameraId', cam.id);
         setFieldValue('name', cam.hostname);
@@ -739,7 +755,7 @@
         setFieldValue('ip', cam.ip);
         setFieldValue('port', cam.port || '');
         setFieldValue('username', cam.username);
-        setFieldValue('hs-toggle-password', cam.password || '');
+        setFieldValue('hs-toggle-password', password);
         setFieldValue('latitude', cam.latitude || '');
         setFieldValue('longitude', cam.longitude || '');
         setFieldValue('asset_no', cam.asset_no || '');
