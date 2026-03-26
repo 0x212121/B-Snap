@@ -21,3 +21,4 @@ ffplay.exe
 .venv
 .env
 *.pyc
+*.pdf
