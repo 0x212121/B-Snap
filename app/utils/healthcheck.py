@@ -82,7 +82,11 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
     is_online, latency_ms = ping_device(device_ip)
     now = datetime.now(timezone.utc)
 
-    entry = db.query(CameraHealth).filter(CameraHealth.id == device_id).first()
+    # Query by camera_id or nvr_id, not by health record id
+    if device_type == 'Camera':
+        entry = db.query(CameraHealth).filter(CameraHealth.camera_id == device_id).first()
+    else:
+        entry = db.query(CameraHealth).filter(CameraHealth.nvr_id == device_id).first()
 
     last_check_time = entry.checked if entry else None
     if last_check_time and last_check_time.tzinfo is None:
@@ -90,7 +94,7 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
 
     if not entry:
         entry_data = {
-            "id": device_id, "status": "Unknown", "status_changed_at": now,
+            "status": "Unknown", "status_changed_at": now,
             "checked": now, "type": device_type
         }
         if device_type == 'Camera':

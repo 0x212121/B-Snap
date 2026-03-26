@@ -70,7 +70,7 @@ async def get_camera_stats(
 
     all_cameras = (
         db.query(DBCamera.hostname)
-        .join(CameraHealth, DBCamera.id == CameraHealth.id)
+        .join(CameraHealth, DBCamera.id == CameraHealth.camera_id)
         .filter(and_(
             not_(CameraHealth.status.ilike("standalone")),
             DBCamera.ip.isnot(None),
@@ -167,7 +167,7 @@ async def get_camera_stats_data(
     if not camera:
         all_cameras = (
             db.query(DBCamera.hostname, CameraHealth.status)
-            .join(CameraHealth, DBCamera.id == CameraHealth.id)
+            .join(CameraHealth, DBCamera.id == CameraHealth.camera_id)
             .filter(and_(
                 not_(CameraHealth.status.ilike("standalone")),
                 DBCamera.ip.isnot(None),
@@ -205,7 +205,7 @@ async def get_no_data_cameras(
     # Ambil semua hostname kamera (exclude standalone & cameras without IP)
     all_cameras = (
         db.query(DBCamera.hostname, CameraHealth.status)
-        .join(CameraHealth, DBCamera.id == CameraHealth.id)
+        .join(CameraHealth, DBCamera.id == CameraHealth.camera_id)
         .filter(and_(
             not_(CameraHealth.status.ilike("standalone")),
             DBCamera.ip.isnot(None),

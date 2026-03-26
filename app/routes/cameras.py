@@ -362,10 +362,10 @@ async def edit_camera_submit(
         )
         
         if cam.status == "Deactivated":
-            health = db.query(CameraHealth).filter(CameraHealth.id == cam.id).first()
+            health = db.query(CameraHealth).filter(CameraHealth.camera_id == cam.id).first()
             if health:
-                new_health = CameraHealth(id=cam.id, status="Offline", checked=datetime.now())
-                db.merge(new_health)
+                health.status = "Offline"
+                health.checked = datetime.now()
                 db.commit()
                 logger.info("Health record for camera '%s' set to Offline due to deactivation.", cam.hostname)
         
