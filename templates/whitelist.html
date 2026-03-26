@@ -18,12 +18,26 @@
         Manage authorized WhatsApp numbers for bot access
       </p>
     </div>
-    <button onclick="openAddModal()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-      </svg>
-      Add Number
-    </button>
+    <div class="flex gap-2">
+      <button onclick="exportWhitelist()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+        </svg>
+        Export
+      </button>
+      <button onclick="showImportModal()" class="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+        </svg>
+        Import
+      </button>
+      <button onclick="openAddModal()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        Add Number
+      </button>
+    </div>
   </div>
 </div>
 
@@ -250,6 +264,108 @@
   let totalPages = 1;
   let currentSearch = "";
   let currentStats = {};
+
+  // ====== EXPORT / IMPORT ======
+  function exportWhitelist() {
+    window.location.href = '/api/whitelist/export'
+  }
+
+  function showImportModal() {
+    const modalHtml = `
+    <div id="import-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+              <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-gray-900 dark:text-white">Import Whitelist</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Upload CSV file</p>
+            </div>
+          </div>
+          <button onclick="closeModal('import-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        
+        <form id="import-form" class="p-6 space-y-4">
+          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-400">
+            <p class="font-medium mb-2">CSV Format:</p>
+            <code class="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded block mb-2">
+              phone_number,name,role,group_name,is_active
+            </code>
+            <ul class="text-xs space-y-1 list-disc list-inside">
+              <li><strong>phone_number</strong>: required (628xxxxxxxxxx)</li>
+              <li><strong>name</strong>: optional</li>
+              <li><strong>role</strong>: optional (user/admin)</li>
+              <li><strong>group_name</strong>: optional</li>
+              <li><strong>is_active</strong>: optional (yes/no)</li>
+            </ul>
+          </div>
+          
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">CSV File <span class="text-red-500">*</span></label>
+            <input type="file" name="csv_file" accept=".csv" required
+                   class="w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 dark:file:bg-green-900/30 dark:file:text-green-400">
+          </div>
+          
+          <div class="flex justify-end gap-3 pt-4">
+            <button type="button" onclick="closeModal('import-modal')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 rounded-lg font-medium transition">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium shadow-sm transition">Import</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    document.getElementById('import-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const fileInput = form.csv_file;
+      
+      if (!fileInput.files[0]) {
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Please select a CSV file', { title: 'Validation Error' });
+        }
+        return;
+      }
+      
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      
+      try {
+        const res = await fetch('/api/whitelist/import', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await safeParseJSONResponse(res);
+        
+        if (res.ok && data.status === 'success') {
+          closeModal('import-modal');
+          if (typeof Toast !== 'undefined') {
+            Toast.success(data.message, { title: 'Import Complete', duration: 3000 });
+          }
+          loadWhitelist(1);
+        } else {
+          const msg = data.detail || data.message || 'Import failed';
+          if (typeof Toast !== 'undefined') {
+            Toast.error(msg, { title: 'Import Failed' });
+          }
+        }
+      } catch (err) {
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Network error', { title: 'Error' });
+        }
+      }
+    };
+  }
 
   // ====== UTIL ======
   function validatePhoneNumber(phone) {
@@ -828,5 +944,7 @@
   window.closeModal = closeModal;
   window.loadWhitelist = loadWhitelist;
   window.resetFilters = resetFilters;
+  window.exportWhitelist = exportWhitelist;
+  window.showImportModal = showImportModal;
 </script>
 {% endblock %}

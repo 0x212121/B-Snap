@@ -1,6 +1,9 @@
 import logging
+import csv
+import io
 from datetime import datetime
-from fastapi import APIRouter, Depends, Request, Form, Path
+from fastapi import APIRouter, Depends, Request, Form, Path, File, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 from typing import Optional
 from sqlalchemy.exc import IntegrityError
@@ -16,6 +19,8 @@ from app.utils.template_helper import templates
 from app.utils.email_helper import send_email, build_email_body
 from app.utils.response_helper import json_error_response, json_success_response
 from app.utils.smtp_config import get_smtp_status_message
+from app.routes.auth import admin_access_required
+from app.models.user import User
 
 logger = logging.getLogger("main")
 mgmt_logger = logging.getLogger("management")
@@ -332,4 +337,143 @@ def test_send_email(
     except Exception as e:
         db.rollback()
         logger.exception("Unexpected error on test_send_email")
+        return json_error_response(str(e), 500)
+
+
+# ============================================================
+# 7️⃣ EXPORT RECIPIENTS TO CSV
+# ============================================================
+@router.get("/api/recipients/export", name="export_recipients_csv")
+def export_recipients_csv(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """Export all recipients to CSV."""
+    try:
+        recipients = db.query(GroupRecipient).options(joinedload(GroupRecipient.group)).all()
+        
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["email", "nickname", "group_name", "locations"])
+        
+        for r in recipients:
+            writer.writerow([
+                r.email,
+                r.nickname or "",
+                r.group.name if r.group else "",
+                r.locations or ""
+            ])
+        
+        csv_content = output.getvalue()
+        output.close()
+        
+        return StreamingResponse(
+            io.BytesIO(csv_content.encode('utf-8')),
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": "attachment; filename=recipients_export.csv"}
+        )
+    except Exception as e:
+        logger.exception("Error exporting recipients")
+        return json_error_response(str(e), 500)
+
+
+# ============================================================
+# 8️⃣ BULK IMPORT RECIPIENTS FROM CSV
+# ============================================================
+@router.post("/api/recipients/import", name="import_recipients_csv")
+async def import_recipients_csv(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """Bulk import recipients from CSV file.
+    
+    CSV Format: email,nickname,group_name,locations
+    - locations can be comma-separated within the column
+    """
+    try:
+        if not file.filename.endswith('.csv'):
+            return json_error_response("File must be a CSV", 400)
+        
+        content = await file.read()
+        content_str = content.decode('utf-8')
+        
+        csv_file = io.StringIO(content_str)
+        reader = csv.DictReader(csv_file)
+        
+        required_columns = {'email', 'group_name'}
+        if not required_columns.issubset(reader.fieldnames or []):
+            return json_error_response(f"CSV must have columns: {required_columns}", 400)
+        
+        # Cache groups for lookup
+        groups = {g.name: g.id for g in db.query(CameraGroup).all()}
+        
+        imported = 0
+        skipped = 0
+        errors = []
+        
+        for row_num, row in enumerate(reader, start=2):  # start=2 for human-friendly line number
+            try:
+                email = row.get('email', '').strip()
+                nickname = row.get('nickname', '').strip() or None
+                group_name = row.get('group_name', '').strip()
+                locations = row.get('locations', '').strip() or None
+                
+                if not email or not group_name:
+                    errors.append(f"Row {row_num}: Missing email or group_name")
+                    skipped += 1
+                    continue
+                
+                # Find group_id
+                group_id = groups.get(group_name)
+                if not group_id:
+                    errors.append(f"Row {row_num}: Group '{group_name}' not found")
+                    skipped += 1
+                    continue
+                
+                # Check if recipient already exists
+                existing = db.query(GroupRecipient).filter(
+                    GroupRecipient.email == email,
+                    GroupRecipient.group_id == group_id
+                ).first()
+                
+                if existing:
+                    skipped += 1
+                    continue
+                
+                # Create new recipient
+                recipient = GroupRecipient(
+                    email=email,
+                    nickname=nickname,
+                    group_id=group_id,
+                    locations=locations
+                )
+                db.add(recipient)
+                imported += 1
+                
+            except Exception as e:
+                errors.append(f"Row {row_num}: {str(e)}")
+                skipped += 1
+        
+        db.commit()
+        
+        # Log audit
+        log_audit(
+            db=db,
+            user=request.session.get("user_name", "unknown"),
+            action="bulk_import_recipients",
+            target="recipients",
+            ip=request.client.host,
+            extra=f"Imported: {imported}, Skipped: {skipped}, Errors: {len(errors)}"
+        )
+        
+        return json_success_response(
+            f"Import complete: {imported} imported, {skipped} skipped",
+            {"imported": imported, "skipped": skipped, "errors": errors[:10]}  # Limit errors in response
+        )
+        
+    except Exception as e:
+        db.rollback()
+        logger.exception("Error importing recipients")
         return json_error_response(str(e), 500)

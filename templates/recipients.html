@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – Email Recipients{% endblock %}
-{% from "_icons.html" import icon_envelope_open, icon_envelope, icon_plus, icon_pencil, icon_trash, icon_airplane, icon_download %}
+{% from "_icons.html" import icon_envelope_open, icon_envelope, icon_plus, icon_pencil, icon_trash, icon_airplane, icon_download, icon_upload %}
 
 {% block head %}
 <!-- SweetAlert2 CSS -->
@@ -19,11 +19,21 @@
       </h1>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage B-SNAP email distribution lists</p>
     </div>
-    <button onclick="toggleSection('addFormContent')" 
-    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-colors">
-    {{ icon_plus("w-4 h-4") }} Add New
-  </button>
-</div>
+    <div class="flex gap-2">
+      <button onclick="exportRecipients()" 
+        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-colors">
+        {{ icon_download("w-4 h-4") }} Export
+      </button>
+      <button onclick="showImportModal()" 
+        class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-colors">
+        {{ icon_upload("w-4 h-4") }} Import
+      </button>
+      <button onclick="toggleSection('addFormContent')" 
+        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-colors">
+        {{ icon_plus("w-4 h-4") }} Add New
+      </button>
+    </div>
+  </div>
 
 <!-- Stats Cards -->
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -928,6 +938,98 @@ document.getElementById("btnResetFilter").addEventListener("click", () => {
   
   loadRecipients()
 })
+
+/* ===============================
+EXPORT / IMPORT
+================================ */
+function exportRecipients() {
+  window.location.href = '/api/recipients/export'
+}
+
+function showImportModal() {
+  const isDark = document.documentElement.classList.contains('dark')
+  Swal.fire({
+    title: 'Import Recipients from CSV',
+    html: `
+      <div class="text-left text-sm text-gray-600 dark:text-gray-400 mb-4">
+        <p class="mb-2">CSV format:</p>
+        <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded block text-xs">
+          email,nickname,group_name,locations
+        </code>
+        <p class="mt-2 text-xs">• <strong>email</strong> and <strong>group_name</strong> are required</p>
+        <p class="text-xs">• locations can be comma-separated</p>
+      </div>
+      <input type="file" id="csvFileInput" accept=".csv" class="w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400">
+    `,
+    showCancelButton: true,
+    confirmButtonText: 'Import',
+    confirmButtonColor: '#2563eb',
+    background: isDark ? '#1f2937' : '#ffffff',
+    color: isDark ? '#f3f4f6' : '#111827',
+    preConfirm: () => {
+      const file = document.getElementById('csvFileInput').files[0]
+      if (!file) {
+        Swal.showValidationMessage('Please select a CSV file')
+        return false
+      }
+      return file
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      importRecipients(result.value)
+    }
+  })
+}
+
+async function importRecipients(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  
+  try {
+    const res = await fetch('/api/recipients/import', {
+      method: 'POST',
+      body: formData
+    })
+    
+    const json = await res.json()
+    
+    // Check for status field (API returns status, not success)
+    if (json.status === 'success') {
+      const errorList = json.data?.errors?.length 
+        ? `<div class="mt-2 text-left"><p class="text-xs text-red-500">Errors:</p><ul class="text-xs text-red-500 list-disc list-inside">${json.data.errors.map(e => `<li>${e}</li>`).join('')}</ul></div>`
+        : ''
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Import Complete',
+        html: `
+          <p class="text-gray-700 dark:text-gray-300">${json.message}</p>
+          ${errorList}
+        `,
+        timer: json.data?.errors?.length ? undefined : 2000,
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827'
+      })
+      loadRecipients()
+    } else {
+      Swal.fire({
+        icon: 'error',
+        title: 'Import Failed',
+        text: json.message || 'Unknown error',
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827'
+      })
+    }
+  } catch (err) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Import Failed',
+      text: err.message,
+      background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827'
+    })
+  }
+}
 
 /* ===============================
 INIT

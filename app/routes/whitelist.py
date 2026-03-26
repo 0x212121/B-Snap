@@ -1,6 +1,8 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Request, Query
-from fastapi.responses import JSONResponse
+import csv
+import io
+from fastapi import APIRouter, Depends, HTTPException, Request, Query, File, UploadFile
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy import or_, func
 from sqlalchemy.orm import Session, joinedload
 from datetime import datetime, timezone
@@ -224,3 +226,168 @@ def edit_whitelist(
         logger.error("Error in edit_whitelist: %s", e, exc_info=True)
         db.rollback()
         raise HTTPException(500, detail=str(e))
+
+
+# ============================================================
+# EXPORT WHITELIST TO CSV
+# ============================================================
+@router.get("/api/whitelist/export")
+def export_whitelist_csv(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """Export all whitelist entries to CSV."""
+    try:
+        entries = db.query(WhatsappWhitelist).options(joinedload(WhatsappWhitelist.group)).all()
+        
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["phone_number", "name", "role", "group_name", "is_active"])
+        
+        for e in entries:
+            writer.writerow([
+                e.phone_number,
+                e.name or "",
+                e.role.value if e.role else "user",
+                e.group.name if e.group else "",
+                "yes" if e.is_active else "no"
+            ])
+        
+        csv_content = output.getvalue()
+        output.close()
+        
+        return StreamingResponse(
+            io.BytesIO(csv_content.encode('utf-8')),
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": "attachment; filename=whitelist_export.csv"}
+        )
+    except Exception as e:
+        logger.error("Error exporting whitelist: %s", e, exc_info=True)
+        raise HTTPException(500, detail=str(e))
+
+
+# ============================================================
+# BULK IMPORT WHITELIST FROM CSV
+# ============================================================
+@router.post("/api/whitelist/import")
+async def import_whitelist_csv(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """Bulk import whitelist entries from CSV file.
+    
+    CSV Format: phone_number,name,role,group_name,is_active
+    - phone_number: required, format: 628xxxxxxxxxx
+    - name: optional
+    - role: optional, default 'user' (values: user, admin)
+    - group_name: optional
+    - is_active: optional, default 'yes' (values: yes, no, true, false, 1, 0)
+    """
+    # Validation errors that should return JSON (not raise HTTPException to avoid HTML error pages)
+    if not file.filename.endswith('.csv'):
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "message": "File must be a CSV"}
+        )
+    
+    try:
+        content = await file.read()
+        content_str = content.decode('utf-8')
+        
+        csv_file = io.StringIO(content_str)
+        reader = csv.DictReader(csv_file)
+        
+        if not reader.fieldnames or 'phone_number' not in reader.fieldnames:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "CSV must have a 'phone_number' column"}
+            )
+        
+        # Cache groups for lookup
+        groups = {g.name: g.id for g in db.query(CameraGroup).all()}
+        
+        imported = 0
+        skipped = 0
+        errors = []
+        
+        for row_num, row in enumerate(reader, start=2):
+            try:
+                phone = row.get('phone_number', '').strip()
+                name = row.get('name', '').strip() or None
+                role_str = row.get('role', 'user').strip().lower()
+                group_name = row.get('group_name', '').strip()
+                is_active_str = row.get('is_active', 'yes').strip().lower()
+                
+                if not phone:
+                    errors.append(f"Row {row_num}: Missing phone_number")
+                    skipped += 1
+                    continue
+                
+                # Validate phone format
+                if not phone.startswith('628') or not phone[3:].isdigit():
+                    errors.append(f"Row {row_num}: Invalid phone format '{phone}'. Must start with 628")
+                    skipped += 1
+                    continue
+                
+                # Check if already exists
+                existing = db.query(WhatsappWhitelist).filter_by(phone_number=phone).first()
+                if existing:
+                    skipped += 1
+                    continue
+                
+                # Parse role
+                role = RoleEnum.admin if role_str == 'admin' else RoleEnum.user
+                
+                # Parse is_active
+                is_active = is_active_str in ('yes', 'true', '1', 'active')
+                
+                # Find group_id
+                group_id = groups.get(group_name) if group_name else None
+                if group_name and not group_id:
+                    errors.append(f"Row {row_num}: Group '{group_name}' not found")
+                    # Continue anyway, just without group
+                
+                # Create entry
+                entry = WhatsappWhitelist(
+                    phone_number=phone,
+                    name=name,
+                    role=role,
+                    group_id=group_id,
+                    is_active=is_active
+                )
+                db.add(entry)
+                imported += 1
+                
+            except Exception as e:
+                errors.append(f"Row {row_num}: {str(e)}")
+                skipped += 1
+        
+        db.commit()
+        
+        # Log audit
+        log_audit(
+            db=db,
+            user=current_admin.username,
+            action="bulk_import_whitelist",
+            target="whitelist",
+            ip=request.client.host,
+            extra=f"Imported: {imported}, Skipped: {skipped}, Errors: {len(errors)}"
+        )
+        
+        return {
+            "status": "success",
+            "message": f"Import complete: {imported} imported, {skipped} skipped",
+            "imported": imported,
+            "skipped": skipped,
+            "errors": errors[:10]
+        }
+        
+    except Exception as e:
+        db.rollback()
+        logger.error("Error importing whitelist: %s", e, exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": f"Internal Server Error: {str(e)}"}
+        )
