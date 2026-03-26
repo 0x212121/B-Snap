@@ -649,15 +649,37 @@ async def upload_csv(request: Request, db: Session = Depends(get_db), file: Uplo
                 new_cam.asset_no = row.get("asset_no", "").strip() or None
                 new_cam.status = row.get("status", "Active").strip() or "Active"
                 new_cam.note = row.get("note", "").strip() or None
+                new_cam.previous_name = row.get("previous_name", "").strip() or None
+                new_cam.snapshot_url = row.get("snapshot_url", "").strip() or None
                 
-                # Handle group_id if provided
-                group_name = row.get("group", "").strip()
-                if group_name:
-                    group = db.query(CameraGroup).filter(CameraGroup.name == group_name).first()
-                    if group:
-                        new_cam.group_id = group.id
+                # Handle is_flipped (boolean field)
+                is_flipped_str = row.get("is_flipped", "").strip().lower()
+                if is_flipped_str in ("true", "yes", "1", "on"):
+                    new_cam.is_flipped = True
+                elif is_flipped_str in ("false", "no", "0", "off"):
+                    new_cam.is_flipped = False
+                # else: keep default (False)
                 
-                # Handle coordinates
+                # Handle group_id if provided (via group_id or group_name)
+                group_id_str = row.get("group_id", "").strip()
+                if group_id_str:
+                    try:
+                        group_id = int(group_id_str)
+                        # Verify group exists
+                        group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
+                        if group:
+                            new_cam.group_id = group_id
+                    except ValueError:
+                        pass
+                else:
+                    # Fallback to group_name lookup
+                    group_name = row.get("group_name", "").strip() or row.get("group", "").strip()
+                    if group_name:
+                        group = db.query(CameraGroup).filter(CameraGroup.name == group_name).first()
+                        if group:
+                            new_cam.group_id = group.id
+                
+                # Handle coordinates (current and previous)
                 lat_str = row.get("latitude", "").strip()
                 lon_str = row.get("longitude", "").strip()
                 if lat_str:
@@ -671,6 +693,20 @@ async def upload_csv(request: Request, db: Session = Depends(get_db), file: Uplo
                     except ValueError:
                         pass
                 
+                # Handle previous coordinates
+                prev_lat_str = row.get("previous_latitude", "").strip()
+                prev_lon_str = row.get("previous_longitude", "").strip()
+                if prev_lat_str:
+                    try:
+                        new_cam.previous_latitude = float(prev_lat_str)
+                    except ValueError:
+                        pass
+                if prev_lon_str:
+                    try:
+                        new_cam.previous_longitude = float(prev_lon_str)
+                    except ValueError:
+                        pass
+                
                 db.add(new_cam)
                 success_count += 1
                 logger.info("Row %s: Created camera '%s' successfully.", row_num, hostname)
@@ -681,6 +717,16 @@ async def upload_csv(request: Request, db: Session = Depends(get_db), file: Uplo
 
         db.commit()
         logger.info("CSV upload finished. Successes: %s, Failures: %s.", success_count, len(failed_rows))
+        
+        # Log audit untuk CSV import
+        log_audit(
+            db=db,
+            user=request.session.get("user_name", "unknown"),
+            action="import_camera_csv",
+            target="Cameras Import",
+            ip=request.client.host if request.client else None,
+            extra=f"Imported {success_count} cameras, {len(failed_rows)} failed"
+        )
         
         # Redirect dengan pesan sukses
         return RedirectResponse(url=f"/cameras?upload_success={success_count}+cameras+processed+successfully.", status_code=303)
@@ -696,7 +742,7 @@ async def upload_csv(request: Request, db: Session = Depends(get_db), file: Uplo
 
 @router.get("/cameras/export_csv")
 async def export_csv(request: Request, db: Session = Depends(get_db)):
-    """Exports all camera data to a CSV file."""
+    """Exports all camera data to a CSV file with all Camera and CameraGroup fields."""
     logger.info("Starting CSV export process.")
     cameras = db.query(DBCamera).options(joinedload(DBCamera.group)).all()
     db.close()
@@ -705,18 +751,28 @@ async def export_csv(request: Request, db: Session = Depends(get_db)):
     output = io.StringIO()
     writer = csv.writer(output)
 
+    # Export all Camera fields + CameraGroup fields
     writer.writerow([
-        "id", "hostname", "ip", "port", "username", "password",
-        "latitude", "longitude", "group_name", "asset_no", "location", "status",
-        "previous_name", "previous_latitude", "previous_longitude", "is_flipped", "note", "snapshot_url"
+        # Core Camera fields
+        "id", "hostname", "previous_name", "ip", "port", "username", "password",
+        "latitude", "longitude", "previous_latitude", "previous_longitude",
+        "asset_no", "location", "status", "is_flipped", "note", "snapshot_url",
+        # CameraGroup fields
+        "group_id", "group_name", "group_latitude", "group_longitude"
     ])
 
     for cam in cameras:
         writer.writerow([
-            cam.id, cam.hostname, cam.ip, cam.port, cam.username, cam.password,
-            cam.latitude, cam.longitude, cam.group.name if cam.group else "",
-            cam.asset_no, cam.location, cam.status, cam.previous_name,
-            cam.previous_latitude, cam.previous_longitude, cam.is_flipped, cam.note, cam.snapshot_url
+            # Core Camera fields
+            cam.id, cam.hostname, cam.previous_name, cam.ip, cam.port, cam.username, cam.password,
+            cam.latitude, cam.longitude, cam.previous_latitude, cam.previous_longitude,
+            cam.asset_no, cam.location, cam.status,
+            cam.is_flipped, cam.note, cam.snapshot_url,
+            # CameraGroup fields
+            cam.group_id if cam.group else "",
+            cam.group.name if cam.group else "",
+            cam.group.latitude if cam.group else "",
+            cam.group.longitude if cam.group else ""
         ])
 
     output.seek(0)

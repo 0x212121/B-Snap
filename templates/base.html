@@ -34,6 +34,8 @@
       transition: background-color 0.5s, color 0.5s, border-color 0.5s, box-shadow 0.5s;
     }
   </style>
+  <!-- SweetAlert2 CSS -->
+  <link rel="stylesheet" href="/static/css/sweetalert2.min.css">
 </head>
 <body 
 class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white"
@@ -268,6 +270,67 @@ function setupPasswordToggles() {
   });
 }
 document.addEventListener('DOMContentLoaded', setupPasswordToggles);
+</script>
+
+<!-- SweetAlert2 JS -->
+<script src="/static/js/sweetalert2.min.js"></script>
+<script>
+// ===============================
+// SWEETALERT2 GLOBAL CONFIGURATION
+// ===============================
+
+// Helper: Get current theme config for SweetAlert2
+function getSwalThemeConfig() {
+  const isDark = document.documentElement.classList.contains('dark') || 
+                 (!document.documentElement.classList.contains('light') && 
+                  window.matchMedia('(prefers-color-scheme: dark)').matches);
+  
+  return {
+    background: isDark ? '#1f2937' : '#ffffff',
+    color: isDark ? '#f3f4f6' : '#111827',
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: isDark ? '#4b5563' : '#9ca3af',
+    iconColor: isDark ? '#60a5fa' : '#3b82f6',
+  };
+}
+
+// Helper: Create themed Swal instance
+function themedSwal(options = {}) {
+  return Swal.fire({...getSwalThemeConfig(), ...options});
+}
+
+// Enhanced global confirm function using SweetAlert2
+function showGlobalConfirm(message, onConfirm, options = {}) {
+  const isDark = document.documentElement.classList.contains('dark');
+  
+  themedSwal({
+    title: options.title || 'Confirm Action',
+    text: message,
+    icon: options.icon || 'warning',
+    showCancelButton: true,
+    confirmButtonText: options.confirmText || 'Confirm',
+    cancelButtonText: options.cancelText || 'Cancel',
+    confirmButtonColor: options.confirmButtonColor || '#2563eb',
+    cancelButtonColor: options.cancelButtonColor || (isDark ? '#4b5563' : '#9ca3af'),
+    ...options
+  }).then((result) => {
+    if (result.isConfirmed && onConfirm) {
+      onConfirm();
+    }
+  });
+}
+
+// Enhanced global alert function using SweetAlert2
+function showGlobalAlert(message, title = 'Information', options = {}) {
+  themedSwal({
+    title: title,
+    text: message,
+    icon: options.icon || 'info',
+    confirmButtonText: options.confirmText || 'OK',
+    confirmButtonColor: options.confirmButtonColor || '#2563eb',
+    ...options
+  });
+}
 </script>
 </body>
 </html>

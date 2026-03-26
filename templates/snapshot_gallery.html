@@ -359,8 +359,21 @@
           Toast.error(data.detail || "Failed", { title: "Error" });
         }
       } else if (action === "delete-all") {
-        if (!confirm(`Delete ALL snapshots for ${camera}?`)) return;
-        Toast.warning("Not implemented", { title: "Info" });
+        themedSwal({
+          title: 'Delete All Snapshots?',
+          text: `Delete ALL snapshots for ${camera}? This action cannot be undone.`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Delete All',
+          cancelButtonText: 'Cancel',
+          confirmButtonColor: '#dc2626',
+          cancelButtonColor: document.documentElement.classList.contains('dark') ? '#4b5563' : '#9ca3af'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            Toast.warning("Not implemented", { title: "Info" });
+          }
+        });
+        return;
       }
     } catch (err) {
       Toast.error("Error occurred", { title: "Error" });

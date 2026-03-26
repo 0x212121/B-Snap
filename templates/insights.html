@@ -299,7 +299,10 @@
           fd.append("api_chart", apiImg);
           fd.append("email_chart", emailImg);
           const r = await fetch("/log/stats/report-pro", { method: "POST", body: fd });
-          if (!r.ok) return alert("Failed to generate report");
+          if (!r.ok) {
+            themedSwal({icon: 'error', title: 'Report Failed', text: 'Failed to generate report'});
+            return;
+          }
           const blob = await r.blob();
           const url = URL.createObjectURL(blob);
           const a = Object.assign(document.createElement("a"), { href: url, download: `b-snap-report-${s}_to_${e}.pdf` });

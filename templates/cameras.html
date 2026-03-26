@@ -929,15 +929,15 @@
               link.download = filename;
               link.click();
             };
-            img.onerror = () => alert("Failed to load image for download.");
+            img.onerror = () => themedSwal({icon: 'error', title: 'Download Failed', text: 'Failed to load image for download.'});
           };
         } else {
-          alert(data.detail || "No snapshot found");
+          themedSwal({icon: 'warning', title: 'No Snapshot', text: data.detail || "No snapshot found"});
         }
       })
       .catch(err => {
         console.error(err);
-        alert("Failed to load snapshot info.");
+        themedSwal({icon: 'error', title: 'Error', text: 'Failed to load snapshot info.'});
       });
     };
     

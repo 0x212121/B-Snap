@@ -369,6 +369,125 @@ def get_camera_snapshot(camera_id: int, timeout: int = 10) -> bytes:
 
 ---
 
+## 🔔 SweetAlert2 (Alerts & Notifications)
+
+Project menggunakan **SweetAlert2** untuk semua modal, alert, dan konfirmasi. Tidak lagi menggunakan native `alert()` atau `confirm()`.
+
+### Setup
+
+SweetAlert2 di-install via NPM dan disimpan di static folder untuk offline support:
+
+```bash
+npm install sweetalert2
+```
+
+Files:
+- `static/js/sweetalert2.min.js`
+- `static/css/sweetalert2.min.css`
+
+### Global Functions (base.html)
+
+Sudah tersedia global function yang bisa dipakai di semua template:
+
+```javascript
+// Confirmation dialog
+showGlobalConfirm(message, onConfirm, options);
+
+// Alert dialog
+showGlobalAlert(message, title, options);
+
+// Themed Swal (untuk custom Swal dengan dark mode support)
+themedSwal({
+  icon: 'success',
+  title: 'Success',
+  text: 'Operation completed'
+});
+```
+
+### Usage Examples
+
+**Basic Confirmation:**
+```javascript
+showGlobalConfirm('Delete this camera?', () => {
+    // Execute delete
+    deleteCamera(id);
+}, {
+    title: 'Confirm Delete',
+    confirmText: 'Delete',
+    confirmButtonColor: '#dc2626'  // red for danger
+});
+```
+
+**SweetAlert2 dengan Dark Mode Support:**
+```javascript
+// Gunakan themedSwal() untuk otomatis mendukung dark mode
+themedSwal({
+    icon: 'success',
+    title: 'Success',
+    text: 'Camera added successfully',
+    timer: 1500,
+    showConfirmButton: false
+});
+
+themedSwal({
+    icon: 'error',
+    title: 'Error',
+    text: 'Failed to load camera data'
+});
+
+themedSwal({
+    icon: 'warning',
+    title: 'Validation Error',
+    text: 'Please select both start and end dates'
+});
+```
+
+### Dark Mode Support
+
+SweetAlert2 otomatis mengikuti tema dark/light mode melalui helper function `getSwalThemeConfig()` dan `themedSwal()` di `base.html`:
+
+```javascript
+// Helper: Get current theme config
+function getSwalThemeConfig() {
+  const isDark = document.documentElement.classList.contains('dark');
+  return {
+    background: isDark ? '#1f2937' : '#ffffff',
+    color: isDark ? '#f3f4f6' : '#111827',
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: isDark ? '#4b5563' : '#9ca3af',
+    iconColor: isDark ? '#60a5fa' : '#3b82f6',
+  };
+}
+
+// Helper: Create themed Swal instance
+function themedSwal(options = {}) {
+  return Swal.fire({...getSwalThemeConfig(), ...options});
+}
+```
+
+**Catatan:** Selalu gunakan `themedSwal()` alih-alih `Swal.fire()` langsung agar dark mode berfungsi dengan baik.
+
+### Icon Types
+
+- `success` - Green checkmark (success operations)
+- `error` - Red X (errors, failures)
+- `warning` - Yellow triangle (validation, caution)
+- `info` - Blue info (informational)
+- `question` - Blue question mark (choices)
+
+### Files yang sudah pakai SweetAlert2
+
+| Template | Usage |
+|----------|-------|
+| `recipients.html` | CRUD operations, CSV import, test email |
+| `cameras.html` | Snapshot download errors |
+| `health_history.html` | Date validation |
+| `insights.html` | Report generation errors |
+| `nvrs.html` | Delete confirmations |
+| `snapshot_gallery.html` | Bulk delete confirmation |
+
+---
+
 ## 📚 Database Migrations
 
 Menggunakan Alembic untuk database migrations:
@@ -433,4 +552,4 @@ python -m memray run app/main.py
 ---
 
 **Version**: 1.14.0  
-**Last Updated**: 2026-03-16
+**Last Updated**: 2026-03-25

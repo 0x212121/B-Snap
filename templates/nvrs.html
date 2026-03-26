@@ -962,16 +962,27 @@
         confirmClasses: 'bg-red-600 hover:bg-red-700'
       });
     } else {
-      // Fallback if showGlobalConfirm not available
-      if (confirm(message)) {
-        fetch(`/nvrs/delete/${itemId}`, { method: 'POST' })
-        .then(res => res.json())
-        .then(data => {
-          if (data.status === 'success') {
-            window.loadNVRPage(currentPage);
-          }
-        });
-      }
+      // Fallback using SweetAlert2
+      themedSwal({
+        title: 'Delete NVR?',
+        text: message,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: document.documentElement.classList.contains('dark') ? '#4b5563' : '#9ca3af'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          fetch(`/nvrs/delete/${itemId}`, { method: 'POST' })
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              window.loadNVRPage(currentPage);
+            }
+          });
+        }
+      });
     }
   };
 })();

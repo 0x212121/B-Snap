@@ -3,8 +3,7 @@
 {% from "_icons.html" import icon_envelope_open, icon_envelope, icon_plus, icon_pencil, icon_trash, icon_airplane, icon_download, icon_upload %}
 
 {% block head %}
-<!-- SweetAlert2 CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<!-- SweetAlert2 already loaded in base.html -->
 {% endblock %}
 
 {% block content %}
@@ -293,52 +292,8 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- SweetAlert2 JS -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <script>
-// ===============================
-// SWEETALERT2 DARK MODE CONFIG
-// ===============================
-const configureSwalTheme = () => {
-  // Deteksi dark mode: cek class 'dark' di html atau preferensi sistem
-  const isDark = document.documentElement.classList.contains('dark') || 
-                 (!document.documentElement.classList.contains('light') && 
-                  window.matchMedia('(prefers-color-scheme: dark)').matches);
-  
-  // Set default konfigurasi SweetAlert2
-  Swal.defaults = Swal.defaults || {};
-  
-  Object.assign(Swal.defaults, {
-    background: isDark ? '#1f2937' : '#ffffff',        // gray-800 : white
-    color: isDark ? '#f3f4f6' : '#111827',             // gray-100 : gray-900
-    confirmButtonColor: '#2563eb',                     // blue-600
-    cancelButtonColor: isDark ? '#4b5563' : '#9ca3af', // gray-600 : gray-400
-    iconColor: isDark ? '#60a5fa' : '#3b82f6',         // blue-400 : blue-500
-    customClass: {
-      popup: isDark ? 'border border-gray-600' : '',
-      title: isDark ? 'text-gray-100' : 'text-gray-900',
-      htmlContainer: isDark ? 'text-gray-300' : 'text-gray-700',
-      input: isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900',
-      validationMessage: isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700',
-      confirmButton: isDark ? 'shadow-lg' : '',
-      cancelButton: isDark ? 'shadow-lg' : ''
-    }
-  });
-};
-
-// Inisialisasi tema saat load
-configureSwalTheme();
-
-// Observer untuk deteksi perubahan tema real-time (jika user toggle dark mode)
-const themeObserver = new MutationObserver(() => {
-  configureSwalTheme();
-});
-
-themeObserver.observe(document.documentElement, {
-  attributes: true,
-  attributeFilter: ['class']
-});
+// SweetAlert2 config inherited from base.html (configureSwalTheme, showGlobalConfirm, showGlobalAlert)
 
 const API_URL = "/api/recipients"
 const TEST_SEND_API = "/api/recipients/test-send"
@@ -670,7 +625,7 @@ document.getElementById("addForm").addEventListener("submit", async (e) => {
       throw new Error(err.message || "Failed to add recipient")
     }
     
-    Swal.fire({
+    themedSwal({
       icon: 'success',
       title: 'Success',
       text: 'Recipient added successfully',
@@ -683,7 +638,7 @@ document.getElementById("addForm").addEventListener("submit", async (e) => {
     loadRecipients()
     
   } catch (err) {
-    Swal.fire({
+    themedSwal({
       icon: 'error',
       title: 'Error',
       text: err.message || 'Failed to add recipient'
@@ -751,7 +706,7 @@ document.getElementById("editForm").addEventListener("submit", async (e) => {
       throw new Error(err.message || "Update failed")
     }
     
-    Swal.fire({
+    themedSwal({
       icon: 'success',
       title: 'Saved',
       timer: 1500,
@@ -762,7 +717,7 @@ document.getElementById("editForm").addEventListener("submit", async (e) => {
     loadRecipients()
     
   } catch (err) {
-    Swal.fire({
+    themedSwal({
       icon: 'error',
       title: 'Update failed',
       text: err.message
@@ -774,7 +729,7 @@ document.getElementById("editForm").addEventListener("submit", async (e) => {
 DELETE RECIPIENT
 ================================ */
 async function deleteRecipient(id) {
-  const confirm = await Swal.fire({
+  const confirm = await themedSwal({
     title: "Delete recipient?",
     text: "This action cannot be undone",
     icon: "warning",
@@ -793,7 +748,7 @@ async function deleteRecipient(id) {
     
     if(!res.ok) throw new Error("Delete failed")
     
-    Swal.fire({
+    themedSwal({
       icon: 'success',
       title: 'Deleted',
       timer: 1500,
@@ -803,7 +758,7 @@ async function deleteRecipient(id) {
     loadRecipients()
     
   } catch(err) {
-    Swal.fire({
+    themedSwal({
       icon: 'error',
       title: 'Failed to delete',
       text: err.message
@@ -819,7 +774,7 @@ async function sendTestEmail() {
   const location = document.getElementById('test_location').value
   
   if (!groupId) {
-    Swal.fire({
+    themedSwal({
       icon: 'warning',
       title: 'Select Group',
       text: 'Please select a target group first'
@@ -851,7 +806,7 @@ async function sendTestEmail() {
     lastTestEmailTime = new Date()
     document.getElementById('test-last-send').textContent = lastTestEmailTime.toLocaleTimeString()
     
-    Swal.fire({
+    themedSwal({
       icon: 'success',
       title: 'Test Email Sent',
       text: json.message || `Email sent to ${json.data?.recipients?.length || 0} recipient(s)`,
@@ -859,7 +814,7 @@ async function sendTestEmail() {
     })
     
   } catch (err) {
-    Swal.fire({
+    themedSwal({
       icon: 'error',
       title: 'Send Failed',
       text: err.message
@@ -948,7 +903,7 @@ function exportRecipients() {
 
 function showImportModal() {
   const isDark = document.documentElement.classList.contains('dark')
-  Swal.fire({
+  themedSwal({
     title: 'Import Recipients from CSV',
     html: `
       <div class="text-left text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -999,7 +954,7 @@ async function importRecipients(file) {
         ? `<div class="mt-2 text-left"><p class="text-xs text-red-500">Errors:</p><ul class="text-xs text-red-500 list-disc list-inside">${json.data.errors.map(e => `<li>${e}</li>`).join('')}</ul></div>`
         : ''
       
-      Swal.fire({
+      themedSwal({
         icon: 'success',
         title: 'Import Complete',
         html: `
@@ -1012,7 +967,7 @@ async function importRecipients(file) {
       })
       loadRecipients()
     } else {
-      Swal.fire({
+      themedSwal({
         icon: 'error',
         title: 'Import Failed',
         text: json.message || 'Unknown error',
@@ -1021,7 +976,7 @@ async function importRecipients(file) {
       })
     }
   } catch (err) {
-    Swal.fire({
+    themedSwal({
       icon: 'error',
       title: 'Import Failed',
       text: err.message,
