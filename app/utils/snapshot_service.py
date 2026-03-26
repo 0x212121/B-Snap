@@ -88,8 +88,9 @@ def _take_snapshot_from_url(camera: Camera, url: str) -> Dict[str, Any]:
         resolution = f"{width}x{height}"
         
         # Generate filename with folder structure: snapshots/<camera_id>/<date>/<filename>
-        today = datetime.now().strftime("%Y%m%d")
-        timestamp = datetime.now().strftime("%H%M%S")
+        # Using UTC for consistency with database timestamps
+        today = datetime.now(timezone.utc).strftime("%Y%m%d")
+        timestamp = datetime.now(timezone.utc).strftime("%H%M%S")
         safe_camera_name = "".join(c for c in camera.hostname if c.isalnum() or c in (' ', '-', '_')).rstrip()
         safe_camera_name = safe_camera_name.replace(' ', '_')
         filename = f"{safe_camera_name}_{timestamp}_{uuid.uuid4().hex[:8]}.jpg"
@@ -197,8 +198,9 @@ def take_snapshot(camera: Camera, db: Session) -> Dict[str, Any]:
         resolution = f"{width}x{height}"
         
         # Generate filename with folder structure: snapshots/<camera_id>/<date>/<filename>
-        today = datetime.now().strftime("%Y-%m-%d")
-        timestamp = datetime.now().strftime("%H-%M-%S")
+        # Using UTC for consistency with database timestamps
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        timestamp = datetime.now(timezone.utc).strftime("%H-%M-%S")
         safe_camera_name = "".join(c for c in camera.hostname if c.isalnum() or c in (' ', '-', '_')).rstrip()
         safe_camera_name = safe_camera_name.replace(' ', '_')
         filename = f"{safe_camera_name}_{timestamp}_{uuid.uuid4().hex[:8]}.jpg"

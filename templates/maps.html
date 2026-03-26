@@ -2,7 +2,7 @@
 {% block title %}B-SNAP – Map{% endblock %}
 {% block content %}
 
-<div id="map" class="h-[960px] mb-6 rounded shadow"></div>
+<div id="map" class="h-[960px] mb-6 rounded shadow" data-timezone="{{ timezone }}"></div>
 
 <!-- External Libraries -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
@@ -442,7 +442,9 @@
       const timeElement = document.getElementById('last-refresh-time');
       if (!timeElement) return;
       
-      const timezone = document.body.dataset.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      // Get timezone from server config or browser
+      const timezone = document.getElementById('map').dataset.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      // Create UTC time and convert to configured timezone
       const now = new Date();
       const timeString = now.toLocaleTimeString('en-US', {
         hour: '2-digit',
@@ -450,7 +452,7 @@
         second: '2-digit',
         hour12: false,
         timeZone: timezone
-      });
+      }) + ' (' + timezone + ')' ;
       
       timeElement.textContent = `Updated: ${timeString}`;
     }

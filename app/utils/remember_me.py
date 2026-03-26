@@ -6,7 +6,7 @@ import hashlib
 import secrets
 import logging
 from typing import Optional, Tuple, List
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.remember_token import RememberToken
@@ -95,7 +95,7 @@ def validate_remember_token(db: Session, plain_token: str) -> Optional[User]:
         return None
     
     # Update last used
-    token_record.last_used_at = datetime.utcnow()
+    token_record.last_used_at = datetime.now(timezone.utc)
     db.commit()
     
     logger.info(f"Remember token used for user_id={user.id}, device={token_record.device_name}")

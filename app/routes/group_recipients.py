@@ -1,7 +1,7 @@
 import logging
 import csv
 import io
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Request, Form, Path, File, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
@@ -269,7 +269,7 @@ def test_send_email(
 
         group_name = group.name
         subject = f"🔔 B-SNAP Test Email — {group_name}{f' | {location}' if location else ''}"
-        now_utc = datetime.utcnow()
+        now_utc = datetime.now(timezone.utc)
         now_str = now_utc.strftime("%d %b %Y %H:%M:%S")
 
         plain_body, html_body = build_email_body(
@@ -310,7 +310,7 @@ def test_send_email(
 
             log_entry.success = True
             log_entry.error_message = None
-            log_entry.sent_at = datetime.utcnow()
+            log_entry.sent_at = datetime.now(timezone.utc)
             db.commit()
 
             logger.info(

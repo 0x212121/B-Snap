@@ -331,6 +331,7 @@
   let currentPage = 1;
   let perPage = 20;
   let totalPages = 1;
+  let currentLogs = [];  // Store current logs data for modal access
   
   // Stats
   function updateStats(stats) {
@@ -508,6 +509,7 @@
       const data = await res.json();
 
       const logs = data.logs || [];
+      currentLogs = logs;  // Store for modal access
       currentPage = data.page || page;
       
       // Update stats
@@ -543,7 +545,7 @@
                   <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
                     ${(log.camera_name || 'C').charAt(0).toUpperCase()}
                   </div>
-                  <span class="font-medium text-gray-900 dark:text-white">${log.camera_name}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">${log.camera_name || '-'}</span>
                 </div>
               </td>
               <td class="px-4 py-3 text-gray-600 dark:text-gray-400 font-mono text-xs">${log.incident_started_at}</td>
@@ -694,13 +696,40 @@
   
   // Show recipients modal
   function showRecipientsModal(logId) {
-    // Find the log in current data (simplified approach)
-    // In production, you might want to fetch details from API
+    // Find the log in current data
+    const log = currentLogs.find(l => l.id === logId);
+    if (!log) {
+      console.error('Log not found:', logId);
+      return;
+    }
+    
+    const recipients = log.recipients || [];
+    const recipientsList = recipients.map(email => 
+      `<li class="flex items-center gap-2 py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+        </svg>
+        <span class="text-gray-700 dark:text-gray-300">${email}</span>
+      </li>`
+    ).join('');
+    
     const content = document.getElementById('detail-content');
     content.innerHTML = `
       <div class="text-gray-600 dark:text-gray-400">
-        <p>Recipient details would be shown here.</p>
-        <p class="text-sm mt-2">Log ID: ${logId}</p>
+        <div class="mb-4">
+          <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Camera</h4>
+          <p class="text-gray-700 dark:text-gray-300">${log.camera_name || '-'}</p>
+        </div>
+        <div class="mb-4">
+          <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Type</h4>
+          <p class="text-gray-700 dark:text-gray-300 capitalize">${log.type || 'alert'}</p>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">All Recipients (${recipients.length})</h4>
+          <ul class="max-h-60 overflow-y-auto">
+            ${recipientsList || '<li class="text-gray-500 py-2">No recipients</li>'}
+          </ul>
+        </div>
       </div>
     `;
     document.getElementById('detail-modal').classList.remove('hidden');

@@ -210,7 +210,7 @@ Sistem mendeteksi bahwa CCTV {camera.hostname} (IP: {camera.ip}) mengalami anoma
 - No. Asset: {camera.asset_no or '-'}
 - Lokasi: {camera.location or '-'}
 - Koordinat: https://www.google.com/maps?q={camera.latitude},{camera.longitude}
-- Waktu Kejadian: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} 
+- Waktu Kejadian: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S')} UTC 
 
 👉 Mohon segera buat tiket SIHEPI dengan mencantumkan cost code agar dapat diproses oleh tim teknis/mitra terkait.
 
@@ -238,7 +238,7 @@ PT Kaltim Prima Coal
       <li><b>No. Asset:</b> {camera.asset_no or '-'}</li>
       <li><b>Lokasi:</b> {camera.location or '-'}</li>
       <li><b>Koordinat:</b> <a href="https://www.google.com/maps?q={camera.latitude},{camera.longitude}" target="_blank">Lihat di Google Maps</a></li>
-      <li><b>Waktu Kejadian:</b> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</li>
+      <li><b>Waktu Kejadian:</b> {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S')} UTC</li>
     </ul>
 
     <p>
@@ -283,7 +283,7 @@ PT Kaltim Prima Coal
             subject=subject,
             cam_group=camera_group,
             cam_hostname=camera.hostname,
-            snapshot_time=datetime.now(),
+            snapshot_time=datetime.now(timezone.utc),
             body=plain_body,
             html=html_body,
             image_path=snapshot_path,
@@ -378,7 +378,7 @@ PT Kaltim Prima Coal
             subject=subject,
             cam_group=camera_group,
             cam_hostname=camera.hostname,
-            snapshot_time=datetime.now(),
+            snapshot_time=datetime.now(timezone.utc),
             body=plain_body,
             html=html_body,
         )

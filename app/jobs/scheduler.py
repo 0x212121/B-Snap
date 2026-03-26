@@ -1065,7 +1065,7 @@ def send_wa_camera_no_snapshot_report():
             return {"records_processed": 0}
         
         lines = ["📊 *B-SNAP Daily Camera Status Report*\n"]
-        lines.append(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
+        lines.append(f"Date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC\n")
         
         if no_snapshot_cameras:
             lines.append(f"⚠️ *Cameras without snapshots:* {len(no_snapshot_cameras)}")

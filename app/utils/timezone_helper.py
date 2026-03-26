@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.config import Configuration
 import pytz
@@ -8,6 +8,14 @@ import threading
 # === Global cache untuk timezone ===
 _tz_cache = TTLCache(maxsize=1, ttl=300)  # simpan 1 value, TTL = 300 detik (5 menit)
 _tz_lock = threading.Lock()
+
+
+def utc_now() -> datetime:
+    """
+    Return current UTC datetime with timezone info.
+    Use this for ALL database timestamp storage.
+    """
+    return datetime.now(timezone.utc)
 
 
 def load_timezone_from_db(db: Session) -> str:
@@ -61,7 +69,8 @@ def format_datetime_standard(dt: datetime, db: Session = None) -> str:
     if not dt:
         return "N/A"
     
-    if db and (not dt.tzinfo or dt.tzinfo.utcoffset(dt) is None):
+    # Always convert to current timezone if db is provided
+    if db:
         dt = to_current_timezone(dt, db)
     elif not dt.tzinfo:
         dt = pytz.utc.localize(dt)

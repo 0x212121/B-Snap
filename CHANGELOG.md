@@ -6,9 +6,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+#### Windows Service & Startup
+- **PowerShell startup script enhancement** (`start-local.ps1`)
+  - Added `all` mode to start web + scheduler + notifier simultaneously
+  - Proper log separation for each service
+  - Process monitoring and auto-restart capability
+
+#### Bulk Import/Export
+- **Recipients CSV Import/Export** (`/recipients`)
+  - Export all recipients to CSV format: `email,nickname,group_name,locations`
+  - Bulk import recipients from CSV with validation
+  - Duplicate detection (skips existing email+group combinations)
+  - Import modal with format instructions and dark mode support
+  - API endpoints: `GET /api/recipients/export`, `POST /api/recipients/import`
+
+- **WhatsApp Whitelist CSV Import/Export** (`/admin/whitelist`)
+  - Export whitelist to CSV: `phone_number,name,role,group_name,is_active`
+  - Bulk import WhatsApp numbers from CSV
+  - Phone format validation (must start with 628)
+  - API endpoints: `GET /api/whitelist/export`, `POST /api/whitelist/import`
+
+#### Database & Schema
+- **Task Timings Timezone Support**
+  - Added `timezone=True` to `started_at` and `ended_at` columns in `task_timings` table
+  - Migration: `ea697ca6b008_add_timezone_to_task_timings_datetime_.py`
+  - Ensures consistent datetime storage with timezone information
+
 ### Fixed
 
-### Recipient pagination issue
+#### Core Systems
+- **APScheduler Table Creation** - Fixed `apscheduler_jobs` table not existing on fresh database by creating it explicitly before scheduler starts.
+- **Snapshot Stats Increment** - Fixed `CameraDailyStats` not incrementing by adding `check_stats()` calls in both scheduler and manual snapshot service.
+
+#### Reporting & PDF
+- **PDF Report Generation** - Enhanced executive PDF reports with:
+  - Executive Summary section
+  - SLA Compliance table
+  - Key Highlights and Top/Worst Performers
+  - Device group filtering support
+- **PDF Page Layout** - Fixed table splitting issues with `SPLITBYROW`
+  - Adjusted column widths (16.5cm total) to prevent overflow
+  - Removed incomplete page footer text
+- **PDF Unicode Issues** - Fixed visual column overflow by changing `█` to `■`
+
+#### Export Formats
+- **CSV/Excel Export 500 Errors** - Fixed encoding errors by using `StringIO → encode → BytesIO` pattern instead of direct BytesIO.
+
+#### Datetime & Timezone
+- **Datetime Formatting Standardization** - Applied consistent format across all endpoints:
+  - Standard format: `DD/MM/YYYY - HH:MM:SS TZ`
+  - Updated: `audit.py`, `audit_log.py`, `snap_gallery.py`, `videos.py`, `user_management.py`, `email_logs.py`
+  - New helper function: `format_datetime_standard()` in `timezone_helper.py`
+
+#### Camera & Health Monitoring
+- **Cameras Without Snapshots** - Fixed incorrect query join condition:
+  - Changed `DBCamera.id == CameraHealth.id` to `DBCamera.id == CameraHealth.camera_id`
+  - Fixed similar issue in `healthcheck.py` and `cameras.py`
+- **Health Check Query** - Fixed health record lookup to use `camera_id`/`nvr_id` instead of `id`
+
+#### Email Logs
+- **Null Camera ID Handling** - Fixed error when displaying email logs with `camera_id = null` (test emails)
+- **Recipients Modal** - Fixed "+X more" button not showing recipient details in popup
+  - Added `currentLogs` global variable to store log data
+  - Updated `showRecipientsModal()` to display full recipient list with camera info and type
+- **ORM Object Modification** - Fixed SQLAlchemy state corruption by using local variables for datetime conversions instead of modifying ORM objects directly
+
+#### Import/Export UI
+- **Recipients Import Success Icon** - Fixed success import showing failed icon (changed `json.success` to `json.status === 'success'`)
+- **Dark Mode Support** - Added dark mode styling to import modals and SweetAlert2 popups
+- **Whitelist Import Error** - Fixed HTML error page showing instead of JSON when CSV format is invalid
+
+### Changed
+- **Email Logs Template** - Updated to handle null `camera_name` gracefully (displays "-" instead of "null")
 
 ## [1.13.0] - 2026-03-12
 

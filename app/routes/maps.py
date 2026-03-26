@@ -11,7 +11,7 @@ from app.models.snapshot import Snapshot
 from app.models.user import User
 from app.routes.auth import get_current_user
 from app.models.camera_status_change_log import CameraStatusChangeLog
-from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
+from app.utils.timezone_helper import get_current_timezone, to_current_timezone, format_datetime_with_tz
 from app.utils.template_helper import templates
 
 router = APIRouter(tags=["Maps"])
@@ -53,9 +53,10 @@ class CameraLocation(BaseModel):
 
 
 @router.get("/maps")
-async def maps_page(request: Request, current_user: User = Depends(get_current_user)):
+async def maps_page(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     map_title = get_config("map_title", default="CCTV Maps")
-    return templates.TemplateResponse("maps.html", {"request": request, "map_title": map_title})
+    tz_name = get_current_timezone(db)
+    return templates.TemplateResponse("maps.html", {"request": request, "map_title": map_title, "timezone": tz_name})
 
 
 @router.get("/camera-locations", response_model=List[CameraLocation])
