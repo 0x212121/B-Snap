@@ -319,25 +319,44 @@ CREATE TRIGGER audit_log_prevent_delete BEFORE DELETE ON audit_logs
 ### P2-004: Secure Snapshot Serving ✅
 
 **Files Modified:**
-- `app/main.py` - SecureStaticFiles configuration
-- `app/routes/snap_gallery.py` - Authenticated API endpoints
+- `app/main.py` - Blocking route `/static/snapshots/{path:path}` → 403 Forbidden
+- `app/routes/snap_gallery.py` - Authenticated API endpoints + gallery view optimization
+- `templates/_gallery_grid.html` - Uses secure API URLs dengan thumb parameter
+- `templates/snapshot_gallery.html` - Batch logging untuk gallery view
 - `templates/admin_trash.html` - Updated image URLs
 
 **Security Changes:**
-- Blocked: Direct access to `/static/snapshots/...` (returns 403)
+- Blocked: Direct access ke `/static/snapshots/*` → 403 Forbidden
 - Required: Authentication via API endpoints
+- Gallery: Menggunakan `/api/snapshots/secure/{id}?thumb=true` (minimal logging)
+- Detail View: Menggunakan `/api/snapshots/secure/{id}` (full logging)
+
+**Audit Log Strategy (Anti-Flooding):**
+| Action | Endpoint | Logging |
+|--------|----------|---------|
+| Gallery Browse | `POST /api/snapshots/gallery-view` | **Batch** - 1 log per page |
+| Thumbnail Load | `GET /api/snapshots/secure/{id}?thumb=true` | Minimal - `gallery_thumbnail` |
+| Detail View | `GET /api/snapshots/secure/{id}` | Full - `view_snapshot` |
+| Download | `GET /api/snapshots/secure/{id}?download=true` | Full - `download_snapshot` |
 
 **API Endpoints:**
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/snapshots/file/{file_path}` | Access by file path |
-| `GET /api/snapshots/secure/{snapshot_id}` | Access by snapshot ID (recommended) |
+| `GET /static/snapshots/{path}` | **BLOCKED** - Returns 403 Forbidden |
+| `POST /api/snapshots/gallery-view` | Batch log gallery page view |
+| `GET /api/snapshots/file/{file_path}` | Access by file path (authenticated) |
+| `GET /api/snapshots/secure/{snapshot_id}?thumb=true` | Gallery thumbnail (minimal log) |
+| `GET /api/snapshots/secure/{snapshot_id}` | Detail view (full log) |
+| `GET /api/snapshots/secure/{id}?download=true` | Download dengan filename |
 
 **Features:**
+- Route blocking di app level (sebelum StaticFiles)
+- **Anti-flooding**: Gallery view log sekali per page, bukan per gambar
 - Directory traversal protection
 - Authentication required (Operator/Admin)
-- Audit logging untuk setiap akses
-- Soft-deleted snapshot protection
+- Audit logging dengan konteks (gallery vs detail)
+- Download dengan filename: `CameraName_YYYYMMDD_HHMMSS.jpg`
+- Soft-deleted snapshot protection (admin only)
 
 ---
 

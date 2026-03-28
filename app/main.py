@@ -218,30 +218,27 @@ async def error_wrapper_middleware(request: Request, call_next):
 # 6. ROUTERS & STATIC FILES
 # ====================================================================
 
-# P2-004: Custom StaticFiles that blocks direct snapshot access
-class SecureStaticFiles(StaticFiles):
-    """StaticFiles that blocks access to /static/snapshots (P2-004).
+# P2-004: Block direct access to /static/snapshots - MUST be before StaticFiles mount
+@app.get("/static/snapshots/{path:path}", include_in_schema=False)
+async def block_snapshot_access(request: Request, path: str):
+    """Block direct access to snapshot files (P2-004).
     
-    Snapshots must be accessed via authenticated API endpoints:
+    Snapshots must be accessed via authenticated API:
     - GET /api/snapshots/secure/{snapshot_id}
     - GET /api/snapshots/file/{file_path}
     """
-    
-    async def get_response(self, path: str, scope):
-        # Block direct access to snapshots
-        if path.startswith("snapshots/"):
-            from fastapi.responses import JSONResponse
-            return JSONResponse(
-                status_code=403,
-                content={
-                    "status": "error",
-                    "detail": "Direct snapshot access blocked (P2-004). Use authenticated API endpoints.",
-                    "code": "SNAPSHOT_ACCESS_BLOCKED"
-                }
-            )
-        return await super().get_response(path, scope)
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=403,
+        content={
+            "status": "error",
+            "detail": "Direct snapshot access blocked (P2-004). Use authenticated API endpoints.",
+            "code": "SNAPSHOT_ACCESS_BLOCKED",
+            "help": "Access snapshots via: /api/snapshots/secure/{snapshot_id}"
+        }
+    )
 
-app.mount("/static", SecureStaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/documentation", StaticFiles(directory="docs/build/html"), name="docs")
 
 # Registrasi routers

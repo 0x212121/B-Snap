@@ -174,25 +174,35 @@
 - **Finding:** Direct static file access bypasses audit logging
 - **Status:** ✅ **DONE**
 - **Implemented:**
-  - Created SecureStaticFiles class yang memblokir akses ke /static/snapshots
-  - New authenticated API endpoints:
-    - `GET /api/snapshots/file/{file_path}` - Serve by path
-    - `GET /api/snapshots/secure/{snapshot_id}` - Serve by ID (preferred)
-  - All access logged ke audit_logs dengan request details
-  - Updated templates untuk menggunakan API endpoints
+  - Route blocker: `/static/snapshots/{path:path}` → 403 Forbidden
+  - **Anti-Flooding Audit Strategy:**
+    - Gallery batch log: `POST /api/snapshots/gallery-view` (1x per page)
+    - Thumbnail: `GET /api/snapshots/secure/{id}?thumb=true` (action: gallery_thumbnail)
+    - Detail view: `GET /api/snapshots/secure/{id}` (action: view_snapshot)
+    - Download: `GET /api/snapshots/secure/{id}?download=true` (action: download_snapshot)
+  - New authenticated API endpoints untuk semua file access
+  - Download support dengan query param: `?download=true`
 - **Files Modified:**
-  - `app/main.py` - SecureStaticFiles configuration
-  - `app/routes/snap_gallery.py` - New API endpoints
+  - `app/main.py` - Blocking route sebelum StaticFiles mount
+  - `app/routes/snap_gallery.py` - API endpoints dengan context-aware logging
+  - `templates/_gallery_grid.html` - Uses thumb URL, detail URL untuk modal
+  - `templates/snapshot_gallery.html` - Batch logging untuk gallery view
   - `templates/admin_trash.html` - Updated image URLs
 - **API Endpoints:**
   ```
-  GET /api/snapshots/file/{file_path}    # Authenticated file access
-  GET /api/snapshots/secure/{snapshot_id} # Authenticated by ID
+  GET /static/snapshots/{path}                   # BLOCKED - 403 Forbidden
+  POST /api/snapshots/gallery-view               # Batch log gallery view
+  GET /api/snapshots/file/{file_path}            # Authenticated file access
+  GET /api/snapshots/secure/{snapshot_id}?thumb=true  # Gallery thumbnail
+  GET /api/snapshots/secure/{snapshot_id}        # Detail view (full log)
+  GET /api/snapshots/secure/{id}?download=true   # Download with filename
   ```
-- **Security:**
-  - Blocks: GET /static/snapshots/... -> 403 Forbidden
-  - Requires: Operator/Admin authentication
-  - Logs: All access dengan user, IP, timestamp
+- **Security & Compliance:**
+  - Blocks: Direct access ke /static/snapshots/* → 403 Forbidden
+  - Requires: Operator/Admin authentication via API
+  - **Anti-Flooding**: Gallery log 1x per page, bukan per gambar
+  - **Audit Context**: Different action types (gallery_view, gallery_thumbnail, view_snapshot, download_snapshot)
+  - Filename: Download menggunakan nama yang meaningful
 - **Completed Date:** 2026-03-28
 
 ---

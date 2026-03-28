@@ -76,7 +76,11 @@ def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[
         # P0-002: Include soft delete status
         is_deleted = getattr(s, 'is_deleted', False)
         result.append({
-            "url": f"/{SNAPSHOT_BASE_DIR}/{s.file_path}",
+            # P2-004: Use authenticated API endpoint instead of direct static URL
+            # thumb=true untuk gallery view (minimal logging)
+            "url": f"/api/snapshots/secure/{s.id}?thumb=true",
+            "detail_url": f"/api/snapshots/secure/{s.id}",  # For modal view (full logging)
+            "file_path": s.file_path,  # Keep for reference
             "camera": s.camera_name,
             "ip": s.camera_ip,
             "time": format_datetime_standard(s.timestamp, db=db),
@@ -87,7 +91,8 @@ def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[
             "is_tampered": s.is_tampered,
             "tamper_reason": s.tamper_reason,
             "is_orphaned": is_orphaned,
-            "is_deleted": is_deleted  # P0-002
+            "is_deleted": is_deleted,  # P0-002
+            "retention_hold": getattr(s, 'retention_hold', False)  # P2-003
         })
     return result
 
@@ -705,13 +710,20 @@ async def serve_snapshot_file(
 async def serve_snapshot_by_id(
     request: Request,
     snapshot_id: str,
+    download: bool = Query(False, description="Set Content-Disposition to attachment for download"),
+    thumb: bool = Query(False, description="Gallery thumbnail view - minimal logging"),
     db: Session = Depends(get_db),
     current_user: User = Depends(operator_access_required)
 ):
     """Serve snapshot file by snapshot ID with authentication (P2-004).
     
     Preferred method: Uses snapshot ID instead of file path for better security.
+    
+    Args:
+        download: If True, sets Content-Disposition to attachment for file download
+        thumb: If True, this is a gallery thumbnail view (minimal logging to prevent flooding)
     """
+    import mimetypes
     from fastapi.responses import FileResponse
     
     # Find snapshot in database
@@ -732,11 +744,20 @@ async def serve_snapshot_by_id(
     if not os.path.exists(full_path):
         raise HTTPException(status_code=404, detail="Snapshot file not found on disk")
     
-    # Log access
+    # Log access (P2-004 compliance)
+    # thumb=true: Gallery browsing - log sebagai gallery_view (batch context)
+    # thumb=false atau download: Individual view - log sebagai view_snapshot
+    if download:
+        action = "download_snapshot"
+    elif thumb:
+        action = "gallery_thumbnail"  # Minimal logging untuk gallery browsing
+    else:
+        action = "view_snapshot"  # Full detail view
+    
     log_audit(
         db=db,
         user=request.session.get("user_name", "unknown"),
-        action="view_snapshot",
+        action=action,
         target=f"{snapshot.camera_name}/{snapshot_id}",
         ip=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
@@ -745,4 +766,71 @@ async def serve_snapshot_by_id(
         response_status=200,
     )
     
-    return FileResponse(path=full_path)
+    # Build filename for download
+    filename = os.path.basename(snapshot.file_path)
+    if download and snapshot.camera_name:
+        # Create meaningful filename: CameraName_YYYYMMDD_HHMMSS.jpg
+        from datetime import datetime
+        timestamp_str = snapshot.timestamp.strftime("%Y%m%d_%H%M%S") if snapshot.timestamp else datetime.now().strftime("%Y%m%d_%H%M%S")
+        ext = os.path.splitext(filename)[1]
+        safe_camera_name = "".join(c if c.isalnum() or c in ('-', '_') else '_' for c in snapshot.camera_name)
+        filename = f"{safe_camera_name}_{timestamp_str}{ext}"
+    
+    # Determine content type
+    content_type, _ = mimetypes.guess_type(full_path)
+    if not content_type:
+        content_type = "image/jpeg"
+    
+    return FileResponse(
+        path=full_path,
+        media_type=content_type,
+        filename=filename if download else None,
+    )
+
+
+
+@router.post("/api/snapshots/gallery-view", response_class=JSONResponse)
+async def log_gallery_view(
+    request: Request,
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(operator_access_required)
+):
+    """Log gallery batch view untuk compliance tanpa flooding (P2-004).
+    
+    Frontend memanggil endpoint ini sekali ketika load gallery page,
+    daripada log setiap gambar individual.
+    
+    Request body:
+    {
+        "camera_filter": "Camera Name" | null,
+        "snapshot_count": 15,
+        "search_query": "search term" | null
+    }
+    """
+    camera_filter = data.get("camera_filter")
+    snapshot_count = data.get("snapshot_count", 0)
+    search_query = data.get("search_query")
+    
+    # Build target description
+    target_parts = []
+    if camera_filter:
+        target_parts.append(f"camera:{camera_filter}")
+    if search_query:
+        target_parts.append(f"search:{search_query}")
+    target_parts.append(f"count:{snapshot_count}")
+    target = " | ".join(target_parts) if target_parts else f"all_cameras:{snapshot_count}"
+    
+    log_audit(
+        db=db,
+        user=request.session.get("user_name", "unknown"),
+        action="gallery_view",  # Batch action untuk compliance
+        target=target,
+        ip=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        request_path=str(request.url.path),
+        request_method=request.method,
+        response_status=200,
+    )
+    
+    return JSONResponse({"status": "logged"})

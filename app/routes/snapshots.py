@@ -299,13 +299,18 @@ def get_snapshot_file_raw(
         final_user_name = request.session.get("user_name") or "token_user"
         extra = "via token" if token else "via dashboard"
 
+    # P2-001: Enhanced audit logging
     log_audit(
         db=db,
         user=final_user_name,
         action="retrieve_snapshot",
         target=snapshot.camera_name,
         ip=request.client.host,
-        extra=extra
+        extra=extra,
+        user_agent=request.headers.get("user-agent"),
+        request_path=str(request.url.path),
+        request_method=request.method,
+        response_status=200,
     )
 
     return FileResponse(path=full_path, media_type="image/jpeg")

@@ -283,6 +283,19 @@
         const count = (data.html.match(/data-card/g) || []).length;
         if (count < GalleryState.limit) GalleryState.hasMore = false;
         else GalleryState.offset = count;
+        
+        // P2-004: Log gallery batch view untuk compliance (hindari flooding per gambar)
+        if (count > 0) {
+          fetch("/api/snapshots/gallery-view", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              camera_filter: GalleryState.currentFilter.camera || null,
+              snapshot_count: count,
+              search_query: GalleryState.currentFilter.q || null
+            })
+          }).catch(() => {}); // Silent fail - don't block UI
+        }
       }
 
     } catch (err) {
@@ -322,8 +335,9 @@
     document.getElementById("modal-img").src = src;
     document.getElementById("modal-camera").textContent = camera;
     document.getElementById("modal-time").textContent = time;
-    document.getElementById("download-btn").href = src;
-    document.getElementById("download-btn").download = `snap_${camera}_${time.replace(/[\s:]/g,"-")}.jpg`;
+    // P2-004: Use download=true query param for proper filename from server
+    document.getElementById("download-btn").href = src + (src.includes("?") ? "&" : "?") + "download=true";
+    document.getElementById("download-btn").download = "";
     document.getElementById("modal").classList.remove("hidden");
     document.getElementById("modal").classList.add("flex");
     document.body.style.overflow = "hidden";

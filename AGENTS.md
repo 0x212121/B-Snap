@@ -590,8 +590,13 @@ python -m memray run app/main.py
 - Purge otomatis skip items dengan retention hold
 
 ### Secure Snapshot Serving (P2-004)
-- Direct access ke `/static/snapshots/*` diblokir (403 Forbidden)
+- Direct access ke `/static/snapshots/*` → 403 Forbidden
+- **Anti-Flooding Audit Log:**
+  - Gallery view: `POST /api/snapshots/gallery-view` (batch log)
+  - Thumbnail: `GET /api/snapshots/secure/{id}?thumb=true` (minimal log)
+  - Detail view: `GET /api/snapshots/secure/{id}` (full log)
 - API endpoints dengan autentikasi:
   - `GET /api/snapshots/file/{file_path}`
-  - `GET /api/snapshots/secure/{snapshot_id}` (recommended)
-- Semua akses dilog ke audit_logs
+  - `GET /api/snapshots/secure/{snapshot_id}`
+- Download: `GET /api/snapshots/secure/{id}?download=true`
+- Semua akses dilog ke audit_logs dengan konteks yang sesuai
