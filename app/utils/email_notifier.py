@@ -19,7 +19,7 @@ from app.models.camera_email_notification_log import (
 from app.utils.timezone_helper import format_datetime_with_tz, to_current_timezone
 from app.models.snapshot import Snapshot
 from app.core.logging_config import set_debug_mode
-set_debug_mode(True)
+set_debug_mode(False)
 
 logger = logging.getLogger("email_notifier")
 SNAPSHOT_BASE_DIR = os.path.join("static", "snapshots")  # absolute base dir
