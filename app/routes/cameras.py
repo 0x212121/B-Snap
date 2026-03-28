@@ -73,12 +73,15 @@ async def manage_data(
     active_count = stats_query.filter(DBCamera.status == 'Active').count()
     deactivated_count = stats_query.filter(DBCamera.status == 'Deactivated').count()
     maintenance_count = stats_query.filter(DBCamera.status == 'Maintenance').count()
+    # P2-002: Safety classification stats
+    critical_count = stats_query.filter(DBCamera.safety_classification == 'critical').count()
     
     stats = {
         "total": total_count,
         "active": active_count,
         "deactivated": deactivated_count,
-        "maintenance": maintenance_count
+        "maintenance": maintenance_count,
+        "critical": critical_count  # P2-002
     }
 
     # Apply filters to main query
@@ -112,10 +115,24 @@ async def manage_data(
         gps_loc = f"{cam.latitude}, {cam.longitude}" if cam.latitude is not None or cam.longitude is not None else ""
         status_classes = get_status_classes(cam.status)
         status_label = cam.status or "Unknown"
+        
+        # P2-002: Safety classification badge
+        safety = cam.safety_classification or 'standard'
+        if safety == 'critical':
+            safety_badge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800" title="Critical Safety - Incident Coverage">🔴 Critical</span>'
+        elif safety == 'low':
+            safety_badge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800" title="Low Safety - General Surveillance">🟢 Low</span>'
+        else:
+            safety_badge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800" title="Standard Safety - Regular Monitoring">🟡 Standard</span>'
 
         rows_html += f"""
             <tr class="group border-b dark:border-gray-700 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors duration-150 text-sm text-gray-700 dark:text-gray-300">
-                <td class="px-4 py-3.5 font-semibold text-gray-900 dark:text-white">{cam.hostname}</td>
+                <td class="px-4 py-3.5 font-semibold text-gray-900 dark:text-white">
+                    <div class="flex items-center gap-2">
+                        {cam.hostname}
+                        {safety_badge if safety == 'critical' else ''}
+                    </div>
+                </td>
                 <td class="px-4 py-3.5 font-mono text-gray-600 dark:text-gray-400">{cam.ip}</td>
                 <td class="px-4 py-3.5">{cam.port}</td>
                 <td class="px-4 py-3.5">{cam.username}</td>
@@ -123,6 +140,7 @@ async def manage_data(
                 <td class="px-4 py-3.5">{cam.asset_no or ''}</td>
                 <td class="px-4 py-3.5">{cam.location or ''}</td>
                 <td class="px-4 py-3.5">{cam.group.name if cam.group else ''}</td>
+                <td class="px-4 py-3.5">{safety_badge}</td>
                 <td class="px-4 py-3.5">
                     <span class="px-2.5 py-1 text-xs font-semibold rounded-full {status_classes}">
                         {status_label}
@@ -419,7 +437,8 @@ async def get_camera_details(
         "is_flipped": camera.is_flipped,
         "group": {"name": camera.group.name} if camera.group else None,
         "note": camera.note,
-        "snapshot_url": camera.snapshot_url
+        "snapshot_url": camera.snapshot_url,
+        "safety_classification": camera.safety_classification or 'standard',  # P2-002
     }
 
 

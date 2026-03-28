@@ -109,6 +109,11 @@ async def get_audit_logs_api(
                 "target": log.target,
                 "ip": log.ip,
                 "extra": log.extra,
+                # P2-001: Enhanced audit fields
+                "user_agent": log.user_agent,
+                "request_path": log.request_path,
+                "request_method": log.request_method,
+                "response_status": log.response_status,
             }
             for log in logs
         ],

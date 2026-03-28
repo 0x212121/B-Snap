@@ -135,6 +135,10 @@ async def get_audit_logs_api(
             "target": log.target,
             "ip": log.ip,
             "extra": log.extra,
+            "request_method": getattr(log, 'request_method', None),
+            "response_status": getattr(log, 'response_status', None),
+            "user_agent": getattr(log, 'user_agent', None),
+            "request_path": getattr(log, 'request_path', None),
         })
 
     return {

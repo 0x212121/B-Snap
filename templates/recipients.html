@@ -7,244 +7,366 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-4 max-w-7xl">
+<div class="container mx-auto px-4 py-6 max-w-7xl">
   
   <!-- Header -->
-  <div class="mb-4 flex items-center justify-between">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-        {{ icon_envelope_open("w-7 h-7 text-yellow-500") }}
-        Email Recipients
-      </h1>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage B-SNAP email distribution lists</p>
-    </div>
-    <div class="flex gap-2">
-      <button onclick="exportRecipients()" 
-        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-colors">
-        {{ icon_download("w-4 h-4") }} Export
-      </button>
-      <button onclick="showImportModal()" 
-        class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-colors">
-        {{ icon_upload("w-4 h-4") }} Import
-      </button>
-      <button onclick="toggleSection('addFormContent')" 
-        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-colors">
-        {{ icon_plus("w-4 h-4") }} Add New
-      </button>
+  <div class="mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+          <div class="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl">
+            {{ icon_envelope_open("w-7 h-7 text-yellow-600 dark:text-yellow-400") }}
+          </div>
+          Email Recipients
+        </h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage B-SNAP email distribution lists</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="exportRecipients()" 
+          class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+          {{ icon_download("w-5 h-5") }} Export
+        </button>
+        <button onclick="showImportModal()" 
+          class="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+          {{ icon_upload("w-5 h-5") }} Import
+        </button>
+        <button onclick="toggleSection('addFormContent')" 
+          class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+          {{ icon_plus("w-5 h-5") }} Add New
+        </button>
+      </div>
     </div>
   </div>
 
-<!-- Stats Cards -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-blue-500">
-    <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Total Recipients</div>
-    <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="stat-total">-</div>
-  </div>
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-green-500">
-    <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Groups</div>
-    <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="stat-groups">-</div>
-  </div>
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-purple-500">
-    <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Total Locations</div>
-    <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="stat-locations">-</div>
-  </div>
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 border-l-4 border-yellow-500">
-    <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Last Updated</div>
-    <div class="text-sm font-medium text-gray-800 dark:text-gray-100 mt-1" id="stat-updated">Just now</div>
-  </div>
-</div>
-
-<!-- === Section 1: Add Recipient (Collapsible) === -->
-<div id="addSection" class="bg-white dark:bg-gray-800 shadow-lg rounded-lg mb-4 overflow-hidden">
-  <div id="addFormContent" class="hidden">
-    <div class="p-4">
-      <form id="addForm" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <!-- Left Column -->
-        <div class="lg:col-span-5 space-y-3">
-          <div>
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address <span class="text-red-500">*</span></label>
-            <input type="email" id="email" name="email" required placeholder="recipient@example.com"
-            class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 transition-all">
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nickname</label>
-            <input type="text" id="nickname" name="nickname" placeholder="John Doe"
-            class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 transition-all">
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Group <span class="text-red-500">*</span></label>
-            <select id="group_id" name="group_id" required onchange="onGroupChange(this.value, 'locations')"
-            class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 pr-8 transition-all">
-            <option value="">Select Group...</option>
-          </select>
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Recipients</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-total">-</p>
+        </div>
+        <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+          {{ icon_envelope("w-6 h-6 text-blue-600 dark:text-blue-400") }}
         </div>
       </div>
-      
-      <!-- Right Column -->
-      <div class="lg:col-span-5">
-        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Locations</label>
-        <select id="locations" name="locations" multiple
-        class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 min-h-[140px]">
-      </select>
-      <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">Hold Ctrl/Cmd to select multiple. Auto-filtered by group.</p>
     </div>
     
-    <!-- Action Column -->
-    <div class="lg:col-span-2 flex items-end">
-      <button type="submit"
-      class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center justify-center gap-2 shadow-sm transition-all transform hover:scale-[1.02] active:scale-[0.98]">
-      {{ icon_plus("w-4 h-4") }} Add Recipient
-    </button>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Groups</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-groups">-</p>
+        </div>
+        <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+          <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Locations</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-locations">-</p>
+        </div>
+        <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+          <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Last Updated</p>
+          <p class="text-sm font-bold text-gray-900 dark:text-white mt-1" id="stat-updated">Just now</p>
+        </div>
+        <div class="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+          <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
   </div>
-</form>
-</div>
-</div>
-</div>
 
-<!-- === Section 2: Recipients List & Test Email === -->
-<div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-  
-  <!-- Recipients Table -->
-  <div class="xl:col-span-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
-    <div class="px-4 py-3 border-b dark:border-gray-700 flex flex-wrap items-center justify-between gap-3">
-      
-      <div class="flex items-center gap-2">
-        <h3 class="font-semibold text-gray-800 dark:text-gray-100">Recipients</h3>
-        <span id="recipient-count"
-        class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-2 py-1 rounded-full">0</span>
+  <!-- Add Recipient Form (Collapsible) -->
+  <div id="addSection" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6 overflow-hidden">
+    <div id="addFormContent" class="hidden">
+      <div class="p-6">
+        <form id="addForm" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <!-- Left Column -->
+          <div class="lg:col-span-5 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email Address <span class="text-red-500">*</span></label>
+              <input type="email" id="email" name="email" required placeholder="recipient@example.com"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-4 py-2.5 transition-all">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nickname</label>
+              <input type="text" id="nickname" name="nickname" placeholder="John Doe"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-4 py-2.5 transition-all">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Group <span class="text-red-500">*</span></label>
+              <select id="group_id" name="group_id" required onchange="onGroupChange(this.value, 'locations')"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-4 py-2.5 pr-8 transition-all appearance-none">
+                <option value="">Select Group...</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- Right Column -->
+          <div class="lg:col-span-5">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Locations</label>
+            <select id="locations" name="locations" multiple
+              class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 min-h-[140px]">
+            </select>
+            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Hold Ctrl/Cmd to select multiple. Auto-filtered by group.</p>
+          </div>
+          
+          <!-- Action Column -->
+          <div class="lg:col-span-2 flex items-end">
+            <button type="submit"
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow-sm transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+              {{ icon_plus("w-4 h-4") }} Add Recipient
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Section -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+    <div class="flex flex-col lg:flex-row gap-4">
+      <!-- Search -->
+      <div class="relative flex-1">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+        <input type="text" id="searchInput" placeholder="Search email or nickname..."
+          class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
       </div>
       
-      <div class="flex flex-wrap items-center gap-2">
-        
-        <!-- Search -->
-        <input
-        id="searchInput"
-        type="text"
-        placeholder="Search email or nickname..."
-        class="text-sm px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-        
-        <!-- Group Filter -->
-        <select id="filterGroup"
-        class="text-sm px-2 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-        <option value="">All Groups</option>
-      </select>
-      
-      <!-- Location Filter -->
-      <select id="filterLocation"
-      class="text-sm px-2 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-      <option value="">All Locations</option>
-    </select>
-    
-    <!-- Reset -->
-    <button id="btnResetFilter"
-    class="text-sm px-3 py-1.5 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-    Reset
-  </button>
-  
-  <!-- Per page -->
-  <select id="perPageSelect"
-  class="text-sm px-2 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-  <option value="10">10</option>
-  <option value="20" selected>20</option>
-  <option value="50">50</option>
-</select>
-
-</div>
-
-</div>
-
-<div class="overflow-x-auto">
-  <table class="w-full text-sm text-left">
-    <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300">
-      <tr>
-        <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Email</th>
-        <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Nickname</th>
-        <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Group</th>
-        <th class="px-3 py-2 font-medium text-xs uppercase tracking-wider">Locations</th>
-        <th class="px-3 py-2 text-center font-medium text-xs uppercase tracking-wider">Actions</th>
-      </tr>
-    </thead>
-    <tbody id="recipients-body" class="divide-y divide-gray-100 dark:divide-gray-700">
-      <tr>
-        <td colspan="5" class="px-4 py-8 text-center">
-          <div class="flex flex-col items-center gap-2 text-gray-400">
-            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-            <span class="text-sm">Loading recipients...</span>
+      <!-- Filters -->
+      <div class="flex gap-2 items-center flex-wrap">
+        <div class="relative">
+          <select id="filterGroup"
+            class="pl-3 pr-8 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+            <option value="">All Groups</option>
+          </select>
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
           </div>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-<div id="pagination-controls" class="flex justify-center items-center gap-1 px-4 py-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30"></div>
-</div>
-
-<!-- Test Email Panel -->
-<div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
-  <div class="px-4 py-3 border-b dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700/50 dark:to-gray-700/30">
-    <h3 class="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-      {{ icon_envelope("w-5 h-5 text-blue-500") }}
-      Send Test Email
-    </h3>
-  </div>
-  
-  <div class="p-4 space-y-4">
-    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
-      <p class="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-        Send a test email to verify your configuration. Select a group and optionally filter by location.
-      </p>
+        </div>
+        
+        <div class="relative">
+          <select id="filterLocation"
+            class="pl-3 pr-8 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+            <option value="">All Locations</option>
+          </select>
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </div>
+        </div>
+        
+        <div class="relative">
+          <select id="perPageSelect"
+            class="pl-3 pr-8 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+            <option value="10">10 / page</option>
+            <option value="20" selected>20 / page</option>
+            <option value="50">50 / page</option>
+          </select>
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </div>
+        </div>
+        
+        <button id="btnResetFilter" class="p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Reset filters">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+      </div>
     </div>
+  </div>
+
+  <!-- Results Info -->
+  <div class="flex items-center justify-between mb-3 px-2">
+    <div id="results-info" class="text-sm text-gray-600 dark:text-gray-400"></div>
+    <div id="loading-indicator" class="hidden items-center gap-2 text-sm text-gray-500">
+      <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Loading...
+    </div>
+  </div>
+
+  <!-- Grid: Table & Test Email -->
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
     
-    <div>
-      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Target Group <span class="text-red-500">*</span></label>
-      <select id="test_group" onchange="onTestGroupChange(this.value)"
-      class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2 transition-all">
-      <option value="">Select Group...</option>
-    </select>
-  </div>
-  
-  <div>
-    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Location</label>
-    <select id="test_location" 
-    class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2 transition-all">
-    <option value="">All Locations</option>
-  </select>
-</div>
+    <!-- Recipients Table -->
+    <div class="xl:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
+      <div id="loading-overlay" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
+        <div class="flex flex-col items-center gap-3">
+          <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="text-gray-600 dark:text-gray-300 font-medium">Loading recipients...</span>
+        </div>
+      </div>
 
-<div class="pt-2">
-  <button id="btnTestSend" onclick="sendTestEmail()"
-  class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow-md transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
-  {{ icon_airplane("w-5 h-5") }}
-  <span>Send Test Email</span>
-</button>
-</div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left" id="recipients-table">
+          <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
+            <tr>
+              <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Email</th>
+              <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Nickname</th>
+              <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Group</th>
+              <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Locations</th>
+              <th class="px-4 py-3.5 font-semibold whitespace-nowrap text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="recipients-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+            <tr>
+              <td colspan="5" class="px-4 py-8 text-center">
+                <div class="flex flex-col items-center gap-2 text-gray-400">
+                  <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                  <span class="text-sm">Loading recipients...</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-<!-- Quick Stats -->
-<div class="grid grid-cols-2 gap-2 pt-2 border-t dark:border-gray-700">
-  <div class="text-center p-2 bg-gray-50 dark:bg-gray-700/30 rounded">
-    <div class="text-xs text-gray-500 dark:text-gray-400">Recipients</div>
-    <div class="text-lg font-bold text-gray-800 dark:text-gray-100" id="test-recipient-count">-</div>
+      <!-- Empty State -->
+      <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center">
+        <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
+          <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No recipients found</h3>
+        <p class="text-gray-500 dark:text-gray-400 max-w-sm">Add a new recipient to get started or adjust your search filters.</p>
+        <button onclick="toggleSection('addFormContent')" class="mt-4 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          Add your first recipient
+        </button>
+      </div>
+    </div>
+
+    <!-- Test Email Panel -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="px-6 py-4 border-b dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700/50 dark:to-gray-700/30">
+        <h3 class="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+          <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+            {{ icon_airplane("w-5 h-5 text-blue-600 dark:text-blue-400") }}
+          </div>
+          Send Test Email
+        </h3>
+      </div>
+      
+      <div class="p-6 space-y-4">
+        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
+          <p class="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+            Send a test email to verify your configuration. Select a group and optionally filter by location.
+          </p>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Target Group <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <select id="test_group" onchange="onTestGroupChange(this.value)"
+              class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-4 py-2.5 pr-8 transition-all appearance-none">
+              <option value="">Select Group...</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Filter by Location</label>
+          <div class="relative">
+            <select id="test_location" 
+              class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-4 py-2.5 pr-8 transition-all appearance-none">
+              <option value="">All Locations</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button id="btnTestSend" onclick="sendTestEmail()"
+            class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow-md transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ icon_airplane("w-5 h-5") }}
+            <span>Send Test Email</span>
+          </button>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-2 gap-2 pt-4 border-t dark:border-gray-700">
+          <div class="text-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Recipients</div>
+            <div class="text-xl font-bold text-gray-800 dark:text-gray-100" id="test-recipient-count">-</div>
+          </div>
+          <div class="text-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Last Test</div>
+            <div class="text-xs font-medium text-gray-600 dark:text-gray-300" id="test-last-send">Never</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="text-center p-2 bg-gray-50 dark:bg-gray-700/30 rounded">
-    <div class="text-xs text-gray-500 dark:text-gray-400">Last Test</div>
-    <div class="text-xs font-medium text-gray-600 dark:text-gray-300 mt-1" id="test-last-send">Never</div>
+
+  <!-- Pagination -->
+  <div id="pagination-controls" class="flex items-center justify-between mt-4 px-2">
+    <div class="text-sm text-gray-500 dark:text-gray-400" id="page-info"></div>
+    <div class="flex items-center gap-1" id="pagination-buttons"></div>
   </div>
-</div>
-</div>
-</div>
-</div>
 </div>
 
 <!-- Edit Modal -->
 <div id="editModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
   <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
     <div class="px-6 py-4 border-b dark:border-gray-700 flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-        {{ icon_pencil("w-5 h-5 text-yellow-500") }}
-        Edit Recipient
-      </h3>
-      <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+          {{ icon_pencil("w-5 h-5 text-yellow-600 dark:text-yellow-400") }}
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white">Edit Recipient</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Update recipient details</p>
+        </div>
+      </div>
+      <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
     </div>
@@ -253,45 +375,69 @@
       <input type="hidden" name="id" id="edit_id">
       
       <div>
-        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email <span class="text-red-500">*</span></label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email <span class="text-red-500">*</span></label>
         <input type="email" id="edit_email" name="email" required
-        class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2">
+          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-4 py-2.5 transition-all">
       </div>
       
       <div>
-        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nickname</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nickname</label>
         <input type="text" id="edit_nickname" name="nickname"
-        class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2">
+          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-4 py-2.5 transition-all">
       </div>
       
       <div>
-        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Group <span class="text-red-500">*</span></label>
-        <select id="edit_group_id" name="group_id" required onchange="onGroupChange(this.value, 'edit_locations')"
-        class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2 pr-8"></select>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Group <span class="text-red-500">*</span></label>
+        <div class="relative">
+          <select id="edit_group_id" name="group_id" required onchange="onGroupChange(this.value, 'edit_locations')"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-4 py-2.5 pr-8 transition-all appearance-none"></select>
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </div>
+        </div>
       </div>
       
       <div>
-        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Locations</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Locations</label>
         <select id="edit_locations" name="locations" multiple size="4"
-        class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2"></select>
+          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 text-sm px-3 py-2 transition-all"></select>
       </div>
       
-      <div class="flex gap-3 pt-2">
+      <div class="flex gap-3 pt-4">
         <button type="button" onclick="closeEditModal()"
-        class="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors">
-        Cancel
-      </button>
-      <button type="submit"
-      class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
-      {{ icon_download("w-4 h-4") }} Save Changes
-    </button>
+          class="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors">
+          Cancel
+        </button>
+        <button type="submit"
+          class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm">
+          {{ icon_download("w-4 h-4") }} Save Changes
+        </button>
+      </div>
+    </form>
   </div>
-</form>
-</div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<style>
+  /* Alternating Row Colors */
+  #recipients-table tbody tr:nth-child(even) {
+    @apply bg-gray-50/50 dark:bg-gray-800/30;
+  }
+  
+  /* Hover effect */
+  #recipients-table tbody tr:hover {
+    @apply bg-blue-50/50 dark:bg-blue-900/10;
+  }
+  
+  /* Smooth transitions */
+  #recipients-table tbody tr {
+    @apply transition-colors duration-150;
+  }
+</style>
+
 <script>
 // SweetAlert2 config inherited from base.html (configureSwalTheme, showGlobalConfirm, showGlobalAlert)
 
@@ -429,26 +575,46 @@ function onTestGroupChange(groupId) {
 LOAD RECIPIENTS (Single source of truth)
 ================================ */
 function showLoading(){
+  const overlay = document.getElementById("loading-overlay")
   const tbody = document.getElementById("recipients-body")
-  tbody.innerHTML = `
-<tr>
-<td colspan="5" class="px-4 py-8 text-center">
-<div class="flex flex-col items-center gap-2 text-gray-400">
-<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-<span class="text-sm">Loading recipients...</span>
-</div>
-</td>
-</tr>`
+  const emptyState = document.getElementById("empty-state")
+  const tableContainer = document.querySelector('.overflow-x-auto')
+  
+  if(overlay) overlay.style.display = 'flex'
+  if(emptyState) emptyState.classList.add('hidden')
+  if(emptyState) emptyState.classList.remove('flex')
+  if(tableContainer) tableContainer.style.opacity = '0.5'
+}
+
+function hideLoading(){
+  const overlay = document.getElementById("loading-overlay")
+  const tableContainer = document.querySelector('.overflow-x-auto')
+  
+  if(overlay) overlay.style.display = 'none'
+  if(tableContainer) tableContainer.style.opacity = '1'
 }
 
 function showError(){
+  hideLoading()
   const tbody = document.getElementById("recipients-body")
-  tbody.innerHTML = `
-<tr>
-<td colspan="5" class="px-4 py-8 text-center text-red-500">
-Failed to load recipients. Please refresh.
-</td>
-</tr>`
+  const emptyState = document.getElementById("empty-state")
+  const tableContainer = document.querySelector('.overflow-x-auto')
+  
+  if(tableContainer) tableContainer.style.opacity = '1'
+  if(emptyState) {
+    emptyState.classList.remove('hidden')
+    emptyState.classList.add('flex')
+    emptyState.innerHTML = `
+      <div class="p-4 bg-red-100 dark:bg-red-900/30 rounded-full mb-4">
+        <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">Failed to load</h3>
+      <p class="text-gray-500 dark:text-gray-400">Could not load recipients. Please try again.</p>
+    `
+  }
+  if(tbody) tbody.innerHTML = ''
 }
 
 async function loadRecipients(){
@@ -495,9 +661,22 @@ async function loadRecipients(){
     renderTable(data.recipients || [])
     renderPagination()
     
-    document.getElementById("recipient-count").textContent = data.pagination?.total || 0
-    document.getElementById("stat-total").textContent = data.pagination?.total || 0
+    // Update stats and info
+    const total = data.pagination?.total || 0
+    document.getElementById("stat-total").textContent = total.toLocaleString()
     document.getElementById("stat-updated").textContent = new Date().toLocaleTimeString()
+    
+    // Update results info text
+    const resultsInfo = document.getElementById("results-info")
+    if(total > 0) {
+      const start = ((state.page - 1) * state.perPage) + 1
+      const end = Math.min(state.page * state.perPage, total)
+      resultsInfo.innerHTML = `Showing <span class="font-medium text-gray-900 dark:text-white">${start}-${end}</span> of <span class="font-medium text-gray-900 dark:text-white">${total.toLocaleString()}</span> entries`
+    } else {
+      resultsInfo.textContent = ''
+    }
+    
+    hideLoading()
     
   } catch(err) {
     console.error(err)
@@ -510,31 +689,50 @@ RENDER TABLE
 ================================ */
 function renderTable(rows){
   const tbody = document.getElementById("recipients-body")
+  const emptyState = document.getElementById("empty-state")
+  const tableContainer = document.querySelector('.overflow-x-auto')
+  
   tbody.innerHTML = ""
   
   if(!rows || rows.length === 0){
-    tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">No recipients found</td></tr>`
+    if(tableContainer) tableContainer.style.display = 'none'
+    if(emptyState) {
+      emptyState.classList.remove('hidden')
+      emptyState.classList.add('flex')
+    }
     return
+  }
+
+  if(tableContainer) tableContainer.style.display = 'block'
+  if(emptyState) {
+    emptyState.classList.add('hidden')
+    emptyState.classList.remove('flex')
   }
 
   rows.forEach(r => {
     const tr = document.createElement("tr")
-    tr.className = "hover:bg-gray-50 dark:hover:bg-gray-700/30 transition cursor-pointer"
+    tr.className = "cursor-pointer"
     
     const locDisplay = r.locations || "-"
     
     tr.innerHTML = `
-<td class="px-3 py-2">${highlight(r.email)}</td>
-<td class="px-3 py-2">${highlight(r.nickname || "-")}</td>
-<td class="px-3 py-2">
-<span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+<td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">${highlight(r.email)}</td>
+<td class="px-4 py-3 text-gray-700 dark:text-gray-300">${highlight(r.nickname || "-")}</td>
+<td class="px-4 py-3">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
 ${escapeHtml(r.group_name || "-")}
 </span>
 </td>
-<td class="px-3 py-2">${escapeHtml(locDisplay)}</td>
-<td class="px-3 py-2 text-center flex gap-2 justify-center">
-<button class="text-blue-600 hover:text-blue-800 text-xs font-medium" onclick='openEditModal(${r.id}, ${JSON.stringify(r.email || "")}, ${JSON.stringify(r.nickname || "")}, ${JSON.stringify(r.group_id || "")}, ${JSON.stringify(r.locations || "")})'>Edit</button>
-<button class="text-red-600 hover:text-red-800 text-xs font-medium" onclick="deleteRecipient(${r.id})">Delete</button>
+<td class="px-4 py-3 text-gray-700 dark:text-gray-300">${escapeHtml(locDisplay)}</td>
+<td class="px-4 py-3 text-center">
+<div class="flex items-center justify-center gap-1">
+<button class="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition" title="Edit" onclick='openEditModal(${r.id}, ${JSON.stringify(r.email || "")}, ${JSON.stringify(r.nickname || "")}, ${JSON.stringify(r.group_id || "")}, ${JSON.stringify(r.locations || "")})'>
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+</button>
+<button class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition" title="Delete" onclick="deleteRecipient(${r.id})">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+</button>
+</div>
 </td>`
     tbody.appendChild(tr)
   })
@@ -544,57 +742,71 @@ ${escapeHtml(r.group_name || "-")}
 PAGINATION
 ================================ */
 function renderPagination(){
-  const container = document.getElementById("pagination-controls")
+  const container = document.getElementById("pagination-buttons")
+  const pageInfo = document.getElementById("page-info")
+  
   container.innerHTML = ""
   
-  if(state.totalPages <= 1) return
+  if(state.totalPages <= 1) {
+    pageInfo.textContent = ''
+    return
+  }
   
-  const maxVisible = 5
+  pageInfo.textContent = `Page ${state.page} of ${state.totalPages}`
+  
+  const maxVisible = 2
   const start = Math.max(1, state.page - 2)
   const end = Math.min(state.totalPages, start + maxVisible - 1)
   
-  const createBtn = (label, page, active = false) => {
-    const btn = document.createElement("button")
-    btn.textContent = label
-    btn.className = active
-      ? "px-3 py-1 bg-blue-600 text-white rounded text-sm"
-      : "px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300"
-    btn.onclick = () => {
-      state.page = page
-      loadRecipients()
+  // First & Prev
+  if(state.page > 1) {
+    container.insertAdjacentHTML('beforeend', `
+      <button onclick="changePage(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+      </button>
+      <button onclick="changePage(${state.page - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+      </button>
+    `)
+  }
+
+  // Page numbers
+  if(start > 2) {
+    container.insertAdjacentHTML('beforeend', `<span class="px-2 text-gray-400">...</span>`)
+  }
+
+  for(let i = Math.max(1, start - 1); i <= Math.min(state.totalPages, end + 1); i++){
+    if(i === state.page) {
+      container.insertAdjacentHTML('beforeend', `
+        <button class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium shadow-sm">${i}</button>
+      `)
+    } else {
+      container.insertAdjacentHTML('beforeend', `
+        <button onclick="changePage(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>
+      `)
     }
-    return btn
   }
-  
-  if(state.page > 1) container.appendChild(createBtn("Prev", state.page - 1))
-  
-  if(start > 1){
-    container.appendChild(createBtn(1, 1))
-    if(start > 2){
-      const dots = document.createElement("span")
-      dots.textContent = "..."
-      dots.className = "px-2 text-gray-500"
-      container.appendChild(dots)
-    }
+
+  if(end < state.totalPages - 1) {
+    container.insertAdjacentHTML('beforeend', `<span class="px-2 text-gray-400">...</span>`)
   }
-  
-  for(let i = start; i <= end; i++){
-    container.appendChild(createBtn(i, i, i === state.page))
+
+  // Next & Last
+  if(state.page < state.totalPages) {
+    container.insertAdjacentHTML('beforeend', `
+      <button onclick="changePage(${state.page + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+      </button>
+      <button onclick="changePage(${state.totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+      </button>
+    `)
   }
-  
-  if(end < state.totalPages){
-    if(end < state.totalPages - 1){
-      const dots = document.createElement("span")
-      dots.textContent = "..."
-      dots.className = "px-2 text-gray-500"
-      container.appendChild(dots)
-    }
-    container.appendChild(createBtn(state.totalPages, state.totalPages))
-  }
-  
-  if(state.page < state.totalPages){
-    container.appendChild(createBtn("Next", state.page + 1))
-  }
+}
+
+function changePage(page) {
+  state.page = page
+  loadRecipients()
 }
 
 /* ===============================
@@ -993,5 +1205,11 @@ document.addEventListener("DOMContentLoaded", () => {
   loadRecipients()
 })
 
+// Close modal on escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeEditModal()
+  }
+})
 </script>
 {% endblock %}
