@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 import traceback
 
 from fastapi import FastAPI, HTTPException, Request, Response, status
-from fastapi.responses import ORJSONResponse, RedirectResponse
+from fastapi.responses import ORJSONResponse, RedirectResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.docs import get_swagger_ui_html
 from sqlalchemy import inspect
@@ -363,3 +363,19 @@ async def not_found_404(request: Request, exc):
 @app.exception_handler(403)
 async def forbidden_403(request: Request, exc):
     return templates.TemplateResponse("403.html", {"request": request}, status_code=403)
+
+
+import traceback
+
+@app.exception_handler(Exception)
+async def debug_exception_handler(request: Request, exc: Exception):
+    return HTMLResponse(
+        content=f"""
+        <h1>INTERNAL SERVER ERROR - DEBUG MODE</h1>
+        <h2>Error Type: {type(exc).__name__}</h2>
+        <h2>Message: {str(exc)}</h2>
+        <hr>
+        <pre style="background: #f0f0f0; padding: 20px; overflow: auto;">{traceback.format_exc()}</pre>
+        """,
+        status_code=500
+    )
