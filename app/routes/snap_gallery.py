@@ -425,6 +425,11 @@ async def get_deleted_snapshots(
             "file_size": int(s.file_size / 1024) if s.file_size else 0,
             "resolution": s.resolution,
             "is_tampered": s.is_tampered,
+            # P2-001: Retention hold fields
+            "retention_hold": s.retention_hold,
+            "retention_hold_reason": s.retention_hold_reason,
+            "retention_hold_by": s.retention_hold_by,
+            "retention_hold_at": format_datetime_standard(s.retention_hold_at, db=db) if s.retention_hold_at else None,
         })
     
     return JSONResponse({
@@ -498,23 +503,42 @@ async def purge_snapshot(
 async def purge_old_deleted_snapshots(
     request: Request,
     days_old: int = Query(30, description="Purge snapshots soft-deleted more than N days ago"),
+    skip_retention_hold: bool = Query(True, description="Skip items with retention hold"),
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    """Admin only: Permanently delete snapshots that have been soft-deleted for specified days."""
+    """Admin only: Permanently delete snapshots that have been soft-deleted for specified days.
+    
+    P2-001: Items with retention_hold=True are skipped by default.
+    """
     from app.utils.snapshot_service import SnapshotService
     
     user_name = request.session.get("user_name", "Unknown")
+    
+    # P2-001: Check for retention hold items
+    if skip_retention_hold:
+        from app.models.snapshot import Snapshot
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days_old)
+        retention_hold_count = db.query(Snapshot).filter(
+            Snapshot.deleted_at.isnot(None),
+            Snapshot.deleted_at < cutoff,
+            Snapshot.retention_hold == True
+        ).count()
+    else:
+        retention_hold_count = 0
+    
     purged_count = SnapshotService.purge_deleted_snapshots(
         db=db,
         days_old=days_old,
-        user_name=user_name
+        user_name=user_name,
+        skip_retention_hold=skip_retention_hold
     )
     
     return JSONResponse({
         "status": "success",
-        "message": f"Purged {purged_count} snapshots",
+        "message": f"Purged {purged_count} snapshots" + (f" ({retention_hold_count} skipped due to retention hold)" if retention_hold_count > 0 else ""),
         "purged_count": purged_count,
+        "retention_hold_skipped": retention_hold_count,
         "days_threshold": days_old
     })
 
@@ -558,3 +582,167 @@ async def admin_trash_page(
 ):
     """Admin Trash Management page - view and manage soft-deleted snapshots/videos."""
     return templates.TemplateResponse("admin_trash.html", {"request": request})
+
+
+
+# P2-001: Retention Hold Management Endpoints
+
+@router.post("/snap/{snapshot_id}/retention-hold", response_class=JSONResponse)
+async def toggle_snapshot_retention_hold(
+    request: Request,
+    snapshot_id: str,
+    enable: bool = Query(..., description="Enable or disable retention hold"),
+    reason: str = Query(None, description="Reason for retention hold"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
+):
+    """Toggle retention hold on a snapshot to prevent purge."""
+    snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
+    if not snapshot:
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+    
+    user_name = request.session.get("user_name", "Unknown")
+    
+    if enable:
+        snapshot.retention_hold = True
+        snapshot.retention_hold_reason = reason or "Legal/Evidence hold"
+        snapshot.retention_hold_by = user_name
+        snapshot.retention_hold_at = datetime.now(timezone.utc)
+        action = "retention_hold_enabled"
+        message = "Retention hold applied - this snapshot cannot be purged"
+    else:
+        snapshot.retention_hold = False
+        snapshot.retention_hold_reason = None
+        snapshot.retention_hold_by = None
+        snapshot.retention_hold_at = None
+        action = "retention_hold_disabled"
+        message = "Retention hold removed - this snapshot can now be purged"
+    
+    db.commit()
+    
+    log_audit(
+        db=db,
+        user=user_name,
+        action=action,
+        target=snapshot.camera_name,
+        ip=request.client.host,
+        extra=f"Snapshot {snapshot_id} - Reason: {reason}" if enable else f"Snapshot {snapshot_id}"
+    )
+    
+    return JSONResponse({
+        "status": "success",
+        "message": message,
+        "retention_hold": snapshot.retention_hold,
+        "retention_hold_reason": snapshot.retention_hold_reason,
+        "retention_hold_by": snapshot.retention_hold_by
+    })
+
+
+
+# P2-004: Secure Snapshot Serving - Authenticated access only
+
+@router.get("/api/snapshots/file/{file_path:path}")
+async def serve_snapshot_file(
+    request: Request,
+    file_path: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(operator_access_required)
+):
+    """Serve snapshot file through authenticated API (P2-004).
+    
+    This endpoint replaces direct static file access to enforce authentication
+    and audit logging for all snapshot access.
+    """
+    import mimetypes
+    from fastapi.responses import FileResponse, StreamingResponse
+    
+    # Security: Prevent directory traversal
+    if ".." in file_path or file_path.startswith("/"):
+        raise HTTPException(status_code=403, detail="Invalid file path")
+    
+    # Build full path
+    full_path = os.path.join(SNAPSHOT_BASE_DIR, file_path)
+    
+    # Verify file exists and is within snapshots directory
+    try:
+        real_path = os.path.realpath(full_path)
+        base_dir = os.path.realpath(SNAPSHOT_BASE_DIR)
+        if not real_path.startswith(base_dir):
+            raise HTTPException(status_code=403, detail="Access denied")
+    except Exception:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    if not os.path.exists(real_path) or not os.path.isfile(real_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Log access for audit trail
+    log_audit(
+        db=db,
+        user=request.session.get("user_name", "unknown"),
+        action="view_snapshot",
+        target=file_path,
+        ip=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        request_path=str(request.url.path),
+        request_method=request.method,
+        response_status=200,
+    )
+    
+    # Determine content type
+    content_type, _ = mimetypes.guess_type(real_path)
+    if not content_type:
+        content_type = "image/jpeg"
+    
+    # Serve file
+    return FileResponse(
+        path=real_path,
+        media_type=content_type,
+        filename=os.path.basename(file_path),
+    )
+
+
+@router.get("/api/snapshots/secure/{snapshot_id}")
+async def serve_snapshot_by_id(
+    request: Request,
+    snapshot_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(operator_access_required)
+):
+    """Serve snapshot file by snapshot ID with authentication (P2-004).
+    
+    Preferred method: Uses snapshot ID instead of file path for better security.
+    """
+    from fastapi.responses import FileResponse
+    
+    # Find snapshot in database
+    snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
+    if not snapshot:
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+    
+    # Check if snapshot is soft-deleted (only admin can view deleted)
+    if snapshot.deleted_at and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Access denied to deleted snapshot")
+    
+    if not snapshot.file_path:
+        raise HTTPException(status_code=404, detail="Snapshot file path not found")
+    
+    # Build full path
+    full_path = os.path.join(SNAPSHOT_BASE_DIR, snapshot.file_path)
+    
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=404, detail="Snapshot file not found on disk")
+    
+    # Log access
+    log_audit(
+        db=db,
+        user=request.session.get("user_name", "unknown"),
+        action="view_snapshot",
+        target=f"{snapshot.camera_name}/{snapshot_id}",
+        ip=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        request_path=str(request.url.path),
+        request_method=request.method,
+        response_status=200,
+    )
+    
+    return FileResponse(path=full_path)

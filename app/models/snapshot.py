@@ -34,6 +34,12 @@ class Snapshot(Base):
     # P0-002: Soft delete support
     deleted_at = Column(DateTime(timezone=True), nullable=True, index=True)
     
+    # P2-001: Legal hold / retention hold for critical evidence
+    retention_hold = Column(Boolean, default=False, server_default="0", nullable=False)
+    retention_hold_reason = Column(String(500), nullable=True)
+    retention_hold_by = Column(String(100), nullable=True)
+    retention_hold_at = Column(DateTime(timezone=True), nullable=True)
+    
     camera = relationship("Camera", back_populates="snapshots")
     
     @property

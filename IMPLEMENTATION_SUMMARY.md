@@ -1,18 +1,20 @@
 # B-SNAP Security Audit - Implementation Summary
 
-> **Implementation Date:** 26 Maret 2026  
-> **Status:** ✅ P0 & P1 COMPLETE
+> **Implementation Date:** 27 Maret 2026  
+> **Status:** ✅ P0, P1 & P2 COMPLETE
 
 ---
 
 ## 🎯 Executive Summary
 
-Semua rekomendasi **P0 (Critical)** dan **P1 (High)** telah berhasil diimplementasikan. Sistem B-SNAP sekarang memiliki:
+Semua rekomendasi **P0 (Critical)**, **P1 (High)**, dan **P2 (Medium)** telah berhasil diimplementasikan. Sistem B-SNAP sekarang memiliki:
 
 - ✅ **Evidence Integrity:** File hash SHA-256 untuk semua snapshot dan video
 - ✅ **Soft Delete:** Data tidak terhapus permanen, dapat di-restore
 - ✅ **Password Encryption:** AES-256-GCM untuk kredensial kamera
 - ✅ **API Security:** Password tidak muncul di response API
+- ✅ **Retention Hold:** Legal hold untuk footage kritis (tidak bisa di-purge)
+- ✅ **Safety Classification:** Klasifikasi kamera untuk mining compliance
 
 ---
 
@@ -229,15 +231,113 @@ alembic downgrade -1
 
 ## 🚀 Next Steps (P2/P3)
 
-### P2 - MEDIUM (Outstanding)
-1. **Append-Only Audit Log** - Database triggers untuk mencegah UPDATE/DELETE
-2. **Safety Classification** - Field untuk klasifikasi kamera (critical/standard)
-3. **Retention Hold** - Legal hold untuk footage incident
-4. **Static File Protection** - Serve snapshots hanya via API
+### P2 - MEDIUM
+1. ✅ **Append-Only Audit Log** - Database triggers mencegah UPDATE/DELETE
+2. ✅ **Safety Classification** - Field untuk klasifikasi kamera (critical/standard)
+3. ✅ **Retention Hold** - Legal hold untuk footage incident
+4. ✅ **Static File Protection** - Serve snapshots hanya via API dengan autentikasi
 
 ### P3 - LOW (Outstanding)
 1. **Cookie Security** - Enforce secure cookies in production
 2. **Blockchain Anchoring** - Future consideration for audit log integrity
+
+---
+
+### P2-001: Append-Only Audit Log ✅
+
+**Files Modified:**
+- `app/models/audit_log.py` - Model dengan PostgreSQL triggers
+- `app/utils/audit_logger.py` - Enhanced logging dengan request details
+- `alembic/versions/a0b22741533a_add_p2_001_append_only_audit_log.py`
+
+**Database Enforcement:**
+```sql
+-- Triggers mencegah UPDATE/DELETE:
+CREATE TRIGGER audit_log_prevent_update BEFORE UPDATE ON audit_logs
+CREATE TRIGGER audit_log_prevent_delete BEFORE DELETE ON audit_logs
+```
+
+**New Columns:**
+| Column | Type | Description |
+|--------|------|-------------|
+| user_agent | VARCHAR(500) | HTTP User-Agent |
+| request_path | VARCHAR(500) | API endpoint |
+| request_method | VARCHAR(10) | HTTP method |
+| response_status | INTEGER | HTTP status code |
+
+**Functions:**
+- `log_audit()` - Basic audit logging
+- `log_api_access()` - Full API access logging
+
+---
+
+### P2-002: Safety Classification ✅
+
+**Files Modified:**
+- `app/models/camera.py` - Added `safety_classification` column
+- `app/schemas/camera.py` - Added to schema
+- `app/routes/cameras.py` - CRUD support
+- `templates/cameras.html` - Dropdown in form
+- `alembic/versions/8a53b8bab616_add_safety_classification_p2_002.py`
+
+**Values:**
+- `critical` - Incident coverage cameras
+- `standard` - Regular monitoring (default)
+- `low` - General surveillance
+
+---
+
+### P2-003: Retention Hold ✅
+
+**Files Modified:**
+- `app/models/snapshot.py` - Added retention hold columns
+- `app/models/video.py` - Added retention hold columns
+- `app/routes/snap_gallery.py` - Retention hold endpoints
+- `app/routes/videos.py` - Retention hold endpoints
+- `templates/admin_trash.html` - UI for retention hold
+- `alembic/versions/f3170d221195_add_retention_hold_p2_001.py`
+
+**Database Columns:**
+| Column | Type | Description |
+|--------|------|-------------|
+| retention_hold | BOOLEAN | Flag untuk legal hold |
+| retention_hold_reason | VARCHAR(500) | Alasan hold |
+| retention_hold_by | VARCHAR(100) | User yang apply hold |
+| retention_hold_at | TIMESTAMP | Waktu hold diterapkan |
+
+**API Endpoints:**
+- `POST /snap/{id}/retention-hold?enable=true&reason=...` - Apply/remove hold
+- `POST /videos/{id}/retention-hold?enable=true&reason=...` - Apply/remove hold
+
+**Behavior:**
+- Items dengan retention hold tidak bisa di-purge
+- Bulk purge otomatis skip retention hold items
+- Badge visual di Trash Management UI
+
+---
+
+### P2-004: Secure Snapshot Serving ✅
+
+**Files Modified:**
+- `app/main.py` - SecureStaticFiles configuration
+- `app/routes/snap_gallery.py` - Authenticated API endpoints
+- `templates/admin_trash.html` - Updated image URLs
+
+**Security Changes:**
+- Blocked: Direct access to `/static/snapshots/...` (returns 403)
+- Required: Authentication via API endpoints
+
+**API Endpoints:**
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/snapshots/file/{file_path}` | Access by file path |
+| `GET /api/snapshots/secure/{snapshot_id}` | Access by snapshot ID (recommended) |
+
+**Features:**
+- Directory traversal protection
+- Authentication required (Operator/Admin)
+- Audit logging untuk setiap akses
+- Soft-deleted snapshot protection
 
 ---
 
@@ -267,14 +367,23 @@ alembic downgrade -1
 
 ## 🎉 Summary
 
-**Status:** ✅ **P0 & P1 COMPLETE**
+**Status:** ✅ **P0, P1 & P2 COMPLETE**
 
-Semua critical dan high priority findings telah diperbaiki:
+Semua critical, high, dan medium priority findings telah diperbaiki:
 
+**P0 (Critical):**
 1. ✅ **Evidence Integrity** - File hash SHA-256
 2. ✅ **Tamper Protection** - Soft delete, tidak ada permanent deletion tanpa izin
+
+**P1 (High):**
 3. ✅ **Password Security** - AES-256 encryption
 4. ✅ **API Security** - Password tidak exposed
+
+**P2 (Medium):**
+5. ✅ **Append-Only Audit Log** - Database triggers mencegah tampering
+6. ✅ **Safety Classification** - Klasifikasi kamera untuk mining compliance
+7. ✅ **Retention Hold** - Legal hold untuk footage kritis
+8. ✅ **Secure File Access** - Snapshots hanya via API dengan autentikasi
 
 Sistem sekarang **SIAP UNTUK PRODUCTION** dengan tingkat keamanan yang sesuai untuk mining operations.
 

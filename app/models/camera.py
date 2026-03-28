@@ -32,6 +32,9 @@ class Camera(Base):
     note = Column(String, nullable=True)
     snapshot_url = Column(String(255), nullable=True)
     
+    # P2-002: Safety classification for mining operations
+    safety_classification = Column(String(20), default='standard', nullable=False, server_default='standard')
+    
     group_id = Column(Integer, ForeignKey('camera_groups.id'))
     group = relationship("CameraGroup", back_populates="cameras")
 
@@ -77,6 +80,14 @@ class Camera(Base):
     def get_password_encrypted(self):
         """Get the raw encrypted password (for API responses - admin only)."""
         return self._password
+    
+    @validates('safety_classification')
+    def validate_safety_classification(self, key, value):
+        """Validate safety classification value."""
+        valid_values = ['critical', 'standard', 'low']
+        if value not in valid_values:
+            raise ValueError(f"Invalid safety_classification. Must be one of: {', '.join(valid_values)}")
+        return value
 
 
 # Event listener to mark snapshots as orphaned before camera delete

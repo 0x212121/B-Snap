@@ -551,5 +551,47 @@ python -m memray run app/main.py
 
 ---
 
-**Version**: 1.14.0  
-**Last Updated**: 2026-03-25
+**Version**: 1.16.0  
+**Last Updated**: 2026-03-28
+
+---
+
+## 🔒 Security Features (P0/P1/P2)
+
+### Evidence Integrity (P0-001)
+- SHA-256 hash untuk semua snapshot dan video
+- Endpoint: `GET /snap/{id}/verify` untuk verifikasi integritas
+- Kolom: `snapshots.file_hash`, `videos.file_hash`
+
+### Soft Delete (P0-002)
+- Data dihapus = soft delete (flag `deleted_at`)
+- Trash Management: `/admin/trash`
+- Restore: `POST /snap/{id}/restore`, `POST /videos/{id}/restore`
+- Purge: `POST /admin/snapshots/purge`, `POST /admin/videos/purge`
+
+### Password Encryption (P1-001)
+- Algorithm: AES-256-GCM
+- Key: `ENCRYPTION_KEY` environment variable (32-byte hex)
+- Format: `ENC:<base64>`
+
+### Append-Only Audit Log (P2-001)
+- Database triggers mencegah UPDATE/DELETE pada `audit_logs`
+- Enhanced columns: `user_agent`, `request_path`, `request_method`, `response_status`
+- Functions: `log_audit()`, `log_api_access()`
+
+### Safety Classification (P2-002)
+- Klasifikasi kamera: `critical`, `standard`, `low`
+- Kolom: `cameras.safety_classification`
+- Untuk mining safety compliance
+
+### Retention Hold (P2-003)
+- Legal hold untuk footage kritis
+- Kolom: `retention_hold`, `retention_hold_reason`, `retention_hold_by`, `retention_hold_at`
+- Purge otomatis skip items dengan retention hold
+
+### Secure Snapshot Serving (P2-004)
+- Direct access ke `/static/snapshots/*` diblokir (403 Forbidden)
+- API endpoints dengan autentikasi:
+  - `GET /api/snapshots/file/{file_path}`
+  - `GET /api/snapshots/secure/{snapshot_id}` (recommended)
+- Semua akses dilog ke audit_logs

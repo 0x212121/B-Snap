@@ -12,12 +12,12 @@
 |----------|-------|-------------|-------------|------|
 | Critical (P0) | 2 | 0 | 0 | 2 |
 | High (P1) | 3 | 0 | 0 | 3 |
-| Medium (P2) | 4 | 4 | 0 | 0 |
+| Medium (P2) | 4 | 0 | 0 | 4 |
 | Low (P3) | 1 | 1 | 0 | 0 |
-| **TOTAL** | **10** | **5** | **0** | **5** |
+| **TOTAL** | **10** | **1** | **0** | **9** |
 
-**Overall Progress:** 100% P0/P1 Complete | 50% Overall  
-**Overall Status:** 🟢 **P0/P1 COMPLETE - Ready for Production**
+**Overall Progress:** 100% P0/P1/P2 Complete | 90% Overall  
+**Overall Status:** 🟢 **P0/P1/P2 COMPLETE - Production Ready**
 
 ---
 
@@ -117,66 +117,83 @@
 
 ## 🟡 P2 - MEDIUM (1-3 months)
 
-### [ ] P2-001: Implement Append-Only Audit Log
+### [x] P2-001: Implement Append-Only Audit Log
 - **Finding:** Audit logs can be modified or deleted
-- **Status:** 🔲 **OUTSTANDING**
-- **Planned Implementation:**
-  - Database triggers preventing UPDATE/DELETE on audit_logs
-  - Separate immutable audit table with WORM enforcement
-  - Optional: External SIEM integration
-- **Files to Modify:**
-  - Database triggers (PostgreSQL)
-  - `app/models/audit_log.py`
-  - Alembic migration
-- **Assigned To:** TBD
-- **Target Date:** TBD
+- **Status:** ✅ **DONE**
+- **Implemented:**
+  - PostgreSQL triggers preventing UPDATE/DELETE on audit_logs
+  - Added columns: user_agent, request_path, request_method, response_status
+  - Enhanced log_audit() function dengan request details
+  - Migration: `a0b22741533a_add_p2_001_append_only_audit_log.py`
+- **Files Modified:**
+  - `app/models/audit_log.py` - Model dengan triggers
+  - `app/utils/audit_logger.py` - Enhanced logging
+  - Alembic migration dengan PostgreSQL functions
+- **Database Enforcement:**
+  ```sql
+  -- Triggers block UPDATE/DELETE:
+  BEFORE UPDATE -> RAISE EXCEPTION
+  BEFORE DELETE -> RAISE EXCEPTION
+  ```
+- **Completed Date:** 2026-03-28
 
-### [ ] P2-002: Add Safety Classification to Cameras
+### [x] P2-002: Add Safety Classification to Cameras
 - **Finding:** No distinction between safety-critical and general cameras
-- **Status:** 🔲 **OUTSTANDING**
-- **Planned Implementation:**
-  - Add `safety_classification` column (critical/standard/monitoring)
-  - UI updates for classification selection
-  - Filter views by safety classification
-  - Priority alerts for critical camera downtime
-- **Files to Modify:**
-  - `app/models/camera.py`
-  - `app/routes/cameras.py`
-  - Templates: `cameras.html`, forms
-  - Alembic migration
-- **Assigned To:** TBD
-- **Target Date:** TBD
+- **Status:** ✅ **DONE**
+- **Implemented:**
+  - Added `safety_classification` column (critical/standard/low)
+  - UI dropdown in camera form (Location & Asset tab)
+  - Validator untuk memastikan hanya nilai valid
+  - Migration: `8a53b8bab616_add_safety_classification_p2_002.py`
+- **Files Modified:**
+  - `app/models/camera.py` - Added column dengan validator
+  - `app/schemas/camera.py` - Added to schema
+  - `app/routes/cameras.py` - CRUD support
+  - `templates/cameras.html` - Dropdown di form
+- **Completed Date:** 2026-03-27
 
-### [ ] P2-003: Implement Retention Hold for Incident Footage
+### [x] P2-003: Implement Retention Hold for Incident Footage
 - **Finding:** No legal hold capability for incident-related footage
-- **Status:** 🔲 **OUTSTANDING**
-- **Planned Implementation:**
-  - Add `retention_hold` flag to snapshots/videos
-  - Add `hold_reason` and `hold_expires_at` columns
-  - Prevent deletion of held footage
-  - UI for applying/removing holds
-- **Files to Modify:**
-  - `app/models/snapshot.py`, `video.py`
-  - `app/routes/snap_gallery.py`, `videos.py`
-  - Templates
-  - Alembic migration
-- **Assigned To:** TBD
-- **Target Date:** TBD
+- **Status:** ✅ **DONE**
+- **Implemented:**
+  - Added `retention_hold` flag to snapshots/videos
+  - Added `retention_hold_reason`, `retention_hold_by`, `retention_hold_at` columns
+  - Purge otomatis skip items dengan retention hold
+  - UI di Trash Management untuk apply/remove hold dengan badge visual
+  - Migration: `f3170d221195_add_retention_hold_p2_001.py`
+- **Files Modified:**
+  - `app/models/snapshot.py`, `video.py` - Retention hold columns
+  - `app/routes/snap_gallery.py`, `videos.py` - Endpoints & purge logic
+  - `templates/admin_trash.html` - UI untuk retention hold
+- **API Endpoints:**
+  - `POST /snap/{id}/retention-hold?enable=true&reason=...`
+  - `POST /videos/{id}/retention-hold?enable=true&reason=...`
+- **Completed Date:** 2026-03-27
 
-### [ ] P2-004: Move Snapshots Outside Web Root
+### [x] P2-004: Move Snapshots Outside Web Root
 - **Finding:** Direct static file access bypasses audit logging
-- **Status:** 🔲 **OUTSTANDING**
-- **Planned Implementation:**
-  - Serve all snapshots through authenticated API only
-  - Remove `/static/snapshots` from StaticFiles mount
-  - Implement streaming response for images
-  - Update all image URLs in templates
-- **Files to Modify:**
-  - `app/main.py` (StaticFiles configuration)
-  - `app/routes/snapshots.py` (new streaming endpoint)
-  - All templates using snapshot URLs
-- **Assigned To:** TBD
-- **Target Date:** TBD
+- **Status:** ✅ **DONE**
+- **Implemented:**
+  - Created SecureStaticFiles class yang memblokir akses ke /static/snapshots
+  - New authenticated API endpoints:
+    - `GET /api/snapshots/file/{file_path}` - Serve by path
+    - `GET /api/snapshots/secure/{snapshot_id}` - Serve by ID (preferred)
+  - All access logged ke audit_logs dengan request details
+  - Updated templates untuk menggunakan API endpoints
+- **Files Modified:**
+  - `app/main.py` - SecureStaticFiles configuration
+  - `app/routes/snap_gallery.py` - New API endpoints
+  - `templates/admin_trash.html` - Updated image URLs
+- **API Endpoints:**
+  ```
+  GET /api/snapshots/file/{file_path}    # Authenticated file access
+  GET /api/snapshots/secure/{snapshot_id} # Authenticated by ID
+  ```
+- **Security:**
+  - Blocks: GET /static/snapshots/... -> 403 Forbidden
+  - Requires: Operator/Admin authentication
+  - Logs: All access dengan user, IP, timestamp
+- **Completed Date:** 2026-03-28
 
 ---
 
@@ -227,11 +244,11 @@
 - [x] Admin-only endpoint available for password retrieval when needed
 - [x] Encryption key stored securely in environment variable
 
-### P2 Acceptance Criteria (Pending)
-- [ ] Audit logs table has triggers preventing UPDATE/DELETE
-- [ ] Cameras have safety_classification field
-- [ ] Snapshots/videos have retention_hold fields
-- [ ] Snapshots served only through authenticated API
+### P2 Acceptance Criteria
+- [x] P2-001: Audit logs table has triggers preventing UPDATE/DELETE
+- [x] P2-002: Cameras have safety_classification field
+- [x] P2-003: Snapshots/videos have retention_hold fields
+- [x] P2-004: Snapshots served only through authenticated API
 
 ---
 
@@ -245,6 +262,8 @@
 | 2026-03-26 | P1-002 | Done | Password removed from API response |
 | 2026-03-26 | P1-003 | Done | NVR password encryption & API security |
 | 2026-03-26 | CHANGELOG | Done | Security updates documented in CHANGELOG.md |
+| 2026-03-27 | P2-002 | Done | Safety classification for cameras |
+| 2026-03-27 | P2-003 | Done | Retention hold for incident footage |
 
 ---
 
@@ -262,5 +281,5 @@ Before marking as complete, verify:
 ---
 
 **Document Owner:** Security Team  
-**Last Updated:** 2026-03-26  
-**Next Review:** Upon P2 completion
+**Last Updated:** 2026-03-28  
+**Next Review:** Quarterly or upon P3 completion

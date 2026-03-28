@@ -217,7 +217,31 @@ async def error_wrapper_middleware(request: Request, call_next):
 # ====================================================================
 # 6. ROUTERS & STATIC FILES
 # ====================================================================
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# P2-004: Custom StaticFiles that blocks direct snapshot access
+class SecureStaticFiles(StaticFiles):
+    """StaticFiles that blocks access to /static/snapshots (P2-004).
+    
+    Snapshots must be accessed via authenticated API endpoints:
+    - GET /api/snapshots/secure/{snapshot_id}
+    - GET /api/snapshots/file/{file_path}
+    """
+    
+    async def get_response(self, path: str, scope):
+        # Block direct access to snapshots
+        if path.startswith("snapshots/"):
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "status": "error",
+                    "detail": "Direct snapshot access blocked (P2-004). Use authenticated API endpoints.",
+                    "code": "SNAPSHOT_ACCESS_BLOCKED"
+                }
+            )
+        return await super().get_response(path, scope)
+
+app.mount("/static", SecureStaticFiles(directory="static"), name="static")
 app.mount("/documentation", StaticFiles(directory="docs/build/html"), name="docs")
 
 # Registrasi routers

@@ -185,6 +185,7 @@ async def add_camera_submit(
     is_flipped: Optional[str] = Form(None),
     note: Optional[str] = Form(None),
     snapshot_url: Optional[str] = Form(None),
+    safety_classification: Optional[str] = Form('standard'),  # P2-002
 ):
     """Handles the form submission to add a new camera."""
     logger.info("Attempting to add new camera with hostname: %s", name)
@@ -213,7 +214,8 @@ async def add_camera_submit(
         new_cam = DBCamera(
             hostname=name, ip=ip, port=port_val, username=username, password=password,
             latitude=lat, longitude=lon, asset_no=asset_no, location=location,
-            group_id=group_id, status=status, is_flipped=is_flipped, note=note, snapshot_url=snapshot_url
+            group_id=group_id, status=status, is_flipped=is_flipped, note=note, snapshot_url=snapshot_url,
+            safety_classification=safety_classification
         )
         db.add(new_cam)
         db.commit()
@@ -278,6 +280,7 @@ async def edit_camera_submit(
     status: str = Form(...),
     note: Optional[str] = Form(None),
     snapshot_url: Optional[str] = Form(None),
+    safety_classification: Optional[str] = Form(None),  # P2-002
 ):
     """Handles the form submission to edit an existing camera."""
     logger.info("Attempting to edit camera with ID: %s", camera_id)
@@ -317,6 +320,8 @@ async def edit_camera_submit(
         cam.is_flipped = (is_flipped is not None)
         cam.note = note
         cam.snapshot_url = snapshot_url
+        if safety_classification:
+            cam.safety_classification = safety_classification
 
         if password:
             cam.password = password

@@ -10,3 +10,4 @@ class CameraUpdatePayload(BaseModel):
     port: Optional[int] = None
     status: Optional[str] = None
     group_name: Optional[str] = None
+    safety_classification: Optional[str] = 'standard'  # P2-002: critical, standard, low
