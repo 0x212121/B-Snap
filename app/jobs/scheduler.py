@@ -932,7 +932,13 @@ def process_email_retry_queue():
         attempt_num = task.attempts + 1
         try:
             if task.type == "tamper":
-                ok = bool(send_tamper_alert(db, cam, task.reason, task.file_path))
+                # BUG FIX: Use task.created_at as incident_time for retry
+                # This preserves the original detection time from first attempt
+                from datetime import timezone
+                incident_time = task.created_at
+                if incident_time.tzinfo is None:
+                    incident_time = incident_time.replace(tzinfo=timezone.utc)
+                ok = bool(send_tamper_alert(db, cam, task.reason, task.file_path, incident_time=incident_time))
             elif task.type == "recovery":
                 ok = bool(send_recovery_alert(db, cam))
             elif task.type == "offline":

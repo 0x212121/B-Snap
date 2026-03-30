@@ -26,7 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `should_send_tamper_alert()` - Deduplication logic for tamper alerts
   - Migration: `20260330_add_notification_circuit_breaker.py`
 
-#### Tamper Alert Cooldown (Anti-Flooding Fix)
+#### Tamper Alert Cooldown & Incident Time Fix
+- **Bug Fix: Incident Time Accuracy** - Fixed timestamp in email to show ACTUAL detection time
+  - Changed from `datetime.now()` (email send time) to `snapshot.timestamp` (actual detection time)
+  - Updated `send_tamper_alert(db, camera, reason, path, incident_time=snapshot.timestamp)`
+  - Email body now shows accurate incident time: "Waktu Kejadian: 30/03/2026 09:52:08 UTC"
+  - Database `incident_started_at` now stores actual detection time, not email send time
+  - Cooldown calculation uses incident_time for consistency
+
 - **Immediate Cooldown Protection** - Prevents per-second flooding of tamper alerts
   - New columns in camera_health table:
     - `alert_cooldown_until` - Timestamp when next alert can be sent

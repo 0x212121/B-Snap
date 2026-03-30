@@ -1,4 +1,4 @@
-"""add_notification_circuit_breaker
+"""circuit_breaker
 
 Revision ID: 20260330_circuit_breaker
 Revises: 20260328_dual_table

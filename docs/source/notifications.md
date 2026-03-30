@@ -9,6 +9,68 @@ The notification system sends alerts for:
 - **Tamper alerts** - Camera tampering detected (blur, etc.)
 - **Recovery alerts** - Camera comes back online
 
+## Incident Time Accuracy (Bug Fix)
+
+### The Problem
+
+Previously, tamper alert emails showed incorrect incident times:
+
+**Before (Bug):**
+- Snapshot taken at: **09:52:08** (detected blur)
+- Email queued/retry delays: 09:52:10, 09:52:15, 09:52:20
+- Email finally sent at: **09:52:25**
+- **Email showed: "Waktu Kejadian: 09:52:25 UTC"** ← Wrong!
+
+This caused:
+- Misleading timestamps in email notifications
+- Incorrect incident records in database
+- Multiple emails showing different times for same incident
+
+### The Solution
+
+**After (Fixed):**
+- Snapshot taken at: **09:52:08** (detected blur)
+- Email sent at: **09:52:25**
+- **Email shows: "Waktu Kejadian: 09:52:08 UTC"** ← Correct!
+
+### Implementation
+
+```python
+# OLD (Bug): Using current time
+def send_tamper_alert(db, camera, reason, path):
+    incident_time = datetime.now(timezone.utc)  # ← Wrong: email send time
+    ...
+
+# NEW (Fixed): Using actual snapshot timestamp
+def send_tamper_alert(db, camera, reason, path, incident_time=None):
+    if incident_time is None:
+        incident_time = datetime.now(timezone.utc)  # Fallback
+    ...
+    # Email body uses incident_time instead of current time
+    plain_body = f"Waktu Kejadian: {incident_time.strftime('%d/%m/%Y %H:%M:%S')} UTC"
+```
+
+### Key Changes
+
+1. **New Parameter**: `incident_time` added to `send_tamper_alert()`
+2. **Snapshot Timestamp**: `snapshot.timestamp` passed as incident_time
+3. **Database Record**: `incident_started_at` stores actual detection time
+4. **Cooldown Calculation**: Based on incident_time, not email send time
+
+### Email Example
+
+**Before (Bug):**
+```
+CCTV Handak_AV_PTZ2 mengalami anomali/tampering dengan indikasi: blur
+Waktu Kejadian: 30/03/2026 09:52:25 UTC  ← Email send time (wrong)
+```
+
+**After (Fixed):**
+```
+CCTV Handak_AV_PTZ2 mengalami anomali/tampering dengan indikasi: blur
+Waktu Kejadian: 30/03/2026 09:52:08 UTC  ← Actual detection time (correct)
+```
+
 ## Circuit Breaker Pattern
 
 To prevent email flooding when cameras have persistent issues, B-Snap implements a **circuit breaker pattern** with the following behavior:
@@ -386,9 +448,58 @@ SELECT hostname, notification_fail_count
 FROM cameras
 WHERE notification_fail_count > 0
 ORDER BY notification_fail_count DESC;
+
+-- Verify incident time accuracy (should match snapshot timestamp)
+SELECT 
+    l.camera_name,
+    l.reason,
+    l.incident_started_at,
+    s.timestamp as snapshot_timestamp,
+    EXTRACT(EPOCH FROM (l.incident_started_at - s.timestamp)) as diff_seconds
+FROM camera_email_notification_logs l
+JOIN snapshots s ON l.camera_id = s.camera_id 
+    AND s.timestamp BETWEEN l.incident_started_at - INTERVAL '1 minute' 
+                        AND l.incident_started_at + INTERVAL '1 minute'
+WHERE l.reason LIKE 'tamper%'
+ORDER BY l.incident_started_at DESC
+LIMIT 10;
 ```
 
 ## Troubleshooting
+
+### Incorrect Incident Time in Emails
+
+If emails show wrong incident times (email send time instead of detection time):
+
+**Check Function Signature:**
+```python
+from app.utils.email_notifier import send_tamper_alert
+import inspect
+print(inspect.signature(send_tamper_alert))
+# Should show: (db, camera, reason, snapshot_path, incident_time=None)
+```
+
+**Verify Snapshot Timestamp:**
+```sql
+-- Check if snapshot timestamp matches email incident time
+SELECT 
+    cam.hostname,
+    snap.timestamp as actual_detection_time,
+    log.incident_started_at as email_incident_time,
+    CASE 
+        WHEN snap.timestamp = log.incident_started_at THEN 'CORRECT'
+        ELSE 'MISMATCH'
+    END as status
+FROM snapshots snap
+JOIN camera_email_notification_logs log ON snap.camera_id = log.camera_id
+JOIN cameras cam ON snap.camera_id = cam.id
+WHERE snap.is_tampered = true
+  AND log.reason LIKE 'tamper%'
+ORDER BY snap.timestamp DESC
+LIMIT 5;
+```
+
+**Fix:** Update to latest version which includes `incident_time` parameter.
 
 ### No Emails Being Sent
 

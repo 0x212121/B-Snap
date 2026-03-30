@@ -177,8 +177,24 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
 
     health.tamper_status = new_status
 
+    # DEBUG: Log status transition for troubleshooting
+    logger.info(
+        "[TAMPER_DEBUG] %s: prev=%s, new=%s, consecutive_tamper=%d, is_tampered=%s",
+        camera.hostname,
+        prev_status,
+        new_status,
+        health.consecutive_tamper,
+        is_tampered
+    )
+
     # === Transisi: normal → tampered ===
     if prev_status != "tampered" and new_status == "tampered":
+        logger.info(
+            "[TAMPER_TRANSITION] %s: normal→tampered (consecutive=%d, threshold=%d)",
+            camera.hostname,
+            health.consecutive_tamper,
+            TAMPER_CONFIRM_THRESHOLD
+        )
         # Check cooldown to prevent flooding
         if is_alert_in_cooldown(health, snapshot.tamper_reason):
             logger.info(
@@ -188,14 +204,32 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
             )
         else:
             try:
-                send_tamper_alert(db, camera, snapshot.tamper_reason, abs_file_path)
-                # Set cooldown after successful send
-                set_alert_cooldown(health, snapshot.tamper_reason)
-                logger.warning("[ALERT] %s marked tampered (%s)", camera.hostname, snapshot.tamper_reason)
+                # BUG FIX: Pass snapshot.timestamp as incident_time (not current time)
+                # This ensures email shows the ACTUAL time when tamper was detected
+                logger.info(
+                    "[ALERT_SEND] Calling send_tamper_alert for %s (%s)",
+                    camera.hostname,
+                    snapshot.tamper_reason
+                )
+                send_tamper_alert(
+                    db, 
+                    camera, 
+                    snapshot.tamper_reason, 
+                    abs_file_path,
+                    incident_time=snapshot.timestamp  # Actual detection time from snapshot
+                )
+                # Note: Cooldown is now set INSIDE send_tamper_alert after dedup check
+                # We don't need to set it again here
+                logger.warning(
+                    "[ALERT] %s marked tampered (%s) at %s",
+                    camera.hostname,
+                    snapshot.tamper_reason,
+                    snapshot.timestamp.isoformat()
+                )
             except Exception as e:
                 # Even on failure, set short cooldown to prevent immediate retry flooding
                 set_alert_cooldown(health, snapshot.tamper_reason)
-                logger.exception("[ALERT FAIL] Tamper email failed for %s: %s", camera.hostname, e)
+                logger.exception("[ALERT_FAIL] Tamper email failed for %s: %s", camera.hostname, e)
                 
                 # Pastikan tidak duplikat di queue
                 existing_retry = db.query(EmailRetryQueue).filter(

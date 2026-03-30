@@ -1,4 +1,4 @@
-"""dual_table_audit_logs
+"""dual_table
 
 Revision ID: 20260328_dual_table
 Revises: a0b22741533a

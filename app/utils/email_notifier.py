@@ -408,26 +408,33 @@ def send_offline_incident_email_once(
 
 
 
-def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str):
-    logger.info("[EMAIL_DEBUG] send_tamper_alert triggered for %s (%s)", camera.hostname, reason)
+def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str, incident_time: datetime = None):
+    """
+    Send tamper alert email.
     
-    # === IMMEDIATE COOLDOWN: Set cooldown FIRST before any processing ===
-    # This prevents flooding even if send fails or function is called repeatedly
-    from app.models.health import CameraHealth
-    health = db.query(CameraHealth).filter_by(camera_id=camera.id).first()
-    if health:
-        now = datetime.now(timezone.utc)
-        # Set cooldown immediately
-        health.alert_cooldown_until = now + timedelta(minutes=TAMPER_DEDUPLICATION_MINUTES)
-        health.last_email_sent = now
-        health.last_alert_reason = reason
-        db.commit()
-        logger.info(
-            "[COOLDOWN SET] %s cooldown set for %s until %s",
-            reason,
-            camera.hostname,
-            health.alert_cooldown_until.isoformat()
+    Args:
+        db: Database session
+        camera: Camera object
+        reason: Tamper reason (blur, dark, etc.)
+        snapshot_path: Path to snapshot image
+        incident_time: ACTUAL time when tamper was detected (from snapshot timestamp)
+                      If None, defaults to current time (but this is less accurate)
+    """
+    # Use provided incident_time or fall back to now (should always be provided)
+    if incident_time is None:
+        incident_time = datetime.now(timezone.utc)
+        logger.warning(
+            "[EMAIL_DEBUG] incident_time not provided for %s, using current time. "
+            "This may cause inaccurate incident timestamps.",
+            camera.hostname
         )
+    
+    logger.info(
+        "[EMAIL_DEBUG] send_tamper_alert triggered for %s (%s) at %s",
+        camera.hostname,
+        reason,
+        incident_time.isoformat()
+    )
     
     # === CIRCUIT BREAKER: Check SMTP configuration first ===
     if not is_smtp_configured():
@@ -436,12 +443,31 @@ def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str):
             "Configure SMTP in /config page to enable notifications.",
             camera.hostname
         )
-        # Cooldown already set above, so we won't retry immediately
         return False
     
     # === CIRCUIT BREAKER: Check deduplication and suppression ===
+    # MUST check this BEFORE setting cooldown, otherwise we'll always skip
     if not should_send_tamper_alert(db, camera, reason):
         return False
+    
+    # === IMMEDIATE COOLDOWN: Set cooldown AFTER dedup check ===
+    # This prevents flooding even if send fails or function is called repeatedly
+    from app.models.health import CameraHealth
+    health = db.query(CameraHealth).filter_by(camera_id=camera.id).first()
+    if health:
+        # Set cooldown based on incident_time, not current time
+        # This ensures cooldown is consistent with the actual incident
+        cooldown_until = incident_time + timedelta(minutes=TAMPER_DEDUPLICATION_MINUTES)
+        health.alert_cooldown_until = cooldown_until
+        health.last_email_sent = incident_time
+        health.last_alert_reason = reason
+        db.commit()
+        logger.info(
+            "[COOLDOWN SET] %s cooldown set for %s until %s (based on incident time)",
+            reason,
+            camera.hostname,
+            health.alert_cooldown_until.isoformat()
+        )
     
     camera_group = camera.group.name if camera.group else "No Division"
     recipients = get_recipients_for_camera(db, camera)
@@ -449,9 +475,13 @@ def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str):
         logger.warning("No recipients found for %s", camera.hostname)
         return False
 
+    # Format incident time for display
+    incident_time_str = incident_time.strftime('%d/%m/%Y %H:%M:%S')
+    
     subject = f"⚠️ [{camera_group}] CCTV Alert – {camera.hostname} {reason.upper()}"
 
     # === Plain text body ===
+    # BUG FIX: Use incident_time (from snapshot) instead of datetime.now()
     plain_body = f"""
 Yth. User,
 
@@ -459,7 +489,7 @@ Sistem mendeteksi bahwa CCTV {camera.hostname} (IP: {camera.ip}) mengalami anoma
 - No. Asset: {camera.asset_no or '-'}
 - Lokasi: {camera.location or '-'}
 - Koordinat: https://www.google.com/maps?q={camera.latitude},{camera.longitude}
-- Waktu Kejadian: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S')} UTC 
+- Waktu Kejadian: {incident_time_str} UTC
 
 👉 Mohon segera buat tiket SIHEPI dengan mencantumkan cost code agar dapat diproses oleh tim teknis/mitra terkait.
 
@@ -473,6 +503,7 @@ PT Kaltim Prima Coal
 """.strip()
 
     # === HTML body ===
+    # BUG FIX: Use incident_time (from snapshot) instead of datetime.now()
     html_body = f"""
 <html>
   <body style="font-family: Arial, sans-serif; color: #111; background-color: #ffffff; padding: 12px;">
@@ -487,7 +518,7 @@ PT Kaltim Prima Coal
       <li><b>No. Asset:</b> {camera.asset_no or '-'}</li>
       <li><b>Lokasi:</b> {camera.location or '-'}</li>
       <li><b>Koordinat:</b> <a href="https://www.google.com/maps?q={camera.latitude},{camera.longitude}" target="_blank">Lihat di Google Maps</a></li>
-      <li><b>Waktu Kejadian:</b> {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S')} UTC</li>
+      <li><b>Waktu Kejadian:</b> {incident_time_str} UTC</li>
     </ul>
 
     <p>
@@ -507,23 +538,9 @@ PT Kaltim Prima Coal
   </body>
 </html>
 """.strip()
-
-    # Set cooldown in CameraHealth FIRST (before attempting send)
-    # This ensures even if send fails, we won't flood with retries
-    from app.models.health import CameraHealth
-    health = db.query(CameraHealth).filter_by(camera_id=camera.id).first()
-    if health:
-        now = datetime.now(timezone.utc)
-        health.alert_cooldown_until = now + timedelta(minutes=TAMPER_DEDUPLICATION_MINUTES)
-        health.last_email_sent = now
-        health.last_alert_reason = reason
-        db.commit()
-        logger.info(
-            "[COOLDOWN] Set %s cooldown for %s until %s",
-            reason,
-            camera.hostname,
-            health.alert_cooldown_until.isoformat()
-        )
+    
+    # Note: Cooldown was already set at the beginning of this function
+    # using incident_time (snapshot timestamp), not current time
     
     try:
         _send_email_with_image(
@@ -536,12 +553,13 @@ PT Kaltim Prima Coal
             image_path=snapshot_path,
         )
         
-        # Create success log
+        # Create success log with ACTUAL incident time (from snapshot)
+        # BUG FIX: Use incident_time instead of datetime.now()
         log = CameraEmailNotificationLog(
             camera_id=camera.id,
             camera_name=camera.hostname,
-            incident_started_at=datetime.now(timezone.utc),
-            sent_at=datetime.now(timezone.utc),
+            incident_started_at=incident_time,  # Actual detection time
+            sent_at=datetime.now(timezone.utc),  # Current time (when email sent)
             success=True,
             error_message=None,
             reason=reason,
@@ -564,12 +582,13 @@ PT Kaltim Prima Coal
         error_msg = str(e)
         logger.exception("Failed to send tamper alert for %s: %s", camera.hostname, e)
         
-        # Create failure log
+        # Create failure log with ACTUAL incident time (from snapshot)
+        # BUG FIX: Use incident_time instead of datetime.now()
         log = CameraEmailNotificationLog(
             camera_id=camera.id,
             camera_name=camera.hostname,
-            incident_started_at=datetime.now(timezone.utc),
-            sent_at=datetime.now(timezone.utc),
+            incident_started_at=incident_time,  # Actual detection time
+            sent_at=datetime.now(timezone.utc),  # Current time (when attempt made)
             success=False,
             error_message=error_msg,
             reason=reason,

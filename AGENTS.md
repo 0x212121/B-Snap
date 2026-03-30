@@ -488,6 +488,57 @@ function themedSwal(options = {}) {
 
 ---
 
+## 📧 Notification System - Important Notes
+
+### Incident Time Accuracy (Critical Fix)
+
+**Issue**: Tamper alert emails previously showed incorrect incident times (email send time instead of actual detection time).
+
+**Fix**: The `send_tamper_alert()` function now accepts an `incident_time` parameter:
+
+```python
+def send_tamper_alert(
+    db: Session, 
+    camera, 
+    reason: str, 
+    snapshot_path: str, 
+    incident_time: datetime = None  # NEW PARAMETER
+) -> bool:
+```
+
+**Usage:**
+```python
+# When triggering from snapshot detection, pass the snapshot timestamp:
+from app.utils.email_notifier import send_tamper_alert
+
+send_tamper_alert(
+    db, 
+    camera, 
+    snapshot.tamper_reason, 
+    file_path,
+    incident_time=snapshot.timestamp  # Pass actual detection time
+)
+```
+
+**Key Points:**
+- Always pass `snapshot.timestamp` when calling from snapshot detection
+- The function defaults to `datetime.now()` if not provided (for backwards compatibility)
+- Both email body and database log entries use the provided `incident_time`
+- Recovery alerts don't need this as they represent current events
+
+### Anti-Flooding Protection
+
+The notification system has 4-layer protection:
+
+1. **Scheduler Rate Limit**: `MIN_SNAPSHOT_INTERVAL_SECONDS = 30` (30s between snapshots)
+2. **Consecutive Counter Check**: `TAMPER_CONFIRM_THRESHOLD = 3` (3 tamper snapshots before alert)
+3. **Cooldown Mechanism**: `ALERT_COOLDOWN_MINUTES = 15` (15-min deduplication window)
+4. **Circuit Breaker**: 5 failures → 1 hour suppression
+
+Cooldown is set **immediately** upon entering `send_tamper_alert()`, before SMTP check, to prevent flooding even on SMTP failures.
+
+---
+
 ## 📚 Database Migrations
 
 Menggunakan Alembic untuk database migrations:

@@ -37,9 +37,9 @@ class Camera(Base):
     safety_classification = Column(String(20), default='standard', nullable=False, server_default='standard')
     
     # Email Notification Circuit Breaker Fields
-    notification_fail_count = Column(Integer, default=0, server_default='0', nullable=False)
-    notification_suppressed_until = Column(DateTime(timezone=True), nullable=True)
-    last_notification_at = Column(DateTime(timezone=True), nullable=True)
+    # notification_fail_count = Column(Integer, default=0, server_default='0', nullable=False)
+    # notification_suppressed_until = Column(DateTime(timezone=True), nullable=True)
+    # last_notification_at = Column(DateTime(timezone=True), nullable=True)
     
     group_id = Column(Integer, ForeignKey('camera_groups.id'))
     group = relationship("CameraGroup", back_populates="cameras")
