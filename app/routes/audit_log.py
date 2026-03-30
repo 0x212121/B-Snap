@@ -13,7 +13,7 @@ from app.models.audit_log import AuditLog, AuditLogLegacy, AuditArchiveHistory
 from app.routes.auth import admin_access_required
 from app.models.user import User
 from app.utils.template_helper import templates
-from app.utils.timezone_helper import format_datetime_standard
+from app.utils.timezone_helper import format_datetime_standard, get_timezone_abbreviation
 from app.jobs.audit_archive import AuditArchiveService, get_archive_stats
 
 router = APIRouter(prefix="/audit-logs", tags=["Audit Logs"])
@@ -28,9 +28,14 @@ async def audit_logs_page(
     per_page: int = 50,
 ):
     """Render audit logs page."""
+    tz_abbr = get_timezone_abbreviation(db)
+    
     return templates.TemplateResponse(
         "audit_logs.html",
-        {"request": request},
+        {
+            "request": request,
+            "timezone": tz_abbr,  # Use abbreviation like WITA, WIB, WIT
+        },
     )
 
 

@@ -168,17 +168,15 @@ class TemplatesWithExtras(Jinja2Templates):
                         "items": filtered_items,
                     })
             
-            # Update context
-            context.update({
-                "nav_items": filtered_nav,
-                "user_role": user_role,
-                "user_name": user_name,
-                "current_path": current_path,
-                "timezone": timezone,
-                "debug_mode": debug_mode,
-                "version": __version__,
-                "request": request,
-            })
+            # Update context - but don't overwrite values already set by routes
+            context.setdefault("nav_items", filtered_nav)
+            context.setdefault("user_role", user_role)
+            context.setdefault("user_name", user_name)
+            context.setdefault("current_path", current_path)
+            context.setdefault("timezone", timezone)  # Only set if not already provided by route
+            context.setdefault("debug_mode", debug_mode)
+            context.setdefault("version", __version__)
+            context.setdefault("request", request)
             
         except Exception as e:
             logger.error(f"Error in TemplateResponse: {e}")

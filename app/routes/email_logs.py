@@ -10,7 +10,7 @@ from math import ceil
 import pytz
 
 from app.db.database import get_db
-from app.utils.timezone_helper import get_current_timezone, format_datetime_standard
+from app.utils.timezone_helper import get_current_timezone, get_timezone_abbreviation, format_datetime_standard
 from app.models.camera_email_notification_log import CameraEmailNotificationLog
 from app.utils.template_helper import templates
 from app.routes.auth import admin_access_required
@@ -26,13 +26,13 @@ def view_email_logs(
     current_admin: User = Depends(admin_access_required),
 ):
     """Render email logs page with modern UI."""
-    tz_name = get_current_timezone(db)
+    tz_abbr = get_timezone_abbreviation(db)
     
     return templates.TemplateResponse(
         "email_logs.html",
         {
             "request": request,
-            "timezone": tz_name,
+            "timezone": tz_abbr,  # Use abbreviation like WITA, WIB, WIT
         },
     )
 

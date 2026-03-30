@@ -8,7 +8,7 @@ from app.db.database import get_db
 from app.models.audit_log import AuditLog
 from app.models.user import User
 from app.routes.auth import admin_access_required
-from app.utils.timezone_helper import get_current_timezone, to_current_timezone, format_datetime_standard
+from app.utils.timezone_helper import get_current_timezone, get_timezone_abbreviation, to_current_timezone, format_datetime_standard
 import io
 import csv
 from app.utils.template_helper import templates
@@ -54,11 +54,11 @@ async def audit_logs_page(
     current_admin: User = Depends(admin_access_required)
 ):
     """Render audit logs page with enhanced UI."""
-    tz_name = get_current_timezone(db)
+    tz_abbr = get_timezone_abbreviation(db)
 
     return templates.TemplateResponse("audit_logs.html", {
         "request": request,
-        "timezone": tz_name,
+        "timezone": tz_abbr,  # Use abbreviation like WITA, WIB, WIT
     })
 
 

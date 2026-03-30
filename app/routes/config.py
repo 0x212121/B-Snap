@@ -15,6 +15,7 @@ from app.core.logging_config import set_debug_mode
 from app.utils.audit_logger import log_audit
 from app.utils.auth import verify_password
 from app.utils.notification_service import NotificationService
+from app.utils.timezone_helper import clear_timezone_cache
 from io import BytesIO
 
 router = APIRouter(tags=["Config"])
@@ -236,6 +237,9 @@ async def config_save(
 
     db.commit()
 
+    # Clear timezone cache so new timezone takes effect immediately
+    clear_timezone_cache()
+    
     set_debug_mode(debug_mode)
     
     # Note: Toast notification is handled by frontend

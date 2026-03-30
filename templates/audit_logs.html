@@ -564,7 +564,9 @@
   
   function showDetailModal(logEntry) {
     const content = document.getElementById('detailContent');
-    const timestamp = dayjs(logEntry.timestamp).tz('{{ timezone }}').format('YYYY-MM-DD HH:mm:ss');
+    // Backend already returns formatted string like "30/03/2026 - 15:38:33 WITA"
+    // Just display it directly without parsing
+    const timestamp = logEntry.timestamp || 'N/A';
     
     let extraSection = '';
     if (logEntry.extra) {

@@ -39,11 +39,14 @@ masked_url = mask_db_url(DATABASE_URL)
 logger.info("Database URL: %s", masked_url)
 
 # === Create SQLAlchemy Engine ===
+# Set connect_args to ensure UTC timezone for all connections
+# This ensures timestamps are consistently handled in UTC
 engine = create_engine(
     DATABASE_URL, pool_size=20,
     max_overflow=10,
     pool_timeout=30,
     pool_recycle=1800,
+    connect_args={"options": "-c timezone=utc"},
     # echo=True # Enable SQL query logging for debugging
 )
 

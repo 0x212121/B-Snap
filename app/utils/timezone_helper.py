@@ -10,6 +10,12 @@ _tz_cache = TTLCache(maxsize=1, ttl=300)  # simpan 1 value, TTL = 300 detik (5 m
 _tz_lock = threading.Lock()
 
 
+def clear_timezone_cache():
+    """Clear the timezone cache. Call this when timezone config is updated."""
+    with _tz_lock:
+        _tz_cache.clear()
+
+
 def utc_now() -> datetime:
     """
     Return current UTC datetime with timezone info.
@@ -41,6 +47,19 @@ def get_current_timezone(db: Session) -> str:
         return tz_name
 
 
+def get_timezone_abbreviation(db: Session) -> str:
+    """Get timezone abbreviation like WITA, WIB, WIT, UTC, etc."""
+    tz_name = get_current_timezone(db)
+    if tz_name == "UTC":
+        return "UTC"
+    try:
+        tz = pytz.timezone(tz_name)
+        now = datetime.now(tz)
+        return now.tzname() or tz_name.split('/')[-1]
+    except:
+        return tz_name.split('/')[-1]
+
+
 def to_current_timezone(dt: datetime, db: Session) -> datetime:
     tz_name = get_current_timezone(db)
     local_tz = pytz.timezone(tz_name)
@@ -54,11 +73,13 @@ def to_current_timezone(dt: datetime, db: Session) -> datetime:
     return dt.astimezone(local_tz)
 
 
-def format_datetime_with_tz(dt: datetime) -> str:
+def format_datetime_with_tz(dt: datetime, tz_name: str = None) -> str:
     """Format datetime to standard display format with timezone."""
     if not dt or not dt.tzinfo:
         return "N/A"
-    return dt.strftime("%d/%m/%Y - %H:%M:%S %Z")
+    # Use provided timezone name or extract from dt
+    tz_abbr = tz_name.split('/')[-1] if tz_name else (dt.tzinfo.tzname(dt) or 'UTC')
+    return dt.strftime(f"%d/%m/%Y - %H:%M:%S {tz_abbr}")
 
 
 def format_datetime_standard(dt: datetime, db: Session = None) -> str:
@@ -71,15 +92,26 @@ def format_datetime_standard(dt: datetime, db: Session = None) -> str:
     
     # Always convert to current timezone if db is provided
     if db:
-        dt = to_current_timezone(dt, db)
+        tz_name = get_current_timezone(db)
+        local_tz = pytz.timezone(tz_name)
+        
+        if dt.tzinfo is None:
+            dt = pytz.utc.localize(dt)
+        
+        dt = dt.astimezone(local_tz)
+        # Get timezone abbreviation (WITA, WIB, WIT, etc.)
+        tz_abbr = dt.tzname() or tz_name.split('/')[-1]
     elif not dt.tzinfo:
         dt = pytz.utc.localize(dt)
+        tz_abbr = "UTC"
+    else:
+        tz_abbr = dt.tzinfo.tzname(dt) or 'UTC'
     
-    return dt.strftime("%d/%m/%Y - %H:%M:%S %Z")
+    return dt.strftime(f"%d/%m/%Y - %H:%M:%S {tz_abbr}")
 
 
 def format_date_standard(dt: datetime) -> str:
-    """Standard date-only formatter."""
+    """Standard date-only formatter."""                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
     if not dt:
         return "N/A"
     if isinstance(dt, str):

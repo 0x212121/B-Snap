@@ -27,12 +27,13 @@ from app.middleware.session_restore import RestoreSessionMiddleware
 from app.core.config_initializer import seed_config
 from app.core.logging_config import setup_logging
 from app.db.database import Base, engine, SessionLocal
+from app.utils.timezone_helper import clear_timezone_cache
 
 # Import all models to register them with Base.metadata
 # This MUST happen before Base.metadata.create_all() is called
 import app.models  # noqa: F401 - imports all models via __init__.py
 from app.routes import (
-    admin, auth, audit, cameras, config, dev_docs, docs, health, jobs, logs, maps,
+    admin, auth, audit, audit_log, cameras, config, dev_docs, docs, health, jobs, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
     user_management, videos, whitelist, group_recipients, email_logs, wa_webhook,
     notifications, toast_demo
@@ -102,6 +103,10 @@ async def lifespan(app: FastAPI):
                 logger.error("Database connection failed after all retries")
                 raise
 
+    # Clear timezone cache on startup to ensure fresh config is loaded
+    clear_timezone_cache()
+    logger.info("Timezone cache cleared on startup.")
+    
     # Always create missing tables (for new models that don't have migrations yet)
     logger.info("Creating any missing tables from Base metadata...")
     try:
@@ -259,6 +264,7 @@ app.include_router(logs.router)
 app.include_router(nvrs.router)
 app.include_router(snap_gallery.router)
 app.include_router(audit.router)
+app.include_router(audit_log.router)
 app.include_router(dev_docs.router)
 app.include_router(ws_router)
 app.include_router(whatsapp_routes.router)
