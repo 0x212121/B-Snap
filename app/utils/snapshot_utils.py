@@ -1,6 +1,6 @@
 import os
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from io import BytesIO
 from PIL import Image
 import numpy as np
@@ -22,6 +22,7 @@ SNAPSHOT_BASE_DIR = os.path.join("static", "snapshots")
 # === konfigurasi ambang ===
 TAMPER_CONFIRM_THRESHOLD = 3    # 3 snapshot berturut-turut baru dianggap tampered
 RECOVERY_CONFIRM_THRESHOLD = 2  # 2 snapshot normal berturut-turut dianggap pulih
+ALERT_COOLDOWN_MINUTES = 15     # Minimum 15 menit antara alert untuk kamera yang sama
 
 
 def get_image_resolution(image_bytes: bytes) -> str:
@@ -34,6 +35,67 @@ def to_native_float(val):
     if isinstance(val, (np.float32, np.float64)):
         return float(val)
     return val
+
+
+def is_alert_in_cooldown(health: CameraHealth, alert_reason: str) -> bool:
+    """
+    Check if alert is in cooldown period to prevent flooding.
+    
+    Returns True if alert should be suppressed, False otherwise.
+    """
+    now = datetime.now(timezone.utc)
+    camera_name = health.camera.hostname if health.camera else "unknown"
+    
+    # Log status untuk debugging
+    logger.debug(
+        "[COOLDOWN CHECK] Camera: %s, Reason: %s, CooldownUntil: %s, LastSent: %s, LastReason: %s",
+        camera_name,
+        alert_reason,
+        health.alert_cooldown_until.isoformat() if health.alert_cooldown_until else "None",
+        health.last_email_sent.isoformat() if health.last_email_sent else "None",
+        health.last_alert_reason
+    )
+    
+    # Check explicit cooldown timestamp
+    if health.alert_cooldown_until and health.alert_cooldown_until > now:
+        remaining = (health.alert_cooldown_until - now).total_seconds()
+        logger.info(
+            "[COOLDOWN ACTIVE] Alert for %s suppressed for %.0f more seconds (until %s)",
+            camera_name,
+            remaining,
+            health.alert_cooldown_until.isoformat()
+        )
+        return True
+    
+    # Check if same reason was alerted recently
+    if (health.last_email_sent and 
+        health.last_alert_reason == alert_reason and
+        health.last_email_sent > now - timedelta(minutes=ALERT_COOLDOWN_MINUTES)):
+        minutes_ago = (now - health.last_email_sent).total_seconds() / 60
+        logger.info(
+            "[DEDUPLICATION] Skipping %s alert for %s - same reason sent %.1f minutes ago",
+            alert_reason,
+            camera_name,
+            minutes_ago
+        )
+        return True
+    
+    logger.debug("[COOLDOWN CHECK] Alert allowed for %s (%s)", camera_name, alert_reason)
+    return False
+
+
+def set_alert_cooldown(health: CameraHealth, reason: str):
+    """Set cooldown period after sending alert."""
+    now = datetime.now(timezone.utc)
+    health.alert_cooldown_until = now + timedelta(minutes=ALERT_COOLDOWN_MINUTES)
+    health.last_email_sent = now
+    health.last_alert_reason = reason
+    logger.info(
+        "[COOLDOWN] Set %s cooldown for %s until %s",
+        reason,
+        health.camera.hostname if health.camera else "unknown",
+        health.alert_cooldown_until.isoformat()
+    )
 
 
 def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolution: str) -> Snapshot:
@@ -117,40 +179,57 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
 
     # === Transisi: normal → tampered ===
     if prev_status != "tampered" and new_status == "tampered":
-        try:
-            send_tamper_alert(db, camera, snapshot.tamper_reason, abs_file_path)
-            health.last_email_sent = datetime.now(timezone.utc)
-            logger.warning("[ALERT] %s marked tampered (%s)", camera.hostname, snapshot.tamper_reason)
-        except Exception as e:
-            # Pastikan tidak duplikat
-            existing_retry = db.query(EmailRetryQueue).filter(
-                EmailRetryQueue.camera_id == camera.id,
-                EmailRetryQueue.type == "tamper",
-                EmailRetryQueue.sent == False
-            ).first()
-            if not existing_retry:
-                queue_email_retry(db, camera, "tamper", reason=snapshot.tamper_reason, file_path=abs_file_path, delay_minutes=1)
-            else:
-                logger.info("[QUEUE] Skip duplicate tamper retry for %s", camera.hostname)
-            logger.exception("[QUEUE] Tamper email failed for %s: %s", camera.hostname, e)
+        # Check cooldown to prevent flooding
+        if is_alert_in_cooldown(health, snapshot.tamper_reason):
+            logger.info(
+                "[ALERT SKIP] %s is tampered but in cooldown period (%s)",
+                camera.hostname,
+                snapshot.tamper_reason
+            )
+        else:
+            try:
+                send_tamper_alert(db, camera, snapshot.tamper_reason, abs_file_path)
+                # Set cooldown after successful send
+                set_alert_cooldown(health, snapshot.tamper_reason)
+                logger.warning("[ALERT] %s marked tampered (%s)", camera.hostname, snapshot.tamper_reason)
+            except Exception as e:
+                # Even on failure, set short cooldown to prevent immediate retry flooding
+                set_alert_cooldown(health, snapshot.tamper_reason)
+                logger.exception("[ALERT FAIL] Tamper email failed for %s: %s", camera.hostname, e)
+                
+                # Pastikan tidak duplikat di queue
+                existing_retry = db.query(EmailRetryQueue).filter(
+                    EmailRetryQueue.camera_id == camera.id,
+                    EmailRetryQueue.type == "tamper",
+                    EmailRetryQueue.sent == False
+                ).first()
+                if not existing_retry:
+                    queue_email_retry(db, camera, "tamper", reason=snapshot.tamper_reason, file_path=abs_file_path, delay_minutes=5)
+                else:
+                    logger.info("[QUEUE] Skip duplicate tamper retry for %s", camera.hostname)
 
     # === Transisi: tampered → normal ===
     elif prev_status == "tampered" and new_status == "normal":
+        # Recovery alerts are important - allow them even in cooldown
+        # but use shorter cooldown to prevent flooding
         try:
             send_recovery_alert(db, camera)
-            health.last_email_sent = datetime.now(timezone.utc)
+            set_alert_cooldown(health, "recovery")
             logger.info("[RECOVERY] %s back to normal", camera.hostname)
         except Exception as e:
+            # Set short cooldown even on failure
+            health.alert_cooldown_until = datetime.now(timezone.utc) + timedelta(minutes=5)
+            logger.exception("[RECOVERY FAIL] Recovery email failed for %s: %s", camera.hostname, e)
+            
             existing_retry = db.query(EmailRetryQueue).filter(
                 EmailRetryQueue.camera_id == camera.id,
                 EmailRetryQueue.type == "recovery",
                 EmailRetryQueue.sent == False
             ).first()
             if not existing_retry:
-                queue_email_retry(db, camera, "recovery", delay_minutes=1)
+                queue_email_retry(db, camera, "recovery", delay_minutes=5)
             else:
                 logger.info("[QUEUE] Skip duplicate recovery retry for %s", camera.hostname)
-            logger.exception("[QUEUE] Recovery email failed for %s: %s", camera.hostname, e)
 
     # === pembaruan umum ===
     health.checked = datetime.now(timezone.utc)

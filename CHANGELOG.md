@@ -4,6 +4,115 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-03-28
+
+### Added
+
+#### Email Notification Circuit Breaker (Anti-Flooding)
+- **Smart Notification Suppression** - Prevents email flooding when camera issues persist
+  - Circuit breaker pattern: After 3 consecutive failures, notifications suppressed for 60 minutes
+  - Automatic suppression reset when camera recovers (comes back online)
+  - Early exit if SMTP not configured (prevents useless retry attempts)
+  - Deduplication window: 15 minutes between tamper alerts for same camera/reason
+  - New columns in cameras table:
+    - `notification_fail_count` - Tracks consecutive failures
+    - `notification_suppressed_until` - Timestamp when suppression ends
+    - `last_notification_at` - For deduplication tracking
+  - Functions:
+    - `is_notification_suppressed()` - Check if camera is in suppression period
+    - `record_notification_failure()` - Increment counter and activate suppression if needed
+    - `record_notification_success()` - Reset counter on successful send
+    - `reset_notification_suppression()` - Reset when camera recovers
+    - `should_send_tamper_alert()` - Deduplication logic for tamper alerts
+  - Migration: `20260330_add_notification_circuit_breaker.py`
+
+#### Tamper Alert Cooldown (Anti-Flooding Fix)
+- **Immediate Cooldown Protection** - Prevents per-second flooding of tamper alerts
+  - New columns in camera_health table:
+    - `alert_cooldown_until` - Timestamp when next alert can be sent
+    - `last_alert_reason` - Reason for last alert (for deduplication)
+  - Functions in snapshot_utils.py:
+    - `is_alert_in_cooldown()` - Check if camera is in cooldown period
+    - `set_alert_cooldown()` - Set 15-minute cooldown after alert
+  - **Scheduler Rate Limiting**: Minimum 30 seconds between snapshots for same camera
+    - Prevents multiple concurrent snapshot processes for one camera
+    - Global cache `_snapshot_rate_limit_cache` tracks last snapshot per camera
+  - **Triple-layer protection**:
+    1. Scheduler rate limiting (30-second minimum interval)
+    2. CameraHealth cooldown check (15-minute alert cooldown)
+    3. CameraHealth last_alert_reason deduplication
+    4. CameraEmailNotificationLog database check
+  - **Immediate Cooldown**: Set BEFORE attempting to send in `send_tamper_alert()`
+    - Ensures no retry flooding even if SMTP fails
+    - Cooldown persists in database across function calls
+  - Recovery alerts use shorter 5-minute cooldown
+  - Enhanced logging for debugging flooding issues
+  - Migration: `20260330_add_alert_cooldown.py`
+
+#### Security & Compliance (Audit Remediation P2)
+- **Dual-Table Audit Log with 6-Month Archive** - P2 Compliance Enhancement
+  - Implemented dual-table strategy: `audit_logs` (current) + `audit_logs_legacy` (historical)
+  - `audit_logs`: Append-only table with PostgreSQL triggers preventing UPDATE/DELETE
+  - `audit_logs_legacy`: Historical data (>6 months) eligible for archival
+  - `audit_logs_unified`: Database view for cross-table querying
+  - `audit_archive_history`: Tracks all archive operations with checksums
+  - Archive process: Export → Gzip compress → AES-256 encrypt → Verify → Delete
+  - SHA-256 checksums for integrity verification
+  - Environment variable: `AUDIT_ARCHIVE_KEY` for encryption
+  - API endpoints: `GET /api/stats`, `POST /api/archive`, `GET /api/archive/history`
+  - UI: Archive warning banner, archive history modal, manual archive button
+  - Scheduled job: Automatic archive every 6 months (January & July)
+  - Migration: `20260328_dual_table_audit_logs.py`
+
+- **Enhanced Audit Log Fields (P2-001)**
+  - Added `user_agent`, `request_path`, `request_method`, `response_status` columns
+  - All API access now logs complete HTTP request context
+  - Method and Status filters in audit log UI
+  - Anti-flooding strategy: Gallery uses batch logging, detail views use individual logging
+
+- **Safety Classification (P2-002)** - Camera Risk Categorization
+  - Added `safety_classification` column to cameras table (critical/standard/low)
+  - Critical (🔴): Incident coverage cameras - highlighted in UI
+  - Standard (🟡): Regular monitoring cameras
+  - Low (🟢): General surveillance cameras
+  - Safety badges displayed in camera table and hostname column
+  - Stats card showing count of critical safety cameras
+  - Migration: `8a53b8bab616_add_safety_classification_p2_002.py`
+
+- **Retention Hold (P2-003)** - Legal Hold for Evidence
+  - Added `retention_hold`, `retention_hold_reason`, `retention_hold_by`, `retention_hold_at` columns
+  - Prevents purge of incident footage during investigation
+  - Admin toggle in snapshot detail modal
+  - Retention hold indicators in snapshot gallery
+  - Audit logging for all retention hold operations
+  - Migration: `f3170d221195_add_retention_hold_p2_001.py`
+
+- **Secure Snapshot Serving (P2-004)**
+  - Blocked direct access to `/static/snapshots/*` - returns 403 Forbidden
+  - All snapshot access must go through authenticated API endpoints
+  - New endpoint: `GET /api/snapshots/secure/{snapshot_id}` with auth check
+  - Legacy token URLs (`/snapshot/file/{path}?token=...`) still functional with enhanced logging
+  - Gallery images migrated to use secure API endpoints
+
+#### Template Relayout
+- **Camera Management (`cameras.html`)**
+  - Added Safety Classification column with color-coded badges
+  - Critical cameras show 🔴 badge in hostname column
+  - Safety stats card (Critical count with warning icon)
+  - Added `icon_lock` and `icon_shield_check` from `_icons.html`
+
+- **Audit Logs (`audit_logs.html`)**
+  - Enhanced table with Method and Status columns
+  - Archive warning banner (shows when >1000 records need archiving)
+  - Archive status card with real-time statistics
+  - Archive history modal with operation details
+  - Manual archive trigger button with confirmation
+
+#### Windows Startup
+- **PowerShell Script Enhancement** (`start-local.ps1`)
+  - Added proper error handling and process management
+  - Fixed gunicorn compatibility issues on Windows
+
 ## [1.14.0] - 2026-03-26
 
 ### Added

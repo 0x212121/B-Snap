@@ -38,6 +38,12 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         About
       </button>
+      <button onclick="showArchiveHistory()" class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 px-4 py-2 rounded-lg transition duration-200">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        History
+      </button>
       <button onclick="exportToCSV()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-200 shadow-sm">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
         Export CSV
@@ -46,8 +52,28 @@
   </div>
 </div>
 
+<!-- Archive Warning Banner (shown if data needs archiving) -->
+<div id="archive-warning" class="hidden mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+  <div class="flex items-center gap-3">
+    <div class="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+      <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+      </svg>
+    </div>
+    <div class="flex-1">
+      <h3 class="font-semibold text-amber-800 dark:text-amber-200">Archive Recommended</h3>
+      <p class="text-sm text-amber-700 dark:text-amber-300">
+        <span id="archive-eligible-count">0</span> records older than 6 months should be archived to maintain performance.
+      </p>
+    </div>
+    <button onclick="triggerArchive()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition">
+      Archive Now
+    </button>
+  </div>
+</div>
+
 <!-- Summary Cards -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
@@ -92,6 +118,22 @@
       </div>
       <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
         <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Archive Status Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition" onclick="showArchiveHistory()">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Archive Status</p>
+        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-archive">-</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5" id="stat-archive-sub">Click for history</p>
+      </div>
+      <div class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+        <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+        </svg>
       </div>
     </div>
   </div>
@@ -328,6 +370,67 @@
   </div>
 </div>
 
+<!-- Archive History Modal -->
+<div id="archiveHistoryModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl mx-auto max-h-[80vh] flex flex-col">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+          <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white">Archive History</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Audit log archival operations</p>
+        </div>
+      </div>
+      <button onclick="hideArchiveHistory()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Current Table</p>
+          <p class="text-xl font-bold text-gray-900 dark:text-white" id="archive-stat-current">-</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Legacy Table</p>
+          <p class="text-xl font-bold text-gray-900 dark:text-white" id="archive-stat-legacy">-</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Total Archives</p>
+          <p class="text-xl font-bold text-gray-900 dark:text-white" id="archive-stat-total">-</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto p-6">
+      <div id="archive-history-empty" class="hidden text-center py-8">
+        <svg class="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+        </svg>
+        <p class="text-gray-500 dark:text-gray-400">No archive operations yet</p>
+      </div>
+      
+      <div id="archive-history-list" class="space-y-3">
+        <!-- Archive history items populated by JS -->
+      </div>
+    </div>
+    
+    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+      <p class="text-xs text-gray-500 dark:text-gray-400">
+        Archives are encrypted with AES-256 and stored in <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">archives/audit_logs/</code>
+      </p>
+      <button onclick="triggerArchive()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+        Archive Now
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Flatpickr -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css" media="(prefers-color-scheme: dark)">
@@ -548,6 +651,158 @@
   function hideDetailModal() {
     document.getElementById('detailModal').classList.add('hidden');
     document.getElementById('detailModal').classList.remove('flex');
+  }
+  
+  // ==========================================
+  // Archive Functions
+  // ==========================================
+  
+  async function fetchArchiveStats() {
+    try {
+      const response = await fetch('/audit-logs/api/stats');
+      if (!response.ok) return;
+      
+      const data = await response.json();
+      
+      // Update archive status card
+      const statArchive = document.getElementById('stat-archive');
+      const statArchiveSub = document.getElementById('stat-archive-sub');
+      if (statArchive && data.current_table) {
+        const totalRecords = data.current_table.records + data.legacy_table.records;
+        statArchive.textContent = totalRecords.toLocaleString();
+      }
+      if (statArchiveSub && data.eligible_for_archive > 0) {
+        statArchiveSub.textContent = `${data.eligible_for_archive.toLocaleString()} ready to archive`;
+        statArchiveSub.classList.add('text-amber-600', 'dark:text-amber-400');
+      }
+      
+      // Show warning banner if eligible for archive
+      const warningBanner = document.getElementById('archive-warning');
+      const eligibleCount = document.getElementById('archive-eligible-count');
+      if (warningBanner && eligibleCount && data.eligible_for_archive > 1000) {
+        eligibleCount.textContent = data.eligible_for_archive.toLocaleString();
+        warningBanner.classList.remove('hidden');
+      }
+      
+    } catch (error) {
+      console.error('Failed to fetch archive stats:', error);
+    }
+  }
+  
+  function showArchiveHistory() {
+    document.getElementById('archiveHistoryModal').classList.remove('hidden');
+    document.getElementById('archiveHistoryModal').classList.add('flex');
+    fetchArchiveHistory();
+  }
+  
+  function hideArchiveHistory() {
+    document.getElementById('archiveHistoryModal').classList.add('hidden');
+    document.getElementById('archiveHistoryModal').classList.remove('flex');
+  }
+  
+  async function fetchArchiveHistory() {
+    try {
+      const response = await fetch('/audit-logs/api/archive/history');
+      if (!response.ok) throw new Error('Failed to fetch');
+      
+      const data = await response.json();
+      renderArchiveHistory(data.history || []);
+      
+      // Update stats in modal
+      const statsResponse = await fetch('/audit-logs/api/stats');
+      if (statsResponse.ok) {
+        const stats = await statsResponse.json();
+        document.getElementById('archive-stat-current').textContent = 
+          (stats.current_table?.records || 0).toLocaleString();
+        document.getElementById('archive-stat-legacy').textContent = 
+          (stats.legacy_table?.records || 0).toLocaleString();
+        document.getElementById('archive-stat-total').textContent = 
+          (stats.archive_history?.total_archives || 0).toLocaleString();
+      }
+      
+    } catch (error) {
+      console.error('Failed to fetch archive history:', error);
+    }
+  }
+  
+  function renderArchiveHistory(history) {
+    const container = document.getElementById('archive-history-list');
+    const emptyState = document.getElementById('archive-history-empty');
+    
+    if (!container) return;
+    
+    if (history.length === 0) {
+      container.innerHTML = '';
+      emptyState.classList.remove('hidden');
+      return;
+    }
+    
+    emptyState.classList.add('hidden');
+    container.innerHTML = history.map(item => `
+      <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}">
+              ${item.status === 'completed' ? '✓ Completed' : '✗ Failed'}
+            </span>
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              ${new Date(item.archived_at).toLocaleString()}
+            </span>
+          </div>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">
+            ${item.records_archived.toLocaleString()} records
+          </span>
+        </div>
+        <div class="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+          <p><strong>By:</strong> ${item.archived_by}</p>
+          <p><strong>File:</strong> <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">${item.file_path.split('/').pop()}</code></p>
+          <p><strong>Size:</strong> ${item.file_size_mb} MB</p>
+          ${item.checksum ? `<p><strong>Checksum:</strong> <code class="text-xs">${item.checksum.substring(0, 16)}...</code></p>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  async function triggerArchive() {
+    const confirmed = confirm(
+      'Archive audit logs older than 6 months?\n\n' +
+      'This will:\n' +
+      '1. Export logs to encrypted file\n' +
+      '2. Copy to legacy table\n' +
+      '3. Remove from current table\n\n' +
+      'This operation cannot be undone.'
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      const response = await fetch('/audit-logs/api/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.status === 'success') {
+        if (typeof Toast !== 'undefined') {
+          Toast.success(result.message || 'Archive completed successfully', { duration: 5000 });
+        }
+        // Refresh stats and history
+        fetchArchiveStats();
+        fetchArchiveHistory();
+        // Refresh logs table
+        fetchLogs(1);
+      } else {
+        throw new Error(result.message || 'Archive failed');
+      }
+    } catch (error) {
+      console.error('Archive failed:', error);
+      if (typeof Toast !== 'undefined') {
+        Toast.error('Archive failed: ' + error.message, { duration: 5000 });
+      } else {
+        alert('Archive failed: ' + error.message);
+      }
+    }
   }
   
   function copyModalContent() {
@@ -1004,9 +1259,15 @@
     document.getElementById('detailModal').addEventListener('click', (e) => {
       if (e.target === e.currentTarget) hideDetailModal();
     });
+    if (document.getElementById('archiveHistoryModal')) {
+      document.getElementById('archiveHistoryModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) hideArchiveHistory();
+      });
+    }
     
     // Initial load
     fetchLogs(1);
+    fetchArchiveStats();
   });
 </script>
 {% endblock %}

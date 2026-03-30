@@ -159,7 +159,36 @@ def logged_job(job_id: str, job_name: str):
 # ----------------------------
 # Job Handlers
 # ----------------------------
+
+# Rate limiting untuk snapshot per kamera (anti-flooding)
+# Format: {camera_id: last_snapshot_timestamp}
+_snapshot_rate_limit_cache = {}
+MIN_SNAPSHOT_INTERVAL_SECONDS = 30  # Minimum 30 detik antar snapshot untuk kamera yang sama
+
 def run_snapshot(camera):
+    
+    # --- RATE LIMITING: Cek apakah kamera baru saja di-snapshot ---
+    now = datetime.now(timezone.utc)
+    camera_id = str(camera.id)
+    
+    if camera_id in _snapshot_rate_limit_cache:
+        last_snapshot = _snapshot_rate_limit_cache[camera_id]
+        elapsed = (now - last_snapshot).total_seconds()
+        
+        if elapsed < MIN_SNAPSHOT_INTERVAL_SECONDS:
+            logger.debug(
+                "[RATE LIMIT] Skipping snapshot for %s - last snapshot %.1f seconds ago (min: %d)",
+                camera.hostname, elapsed, MIN_SNAPSHOT_INTERVAL_SECONDS
+            )
+            return {
+                "status": "skipped",
+                "reason": "rate_limited",
+                "camera": camera.hostname,
+                "retry_after": MIN_SNAPSHOT_INTERVAL_SECONDS - int(elapsed)
+            }
+    
+    # Update cache
+    _snapshot_rate_limit_cache[camera_id] = now
     
     # --- SHORT CIRCUIT: Ping Check ---
     try:

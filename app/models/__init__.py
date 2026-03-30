@@ -15,7 +15,7 @@ from .config import Configuration
 from .notification_queue import NotificationQueue
 from .whitelist import WhatsappWhitelist
 from .task_timing import TaskTiming
-from .audit_log import AuditLog
+from .audit_log import AuditLog, AuditLogLegacy, AuditArchiveHistory
 from .storage_metric import StorageMetric, StorageAlert
 from .notification import Notification
 
@@ -48,6 +48,8 @@ __all__ = [
     "WhatsappWhitelist",
     "TaskTiming",
     "AuditLog",
+    "AuditLogLegacy",
+    "AuditArchiveHistory",
     "StorageMetric",
     "StorageAlert",
     "Notification",
