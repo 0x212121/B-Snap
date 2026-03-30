@@ -92,10 +92,8 @@ def record_notification_failure(db: Session, camera: Camera, error_message: str)
     """
     Record a notification failure and activate suppression if needed.
     
-    Args:
-        db: Database session
-        camera: Camera object
-        error_message: Error message for logging
+    Circuit breaker: After MAX_NOTIFICATION_FAILURES consecutive failures,
+    notifications are suppressed for NOTIFICATION_SUPPRESS_MINUTES.
     """
     camera.notification_fail_count += 1
     camera.last_notification_at = datetime.now(timezone.utc)
@@ -127,10 +125,6 @@ def record_notification_failure(db: Session, camera: Camera, error_message: str)
 def record_notification_success(db: Session, camera: Camera):
     """
     Record a successful notification and reset failure counter.
-    
-    Args:
-        db: Database session
-        camera: Camera object
     """
     camera.notification_fail_count = 0
     camera.notification_suppressed_until = None
@@ -548,6 +542,7 @@ PT Kaltim Prima Coal
             subject=subject,
             cam_group=camera_group,
             cam_hostname=camera.hostname,
+            snapshot_time=incident_time,  # BUG FIX: Add missing snapshot_time
             body=plain_body,
             html=html_body,
             image_path=snapshot_path,
@@ -610,8 +605,13 @@ PT Kaltim Prima Coal
 
 def send_recovery_alert(db: Session, camera, last_reason: str = None):
     """
-    Send recovery notification when camera comes back online.
-    Also resets notification suppression.
+    Send recovery notification when camera image returns to normal (from TAMPERED state).
+    
+    NOTE: This is DIFFERENT from send_online_alert which handles offline->online.
+    - send_recovery_alert: Camera image was tampered (blur/dark/occluded), now clean
+    - send_online_alert: Camera was offline (no ping response), now responding
+    
+    Also resets notification suppression (circuit breaker).
     """
     logger.info("[RECOVERY] Camera %s is back online", camera.hostname)
     
@@ -629,20 +629,21 @@ def send_recovery_alert(db: Session, camera, last_reason: str = None):
         return False
     
     camera_group = camera.group.name if camera.group else "No Division"
-    subject = f"✅ [{camera_group}] CCTV Recovery – {camera.hostname}"
+    subject = f"✅ [{camera_group}] CCTV Image Recovery – {camera.hostname}"
     
     reason_text = f"\nPrevious issue: {last_reason}" if last_reason else ""
     
     plain_body = f"""
 Yth. User,
 
-CCTV {camera.hostname} (IP: {camera.ip}) telah kembali ONLINE.{reason_text}
+CCTV {camera.hostname} (IP: {camera.ip}) image telah kembali NORMAL dari status TAMPERED.{reason_text}
 
 - No. Asset: {camera.asset_no or '-'}
 - Lokasi: {camera.location or '-'}
+- Koordinat: https://www.google.com/maps?q={camera.latitude},{camera.longitude}
 - Waktu Recovery: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S')} UTC
 
-Sistem telah memverifikasi konektivitas kamera telah pulih.
+Sistem telah memverifikasi kualitas gambar kamera telah pulih (tidak blur, gelap, atau terhalang).
 
 Terima kasih,
 IT Computer Operations
@@ -655,6 +656,7 @@ PT Kaltim Prima Coal
             subject=subject,
             cam_group=camera_group,
             cam_hostname=camera.hostname,
+            snapshot_time=datetime.now(timezone.utc),  # BUG FIX: Add missing snapshot_time (recovery time)
             body=plain_body,
             html=None,
             image_path=None,
@@ -708,3 +710,11 @@ def queue_email_retry(db: Session, camera, alert_type: str, reason: str, delay_m
         camera.hostname,
         scheduled_for.isoformat()
     )
+
+
+# NOTE: send_online_alert has been removed as per requirement.
+# Online notifications (offline -> online) are intentionally disabled.
+# Only the following notifications are sent:
+# - send_tamper_alert: When camera image is tampered (blur/dark/occluded)
+# - send_recovery_alert: When tampered camera image returns to normal
+# - send_offline_incident_email_once: When camera goes offline

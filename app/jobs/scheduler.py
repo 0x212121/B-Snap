@@ -13,7 +13,11 @@ from app.models.health import CameraHealth
 from app.models.email_retry_queue import EmailRetryQueue
 from app.models.log import ApiLog, CommandLog
 from app.snapshot import load_active_cameras
-from app.utils.email_notifier import send_recovery_alert, send_tamper_alert, send_offline_incident_email_once
+from app.utils.email_notifier import (
+    send_recovery_alert,  # For tampered -> normal transitions
+    send_tamper_alert,     # For tamper detection
+    send_offline_incident_email_once  # For offline alerts (online alerts intentionally disabled)
+)
 from app.utils.snapshot_locker import get_camera_lock
 from app.utils.snapshot_service import take_snapshot
 from app.utils.healthcheck import ping_all_devices
@@ -948,8 +952,10 @@ def process_email_retry_queue():
                     offline_duration_seconds=1800,
                 ))
             elif task.type == "online":
-                from app.utils.email_notifier import send_online_alert
-                ok = bool(send_online_alert(db, cam))
+                # NOTE: Online notifications (offline -> online) are intentionally disabled
+                # as per requirement. Only offline alerts and tamper/recovery alerts are sent.
+                logger.info("[ONLINE] Camera %s is back online - no email sent (as per policy)", cam.hostname)
+                ok = True  # Mark as processed but don't send email
             else:
                 task.sent = True
                 db.commit()

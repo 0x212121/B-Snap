@@ -13,7 +13,11 @@ from app.models.audit_log import AuditLog, AuditLogLegacy, AuditArchiveHistory
 from app.routes.auth import admin_access_required
 from app.models.user import User
 from app.utils.template_helper import templates
-from app.utils.timezone_helper import format_datetime_standard, get_timezone_abbreviation
+from app.utils.timezone_helper import (
+    format_datetime_standard, 
+    get_current_timezone,
+    utc_now
+)
 from app.jobs.audit_archive import AuditArchiveService, get_archive_stats
 
 router = APIRouter(prefix="/audit-logs", tags=["Audit Logs"])
@@ -24,17 +28,15 @@ async def audit_logs_page(
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(admin_access_required),
-    page: int = 1,
-    per_page: int = 50,
 ):
-    """Render audit logs page."""
-    tz_abbr = get_timezone_abbreviation(db)
+    """Render audit logs page dengan timezone format Asia/Makassar."""
+    tz_name = get_current_timezone(db)  # "Asia/Makassar"
     
     return templates.TemplateResponse(
         "audit_logs.html",
         {
             "request": request,
-            "timezone": tz_abbr,  # Use abbreviation like WITA, WIB, WIT
+            "timezone": tz_name,  # Format: Asia/Makassar, Asia/Jakarta
         },
     )
 
@@ -54,25 +56,10 @@ async def get_audit_logs_api(
     end_date: Optional[str] = None,
     include_legacy: bool = False,
 ):
-    """Get audit logs with filtering and pagination.
-    
-    Args:
-        include_legacy: If True, also search in legacy table (>6 months old)
-    """
+    """Get audit logs dengan filtering dan timezone yang benar."""
     offset = (page - 1) * per_page
     
-    # Build base query - use unified view if include_legacy, else just current table
-    if include_legacy:
-        # Query from unified view
-        query = db.execute(text("""
-            SELECT * FROM audit_logs_unified 
-            WHERE 1=1
-        """))
-        # Note: For complex filtering with unified view, we'd need raw SQL
-        # For simplicity, we'll query both tables separately and merge
-        pass
-    
-    # Default: query only current audit_logs table
+    # Query dasar
     query = db.query(AuditLog)
     
     # Apply filters
@@ -94,35 +81,41 @@ async def get_audit_logs_api(
     if status_code:
         query = query.filter(AuditLog.response_status == status_code)
     
+    # Date filter dengan timezone handling yang benar
+    tz_name = get_current_timezone(db)
+    
     if start_date:
         try:
-            start = datetime.strptime(start_date, "%Y-%m-%d")
-            query = query.filter(AuditLog.timestamp >= start)
+            # Parse sebagai local timezone lalu convert ke UTC untuk query DB
+            start_local = datetime.strptime(start_date, "%Y-%m-%d")
+            start_utc = to_utc_for_query(start_local, tz_name)
+            query = query.filter(AuditLog.timestamp >= start_utc)
         except ValueError:
             pass
     
     if end_date:
         try:
-            end = datetime.strptime(end_date, "%Y-%m-%d")
-            end = end + timedelta(days=1)
-            query = query.filter(AuditLog.timestamp < end)
+            end_local = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+            end_utc = to_utc_for_query(end_local, tz_name)
+            query = query.filter(AuditLog.timestamp < end_utc)
         except ValueError:
             pass
     
-    # Get total count for pagination
+    # Pagination
     total = query.count()
     total_pages = (total + per_page - 1) // per_page if total > 0 else 1
     
-    # Get paginated logs
     logs = query.order_by(AuditLog.timestamp.desc()).offset(offset).limit(per_page).all()
     
-    # Calculate stats
-    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    today_count = db.query(AuditLog).filter(AuditLog.timestamp >= today_start).count()
+    # Stats dengan timezone yang benar
+    now_utc = utc_now()
+    # Convert UTC midnight ke local untuk hitung "today"
+    today_start = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
     
+    today_count = db.query(AuditLog).filter(AuditLog.timestamp >= today_start).count()
     unique_users = db.query(AuditLog.user).distinct().count()
     
-    # Get security events count (sensitive actions)
+    # Security events
     security_actions = [
         'view_camera_password', 'view_nvr_password', 
         'retention_hold_enabled', 'retention_hold_disabled',
@@ -132,8 +125,8 @@ async def get_audit_logs_api(
         AuditLog.action.in_(security_actions)
     ).count()
     
-    # Archive stats
-    cutoff_date = datetime.now(timezone.utc) - timedelta(days=180)
+    # Archive stats (6 bulan lalu dari sekarang dalam local timezone)
+    cutoff_date = now_utc - timedelta(days=180)
     eligible_for_archive = db.query(AuditLog).filter(
         AuditLog.timestamp < cutoff_date
     ).count()
@@ -142,13 +135,13 @@ async def get_audit_logs_api(
         "logs": [
             {
                 "id": log.id,
+                # Format: "30/03/2026 - 16:57:00 WITA"
                 "timestamp": format_datetime_standard(log.timestamp, db=db) if log.timestamp else None,
                 "user": log.user,
                 "action": log.action,
                 "target": log.target,
                 "ip": log.ip,
                 "extra": log.extra,
-                # P2-001: Enhanced audit fields
                 "user_agent": log.user_agent,
                 "request_path": log.request_path,
                 "request_method": log.request_method,
@@ -161,6 +154,7 @@ async def get_audit_logs_api(
         "page": page,
         "per_page": per_page,
         "total_pages": total_pages,
+        "timezone": tz_name,  # "Asia/Makassar" untuk konsistensi dengan header
         "stats": {
             "today": today_count,
             "unique_users": unique_users,
@@ -168,6 +162,17 @@ async def get_audit_logs_api(
             "eligible_for_archive": eligible_for_archive,
         }
     })
+
+
+def to_utc_for_query(naive_dt: datetime, tz_name: str) -> datetime:
+    """Helper: Convert naive local datetime ke UTC untuk query DB."""
+    import pytz
+    if naive_dt.tzinfo is None:
+        local_tz = pytz.timezone(tz_name)
+        aware_dt = local_tz.localize(naive_dt)
+    else:
+        aware_dt = naive_dt
+    return aware_dt.astimezone(pytz.UTC)
 
 
 @router.get("/api/stats")

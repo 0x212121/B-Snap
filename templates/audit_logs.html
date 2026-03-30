@@ -436,15 +436,6 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css" media="(prefers-color-scheme: dark)">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-<!-- Day.js (juga dibutuhkan) -->
-<script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/utc.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/timezone.js"></script>
-<script>
-  dayjs.extend(dayjs_plugin_utc);
-  dayjs.extend(dayjs_plugin_timezone);
-</script>
-
 <script>
   // Global state
   let currentPage = 1;
@@ -452,7 +443,7 @@
   let datePicker;
   
   // ==========================================
-  // Helper Functions
+  // Helper Functions (tetap sama)
   // ==========================================
   
   function getActionIcon(action) {
@@ -497,23 +488,12 @@
     return `<span class="action-badge ${badgeClass}">${icon} ${action}</span>`;
   }
   
-  function getStatusColor(status) {
-    if (!status) return 'text-gray-500';
-    if (status >= 200 && status < 300) return 'text-green-600 font-medium';
-    if (status >= 400 && status < 500) return 'text-amber-600 font-medium';
-    if (status >= 500) return 'text-red-600 font-medium';
-    return 'text-gray-600';
-  }
-  
   function getStatusBadge(status) {
-    // FIX #5: Handle status yang mungkin number atau string
     if (status === null || status === undefined || status === '-') {
       return '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">-</span>';
     }
     
-    // Convert to number kalau string
     const statusNum = parseInt(status);
-    
     let bgClass = 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
     
     if (!isNaN(statusNum)) {
@@ -538,288 +518,19 @@
   function highlightJSON(json) {
     if (typeof json !== 'string') json = JSON.stringify(json, null, 2);
     return json
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/("(?:\\.|[^"\\])*")/g, '<span class="json-string">$1</span>')
-    .replace(/\b(true|false)\b/g, '<span class="json-boolean">$1</span>')
-    .replace(/\b(null)\b/g, '<span class="json-null">$1</span>')
-    .replace(/\b(\d+)\b/g, '<span class="json-number">$1</span>')
-    .replace(/(["\}])\s*:/g, '<span class="json-key">$1</span>:');
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/("(?:\\.|[^"\\])*")/g, '<span class="json-string">$1</span>')
+      .replace(/\b(true|false)\b/g, '<span class="json-boolean">$1</span>')
+      .replace(/\b(null)\b/g, '<span class="json-null">$1</span>')
+      .replace(/\b(\d+)\b/g, '<span class="json-number">$1</span>')
+      .replace(/(["\}])\s*:/g, '<span class="json-key">$1</span>:');
   }
-  
-  // ==========================================
-  // Modal Functions
-  // ==========================================
-  
-  function showAuditInfo() {
-    document.getElementById('auditInfoModal').classList.remove('hidden');
-    document.getElementById('auditInfoModal').classList.add('flex');
-  }
-  
-  function hideAuditInfo() {
-    document.getElementById('auditInfoModal').classList.add('hidden');
-    document.getElementById('auditInfoModal').classList.remove('flex');
-  }
-  
-  function showDetailModal(logEntry) {
-    const content = document.getElementById('detailContent');
-    // Backend already returns formatted string like "30/03/2026 - 15:38:33 WITA"
-    // Just display it directly without parsing
-    const timestamp = logEntry.timestamp || 'N/A';
-    
-    let extraSection = '';
-    if (logEntry.extra) {
-      const formatted = formatExtra(logEntry.extra);
-      const highlighted = highlightJSON(formatted);
-      extraSection = `
-      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg relative group">
-        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase mb-2">Extra Data</p>
-        <pre class="text-sm text-gray-700 dark:text-gray-300 font-mono whitespace-pre-wrap overflow-x-auto">${highlighted}</pre>
-        <button onclick="copyModalContent()" class="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 bg-white dark:bg-gray-600 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 transition opacity-0 group-hover:opacity-100" title="Copy to clipboard">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-          </svg>
-        </button>
-      </div>
-    `;
-    }
-    
-    content.innerHTML = `
-    <div class="space-y-4">
-      <div class="grid grid-cols-2 gap-4">
-        <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-          <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Timestamp</p>
-          <p class="font-medium text-gray-900 dark:text-white font-mono text-sm">${timestamp}</p>
-        </div>
-        <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-          <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">User</p>
-          <div class="flex items-center gap-2 mt-1">
-            <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
-              ${(logEntry.user || 'A').charAt(0).toUpperCase()}
-            </div>
-            <p class="font-medium text-gray-900 dark:text-white">${logEntry.user || 'anonymous'}</p>
-          </div>
-        </div>
-        <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-          <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Action</p>
-          <p class="font-medium text-gray-900 dark:text-white flex items-center gap-2 mt-1">
-            ${getActionBadge(logEntry.action)}
-          </p>
-        </div>
-        <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-          <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Target</p>
-          <p class="font-medium text-gray-900 dark:text-white text-sm truncate">${logEntry.target || '-'}</p>
-        </div>
-      </div>
-      
-      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase mb-2">Request Details</p>
-        <div class="grid grid-cols-2 gap-3 text-sm">
-          <div class="flex items-center gap-2">
-            <span class="text-gray-500">Method:</span> 
-            <span class="font-mono bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded text-xs">${logEntry.request_method || '-'}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-gray-500">Status:</span> 
-            ${getStatusBadge(logEntry.response_status)}
-          </div>
-          <div class="col-span-2">
-            <span class="text-gray-500">Path:</span> 
-            <span class="font-mono text-xs break-all bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded block mt-1">${logEntry.request_path || '-'}</span>
-          </div>
-          <div class="col-span-2 flex items-center gap-2">
-            <span class="text-gray-500">IP:</span> 
-            <code class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">${logEntry.ip || '-'}</code>
-          </div>
-        </div>
-      </div>
-      
-      ${logEntry.user_agent ? `
-      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">User Agent</p>
-        <p class="text-sm text-gray-700 dark:text-gray-300 font-mono break-all bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">${logEntry.user_agent}</p>
-      </div>
-      ` : ''}
-      
-      ${extraSection}
-    </div>
-  `;
-    
-    document.getElementById('detailModal').classList.remove('hidden');
-    document.getElementById('detailModal').classList.add('flex');
-  }
-  
-  function hideDetailModal() {
-    document.getElementById('detailModal').classList.add('hidden');
-    document.getElementById('detailModal').classList.remove('flex');
-  }
-  
-  // ==========================================
-  // Archive Functions
-  // ==========================================
-  
-  async function fetchArchiveStats() {
-    try {
-      const response = await fetch('/audit-logs/api/stats');
-      if (!response.ok) return;
-      
-      const data = await response.json();
-      
-      // Update archive status card
-      const statArchive = document.getElementById('stat-archive');
-      const statArchiveSub = document.getElementById('stat-archive-sub');
-      if (statArchive && data.current_table) {
-        const totalRecords = data.current_table.records + data.legacy_table.records;
-        statArchive.textContent = totalRecords.toLocaleString();
-      }
-      if (statArchiveSub && data.eligible_for_archive > 0) {
-        statArchiveSub.textContent = `${data.eligible_for_archive.toLocaleString()} ready to archive`;
-        statArchiveSub.classList.add('text-amber-600', 'dark:text-amber-400');
-      }
-      
-      // Show warning banner if eligible for archive
-      const warningBanner = document.getElementById('archive-warning');
-      const eligibleCount = document.getElementById('archive-eligible-count');
-      if (warningBanner && eligibleCount && data.eligible_for_archive > 1000) {
-        eligibleCount.textContent = data.eligible_for_archive.toLocaleString();
-        warningBanner.classList.remove('hidden');
-      }
-      
-    } catch (error) {
-      console.error('Failed to fetch archive stats:', error);
-    }
-  }
-  
-  function showArchiveHistory() {
-    document.getElementById('archiveHistoryModal').classList.remove('hidden');
-    document.getElementById('archiveHistoryModal').classList.add('flex');
-    fetchArchiveHistory();
-  }
-  
-  function hideArchiveHistory() {
-    document.getElementById('archiveHistoryModal').classList.add('hidden');
-    document.getElementById('archiveHistoryModal').classList.remove('flex');
-  }
-  
-  async function fetchArchiveHistory() {
-    try {
-      const response = await fetch('/audit-logs/api/archive/history');
-      if (!response.ok) throw new Error('Failed to fetch');
-      
-      const data = await response.json();
-      renderArchiveHistory(data.history || []);
-      
-      // Update stats in modal
-      const statsResponse = await fetch('/audit-logs/api/stats');
-      if (statsResponse.ok) {
-        const stats = await statsResponse.json();
-        document.getElementById('archive-stat-current').textContent = 
-          (stats.current_table?.records || 0).toLocaleString();
-        document.getElementById('archive-stat-legacy').textContent = 
-          (stats.legacy_table?.records || 0).toLocaleString();
-        document.getElementById('archive-stat-total').textContent = 
-          (stats.archive_history?.total_archives || 0).toLocaleString();
-      }
-      
-    } catch (error) {
-      console.error('Failed to fetch archive history:', error);
-    }
-  }
-  
-  function renderArchiveHistory(history) {
-    const container = document.getElementById('archive-history-list');
-    const emptyState = document.getElementById('archive-history-empty');
-    
-    if (!container) return;
-    
-    if (history.length === 0) {
-      container.innerHTML = '';
-      emptyState.classList.remove('hidden');
-      return;
-    }
-    
-    emptyState.classList.add('hidden');
-    container.innerHTML = history.map(item => `
-      <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-2">
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}">
-              ${item.status === 'completed' ? '✓ Completed' : '✗ Failed'}
-            </span>
-            <span class="text-sm text-gray-600 dark:text-gray-400">
-              ${new Date(item.archived_at).toLocaleString()}
-            </span>
-          </div>
-          <span class="text-sm font-medium text-gray-900 dark:text-white">
-            ${item.records_archived.toLocaleString()} records
-          </span>
-        </div>
-        <div class="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-          <p><strong>By:</strong> ${item.archived_by}</p>
-          <p><strong>File:</strong> <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">${item.file_path.split('/').pop()}</code></p>
-          <p><strong>Size:</strong> ${item.file_size_mb} MB</p>
-          ${item.checksum ? `<p><strong>Checksum:</strong> <code class="text-xs">${item.checksum.substring(0, 16)}...</code></p>` : ''}
-        </div>
-      </div>
-    `).join('');
-  }
-  
-  async function triggerArchive() {
-    const confirmed = confirm(
-      'Archive audit logs older than 6 months?\n\n' +
-      'This will:\n' +
-      '1. Export logs to encrypted file\n' +
-      '2. Copy to legacy table\n' +
-      '3. Remove from current table\n\n' +
-      'This operation cannot be undone.'
-    );
-    
-    if (!confirmed) return;
-    
-    try {
-      const response = await fetch('/audit-logs/api/archive', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      const result = await response.json();
-      
-      if (response.ok && result.status === 'success') {
-        if (typeof Toast !== 'undefined') {
-          Toast.success(result.message || 'Archive completed successfully', { duration: 5000 });
-        }
-        // Refresh stats and history
-        fetchArchiveStats();
-        fetchArchiveHistory();
-        // Refresh logs table
-        fetchLogs(1);
-      } else {
-        throw new Error(result.message || 'Archive failed');
-      }
-    } catch (error) {
-      console.error('Archive failed:', error);
-      if (typeof Toast !== 'undefined') {
-        Toast.error('Archive failed: ' + error.message, { duration: 5000 });
-      } else {
-        alert('Archive failed: ' + error.message);
-      }
-    }
-  }
-  
-  function copyModalContent() {
-    const content = document.getElementById('detailContent').innerText;
-    navigator.clipboard.writeText(content).then(() => {
-      if (typeof Toast !== 'undefined') {
-        Toast.success("Copied to clipboard!", { duration: 2000 });
-      }
-    });
-  }
-  
+
   // ==========================================
   // Data Fetching & Rendering
   // ==========================================
-  
   
   async function fetchLogs(page = 1) {
     currentPage = page;
@@ -828,7 +539,7 @@
     const tableBody = document.querySelector('#audit-table tbody');
     const emptyState = document.getElementById('empty-state');
     
-    // Get all filter values
+    // Get filter values
     const searchInput = document.getElementById('search-input');
     const actionFilter = document.getElementById('action-filter');
     const methodFilter = document.getElementById('method-filter');
@@ -854,13 +565,12 @@
       end_date: dateRangeInput && dateRangeInput.value ? dateRangeInput.value.split(" to ")[1] || '' : ''
     });
     
-    // Note: method and status filters not supported by current backend but sent anyway
     if (methodFilter && methodFilter.value) params.append('method', methodFilter.value);
     if (statusFilter && statusFilter.value) params.append('status', statusFilter.value);
     
     try {
-      // FIX: Endpoint yang benar sesuai audit.py
-      const response = await fetch(`/api/audit-logs?${params.toString()}`);
+      // PERBAIKAN: Gunakan endpoint yang benar sesuai router prefix
+      const response = await fetch(`/audit-logs/api?${params.toString()}`);
       
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
@@ -889,20 +599,20 @@
       console.error("Failed to fetch audit logs:", error);
       if (tableBody) {
         tableBody.innerHTML = `
-        <tr>
-          <td colspan="8" class="text-center py-12">
-            <div class="flex flex-col items-center gap-3">
-              <div class="p-4 bg-red-100 dark:bg-red-900/20 rounded-full">
-                <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
+          <tr>
+            <td colspan="8" class="text-center py-12">
+              <div class="flex flex-col items-center gap-3">
+                <div class="p-4 bg-red-100 dark:bg-red-900/20 rounded-full">
+                  <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                  </svg>
+                </div>
+                <span class="text-red-500 font-medium">Failed to load data: ${error.message}</span>
+                <button onclick="fetchLogs(${page})" class="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition">Retry</button>
               </div>
-              <span class="text-red-500 font-medium">Failed to load data: ${error.message}</span>
-              <button onclick="fetchLogs(${page})" class="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition">Retry</button>
-            </div>
-          </td>
-        </tr>
-      `;
+            </td>
+          </tr>
+        `;
       }
     } finally {
       if (loadingOverlay) loadingOverlay.style.display = 'none';
@@ -925,13 +635,7 @@
     if (data.stats) {
       if (statToday) statToday.textContent = (data.stats.today || 0).toLocaleString();
       if (statUsers) statUsers.textContent = (data.stats.unique_users || 0).toLocaleString();
-      
-      // Security events - hitung dari data yang ada (opsional)
-      if (statSecurity) {
-        // Jika backend tidak mengirim security_events, hitung manual atau tampilkan 0
-        const securityEvents = data.stats.security_events || 0;
-        statSecurity.textContent = securityEvents.toLocaleString();
-      }
+      if (statSecurity) statSecurity.textContent = (data.stats.security_events || 0).toLocaleString();
     }
   }
   
@@ -942,22 +646,12 @@
     tableBody.innerHTML = '';
     if (logs.length === 0) return;
     
-    // Use timezone from data if available, fallback to template variable or UTC
-    const tz = '{{ timezone }}' || 'UTC';
-    
     logs.forEach(log => {
       const row = document.createElement('tr');
       row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700/50 transition group';
       
-      // Handle timestamp - backend already formatted it
-      let timestamp = '-';
-      if (log.timestamp) {
-        // Backend already returns formatted string via format_datetime_standard
-        timestamp = log.timestamp;
-      }
-      
-      // FIX: Backend tidak mengirim request_method dan response_status saat ini
-      // Jika ada, tampilkan. Jika tidak, tampilkan '-'
+      // Backend already returns formatted timestamp: "30/03/2026 - 16:55:00 WITA"
+      const timestamp = log.timestamp || '-';
       const method = log.request_method || '-';
       const status = log.response_status || '-';
       const user = log.user || 'anonymous';
@@ -965,35 +659,33 @@
       const ip = log.ip || '-';
       
       row.innerHTML = `
-      <td class="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300 font-mono text-xs">${timestamp}</td>
-      <td class="px-4 py-3 whitespace-nowrap">
-        <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
-            ${user.charAt(0).toUpperCase()}
+        <td class="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300 font-mono text-xs">${timestamp}</td>
+        <td class="px-4 py-3 whitespace-nowrap">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+              ${user.charAt(0).toUpperCase()}
+            </div>
+            <span class="text-gray-900 dark:text-white font-medium">${user}</span>
           </div>
-          <span class="text-gray-900 dark:text-white font-medium">${user}</span>
-        </div>
-      </td>
-      <td class="px-4 py-3 whitespace-nowrap">${getActionBadge(log.action)}</td>
-      <td class="px-4 py-3 text-gray-700 dark:text-gray-300 max-w-xs truncate" title="${target}">${target}</td>
-      <td class="px-4 py-3 whitespace-nowrap text-center">
-        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 font-mono">${method}</span>
-      </td>
-      <td class="px-4 py-3 whitespace-nowrap text-center">
-        ${getStatusBadge(status)}
-      </td>
-      <td class="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400 font-mono text-xs">${ip}</td>
-      <td class="px-4 py-3 whitespace-nowrap text-center">
-        <button onclick='showDetailModal(${JSON.stringify(log).replace(/'/g, "&#39;")})' 
-          class="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition" 
-          title="View Details">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-          </svg>
-        </button>
-      </td>
-    `;
+        </td>
+        <td class="px-4 py-3 whitespace-nowrap">${getActionBadge(log.action)}</td>
+        <td class="px-4 py-3 text-gray-700 dark:text-gray-300 max-w-xs truncate" title="${target}">${target}</td>
+        <td class="px-4 py-3 whitespace-nowrap text-center">
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 font-mono">${method}</span>
+        </td>
+        <td class="px-4 py-3 whitespace-nowrap text-center">${getStatusBadge(status)}</td>
+        <td class="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400 font-mono text-xs">${ip}</td>
+        <td class="px-4 py-3 whitespace-nowrap text-center">
+          <button onclick='showDetailModal(${JSON.stringify(log).replace(/'/g, "&#39;")})' 
+            class="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition" 
+            title="View Details">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+            </svg>
+          </button>
+        </td>
+      `;
       tableBody.appendChild(row);
     });
   }
@@ -1017,13 +709,13 @@
     // First & Prev
     if (currentPageNum > 1) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-      <button onclick="fetchLogs(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
-      </button>
-      <button onclick="fetchLogs(${currentPageNum - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-      </button>
-    `);
+        <button onclick="fetchLogs(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+        </button>
+        <button onclick="fetchLogs(${currentPageNum - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+      `);
     }
     
     // Left ellipsis
@@ -1035,12 +727,12 @@
     for (let i = Math.max(1, currentPageNum - window); i <= Math.min(totalPages, currentPageNum + window); i++) {
       if (i === currentPageNum) {
         paginationButtons.insertAdjacentHTML('beforeend', `
-        <button class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium shadow-sm">${i}</button>
-      `);
+          <button class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium shadow-sm">${i}</button>
+        `);
       } else {
         paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="fetchLogs(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>
-      `);
+          <button onclick="fetchLogs(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>
+        `);
       }
     }
     
@@ -1052,13 +744,13 @@
     // Next & Last
     if (currentPageNum < totalPages) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-      <button onclick="fetchLogs(${currentPageNum + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-      </button>
-      <button onclick="fetchLogs(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
-      </button>
-    `);
+        <button onclick="fetchLogs(${currentPageNum + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+        <button onclick="fetchLogs(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+        </button>
+      `);
     }
   }
   
@@ -1074,9 +766,9 @@
       }
     }
   }
-  
+
   // ==========================================
-  // Filter Functions
+  // Filter Functions (tetap sama)
   // ==========================================
   
   function updateActiveFilters() {
@@ -1156,34 +848,268 @@
     if (datePicker) datePicker.clear();
     fetchLogs(1);
   }
+
+  // ==========================================
+  // Modal Functions (tetap sama)
+  // ==========================================
   
-  function setQuickDate(range) {
-    const today = new Date();
-    let start, end;
+  function showAuditInfo() {
+    document.getElementById('auditInfoModal').classList.remove('hidden');
+    document.getElementById('auditInfoModal').classList.add('flex');
+  }
+  
+  function hideAuditInfo() {
+    document.getElementById('auditInfoModal').classList.add('hidden');
+    document.getElementById('auditInfoModal').classList.remove('flex');
+  }
+  
+  function showDetailModal(logEntry) {
+    const content = document.getElementById('detailContent');
+    const timestamp = logEntry.timestamp || 'N/A';
     
-    switch(range) {
-      case 'today':
-      start = end = today;
-      break;
-      case 'yesterday':
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      start = end = yesterday;
-      break;
-      case 'week':
-      start = new Date(today);
-      start.setDate(start.getDate() - 6);
-      end = today;
-      break;
+    let extraSection = '';
+    if (logEntry.extra) {
+      const formatted = formatExtra(logEntry.extra);
+      const highlighted = highlightJSON(formatted);
+      extraSection = `
+        <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg relative group">
+          <p class="text-xs text-gray-500 dark:text-gray-400 uppercase mb-2">Extra Data</p>
+          <pre class="text-sm text-gray-700 dark:text-gray-300 font-mono whitespace-pre-wrap overflow-x-auto">${highlighted}</pre>
+          <button onclick="copyModalContent()" class="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 bg-white dark:bg-gray-600 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 transition opacity-0 group-hover:opacity-100" title="Copy to clipboard">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+          </button>
+        </div>
+      `;
     }
     
-    if (start && end) {
-      const format = (d) => d.toISOString().split('T')[0];
-      datePicker.setDate([start, end]);
-      fetchLogs(1);
+    content.innerHTML = `
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Timestamp</p>
+            <p class="font-medium text-gray-900 dark:text-white font-mono text-sm">${timestamp}</p>
+          </div>
+          <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">User</p>
+            <div class="flex items-center gap-2 mt-1">
+              <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                ${(logEntry.user || 'A').charAt(0).toUpperCase()}
+              </div>
+              <p class="font-medium text-gray-900 dark:text-white">${logEntry.user || 'anonymous'}</p>
+            </div>
+          </div>
+          <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Action</p>
+            <p class="font-medium text-gray-900 dark:text-white flex items-center gap-2 mt-1">
+              ${getActionBadge(logEntry.action)}
+            </p>
+          </div>
+          <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Target</p>
+            <p class="font-medium text-gray-900 dark:text-white text-sm truncate">${logEntry.target || '-'}</p>
+          </div>
+        </div>
+        
+        <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+          <p class="text-xs text-gray-500 dark:text-gray-400 uppercase mb-2">Request Details</p>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div class="flex items-center gap-2">
+              <span class="text-gray-500">Method:</span> 
+              <span class="font-mono bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded text-xs">${logEntry.request_method || '-'}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-gray-500">Status:</span> 
+              ${getStatusBadge(logEntry.response_status)}
+            </div>
+            <div class="col-span-2">
+              <span class="text-gray-500">Path:</span> 
+              <span class="font-mono text-xs break-all bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded block mt-1">${logEntry.request_path || '-'}</span>
+            </div>
+            <div class="col-span-2 flex items-center gap-2">
+              <span class="text-gray-500">IP:</span> 
+              <code class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">${logEntry.ip || '-'}</code>
+            </div>
+          </div>
+        </div>
+        
+        ${logEntry.user_agent ? `
+        <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+          <p class="text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">User Agent</p>
+          <p class="text-sm text-gray-700 dark:text-gray-300 font-mono break-all bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">${logEntry.user_agent}</p>
+        </div>
+        ` : ''}
+        
+        ${extraSection}
+      </div>
+    `;
+    
+    document.getElementById('detailModal').classList.remove('hidden');
+    document.getElementById('detailModal').classList.add('flex');
+  }
+  
+  function hideDetailModal() {
+    document.getElementById('detailModal').classList.add('hidden');
+    document.getElementById('detailModal').classList.remove('flex');
+  }
+  
+  function copyModalContent() {
+    const content = document.getElementById('detailContent').innerText;
+    navigator.clipboard.writeText(content).then(() => {
+      if (typeof Toast !== 'undefined') {
+        Toast.success("Copied to clipboard!", { duration: 2000 });
+      }
+    });
+  }
+
+  // ==========================================
+  // Archive Functions (tetap sama)
+  // ==========================================
+  
+  async function fetchArchiveStats() {
+    try {
+      const response = await fetch('/audit-logs/api/stats');
+      if (!response.ok) return;
+      
+      const data = await response.json();
+      
+      const statArchive = document.getElementById('stat-archive');
+      const statArchiveSub = document.getElementById('stat-archive-sub');
+      if (statArchive && data.current_table) {
+        const totalRecords = data.current_table.records + data.legacy_table.records;
+        statArchive.textContent = totalRecords.toLocaleString();
+      }
+      if (statArchiveSub && data.eligible_for_archive > 0) {
+        statArchiveSub.textContent = `${data.eligible_for_archive.toLocaleString()} ready to archive`;
+        statArchiveSub.classList.add('text-amber-600', 'dark:text-amber-400');
+      }
+      
+      const warningBanner = document.getElementById('archive-warning');
+      const eligibleCount = document.getElementById('archive-eligible-count');
+      if (warningBanner && eligibleCount && data.eligible_for_archive > 1000) {
+        eligibleCount.textContent = data.eligible_for_archive.toLocaleString();
+        warningBanner.classList.remove('hidden');
+      }
+      
+    } catch (error) {
+      console.error('Failed to fetch archive stats:', error);
     }
   }
   
+  function showArchiveHistory() {
+    document.getElementById('archiveHistoryModal').classList.remove('hidden');
+    document.getElementById('archiveHistoryModal').classList.add('flex');
+    fetchArchiveHistory();
+  }
+  
+  function hideArchiveHistory() {
+    document.getElementById('archiveHistoryModal').classList.add('hidden');
+    document.getElementById('archiveHistoryModal').classList.remove('flex');
+  }
+  
+  async function fetchArchiveHistory() {
+    try {
+      const response = await fetch('/audit-logs/api/archive/history');
+      if (!response.ok) throw new Error('Failed to fetch');
+      
+      const data = await response.json();
+      renderArchiveHistory(data.history || []);
+      
+      const statsResponse = await fetch('/audit-logs/api/stats');
+      if (statsResponse.ok) {
+        const stats = await statsResponse.json();
+        document.getElementById('archive-stat-current').textContent = 
+          (stats.current_table?.records || 0).toLocaleString();
+        document.getElementById('archive-stat-legacy').textContent = 
+          (stats.legacy_table?.records || 0).toLocaleString();
+        document.getElementById('archive-stat-total').textContent = 
+          (stats.archive_history?.total_archives || 0).toLocaleString();
+      }
+      
+    } catch (error) {
+      console.error('Failed to fetch archive history:', error);
+    }
+  }
+  
+  function renderArchiveHistory(history) {
+    const container = document.getElementById('archive-history-list');
+    const emptyState = document.getElementById('archive-history-empty');
+    
+    if (!container) return;
+    
+    if (history.length === 0) {
+      container.innerHTML = '';
+      emptyState.classList.remove('hidden');
+      return;
+    }
+    
+    emptyState.classList.add('hidden');
+    container.innerHTML = history.map(item => `
+      <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}">
+              ${item.status === 'completed' ? '✓ Completed' : '✗ Failed'}
+            </span>
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              ${new Date(item.archived_at).toLocaleString()}
+            </span>
+          </div>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">
+            ${item.records_archived.toLocaleString()} records
+          </span>
+        </div>
+        <div class="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+          <p><strong>By:</strong> ${item.archived_by}</p>
+          <p><strong>File:</strong> <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">${item.file_path.split('/').pop()}</code></p>
+          <p><strong>Size:</strong> ${item.file_size_mb} MB</p>
+          ${item.checksum ? `<p><strong>Checksum:</strong> <code class="text-xs">${item.checksum.substring(0, 16)}...</code></p>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  async function triggerArchive() {
+    const confirmed = confirm(
+      'Archive audit logs older than 6 months?\n\n' +
+      'This will:\n' +
+      '1. Export logs to encrypted file\n' +
+      '2. Copy to legacy table\n' +
+      '3. Remove from current table\n\n' +
+      'This operation cannot be undone.'
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      const response = await fetch('/audit-logs/api/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.status === 'success') {
+        if (typeof Toast !== 'undefined') {
+          Toast.success(result.message || 'Archive completed successfully', { duration: 5000 });
+        }
+        fetchArchiveStats();
+        fetchArchiveHistory();
+        fetchLogs(1);
+      } else {
+        throw new Error(result.message || 'Archive failed');
+      }
+    } catch (error) {
+      console.error('Archive failed:', error);
+      if (typeof Toast !== 'undefined') {
+        Toast.error('Archive failed: ' + error.message, { duration: 5000 });
+      } else {
+        alert('Archive failed: ' + error.message);
+      }
+    }
+  }
+
   // ==========================================
   // Export Function
   // ==========================================
@@ -1209,10 +1135,10 @@
       Toast.info("Downloading CSV...", { duration: 2000 });
     }
     
-    // FIX: URL export yang benar
-    window.location.href = `/api/audit-logs/export?${params.toString()}`;
+    // PERBAIKAN: URL export yang benar sesuai router prefix
+    window.location.href = `/audit-logs/api/export?${params.toString()}`;
   }
-  
+
   // ==========================================
   // Initialization
   // ==========================================
@@ -1251,6 +1177,7 @@
       if (e.key === 'Escape') {
         hideAuditInfo();
         hideDetailModal();
+        hideArchiveHistory();
       }
     });
     
