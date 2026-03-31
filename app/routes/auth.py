@@ -18,6 +18,11 @@ from app.utils.remember_me import (
     create_remember_token, revoke_token, get_cookie_settings
 )
 
+# Cookie security settings based on environment
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+COOKIE_SECURE = ENVIRONMENT == "production"
+COOKIE_SAMESITE = "strict" if ENVIRONMENT == "production" else "lax"
+
 # --- Setup Router and Template ---
 router = APIRouter(tags=["Authentication"])
 from app.utils.template_helper import templates
@@ -156,8 +161,8 @@ def otp_post(
         token,
         httponly=True,
         max_age=60*60*24,
-        samesite="lax",
-        secure=False  # Ganti ke True jika menggunakan HTTPS
+        samesite=COOKIE_SAMESITE,
+        secure=COOKIE_SECURE
     )
     
     # Handle Remember Me
@@ -287,8 +292,8 @@ def mfa_setup_post(
         value=token,
         httponly=True,
         max_age=60*60*24,
-        samesite="lax",
-        secure=False
+        samesite=COOKIE_SAMESITE,
+        secure=COOKIE_SECURE
     )
     
     # Handle Remember Me (for first-time MFA setup flow)

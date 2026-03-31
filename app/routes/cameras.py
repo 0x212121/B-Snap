@@ -528,7 +528,7 @@ async def get_camera_password(
 
 
 @router.get("/api/camera_groups")
-async def get_camera_groups(request: Request, db: Session = Depends(get_db)):
+async def get_camera_groups_list(request: Request, db: Session = Depends(get_db)):
     """Fetches a list of all camera groups."""
     groups = db.query(CameraGroup).all()
     logger.debug("Fetched %s camera groups.", len(groups))

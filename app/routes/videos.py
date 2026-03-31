@@ -51,12 +51,15 @@ def _get_filtered_videos(
     """
     # If group_id is None, user has no specific group - access to all cameras
     if group_id is None:
-        video_query = db.query(Video)
+        video_query = db.query(Video).filter(Video.deleted_at.is_(None))
     else:
         user_group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
         if not user_group:
             raise HTTPException(status_code=403, detail="User group not found")
-        video_query = db.query(Video).filter(Video.camera_group == user_group.name)
+        video_query = db.query(Video).filter(
+            Video.camera_group == user_group.name,
+            Video.deleted_at.is_(None)
+        )
 
     if camera_filter:
         video_query = video_query.filter(Video.camera_name == camera_filter)

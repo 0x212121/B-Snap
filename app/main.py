@@ -63,6 +63,9 @@ if os.getenv("BSNAP_LOG_VIA_GUNICORN", "1") not in ("1", "true", "yes"):
 
 logger = logging.getLogger("main")
 
+# Environment detection
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+
 SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key-for-dev")
 if SECRET_KEY == "your-default-secret-key-for-dev":
     logger.warning("Using default SECRET_KEY. This is not secure for production.")
@@ -83,6 +86,15 @@ templates.env.globals["version"] = __version__
 # ====================================================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Log startup environment
+    env_display = ENVIRONMENT.upper()
+    if ENVIRONMENT == "production":
+        logger.info(f"🚀 B-Snap starting in {env_display} mode")
+    elif ENVIRONMENT == "testing":
+        logger.info(f"🧪 B-Snap starting in {env_display} mode")
+    else:
+        logger.info(f"🔧 B-Snap starting in {env_display} mode")
+    
     logger.info("Lifespan startup: Initializing database...")
     
     # Wait a bit for database to be fully ready in containerized environments
