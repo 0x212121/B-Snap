@@ -2,6 +2,7 @@ from datetime import datetime
 from email.mime.application import MIMEApplication
 import os
 import smtplib
+import socket
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from fastapi import BackgroundTasks
@@ -43,10 +44,17 @@ def _send_email_sync(to: list[str], subject: str, body: str, html: str | None = 
     if html:
         msg.attach(MIMEText(html, "html"))
 
-    with smtplib.SMTP(config["smtp_host"], config["smtp_port"]) as server:
-        server.starttls()
-        server.login(config["smtp_user"], config["smtp_pass"])
-        server.sendmail(config["email_from"], to, msg.as_string())
+    try:
+        with smtplib.SMTP(config["smtp_host"], config["smtp_port"], timeout=30) as server:
+            server.starttls()
+            server.login(config["smtp_user"], config["smtp_pass"])
+            server.sendmail(config["email_from"], to, msg.as_string())
+    except socket.gaierror as e:
+        raise RuntimeError(f"Cannot resolve SMTP host '{config['smtp_host']}': {e}. Please check your SMTP configuration.")
+    except socket.timeout as e:
+        raise RuntimeError(f"SMTP connection timeout: {e}. Please check your network connection.")
+    except smtplib.SMTPException as e:
+        raise RuntimeError(f"SMTP error: {e}")
 
 
 def send_email(
@@ -195,10 +203,17 @@ def _send_email_with_image(
     # gabungkan recipients (to + cc)
     all_recipients = to_emails + ([config["email_cc"]] if config["email_cc"] else [])
 
-    with smtplib.SMTP(config["smtp_host"], config["smtp_port"]) as server:
-        server.starttls()
-        server.login(config["smtp_user"], config["smtp_pass"])
-        server.sendmail(config["email_from"], all_recipients, msg.as_string())
+    try:
+        with smtplib.SMTP(config["smtp_host"], config["smtp_port"], timeout=30) as server:
+            server.starttls()
+            server.login(config["smtp_user"], config["smtp_pass"])
+            server.sendmail(config["email_from"], all_recipients, msg.as_string())
+    except socket.gaierror as e:
+        raise RuntimeError(f"Cannot resolve SMTP host '{config['smtp_host']}': {e}. Please check your SMTP configuration.")
+    except socket.timeout as e:
+        raise RuntimeError(f"SMTP connection timeout: {e}. Please check your network connection.")
+    except smtplib.SMTPException as e:
+        raise RuntimeError(f"SMTP error: {e}")
 
 
 # =========================

@@ -682,6 +682,10 @@ PT Kaltim Prima Coal
         logger.info("Recovery alert sent for %s", camera.hostname)
         return True
         
+    except RuntimeError as e:
+        # SMTP configuration/network errors - log as warning, not error
+        logger.warning("Failed to send recovery alert: %s", e)
+        return False
     except Exception as e:
         logger.exception("Failed to send recovery alert: %s", e)
         # Don't record failure for recovery - it's less critical
