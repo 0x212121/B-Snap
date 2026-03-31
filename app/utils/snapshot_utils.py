@@ -267,7 +267,7 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
 
     # === pembaruan umum ===
     health.checked = datetime.now(timezone.utc)
-    health.status_changed_at = datetime.now(timezone.utc)
+    # health.status_changed_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(health)
 

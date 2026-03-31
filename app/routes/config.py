@@ -192,12 +192,12 @@ async def config_save(
         "storage_warning_percent": storage_warning_percent,
         "storage_info_percent": storage_info_percent,
         "storage_critical_free_gb": storage_critical_free_gb,
-        "smtp_host": smtp_host,
+        "smtp_host": smtp_host.strip(),
         "smtp_port": smtp_port,
-        "smtp_user": smtp_user,
+        "smtp_user": smtp_user.strip(),
         "smtp_pass": smtp_pass,
-        "email_from": email_from,
-        "email_cc": email_cc,
+        "email_from": email_from.strip(),
+        "email_cc": email_cc.strip(),
     }
 
     for config_key, config_value in keys.items():
