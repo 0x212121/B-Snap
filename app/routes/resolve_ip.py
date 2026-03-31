@@ -31,10 +31,7 @@ def resolve_ip_by_name(
             # --- Ambil whitelist berdasarkan nomor WA ---
             whitelist_entries = (
                 db.query(WhatsappWhitelist)
-                .filter(
-                    WhatsappWhitelist.phone_number == phone_number,
-                    WhatsappWhitelist.is_active == True
-                )
+                .filter(WhatsappWhitelist.phone_number == phone_number)
                 .all()
             )
 

@@ -760,17 +760,25 @@ def update_scheduler_config():
 # Cleanup Jobs
 # ----------------------------
 def delete_old_audit_logs():
+    """P2-001: Archive old audit logs from legacy table.
+    
+    Note: audit_logs (main table) is append-only and cannot be deleted.
+          Only audit_logs_legacy can be cleaned up.
+    """
     db: Session = SessionLocal()
     try:
+        from app.models.audit_log import AuditLogLegacy
         retention_days = int(get_config("retention_audit_logs_days", 180))
         cutoff_date = date.today() - timedelta(days=retention_days)
+        
+        # P2-001: Only delete from legacy table, main audit_logs is immutable
         deleted_rows = (
-            db.query(AuditLog)
-            .filter(AuditLog.timestamp < cutoff_date)
+            db.query(AuditLogLegacy)
+            .filter(AuditLogLegacy.timestamp < cutoff_date)
             .delete(synchronize_session=False)
         )
         db.commit()
-        logger.info("[delete_old_audit_logs] Deleted %d rows older than %s", deleted_rows, cutoff_date)
+        logger.info("[delete_old_audit_logs] Deleted %d rows from legacy table older than %s", deleted_rows, cutoff_date)
         return {"records_processed": deleted_rows}
     except Exception as e:
         db.rollback()

@@ -5,7 +5,6 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
-    Boolean,
     DateTime,
     Index,
     Enum as SAEnum,  # Enum untuk SQLAlchemy
@@ -27,7 +26,6 @@ class WhatsappWhitelist(Base):
     phone_number = Column(String(20), unique=True, index=True, nullable=False)
     name = Column(String(100), nullable=True)
     role = Column(SAEnum(RoleEnum, name="role_enum"), default=RoleEnum.user, nullable=False)
-    is_active = Column(Boolean, default=True)
     added_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     group_id = Column(Integer, ForeignKey("camera_groups.id", ondelete="SET NULL"), nullable=True)
     group = relationship("CameraGroup", back_populates="whatsapp_whitelist", lazy="joined")

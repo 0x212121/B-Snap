@@ -33,6 +33,77 @@
     html.theme-transition, body.theme-transition, .theme-transition * {
       transition: background-color 0.5s, color 0.5s, border-color 0.5s, box-shadow 0.5s;
     }
+    /* SweetAlert2 Popup Styling - Default (Light Mode) */
+    .swal2-popup {
+      background: #ffffff !important;
+      color: #111827 !important;
+    }
+    .swal2-title {
+      color: #111827 !important;
+    }
+    .swal2-html-container {
+      color: #374151 !important;
+    }
+    /* SweetAlert2 Buttons - Light Mode */
+    .swal2-confirm {
+      background-color: #2563eb !important;
+      color: #ffffff !important;
+    }
+    .swal2-cancel {
+      background-color: #9ca3af !important;
+      color: #ffffff !important;
+    }
+
+    /* SweetAlert2 Input Styling - Default (Light Mode) */
+    .swal2-container .swal2-input,
+    .swal2-popup .swal2-input {
+      color: #374151 !important;
+      background-color: #f9fafb !important;
+      border-color: #d1d5db !important;
+      -webkit-text-fill-color: #374151 !important;
+    }
+    .swal2-container .swal2-input:focus,
+    .swal2-popup .swal2-input:focus {
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
+    }
+    /* SweetAlert2 Popup & Input Styling - Dark Mode Override */
+    html.dark .swal2-popup {
+      background: #1f2937 !important;
+      color: #f3f4f6 !important;
+    }
+    html.dark .swal2-title {
+      color: #f3f4f6 !important;
+    }
+    html.dark .swal2-html-container {
+      color: #d1d5db !important;
+    }
+    /* SweetAlert2 Buttons - Dark Mode */
+    html.dark .swal2-confirm {
+      background-color: #3b82f6 !important;
+      color: #ffffff !important;
+    }
+    html.dark .swal2-cancel {
+      background-color: #4b5563 !important;
+      color: #ffffff !important;
+    }
+
+    html.dark .swal2-container .swal2-input,
+    html.dark .swal2-popup .swal2-input,
+    .swal2-container .swal2-input.swal2-input-dark,
+    .swal2-popup .swal2-input.swal2-input-dark {
+      color: #f3f4f6 !important;
+      background-color: #374151 !important;
+      border-color: #4b5563 !important;
+      -webkit-text-fill-color: #f3f4f6 !important;
+    }
+    html.dark .swal2-container .swal2-input:focus,
+    html.dark .swal2-popup .swal2-input:focus,
+    .swal2-container .swal2-input.swal2-input-dark:focus,
+    .swal2-popup .swal2-input.swal2-input-dark:focus {
+      border-color: #60a5fa !important;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.3) !important;
+    }
   </style>
   <!-- SweetAlert2 CSS -->
   <link rel="stylesheet" href="/static/css/sweetalert2.min.css">
@@ -296,7 +367,48 @@ function getSwalThemeConfig() {
 }
 
 function themedSwal(options = {}) {
-  return Swal.fire({...getSwalThemeConfig(), ...options});
+  const isDark = document.documentElement.classList.contains('dark');
+  
+  // Custom input class based on theme
+  const inputClass = isDark 
+    ? 'swal2-input-dark' 
+    : 'swal2-input-light';
+  
+  // If has input, apply styling via didOpen callback
+  const originalDidOpen = options.didOpen;
+  const didOpen = (popup) => {
+    // Apply styling to input if exists
+    const input = popup.querySelector('.swal2-input');
+    if (input) {
+      input.classList.remove('swal2-input-light', 'swal2-input-dark');
+      input.classList.add(inputClass);
+      
+      // Force inline styles as fallback
+      if (isDark) {
+        input.style.color = '#f3f4f6';
+        input.style.backgroundColor = '#374151';
+        input.style.borderColor = '#4b5563';
+      } else {
+        input.style.color = '#374151';
+        input.style.backgroundColor = '#f9fafb';
+        input.style.borderColor = '#d1d5db';
+      }
+    }
+    
+    if (originalDidOpen) originalDidOpen(popup);
+  };
+  
+  // Merge with custom input styling
+  const mergedOptions = {
+    ...options,
+    didOpen: didOpen,
+    customClass: {
+      ...options.customClass,
+      input: inputClass + ' ' + (options.customClass?.input || ''),
+    }
+  };
+  
+  return Swal.fire({...getSwalThemeConfig(), ...mergedOptions});
 }
 
 function showGlobalConfirm(message, onConfirm, options = {}) {

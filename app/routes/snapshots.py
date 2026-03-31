@@ -127,7 +127,7 @@ def search_snapshots(
     if phone_number:
         whitelist_entries = (
             db.query(WhatsappWhitelist)
-            .filter(WhatsappWhitelist.phone_number == phone_number, WhatsappWhitelist.is_active == True)
+            .filter(WhatsappWhitelist.phone_number == phone_number)
             .all()
         )
         if not whitelist_entries:

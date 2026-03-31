@@ -185,7 +185,6 @@
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Name</th>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Role</th>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Group</th>
-          <th class="px-4 py-3.5 font-semibold whitespace-nowrap text-center">Status</th>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap text-center">Actions</th>
         </tr>
       </thead>
@@ -297,14 +296,13 @@
           <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-400">
             <p class="font-medium mb-2">CSV Format:</p>
             <code class="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded block mb-2">
-              phone_number,name,role,group_name,is_active
+              phone_number,name,role,group_name
             </code>
             <ul class="text-xs space-y-1 list-disc list-inside">
               <li><strong>phone_number</strong>: required (628xxxxxxxxxx)</li>
               <li><strong>name</strong>: optional</li>
               <li><strong>role</strong>: optional (user/admin)</li>
               <li><strong>group_name</strong>: optional</li>
-              <li><strong>is_active</strong>: optional (yes/no)</li>
             </ul>
           </div>
           
@@ -533,8 +531,6 @@
         
         data.forEach(w => {
           const initials = (w.name || w.phone_number).split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-          const bgColor = w.is_active ? 'bg-green-600' : 'bg-gray-200 dark:bg-gray-700';
-          const dotTransform = w.is_active ? 'translate-x-6' : 'translate-x-1';
           
           tableBody.insertAdjacentHTML('beforeend', `
             <tr class="group">
@@ -557,15 +553,8 @@
                 </span>
               </td>
               <td class="px-4 py-3 text-center">
-                <button onclick="toggleActive('${w.phone_number}', '${w.name || ''}', '${w.role}', ${!w.is_active})" 
-                        class="status-toggle ${w.is_active ? 'status-toggle-active' : 'status-toggle-inactive'}"
-                        title="${w.is_active ? 'Active' : 'Inactive'}">
-                  <span class="status-toggle-dot ${w.is_active ? 'translate-x-6' : 'translate-x-1'}"></span>
-                </button>
-              </td>
-              <td class="px-4 py-3 text-center">
                 <div class="flex items-center justify-center gap-1">
-                  <button onclick="showEditModal('${w.phone_number}', '${w.name || ''}', '${w.role}', '${w.group_id || ''}', ${w.is_active})"
+                  <button onclick="showEditModal('${w.phone_number}', '${w.name || ''}', '${w.role}', '${w.group_id || ''}')"
                           title="Edit"
                           class="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -608,33 +597,7 @@
     }
   }
 
-  // ====== ACTIONS ======
-  async function toggleActive(phone, name, role, state) {
-    try {
-      const res = await fetch(`/api/whitelist/${encodeURIComponent(phone)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, role, is_active: state })
-      });
 
-      if (!res.ok) {
-        const body = await res.text();
-        let msg;
-        try { msg = (JSON.parse(body).detail) || body; } catch { msg = body; }
-        throw new Error(msg);
-      }
-
-      if (typeof Toast !== 'undefined') {
-        Toast.success(`Status ${state ? 'activated' : 'deactivated'}`, { title: 'Updated', duration: 2000 });
-      }
-      loadWhitelist(currentPage);
-    } catch (error) {
-      console.error('Error updating whitelist:', error);
-      if (typeof Toast !== 'undefined') {
-        Toast.error(`Failed to update: ${error.message || 'Unknown error'}`, { title: 'Error' });
-      }
-    }
-  }
 
   function confirmDelete(phone) {
     const message = `Are you sure you want to delete ${phone}? This action cannot be undone.`;
@@ -751,7 +714,7 @@
         name: form.name.value || null,
         role: form.role.value,
         group_id: parseInt(form.group_id.value),
-        is_active: true
+
       };
       
       try {
@@ -782,7 +745,7 @@
     };
   }
 
-  async function showEditModal(phone, name, role, groupId, isActive) {
+  async function showEditModal(phone, name, role, groupId) {
     if (!cameraGroups.length) await loadGroups();
     
     const modalHtml = `
@@ -831,11 +794,6 @@
             </div>
           </div>
           
-          <label class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
-            <input type="checkbox" name="is_active" ${isActive ? 'checked' : ''} class="w-5 h-5 text-green-600 rounded focus:ring-green-500">
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Active</span>
-          </label>
-          
           <div class="flex justify-end gap-3 pt-4">
             <button type="button" onclick="closeModal('edit-modal')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 rounded-lg font-medium transition">Cancel</button>
             <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition">Save Changes</button>
@@ -852,8 +810,7 @@
       const payload = {
         name: form.name.value || null,
         role: form.role.value,
-        group_id: form.group_id.value || null,
-        is_active: form.is_active.checked
+        group_id: form.group_id.value || null
       };
       
       try {

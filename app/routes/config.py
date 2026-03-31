@@ -278,6 +278,9 @@ async def run_cleanup_now(
     """
     Manually trigger log cleanup jobs with current retention settings.
     Requires password verification for security.
+    
+    Note: Audit logs are append-only (P2-001) and cannot be deleted.
+          They are archived instead based on retention policy.
     """
     from app.jobs.scheduler import (
         delete_old_audit_logs,
@@ -308,9 +311,12 @@ async def run_cleanup_now(
     
     try:
         # Run each cleanup job and capture results
+        # P2-001: Audit logs main table is append-only (immutable)
+        # Only legacy table (>6 months old) can be cleaned
         try:
-            delete_old_audit_logs()
-            results["audit_logs"] = "Cleaned successfully"
+            result = delete_old_audit_logs()
+            deleted = result.get("records_processed", 0)
+            results["audit_logs"] = f"{deleted} legacy records archived"
         except Exception as e:
             errors.append(f"Audit logs: {str(e)}")
             results["audit_logs"] = f"Error: {str(e)}"

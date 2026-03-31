@@ -60,7 +60,7 @@ LOGGING_CONFIG = {
         },
         "access": {
             "()": UTCFormatter,
-            "format": '%(asctime)s [%(levelname)s] [%(name)s] [pid=%(process)d] %(client_addr)s - "%(request_line)s" %(status_code)s'
+            "format": "[%(asctime)s] [%(levelname)s] [%(name)s] [pid=%(process)d] %(message)s"
         },
     },
 
