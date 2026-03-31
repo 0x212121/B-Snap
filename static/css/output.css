@@ -1435,10 +1435,6 @@ select {
   max-width: 64rem;
 }
 
-.max-w-7xl {
-  max-width: 80rem;
-}
-
 .max-w-\[1400px\] {
   max-width: 1400px;
 }
@@ -4934,11 +4930,6 @@ select {
     padding: 1.5rem;
   }
 
-  .sm\:px-6 {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-
   .sm\:text-sm {
     font-size: 0.875rem;
     line-height: 1.25rem;
@@ -5047,11 +5038,6 @@ select {
 
   .lg\:justify-end {
     justify-content: flex-end;
-  }
-
-  .lg\:px-8 {
-    padding-left: 2rem;
-    padding-right: 2rem;
   }
 }
 

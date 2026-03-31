@@ -20,9 +20,9 @@ B-Snap implements defense-in-depth security for CCTV environments, addressing bo
 ### Password Encryption (P1-001)
 Camera and NVR passwords are encrypted at rest using **AES-256-GCM**:
 
-```python
+```text
 # Encryption flow
-plaintext password → AES-256-GCM → ciphertext stored in DB
+plaintext password -> AES-256-GCM -> ciphertext stored in DB
 ```
 
 - **Algorithm**: AES-256-GCM (authenticated encryption)
@@ -55,10 +55,10 @@ file_hash = hashlib.sha256(file_content).hexdigest()
 
 Database-level enforcement prevents tampering:
 
-```sql
+```text
 -- Triggers prevent modification
-BEFORE DELETE ON audit_logs → RAISE EXCEPTION
-BEFORE UPDATE ON audit_logs → RAISE EXCEPTION
+BEFORE DELETE ON audit_logs -> RAISE EXCEPTION
+BEFORE UPDATE ON audit_logs -> RAISE EXCEPTION
 ```
 
 **Log Retention Strategy**:

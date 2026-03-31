@@ -13,7 +13,7 @@ from typing import Optional, Union
 from app.models.user import User
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, UploadFile, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.database import get_db
@@ -37,9 +37,29 @@ setup_logging()
 logger = logging.getLogger("management")
 
 @router.get("/cameras", response_class=HTMLResponse)
-async def manage(request: Request):
-    """Renders the main cameras management page."""
-    return templates.TemplateResponse("cameras.html", {"request": request})
+async def manage(request: Request, db: Session = Depends(get_db)):
+    """Renders the main cameras management page with filter options."""
+    # Get unique filter values
+    groups = db.query(CameraGroup).order_by(CameraGroup.name).all()
+    locations = db.query(DBCamera.location).filter(DBCamera.location.isnot(None)).distinct().order_by(DBCamera.location).all()
+    
+    return templates.TemplateResponse("cameras.html", {
+        "request": request,
+        "groups": groups,
+        "locations": [loc[0] for loc in locations if loc[0]],
+        "safety_options": [
+            {"value": "critical", "label": "Critical"},
+            {"value": "standard", "label": "Standard"},
+            {"value": "low", "label": "Low"}
+        ],
+        "status_options": [
+            {"value": "Active", "label": "Active"},
+            {"value": "Deactivated", "label": "Deactivated"},
+            {"value": "Maintenance", "label": "Maintenance"},
+            {"value": "Restricted", "label": "Restricted"},
+            {"value": "Standalone", "label": "Standalone"}
+        ]
+    })
 
 
 @router.get("/cameras/data", response_class=JSONResponse)
@@ -48,14 +68,36 @@ async def manage_data(
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
     search: Optional[str] = Query(None),
-    per_page: int = Query(10, ge=1)
+    per_page: int = Query(10, ge=1),
+    group_id: Optional[int] = Query(None),
+    location: Optional[str] = Query(None),
+    safety: Optional[str] = Query(None),
+    status: Optional[str] = Query(None)
 ):
-    logger.debug("Received request for camera data. Page: %s, Search: %s, Per_page: %s", page, search, per_page)
+    logger.debug("Received request for camera data. Page: %s, Search: %s, Filters: group=%s, location=%s, safety=%s, status=%s", 
+                 page, search, group_id, location, safety, status)
 
     query = db.query(DBCamera).options(joinedload(DBCamera.group))
+    stats_query = db.query(DBCamera)
+    
+    # Apply filters to both queries
+    if group_id:
+        query = query.filter(DBCamera.group_id == group_id)
+        stats_query = stats_query.filter(DBCamera.group_id == group_id)
+    
+    if location:
+        query = query.filter(DBCamera.location.ilike(f"%{location}%"))
+        stats_query = stats_query.filter(DBCamera.location.ilike(f"%{location}%"))
+    
+    if safety:
+        query = query.filter(DBCamera.safety_classification == safety)
+        stats_query = stats_query.filter(DBCamera.safety_classification == safety)
+    
+    if status:
+        query = query.filter(DBCamera.status == status)
+        stats_query = stats_query.filter(DBCamera.status == status)
     
     # Calculate stats before applying pagination
-    stats_query = db.query(DBCamera)
     if search:
         search_term = f"%{search}%"
         stats_query = stats_query.join(CameraGroup, DBCamera.group_id == CameraGroup.id, isouter=True).filter(
@@ -84,7 +126,7 @@ async def manage_data(
         "critical": critical_count  # P2-002
     }
 
-    # Apply filters to main query
+    # Apply search filter to main query
     if search:
         search_term = f"%{search}%"
         query = query.join(CameraGroup, DBCamera.group_id == CameraGroup.id, isouter=True).filter(
