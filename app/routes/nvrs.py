@@ -176,12 +176,17 @@ async def create_nvr(
     longitude: Optional[str] = Form(None),
     asset_no: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
-    group_name: str = Form(None),
+    group_name: str = Form(...),  # Changed: now required
     status: str = Form(None),
     note: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
+    # Validate group_name is provided
+    if not group_name or not group_name.strip():
+        logger.warning("Attempted to add NVR without group: %s", name)
+        return JSONResponse(status_code=400, content={"status": "error", "message": "Group is required. Please select a group."})
+    
     # Convert lat/lon jika ada
     lat = float(latitude) if latitude and latitude.strip() else None
     lon = float(longitude) if longitude and longitude.strip() else None

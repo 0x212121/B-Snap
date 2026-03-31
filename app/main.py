@@ -33,7 +33,7 @@ from app.utils.timezone_helper import clear_timezone_cache
 # This MUST happen before Base.metadata.create_all() is called
 import app.models  # noqa: F401 - imports all models via __init__.py
 from app.routes import (
-    admin, auth, audit, audit_log, cameras, config, dev_docs, docs, health, jobs, logs, maps,
+    admin, auth, audit, audit_log, cameras, camera_groups, config, dev_docs, docs, health, jobs, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
     user_management, videos, whitelist, group_recipients, email_logs, wa_webhook,
     notifications, toast_demo
@@ -277,6 +277,7 @@ app.include_router(wa_webhook.router)
 app.include_router(insights.router)
 app.include_router(notifications.router)
 app.include_router(jobs.router)
+app.include_router(camera_groups.router)
 # Demo routes - remove in production
 app.include_router(toast_demo.router)
 

@@ -198,7 +198,7 @@ async def add_camera_submit(
     longitude: str = Form(None),
     asset_no: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
-    group_name: Optional[str] = Form(None),
+    group_name: str = Form(...),  # Changed: now required
     status: str = Form(...),
     is_flipped: Optional[str] = Form(None),
     note: Optional[str] = Form(None),
@@ -208,6 +208,11 @@ async def add_camera_submit(
     """Handles the form submission to add a new camera."""
     logger.info("Attempting to add new camera with hostname: %s", name)
     try:
+        # Validate group_name is provided
+        if not group_name or not group_name.strip():
+            logger.warning("Attempted to add camera without group: %s", name)
+            return JSONResponse(status_code=400, content={"status": "error", "message": "Group is required. Please select a group."})
+        
         existing_cam = db.query(DBCamera).filter(DBCamera.hostname == name).first()
         if existing_cam:
             logger.warning("Attempted to add a camera that already exists: %s", name)

@@ -61,6 +61,21 @@ def format_datetime_standard(dt: datetime, db: Session = None) -> str:
     # Format: 30/03/2026 - 16:54:00 WITA (otomatis dari pytz)
     return dt.strftime("%d/%m/%Y - %H:%M:%S %Z")
 
+
+def format_time_with_tz_abbr(dt: datetime, db: Session = None) -> str:
+    """Format waktu dengan timezone abbreviation untuk maps.
+    
+    Returns format: "09:00:00 WITA" atau "09:00:00 WIB" atau "09:00:00 PST"
+    """
+    if not dt:
+        return "N/A"
+    if db:
+        dt = to_current_timezone(dt, db)
+    elif not dt.tzinfo:
+        dt = pytz.utc.localize(dt)
+    # Format: 09:00:00 WITA (timezone abbreviation dari pytz)
+    return dt.strftime("%H:%M:%S %Z")
+
 def format_date_standard(dt) -> str:
     if not dt:
         return "N/A"
