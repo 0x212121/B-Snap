@@ -398,7 +398,7 @@
         
         data.forEach(user => {
           const initials = (user.username || 'U').substring(0, 2).toUpperCase();
-          const groupName = user.group ? user.group.name : 'No Group';
+          const groupName = user.group ? user.group.name : 'All Groups';
           const lastLogin = user.last_login ? new Date(user.last_login).toLocaleString() : 'Never';
           const isCurrentUser = user.id === parseInt('{{ request.session.get("user_id", 0) }}');
           
@@ -548,7 +548,7 @@
             <div>
               <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Group</label>
               <select name="group_id" class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                <option value="">No Group</option>
+                <option value="">All Groups (Access to all cameras)</option>
                 ${cameraGroups.map(g => `<option value="${g.id}">${escapeHTML(g.name)}</option>`).join('')}
               </select>
             </div>
@@ -651,7 +651,7 @@
             <div>
               <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Group</label>
               <select name="group_id" class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition">
-                <option value="">No Group</option>
+                <option value="">All Groups (Access to all cameras)</option>
                 ${cameraGroups.map(g => `<option value="${g.id}" ${String(g.id) === String(groupId) ? 'selected' : ''}>${escapeHTML(g.name)}</option>`).join('')}
               </select>
             </div>

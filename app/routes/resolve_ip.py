@@ -41,10 +41,11 @@ def resolve_ip_by_name(
             if not whitelist_entries:
                 return {"count": 0, "results": []}
 
-            # cek apakah punya akses ALL
+            # cek apakah punya akses ke semua kamera
+            # akses penuh jika: role admin, atau group_id is None (tidak terbatas group)
             has_all = any(
-                entry.group_name and entry.group_name.upper() == "ALL" or entry.role == RoleEnum.admin for w in whitelist_entries
-            for entry in whitelist_entries
+                entry.role == RoleEnum.admin or entry.group_id is None
+                for entry in whitelist_entries
             )
             whitelisted_group_ids = [entry.group_id for entry in whitelist_entries if entry.group_id]
         else:

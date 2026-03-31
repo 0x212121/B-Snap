@@ -135,8 +135,8 @@ def search_snapshots(
 
         group_ids = [w.group_id for w in whitelist_entries if w.group_id is not None]
 
-        # Kalau ada role admin/global, izinkan semua kamera
-        is_global = any(w.group_name == "ALL" or w.role == RoleEnum.admin for w in whitelist_entries)
+        # Kalau ada role admin atau group_id is None (no group restriction), izinkan semua kamera
+        is_global = any(w.role == RoleEnum.admin or w.group_id is None for w in whitelist_entries)
         if not is_global:
             query = query.filter(DBCamera.group_id.in_(group_ids))
 

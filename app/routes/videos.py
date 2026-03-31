@@ -46,15 +46,17 @@ def _get_filtered_videos(
 ) -> List[Dict[str, Any]]:
     """
     Helper function to fetch and filter videos from the database.
+    
+    NOTE: If group_id is None, user has access to all cameras (no group restriction).
     """
-    user_group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
-    if not user_group:
-        raise HTTPException(status_code=403, detail="User group not found")
-
-    if user_group.name != 'ALL':
-        video_query = db.query(Video).filter(Video.camera_group == user_group.name)
-    else:
+    # If group_id is None, user has no specific group - access to all cameras
+    if group_id is None:
         video_query = db.query(Video)
+    else:
+        user_group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
+        if not user_group:
+            raise HTTPException(status_code=403, detail="User group not found")
+        video_query = db.query(Video).filter(Video.camera_group == user_group.name)
 
     if camera_filter:
         video_query = video_query.filter(Video.camera_name == camera_filter)
@@ -96,16 +98,15 @@ def show_videos(
     current_operator: User = Depends(operator_access_required)
 ):
     group_id = request.session.get("user_groupid")
-    if not group_id:
-        return RedirectResponse(url="/login")
-
-    user_group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
-    if not user_group:
-        raise HTTPException(status_code=403, detail="User group not found")
-
-    if user_group.name == 'ALL':
+    # group_id can be None - meaning user has access to all groups
+    
+    # If group_id is None, user has access to all cameras
+    if group_id is None:
         all_cameras_query = db.query(Camera.hostname)
     else:
+        user_group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
+        if not user_group:
+            raise HTTPException(status_code=403, detail="User group not found")
         all_cameras_query = db.query(Camera.hostname).join(Camera.group).filter(CameraGroup.id == group_id)
 
     all_camera_names = sorted([row[0] for row in all_cameras_query.all()])
@@ -130,7 +131,9 @@ async def get_video_gallery_data(
     current_operator: User = Depends(operator_access_required)
 ):
     group_id = request.session.get("user_groupid")
-    if not group_id:
+    # group_id can be None (access to all cameras) or a specific group ID
+    # Check if user is authenticated by checking user_id in session
+    if not request.session.get("user_id"):
         return JSONResponse(status_code=403, content={"detail": "Authentication required."})
 
     offset = (page - 1) * 12

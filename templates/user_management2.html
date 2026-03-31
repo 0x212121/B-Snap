@@ -84,7 +84,7 @@
                         <td class="p-4">{{ loop.index }}</td>
                         <td class="p-4">{{ user.username }}</td>
                         <td class="p-4">{{ user.role }}</td>
-                        <td class="p-4">{{ user.group.name if user.group else '-' }}</td>
+                        <td class="p-4">{{ user.group.name if user.group else 'All Groups' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

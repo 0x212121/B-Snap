@@ -32,22 +32,25 @@ SNAPSHOT_BASE_DIR = "static/snapshots"
 logger = logging.getLogger(__name__)
 
 
-def _get_filtered_snapshots(db: Session, group_id: int, camera_filter: Optional[str] = None, search_query: Optional[str] = None,
+def _get_filtered_snapshots(db: Session, group_id: Optional[int], camera_filter: Optional[str] = None, search_query: Optional[str] = None,
                             tampered_only: bool = False, offset: int = 0, limit: int = 15, 
                             include_deleted: bool = False) -> List[Dict[str, Any]]:
     """
     Helper function to query and filter snapshots from the database.
     This function now correctly fetches all snapshots, even if the camera has been deleted.
+    
+    NOTE: If group_id is None, user has access to all cameras (no group restriction).
     """
-    user_group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
-    if not user_group:
-        raise HTTPException(status_code=403, detail="User group not found")
-
-    # Base query on the Snapshot table. This ensures all snapshots are retrieved.
-    if user_group.name != 'ALL':
-        snapshot_query = db.query(Snapshot).filter(Snapshot.camera_group == user_group.name)
-    else:
+    # Base query on the Snapshot table
+    if group_id is None:
+        # User has no specific group - access to all cameras
         snapshot_query = db.query(Snapshot)
+    else:
+        user_group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
+        if not user_group:
+            raise HTTPException(status_code=403, detail="User group not found")
+        # Filter by user's group
+        snapshot_query = db.query(Snapshot).filter(Snapshot.camera_group == user_group.name)
 
     # P0-002: Filter out soft-deleted snapshots unless explicitly requested
     if not include_deleted:
@@ -273,19 +276,18 @@ async def delete_snapshot(
 @router.get("/snap_gallery")
 def show_snapshots(request: Request, db: Session = Depends(get_db), camera: str = "", current_operator: User = Depends(operator_access_required)):
     group_id = request.session.get("user_groupid")
-    if not group_id:
-        return RedirectResponse(url="/login")
-
-    user_group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
-    if not user_group:
-        raise HTTPException(status_code=403, detail="User group not found")
-
+    # group_id can be None - meaning user has access to all groups
+    
     # --- CHANGE 1: Get camera list for dropdown from snapshots ---
     # This query gets the names of only those cameras that have snapshots.
-    if user_group.name != 'ALL':
-        cameras_with_snapshots_query = db.query(Snapshot.camera_name).filter(Snapshot.camera_group == user_group.name)
-    else:
+    # If group_id is None, user has access to all cameras (no group restriction)
+    if group_id is None:
         cameras_with_snapshots_query = db.query(Snapshot.camera_name)
+    else:
+        user_group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
+        if not user_group:
+            raise HTTPException(status_code=403, detail="User group not found")
+        cameras_with_snapshots_query = db.query(Snapshot.camera_name).filter(Snapshot.camera_group == user_group.name)
     
     # Get distinct names and sort them
     camera_name_tuples = cameras_with_snapshots_query.distinct().all()
@@ -321,7 +323,9 @@ async def get_gallery_data(
     limit: int = Query(15),
 ):
     group_id = request.session.get("user_groupid")
-    if not group_id:
+    # group_id can be None (access to all cameras) or a specific group ID
+    # Check if user is authenticated by checking user_id in session
+    if not request.session.get("user_id"):
         return JSONResponse(status_code=403, content={"detail": "Authentication required."})
 
     filtered_images = _get_filtered_snapshots(

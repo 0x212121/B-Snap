@@ -64,16 +64,17 @@ async def get_camera_locations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    group_name = current_user.group.name if current_user.group else "N/A"
-    group_id = current_user.group_id if current_user.group else None
+    group_id = current_user.group_id
+    group_name = current_user.group.name if current_user.group else "All Groups"
 
     # --- Kamera utama ---
+    # If user has no group (group_id is None), they can see all cameras
     query = (
         db.query(DBCamera)
         .filter(DBCamera.status.in_(["Active", "Maintenance", "Standalone"]))
         .options(joinedload(DBCamera.health))
     )
-    if group_name != "ALL" and group_id is not None:
+    if group_id is not None:
         query = query.filter(DBCamera.group_id == group_id)
     cameras = query.all()
 
