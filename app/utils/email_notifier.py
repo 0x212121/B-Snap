@@ -20,6 +20,7 @@ from app.utils.timezone_helper import format_datetime_with_tz, to_current_timezo
 from app.models.snapshot import Snapshot
 from app.core.logging_config import set_debug_mode
 from app.models.camera import Camera
+from app.utils.email_template_renderer import render_template
 
 set_debug_mode(False)
 
@@ -348,19 +349,27 @@ def send_offline_incident_email_once(
 
     # kirim email
     try:
-        plain_body, html_body = build_email_body(
-            camera_name=camera.hostname,
-            ip=camera.ip,
-            asset_no=camera.asset_no or "N/A",
-            coordinate=f'https://www.google.com/maps?q={camera.latitude},{camera.longitude}' or "N/A",
-            incident_time=local_incident,
-            last_snapshot_time=snapshot_time,
-            has_snapshot=bool(snapshot_path)
-        )
+        # Prepare template context
+        template_context = {
+            "camera_name": camera.hostname,
+            "camera_ip": camera.ip,
+            "camera_group": camera_group,
+            "asset_no": camera.asset_no,
+            "location": camera.location,
+            "latitude": camera.latitude or "",
+            "longitude": camera.longitude or "",
+            "incident_time": local_incident,
+            "offline_duration": str(minutes),
+            "snapshot_time": snapshot_time if snapshot_time != "N/A" else None,
+            "has_snapshot": bool(snapshot_path),
+        }
+        
+        # Render template
+        subject, plain_body, html_body = render_template("offline_alert", template_context, db)
 
         _send_email_with_image(
             to_emails=emails,
-            subject=f"🚨 [{camera_group}] CCTV Alert – {camera.hostname} – Offline",
+            subject=subject,
             cam_group=camera_group,
             cam_hostname=camera.hostname,
             snapshot_time=to_current_timezone(snapshot.timestamp, db) if snapshot else None,
@@ -472,66 +481,22 @@ def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str, inci
     # Format incident time for display
     incident_time_str = incident_time.strftime('%d/%m/%Y %H:%M:%S')
     
-    subject = f"⚠️ [{camera_group}] CCTV Alert – {camera.hostname} {reason.upper()}"
-
-    # === Plain text body ===
-    # BUG FIX: Use incident_time (from snapshot) instead of datetime.now()
-    plain_body = f"""
-Yth. User,
-
-Sistem mendeteksi bahwa CCTV {camera.hostname} (IP: {camera.ip}) mengalami anomali/tampering dengan indikasi: {reason}.
-- No. Asset: {camera.asset_no or '-'}
-- Lokasi: {camera.location or '-'}
-- Koordinat: https://www.google.com/maps?q={camera.latitude},{camera.longitude}
-- Waktu Kejadian: {incident_time_str} UTC
-
-👉 Mohon segera buat tiket SIHEPI dengan mencantumkan cost code agar dapat diproses oleh tim teknis/mitra terkait.
-
-Catatan: Foto snapshot { "terlampir" if snapshot_path else "tidak tersedia" } sebagai referensi kondisi terakhir kamera.
-
-Terima kasih atas perhatian dan kerja samanya.
-
-Hormat kami,
-IT Computer Operations
-PT Kaltim Prima Coal
-""".strip()
-
-    # === HTML body ===
-    # BUG FIX: Use incident_time (from snapshot) instead of datetime.now()
-    html_body = f"""
-<html>
-  <body style="font-family: Arial, sans-serif; color: #111; background-color: #ffffff; padding: 12px;">
-    <p>Yth. User,</p>
-
-    <p>
-      Sistem mendeteksi bahwa <b>CCTV {camera.hostname} (IP: {camera.ip})</b> mengalami 
-      <b>anomali / tampering</b> dengan indikasi: <b>{reason}</b>.
-    </p>
-
-    <ul>
-      <li><b>No. Asset:</b> {camera.asset_no or '-'}</li>
-      <li><b>Lokasi:</b> {camera.location or '-'}</li>
-      <li><b>Koordinat:</b> <a href="https://www.google.com/maps?q={camera.latitude},{camera.longitude}" target="_blank">Lihat di Google Maps</a></li>
-      <li><b>Waktu Kejadian:</b> {incident_time_str} UTC</li>
-    </ul>
-
-    <p>
-        👉 Mohon segera buat tiket SIHEPI dengan mencantumkan cost code agar dapat diproses oleh tim teknis/mitra terkait.
-    </p>
-
-    <p style="font-size:13px; color:#444;">
-      <b>Catatan:</b> Foto snapshot { "terlampir" if snapshot_path else "tidak tersedia" } sebagai referensi kondisi terakhir kamera.
-    </p>
-
-    <br/>
-    <p>
-      Hormat kami,<br/>
-      <b>IT Computer Operations</b><br/>
-      PT Kaltim Prima Coal
-    </p>
-  </body>
-</html>
-""".strip()
+    # Prepare template context
+    template_context = {
+        "camera_name": camera.hostname,
+        "camera_ip": camera.ip,
+        "camera_group": camera_group,
+        "reason": reason,
+        "asset_no": camera.asset_no,
+        "location": camera.location,
+        "latitude": camera.latitude or "",
+        "longitude": camera.longitude or "",
+        "incident_time": incident_time_str,
+        "has_snapshot": bool(snapshot_path),
+    }
+    
+    # Render template
+    subject, plain_body, html_body = render_template("tamper_alert", template_context, db)
     
     # Note: Cooldown was already set at the beginning of this function
     # using incident_time (snapshot timestamp), not current time
@@ -629,10 +594,6 @@ def send_recovery_alert(db: Session, camera, last_reason: str = None):
         return False
     
     camera_group = camera.group.name if camera.group else "No Division"
-    subject = f"✅ [{camera_group}] CCTV Image Recovery – {camera.hostname}"
-    
-    reason_text = f"\nPrevious issue: {last_reason}" if last_reason else ""
-    reason_html = f"<li><b>Previous Issue:</b> {last_reason}</li>" if last_reason else ""
     
     # Get current time for recovery
     recovery_time = datetime.now(timezone.utc)
@@ -648,7 +609,7 @@ def send_recovery_alert(db: Session, camera, last_reason: str = None):
     
     snapshot_path = None
     snapshot_time = None
-    snapshot_time_str = "N/A"
+    snapshot_time_str = None
     if snapshot:
         snapshot_time = snapshot.timestamp
         snapshot_time_str = format_datetime_with_tz(to_current_timezone(snapshot.timestamp, db))
@@ -663,61 +624,23 @@ def send_recovery_alert(db: Session, camera, last_reason: str = None):
                 candidate_path,
             )
     
-    plain_body = f"""
-Yth. User,
-
-CCTV {camera.hostname} (IP: {camera.ip}) image telah kembali NORMAL dari status TAMPERED.{reason_text}
-
-- No. Asset: {camera.asset_no or '-'}
-- Lokasi: {camera.location or '-'}
-- Koordinat: https://www.google.com/maps?q={camera.latitude},{camera.longitude}
-- Waktu Recovery: {recovery_time_str} UTC
-- Snapshot Terakhir: {snapshot_time_str}
-
-Sistem telah memverifikasi kualitas gambar kamera telah pulih (tidak blur, gelap, atau terhalang).
-
-Catatan: Foto snapshot { "terlampir" if snapshot_path else "tidak tersedia" } sebagai referensi kondisi kamera saat ini.
-
-Terima kasih,
-IT Computer Operations
-PT Kaltim Prima Coal
-""".strip()
+    # Prepare template context
+    template_context = {
+        "camera_name": camera.hostname,
+        "camera_ip": camera.ip,
+        "camera_group": camera_group,
+        "last_reason": last_reason,
+        "asset_no": camera.asset_no,
+        "location": camera.location,
+        "latitude": camera.latitude or "",
+        "longitude": camera.longitude or "",
+        "recovery_time": recovery_time_str,
+        "snapshot_time": snapshot_time_str,
+        "has_snapshot": bool(snapshot_path),
+    }
     
-    html_body = f"""
-<html>
-  <body style="font-family: Arial, sans-serif; color: #111; background-color: #ffffff; padding: 12px;">
-    <p>Yth. User,</p>
-
-    <p>
-      <b>CCTV {camera.hostname} (IP: {camera.ip})</b> image telah kembali <b style="color: #16a34a;">NORMAL</b> dari status TAMPERED.
-    </p>
-
-    <ul>
-      <li><b>No. Asset:</b> {camera.asset_no or '-'}</li>
-      <li><b>Lokasi:</b> {camera.location or '-'}</li>
-      <li><b>Koordinat:</b> <a href="https://www.google.com/maps?q={camera.latitude},{camera.longitude}" target="_blank">Lihat di Google Maps</a></li>
-      <li><b>Waktu Recovery:</b> {recovery_time_str} UTC</li>
-      <li><b>Snapshot Terakhir:</b> {snapshot_time_str} { "(foto terlampir)" if snapshot_path else "" }</li>
-      {reason_html}
-    </ul>
-
-    <p>
-      Sistem telah memverifikasi kualitas gambar kamera telah pulih (tidak blur, gelap, atau terhalang).
-    </p>
-
-    <p style="font-size:13px; color:#444;">
-      <b>Catatan:</b> Foto snapshot { "terlampir sebagai attachment" if snapshot_path else "tidak tersedia" } sebagai referensi kondisi kamera saat ini.
-    </p>
-
-    <br/>
-    <p>
-      Hormat kami,<br/>
-      <b>IT Computer Operations</b><br/>
-      PT Kaltim Prima Coal
-    </p>
-  </body>
-</html>
-""".strip()
+    # Render template
+    subject, plain_body, html_body = render_template("recovery_alert", template_context, db)
     
     try:
         _send_email_with_image(

@@ -36,7 +36,7 @@ from app.routes import (
     admin, auth, audit, audit_log, cameras, camera_groups, config, dev_docs, docs, health, jobs, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
     user_management, videos, whitelist, group_recipients, email_logs, wa_webhook,
-    notifications, toast_demo
+    notifications, toast_demo, email_templates
 )
 from app.routes import insights
 from app.ws.routes import notification_listener, router as ws_router
@@ -285,6 +285,7 @@ app.include_router(admin.router)
 app.include_router(whitelist.router)
 app.include_router(group_recipients.router)
 app.include_router(email_logs.router)
+app.include_router(email_templates.router)
 app.include_router(wa_webhook.router)
 app.include_router(insights.router)
 app.include_router(notifications.router)

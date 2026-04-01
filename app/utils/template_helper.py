@@ -26,6 +26,7 @@ ICONS = {
     "bar-chart": '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>',
     "pie-chart": '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>',
     "grid": '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+    "mail-open": '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.2 8.4c.5.38.8.97.8 1.6v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 .8-1.6l8-6a2 2 0 0 1 2.4 0l8 6Z"/><path d="m22 10-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 10"/></svg>',
 }
 
 # Struktur nav_items dengan nama icon
@@ -59,6 +60,7 @@ nav_items = [
             {"label": "Camera Groups", "href": "/admin/camera-groups", "icon": "grid", "roles": ["admin"]},
             {"label": "WA Whitelist", "href": "/admin/whitelist", "icon": "shield-check", "roles": ["admin"]},
             {"label": "Email Recipients", "href": "/recipients", "icon": "mail", "roles": ["admin"]},
+            {"label": "Email Templates", "href": "/email-templates", "icon": "mail-open", "roles": ["admin"]},
             {"label": "Configuration", "href": "/config", "icon": "settings", "roles": ["admin"]},
             {"label": "Job Management", "href": "/admin/jobs", "icon": "clock", "roles": ["admin"]},
             {"label": "Trash Management", "href": "/admin/trash", "icon": "trash", "roles": ["admin"]},
