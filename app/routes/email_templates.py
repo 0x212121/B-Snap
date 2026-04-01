@@ -170,7 +170,7 @@ async def save_template(
     log_audit(
         db=db,
         user=current_admin.username,
-        action="EMAIL_TEMPLATE_UPDATE",
+        action="email_template_update",
         target=f"template:{template_type}",
         ip=request.client.host if request.client else None,
         extra={"subject": subject}
@@ -230,7 +230,7 @@ async def reset_template(
         log_audit(
             db=db,
             user=current_admin.username,
-            action="EMAIL_TEMPLATE_RESET",
+            action="email_template_reset",
             target=f"template:{template_type}",
             ip=request.client.host if request.client else None
         )

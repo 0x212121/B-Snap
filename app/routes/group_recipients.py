@@ -280,6 +280,7 @@ def test_send_email(
     """
     Kirim test email ke semua recipient berdasarkan group_id dan lokasi (opsional).
     Log dicatat ke CameraEmailNotificationLog agar konsisten dengan alert sungguhan.
+    ✅ UPDATE: CC email juga masuk ke log
     """
 
     try:
@@ -331,12 +332,24 @@ def test_send_email(
         db.add(log_entry)
         db.flush()  # agar dapat log_entry.id
 
-        # Immutable recipient snapshot
+        # ✅ ROBUST LOGGING: Immutable recipient snapshot (To + CC)
         for em in emails:
             db.add(CameraEmailNotificationRecipient(
                 log_id=log_entry.id,
                 recipient_email=em,
             ))
+        
+        # ✅ TAMBAHAN: Log CC recipient dari config
+        from app.utils.smtp_config import get_smtp_config
+        config = get_smtp_config()
+        cc_email = config.get("email_cc")
+        if cc_email and isinstance(cc_email, str) and cc_email.strip():
+            db.add(CameraEmailNotificationRecipient(
+                log_id=log_entry.id,
+                recipient_email=cc_email.strip()
+            ))
+            logger.info(f"Added CC recipient to test email log: {cc_email.strip()}")
+        
         db.flush()
         db.commit()  # commit sementara agar log aman disimpan
 

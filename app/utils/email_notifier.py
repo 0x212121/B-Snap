@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timezone, timedelta
+from typing import List, Optional
 import os
 from uuid import uuid4
 from sqlalchemy.orm import Session
@@ -33,6 +34,42 @@ NOTIFICATION_SUPPRESS_MINUTES = 60  # Suppression duration after max failures
 TAMPER_DEDUPLICATION_MINUTES = 15  # Minimum time between tamper alerts for same camera
 
 
+# ============================================================================
+# HELPER FUNCTIONS (NEW)
+# ============================================================================
+
+def _log_recipients_with_cc(
+    db: Session, 
+    log_id: int, 
+    to_emails: List[str], 
+    cc_email: Optional[str] = None
+):
+    """
+    Robust helper untuk log recipients (To + CC).
+    Handle: None, empty list, empty string, whitespace only, type safety.
+    """
+    # Log To recipients (filter None, empty, whitespace)
+    if to_emails:
+        for email in to_emails:
+            if email and isinstance(email, str) and email.strip():
+                recipient = CameraEmailNotificationRecipient(
+                    log_id=log_id, 
+                    recipient_email=email.strip()
+                    # is_cc=False  # Uncomment jika field is_cc sudah ada di DB
+                )
+                db.add(recipient)
+    
+    # Log CC recipient jika valid
+    if cc_email and isinstance(cc_email, str) and cc_email.strip():
+        cc_recipient = CameraEmailNotificationRecipient(
+            log_id=log_id, 
+            recipient_email=cc_email.strip()
+            # is_cc=True  # Uncomment jika field is_cc sudah ada di DB
+        )
+        db.add(cc_recipient)
+        logger.debug(f"Logged CC recipient: {cc_email.strip()}")
+
+
 def cleanup_old_email_logs(db: Session, days: int = None) -> int:
     from app.core.config import get_config
     if days is None:
@@ -63,13 +100,6 @@ def is_notification_suppressed(db: Session, camera: Camera) -> bool:
     
     Circuit breaker pattern: After MAX_NOTIFICATION_FAILURES consecutive failures,
     notifications are suppressed for NOTIFICATION_SUPPRESS_MINUTES.
-    
-    Args:
-        db: Database session
-        camera: Camera object
-        
-    Returns:
-        True if notification should be suppressed, False otherwise
     """
     # Check if explicitly suppressed
     if camera.notification_suppressed_until:
@@ -138,10 +168,6 @@ def reset_notification_suppression(db: Session, camera_id: str):
     """
     Reset notification suppression for a camera.
     Called when camera recovers (comes back online).
-    
-    Args:
-        db: Database session
-        camera_id: Camera ID
     """
     camera = db.query(Camera).filter(Camera.id == camera_id).first()
     if camera and (camera.notification_fail_count > 0 or camera.notification_suppressed_until):
@@ -158,14 +184,6 @@ def reset_notification_suppression(db: Session, camera_id: str):
 def should_send_tamper_alert(db: Session, camera: Camera, reason: str) -> bool:
     """
     Check if we should send a tamper alert (deduplication logic).
-    
-    Args:
-        db: Database session
-        camera: Camera object
-        reason: Tamper reason
-        
-    Returns:
-        True if alert should be sent, False otherwise
     """
     from app.models.health import CameraHealth
     
@@ -220,6 +238,10 @@ def should_send_tamper_alert(db: Session, camera: Camera, reason: str) -> bool:
     
     return True
 
+
+# ============================================================================
+# EMAIL SEND FUNCTIONS (UPDATED)
+# ============================================================================
 
 def send_offline_incident_email_once(
     db: Session,
@@ -342,32 +364,27 @@ def send_offline_incident_email_once(
         )
         return False
 
-    # isi recipients sesuai daftar saat ini (immutable snapshot)
-    for e in emails:
-        db.add(CameraEmailNotificationRecipient(log_id=log.id, recipient_email=e))
-    db.flush()
+    # Prepare template context
+    template_context = {
+        "camera_name": camera.hostname,
+        "camera_ip": camera.ip,
+        "camera_group": camera_group,
+        "asset_no": camera.asset_no,
+        "location": camera.location,
+        "latitude": camera.latitude or "",
+        "longitude": camera.longitude or "",
+        "incident_time": local_incident,
+        "offline_duration": str(minutes),
+        "snapshot_time": snapshot_time if snapshot_time != "N/A" else None,
+        "has_snapshot": bool(snapshot_path),
+    }
+    
+    # Render template
+    subject, plain_body, html_body = render_template("offline_alert", template_context, db)
 
-    # kirim email
+    # kirim email dan dapatkan CC yang digunakan
     try:
-        # Prepare template context
-        template_context = {
-            "camera_name": camera.hostname,
-            "camera_ip": camera.ip,
-            "camera_group": camera_group,
-            "asset_no": camera.asset_no,
-            "location": camera.location,
-            "latitude": camera.latitude or "",
-            "longitude": camera.longitude or "",
-            "incident_time": local_incident,
-            "offline_duration": str(minutes),
-            "snapshot_time": snapshot_time if snapshot_time != "N/A" else None,
-            "has_snapshot": bool(snapshot_path),
-        }
-        
-        # Render template
-        subject, plain_body, html_body = render_template("offline_alert", template_context, db)
-
-        _send_email_with_image(
+        cc_used = _send_email_with_image(
             to_emails=emails,
             subject=subject,
             cam_group=camera_group,
@@ -378,6 +395,9 @@ def send_offline_incident_email_once(
             image_path=snapshot_path,
         )
 
+        # ✅ ROBUST LOGGING: To + CC (helper function)
+        _log_recipients_with_cc(db, log.id, emails, cc_used)
+
         log.success = True
         log.error_message = None
         log.sent_at = datetime.now(timezone.utc)
@@ -387,13 +407,22 @@ def send_offline_incident_email_once(
         record_notification_success(db, camera)
         
         logger.info(
-            "Successfully sent email alert for camera %s to %s",
+            "Successfully sent email alert for camera %s to %s (CC: %s)",
             camera.hostname,
             emails,
+            cc_used or "None"
         )
         return True
+        
     except Exception as e:
         error_msg = str(e)
+        
+        # ✅ ROBUST LOGGING: Log recipients even on failure (untuk tracking)
+        from app.utils.smtp_config import get_smtp_config
+        config = get_smtp_config()
+        cc_config = config.get("email_cc")
+        _log_recipients_with_cc(db, log.id, emails, cc_config)
+        
         log.success = False
         log.error_message = error_msg
         log.sent_at = datetime.now(timezone.utc)
@@ -414,14 +443,6 @@ def send_offline_incident_email_once(
 def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str, incident_time: datetime = None):
     """
     Send tamper alert email.
-    
-    Args:
-        db: Database session
-        camera: Camera object
-        reason: Tamper reason (blur, dark, etc.)
-        snapshot_path: Path to snapshot image
-        incident_time: ACTUAL time when tamper was detected (from snapshot timestamp)
-                      If None, defaults to current time (but this is less accurate)
     """
     # Use provided incident_time or fall back to now (should always be provided)
     if incident_time is None:
@@ -454,12 +475,9 @@ def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str, inci
         return False
     
     # === IMMEDIATE COOLDOWN: Set cooldown AFTER dedup check ===
-    # This prevents flooding even if send fails or function is called repeatedly
     from app.models.health import CameraHealth
     health = db.query(CameraHealth).filter_by(camera_id=camera.id).first()
     if health:
-        # Set cooldown based on incident_time, not current time
-        # This ensures cooldown is consistent with the actual incident
         cooldown_until = incident_time + timedelta(minutes=TAMPER_DEDUPLICATION_MINUTES)
         health.alert_cooldown_until = cooldown_until
         health.last_email_sent = incident_time
@@ -498,28 +516,25 @@ def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str, inci
     # Render template
     subject, plain_body, html_body = render_template("tamper_alert", template_context, db)
     
-    # Note: Cooldown was already set at the beginning of this function
-    # using incident_time (snapshot timestamp), not current time
-    
+    # kirim email dan capture CC
     try:
-        _send_email_with_image(
+        cc_used = _send_email_with_image(
             to_emails=recipients,
             subject=subject,
             cam_group=camera_group,
             cam_hostname=camera.hostname,
-            snapshot_time=incident_time,  # BUG FIX: Add missing snapshot_time
+            snapshot_time=incident_time,
             body=plain_body,
             html=html_body,
             image_path=snapshot_path,
         )
-        
-        # Create success log with ACTUAL incident time (from snapshot)
-        # BUG FIX: Use incident_time instead of datetime.now()
+
+        # Create success log with ACTUAL incident time
         log = CameraEmailNotificationLog(
             camera_id=camera.id,
             camera_name=camera.hostname,
-            incident_started_at=incident_time,  # Actual detection time
-            sent_at=datetime.now(timezone.utc),  # Current time (when email sent)
+            incident_started_at=incident_time,
+            sent_at=datetime.now(timezone.utc),
             success=True,
             error_message=None,
             reason=reason,
@@ -527,28 +542,27 @@ def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str, inci
         db.add(log)
         db.flush()
         
-        for r in recipients:
-            db.add(CameraEmailNotificationRecipient(log_id=log.id, recipient_email=r))
+        # ✅ ROBUST LOGGING: To + CC
+        _log_recipients_with_cc(db, log.id, recipients, cc_used)
         
         db.commit()
         
         # Circuit breaker: Reset failure counter on success
         record_notification_success(db, camera)
         
-        logger.info("Tamper alert sent successfully for %s", camera.hostname)
+        logger.info("Tamper alert sent successfully for %s (CC: %s)", camera.hostname, cc_used or "None")
         return True
         
     except Exception as e:
         error_msg = str(e)
         logger.exception("Failed to send tamper alert for %s: %s", camera.hostname, e)
         
-        # Create failure log with ACTUAL incident time (from snapshot)
-        # BUG FIX: Use incident_time instead of datetime.now()
+        # Create failure log
         log = CameraEmailNotificationLog(
             camera_id=camera.id,
             camera_name=camera.hostname,
-            incident_started_at=incident_time,  # Actual detection time
-            sent_at=datetime.now(timezone.utc),  # Current time (when attempt made)
+            incident_started_at=incident_time,
+            sent_at=datetime.now(timezone.utc),
             success=False,
             error_message=error_msg,
             reason=reason,
@@ -556,13 +570,15 @@ def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str, inci
         db.add(log)
         db.flush()
         
-        for r in recipients:
-            db.add(CameraEmailNotificationRecipient(log_id=log.id, recipient_email=r))
+        # ✅ ROBUST LOGGING: To + CC (dari config jika send gagal)
+        from app.utils.smtp_config import get_smtp_config
+        config = get_smtp_config()
+        cc_config = config.get("email_cc")
+        _log_recipients_with_cc(db, log.id, recipients, cc_config)
         
         db.commit()
         
-        # Circuit breaker: Record failure (may activate suppression)
-        # Cooldown already set above, so this won't immediately retry
+        # Circuit breaker: Record failure
         record_notification_failure(db, camera, error_msg)
         
         return False
@@ -570,13 +586,7 @@ def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str, inci
 
 def send_recovery_alert(db: Session, camera, last_reason: str = None):
     """
-    Send recovery notification when camera image returns to normal (from TAMPERED state).
-    
-    NOTE: This is DIFFERENT from send_online_alert which handles offline->online.
-    - send_recovery_alert: Camera image was tampered (blur/dark/occluded), now clean
-    - send_online_alert: Camera was offline (no ping response), now responding
-    
-    Also resets notification suppression (circuit breaker).
+    Send recovery notification when camera image returns to normal.
     """
     logger.info("[RECOVERY] Camera %s is back online", camera.hostname)
     
@@ -595,11 +605,11 @@ def send_recovery_alert(db: Session, camera, last_reason: str = None):
     
     camera_group = camera.group.name if camera.group else "No Division"
     
-    # Get current time for recovery (with timezone conversion like snapshot)
+    # Get current time for recovery
     recovery_time = datetime.now(timezone.utc)
     recovery_time_str = format_datetime_with_tz(to_current_timezone(recovery_time, db))
     
-    # Get latest snapshot for attachment (like in send_offline_incident_email_once)
+    # Get latest snapshot for attachment
     snapshot = (
         db.query(Snapshot)
         .filter(Snapshot.camera_id == camera.id)
@@ -643,7 +653,7 @@ def send_recovery_alert(db: Session, camera, last_reason: str = None):
     subject, plain_body, html_body = render_template("recovery_alert", template_context, db)
     
     try:
-        _send_email_with_image(
+        cc_used = _send_email_with_image(
             to_emails=recipients,
             subject=subject,
             cam_group=camera_group,
@@ -667,11 +677,11 @@ def send_recovery_alert(db: Session, camera, last_reason: str = None):
         db.add(log)
         db.flush()
         
-        for r in recipients:
-            db.add(CameraEmailNotificationRecipient(log_id=log.id, recipient_email=r))
+        # ✅ ROBUST LOGGING: To + CC
+        _log_recipients_with_cc(db, log.id, recipients, cc_used)
         
         db.commit()
-        logger.info("Recovery alert sent for %s", camera.hostname)
+        logger.info("Recovery alert sent for %s (CC: %s)", camera.hostname, cc_used or "None")
         return True
         
     except RuntimeError as e:
@@ -706,11 +716,3 @@ def queue_email_retry(db: Session, camera, alert_type: str, reason: str, delay_m
         camera.hostname,
         scheduled_for.isoformat()
     )
-
-
-# NOTE: send_online_alert has been removed as per requirement.
-# Online notifications (offline -> online) are intentionally disabled.
-# Only the following notifications are sent:
-# - send_tamper_alert: When camera image is tampered (blur/dark/occluded)
-# - send_recovery_alert: When tampered camera image returns to normal
-# - send_offline_incident_email_once: When camera goes offline
