@@ -55,7 +55,7 @@ async def email_templates_page(
                 "subject": t.subject,
                 "plain_body": t.plain_body,
                 "html_body": t.html_body,
-                "updated_at": t.updated_at,
+                "updated_at": t.updated_at.isoformat() if t.updated_at else None,
                 "is_custom": True
             })
         else:
