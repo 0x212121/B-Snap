@@ -82,7 +82,6 @@ nav_items = [
         "roles": ["admin"],
         "items": [
             {"label": "API Docs", "href": "/developer/docs", "icon": "book-open", "roles": ["admin"]},
-            {"label": "Changelog", "href": "/changelog", "icon": "git-branch", "roles": ["admin"]},
             {"label": "Documentation", "href": "/documentation/index.html", "icon": "book-open", "roles": ["admin"], "external": True},
         ],
     },
@@ -91,8 +90,7 @@ nav_items = [
         "icon": "bar-chart",
         "roles": ["admin"],
         "items": [
-            {"label": "Statistics", "href": "/stats", "icon": "bar-chart", "roles": ["admin"]},
-            {"label": "Insights", "href": "/insights", "icon": "pie-chart", "roles": ["admin"]},
+            {"label": "Dashboard", "href": "/analytics", "icon": "bar-chart", "roles": ["admin"]},
         ],
     },
 ]

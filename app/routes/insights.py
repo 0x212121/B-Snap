@@ -149,9 +149,10 @@ def _health_index(api_now, api_prev, cmd_now, cmd_prev, email_now, email_prev,
 
 # --------- Pages ---------
 @router.get("/insights", include_in_schema=False)
-def insights_dashboard(request: Request, db: Session = Depends(get_db)):
-    """Render insights dashboard."""
-    return templates.TemplateResponse("insights.html", {"request": request})
+def insights_dashboard_redirect(request: Request):
+    """Redirect old /insights to /analytics for backwards compatibility."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/analytics?tab=overview", status_code=301)
 
 
 # --------- APIs for charts/data ---------

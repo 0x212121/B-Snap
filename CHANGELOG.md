@@ -4,9 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.15.0] - 2026-03-28
+## [1.15.0] - 2026-04-01
 
 ### Added
+
+#### Custom Email Templates with Drag-and-Drop Editor
+- **Email Template Management** - Customize notification messages via web UI
+  - New page: `/email-templates` with tabbed interface for 3 template types
+  - Drag-and-drop variable insertion from sidebar
+  - Live preview with sample data before saving
+  - Reset to default functionality
+  - New database table: `email_templates` (template_type, subject, plain_body, html_body)
+  - Migration: `a3366d14c9a4_add_email_templates_table.py`
+
+- **API Endpoints**
+  - `GET /email-templates` - Template editor page
+  - `GET /api/email-templates/{type}` - Get template (custom or default)
+  - `POST /api/email-templates/{type}/save` - Save custom template
+  - `POST /api/email-templates/{type}/preview` - Preview with sample data
+  - `POST /api/email-templates/{type}/reset` - Reset to default
+  - `GET /api/email-templates/{type}/variables` - Get available variables
+
+- **Integration**
+  - `send_tamper_alert()` - Uses `tamper_alert` template
+  - `send_recovery_alert()` - Uses `recovery_alert` template
+  - `send_offline_incident_email_once()` - Uses `offline_alert` template
+  - All email functions now use template renderer instead of hardcoded strings
 
 #### Email Notification Circuit Breaker (Anti-Flooding)
 - **Smart Notification Suppression** - Prevents email flooding when camera issues persist
@@ -119,6 +142,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PowerShell Script Enhancement** (`start-local.ps1`)
   - Added proper error handling and process management
   - Fixed gunicorn compatibility issues on Windows
+
+### Changed
+
+#### Navbar Restructuring & Simplification
+- **Merged: Statistics + Insights → Analytics Dashboard** - Consolidated analytics pages
+  - New unified page: `/analytics` with tabbed interface (System Overview + Snapshot Stats)
+  - Previous `/stats` and `/insights` routes redirect to `/analytics` with appropriate tab parameter
+  - Reduced 2 menu items into 1 "Dashboard" item under Analytics section
+  - Maintains all functionality: KPI cards, charts, storage health, scheduler logs
+  - Backward compatible: old URLs redirect automatically
+  - Files: `templates/analytics.html` (new), `app/routes/stats.py`, `app/routes/insights.py`, `app/utils/template_helper.py`
+
+- **Moved: Changelog → Footer Modal** - Removed from navbar to reduce clutter
+  - Changelog no longer appears in Developer section navbar
+  - Footer version text is now clickable to open modal changelog
+  - Modal displays last 5 versions with expandable categories (Added, Fixed, Changed, etc.)
+  - "Full Page" button opens complete `/changelog` page with pagination
+  - Maintains backward compatibility: direct `/changelog` access still works
+  - Files: `templates/base.html`, `app/utils/template_helper.py`
+
+- **Impact**: Reduced from 6 sections/22 items to cleaner structure (32% menu reduction)
+  - Before: 6 sections (Monitoring, Devices, Administration, Logs, Developer, Analytics)
+  - After: 5 sections with 15 menu items
+  - Improved mobile navigation and reduced cognitive load
+
+
+### Fixed
+
+#### Recovery Alert Email Body
+- **Bug Fix: Missing HTML Body** - Recovery alert now has proper HTML formatting
+  - Previously: `html=None` caused plain text only emails
+  - Now: Full HTML body with styling matching other alert types
+
+- **Bug Fix: Missing Snapshot Attachment** - Recovery alert now includes latest snapshot
+  - Previously: `image_path=None` meant no photo attachment
+  - Now: Queries latest snapshot from database and attaches if available
+  - Shows snapshot timestamp in email body
+
+#### Timezone Consistency in Email Templates
+- **Bug Fix: UTC vs Local Time** - All timestamps now use configured timezone
+  - Previously: `recovery_time` and `incident_time` used UTC (`strftime` directly)
+  - Now: All times use `format_datetime_with_tz(to_current_timezone(...))`
+  - Consistent with `snapshot_time` formatting
+  - Affected functions: `send_recovery_alert()`, `send_tamper_alert()`
+
+#### Email CC Header
+- **Bug Fix: Empty CC Header** - Fixed potential SMTP issue with empty CC
+  - Previously: `msg["Cc"] = ""` when email_cc not configured
+  - Now: CC header only set when `email_cc` has value
+
+#### Videos Endpoint
+- **Fixed: Infinite Scroll Pagination** - Resolved infinite loading issues in video gallery
+
+---
 
 ## [1.14.0] - 2026-03-26
 
@@ -465,4 +542,4 @@ Additional changes:
 - Custom 403, 404, and 500 page.
 
 ### Changed
-- Redesign icon and layout.
+- Redesign icon and layout. 

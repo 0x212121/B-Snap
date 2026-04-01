@@ -478,8 +478,8 @@ def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str, inci
         logger.warning("No recipients found for %s", camera.hostname)
         return False
 
-    # Format incident time for display
-    incident_time_str = incident_time.strftime('%d/%m/%Y %H:%M:%S')
+    # Format incident time for display (with timezone conversion)
+    incident_time_str = format_datetime_with_tz(to_current_timezone(incident_time, db))
     
     # Prepare template context
     template_context = {
@@ -595,9 +595,9 @@ def send_recovery_alert(db: Session, camera, last_reason: str = None):
     
     camera_group = camera.group.name if camera.group else "No Division"
     
-    # Get current time for recovery
+    # Get current time for recovery (with timezone conversion like snapshot)
     recovery_time = datetime.now(timezone.utc)
-    recovery_time_str = recovery_time.strftime('%d/%m/%Y %H:%M:%S')
+    recovery_time_str = format_datetime_with_tz(to_current_timezone(recovery_time, db))
     
     # Get latest snapshot for attachment (like in send_offline_incident_email_once)
     snapshot = (
