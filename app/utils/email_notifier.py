@@ -632,6 +632,36 @@ def send_recovery_alert(db: Session, camera, last_reason: str = None):
     subject = f"✅ [{camera_group}] CCTV Image Recovery – {camera.hostname}"
     
     reason_text = f"\nPrevious issue: {last_reason}" if last_reason else ""
+    reason_html = f"<li><b>Previous Issue:</b> {last_reason}</li>" if last_reason else ""
+    
+    # Get current time for recovery
+    recovery_time = datetime.now(timezone.utc)
+    recovery_time_str = recovery_time.strftime('%d/%m/%Y %H:%M:%S')
+    
+    # Get latest snapshot for attachment (like in send_offline_incident_email_once)
+    snapshot = (
+        db.query(Snapshot)
+        .filter(Snapshot.camera_id == camera.id)
+        .order_by(Snapshot.timestamp.desc())
+        .first()
+    )
+    
+    snapshot_path = None
+    snapshot_time = None
+    snapshot_time_str = "N/A"
+    if snapshot:
+        snapshot_time = snapshot.timestamp
+        snapshot_time_str = format_datetime_with_tz(to_current_timezone(snapshot.timestamp, db))
+        candidate_path = os.path.join(SNAPSHOT_BASE_DIR, snapshot.file_path)
+        if os.path.exists(candidate_path):
+            snapshot_path = candidate_path
+        else:
+            logger.warning(
+                "Snapshot file missing for camera %s (%s): %s",
+                camera.hostname,
+                camera.ip,
+                candidate_path,
+            )
     
     plain_body = f"""
 Yth. User,
@@ -641,13 +671,52 @@ CCTV {camera.hostname} (IP: {camera.ip}) image telah kembali NORMAL dari status 
 - No. Asset: {camera.asset_no or '-'}
 - Lokasi: {camera.location or '-'}
 - Koordinat: https://www.google.com/maps?q={camera.latitude},{camera.longitude}
-- Waktu Recovery: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S')} UTC
+- Waktu Recovery: {recovery_time_str} UTC
+- Snapshot Terakhir: {snapshot_time_str}
 
 Sistem telah memverifikasi kualitas gambar kamera telah pulih (tidak blur, gelap, atau terhalang).
+
+Catatan: Foto snapshot { "terlampir" if snapshot_path else "tidak tersedia" } sebagai referensi kondisi kamera saat ini.
 
 Terima kasih,
 IT Computer Operations
 PT Kaltim Prima Coal
+""".strip()
+    
+    html_body = f"""
+<html>
+  <body style="font-family: Arial, sans-serif; color: #111; background-color: #ffffff; padding: 12px;">
+    <p>Yth. User,</p>
+
+    <p>
+      <b>CCTV {camera.hostname} (IP: {camera.ip})</b> image telah kembali <b style="color: #16a34a;">NORMAL</b> dari status TAMPERED.
+    </p>
+
+    <ul>
+      <li><b>No. Asset:</b> {camera.asset_no or '-'}</li>
+      <li><b>Lokasi:</b> {camera.location or '-'}</li>
+      <li><b>Koordinat:</b> <a href="https://www.google.com/maps?q={camera.latitude},{camera.longitude}" target="_blank">Lihat di Google Maps</a></li>
+      <li><b>Waktu Recovery:</b> {recovery_time_str} UTC</li>
+      <li><b>Snapshot Terakhir:</b> {snapshot_time_str} { "(foto terlampir)" if snapshot_path else "" }</li>
+      {reason_html}
+    </ul>
+
+    <p>
+      Sistem telah memverifikasi kualitas gambar kamera telah pulih (tidak blur, gelap, atau terhalang).
+    </p>
+
+    <p style="font-size:13px; color:#444;">
+      <b>Catatan:</b> Foto snapshot { "terlampir sebagai attachment" if snapshot_path else "tidak tersedia" } sebagai referensi kondisi kamera saat ini.
+    </p>
+
+    <br/>
+    <p>
+      Hormat kami,<br/>
+      <b>IT Computer Operations</b><br/>
+      PT Kaltim Prima Coal
+    </p>
+  </body>
+</html>
 """.strip()
     
     try:
@@ -656,10 +725,10 @@ PT Kaltim Prima Coal
             subject=subject,
             cam_group=camera_group,
             cam_hostname=camera.hostname,
-            snapshot_time=datetime.now(timezone.utc),  # BUG FIX: Add missing snapshot_time (recovery time)
+            snapshot_time=snapshot_time if snapshot_time else recovery_time,
             body=plain_body,
-            html=None,
-            image_path=None,
+            html=html_body,
+            image_path=snapshot_path,
         )
         
         # Log the recovery notification

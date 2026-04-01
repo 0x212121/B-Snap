@@ -182,7 +182,8 @@ def _send_email_with_image(
     msg["To"] = ", ".join(to_emails)
 
     # ✅ tambahkan CC helpdesk jika diset
-    msg["Cc"] = config["email_cc"] if config["email_cc"] else ""
+    if config["email_cc"]:
+        msg["Cc"] = config["email_cc"]
 
     # alternative part: plain + html
     alt = MIMEMultipart("alternative")
