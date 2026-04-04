@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, event
+from sqlalchemy import Column, Integer, String, event
 from sqlalchemy.orm import relationship
 from app.db.database import Base
 
@@ -16,8 +16,6 @@ class CameraGroup(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True, nullable=False)
-    latitude = Column(Float, nullable=True)
-    longitude = Column(Float, nullable=True)
 
     cameras = relationship("Camera", back_populates="group")  # pakai string
     nvr = relationship("NVR", back_populates="group")

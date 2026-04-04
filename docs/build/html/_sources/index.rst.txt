@@ -12,8 +12,16 @@ Welcome to B-Snap Documentation!
 
    architecture
    security
+   audit_logging
+   notifications
    development
    deployment
    maintenance
    appendix
 
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

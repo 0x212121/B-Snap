@@ -8,7 +8,7 @@ router = APIRouter()
 
 @router.get("/api/whatsapp/is-allowed")
 def is_whatsapp_allowed(phone: str, db: Session = Depends(get_db)):
-    entry = db.query(WhatsappWhitelist).filter_by(phone_number=phone, is_active=True).first()
+    entry = db.query(WhatsappWhitelist).filter_by(phone_number=phone).first()
     if entry:
         return {
             "allowed": True,

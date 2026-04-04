@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 import traceback
 
 from fastapi import FastAPI, HTTPException, Request, Response, status
-from fastapi.responses import ORJSONResponse, RedirectResponse
+from fastapi.responses import ORJSONResponse, RedirectResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.docs import get_swagger_ui_html
 from sqlalchemy import inspect
@@ -27,15 +27,16 @@ from app.middleware.session_restore import RestoreSessionMiddleware
 from app.core.config_initializer import seed_config
 from app.core.logging_config import setup_logging
 from app.db.database import Base, engine, SessionLocal
+from app.utils.timezone_helper import clear_timezone_cache
 
 # Import all models to register them with Base.metadata
 # This MUST happen before Base.metadata.create_all() is called
 import app.models  # noqa: F401 - imports all models via __init__.py
 from app.routes import (
-    admin, auth, audit, cameras, config, dev_docs, docs, health, jobs, logs, maps,
+    admin, auth, audit, audit_log, cameras, camera_groups, config, dev_docs, docs, health, jobs, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
     user_management, videos, whitelist, group_recipients, email_logs, wa_webhook,
-    notifications, toast_demo
+    notifications, toast_demo, email_templates
 )
 from app.routes import insights
 from app.ws.routes import notification_listener, router as ws_router
@@ -62,6 +63,9 @@ if os.getenv("BSNAP_LOG_VIA_GUNICORN", "1") not in ("1", "true", "yes"):
 
 logger = logging.getLogger("main")
 
+# Environment detection
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+
 SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key-for-dev")
 if SECRET_KEY == "your-default-secret-key-for-dev":
     logger.warning("Using default SECRET_KEY. This is not secure for production.")
@@ -82,6 +86,15 @@ templates.env.globals["version"] = __version__
 # ====================================================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Log startup environment
+    env_display = ENVIRONMENT.upper()
+    if ENVIRONMENT == "production":
+        logger.info(f"🚀 B-Snap starting in {env_display} mode")
+    elif ENVIRONMENT == "testing":
+        logger.info(f"🧪 B-Snap starting in {env_display} mode")
+    else:
+        logger.info(f"🔧 B-Snap starting in {env_display} mode")
+    
     logger.info("Lifespan startup: Initializing database...")
     
     # Wait a bit for database to be fully ready in containerized environments
@@ -102,6 +115,10 @@ async def lifespan(app: FastAPI):
                 logger.error("Database connection failed after all retries")
                 raise
 
+    # Clear timezone cache on startup to ensure fresh config is loaded
+    clear_timezone_cache()
+    logger.info("Timezone cache cleared on startup.")
+    
     # Always create missing tables (for new models that don't have migrations yet)
     logger.info("Creating any missing tables from Base metadata...")
     try:
@@ -217,6 +234,27 @@ async def error_wrapper_middleware(request: Request, call_next):
 # ====================================================================
 # 6. ROUTERS & STATIC FILES
 # ====================================================================
+
+# P2-004: Block direct access to /static/snapshots - MUST be before StaticFiles mount
+@app.get("/static/snapshots/{path:path}", include_in_schema=False)
+async def block_snapshot_access(request: Request, path: str):
+    """Block direct access to snapshot files (P2-004).
+    
+    Snapshots must be accessed via authenticated API:
+    - GET /api/snapshots/secure/{snapshot_id}
+    - GET /api/snapshots/file/{file_path}
+    """
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=403,
+        content={
+            "status": "error",
+            "detail": "Direct snapshot access blocked (P2-004). Use authenticated API endpoints.",
+            "code": "SNAPSHOT_ACCESS_BLOCKED",
+            "help": "Access snapshots via: /api/snapshots/secure/{snapshot_id}"
+        }
+    )
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/documentation", StaticFiles(directory="docs/build/html"), name="docs")
 
@@ -238,6 +276,7 @@ app.include_router(logs.router)
 app.include_router(nvrs.router)
 app.include_router(snap_gallery.router)
 app.include_router(audit.router)
+app.include_router(audit_log.router)
 app.include_router(dev_docs.router)
 app.include_router(ws_router)
 app.include_router(whatsapp_routes.router)
@@ -246,10 +285,12 @@ app.include_router(admin.router)
 app.include_router(whitelist.router)
 app.include_router(group_recipients.router)
 app.include_router(email_logs.router)
+app.include_router(email_templates.router)
 app.include_router(wa_webhook.router)
 app.include_router(insights.router)
 app.include_router(notifications.router)
 app.include_router(jobs.router)
+app.include_router(camera_groups.router)
 # Demo routes - remove in production
 app.include_router(toast_demo.router)
 
@@ -342,3 +383,19 @@ async def not_found_404(request: Request, exc):
 @app.exception_handler(403)
 async def forbidden_403(request: Request, exc):
     return templates.TemplateResponse("403.html", {"request": request}, status_code=403)
+
+
+import traceback
+
+@app.exception_handler(Exception)
+async def debug_exception_handler(request: Request, exc: Exception):
+    return HTMLResponse(
+        content=f"""
+        <h1>INTERNAL SERVER ERROR - DEBUG MODE</h1>
+        <h2>Error Type: {type(exc).__name__}</h2>
+        <h2>Message: {str(exc)}</h2>
+        <hr>
+        <pre style="background: #f0f0f0; padding: 20px; overflow: auto;">{traceback.format_exc()}</pre>
+        """,
+        status_code=500
+    )

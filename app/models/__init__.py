@@ -15,7 +15,7 @@ from .config import Configuration
 from .notification_queue import NotificationQueue
 from .whitelist import WhatsappWhitelist
 from .task_timing import TaskTiming
-from .audit_log import AuditLog
+from .audit_log import AuditLog, AuditLogLegacy, AuditArchiveHistory
 from .storage_metric import StorageMetric, StorageAlert
 from .notification import Notification
 
@@ -31,6 +31,7 @@ from .camera_email_notification_log import (
 from .health_check_status import HealthCheckStatus
 from .job_execution_log import JobExecutionLog
 from .sla_report import SLAReport, ScheduledReport
+from .email_template import EmailTemplate
 
 __all__ = [
     "Camera",
@@ -48,6 +49,8 @@ __all__ = [
     "WhatsappWhitelist",
     "TaskTiming",
     "AuditLog",
+    "AuditLogLegacy",
+    "AuditArchiveHistory",
     "StorageMetric",
     "StorageAlert",
     "Notification",
@@ -62,4 +65,5 @@ __all__ = [
     "JobExecutionLog",
     "SLAReport",
     "ScheduledReport",
+    "EmailTemplate",
 ]

@@ -13,7 +13,7 @@ from typing import Optional, Union
 from app.models.user import User
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, UploadFile, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.database import get_db
@@ -37,9 +37,29 @@ setup_logging()
 logger = logging.getLogger("management")
 
 @router.get("/cameras", response_class=HTMLResponse)
-async def manage(request: Request):
-    """Renders the main cameras management page."""
-    return templates.TemplateResponse("cameras.html", {"request": request})
+async def manage(request: Request, db: Session = Depends(get_db)):
+    """Renders the main cameras management page with filter options."""
+    # Get unique filter values
+    groups = db.query(CameraGroup).order_by(CameraGroup.name).all()
+    locations = db.query(DBCamera.location).filter(DBCamera.location.isnot(None)).distinct().order_by(DBCamera.location).all()
+    
+    return templates.TemplateResponse("cameras.html", {
+        "request": request,
+        "groups": groups,
+        "locations": [loc[0] for loc in locations if loc[0]],
+        "safety_options": [
+            {"value": "critical", "label": "Critical"},
+            {"value": "standard", "label": "Standard"},
+            {"value": "low", "label": "Low"}
+        ],
+        "status_options": [
+            {"value": "Active", "label": "Active"},
+            {"value": "Deactivated", "label": "Deactivated"},
+            {"value": "Maintenance", "label": "Maintenance"},
+            {"value": "Restricted", "label": "Restricted"},
+            {"value": "Standalone", "label": "Standalone"}
+        ]
+    })
 
 
 @router.get("/cameras/data", response_class=JSONResponse)
@@ -48,14 +68,36 @@ async def manage_data(
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
     search: Optional[str] = Query(None),
-    per_page: int = Query(10, ge=1)
+    per_page: int = Query(10, ge=1),
+    group_id: Optional[int] = Query(None),
+    location: Optional[str] = Query(None),
+    safety: Optional[str] = Query(None),
+    status: Optional[str] = Query(None)
 ):
-    logger.debug("Received request for camera data. Page: %s, Search: %s, Per_page: %s", page, search, per_page)
+    logger.debug("Received request for camera data. Page: %s, Search: %s, Filters: group=%s, location=%s, safety=%s, status=%s", 
+                 page, search, group_id, location, safety, status)
 
     query = db.query(DBCamera).options(joinedload(DBCamera.group))
+    stats_query = db.query(DBCamera)
+    
+    # Apply filters to both queries
+    if group_id:
+        query = query.filter(DBCamera.group_id == group_id)
+        stats_query = stats_query.filter(DBCamera.group_id == group_id)
+    
+    if location:
+        query = query.filter(DBCamera.location.ilike(f"%{location}%"))
+        stats_query = stats_query.filter(DBCamera.location.ilike(f"%{location}%"))
+    
+    if safety:
+        query = query.filter(DBCamera.safety_classification == safety)
+        stats_query = stats_query.filter(DBCamera.safety_classification == safety)
+    
+    if status:
+        query = query.filter(DBCamera.status == status)
+        stats_query = stats_query.filter(DBCamera.status == status)
     
     # Calculate stats before applying pagination
-    stats_query = db.query(DBCamera)
     if search:
         search_term = f"%{search}%"
         stats_query = stats_query.join(CameraGroup, DBCamera.group_id == CameraGroup.id, isouter=True).filter(
@@ -73,15 +115,18 @@ async def manage_data(
     active_count = stats_query.filter(DBCamera.status == 'Active').count()
     deactivated_count = stats_query.filter(DBCamera.status == 'Deactivated').count()
     maintenance_count = stats_query.filter(DBCamera.status == 'Maintenance').count()
+    # P2-002: Safety classification stats
+    critical_count = stats_query.filter(DBCamera.safety_classification == 'critical').count()
     
     stats = {
         "total": total_count,
         "active": active_count,
         "deactivated": deactivated_count,
-        "maintenance": maintenance_count
+        "maintenance": maintenance_count,
+        "critical": critical_count  # P2-002
     }
 
-    # Apply filters to main query
+    # Apply search filter to main query
     if search:
         search_term = f"%{search}%"
         query = query.join(CameraGroup, DBCamera.group_id == CameraGroup.id, isouter=True).filter(
@@ -112,10 +157,24 @@ async def manage_data(
         gps_loc = f"{cam.latitude}, {cam.longitude}" if cam.latitude is not None or cam.longitude is not None else ""
         status_classes = get_status_classes(cam.status)
         status_label = cam.status or "Unknown"
+        
+        # P2-002: Safety classification badge
+        safety = cam.safety_classification or 'standard'
+        if safety == 'critical':
+            safety_badge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800" title="Critical Safety - Incident Coverage">🔴 Critical</span>'
+        elif safety == 'low':
+            safety_badge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800" title="Low Safety - General Surveillance">🟢 Low</span>'
+        else:
+            safety_badge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800" title="Standard Safety - Regular Monitoring">🟡 Standard</span>'
 
         rows_html += f"""
             <tr class="group border-b dark:border-gray-700 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors duration-150 text-sm text-gray-700 dark:text-gray-300">
-                <td class="px-4 py-3.5 font-semibold text-gray-900 dark:text-white">{cam.hostname}</td>
+                <td class="px-4 py-3.5 font-semibold text-gray-900 dark:text-white">
+                    <div class="flex items-center gap-2">
+                        {cam.hostname}
+                        {safety_badge if safety == 'critical' else ''}
+                    </div>
+                </td>
                 <td class="px-4 py-3.5 font-mono text-gray-600 dark:text-gray-400">{cam.ip}</td>
                 <td class="px-4 py-3.5">{cam.port}</td>
                 <td class="px-4 py-3.5">{cam.username}</td>
@@ -123,6 +182,7 @@ async def manage_data(
                 <td class="px-4 py-3.5">{cam.asset_no or ''}</td>
                 <td class="px-4 py-3.5">{cam.location or ''}</td>
                 <td class="px-4 py-3.5">{cam.group.name if cam.group else ''}</td>
+                <td class="px-4 py-3.5">{safety_badge}</td>
                 <td class="px-4 py-3.5">
                     <span class="px-2.5 py-1 text-xs font-semibold rounded-full {status_classes}">
                         {status_label}
@@ -180,15 +240,21 @@ async def add_camera_submit(
     longitude: str = Form(None),
     asset_no: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
-    group_name: Optional[str] = Form(None),
+    group_name: str = Form(...),  # Changed: now required
     status: str = Form(...),
     is_flipped: Optional[str] = Form(None),
     note: Optional[str] = Form(None),
     snapshot_url: Optional[str] = Form(None),
+    safety_classification: Optional[str] = Form('standard'),  # P2-002
 ):
     """Handles the form submission to add a new camera."""
     logger.info("Attempting to add new camera with hostname: %s", name)
     try:
+        # Validate group_name is provided
+        if not group_name or not group_name.strip():
+            logger.warning("Attempted to add camera without group: %s", name)
+            return JSONResponse(status_code=400, content={"status": "error", "message": "Group is required. Please select a group."})
+        
         existing_cam = db.query(DBCamera).filter(DBCamera.hostname == name).first()
         if existing_cam:
             logger.warning("Attempted to add a camera that already exists: %s", name)
@@ -213,7 +279,8 @@ async def add_camera_submit(
         new_cam = DBCamera(
             hostname=name, ip=ip, port=port_val, username=username, password=password,
             latitude=lat, longitude=lon, asset_no=asset_no, location=location,
-            group_id=group_id, status=status, is_flipped=is_flipped, note=note, snapshot_url=snapshot_url
+            group_id=group_id, status=status, is_flipped=is_flipped, note=note, snapshot_url=snapshot_url,
+            safety_classification=safety_classification
         )
         db.add(new_cam)
         db.commit()
@@ -278,6 +345,7 @@ async def edit_camera_submit(
     status: str = Form(...),
     note: Optional[str] = Form(None),
     snapshot_url: Optional[str] = Form(None),
+    safety_classification: Optional[str] = Form(None),  # P2-002
 ):
     """Handles the form submission to edit an existing camera."""
     logger.info("Attempting to edit camera with ID: %s", camera_id)
@@ -317,6 +385,8 @@ async def edit_camera_submit(
         cam.is_flipped = (is_flipped is not None)
         cam.note = note
         cam.snapshot_url = snapshot_url
+        if safety_classification:
+            cam.safety_classification = safety_classification
 
         if password:
             cam.password = password
@@ -414,7 +484,8 @@ async def get_camera_details(
         "is_flipped": camera.is_flipped,
         "group": {"name": camera.group.name} if camera.group else None,
         "note": camera.note,
-        "snapshot_url": camera.snapshot_url
+        "snapshot_url": camera.snapshot_url,
+        "safety_classification": camera.safety_classification or 'standard',  # P2-002
     }
 
 
@@ -457,7 +528,7 @@ async def get_camera_password(
 
 
 @router.get("/api/camera_groups")
-async def get_camera_groups(request: Request, db: Session = Depends(get_db)):
+async def get_camera_groups_list(request: Request, db: Session = Depends(get_db)):
     """Fetches a list of all camera groups."""
     groups = db.query(CameraGroup).all()
     logger.debug("Fetched %s camera groups.", len(groups))

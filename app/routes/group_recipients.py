@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 from typing import Optional
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from app.db.database import get_db
 from app.models.recipient import GroupRecipient
@@ -43,15 +43,51 @@ def list_recipients_page(request: Request, db: Session = Depends(get_db)):
 
 
 # ============================================================
-# 2️⃣ API: GET RECIPIENTS (JSON)
+# 2️⃣ API: GET RECIPIENTS (JSON) - FIXED WITH SEARCH & FILTERS
 # ============================================================
 @router.get("/api/recipients", name="list_recipients_api")
-def list_recipients_api(db: Session = Depends(get_db), page: int = 1, per_page: int = 10):
+def list_recipients_api(
+    db: Session = Depends(get_db), 
+    page: int = 1, 
+    per_page: int = 10,
+    search: Optional[str] = None,
+    group: Optional[str] = None,
+    location: Optional[str] = None
+):
     try:
         groups = db.query(CameraGroup).all()
+        
+        # Base query with join
         query = db.query(GroupRecipient).options(joinedload(GroupRecipient.group))
-
+        
+        # Apply search filter (email or nickname)
+        if search:
+            search_filter = f"%{search}%"
+            query = query.filter(
+                or_(
+                    GroupRecipient.email.ilike(search_filter),
+                    GroupRecipient.nickname.ilike(search_filter)
+                )
+            )
+        
+        # Apply group filter
+        if group and group.isdigit():
+            query = query.filter(GroupRecipient.group_id == int(group))
+        
+        # Apply location filter
+        if location:
+            location_filter = f"%{location}%"
+            query = query.filter(
+                or_(
+                    GroupRecipient.locations.ilike(location_filter),
+                    GroupRecipient.locations.is_(None) if location == "" else False
+                )
+            )
+        
+        # Get total count after filters
         total = query.count()
+        
+        # Apply pagination
         recipients = query.offset((page - 1) * per_page).limit(per_page).all()
         total_pages = (total + per_page - 1) // per_page
 
@@ -244,6 +280,7 @@ def test_send_email(
     """
     Kirim test email ke semua recipient berdasarkan group_id dan lokasi (opsional).
     Log dicatat ke CameraEmailNotificationLog agar konsisten dengan alert sungguhan.
+    ✅ UPDATE: CC email juga masuk ke log
     """
 
     try:
@@ -295,12 +332,24 @@ def test_send_email(
         db.add(log_entry)
         db.flush()  # agar dapat log_entry.id
 
-        # Immutable recipient snapshot
+        # ✅ ROBUST LOGGING: Immutable recipient snapshot (To + CC)
         for em in emails:
             db.add(CameraEmailNotificationRecipient(
                 log_id=log_entry.id,
                 recipient_email=em,
             ))
+        
+        # ✅ TAMBAHAN: Log CC recipient dari config
+        from app.utils.smtp_config import get_smtp_config
+        config = get_smtp_config()
+        cc_email = config.get("email_cc")
+        if cc_email and isinstance(cc_email, str) and cc_email.strip():
+            db.add(CameraEmailNotificationRecipient(
+                log_id=log_entry.id,
+                recipient_email=cc_email.strip()
+            ))
+            logger.info(f"Added CC recipient to test email log: {cc_email.strip()}")
+        
         db.flush()
         db.commit()  # commit sementara agar log aman disimpan
 

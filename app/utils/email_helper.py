@@ -2,10 +2,11 @@ from datetime import datetime
 from email.mime.application import MIMEApplication
 import os
 import smtplib
+import socket
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from fastapi import BackgroundTasks
-from typing import List
+from typing import List, Optional
 from sqlalchemy.orm import Session
 
 # Import SMTP config helper (with DB + env fallback)
@@ -43,10 +44,17 @@ def _send_email_sync(to: list[str], subject: str, body: str, html: str | None = 
     if html:
         msg.attach(MIMEText(html, "html"))
 
-    with smtplib.SMTP(config["smtp_host"], config["smtp_port"]) as server:
-        server.starttls()
-        server.login(config["smtp_user"], config["smtp_pass"])
-        server.sendmail(config["email_from"], to, msg.as_string())
+    try:
+        with smtplib.SMTP(config["smtp_host"], config["smtp_port"], timeout=30) as server:
+            server.starttls()
+            server.login(config["smtp_user"], config["smtp_pass"])
+            server.sendmail(config["email_from"], to, msg.as_string())
+    except socket.gaierror as e:
+        raise RuntimeError(f"Cannot resolve SMTP host '{config['smtp_host']}': {e}. Please check your SMTP configuration.")
+    except socket.timeout as e:
+        raise RuntimeError(f"SMTP connection timeout: {e}. Please check your network connection.")
+    except smtplib.SMTPException as e:
+        raise RuntimeError(f"SMTP error: {e}")
 
 
 def send_email(
@@ -157,10 +165,12 @@ def _send_email_with_image(
     body: str,
     html: str,
     image_path: str = None
-):
+) -> Optional[str]:
     """
     Kirim email dengan plain text + HTML.
     Snapshot (jika ada) dikirim sebagai attachment, bukan inline.
+    
+    ✅ RETURNS: CC email address yang digunakan, atau None jika tidak ada.
     """
     # Load SMTP config from database (with env fallback)
     config = get_smtp_config()
@@ -174,7 +184,9 @@ def _send_email_with_image(
     msg["To"] = ", ".join(to_emails)
 
     # ✅ tambahkan CC helpdesk jika diset
-    msg["Cc"] = config["email_cc"] if config["email_cc"] else ""
+    cc_email = config.get("email_cc")
+    if cc_email and isinstance(cc_email, str) and cc_email.strip():
+        msg["Cc"] = cc_email.strip()
 
     # alternative part: plain + html
     alt = MIMEMultipart("alternative")
@@ -184,7 +196,7 @@ def _send_email_with_image(
 
     # attach snapshot sebagai file (bukan inline)
     if image_path and os.path.exists(image_path):
-        ts_str = snapshot_time.strftime("%Y%m%d-%H%M%Z")
+        ts_str = snapshot_time.strftime("%Y%m%d-%H%M%Z") if snapshot_time else datetime.now().strftime("%Y%m%d-%H%M%Z")
         snapshot_file_name = f"B-Snap_{cam_group if cam_group else 'NoGroup'}_{cam_hostname}_LastSnapshot_{ts_str}.jpg"
         
         with open(image_path, "rb") as f:
@@ -192,13 +204,23 @@ def _send_email_with_image(
         part['Content-Disposition'] = f'attachment; filename="{snapshot_file_name}"'
         msg.attach(part)
 
-    # gabungkan recipients (to + cc)
-    all_recipients = to_emails + ([config["email_cc"]] if config["email_cc"] else [])
+    # gabungkan recipients (to + cc) untuk pengiriman
+    all_recipients = to_emails + ([cc_email.strip()] if cc_email and isinstance(cc_email, str) else [])
 
-    with smtplib.SMTP(config["smtp_host"], config["smtp_port"]) as server:
-        server.starttls()
-        server.login(config["smtp_user"], config["smtp_pass"])
-        server.sendmail(config["email_from"], all_recipients, msg.as_string())
+    try:
+        with smtplib.SMTP(config["smtp_host"], config["smtp_port"], timeout=30) as server:
+            server.starttls()
+            server.login(config["smtp_user"], config["smtp_pass"])
+            server.sendmail(config["email_from"], all_recipients, msg.as_string())
+    except socket.gaierror as e:
+        raise RuntimeError(f"Cannot resolve SMTP host '{config['smtp_host']}': {e}. Please check your SMTP configuration.")
+    except socket.timeout as e:
+        raise RuntimeError(f"SMTP connection timeout: {e}. Please check your network connection.")
+    except smtplib.SMTPException as e:
+        raise RuntimeError(f"SMTP error: {e}")
+    
+    # ✅ RETURN CC email untuk keperluan logging
+    return cc_email.strip() if cc_email and isinstance(cc_email, str) and cc_email.strip() else None
 
 
 # =========================
@@ -249,4 +271,3 @@ def get_recipients_for_camera(db: Session, camera: DBCamera) -> List[str]:
     # dedup
     seen = set()
     return [e for e in recipients if not (e in seen or seen.add(e))]
-

@@ -35,6 +35,7 @@ def run_migrations_offline() -> None:
     context.configure(
         url=url,
         target_metadata=target_metadata,
+        version_table_schema="public",
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )

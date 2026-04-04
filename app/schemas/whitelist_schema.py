@@ -12,14 +12,12 @@ class WhitelistCreate(BaseModel):
     )
     name: Optional[str] = None
     role: RoleEnum = RoleEnum.user
-    is_active: bool = True
     group_id: Optional[int] = Field(None, description="ID dari camera group")
 
 
 class WhitelistUpdate(BaseModel):
     name: Optional[str] = None
     role: RoleEnum = RoleEnum.user
-    is_active: bool
     group_id: Optional[int] = Field(None, description="ID dari camera group")
 
 

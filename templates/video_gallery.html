@@ -140,6 +140,20 @@
     initTomSelect();
     setupEventListeners();
     setupInfiniteScroll();
+    
+    // Check initial content count
+    const initialCount = document.querySelectorAll("[data-video-card]").length;
+    const sentinel = document.getElementById("scrollSentinel");
+    if (initialCount < 12) {
+      VideoState.hasMore = false;
+      sentinel.classList.add("hidden");
+      sentinel.classList.remove("flex");
+    } else {
+      // Show sentinel if we have 12 items (might have more)
+      sentinel.classList.remove("hidden");
+      sentinel.classList.add("flex");
+    }
+    console.log("Initial count:", initialCount, "hasMore:", VideoState.hasMore);
   });
 
   function initTomSelect() {
@@ -178,14 +192,17 @@
    */
   function setupInfiniteScroll() {
     const sentinel = document.getElementById("scrollSentinel");
+    console.log("Setting up infinite scroll, sentinel:", sentinel);
     
     VideoState.observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && !VideoState.isLoading && VideoState.hasMore && VideoState.currentPage > 1) {
+      console.log("Intersection observed:", entries[0].isIntersecting, "isLoading:", VideoState.isLoading, "hasMore:", VideoState.hasMore);
+      if (entries[0].isIntersecting && !VideoState.isLoading && VideoState.hasMore) {
         loadMore();
       }
-    }, { rootMargin: "100px", threshold: 0.1 });
+    }, { rootMargin: "200px", threshold: 0.1 });
 
     VideoState.observer.observe(sentinel);
+    console.log("Observer attached to sentinel");
   }
 
   function resetAndLoad() {
@@ -194,13 +211,19 @@
     VideoState.lastRequestId++;
     document.getElementById("videoGrid").innerHTML = "";
     const sentinel = document.getElementById("scrollSentinel");
-    sentinel.classList.add("hidden");
+    sentinel.classList.remove("hidden");
+    sentinel.classList.add("flex");
     fetchVideos(false);
   }
 
   function loadMore() {
-    if (VideoState.isLoading || !VideoState.hasMore) return;
+    console.log("loadMore called, page:", VideoState.currentPage + 1, "hasMore:", VideoState.hasMore, "isLoading:", VideoState.isLoading);
+    if (VideoState.isLoading || !VideoState.hasMore) {
+      console.log("loadMore skipped - isLoading:", VideoState.isLoading, "hasMore:", VideoState.hasMore);
+      return;
+    }
     VideoState.currentPage++;
+    console.log("Loading page:", VideoState.currentPage);
     fetchVideos(true);
   }
 
@@ -222,37 +245,37 @@
     params.set("page", VideoState.currentPage);
     if (VideoState.currentFilter.camera) params.set("camera", VideoState.currentFilter.camera);
     if (VideoState.currentFilter.q) params.set("q", VideoState.currentFilter.q);
+    
+    console.log("Fetching videos, page:", VideoState.currentPage, "params:", params.toString());
 
     try {
       const res = await fetch(`/video-gallery-data?${params}`);
       const data = await res.json();
       
-      // Cancel check
+      console.log("Fetch response, newItems count:", (data.html.match(/data-video-card/g) || []).length);
+      
+      // Cancel check - new request started
       if (requestId !== VideoState.lastRequestId) return;
 
+      // Parse new items
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = data.html;
+      const newItems = Array.from(tempDiv.querySelectorAll("[data-video-card]"));
+      
       if (!append) {
         grid.innerHTML = data.html;
-      } else {
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = data.html;
-        const newItems = Array.from(tempDiv.querySelectorAll("[data-video-card]"));
-        
-        if (newItems.length === 0) {
-          VideoState.hasMore = false;
-        } else {
-          const fragment = document.createDocumentFragment();
-          newItems.forEach(item => fragment.appendChild(item));
-          grid.appendChild(fragment);
-          
-          // Cek apakah return < limit (misal limit 15)
-          if (newItems.length < 15) VideoState.hasMore = false;
-        }
+      } else if (newItems.length > 0) {
+        const fragment = document.createDocumentFragment();
+        newItems.forEach(item => fragment.appendChild(item));
+        grid.appendChild(fragment);
       }
-
-      // Initial load check
-      if (!append) {
-        const count = (data.html.match(/data-video-card/g) || []).length;
-        if (count === 0 || count < 15) VideoState.hasMore = false;
+      
+      // Determine if there are more pages (limit is 12)
+      if (newItems.length < 12) {
+        VideoState.hasMore = false;
+        console.log("No more videos (got", newItems.length, ")");
+      } else {
+        console.log("More videos available");
       }
 
     } catch (err) {
@@ -262,7 +285,10 @@
       if (requestId === VideoState.lastRequestId) {
         VideoState.isLoading = false;
         grid.style.opacity = "1";
-        if (!VideoState.hasMore) sentinel.classList.add("hidden");
+        if (!VideoState.hasMore) {
+          sentinel.classList.add("hidden");
+          sentinel.classList.remove("flex");
+        }
       }
     }
   }

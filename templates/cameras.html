@@ -38,7 +38,7 @@
 </div>
 
 <!-- Stats Cards -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
@@ -47,6 +47,21 @@
       </div>
       <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
         {{ icon_video_camera("w-6 h-6 text-blue-600 dark:text-blue-400") }}
+      </div>
+    </div>
+  </div>
+  
+  <!-- P2-002: Safety Classification Stats -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Critical Safety</p>
+        <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1" id="stat-critical">-</p>
+      </div>
+      <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+        <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
       </div>
     </div>
   </div>
@@ -92,25 +107,52 @@
 
 <!-- Filter Section -->
 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
-  <div class="flex flex-col lg:flex-row gap-4 justify-between">
-    <!-- Search -->
-    <div class="relative flex-1 max-w-lg">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        {{ icon_search("h-5 w-5 text-gray-400") }}
+  <div class="flex flex-col gap-4">
+    <!-- Row 1: Search and Per Page -->
+    <div class="flex flex-col lg:flex-row gap-4 justify-between">
+      <!-- Search -->
+      <div class="relative flex-1 max-w-lg">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          {{ icon_search("h-5 w-5 text-gray-400") }}
+        </div>
+        <input name="search" id="searchInput" type="text" placeholder="Search by Name, IP, Location, Asset No..." 
+          value="{{ search or '' }}"
+          class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
       </div>
-      <input name="search" id="searchInput" type="text" placeholder="Search by Name, IP, Location, Asset No..." 
-        value="{{ search or '' }}"
-        class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+      
+      <!-- Controls -->
+      <div class="flex gap-2 items-center">
+        <div class="relative w-40">
+          <select id="perPageSelect" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+            <option value="10">10 / page</option>
+            <option value="25">25 / page</option>
+            <option value="50">50 / page</option>
+            <option value="100">100 / page</option>
+          </select>
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </div>
+        </div>
+        
+        <button onclick="resetFilters()" class="p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Reset filters">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+      </div>
     </div>
     
-    <!-- Controls -->
-    <div class="flex gap-2 items-center">
-      <div class="relative w-40">
-        <select id="perPageSelect" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
-          <option value="10">10 / page</option>
-          <option value="25">25 / page</option>
-          <option value="50">50 / page</option>
-          <option value="100">100 / page</option>
+    <!-- Row 2: Filter Dropdowns -->
+    <div class="flex flex-wrap gap-3">
+      <!-- Group Filter -->
+      <div class="relative w-48">
+        <select id="groupFilter" class="pl-3 pr-8 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none text-sm">
+          <option value="">All Groups</option>
+          {% for group in groups %}
+          <option value="{{ group.id }}">{{ group.name }}</option>
+          {% endfor %}
         </select>
         <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
           <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,11 +161,50 @@
         </div>
       </div>
       
-      <button onclick="resetFilters()" class="p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Reset filters">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-        </svg>
-      </button>
+      <!-- Location Filter -->
+      <div class="relative w-48">
+        <select id="locationFilter" class="pl-3 pr-8 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none text-sm">
+          <option value="">All Locations</option>
+          {% for loc in locations %}
+          <option value="{{ loc }}">{{ loc }}</option>
+          {% endfor %}
+        </select>
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+          <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </div>
+      </div>
+      
+      <!-- Safety Filter -->
+      <div class="relative w-40">
+        <select id="safetyFilter" class="pl-3 pr-8 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none text-sm">
+          <option value="">All Safety</option>
+          {% for option in safety_options %}
+          <option value="{{ option.value }}">{{ option.label }}</option>
+          {% endfor %}
+        </select>
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+          <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </div>
+      </div>
+      
+      <!-- Status Filter -->
+      <div class="relative w-40">
+        <select id="statusFilter" class="pl-3 pr-8 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none text-sm">
+          <option value="">All Status</option>
+          {% for option in status_options %}
+          <option value="{{ option.value }}">{{ option.label }}</option>
+          {% endfor %}
+        </select>
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+          <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -174,7 +255,16 @@
           </th>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Asset No.</th>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Location</th>
-          <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Division</th>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Group</th>
+          <!-- P2-002: Safety Classification Column -->
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap">
+            <div class="flex items-center gap-1">
+              <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+              Safety
+            </div>
+          </th>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Status</th>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap text-center">Actions</th>
         </tr>
@@ -357,12 +447,14 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="group_name">Camera Division</label>
-            <select id="group_name" name="group_name" 
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="group_name">
+              Camera Group <span class="text-red-500">*</span>
+            </label>
+            <select id="group_name" name="group_name" required
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-              <option value="">-- Select Division --</option>
+              <option value="">-- Select Group --</option>
             </select>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Grouping camera to filter in maps</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Required: Group for organizing and filtering cameras</p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="status">Status</label>
@@ -374,6 +466,18 @@
               <option value="Standalone">Standalone</option>
               <option value="Maintenance">Maintenance</option>
             </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="safety_classification">
+              Safety Classification <span class="text-xs text-amber-600 font-normal">(P2-002)</span>
+            </label>
+            <select id="safety_classification" name="safety_classification" 
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition">
+              <option value="critical">🔴 Critical - Incident coverage</option>
+              <option value="standard" selected>🟡 Standard - Regular monitoring</option>
+              <option value="low">🟢 Low - General surveillance</option>
+            </select>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">For mining safety compliance</p>
           </div>
         </div>
         
@@ -518,7 +622,24 @@
       loadingIndicator.classList.add('flex');
       
       try {
-        const res = await fetch(`/cameras/data?page=${page}&search=${encodeURIComponent(search || '')}&per_page=${perPage}`);
+        // Get filter values
+        const groupFilter = document.getElementById('groupFilter')?.value || '';
+        const locationFilter = document.getElementById('locationFilter')?.value || '';
+        const safetyFilter = document.getElementById('safetyFilter')?.value || '';
+        const statusFilter = document.getElementById('statusFilter')?.value || '';
+        
+        // Build query params
+        const params = new URLSearchParams({
+          page: page,
+          per_page: perPage
+        });
+        if (search) params.append('search', search);
+        if (groupFilter) params.append('group_id', groupFilter);
+        if (locationFilter) params.append('location', locationFilter);
+        if (safetyFilter) params.append('safety', safetyFilter);
+        if (statusFilter) params.append('status', statusFilter);
+        
+        const res = await fetch(`/cameras/data?${params.toString()}`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         
         const data = await res.json();
@@ -526,6 +647,7 @@
         // Update stats
         if (data.stats) {
           document.getElementById('stat-total').textContent = data.stats.total || 0;
+          document.getElementById('stat-critical').textContent = data.stats.critical || 0;
           document.getElementById('stat-active').textContent = data.stats.active || 0;
           document.getElementById('stat-deactivated').textContent = data.stats.deactivated || 0;
           document.getElementById('stat-maintenance').textContent = data.stats.maintenance || 0;
@@ -764,6 +886,7 @@
         setFieldValue('is_flipped', cam.is_flipped);
         setFieldValue('note', cam.note || '');
         setFieldValue('snapshot_url', cam.snapshot_url || '');
+        setFieldValue('safety_classification', cam.safety_classification || 'standard');
         
         populateGroupSelect(cam.group ? cam.group.name : "");
         
@@ -802,6 +925,10 @@
     
     window.resetFilters = function() {
       document.getElementById('searchInput').value = '';
+      document.getElementById('groupFilter').value = '';
+      document.getElementById('locationFilter').value = '';
+      document.getElementById('safetyFilter').value = '';
+      document.getElementById('statusFilter').value = '';
       loadPage(1);
     };
     
@@ -814,6 +941,23 @@
     });
     
     document.getElementById('perPageSelect').addEventListener('change', () => {
+      loadPage(1);
+    });
+    
+    // Filter dropdown listeners
+    document.getElementById('groupFilter').addEventListener('change', () => {
+      loadPage(1);
+    });
+    
+    document.getElementById('locationFilter').addEventListener('change', () => {
+      loadPage(1);
+    });
+    
+    document.getElementById('safetyFilter').addEventListener('change', () => {
+      loadPage(1);
+    });
+    
+    document.getElementById('statusFilter').addEventListener('change', () => {
       loadPage(1);
     });
     

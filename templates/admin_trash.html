@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}B-Snap – Trash Management{% endblock %}
-{% from "_icons.html" import icon_trash, icon_arrow_path, icon_eye, icon_download, icon_x_mark, icon_check_circle, icon_warning %}
+{% from "_icons.html" import icon_trash, icon_arrow_path, icon_eye, icon_download, icon_x_mark, icon_check_circle, icon_warning, icon_lock %}
 
 {% block content %}
 <!-- Header Section -->
@@ -395,8 +395,8 @@ function renderSnapshots(snapshots, total, page) {
     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
       <td class="px-4 py-3">
         <div class="flex items-center gap-3">
-          <img src="/static/snapshots/${s.file_path}" alt="" class="w-12 h-9 object-cover rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-80" 
-               onclick="previewSnapshot('${s.file_path}', '${s.camera}', '${s.deleted_at}')" title="Click to preview">
+          <img src="/api/snapshots/file/${s.file_path}" alt="" class="w-12 h-9 object-cover rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-80" 
+               onclick="previewSnapshot('${s.file_path}', '${s.camera}', '${s.deleted_at}')" title="Click to preview (P2-004: Authenticated)">
           <div>
             <p class="font-medium text-gray-900 dark:text-white text-xs">${s.file_path.split('/').pop()}</p>
             <p class="text-xs text-gray-500">${s.resolution || 'Unknown'}</p>
@@ -414,10 +414,19 @@ function renderSnapshots(snapshots, total, page) {
       </td>
       <td class="px-4 py-3 text-center">
         <div class="flex items-center justify-center gap-1">
+          ${s.retention_hold ? 
+            `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 mr-2" title="${s.retention_hold_reason || 'Legal hold - cannot be purged'}">
+              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              Hold
+            </span>` : ''
+          }
           <button onclick="restoreSnapshot('${s.id}')" title="Restore" class="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
           </button>
-          <button onclick="purgeSnapshot('${s.id}', '${s.camera}')" title="Purge Permanently" class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+          <button onclick="toggleRetentionHold('${s.id}', 'snapshot', ${!s.retention_hold})" title="${s.retention_hold ? 'Remove retention hold' : 'Apply retention hold'}" class="p-2 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+          </button>
+          <button onclick="purgeSnapshot('${s.id}', '${s.camera}')" title="Purge Permanently" class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition ${s.retention_hold ? 'opacity-50 cursor-not-allowed' : ''}" ${s.retention_hold ? 'disabled' : ''}>
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
           </button>
         </div>
@@ -494,10 +503,19 @@ function renderVideos(videos, total, page) {
       <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs">${v.file_size} MB</td>
       <td class="px-4 py-3 text-center">
         <div class="flex items-center justify-center gap-1">
+          ${v.retention_hold ? 
+            `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 mr-2" title="${v.retention_hold_reason || 'Legal hold - cannot be purged'}">
+              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              Hold
+            </span>` : ''
+          }
           <button onclick="restoreVideo('${v.id}')" title="Restore" class="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
           </button>
-          <button onclick="purgeVideo('${v.id}', '${v.camera}')" title="Purge Permanently" class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+          <button onclick="toggleRetentionHold('${v.id}', 'video', ${!v.retention_hold})" title="${v.retention_hold ? 'Remove retention hold' : 'Apply retention hold'}" class="p-2 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+          </button>
+          <button onclick="purgeVideo('${v.id}', '${v.camera}')" title="Purge Permanently" class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition ${v.retention_hold ? 'opacity-50 cursor-not-allowed' : ''}" ${v.retention_hold ? 'disabled' : ''}>
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
           </button>
         </div>
@@ -595,6 +613,33 @@ async function purgeSnapshot(id, cameraName) {
   }
 }
 
+async function toggleRetentionHold(id, type, enable) {
+  const reason = enable ? prompt('Enter reason for retention hold (e.g., Legal case #12345):') : null;
+  if (enable && !reason) {
+    if (typeof Toast !== 'undefined') Toast.warning('Reason is required for retention hold', { title: 'Warning' });
+    return;
+  }
+  
+  try {
+    const endpoint = type === 'snapshot' ? `/snap/${id}/retention-hold` : `/videos/${id}/retention-hold`;
+    const url = `${endpoint}?enable=${enable}${reason ? `&reason=${encodeURIComponent(reason)}` : ''}`;
+    
+    const res = await fetch(url, { method: 'POST' });
+    const data = await res.json();
+    
+    if (res.ok) {
+      if (typeof Toast !== 'undefined') Toast.success(data.message, { title: 'Success' });
+      if (type === 'snapshot') loadSnapshots(currentPage.snapshots);
+      else loadVideos(currentPage.videos);
+    } else {
+      if (typeof Toast !== 'undefined') Toast.error(data.detail || 'Failed to update retention hold', { title: 'Error' });
+    }
+  } catch (err) {
+    console.error('Retention hold error:', err);
+    if (typeof Toast !== 'undefined') Toast.error('Network error', { title: 'Error' });
+  }
+}
+
 function showPurgeModal() {
   const modal = document.getElementById('purgeModal');
   modal.classList.remove('hidden');
@@ -653,7 +698,7 @@ function previewSnapshot(filePath, camera, deletedAt) {
   const video = document.getElementById('preview-video');
   const details = document.getElementById('preview-details');
   
-  img.src = `/static/snapshots/${filePath}`;
+  img.src = `/api/snapshots/file/${filePath}`;
   img.classList.remove('hidden');
   video.classList.add('hidden');
   video.pause();

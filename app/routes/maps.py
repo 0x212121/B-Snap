@@ -11,7 +11,7 @@ from app.models.snapshot import Snapshot
 from app.models.user import User
 from app.routes.auth import get_current_user
 from app.models.camera_status_change_log import CameraStatusChangeLog
-from app.utils.timezone_helper import get_current_timezone, to_current_timezone, format_datetime_with_tz
+from app.utils.timezone_helper import format_datetime_standard, format_time_with_tz_abbr, get_current_timezone, to_current_timezone, format_datetime_with_tz
 from app.utils.template_helper import templates
 
 router = APIRouter(tags=["Maps"])
@@ -56,7 +56,18 @@ class CameraLocation(BaseModel):
 async def maps_page(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     map_title = get_config("map_title", default="CCTV Maps")
     tz_name = get_current_timezone(db)
-    return templates.TemplateResponse("maps.html", {"request": request, "map_title": map_title, "timezone": tz_name})
+    
+    # Get current time formatted with timezone abbreviation (e.g., "09:00:00 WITA")
+    now_utc = datetime.now(timezone.utc)
+    current_time_local = to_current_timezone(now_utc, db)
+    refresh_time = format_time_with_tz_abbr(current_time_local, db)
+    
+    return templates.TemplateResponse("maps.html", {
+        "request": request, 
+        "map_title": map_title, 
+        "timezone": tz_name,
+        "refresh_time": refresh_time
+    })
 
 
 @router.get("/camera-locations", response_model=List[CameraLocation])
@@ -64,16 +75,17 @@ async def get_camera_locations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    group_name = current_user.group.name if current_user.group else "N/A"
-    group_id = current_user.group_id if current_user.group else None
+    group_id = current_user.group_id
+    group_name = current_user.group.name if current_user.group else "All Groups"
 
     # --- Kamera utama ---
+    # If user has no group (group_id is None), they can see all cameras
     query = (
         db.query(DBCamera)
         .filter(DBCamera.status.in_(["Active", "Maintenance", "Standalone"]))
         .options(joinedload(DBCamera.health))
     )
-    if group_name != "ALL" and group_id is not None:
+    if group_id is not None:
         query = query.filter(DBCamera.group_id == group_id)
     cameras = query.all()
 

@@ -33,6 +33,77 @@
     html.theme-transition, body.theme-transition, .theme-transition * {
       transition: background-color 0.5s, color 0.5s, border-color 0.5s, box-shadow 0.5s;
     }
+    /* SweetAlert2 Popup Styling - Default (Light Mode) */
+    .swal2-popup {
+      background: #ffffff !important;
+      color: #111827 !important;
+    }
+    .swal2-title {
+      color: #111827 !important;
+    }
+    .swal2-html-container {
+      color: #374151 !important;
+    }
+    /* SweetAlert2 Buttons - Light Mode */
+    .swal2-confirm {
+      background-color: #2563eb !important;
+      color: #ffffff !important;
+    }
+    .swal2-cancel {
+      background-color: #9ca3af !important;
+      color: #ffffff !important;
+    }
+
+    /* SweetAlert2 Input Styling - Default (Light Mode) */
+    .swal2-container .swal2-input,
+    .swal2-popup .swal2-input {
+      color: #374151 !important;
+      background-color: #f9fafb !important;
+      border-color: #d1d5db !important;
+      -webkit-text-fill-color: #374151 !important;
+    }
+    .swal2-container .swal2-input:focus,
+    .swal2-popup .swal2-input:focus {
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
+    }
+    /* SweetAlert2 Popup & Input Styling - Dark Mode Override */
+    html.dark .swal2-popup {
+      background: #1f2937 !important;
+      color: #f3f4f6 !important;
+    }
+    html.dark .swal2-title {
+      color: #f3f4f6 !important;
+    }
+    html.dark .swal2-html-container {
+      color: #d1d5db !important;
+    }
+    /* SweetAlert2 Buttons - Dark Mode */
+    html.dark .swal2-confirm {
+      background-color: #3b82f6 !important;
+      color: #ffffff !important;
+    }
+    html.dark .swal2-cancel {
+      background-color: #4b5563 !important;
+      color: #ffffff !important;
+    }
+
+    html.dark .swal2-container .swal2-input,
+    html.dark .swal2-popup .swal2-input,
+    .swal2-container .swal2-input.swal2-input-dark,
+    .swal2-popup .swal2-input.swal2-input-dark {
+      color: #f3f4f6 !important;
+      background-color: #374151 !important;
+      border-color: #4b5563 !important;
+      -webkit-text-fill-color: #f3f4f6 !important;
+    }
+    html.dark .swal2-container .swal2-input:focus,
+    html.dark .swal2-popup .swal2-input:focus,
+    .swal2-container .swal2-input.swal2-input-dark:focus,
+    .swal2-popup .swal2-input.swal2-input-dark:focus {
+      border-color: #60a5fa !important;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.3) !important;
+    }
   </style>
   <!-- SweetAlert2 CSS -->
   <link rel="stylesheet" href="/static/css/sweetalert2.min.css">
@@ -44,7 +115,7 @@ x-data="{
   userMenuOpen: false,
   isDarkMode: document.documentElement.classList.contains('dark')
 }"
-data-timezone="{{ timezone }}"
+data-timezone="{{ timezone|default('UTC') }}"
 >
 <header 
 class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50"
@@ -52,21 +123,25 @@ class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50"
 >
 <div class="container mx-auto px-4">
   <div class="flex items-center justify-between h-16">
+    <!-- Logo -->
     <a href="/" class="flex items-center gap-2">
-      <img src="/static/icons/b-snap.png" class="h-8">
+      <img src="/static/icons/b-snap.png" class="h-8" alt="B-SNAP">
     </a>
     
+    <!-- Desktop Navigation -->
     <div class="hidden md:flex items-center space-x-4">
       {% from "macros/navigation.html" import render_nav %}
       {{ render_nav(nav_items, request) }}
       
       <div class="border-l border-gray-300 dark:border-gray-600 h-6"></div>
       
+      <!-- Theme Toggle -->
       <button @click="toggleDark()" class="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
         <svg x-show="!isDarkMode" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
         <svg x-show="isDarkMode" x-cloak class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
       </button>
       
+      <!-- User Menu -->
       <div class="relative" @click.away="userMenuOpen = false">
         <button @click="userMenuOpen = !userMenuOpen" class="flex items-center gap-2 rounded-full py-1.5 pl-2 pr-3 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
           <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
@@ -79,6 +154,7 @@ class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50"
       </div>
     </div>
     
+    <!-- Mobile Menu Button -->
     <div class="md:hidden">
       <button @click="mobileMenuOpen = !mobileMenuOpen" class="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m4 6h-16" /></svg>
@@ -87,14 +163,17 @@ class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50"
   </div>
 </div>
 
+<!-- Mobile Navigation -->
 {% from "macros/navigation.html" import render_mobile_nav %}
-<div x-show="mobileMenuOpen"
-@click.away="mobileMenuOpen = false"
-x-cloak
-class="md:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-<div class="px-2 pt-2 pb-3 space-y-1">
-  {{ render_mobile_nav(nav_items, request) }}
-</div>
+<div 
+  x-show="mobileMenuOpen"
+  @click.away="mobileMenuOpen = false"
+  x-cloak
+  class="md:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700"
+>
+  <div class="px-2 pt-2 pb-3 space-y-1">
+    {{ render_mobile_nav(nav_items, request) }}
+  </div>
 </div>
 </header>
 
@@ -105,7 +184,8 @@ class="md:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-
   }
 </style>
 
-{% if request.session.user_role == 'admin' and request.state.debug_mode %}
+<!-- Debug Banner - Menggunakan variabel dari context (bukan akses langsung ke request) -->
+{% if user_role|default('viewer') == 'admin' and debug_mode|default(false) %}
 <div class="bg-red-600 text-white text-sm font-bold px-4 py-2 flex items-center justify-center shadow-lg animate-[pulse-warning_2s_infinite]">
   🐞 DEBUG MODE ACTIVE – Detailed logging enabled
 </div>
@@ -126,9 +206,225 @@ class="md:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-
   </div>
 </div>
 
-<div class="fixed bottom-2 right-4 bg-gray-800 text-white text-xs px-3 py-1 rounded shadow-lg z-50 opacity-80 hover:opacity-100 transition-opacity">
-  B-SNAP v{{ version }}
+<!-- Version Badge with Changelog Modal -->
+<div x-data="changelogModal()" class="fixed bottom-2 right-4 z-50">
+  <button @click="open()" 
+          class="bg-gray-800 text-white text-xs px-3 py-1 rounded shadow-lg opacity-80 hover:opacity-100 transition-opacity flex items-center gap-1.5">
+    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    B-SNAP v{{ version|default('1.0.0') }}
+  </button>
+  
+  <!-- Changelog Modal -->
+  <div x-show="showChangelog" 
+       x-cloak
+       class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+       @keydown.escape.window="showChangelog = false">
+    <div x-show="showChangelog"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95"
+         @click.away="showChangelog = false"
+         class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] mx-4 flex flex-col">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+            <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Changelog</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Track all changes and updates</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <a href="/changelog" target="_blank" 
+             class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+            Full Page
+          </a>
+          <button @click="showChangelog = false" 
+                  class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Modal Body -->
+      <div class="flex-1 overflow-hidden flex flex-col">
+        <!-- Stats -->
+        <div class="grid grid-cols-4 gap-3 px-6 py-3 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700">
+          <div class="text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Versions</p>
+            <p class="text-lg font-bold text-gray-900 dark:text-white" x-text="stats.versions">-</p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Features</p>
+            <p class="text-lg font-bold text-green-600 dark:text-green-400" x-text="stats.added">-</p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Fixes</p>
+            <p class="text-lg font-bold text-blue-600 dark:text-blue-400" x-text="stats.fixed">-</p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Latest</p>
+            <p class="text-sm font-bold text-purple-600 dark:text-purple-400" x-text="stats.latest">-</p>
+          </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="flex-1 overflow-y-auto p-6">
+          <!-- Loading -->
+          <div x-show="loading" class="flex items-center justify-center py-12">
+            <svg class="animate-spin h-8 w-8 text-emerald-600" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+          
+          <!-- Error -->
+          <div x-show="error" class="text-center py-8 text-red-500">
+            <p>Failed to load changelog</p>
+            <button @click="loadData()" class="mt-2 text-sm text-blue-600 hover:underline">Retry</button>
+          </div>
+          
+          <!-- Versions -->
+          <div x-show="!loading && !error" class="space-y-3">
+            <template x-for="version in versions" :key="version.version">
+              <div class="bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 overflow-hidden" x-data="{ open: version.isUnreleased }">
+                <button @click="open = !open" class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                  <div class="flex items-center gap-3">
+                    <span class="font-bold" :class="version.isUnreleased ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'">
+                      <span x-text="version.isUnreleased ? '🚀 Upcoming' : 'v' + version.version"></span>
+                    </span>
+                    <span x-show="version.date && version.date !== 'Unreleased'" x-text="version.date" class="text-xs text-gray-500 dark:text-gray-400"></span>
+                    <span x-show="!version.date || version.date === 'Unreleased'" class="text-xs text-emerald-600 dark:text-emerald-400">(in progress)</span>
+                  </div>
+                  <svg :class="{ 'rotate-180': open }" class="w-4 h-4 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </button>
+                <div x-show="open" x-collapse class="px-4 py-3">
+                  <template x-for="cat in version.categories" :key="cat.key">
+                    <div class="mb-3 border-l-4 rounded-r-lg p-3" :class="cat.bg + ' ' + cat.border">
+                      <h4 class="flex items-center gap-2 font-semibold text-sm mb-2" :class="cat.color">
+                        <span x-text="cat.icon + ' ' + cat.label"></span>
+                      </h4>
+                      <ul class="space-y-1.5">
+                        <template x-for="item in cat.items" :key="item.text">
+                          <li class="text-gray-700 dark:text-gray-300 text-sm">
+                            <span :class="cat.color">•</span> 
+                            <span x-html="item.html"></span>
+                          </li>
+                        </template>
+                      </ul>
+                    </div>
+                  </template>
+                  <p x-show="!version.categories || version.categories.length === 0" class="text-gray-500 text-sm italic">No changes documented.</p>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+<script>
+function changelogModal() {
+  const categories = {
+    added: { label: 'Added', icon: '✨', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-800' },
+    changed: { label: 'Changed', icon: '🔧', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-200 dark:border-amber-800' },
+    fixed: { label: 'Fixed', icon: '🐛', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800' },
+    deprecated: { label: 'Deprecated', icon: '⚠️', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-200 dark:border-orange-800' },
+    removed: { label: 'Removed', icon: '🗑️', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800' },
+    security: { label: 'Security', icon: '🔒', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-200 dark:border-purple-800' },
+    other: { label: 'Other', icon: '📝', color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-50 dark:bg-gray-700', border: 'border-gray-200 dark:border-gray-600' }
+  };
+  
+  function formatMarkdown(text) {
+    text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/`(.+?)`/g, '<code class="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-sm">$1</code>');
+    text = text.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" class="text-blue-600 hover:underline">$1</a>');
+    return text;
+  }
+  
+  return {
+    showChangelog: false,
+    loading: false,
+    error: false,
+    stats: { versions: '-', added: '-', fixed: '-', latest: '-' },
+    versions: [],
+    
+    open() {
+      this.showChangelog = true;
+      if (this.versions.length === 0) {
+        this.loadData();
+      }
+    },
+    
+    async loadData() {
+      this.loading = true;
+      this.error = false;
+      
+      try {
+        const res = await fetch('/api/changelog?page=1&per_page=5');
+        if (!res.ok) throw new Error('Failed to load');
+        const data = await res.json();
+        
+        // Update stats
+        this.stats = {
+          versions: data.stats?.total_versions || '0',
+          added: data.stats?.total_added || '0',
+          fixed: data.stats?.total_fixed || '0',
+          latest: data.stats?.latest_version || '-'
+        };
+        
+        // Process versions
+        this.versions = (data.versions || []).map(v => {
+          const versionCats = [];
+          ['added', 'changed', 'fixed', 'deprecated', 'removed', 'security', 'other'].forEach(key => {
+            if (v[key] && v[key].length > 0) {
+              versionCats.push({
+                key,
+                ...categories[key],
+                items: v[key].map(item => ({
+                  text: item.text,
+                  html: formatMarkdown(item.text)
+                }))
+              });
+            }
+          });
+          
+          return {
+            version: v.version,
+            date: v.date,
+            isUnreleased: v.version === 'Unreleased',
+            categories: versionCats
+          };
+        });
+      } catch (err) {
+        console.error('Failed to load changelog:', err);
+        this.error = true;
+      } finally {
+        this.loading = false;
+      }
+    }
+  };
+}
+</script>
 
 {% block scripts %}{% endblock %}
 <script defer src="https://unpkg.com/@alpinejs/collapse@3.14.1/dist/cdn.min.js"></script>
@@ -162,10 +458,8 @@ class="md:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-
     messageEl.textContent = message;
     yesBtn.textContent = config.confirmText;
     
-    // Reset class dan terapkan yang baru
     yesBtn.className = 'text-white px-4 py-2 rounded-lg font-bold ' + config.confirmClasses;
     
-    // Menghapus event listener lama dengan kloning tombol
     const newYesBtn = yesBtn.cloneNode(true);
     yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
     
@@ -181,7 +475,6 @@ class="md:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-
       modal.querySelector('.transform').classList.remove('opacity-0', '-translate-y-4');
     });
   }
-  
   
   function hideGlobalAlert() {
     const modal = document.getElementById('globalAlertModal');
@@ -275,11 +568,6 @@ document.addEventListener('DOMContentLoaded', setupPasswordToggles);
 <!-- SweetAlert2 JS -->
 <script src="/static/js/sweetalert2.min.js"></script>
 <script>
-// ===============================
-// SWEETALERT2 GLOBAL CONFIGURATION
-// ===============================
-
-// Helper: Get current theme config for SweetAlert2
 function getSwalThemeConfig() {
   const isDark = document.documentElement.classList.contains('dark') || 
                  (!document.documentElement.classList.contains('light') && 
@@ -294,12 +582,51 @@ function getSwalThemeConfig() {
   };
 }
 
-// Helper: Create themed Swal instance
 function themedSwal(options = {}) {
-  return Swal.fire({...getSwalThemeConfig(), ...options});
+  const isDark = document.documentElement.classList.contains('dark');
+  
+  // Custom input class based on theme
+  const inputClass = isDark 
+    ? 'swal2-input-dark' 
+    : 'swal2-input-light';
+  
+  // If has input, apply styling via didOpen callback
+  const originalDidOpen = options.didOpen;
+  const didOpen = (popup) => {
+    // Apply styling to input if exists
+    const input = popup.querySelector('.swal2-input');
+    if (input) {
+      input.classList.remove('swal2-input-light', 'swal2-input-dark');
+      input.classList.add(inputClass);
+      
+      // Force inline styles as fallback
+      if (isDark) {
+        input.style.color = '#f3f4f6';
+        input.style.backgroundColor = '#374151';
+        input.style.borderColor = '#4b5563';
+      } else {
+        input.style.color = '#374151';
+        input.style.backgroundColor = '#f9fafb';
+        input.style.borderColor = '#d1d5db';
+      }
+    }
+    
+    if (originalDidOpen) originalDidOpen(popup);
+  };
+  
+  // Merge with custom input styling
+  const mergedOptions = {
+    ...options,
+    didOpen: didOpen,
+    customClass: {
+      ...options.customClass,
+      input: inputClass + ' ' + (options.customClass?.input || ''),
+    }
+  };
+  
+  return Swal.fire({...getSwalThemeConfig(), ...mergedOptions});
 }
 
-// Enhanced global confirm function using SweetAlert2
 function showGlobalConfirm(message, onConfirm, options = {}) {
   const isDark = document.documentElement.classList.contains('dark');
   
@@ -312,7 +639,6 @@ function showGlobalConfirm(message, onConfirm, options = {}) {
     cancelButtonText: options.cancelText || 'Cancel',
     confirmButtonColor: options.confirmButtonColor || '#2563eb',
     cancelButtonColor: options.cancelButtonColor || (isDark ? '#4b5563' : '#9ca3af'),
-    ...options
   }).then((result) => {
     if (result.isConfirmed && onConfirm) {
       onConfirm();
@@ -320,7 +646,6 @@ function showGlobalConfirm(message, onConfirm, options = {}) {
   });
 }
 
-// Enhanced global alert function using SweetAlert2
 function showGlobalAlert(message, title = 'Information', options = {}) {
   themedSwal({
     title: title,
@@ -328,7 +653,6 @@ function showGlobalAlert(message, title = 'Information', options = {}) {
     icon: options.icon || 'info',
     confirmButtonText: options.confirmText || 'OK',
     confirmButtonColor: options.confirmButtonColor || '#2563eb',
-    ...options
   });
 }
 </script>

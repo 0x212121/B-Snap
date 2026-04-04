@@ -13,7 +13,11 @@ from app.models.health import CameraHealth
 from app.models.email_retry_queue import EmailRetryQueue
 from app.models.log import ApiLog, CommandLog
 from app.snapshot import load_active_cameras
-from app.utils.email_notifier import send_recovery_alert, send_tamper_alert, send_offline_incident_email_once
+from app.utils.email_notifier import (
+    send_recovery_alert,  # For tampered -> normal transitions
+    send_tamper_alert,     # For tamper detection
+    send_offline_incident_email_once  # For offline alerts (online alerts intentionally disabled)
+)
 from app.utils.snapshot_locker import get_camera_lock
 from app.utils.snapshot_service import take_snapshot
 from app.utils.healthcheck import ping_all_devices
@@ -159,7 +163,36 @@ def logged_job(job_id: str, job_name: str):
 # ----------------------------
 # Job Handlers
 # ----------------------------
+
+# Rate limiting untuk snapshot per kamera (anti-flooding)
+# Format: {camera_id: last_snapshot_timestamp}
+_snapshot_rate_limit_cache = {}
+MIN_SNAPSHOT_INTERVAL_SECONDS = 30  # Minimum 30 detik antar snapshot untuk kamera yang sama
+
 def run_snapshot(camera):
+    
+    # --- RATE LIMITING: Cek apakah kamera baru saja di-snapshot ---
+    now = datetime.now(timezone.utc)
+    camera_id = str(camera.id)
+    
+    if camera_id in _snapshot_rate_limit_cache:
+        last_snapshot = _snapshot_rate_limit_cache[camera_id]
+        elapsed = (now - last_snapshot).total_seconds()
+        
+        if elapsed < MIN_SNAPSHOT_INTERVAL_SECONDS:
+            logger.debug(
+                "[RATE LIMIT] Skipping snapshot for %s - last snapshot %.1f seconds ago (min: %d)",
+                camera.hostname, elapsed, MIN_SNAPSHOT_INTERVAL_SECONDS
+            )
+            return {
+                "status": "skipped",
+                "reason": "rate_limited",
+                "camera": camera.hostname,
+                "retry_after": MIN_SNAPSHOT_INTERVAL_SECONDS - int(elapsed)
+            }
+    
+    # Update cache
+    _snapshot_rate_limit_cache[camera_id] = now
     
     # --- SHORT CIRCUIT: Ping Check ---
     try:
@@ -727,17 +760,25 @@ def update_scheduler_config():
 # Cleanup Jobs
 # ----------------------------
 def delete_old_audit_logs():
+    """P2-001: Archive old audit logs from legacy table.
+    
+    Note: audit_logs (main table) is append-only and cannot be deleted.
+          Only audit_logs_legacy can be cleaned up.
+    """
     db: Session = SessionLocal()
     try:
+        from app.models.audit_log import AuditLogLegacy
         retention_days = int(get_config("retention_audit_logs_days", 180))
         cutoff_date = date.today() - timedelta(days=retention_days)
+        
+        # P2-001: Only delete from legacy table, main audit_logs is immutable
         deleted_rows = (
-            db.query(AuditLog)
-            .filter(AuditLog.timestamp < cutoff_date)
+            db.query(AuditLogLegacy)
+            .filter(AuditLogLegacy.timestamp < cutoff_date)
             .delete(synchronize_session=False)
         )
         db.commit()
-        logger.info("[delete_old_audit_logs] Deleted %d rows older than %s", deleted_rows, cutoff_date)
+        logger.info("[delete_old_audit_logs] Deleted %d rows from legacy table older than %s", deleted_rows, cutoff_date)
         return {"records_processed": deleted_rows}
     except Exception as e:
         db.rollback()
@@ -903,7 +944,13 @@ def process_email_retry_queue():
         attempt_num = task.attempts + 1
         try:
             if task.type == "tamper":
-                ok = bool(send_tamper_alert(db, cam, task.reason, task.file_path))
+                # BUG FIX: Use task.created_at as incident_time for retry
+                # This preserves the original detection time from first attempt
+                from datetime import timezone
+                incident_time = task.created_at
+                if incident_time.tzinfo is None:
+                    incident_time = incident_time.replace(tzinfo=timezone.utc)
+                ok = bool(send_tamper_alert(db, cam, task.reason, task.file_path, incident_time=incident_time))
             elif task.type == "recovery":
                 ok = bool(send_recovery_alert(db, cam))
             elif task.type == "offline":
@@ -913,8 +960,10 @@ def process_email_retry_queue():
                     offline_duration_seconds=1800,
                 ))
             elif task.type == "online":
-                from app.utils.email_notifier import send_online_alert
-                ok = bool(send_online_alert(db, cam))
+                # NOTE: Online notifications (offline -> online) are intentionally disabled
+                # as per requirement. Only offline alerts and tamper/recovery alerts are sent.
+                logger.info("[ONLINE] Camera %s is back online - no email sent (as per policy)", cam.hostname)
+                ok = True  # Mark as processed but don't send email
             else:
                 task.sent = True
                 db.commit()

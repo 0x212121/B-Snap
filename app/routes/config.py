@@ -15,6 +15,7 @@ from app.core.logging_config import set_debug_mode
 from app.utils.audit_logger import log_audit
 from app.utils.auth import verify_password
 from app.utils.notification_service import NotificationService
+from app.utils.timezone_helper import clear_timezone_cache
 from io import BytesIO
 
 router = APIRouter(tags=["Config"])
@@ -191,12 +192,12 @@ async def config_save(
         "storage_warning_percent": storage_warning_percent,
         "storage_info_percent": storage_info_percent,
         "storage_critical_free_gb": storage_critical_free_gb,
-        "smtp_host": smtp_host,
+        "smtp_host": smtp_host.strip(),
         "smtp_port": smtp_port,
-        "smtp_user": smtp_user,
+        "smtp_user": smtp_user.strip(),
         "smtp_pass": smtp_pass,
-        "email_from": email_from,
-        "email_cc": email_cc,
+        "email_from": email_from.strip(),
+        "email_cc": email_cc.strip(),
     }
 
     for config_key, config_value in keys.items():
@@ -236,6 +237,9 @@ async def config_save(
 
     db.commit()
 
+    # Clear timezone cache so new timezone takes effect immediately
+    clear_timezone_cache()
+    
     set_debug_mode(debug_mode)
     
     # Note: Toast notification is handled by frontend
@@ -274,6 +278,9 @@ async def run_cleanup_now(
     """
     Manually trigger log cleanup jobs with current retention settings.
     Requires password verification for security.
+    
+    Note: Audit logs are append-only (P2-001) and cannot be deleted.
+          They are archived instead based on retention policy.
     """
     from app.jobs.scheduler import (
         delete_old_audit_logs,
@@ -304,9 +311,12 @@ async def run_cleanup_now(
     
     try:
         # Run each cleanup job and capture results
+        # P2-001: Audit logs main table is append-only (immutable)
+        # Only legacy table (>6 months old) can be cleaned
         try:
-            delete_old_audit_logs()
-            results["audit_logs"] = "Cleaned successfully"
+            result = delete_old_audit_logs()
+            deleted = result.get("records_processed", 0)
+            results["audit_logs"] = f"{deleted} legacy records archived"
         except Exception as e:
             errors.append(f"Audit logs: {str(e)}")
             results["audit_logs"] = f"Error: {str(e)}"

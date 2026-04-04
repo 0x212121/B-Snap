@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from passlib.hash import bcrypt
-from app.models.camera_group import CameraGroup
 from app.models.user import User
 from app.db.database import SessionLocal
 
@@ -23,16 +22,13 @@ def setup_form(request: Request):
 def setup_create(username: str = Form(...), password: str = Form(...)):
     db = SessionLocal()
     try:
-        group = db.query(CameraGroup).filter(CameraGroup.name == "ALL").first()
-
-        if not group:
-            raise HTTPException(status_code=404, detail="Default group 'ALL' not found")
-
         if db.query(User).first():
             return RedirectResponse(url="/login", status_code=302)
 
         hashed = bcrypt.hash(password)
-        user = User(username=username, password=hashed, role="admin", group_id=group.id)
+        # NOTE: group_id is None - admin has access to all cameras by default
+        # No need for special "ALL" group anymore
+        user = User(username=username, password=hashed, role="admin", group_id=None)
 
         db.add(user)
         db.commit()

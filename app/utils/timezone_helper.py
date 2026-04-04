@@ -2,126 +2,107 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.config import Configuration
 import pytz
-from cachetools import TTLCache
-import threading
+from functools import lru_cache
 
-# === Global cache untuk timezone ===
-_tz_cache = TTLCache(maxsize=1, ttl=300)  # simpan 1 value, TTL = 300 detik (5 menit)
-_tz_lock = threading.Lock()
-
-
-def utc_now() -> datetime:
-    """
-    Return current UTC datetime with timezone info.
-    Use this for ALL database timestamp storage.
-    """
-    return datetime.now(timezone.utc)
-
-
-def load_timezone_from_db(db: Session) -> str:
-    config = db.query(Configuration).filter_by(key="timezone").first()
-    if not config or not config.value:
-        return "UTC"
+@lru_cache(maxsize=32)
+def _tz(tz_name: str):
     try:
-        pytz.timezone(config.value)  # validasi
-        return config.value
-    except Exception as e:
-        print(f"[Timezone] Invalid timezone in DB: {config.value} ({e})")
-        return "UTC"
+        return pytz.timezone(tz_name)
+    except:
+        return pytz.UTC
 
+def _load_tz_name(db: Session):
+    cfg = db.query(Configuration).filter_by(key="timezone").first()
+    return cfg.value if cfg else "UTC"
 
 def get_current_timezone(db: Session) -> str:
-    # pakai cache global biar ga query terus
-    with _tz_lock:
-        if "tz" in _tz_cache:
-            return _tz_cache["tz"]
+    """Return full timezone name e.g. 'Asia/Makassar'."""
+    try:
+        tz = _load_tz_name(db)
+        pytz.timezone(tz)  # validate
+        return tz
+    except:
+        return "UTC"
 
-        tz_name = load_timezone_from_db(db)
-        _tz_cache["tz"] = tz_name
-        return tz_name
+def get_timezone_display(db: Session) -> str:
+    """Alias untuk template yang butuh format Asia/Makassar."""
+    return get_current_timezone(db)
 
+def clear_timezone_cache():
+    _tz.cache_clear()
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 def to_current_timezone(dt: datetime, db: Session) -> datetime:
-    tz_name = get_current_timezone(db)
-    local_tz = pytz.timezone(tz_name)
-
     if not dt:
         return None
-
-    if dt.tzinfo is None:
+    tz = _tz(get_current_timezone(db))
+    if not dt.tzinfo:
         dt = pytz.utc.localize(dt)
+    return dt.astimezone(tz)
 
-    return dt.astimezone(local_tz)
-
-
-def format_datetime_with_tz(dt: datetime) -> str:
-    """Format datetime to standard display format with timezone."""
+def format_datetime_with_tz(dt: datetime, tz_name: str = None) -> str:
+    """Backward compatible."""
     if not dt or not dt.tzinfo:
         return "N/A"
-    return dt.strftime("%d/%m/%Y - %H:%M:%S %Z")
-
+    if tz_name:
+        dt = dt.astimezone(_tz(tz_name))
+    return dt.strftime(f"%d/%m/%Y - %H:%M:%S {dt.tzname() or 'UTC'}")
 
 def format_datetime_standard(dt: datetime, db: Session = None) -> str:
-    """
-    Standard datetime formatter used across the application.
-    Converts to current timezone and formats consistently.
-    """
+    """Format dengan timezone yang benar untuk display."""
     if not dt:
         return "N/A"
-    
-    # Always convert to current timezone if db is provided
     if db:
         dt = to_current_timezone(dt, db)
     elif not dt.tzinfo:
         dt = pytz.utc.localize(dt)
-    
+    # Format: 30/03/2026 - 16:54:00 WITA (otomatis dari pytz)
     return dt.strftime("%d/%m/%Y - %H:%M:%S %Z")
 
 
-def format_date_standard(dt: datetime) -> str:
-    """Standard date-only formatter."""
+def format_time_with_tz_abbr(dt: datetime, db: Session = None) -> str:
+    """Format waktu dengan timezone abbreviation untuk maps.
+    
+    Returns format: "09:00:00 WITA" atau "09:00:00 WIB" atau "09:00:00 PST"
+    """
+    if not dt:
+        return "N/A"
+    if db:
+        dt = to_current_timezone(dt, db)
+    elif not dt.tzinfo:
+        dt = pytz.utc.localize(dt)
+    # Format: 09:00:00 WITA (timezone abbreviation dari pytz)
+    return dt.strftime("%H:%M:%S %Z")
+
+def format_date_standard(dt) -> str:
     if not dt:
         return "N/A"
     if isinstance(dt, str):
         try:
             dt = datetime.fromisoformat(dt)
-        except ValueError:
+        except:
             return dt
     return dt.strftime("%d/%m/%Y")
 
-
 def format_datetime_iso(dt: datetime) -> str:
-    """ISO format for API responses (always in UTC)."""
     if not dt:
         return None
     if not dt.tzinfo:
         dt = pytz.utc.localize(dt)
     return dt.isoformat()
 
-
 def parse_datetime_standard(dt_str: str) -> datetime:
-    """Parse datetime from various standard formats."""
     if not dt_str:
         return None
-    
-    formats = [
-        "%Y-%m-%dT%H:%M:%S.%f%z",
-        "%Y-%m-%dT%H:%M:%S%z",
-        "%Y-%m-%dT%H:%M:%S.%f",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%d %H:%M:%S",
-        "%d/%m/%Y - %H:%M:%S",
-        "%d/%m/%Y %H:%M:%S",
-    ]
-    
-    for fmt in formats:
+    for fmt in ["%Y-%m-%dT%H:%M:%S.%f%z", "%Y-%m-%dT%H:%M:%S%z", 
+                "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"]:
         try:
             return datetime.strptime(dt_str, fmt)
-        except ValueError:
+        except:
             continue
-    
-    # Try ISO format as fallback
     try:
         return datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
-    except ValueError:
+    except:
         return None

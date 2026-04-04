@@ -1,0 +1,655 @@
+{% extends "base.html" %}
+
+{% block title %}Camera Groups{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+      <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+          <svg class="w-7 h-7 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="14" y="3" width="7" height="7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="14" y="14" width="7" height="7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="3" y="14" width="7" height="7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        Camera Groups
+      </h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        Manage camera groups for organizing cameras and NVRs
+      </p>
+    </div>
+    
+    <button onclick="openAddModal()" 
+      class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+      </svg>
+      Add Group
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Groups</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-total">0</p>
+        </div>
+        <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+          <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="14" y="3" width="7" height="7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="14" y="14" width="7" height="7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="3" y="14" width="7" height="7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Cameras</p>
+          <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="stat-cameras">0</p>
+        </div>
+        <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+          <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">NVRs</p>
+          <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1" id="stat-nvrs">0</p>
+        </div>
+        <div class="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+          <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Users</p>
+          <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1" id="stat-users">0</p>
+        </div>
+        <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+          <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Container -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
+    <div id="loading-overlay" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
+      <div class="flex flex-col items-center gap-3">
+        <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="text-gray-600 dark:text-gray-300 font-medium">Loading groups...</span>
+      </div>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-700">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Group Name</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Cameras</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">NVRs</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Users</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Usage</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="groupsTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <!-- Populated by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Empty State -->
+    <div id="empty-state" class="hidden flex-col items-center justify-center py-12">
+      <div class="p-4 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+        <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="14" y="3" width="7" height="7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="14" y="14" width="7" height="7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="3" y="14" width="7" height="7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No groups found</h3>
+      <p class="text-gray-500 dark:text-gray-400">Get started by creating your first camera group</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Load groups on page load
+  document.addEventListener('DOMContentLoaded', loadGroups);
+
+  async function loadGroups() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const tableBody = document.getElementById('groupsTableBody');
+    const emptyState = document.getElementById('empty-state');
+    
+    loadingOverlay.style.display = 'flex';
+    loadingOverlay.classList.remove('hidden');
+    
+    try {
+      const response = await fetch('/api/camera-groups');
+      const groups = await response.json();
+      
+      // Update stats
+      updateStats(groups);
+      
+      tableBody.innerHTML = '';
+      
+      if (groups.length === 0) {
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+      } else {
+        emptyState.classList.add('hidden');
+        emptyState.classList.remove('flex');
+        
+        groups.forEach(group => {
+          tableBody.insertAdjacentHTML('beforeend', `
+            <tr class="group hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold">
+                    ${(group.name || 'G').substring(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <p class="font-semibold text-gray-900 dark:text-white">${escapeHtml(group.name)}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">ID: ${group.id}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-center">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                  ${group.camera_count > 0 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}">
+                  ${group.camera_count}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-center">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                  ${group.nvr_count > 0 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}">
+                  ${group.nvr_count}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-center">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                  ${group.user_count > 0 ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}">
+                  ${group.user_count}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-center">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                  ${group.total_usage > 0 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}">
+                  ${group.total_usage}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <div class="flex items-center justify-end gap-1">
+                  <button onclick="openEditModal(${group.id}, '${escapeHtml(group.name)}')"
+                    title="Edit ${escapeHtml(group.name)}"
+                    class="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                  </button>
+                  <button onclick="confirmDeleteGroup(${group.id}, '${escapeHtml(group.name)}', ${group.total_usage})"
+                    title="Delete ${escapeHtml(group.name)}"
+                    class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `);
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load groups:', error);
+      if (typeof Toast !== 'undefined') {
+        Toast.error('Failed to load groups', { title: 'Error' });
+      }
+    } finally {
+      loadingOverlay.style.display = 'none';
+    }
+  }
+
+  function updateStats(groups) {
+    const total = groups.length;
+    const cameras = groups.reduce((sum, g) => sum + g.camera_count, 0);
+    const nvrs = groups.reduce((sum, g) => sum + g.nvr_count, 0);
+    const users = groups.reduce((sum, g) => sum + g.user_count, 0);
+    
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-cameras').textContent = cameras;
+    document.getElementById('stat-nvrs').textContent = nvrs;
+    document.getElementById('stat-users').textContent = users;
+  }
+
+  // ====== ADD MODAL ======
+  function openAddModal() {
+    closeModal('add-group-modal');
+    
+    const modalHtml = `
+    <div id="add-group-modal" class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <!-- Backdrop -->
+      <div class="fixed inset-0 bg-gray-950/50 backdrop-blur-sm transition-opacity opacity-0" id="add-modal-backdrop"></div>
+      
+      <!-- Modal Container -->
+      <div class="fixed inset-0 z-10 flex items-center justify-center p-4">
+        <div class="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 text-left shadow-2xl transition-all opacity-0 scale-95" id="add-modal-panel">
+          
+          <!-- Header -->
+          <div class="bg-gray-50 dark:bg-gray-900/50 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/30">
+                  <svg class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white" id="modal-title">Add Group</h3>
+                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Create a new camera group</p>
+                </div>
+              </div>
+              <button type="button" onclick="closeModal('add-group-modal')" class="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <span class="sr-only">Close</span>
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Form -->
+          <form id="add-group-form" class="px-6 py-6">
+            <div class="space-y-5">
+              <div>
+                <label for="group-name" class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  Group Name <span class="text-red-500" aria-hidden="true">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  name="name" 
+                  id="group-name" 
+                  required 
+                  autofocus
+                  placeholder="e.g., Building A"
+                  class="block w-full rounded-lg border-0 py-3 px-4 text-gray-900 dark:text-white bg-white dark:bg-gray-700 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm transition-shadow"
+                >
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Choose a unique name for this group</p>
+              </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="mt-8 flex items-center justify-end gap-3">
+              <button 
+                type="button" 
+                onclick="closeModal('add-group-modal')" 
+                class="rounded-lg px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Create Group
+              </button>
+            </div>
+          </form>
+        </div>
+        </div>
+      </div>
+    </div>`;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Animate in
+    requestAnimationFrame(() => {
+      document.getElementById('add-modal-backdrop').classList.remove('opacity-0');
+      document.getElementById('add-modal-panel').classList.remove('opacity-0', 'scale-95');
+    });
+    
+    // Focus input
+    setTimeout(() => document.getElementById('group-name').focus(), 50);
+    
+    // Close on backdrop click
+    document.getElementById('add-modal-backdrop').addEventListener('click', () => closeModal('add-group-modal'));
+    
+    // Close on Escape key
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        closeModal('add-group-modal');
+        document.removeEventListener('keydown', handleEscape);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    
+    document.getElementById('add-group-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Creating...
+      `;
+      
+      const formData = new FormData();
+      formData.append('name', form.name.value.trim());
+      
+      try {
+        const res = await fetch('/api/camera-groups', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const result = await res.json();
+        
+        if (res.ok) {
+          closeModal('add-group-modal');
+          if (typeof Toast !== 'undefined') {
+            Toast.success(result.message, { title: 'Success' });
+          }
+          loadGroups();
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Create Group
+          `;
+          if (typeof Toast !== 'undefined') {
+            Toast.error(result.message || 'Failed to create group', { title: 'Error' });
+          }
+        }
+      } catch (err) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Create Group
+        `;
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Network error', { title: 'Error' });
+        }
+      }
+    };
+  }
+
+  // ====== EDIT MODAL ======
+  function openEditModal(groupId, groupName) {
+    closeModal('edit-group-modal');
+    
+    const modalHtml = `
+    <div id="edit-group-modal" class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <!-- Backdrop -->
+      <div class="fixed inset-0 bg-gray-950/50 backdrop-blur-sm transition-opacity opacity-0" id="edit-modal-backdrop"></div>
+      
+      <!-- Modal Container -->
+      <div class="fixed inset-0 z-10 flex items-center justify-center p-4">
+        <div class="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 text-left shadow-2xl transition-all opacity-0 scale-95" id="edit-modal-panel">
+          
+          <!-- Header -->
+          <div class="bg-gray-50 dark:bg-gray-900/50 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30">
+                  <svg class="h-6 w-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white" id="modal-title">Edit Group</h3>
+                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">${escapeHtml(groupName)}</p>
+                </div>
+              </div>
+              <button type="button" onclick="closeModal('edit-group-modal')" class="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500">
+                <span class="sr-only">Close</span>
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Form -->
+          <form id="edit-group-form" class="px-6 py-6">
+            <div class="space-y-5">
+              <div>
+                <label for="edit-group-name" class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  Group Name <span class="text-red-500" aria-hidden="true">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  name="name" 
+                  id="edit-group-name" 
+                  value="${escapeHtml(groupName)}"
+                  required 
+                  autofocus
+                  class="block w-full rounded-lg border-0 py-3 px-4 text-gray-900 dark:text-white bg-white dark:bg-gray-700 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm transition-shadow"
+                >
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Update the name for this group</p>
+              </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="mt-8 flex items-center justify-end gap-3">
+              <button 
+                type="button" 
+                onclick="closeModal('edit-group-modal')" 
+                class="rounded-lg px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                class="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+                </svg>
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+        </div>
+      </div>
+    </div>`;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Animate in
+    requestAnimationFrame(() => {
+      document.getElementById('edit-modal-backdrop').classList.remove('opacity-0');
+      document.getElementById('edit-modal-panel').classList.remove('opacity-0', 'scale-95');
+    });
+    
+    // Focus input and select all text
+    setTimeout(() => {
+      const input = document.getElementById('edit-group-name');
+      input.focus();
+      input.select();
+    }, 50);
+    
+    // Close on backdrop click
+    document.getElementById('edit-modal-backdrop').addEventListener('click', () => closeModal('edit-group-modal'));
+    
+    // Close on Escape key
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        closeModal('edit-group-modal');
+        document.removeEventListener('keydown', handleEscape);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    
+    document.getElementById('edit-group-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Saving...
+      `;
+      
+      const formData = new FormData();
+      formData.append('name', form.name.value.trim());
+      
+      try {
+        const res = await fetch(`/api/camera-groups/${groupId}/update`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        const result = await res.json();
+        
+        if (res.ok) {
+          closeModal('edit-group-modal');
+          if (typeof Toast !== 'undefined') {
+            Toast.success(result.message, { title: 'Success' });
+          }
+          loadGroups();
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+            </svg>
+            Save Changes
+          `;
+          if (typeof Toast !== 'undefined') {
+            Toast.error(result.message || 'Failed to update group', { title: 'Error' });
+          }
+        }
+      } catch (err) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+          </svg>
+          Save Changes
+        `;
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Network error', { title: 'Error' });
+        }
+      }
+    };
+  }
+
+  // ====== DELETE CONFIRMATION ======
+  function confirmDeleteGroup(groupId, groupName, usageCount) {
+    if (usageCount > 0) {
+      themedSwal({
+        icon: 'warning',
+        title: 'Cannot Delete Group',
+        html: `Group <strong>${escapeHtml(groupName)}</strong> is currently in use.<br><br>
+               Please reassign or remove all cameras, NVRs, and users from this group before deleting.`,
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#F59E0B'
+      });
+      return;
+    }
+
+    showGlobalConfirm(
+      `Are you sure you want to delete group "${escapeHtml(groupName)}"? This action cannot be undone.`,
+      async () => {
+        try {
+          const res = await fetch(`/api/camera-groups/${groupId}/delete`, {
+            method: 'POST'
+          });
+          
+          const result = await res.json();
+          
+          if (res.ok) {
+            if (typeof Toast !== 'undefined') {
+              Toast.success(result.message, { title: 'Success' });
+            }
+            loadGroups();
+          } else {
+            if (typeof Toast !== 'undefined') {
+              Toast.error(result.message || 'Failed to delete group', { title: 'Error' });
+            }
+          }
+        } catch (err) {
+          if (typeof Toast !== 'undefined') {
+            Toast.error('Network error', { title: 'Error' });
+          }
+        }
+      },
+      {
+        title: 'Delete Group',
+        confirmText: 'Delete',
+        confirmButtonColor: '#dc2626',
+        cancelText: 'Cancel'
+      }
+    );
+  }
+
+  // ====== UTILITIES ======
+  function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    
+    // Animate out
+    const backdrop = modal.querySelector('[id$="-modal-backdrop"]');
+    const panel = modal.querySelector('[id$="-modal-panel"]');
+    
+    if (backdrop && panel) {
+      backdrop.classList.add('opacity-0');
+      panel.classList.add('opacity-0', 'scale-95');
+      
+      setTimeout(() => modal.remove(), 200);
+    } else {
+      modal.remove();
+    }
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+</script>
+{% endblock %}

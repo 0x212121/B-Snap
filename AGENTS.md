@@ -488,6 +488,57 @@ function themedSwal(options = {}) {
 
 ---
 
+## 📧 Notification System - Important Notes
+
+### Incident Time Accuracy (Critical Fix)
+
+**Issue**: Tamper alert emails previously showed incorrect incident times (email send time instead of actual detection time).
+
+**Fix**: The `send_tamper_alert()` function now accepts an `incident_time` parameter:
+
+```python
+def send_tamper_alert(
+    db: Session, 
+    camera, 
+    reason: str, 
+    snapshot_path: str, 
+    incident_time: datetime = None  # NEW PARAMETER
+) -> bool:
+```
+
+**Usage:**
+```python
+# When triggering from snapshot detection, pass the snapshot timestamp:
+from app.utils.email_notifier import send_tamper_alert
+
+send_tamper_alert(
+    db, 
+    camera, 
+    snapshot.tamper_reason, 
+    file_path,
+    incident_time=snapshot.timestamp  # Pass actual detection time
+)
+```
+
+**Key Points:**
+- Always pass `snapshot.timestamp` when calling from snapshot detection
+- The function defaults to `datetime.now()` if not provided (for backwards compatibility)
+- Both email body and database log entries use the provided `incident_time`
+- Recovery alerts don't need this as they represent current events
+
+### Anti-Flooding Protection
+
+The notification system has 4-layer protection:
+
+1. **Scheduler Rate Limit**: `MIN_SNAPSHOT_INTERVAL_SECONDS = 30` (30s between snapshots)
+2. **Consecutive Counter Check**: `TAMPER_CONFIRM_THRESHOLD = 3` (3 tamper snapshots before alert)
+3. **Cooldown Mechanism**: `ALERT_COOLDOWN_MINUTES = 15` (15-min deduplication window)
+4. **Circuit Breaker**: 5 failures → 1 hour suppression
+
+Cooldown is set **immediately** upon entering `send_tamper_alert()`, before SMTP check, to prevent flooding even on SMTP failures.
+
+---
+
 ## 📚 Database Migrations
 
 Menggunakan Alembic untuk database migrations:
@@ -551,5 +602,52 @@ python -m memray run app/main.py
 
 ---
 
-**Version**: 1.14.0  
-**Last Updated**: 2026-03-25
+**Version**: 1.16.0  
+**Last Updated**: 2026-03-28
+
+---
+
+## 🔒 Security Features (P0/P1/P2)
+
+### Evidence Integrity (P0-001)
+- SHA-256 hash untuk semua snapshot dan video
+- Endpoint: `GET /snap/{id}/verify` untuk verifikasi integritas
+- Kolom: `snapshots.file_hash`, `videos.file_hash`
+
+### Soft Delete (P0-002)
+- Data dihapus = soft delete (flag `deleted_at`)
+- Trash Management: `/admin/trash`
+- Restore: `POST /snap/{id}/restore`, `POST /videos/{id}/restore`
+- Purge: `POST /admin/snapshots/purge`, `POST /admin/videos/purge`
+
+### Password Encryption (P1-001)
+- Algorithm: AES-256-GCM
+- Key: `ENCRYPTION_KEY` environment variable (32-byte hex)
+- Format: `ENC:<base64>`
+
+### Append-Only Audit Log (P2-001)
+- Database triggers mencegah UPDATE/DELETE pada `audit_logs`
+- Enhanced columns: `user_agent`, `request_path`, `request_method`, `response_status`
+- Functions: `log_audit()`, `log_api_access()`
+
+### Safety Classification (P2-002)
+- Klasifikasi kamera: `critical`, `standard`, `low`
+- Kolom: `cameras.safety_classification`
+- Untuk mining safety compliance
+
+### Retention Hold (P2-003)
+- Legal hold untuk footage kritis
+- Kolom: `retention_hold`, `retention_hold_reason`, `retention_hold_by`, `retention_hold_at`
+- Purge otomatis skip items dengan retention hold
+
+### Secure Snapshot Serving (P2-004)
+- Direct access ke `/static/snapshots/*` → 403 Forbidden
+- **Anti-Flooding Audit Log:**
+  - Gallery view: `POST /api/snapshots/gallery-view` (batch log)
+  - Thumbnail: `GET /api/snapshots/secure/{id}?thumb=true` (minimal log)
+  - Detail view: `GET /api/snapshots/secure/{id}` (full log)
+- API endpoints dengan autentikasi:
+  - `GET /api/snapshots/file/{file_path}`
+  - `GET /api/snapshots/secure/{snapshot_id}`
+- Download: `GET /api/snapshots/secure/{id}?download=true`
+- Semua akses dilog ke audit_logs dengan konteks yang sesuai

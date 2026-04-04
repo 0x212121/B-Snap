@@ -3,6 +3,7 @@ Remember Me functionality - Persistent login tokens.
 Tokens do not expire until manually revoked (logout).
 """
 import hashlib
+import os
 import secrets
 import logging
 from typing import Optional, Tuple, List
@@ -11,6 +12,9 @@ from sqlalchemy.orm import Session
 
 from app.models.remember_token import RememberToken
 from app.models.user import User
+
+# Cookie security settings based on environment
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 logger = logging.getLogger("auth")
 
@@ -148,11 +152,12 @@ def get_user_tokens(db: Session, user_id: int) -> List[RememberToken]:
 
 def get_cookie_settings() -> dict:
     """Get standard cookie settings for remember me token."""
+    is_production = ENVIRONMENT == "production"
     return {
         "key": REMEMBER_COOKIE_NAME,
         "max_age": REMEMBER_COOKIE_MAX_AGE,  # 1 year
         "httponly": True,
-        "secure": False,  # Set to True in production with HTTPS
-        "samesite": "lax",
+        "secure": is_production,  # True in production with HTTPS
+        "samesite": "strict" if is_production else "lax",
         "path": "/"
     }

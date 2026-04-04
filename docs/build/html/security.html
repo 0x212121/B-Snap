@@ -1,47 +1,49 @@
 <!DOCTYPE html>
 
-<html :class="{'dark': darkMode === 'dark' || (darkMode === 'system' &amp;&amp; window.matchMedia('(prefers-color-scheme: dark)').matches)}" class="scroll-smooth" data-content_root="./" lang="en" x-data="{ darkMode: localStorage.getItem('darkMode') || localStorage.setItem('darkMode', 'system'), activeSection: '' }" x-init="$watch('darkMode', val =&gt; localStorage.setItem('darkMode', val))">
+<html :class="{ 'dark' : darkMode === true }" data-content_root="./" lang="en" x-data="{ darkMode: $persist(window.matchMedia('(prefers-color-scheme: dark)').matches), activeSection: ''}">
 <head>
+<script>
+    (function () {
+      // Set initial color scheme
+      if ((localStorage.getItem("_x_darkMode") === "true") || (window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+        document.documentElement.classList.add("dark");
+      }
+
+      // Watch for media preference changes
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (event) => {
+        localStorage.setItem("_x_darkMode", event.matches);
+        document.documentElement.classList.toggle("dark", event.matches);
+      });
+    })();
+  </script>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <meta charset="utf-8"/>
-<meta content="white" media="(prefers-color-scheme: light)" name="theme-color"/>
-<meta content="black" media="(prefers-color-scheme: dark)" name="theme-color"/>
+<meta content="#ffffff" media="(prefers-color-scheme: light)" name="theme-color"/>
+<meta content="#030711" media="(prefers-color-scheme: dark)" name="theme-color"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Security | B-SNAP v1.13.0 documentation</title>
-<meta content="Security | B-SNAP v1.13.0 documentation" property="og:title"/>
-<meta content="Security | B-SNAP v1.13.0 documentation" name="twitter:title"/>
+<title>Security | B-SNAP v1.15.0 documentation</title>
+<meta content="Security | B-SNAP v1.15.0 documentation" property="og:title"/>
+<meta content="Security | B-SNAP v1.15.0 documentation" name="twitter:title"/>
 <link href="_static/pygments.css?v=e72c8e07" rel="stylesheet" type="text/css"/>
-<link href="_static/theme.css?v=42baaae4" rel="stylesheet" type="text/css"/>
+<link href="_static/theme.css?v=73505e79" rel="stylesheet" type="text/css"/>
 <link href="search.html" rel="search" title="Search"/>
 <link href="genindex.html" rel="index" title="Index"/>
-<link href="development.html" rel="next" title="Development Guide"/>
+<link href="audit_logging.html" rel="next" title="Audit Logging System"/>
 <link href="architecture.html" rel="prev" title="System Architecture"/>
-<script>
-    <!-- Prevent Flash of wrong theme -->
-      const userPreference = localStorage.getItem('darkMode');
-      let mode;
-      if (userPreference === 'dark' || window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        mode = 'dark';
-        document.documentElement.classList.add('dark');
-      } else {
-        mode = 'light';
-      }
-      if (!userPreference) {localStorage.setItem('darkMode', mode)}
-    </script>
 </head>
 <body :class="{ 'overflow-hidden': showSidebar }" class="min-h-screen font-sans antialiased bg-background text-foreground" x-data="{ showSidebar: false, showScrollTop: false }">
 <div @click.self="showSidebar = false" class="fixed inset-0 z-50 overflow-hidden bg-background/80 backdrop-blur-sm md:hidden" x-cloak="" x-show="showSidebar"></div><div class="relative flex flex-col min-h-screen" id="page"><a class="absolute top-0 left-0 z-[100] block bg-background p-4 text-xl transition -translate-x-full opacity-0 focus:translate-x-0 focus:opacity-100" href="#content">
       Skip to content
-    </a><header class="sticky top-0 z-40 w-full border-b shadow-sm border-border supports-backdrop-blur:bg-background/60 bg-background/95 backdrop-blur"><div class="container flex items-center h-14">
+    </a><header class="sticky top-0 z-40 w-full border-b shadow-xs border-border bg-background/90 backdrop-blur"><div class="container flex items-center h-14">
 <div class="hidden mr-4 md:flex">
-<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v1.13.0 documentation</span>
+<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v1.15.0 documentation</span>
 </a></div><button @click="showSidebar = true" class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden" type="button">
 <svg aria-hidden="true" fill="currentColor" height="24" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
 <path d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z"></path>
 </svg>
 <span class="sr-only">Toggle navigation menu</span>
 </button>
-<div class="flex items-center justify-between flex-1 space-x-2 sm:space-x-4 md:justify-end">
+<div class="flex items-center justify-between flex-1 gap-2 sm:gap-4 md:justify-end">
 <div class="flex-1 w-full md:w-auto md:flex-none"><form @keydown.k.window.meta="$refs.search.focus()" action="search.html" class="relative flex items-center group" id="searchbox" method="get">
 <input aria-label="Search the docs" class="inline-flex items-center font-medium transition-colors bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input hover:bg-accent focus:bg-accent hover:text-accent-foreground focus:text-accent-foreground hover:placeholder-accent-foreground py-2 px-4 relative h-9 w-full justify-start rounded-[0.5rem] text-sm text-muted-foreground sm:pr-12 md:w-40 lg:w-64" id="search-input" name="q" placeholder="Search ..." type="search" x-ref="search"/>
 <kbd class="pointer-events-none absolute right-1.5 top-2 hidden h-5 select-none text-muted-foreground items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex group-hover:bg-accent group-hover:text-accent-foreground">
@@ -50,12 +52,12 @@
   </kbd>
 </form>
 </div>
-<nav class="flex items-center space-x-1">
-<button @click="darkMode = darkMode === 'light' ? 'dark' : 'light'" aria-label="Color theme switcher" class="relative inline-flex items-center justify-center px-0 text-sm font-medium transition-colors rounded-md hover:bg-accent hover:text-accent-foreground h-9 w-9" type="button">
-<svg class="absolute transition-all scale-100 rotate-0 dark:-rotate-90 dark:scale-0" fill="currentColor" height="24" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
+<nav class="flex items-center gap-1">
+<button @click="darkMode = !darkMode" class="relative inline-flex items-center justify-center px-0 text-sm font-medium transition-colors rounded-md hover:bg-accent hover:text-accent-foreground h-9 w-9" title="Toggle color scheme" type="button">
+<svg class="absolute transition-all scale-100 rotate-0 dark:-rotate-90 dark:scale-0" fill="currentColor" height="16" viewbox="0 96 960 960" width="16" xmlns="http://www.w3.org/2000/svg">
 <path d="M480 685q45.456 0 77.228-31.772Q589 621.456 589 576q0-45.456-31.772-77.228Q525.456 467 480 467q-45.456 0-77.228 31.772Q371 530.544 371 576q0 45.456 31.772 77.228Q434.544 685 480 685Zm0 91q-83 0-141.5-58.5T280 576q0-83 58.5-141.5T480 376q83 0 141.5 58.5T680 576q0 83-58.5 141.5T480 776ZM80 621.5q-19.152 0-32.326-13.174T34.5 576q0-19.152 13.174-32.326T80 530.5h80q19.152 0 32.326 13.174T205.5 576q0 19.152-13.174 32.326T160 621.5H80Zm720 0q-19.152 0-32.326-13.174T754.5 576q0-19.152 13.174-32.326T800 530.5h80q19.152 0 32.326 13.174T925.5 576q0 19.152-13.174 32.326T880 621.5h-80Zm-320-320q-19.152 0-32.326-13.174T434.5 256v-80q0-19.152 13.174-32.326T480 130.5q19.152 0 32.326 13.174T525.5 176v80q0 19.152-13.174 32.326T480 301.5Zm0 720q-19.152 0-32.326-13.17Q434.5 995.152 434.5 976v-80q0-19.152 13.174-32.326T480 850.5q19.152 0 32.326 13.174T525.5 896v80q0 19.152-13.174 32.33-13.174 13.17-32.326 13.17ZM222.174 382.065l-43-42Q165.5 327.391 166 308.239t13.174-33.065q13.435-13.674 32.587-13.674t32.065 13.674l42.239 43q12.674 13.435 12.555 31.706-.12 18.272-12.555 31.946-12.674 13.674-31.445 13.413-18.772-.261-32.446-13.174Zm494 494.761-42.239-43q-12.674-13.435-12.674-32.087t12.674-31.565Q686.609 756.5 705.38 757q18.772.5 32.446 13.174l43 41.761Q794.5 824.609 794 843.761t-13.174 33.065Q767.391 890.5 748.239 890.5t-32.065-13.674Zm-42-494.761Q660.5 369.391 661 350.62q.5-18.772 13.174-32.446l41.761-43Q728.609 261.5 747.761 262t33.065 13.174q13.674 13.435 13.674 32.587t-13.674 32.065l-43 42.239q-13.435 12.674-31.706 12.555-18.272-.12-31.946-12.555Zm-495 494.761Q165.5 863.391 165.5 844.239t13.674-32.065l43-42.239q13.435-12.674 32.087-12.674t31.565 12.674Q299.5 782.609 299 801.38q-.5 18.772-13.174 32.446l-41.761 43Q231.391 890.5 212.239 890t-33.065-13.174ZM480 576Z"></path>
 </svg>
-<svg class="absolute transition-all scale-0 rotate-90 dark:rotate-0 dark:scale-100" fill="currentColor" height="24" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
+<svg class="absolute transition-all scale-0 rotate-90 dark:rotate-0 dark:scale-100" fill="currentColor" height="16" viewbox="0 96 960 960" width="16" xmlns="http://www.w3.org/2000/svg">
 <path d="M480 936q-151 0-255.5-104.5T120 576q0-138 90-239.5T440 218q25-3 39 18t-1 44q-17 26-25.5 55t-8.5 61q0 90 63 153t153 63q31 0 61.5-9t54.5-25q21-14 43-1.5t19 39.5q-14 138-117.5 229T480 936Zm0-80q88 0 158-48.5T740 681q-20 5-40 8t-40 3q-123 0-209.5-86.5T364 396q0-20 3-40t8-40q-78 32-126.5 102T200 576q0 116 82 198t198 82Zm-10-270Z"></path>
 </svg>
 </button>
@@ -63,15 +65,17 @@
 </div>
 </div>
 </header>
-<div class="flex-1"><div class="container flex-1 items-start md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }" class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full shrink-0 overflow-y-auto border-r border-border md:sticky" id="left-sidebar">
-<a class="!justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v1.13.0 documentation</span>
+<div class="flex-1"><div class="container md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }" class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky" id="left-sidebar">
+<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v1.15.0 documentation</span>
 </a>
-<div class="relative overflow-hidden md:overflow-auto my-4 md:my-0 h-[calc(100vh-8rem)] md:h-auto">
+<div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
 <div class="overflow-y-auto h-full w-full relative pr-6"><nav class="table w-full min-w-full my-6 lg:my-8">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="architecture.html">System Architecture</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="audit_logging.html">Audit Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notifications.html">Email Notifications</a></li>
 <li class="toctree-l1"><a class="reference internal" href="development.html">Development Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="deployment.html">Deployment</a></li>
 <li class="toctree-l1"><a class="reference internal" href="maintenance.html">Maintenance &amp; Troubleshooting</a></li>
@@ -90,7 +94,7 @@
 <div class="w-full min-w-0 mx-auto">
 <nav aria-label="breadcrumbs" class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
 <a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground" href="index.html">
-<span class="hidden md:inline">B-SNAP v1.13.0 documentation</span>
+<span class="hidden md:inline">B-SNAP v1.15.0 documentation</span>
 <svg aria-label="Home" class="md:hidden" fill="currentColor" height="18" stroke="none" viewbox="0 96 960 960" width="18" xmlns="http://www.w3.org/2000/svg">
 <path d="M240 856h120V616h240v240h120V496L480 316 240 496v360Zm-80 80V456l320-240 320 240v480H520V696h-80v240H160Zm320-350Z"></path>
 </svg>
@@ -100,29 +104,431 @@
 <div id="content" role="main">
 <section id="security">
 <h1>Security<a class="headerlink" href="#security" title="Link to this heading"><span>#</span></a></h1>
-<section id="authentication">
-<h2>Authentication<a class="headerlink" href="#authentication" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#authentication'"><span>#</span></a></h2>
+<p>B-Snap implements defense-in-depth security for CCTV environments, addressing both cyber threats and physical evidence protection requirements.</p>
+<section id="authentication-authorization">
+<h2>Authentication &amp; Authorization<a class="headerlink" href="#authentication-authorization" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#authentication-authorization'"><span>#</span></a></h2>
+<section id="session-based-authentication">
+<h3>Session-Based Authentication<a class="headerlink" href="#session-based-authentication" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#session-based-authentication'"><span>#</span></a></h3>
 <ul class="simple">
-<li><p>FastAPI session middleware with secure cookie.</p></li>
-<li><p>Passwords hashed with bcrypt.</p></li>
+<li><p>FastAPI session middleware with secure cookie settings</p></li>
+<li><p>Passwords hashed with bcrypt (adaptive hashing)</p></li>
+<li><p>Session timeout after 30 minutes of inactivity</p></li>
+<li><p>Role-based access control (Admin, Operator, Viewer)</p></li>
 </ul>
 </section>
-<section id="owasp-considerations">
-<h2>OWASP Considerations<a class="headerlink" href="#owasp-considerations" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#owasp-considerations'"><span>#</span></a></h2>
+<section id="one-time-password-otp">
+<h3>One-Time Password (OTP)<a class="headerlink" href="#one-time-password-otp" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#one-time-password-otp'"><span>#</span></a></h3>
 <ul class="simple">
-<li><p><strong>Injection</strong>: ORM (SQLAlchemy) + parameterized queries.</p></li>
-<li><p><strong>Broken Auth</strong>: Secure cookie, session expiry, and OTP.</p></li>
-<li><p><strong>Sensitive Data Exposure</strong>: HTTPS required.</p></li>
-<li><p><strong>XSS</strong>: Jinja2 autoescape enabled.</p></li>
-<li><p><strong>CSRF</strong>: Not required (API-only), JWT used.</p></li>
+<li><p>TOTP-based two-factor authentication</p></li>
+<li><p>QR code enrollment for authenticator apps</p></li>
+<li><p>Backup codes for account recovery</p></li>
+</ul>
+</section>
+</section>
+<section id="data-protection">
+<h2>Data Protection<a class="headerlink" href="#data-protection" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#data-protection'"><span>#</span></a></h2>
+<section id="password-encryption-p1-001">
+<h3>Password Encryption (P1-001)<a class="headerlink" href="#password-encryption-p1-001" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#password-encryption-p1-001'"><span>#</span></a></h3>
+<p>Camera and NVR passwords are encrypted at rest using <strong>AES-256-GCM</strong>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"># Encryption flow
+</span><span id="line-2">plaintext password -&gt; AES-256-GCM -&gt; ciphertext stored in DB
+</span></code></pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>Algorithm</strong>: AES-256-GCM (authenticated encryption)</p></li>
+<li><p><strong>Key Management</strong>: Environment variable <code class="docutils literal notranslate"><span class="pre">ENCRYPTION_KEY</span></code></p></li>
+<li><p><strong>Key Generation</strong>: <code class="docutils literal notranslate"><span class="pre">openssl</span> <span class="pre">rand</span> <span class="pre">-hex</span> <span class="pre">32</span></code></p></li>
+<li><p><strong>Backward Compatible</strong>: Existing plain-text passwords migrated on first save</p></li>
+</ul>
+</section>
+<section id="api-security-p1-002">
+<h3>API Security (P1-002)<a class="headerlink" href="#api-security-p1-002" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#api-security-p1-002'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p>Passwords excluded from standard API responses</p></li>
+<li><p>Admin-only endpoints for password retrieval:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/api/camera/{id}/password</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/api/nvr/{id}/password</span></code></p></li>
+</ul>
+</li>
+<li><p>All password access logged in audit trail</p></li>
+</ul>
+</section>
+<section id="file-integrity-p0-001">
+<h3>File Integrity (P0-001)<a class="headerlink" href="#file-integrity-p0-001" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#file-integrity-p0-001'"><span>#</span></a></h3>
+<p>SHA-256 hashes for all snapshots and videos:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="c1"># Hash calculation on file creation</span>
+</span><span id="line-2"><span class="n">file_hash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">file_content</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+</span></code></pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>Verification API</strong>: <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/snap/{id}/verify</span></code></p></li>
+<li><p><strong>Tamper Detection</strong>: Hash mismatch indicates file modification</p></li>
+<li><p><strong>Evidence Integrity</strong>: Hash stored in database alongside file path</p></li>
+</ul>
+</section>
+</section>
+<section id="audit-compliance-p2">
+<h2>Audit &amp; Compliance (P2)<a class="headerlink" href="#audit-compliance-p2" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#audit-compliance-p2'"><span>#</span></a></h2>
+<section id="append-only-audit-log-p2-001">
+<h3>Append-Only Audit Log (P2-001)<a class="headerlink" href="#append-only-audit-log-p2-001" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#append-only-audit-log-p2-001'"><span>#</span></a></h3>
+<p>Database-level enforcement prevents tampering:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">-- Triggers prevent modification
+</span><span id="line-2">BEFORE DELETE ON audit_logs -&gt; RAISE EXCEPTION
+</span><span id="line-3">BEFORE UPDATE ON audit_logs -&gt; RAISE EXCEPTION
+</span></code></pre></div>
+</div>
+<p><strong>Log Retention Strategy</strong>:</p>
+<ul class="simple">
+<li><p><strong>Hot Storage</strong> (0-6 months): PostgreSQL <code class="docutils literal notranslate"><span class="pre">audit_logs</span></code> table</p></li>
+<li><p><strong>Warm Storage</strong> (6+ months): <code class="docutils literal notranslate"><span class="pre">audit_logs_legacy</span></code> table</p></li>
+<li><p><strong>Cold Storage</strong> (archived): Encrypted files in <code class="docutils literal notranslate"><span class="pre">archives/audit_logs/</span></code></p></li>
+</ul>
+<p><strong>Archive Process</strong>:</p>
+<ol class="arabic simple">
+<li><p>Export to JSON</p></li>
+<li><p>Gzip compression (~90% reduction)</p></li>
+<li><p>AES-256 encryption</p></li>
+<li><p>SHA-256 checksum verification</p></li>
+<li><p>Safe deletion from hot storage</p></li>
+</ol>
+<p>See <a class="reference internal" href="audit_logging.html"><span class="std std-doc">Audit Logging</span></a> for detailed documentation.</p>
+</section>
+<section id="safety-classification-p2-002">
+<h3>Safety Classification (P2-002)<a class="headerlink" href="#safety-classification-p2-002" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#safety-classification-p2-002'"><span>#</span></a></h3>
+<p>Cameras classified by criticality:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Level</p></th>
+<th class="head"><p>Badge</p></th>
+<th class="head"><p>Use Case</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>🔴 Critical</p></td>
+<td><p>Red</p></td>
+<td><p>Incident coverage, entry points, high-risk areas</p></td>
+</tr>
+<tr class="row-odd"><td><p>🟡 Standard</p></td>
+<td><p>Yellow</p></td>
+<td><p>Regular monitoring, general surveillance</p></td>
+</tr>
+<tr class="row-even"><td><p>🟢 Low</p></td>
+<td><p>Green</p></td>
+<td><p>Peripheral areas, low-sensitivity zones</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Impact</strong>: Critical cameras highlighted in UI and have priority in retention policies.</p>
+</section>
+<section id="retention-hold-p2-003">
+<h3>Retention Hold (P2-003)<a class="headerlink" href="#retention-hold-p2-003" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#retention-hold-p2-003'"><span>#</span></a></h3>
+<p>Legal hold mechanism for incident footage:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">snapshot</span><span class="o">.</span><span class="n">retention_hold</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="line-2"><span class="n">snapshot</span><span class="o">.</span><span class="n">retention_hold_reason</span> <span class="o">=</span> <span class="s2">"Investigation Case #2024-001"</span>
+</span></code></pre></div>
+</div>
+<ul class="simple">
+<li><p>Prevents automatic purge of incident-related snapshots</p></li>
+<li><p>Requires admin role to set/clear</p></li>
+<li><p>All retention hold operations audited</p></li>
+<li><p>Visual indicator in snapshot gallery</p></li>
+</ul>
+</section>
+<section id="secure-file-serving-p2-004">
+<h3>Secure File Serving (P2-004)<a class="headerlink" href="#secure-file-serving-p2-004" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#secure-file-serving-p2-004'"><span>#</span></a></h3>
+<p>Direct static file access blocked:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">GET /static/snapshots/camera1/2024-01-01/image.jpg
+</span><span id="line-2">→ 403 Forbidden
+</span></code></pre></div>
+</div>
+<p><strong>Secure Access</strong> (authenticated):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">GET /api/snapshots/secure/{snapshot_id}
+</span><span id="line-2">→ 200 OK (after auth check)
+</span></code></pre></div>
+</div>
+<p>Benefits:</p>
+<ul class="simple">
+<li><p>All file access logged</p></li>
+<li><p>Authentication enforced</p></li>
+<li><p>No direct filesystem exposure</p></li>
+</ul>
+</section>
+</section>
+<section id="owasp-top-10-mitigations">
+<h2>OWASP Top 10 Mitigations<a class="headerlink" href="#owasp-top-10-mitigations" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#owasp-top-10-mitigations'"><span>#</span></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Risk</p></th>
+<th class="head"><p>Mitigation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Injection</strong></p></td>
+<td><p>SQLAlchemy ORM + parameterized queries</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Broken Auth</strong></p></td>
+<td><p>bcrypt hashing, secure cookies, session expiry, OTP</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Sensitive Data</strong></p></td>
+<td><p>AES-256 encryption, HTTPS required, password masking</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>XXE</strong></p></td>
+<td><p>No XML parsing in application</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Access Control</strong></p></td>
+<td><p>Role-based permissions, admin-only endpoints</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Security Misconfig</strong></p></td>
+<td><p>Environment-based config, no debug in production</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>XSS</strong></p></td>
+<td><p>Jinja2 autoescape, Content-Security-Policy headers</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Insecure Deserialization</strong></p></td>
+<td><p>JSON only, no pickle/xml deserialization</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Components</strong></p></td>
+<td><p>Regular dependency updates, CVE monitoring</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Logging</strong></p></td>
+<td><p>Comprehensive audit logging, append-only protection</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="network-security">
+<h2>Network Security<a class="headerlink" href="#network-security" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#network-security'"><span>#</span></a></h2>
+<section id="camera-communication">
+<h3>Camera Communication<a class="headerlink" href="#camera-communication" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#camera-communication'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p>ONVIF/RTSP with digest authentication</p></li>
+<li><p>Passwords encrypted at rest and in transit</p></li>
+<li><p>Isolated VLAN for CCTV cameras (recommended)</p></li>
+</ul>
+</section>
+<section id="web-application">
+<h3>Web Application<a class="headerlink" href="#web-application" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#web-application'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p>HTTPS enforced (TLS 1.2+)</p></li>
+<li><p>Secure cookie flags (HttpOnly, Secure, SameSite)</p></li>
+<li><p>CORS configured for same-origin only</p></li>
+<li><p>Rate limiting on authentication endpoints</p></li>
+</ul>
+</section>
+</section>
+<section id="evidence-protection">
+<h2>Evidence Protection<a class="headerlink" href="#evidence-protection" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#evidence-protection'"><span>#</span></a></h2>
+<section id="soft-delete-p0-002">
+<h3>Soft Delete (P0-002)<a class="headerlink" href="#soft-delete-p0-002" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#soft-delete-p0-002'"><span>#</span></a></h3>
+<p>Deleted snapshots are recoverable:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="c1"># Soft delete (default)</span>
+</span><span id="line-2"><span class="n">snapshot</span><span class="o">.</span><span class="n">deleted_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+</span><span id="line-3">
+</span><span id="line-4"><span class="c1"># Restore (admin only)</span>
+</span><span id="line-5"><span class="n">snapshot</span><span class="o">.</span><span class="n">deleted_at</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="line-6">
+</span><span id="line-7"><span class="c1"># Hard delete (admin + audit logged)</span>
+</span><span id="line-8"><span class="n">db</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">snapshot</span><span class="p">)</span>  <span class="c1"># Only after soft delete</span>
+</span></code></pre></div>
+</div>
+<p><strong>Benefits</strong>:</p>
+<ul class="simple">
+<li><p>Prevents accidental deletion</p></li>
+<li><p>Recovery within retention period</p></li>
+<li><p>Audit trail of all deletions</p></li>
+</ul>
+</section>
+<section id="chain-of-custody">
+<h3>Chain of Custody<a class="headerlink" href="#chain-of-custody" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#chain-of-custody'"><span>#</span></a></h3>
+<p>Every snapshot access creates audit record:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>User</p></td>
+<td><p>john.doe</p></td>
+</tr>
+<tr class="row-odd"><td><p>Action</p></td>
+<td><p>download_snapshot</p></td>
+</tr>
+<tr class="row-even"><td><p>Target</p></td>
+<td><p>snapshot_12345.jpg</p></td>
+</tr>
+<tr class="row-odd"><td><p>IP</p></td>
+<td><p>192.168.1.50</p></td>
+</tr>
+<tr class="row-even"><td><p>Timestamp</p></td>
+<td><p>2024-03-28T10:30:00Z</p></td>
+</tr>
+<tr class="row-odd"><td><p>User Agent</p></td>
+<td><p>Mozilla/5.0…</p></td>
+</tr>
+<tr class="row-even"><td><p>Request Path</p></td>
+<td><p>/api/snapshots/secure/12345</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="tamper-detection">
+<h3>Tamper Detection<a class="headerlink" href="#tamper-detection" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#tamper-detection'"><span>#</span></a></h3>
+<p>Health monitoring detects camera tampering:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">CameraHealth</span><span class="o">.</span><span class="n">tamper_detected</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="line-2"><span class="n">CameraHealth</span><span class="o">.</span><span class="n">tamper_count</span> <span class="o">+=</span> <span class="mi">1</span>
+</span></code></pre></div>
+</div>
+<p>Triggers:</p>
+<ul class="simple">
+<li><p>Unexpected reboot</p></li>
+<li><p>Configuration changes</p></li>
+<li><p>Network anomalies</p></li>
+</ul>
+</section>
+</section>
+<section id="compliance">
+<h2>Compliance<a class="headerlink" href="#compliance" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#compliance'"><span>#</span></a></h2>
+<section id="iso-27001">
+<h3>ISO 27001<a class="headerlink" href="#iso-27001" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#iso-27001'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p><strong>A.12.4</strong> - Logging and monitoring ✅</p></li>
+<li><p><strong>A.10.1</strong> - Cryptographic controls ✅</p></li>
+<li><p><strong>A.9.4</strong> - System access control ✅</p></li>
+</ul>
+</section>
+<section id="soc-2-type-ii">
+<h3>SOC 2 Type II<a class="headerlink" href="#soc-2-type-ii" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#soc-2-type-ii'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p><strong>CC6.x</strong> - Logical and physical access ✅</p></li>
+<li><p><strong>CC7.x</strong> - System operations and monitoring ✅</p></li>
+</ul>
+</section>
+<section id="cctv-evidence-standards">
+<h3>CCTV Evidence Standards<a class="headerlink" href="#cctv-evidence-standards" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#cctv-evidence-standards'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p>Chain of custody maintained</p></li>
+<li><p>Tamper-evident logging</p></li>
+<li><p>Configurable retention periods</p></li>
+<li><p>Legal hold capability</p></li>
+</ul>
+</section>
+</section>
+<section id="security-checklist">
+<h2>Security Checklist<a class="headerlink" href="#security-checklist" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#security-checklist'"><span>#</span></a></h2>
+<section id="deployment">
+<h3>Deployment<a class="headerlink" href="#deployment" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#deployment'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p>[ ] Change default admin password</p></li>
+<li><p>[ ] Set strong <code class="docutils literal notranslate"><span class="pre">ENCRYPTION_KEY</span></code> (32-byte hex)
+[ ] Configure <code class="docutils literal notranslate"><span class="pre">SECRET_KEY</span></code> for sessions</p></li>
+<li><p>[ ] Enable HTTPS</p></li>
+<li><p>[ ] Set <code class="docutils literal notranslate"><span class="pre">ENVIRONMENT=production</span></code></p></li>
+<li><p>[ ] Disable debug mode</p></li>
+</ul>
+</section>
+<section id="maintenance">
+<h3>Maintenance<a class="headerlink" href="#maintenance" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#maintenance'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p>[ ] Review audit logs weekly</p></li>
+<li><p>[ ] Archive old logs (6-month cycle)</p></li>
+<li><p>[ ] Update dependencies monthly</p></li>
+<li><p>[ ] Backup encryption keys securely</p></li>
+<li><p>[ ] Test restore from archive</p></li>
+</ul>
+</section>
+<section id="monitoring">
+<h3>Monitoring<a class="headerlink" href="#monitoring" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#monitoring'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p>[ ] Failed login attempts</p></li>
+<li><p>[ ] Password access events</p></li>
+<li><p>[ ] Unusual download patterns</p></li>
+<li><p>[ ] Tamper alerts</p></li>
+<li><p>[ ] Archive job status</p></li>
+</ul>
+</section>
+</section>
+<section id="incident-response">
+<h2>Incident Response<a class="headerlink" href="#incident-response" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#incident-response'"><span>#</span></a></h2>
+<section id="suspected-breach">
+<h3>Suspected Breach<a class="headerlink" href="#suspected-breach" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#suspected-breach'"><span>#</span></a></h3>
+<ol class="arabic simple">
+<li><p>Check audit logs for unauthorized access</p></li>
+<li><p>Verify file integrity hashes</p></li>
+<li><p>Review retention hold settings</p></li>
+<li><p>Contact security team</p></li>
+</ol>
+</section>
+<section id="audit-log-compromise">
+<h3>Audit Log Compromise<a class="headerlink" href="#audit-log-compromise" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#audit-log-compromise'"><span>#</span></a></h3>
+<ol class="arabic simple">
+<li><p>Archives are immutable (checksums)</p></li>
+<li><p>Restore from encrypted backups</p></li>
+<li><p>Verify chain of custody intact</p></li>
+</ol>
+</section>
+</section>
+<section id="additional-resources">
+<h2>Additional Resources<a class="headerlink" href="#additional-resources" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#additional-resources'"><span>#</span></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="audit_logging.html"><span class="std std-doc">Audit Logging Documentation</span></a></p></li>
+<li><p><a class="reference internal" href="deployment.html"><span class="std std-doc">Deployment Guide</span></a></p></li>
+<li><p><a class="reference download internal" download="" href="_downloads/81a4213b3282d6ebe982e56a204421ca/openapi.json"><span class="xref download myst">API Security Reference</span></a></p></li>
 </ul>
 </section>
 </section>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
-<div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
+<div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
 <ul>
-<li><a :data-current="activeSection === '#authentication'" class="reference internal" href="#authentication">Authentication</a></li>
-<li><a :data-current="activeSection === '#owasp-considerations'" class="reference internal" href="#owasp-considerations">OWASP Considerations</a></li>
+<li><a :data-current="activeSection === '#authentication-authorization'" class="reference internal" href="#authentication-authorization">Authentication &amp; Authorization</a><ul>
+<li><a :data-current="activeSection === '#session-based-authentication'" class="reference internal" href="#session-based-authentication">Session-Based Authentication</a></li>
+<li><a :data-current="activeSection === '#one-time-password-otp'" class="reference internal" href="#one-time-password-otp">One-Time Password (OTP)</a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#data-protection'" class="reference internal" href="#data-protection">Data Protection</a><ul>
+<li><a :data-current="activeSection === '#password-encryption-p1-001'" class="reference internal" href="#password-encryption-p1-001">Password Encryption (P1-001)</a></li>
+<li><a :data-current="activeSection === '#api-security-p1-002'" class="reference internal" href="#api-security-p1-002">API Security (P1-002)</a></li>
+<li><a :data-current="activeSection === '#file-integrity-p0-001'" class="reference internal" href="#file-integrity-p0-001">File Integrity (P0-001)</a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#audit-compliance-p2'" class="reference internal" href="#audit-compliance-p2">Audit &amp; Compliance (P2)</a><ul>
+<li><a :data-current="activeSection === '#append-only-audit-log-p2-001'" class="reference internal" href="#append-only-audit-log-p2-001">Append-Only Audit Log (P2-001)</a></li>
+<li><a :data-current="activeSection === '#safety-classification-p2-002'" class="reference internal" href="#safety-classification-p2-002">Safety Classification (P2-002)</a></li>
+<li><a :data-current="activeSection === '#retention-hold-p2-003'" class="reference internal" href="#retention-hold-p2-003">Retention Hold (P2-003)</a></li>
+<li><a :data-current="activeSection === '#secure-file-serving-p2-004'" class="reference internal" href="#secure-file-serving-p2-004">Secure File Serving (P2-004)</a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#owasp-top-10-mitigations'" class="reference internal" href="#owasp-top-10-mitigations">OWASP Top 10 Mitigations</a></li>
+<li><a :data-current="activeSection === '#network-security'" class="reference internal" href="#network-security">Network Security</a><ul>
+<li><a :data-current="activeSection === '#camera-communication'" class="reference internal" href="#camera-communication">Camera Communication</a></li>
+<li><a :data-current="activeSection === '#web-application'" class="reference internal" href="#web-application">Web Application</a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#evidence-protection'" class="reference internal" href="#evidence-protection">Evidence Protection</a><ul>
+<li><a :data-current="activeSection === '#soft-delete-p0-002'" class="reference internal" href="#soft-delete-p0-002">Soft Delete (P0-002)</a></li>
+<li><a :data-current="activeSection === '#chain-of-custody'" class="reference internal" href="#chain-of-custody">Chain of Custody</a></li>
+<li><a :data-current="activeSection === '#tamper-detection'" class="reference internal" href="#tamper-detection">Tamper Detection</a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#compliance'" class="reference internal" href="#compliance">Compliance</a><ul>
+<li><a :data-current="activeSection === '#iso-27001'" class="reference internal" href="#iso-27001">ISO 27001</a></li>
+<li><a :data-current="activeSection === '#soc-2-type-ii'" class="reference internal" href="#soc-2-type-ii">SOC 2 Type II</a></li>
+<li><a :data-current="activeSection === '#cctv-evidence-standards'" class="reference internal" href="#cctv-evidence-standards">CCTV Evidence Standards</a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#security-checklist'" class="reference internal" href="#security-checklist">Security Checklist</a><ul>
+<li><a :data-current="activeSection === '#deployment'" class="reference internal" href="#deployment">Deployment</a></li>
+<li><a :data-current="activeSection === '#maintenance'" class="reference internal" href="#maintenance">Maintenance</a></li>
+<li><a :data-current="activeSection === '#monitoring'" class="reference internal" href="#monitoring">Monitoring</a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#incident-response'" class="reference internal" href="#incident-response">Incident Response</a><ul>
+<li><a :data-current="activeSection === '#suspected-breach'" class="reference internal" href="#suspected-breach">Suspected Breach</a></li>
+<li><a :data-current="activeSection === '#audit-log-compromise'" class="reference internal" href="#audit-log-compromise">Audit Log Compromise</a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#additional-resources'" class="reference internal" href="#additional-resources">Additional Resources</a></li>
 </ul>
 </div>
 </aside>
@@ -131,14 +537,14 @@
 </div><footer class="py-6 border-t border-border md:py-0">
 <div class="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
 <div class="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
-<p class="text-sm leading-loose text-center text-muted-foreground md:text-left">© 2025, Indra W. Built with <a class="font-medium underline underline-offset-4" href="https://www.sphinx-doc.org" rel="noreferrer">Sphinx 8.2.3</a></p>
+<p class="text-sm leading-loose text-center text-muted-foreground md:text-left">© 2025, Indra W. Built with <a class="font-medium underline underline-offset-4" href="https://www.sphinx-doc.org" rel="noreferrer">Sphinx 9.1.0</a></p>
 </div>
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=2471e684"></script>
-<script src="_static/doctools.js?v=9bcbadda"></script>
-<script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-<script defer="defer" src="_static/theme.js?v=073f68d9"></script>
+<script src="_static/documentation_options.js?v=dbff5d13"></script>
+<script src="_static/doctools.js?v=fd6eb6e6"></script>
+<script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+<script defer="defer" src="_static/theme.js?v=582b20c5"></script>
 </body>
 </html>

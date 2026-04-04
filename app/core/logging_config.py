@@ -3,6 +3,7 @@ import logging
 import logging.config
 from pathlib import Path
 import os
+from datetime import datetime, timezone
 
 # pip install concurrent-log-handler
 from concurrent_log_handler import ConcurrentRotatingFileHandler  # type: ignore
@@ -11,6 +12,22 @@ from concurrent_log_handler import ConcurrentRotatingFileHandler  # type: ignore
 BASE_DIR = Path(__file__).resolve().parents[2]  # sesuaikan jika struktur berbeda
 LOG_DIR = Path(os.getenv("LOG_DIR", BASE_DIR / "logs"))
 LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# === UTC Formatter Class ===
+class UTCFormatter(logging.Formatter):
+    """
+    Formatter that always uses UTC time for log timestamps.
+    This ensures consistency with database timestamps (which are all UTC).
+    Uses ISO 8601 format with timezone offset.
+    """
+    converter = lambda *args: datetime.now(timezone.utc).timetuple()
+    
+    def formatTime(self, record, datefmt=None):
+        """Format timestamp in UTC using ISO 8601 format."""
+        dt = datetime.fromtimestamp(record.created, timezone.utc)
+        # ISO 8601 format: 2026-03-30T06:47:13+00:00
+        return dt.isoformat(timespec='seconds')
 
 # === Path file log ===
 MAIN_LOG = LOG_DIR / "main.log"
@@ -38,10 +55,12 @@ LOGGING_CONFIG = {
 
     "formatters": {
         "standard": {
+            "()": UTCFormatter,
             "format": "[%(asctime)s] [%(levelname)s] [%(name)s] [pid=%(process)d] %(message)s"
         },
         "access": {
-            "format": '%(asctime)s [%(levelname)s] [%(name)s] [pid=%(process)d] %(client_addr)s - "%(request_line)s" %(status_code)s'
+            "()": UTCFormatter,
+            "format": "[%(asctime)s] [%(levelname)s] [%(name)s] [pid=%(process)d] %(message)s"
         },
     },
 

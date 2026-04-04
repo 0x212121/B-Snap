@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+
+{% block title %}Email Templates - B-Snap{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <i class="fas fa-envelope-open-text mr-2"></i>Email Templates
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400">
+            Customize notification email messages with drag-and-drop variables
+        </p>
+    </div>
+
+    <!-- Template Type Selector -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6">
+        <div class="border-b border-gray-200 dark:border-gray-700">
+            <nav class="flex -mb-px" id="templateTabs">
+                <button onclick="switchTab('tamper_alert')" 
+                        class="tab-btn active px-6 py-4 text-sm font-medium border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                        data-tab="tamper_alert">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Tamper Alert
+                </button>
+                <button onclick="switchTab('recovery_alert')" 
+                        class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                        data-tab="recovery_alert">
+                    <i class="fas fa-check-circle mr-2"></i>Recovery Alert
+                </button>
+                <button onclick="switchTab('offline_alert')" 
+                        class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                        data-tab="offline_alert">
+                    <i class="fas fa-power-off mr-2"></i>Offline Alert
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Editor Area -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Panel: Editor -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Subject Editor -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-heading mr-1"></i>Email Subject
+                </label>
+                <input type="text" id="subjectInput" 
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                              bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                              focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       placeholder="Enter email subject...">
+            </div>
+
+            <!-- Plain Body Editor -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-align-left mr-1"></i>Plain Text Body
+                </label>
+                <textarea id="plainBodyInput" rows="12"
+                          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                                 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm
+                                 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter plain text body..."></textarea>
+            </div>
+
+            <!-- HTML Body Editor -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-code mr-1"></i>HTML Body
+                </label>
+                <textarea id="htmlBodyInput" rows="12"
+                          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                                 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm
+                                 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter HTML body..."></textarea>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap gap-3">
+                <button onclick="saveTemplate()" 
+                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                    <i class="fas fa-save mr-2"></i>Save Template
+                </button>
+                <button onclick="previewTemplate()" 
+                        class="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                    <i class="fas fa-eye mr-2"></i>Preview
+                </button>
+                <button onclick="resetTemplate()" 
+                        class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                    <i class="fas fa-undo mr-2"></i>Reset to Default
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Panel: Variables -->
+        <div class="lg:col-span-1">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sticky top-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <i class="fas fa-tags mr-2"></i>Available Variables
+                </h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Drag and drop variables into the editor, or click to insert at cursor position.
+                </p>
+                
+                <div id="variablesList" class="space-y-2 max-h-[600px] overflow-y-auto">
+                    <!-- Variables will be populated by JavaScript -->
+                </div>
+
+                <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <h4 class="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
+                        <i class="fas fa-info-circle mr-1"></i>Tips
+                    </h4>
+                    <ul class="text-xs text-blue-800 dark:text-blue-400 space-y-1">
+                        <li>• Use <code>{{ variable }}</code> syntax</li>
+                        <li>• Supports Jinja2 conditionals</li>
+                        <li>• HTML is supported in HTML body</li>
+                        <li>• Test with Preview before saving</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div id="previewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <i class="fas fa-eye mr-2"></i>Template Preview
+            </h3>
+            <button onclick="closePreview()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6 overflow-y-auto max-h-[70vh]">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject:</label>
+                <div id="previewSubject" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-900 dark:text-white"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plain Text:</label>
+                    <pre id="previewPlain" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white overflow-x-auto whitespace-pre-wrap"></pre>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">HTML Preview:</label>
+                    <div id="previewHtml" class="p-3 bg-white dark:bg-gray-700 rounded-lg overflow-x-auto"></div>
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                <i class="fas fa-info-circle mr-1"></i>
+                Preview uses sample data. Actual emails will contain real camera information.
+            </p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Template data from server
+const templatesData = {{ templates | tojson }};
+const variablesData = {{ variables | tojson }};
+
+let currentTab = 'tamper_alert';
+let currentTemplate = null;
+let activeEditor = null;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    loadTemplate('tamper_alert');
+    setupEditorDropZones();  // Setup once
+    setupEditorFocus();
+});
+
+// Switch between template tabs
+function switchTab(tabName) {
+    currentTab = tabName;
+    
+    // Update tab styles
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        if (btn.dataset.tab === tabName) {
+            btn.classList.add('border-blue-500', 'text-blue-600', 'dark:text-blue-400');
+            btn.classList.remove('border-transparent', 'text-gray-500');
+        } else {
+            btn.classList.remove('border-blue-500', 'text-blue-600', 'dark:text-blue-400');
+            btn.classList.add('border-transparent', 'text-gray-500');
+        }
+    });
+    
+    loadTemplate(tabName);
+}
+
+// Load template data
+function loadTemplate(templateType) {
+    currentTemplate = templatesData.find(t => t.type === templateType);
+    
+    if (currentTemplate) {
+        document.getElementById('subjectInput').value = currentTemplate.subject;
+        document.getElementById('plainBodyInput').value = currentTemplate.plain_body;
+        document.getElementById('htmlBodyInput').value = currentTemplate.html_body;
+    }
+    
+    // Update variables list
+    updateVariablesList(templateType);
+}
+
+{% raw %}
+// Update variables list for current template type
+function updateVariablesList(templateType) {
+    const container = document.getElementById('variablesList');
+    const vars = variablesData[templateType] || [];
+    
+    container.innerHTML = vars.map(v => {
+        const varPlaceholder = '{{ ' + v.key + ' }}';
+        return `
+        <div class="variable-item flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-move hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+             draggable="true"
+             data-variable="${varPlaceholder}"
+             title="${v.description}">
+            <i class="fas fa-grip-vertical text-gray-400 mr-3"></i>
+            <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-gray-900 dark:text-white truncate">${v.label}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 truncate">${varPlaceholder}</div>
+            </div>
+            <button onclick="insertVariable('${varPlaceholder}')" 
+                    class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                    title="Insert at cursor">
+                <i class="fas fa-plus-circle"></i>
+            </button>
+        </div>
+        `;
+    }).join('');
+    
+    // Setup drag events for variable items only (not editors)
+    setupVariableItemDragEvents();
+}
+
+// Setup drag events for variable items only
+function setupVariableItemDragEvents() {
+    const variableItems = document.querySelectorAll('.variable-item');
+    
+    variableItems.forEach(item => {
+        item.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', item.dataset.variable);
+            item.classList.add('opacity-50');
+        });
+        
+        item.addEventListener('dragend', () => {
+            item.classList.remove('opacity-50');
+        });
+    });
+}
+
+// Setup drop zones for editors (called once on init)
+function setupEditorDropZones() {
+    const editors = ['subjectInput', 'plainBodyInput', 'htmlBodyInput'];
+    
+    editors.forEach(editorId => {
+        const editor = document.getElementById(editorId);
+        
+        editor.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            editor.classList.add('ring-2', 'ring-blue-500');
+        });
+        
+        editor.addEventListener('dragleave', () => {
+            editor.classList.remove('ring-2', 'ring-blue-500');
+        });
+        
+        editor.addEventListener('drop', (e) => {
+            e.preventDefault();
+            editor.classList.remove('ring-2', 'ring-blue-500');
+            const variable = e.dataTransfer.getData('text/plain');
+            insertTextAtCursor(editor, variable);
+        });
+    });
+}
+{% endraw %}
+
+// Track which editor is focused
+function setupEditorFocus() {
+    ['subjectInput', 'plainBodyInput', 'htmlBodyInput'].forEach(id => {
+        document.getElementById(id).addEventListener('focus', function() {
+            activeEditor = this;
+        });
+    });
+}
+
+// Insert variable at cursor position
+function insertVariable(variable) {
+    if (activeEditor) {
+        insertTextAtCursor(activeEditor, variable);
+    } else {
+        // Default to plain body if no editor focused
+        insertTextAtCursor(document.getElementById('plainBodyInput'), variable);
+    }
+}
+
+// Insert text at cursor position in textarea/input
+function insertTextAtCursor(element, text) {
+    const start = element.selectionStart;
+    const end = element.selectionEnd;
+    const value = element.value;
+    
+    element.value = value.substring(0, start) + text + value.substring(end);
+    element.selectionStart = element.selectionEnd = start + text.length;
+    element.focus();
+}
+
+// Save template
+async function saveTemplate() {
+    const subject = document.getElementById('subjectInput').value;
+    const plainBody = document.getElementById('plainBodyInput').value;
+    const htmlBody = document.getElementById('htmlBodyInput').value;
+    
+    if (!subject.trim() || !plainBody.trim() || !htmlBody.trim()) {
+        showGlobalAlert('All fields are required', 'Validation Error', { icon: 'warning' });
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/email-templates/${currentTab}/save`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                subject: subject,
+                plain_body: plainBody,
+                html_body: htmlBody
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Update local data
+            const idx = templatesData.findIndex(t => t.type === currentTab);
+            if (idx >= 0) {
+                templatesData[idx].subject = subject;
+                templatesData[idx].plain_body = plainBody;
+                templatesData[idx].html_body = htmlBody;
+                templatesData[idx].is_custom = true;
+            }
+            
+            showGlobalAlert(result.message, 'Success', { icon: 'success' });
+        } else {
+            showGlobalAlert(result.message, 'Error', { icon: 'error' });
+        }
+    } catch (error) {
+        showGlobalAlert('Failed to save template: ' + error.message, 'Error', { icon: 'error' });
+    }
+}
+
+// Preview template
+async function previewTemplate() {
+    const subject = document.getElementById('subjectInput').value;
+    const plainBody = document.getElementById('plainBodyInput').value;
+    const htmlBody = document.getElementById('htmlBodyInput').value;
+    
+    try {
+        const response = await fetch(`/api/email-templates/${currentTab}/preview`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                template_type: currentTab,
+                subject: subject,
+                plain_body: plainBody,
+                html_body: htmlBody
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            document.getElementById('previewSubject').textContent = result.subject;
+            document.getElementById('previewPlain').textContent = result.plain_body;
+            document.getElementById('previewHtml').innerHTML = result.html_body;
+            document.getElementById('previewModal').classList.remove('hidden');
+        } else {
+            showGlobalAlert(result.message, 'Preview Error', { icon: 'error' });
+        }
+    } catch (error) {
+        showGlobalAlert('Failed to preview: ' + error.message, 'Error', { icon: 'error' });
+    }
+}
+
+// Close preview modal
+function closePreview() {
+    document.getElementById('previewModal').classList.add('hidden');
+}
+
+// Reset template to default
+function resetTemplate() {
+    showGlobalConfirm(
+        'Are you sure you want to reset this template to default? All custom changes will be lost.',
+        async () => {
+            try {
+                const response = await fetch(`/api/email-templates/${currentTab}/reset`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Reload page to get fresh default data
+                    window.location.reload();
+                } else {
+                    showGlobalAlert(result.message, 'Error', { icon: 'error' });
+                }
+            } catch (error) {
+                showGlobalAlert('Failed to reset template: ' + error.message, 'Error', { icon: 'error' });
+            }
+        },
+        {
+            title: 'Confirm Reset',
+            confirmText: 'Reset',
+            confirmButtonColor: '#dc2626'
+        }
+    );
+}
+
+// Close modal on backdrop click
+document.getElementById('previewModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePreview();
+    }
+});
+</script>
+{% endblock %}

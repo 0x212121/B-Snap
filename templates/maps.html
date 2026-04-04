@@ -2,7 +2,7 @@
 {% block title %}B-SNAP – Map{% endblock %}
 {% block content %}
 
-<div id="map" class="h-[960px] mb-6 rounded shadow" data-timezone="{{ timezone }}"></div>
+<div id="map" class="h-[960px] mb-6 rounded shadow" data-timezone="{{ timezone }}" data-refresh-time="{{ refresh_time }}"></div>
 
 <!-- External Libraries -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
@@ -442,19 +442,25 @@
       const timeElement = document.getElementById('last-refresh-time');
       if (!timeElement) return;
       
-      // Get timezone from server config or browser
-      const timezone = document.getElementById('map').dataset.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-      // Create UTC time and convert to configured timezone
-      const now = new Date();
-      const timeString = now.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-        timeZone: timezone
-      }) + ' (' + timezone + ')' ;
+      // Get refresh time from server (format: "09:00:00 WITA")
+      const mapElement = document.getElementById('map');
+      const serverRefreshTime = mapElement.dataset.refreshTime;
       
-      timeElement.textContent = `Updated: ${timeString}`;
+      if (serverRefreshTime && serverRefreshTime !== 'N/A') {
+        timeElement.textContent = `Updated: ${serverRefreshTime}`;
+      } else {
+        // Fallback: use browser time with timezone
+        const timezone = mapElement.dataset.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+          timeZone: timezone
+        });
+        timeElement.textContent = `Updated: ${timeString}`;
+      }
     }
     
     /**

@@ -3,7 +3,7 @@ import csv
 import io
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, File, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
-from sqlalchemy import or_, func
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 from datetime import datetime, timezone
 
@@ -62,14 +62,11 @@ def get_whitelist(
             "role": e.role.value if e.role else None,
             "group_id": e.group_id,
             "group_name": group_name,
-            "is_active": e.is_active,
             "added_at": e.added_at or datetime.now(timezone.utc),
         })
 
     # Calculate stats
     total_entries = db.query(WhatsappWhitelist).count()
-    active_count = db.query(WhatsappWhitelist).filter(WhatsappWhitelist.is_active == True).count()
-    inactive_count = total_entries - active_count
     
     # Role distribution
     admin_count = db.query(WhatsappWhitelist).filter(WhatsappWhitelist.role == RoleEnum.admin).count()
@@ -83,8 +80,6 @@ def get_whitelist(
         "total_pages": (total + limit - 1) // limit,
         "stats": {
             "total": total_entries,
-            "active": active_count,
-            "inactive": inactive_count,
             "admins": admin_count,
             "users": user_count,
         }
@@ -205,8 +200,7 @@ def edit_whitelist(
             entry.name = data.name
         if data.role is not None:
             entry.role = RoleEnum(data.role)
-        if data.is_active is not None:
-            entry.is_active = data.is_active
+
         if data.group_id is not None:
             entry.group_id = data.group_id
 
@@ -242,15 +236,14 @@ def export_whitelist_csv(
         
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(["phone_number", "name", "role", "group_name", "is_active"])
+        writer.writerow(["phone_number", "name", "role", "group_name"])
         
         for e in entries:
             writer.writerow([
                 e.phone_number,
                 e.name or "",
                 e.role.value if e.role else "user",
-                e.group.name if e.group else "",
-                "yes" if e.is_active else "no"
+                e.group.name if e.group else ""
             ])
         
         csv_content = output.getvalue()
@@ -278,12 +271,11 @@ async def import_whitelist_csv(
 ):
     """Bulk import whitelist entries from CSV file.
     
-    CSV Format: phone_number,name,role,group_name,is_active
+    CSV Format: phone_number,name,role,group_name
     - phone_number: required, format: 628xxxxxxxxxx
     - name: optional
     - role: optional, default 'user' (values: user, admin)
     - group_name: optional
-    - is_active: optional, default 'yes' (values: yes, no, true, false, 1, 0)
     """
     # Validation errors that should return JSON (not raise HTTPException to avoid HTML error pages)
     if not file.filename.endswith('.csv'):
@@ -318,8 +310,6 @@ async def import_whitelist_csv(
                 name = row.get('name', '').strip() or None
                 role_str = row.get('role', 'user').strip().lower()
                 group_name = row.get('group_name', '').strip()
-                is_active_str = row.get('is_active', 'yes').strip().lower()
-                
                 if not phone:
                     errors.append(f"Row {row_num}: Missing phone_number")
                     skipped += 1
@@ -340,9 +330,6 @@ async def import_whitelist_csv(
                 # Parse role
                 role = RoleEnum.admin if role_str == 'admin' else RoleEnum.user
                 
-                # Parse is_active
-                is_active = is_active_str in ('yes', 'true', '1', 'active')
-                
                 # Find group_id
                 group_id = groups.get(group_name) if group_name else None
                 if group_name and not group_id:
@@ -354,8 +341,7 @@ async def import_whitelist_csv(
                     phone_number=phone,
                     name=name,
                     role=role,
-                    group_id=group_id,
-                    is_active=is_active
+                    group_id=group_id
                 )
                 db.add(entry)
                 imported += 1

@@ -437,6 +437,7 @@ class SnapshotService:
         db: Session,
         days_old: int = 30,
         user_name: str = "system",
+        skip_retention_hold: bool = True,
     ) -> int:
         """Permanently delete snapshots that have been soft-deleted for specified days.
         
@@ -444,6 +445,7 @@ class SnapshotService:
             db: Database session
             days_old: Delete snapshots soft-deleted more than this many days ago
             user_name: Name of user performing the purge
+            skip_retention_hold: If True, skip snapshots with retention_hold=True
             
         Returns:
             Number of snapshots purged
@@ -452,11 +454,17 @@ class SnapshotService:
         
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_old)
         
-        # Find snapshots to purge
-        snapshots_to_purge = db.query(Snapshot).filter(
+        # Build query
+        query = db.query(Snapshot).filter(
             Snapshot.deleted_at.isnot(None),
             Snapshot.deleted_at < cutoff_date
-        ).all()
+        )
+        
+        # P2-001: Skip retention hold items if requested
+        if skip_retention_hold:
+            query = query.filter(Snapshot.retention_hold == False)
+        
+        snapshots_to_purge = query.all()
         
         purged_count = 0
         for snapshot in snapshots_to_purge:
