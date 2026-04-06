@@ -323,15 +323,31 @@ async def get_executive_report_pro(
     logger.info("Report-Pro request: %s → %s", start_date, end_date)
 
     # --- Data Retrieval ---
-    summary = get_summary(db, start_date, end_date)
-    start_dt = datetime.fromisoformat(summary["range"]["start"])
-    end_dt = datetime.fromisoformat(summary["range"]["end"])
+    start_dt, end_dt, prev_start, prev_end = _parse_range(start_date, end_date)
+    
+    # Get totals
+    api_now = _total_count(db, ApiLog, "timestamp", start_dt, end_dt)
+    cmd_now = _total_count(db, CommandLog, "timestamp", start_dt, end_dt)
+    email_now = _total_count(db, CameraEmailNotificationLog, "sent_at", start_dt, end_dt, success_only=True)
+    api_prev = _total_count(db, ApiLog, "timestamp", prev_start, prev_end)
+    cmd_prev = _total_count(db, CommandLog, "timestamp", prev_start, prev_end)
+    email_prev = _total_count(db, CameraEmailNotificationLog, "sent_at", prev_start, prev_end, success_only=True)
+    
+    # Calculate deltas and health index
+    days_now = (end_dt - start_dt).days + 1
+    days_prev = (prev_end - prev_start).days + 1
+    api_delta = _pct_change(api_now, api_prev, days_now, days_prev)
+    cmd_delta = _pct_change(cmd_now, cmd_prev, days_now, days_prev)
+    email_delta = _pct_change(email_now, email_prev, days_now, days_prev)
+    idx, label, color = _health_index(api_now, api_prev, cmd_now, cmd_prev, email_now, email_prev, days_now=days_now, days_prev=days_prev)
+    
+    totals = {"api": api_now, "command": cmd_now, "email": email_now}
+    deltas = {"api": api_delta, "command": cmd_delta, "email": email_delta}
+    hi = {"value": idx, "label": label, "color": color}
+    previous = {"api": api_prev, "command": cmd_prev, "email": email_prev}
+    
     top_cmd = get_top_commands(db, start_date, end_date, limit=10)
     top_cam = get_top_cameras_by_email(db, start_date, end_date, limit=5)
-
-    totals = summary["totals"]
-    deltas = summary["delta_pct"]
-    hi = summary["health_index"]
 
     def pct_phrase(value: float) -> str:
         """Convert delta% to readable text like 'meningkat 12.3%' or 'menurun 5.6%'."""
@@ -388,7 +404,7 @@ async def get_executive_report_pro(
     elems = []
 
     # --- Header ---
-    logo_path = "/static/icons/logo.png"
+    logo_path = "/app/static/icons/logo.png"
     try:
         elems.append(RLImage(logo_path, width=3 * cm, height=3 * cm))
     except Exception:
@@ -418,9 +434,9 @@ async def get_executive_report_pro(
     # --- KPI Table ---
     kpi_data = [
         ["Metric", "Current", "Previous", "Δ %"],
-        ["API Calls", f"{totals['api']:,}", f"{summary['previous']['api']:,}", f"{deltas['api']:.1f}%"],
-        ["Commands", f"{totals['command']:,}", f"{summary['previous']['command']:,}", f"{deltas['command']:.1f}%"],
-        ["Emails", f"{totals['email']:,}", f"{summary['previous']['email']:,}", f"{deltas['email']:.1f}%"],
+        ["API Calls", f"{totals['api']:,}", f"{previous['api']:,}", f"{deltas['api']:.1f}%"],
+        ["Commands", f"{totals['command']:,}", f"{previous['command']:,}", f"{deltas['command']:.1f}%"],
+        ["Emails", f"{totals['email']:,}", f"{previous['email']:,}", f"{deltas['email']:.1f}%"],
     ]
     kpi_tbl = Table(kpi_data, colWidths=[5 * cm, 3 * cm, 3 * cm, 3 * cm])
     kpi_tbl.setStyle(TableStyle([
