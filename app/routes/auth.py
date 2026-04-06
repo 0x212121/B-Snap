@@ -17,6 +17,7 @@ from app.utils.audit_logger import log_audit
 from app.utils.remember_me import (
     create_remember_token, revoke_token, get_cookie_settings
 )
+from app.utils.online_users import get_online_tracker
 
 # Cookie security settings based on environment
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
@@ -357,6 +358,11 @@ def logout(
     if remember_token:
         revoke_token(db, remember_token)
 
+    # Remove from online users tracking
+    if session_token:
+        tracker = get_online_tracker()
+        tracker.remove_user(session_token)
+    
     request.session.clear()
     response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie("session_token")

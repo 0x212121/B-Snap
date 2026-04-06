@@ -691,6 +691,50 @@ python -m memray run app/main.py
 
 ---
 
+## 👥 Online Users Tracking
+
+Fitur untuk melacak user yang sedang online. Hanya admin yang dapat melihat informasi ini.
+
+### Components
+
+**Backend:**
+- `app/utils/online_users.py` - Thread-safe tracker untuk user online
+- `app/middleware/online_user_tracker.py` - Middleware untuk update activity
+- `app/routes/online_users.py` - API endpoints
+
+**Frontend:**
+- Sticky popup di `templates/base.html` (hanya untuk admin)
+- Auto-refresh setiap 30 detik
+
+### API Endpoints
+
+| Endpoint | Method | Access | Description |
+|----------|--------|--------|-------------|
+| `/api/online-users` | GET | Admin | Get detailed list of online users |
+| `/api/online-users/count` | GET | Admin | Get count only (lightweight) |
+
+### How It Works
+
+1. **Tracking**: Middleware `OnlineUserTrackerMiddleware` memperbarui timestamp setiap request
+2. **Timeout**: User dianggap offline setelah 5 menit tidak ada aktivitas
+3. **Logout**: User dihapus dari tracking saat logout
+4. **Display**: Sticky popup menampilkan jumlah user online dan detail saat diklik
+
+### Usage Example (Backend)
+
+```python
+from app.utils.online_users import get_online_tracker
+
+tracker = get_online_tracker()
+
+# Get online users
+users = tracker.get_online_users()
+count = tracker.get_online_count()
+stats = tracker.get_stats()
+```
+
+---
+
 ## 📖 Resources
 
 - [FastAPI Docs](https://fastapi.tiangolo.com/)
