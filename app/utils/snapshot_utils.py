@@ -150,6 +150,14 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
     db.add(snapshot)
     db.commit()
     db.refresh(snapshot)
+    
+    # === Enforce max snapshot limit per camera ===
+    # Soft-delete oldest snapshots if limit exceeded
+    try:
+        enforce_max_snapshots_per_camera(db, camera.id)
+    except Exception as e:
+        logger.error("[MAX_SNAPSHOT_LIMIT] Error enforcing limit for camera %s: %s", camera.hostname, e)
+        # Don't raise - this shouldn't block snapshot creation
 
     # === update CameraHealth ===
     health = db.query(CameraHealth).filter_by(camera_id=camera.id).first()
@@ -348,3 +356,84 @@ def get_orphaned_snapshots(db: Session, limit: int = None) -> List[Snapshot]:
         query = query.limit(limit)
     
     return query.all()
+
+
+def enforce_max_snapshots_per_camera(db: Session, camera_id: str, max_snapshots: int = None) -> int:
+    """Enforce max snapshot limit per camera by soft-deleting oldest snapshots.
+    
+    This function checks the number of non-deleted snapshots for a camera and
+    soft-deletes the oldest ones if the count exceeds max_screenshot_per_camera.
+    
+    Args:
+        db: Database session
+        camera_id: The camera ID to check
+        max_snapshots: Maximum snapshots allowed (if None, reads from config)
+        
+    Returns:
+        Number of snapshots that were soft-deleted
+    """
+    from app.core.config import get_config
+    
+    # Get max snapshots from config if not provided
+    if max_snapshots is None:
+        try:
+            max_snapshots = int(get_config("max_screenshot_per_camera", "20"))
+        except (ValueError, TypeError):
+            max_snapshots = 20
+    
+    # Ensure minimum of 1 snapshot
+    max_snapshots = max(1, max_snapshots)
+    
+    # Count non-deleted snapshots for this camera
+    snapshot_count = db.query(Snapshot).filter(
+        Snapshot.camera_id == camera_id,
+        Snapshot.deleted_at.is_(None)
+    ).count()
+    
+    # If under limit, nothing to do
+    if snapshot_count <= max_snapshots:
+        return 0
+    
+    # Calculate how many to delete
+    to_delete_count = snapshot_count - max_snapshots
+    
+    # Get oldest snapshots to delete (excluding those with retention hold)
+    # P2-003: Never delete snapshots with retention_hold=True
+    oldest_snapshots = db.query(Snapshot).filter(
+        Snapshot.camera_id == camera_id,
+        Snapshot.deleted_at.is_(None),
+        Snapshot.retention_hold == False
+    ).order_by(Snapshot.timestamp.asc()).limit(to_delete_count).all()
+    
+    deleted_count = 0
+    skipped_retention_hold = 0
+    
+    for snapshot in oldest_snapshots:
+        try:
+            snapshot.soft_delete()
+            deleted_count += 1
+            logger.info(
+                "[MAX_SNAPSHOT_LIMIT] Soft-deleted snapshot %s for camera %s (exceeded limit of %d)",
+                snapshot.id, camera_id, max_snapshots
+            )
+        except Exception as e:
+            logger.error("[MAX_SNAPSHOT_LIMIT] Failed to soft-delete snapshot %s: %s", snapshot.id, e)
+    
+    # Check if we couldn't delete enough due to retention hold
+    if deleted_count < to_delete_count:
+        skipped_retention_hold = to_delete_count - deleted_count
+        logger.warning(
+            "[MAX_SNAPSHOT_LIMIT] Could only delete %d of %d snapshots for camera %s "
+            "(%d skipped due to retention hold)",
+            deleted_count, to_delete_count, camera_id, skipped_retention_hold
+        )
+    
+    if deleted_count > 0:
+        db.commit()
+        logger.info(
+            "[MAX_SNAPSHOT_LIMIT] Enforced limit for camera %s: deleted %d snapshots, "
+            "keeping %d snapshots (max: %d)",
+            camera_id, deleted_count, snapshot_count - deleted_count, max_snapshots
+        )
+    
+    return deleted_count

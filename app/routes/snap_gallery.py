@@ -13,6 +13,7 @@ from app.models.camera_group import CameraGroup
 from app.models.camera import Camera
 from app.models.snapshot import Snapshot
 from app.models.snapshot_log import SnapshotLog
+from app.models.video import Video
 from app.models.user import User
 from app.models.whitelist import WhatsappWhitelist
 from app.routes.auth import admin_access_required, operator_access_required
@@ -842,3 +843,45 @@ async def log_gallery_view(
     )
     
     return JSONResponse({"status": "logged"})
+
+
+@router.get("/admin/trash/stats", response_class=JSONResponse)
+async def get_trash_stats(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required),
+):
+    """Get statistics for trash management (deleted snapshots and videos).
+    
+    Returns:
+        JSON with snapshot_count, video_count, total_snapshot_size_mb, total_video_size_mb
+    """
+    # Count deleted snapshots
+    snapshot_count = db.query(Snapshot).filter(Snapshot.deleted_at.isnot(None)).count()
+    
+    # Count deleted videos
+    video_count = db.query(Video).filter(Video.deleted_at.isnot(None)).count()
+    
+    # Calculate total snapshot size (in bytes, convert to MB)
+    snapshot_size_result = db.query(Snapshot.file_size).filter(
+        Snapshot.deleted_at.isnot(None)
+    ).all()
+    total_snapshot_size_mb = sum(
+        (size[0] or 0) for size in snapshot_size_result
+    ) / (1024 * 1024)
+    
+    # Calculate total video size (in bytes, convert to MB)
+    video_size_result = db.query(Video.file_size).filter(
+        Video.deleted_at.isnot(None)
+    ).all()
+    total_video_size_mb = sum(
+        (size[0] or 0) for size in video_size_result
+    ) / (1024 * 1024)
+    
+    return JSONResponse({
+        "snapshot_count": snapshot_count,
+        "video_count": video_count,
+        "total_snapshot_size_mb": round(total_snapshot_size_mb, 2),
+        "total_video_size_mb": round(total_video_size_mb, 2),
+        "total_size_mb": round(total_snapshot_size_mb + total_video_size_mb, 2),
+    })

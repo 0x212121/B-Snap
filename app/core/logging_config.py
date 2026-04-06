@@ -119,6 +119,19 @@ LOGGING_CONFIG = {
             "propagate": False,
         },
 
+        # === Third-party libraries ===
+        # Zeep (SOAP/ONVIF) - log ke main file agar debug ONVIF tersimpan
+        "zeep": {
+            "handlers": ["main_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "zeep.transports": {
+            "handlers": ["main_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+
         # === Modul lainnya ===
         "healthcheck": {
             "handlers": ["healthcheck_file", "console"],
@@ -229,8 +242,10 @@ def _apply_debug_mode_to_all_loggers(enabled: bool):
     
     # juga tangani logger yang mungkin sudah dibuat tapi tidak di config
     # (misalnya logger dari third-party libraries)
+    # Tapi skip logger sqlalchemy untuk menghindari log noise
+    skip_prefixes = ("sqlalchemy", "alembic")
     for name in logging.root.manager.loggerDict.keys():
-        if name not in LOGGING_CONFIG["loggers"]:
+        if name not in LOGGING_CONFIG["loggers"] and not name.startswith(skip_prefixes):
             lg = logging.getLogger(name)
             # Hanya ubah level, jangan tambahkan handler baru
             lg.setLevel(new_level)

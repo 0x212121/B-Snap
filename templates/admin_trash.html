@@ -344,11 +344,30 @@ function switchTab(tab) {
 
 async function loadStats() {
   try {
-    // This would be a new endpoint, for now we estimate
-    document.getElementById('stat-snapshots').textContent = '...';
-    document.getElementById('stat-videos').textContent = '...';
+    const res = await fetch('/admin/trash/stats');
+    if (!res.ok) throw new Error('Failed to load stats');
+    
+    const data = await res.json();
+    
+    // Update stat cards
+    document.getElementById('stat-snapshots').textContent = data.snapshot_count || 0;
+    document.getElementById('stat-videos').textContent = data.video_count || 0;
+    
+    // Format total size
+    const totalSizeMB = data.total_size_mb || 0;
+    let sizeText;
+    if (totalSizeMB >= 1024) {
+      sizeText = (totalSizeMB / 1024).toFixed(2) + ' GB';
+    } else {
+      sizeText = totalSizeMB.toFixed(2) + ' MB';
+    }
+    document.getElementById('stat-size').textContent = sizeText;
+    
   } catch (err) {
     console.error('Failed to load stats:', err);
+    document.getElementById('stat-snapshots').textContent = '0';
+    document.getElementById('stat-videos').textContent = '0';
+    document.getElementById('stat-size').textContent = '0 MB';
   }
 }
 
@@ -596,6 +615,16 @@ async function purgeSnapshot(id, cameraName) {
     showGlobalConfirm(message, async () => {
       try {
         const res = await fetch(`/admin/snapshots/${id}/purge`, { method: 'DELETE' });
+        
+        // Check if response is JSON
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await res.text();
+          console.error('Non-JSON response:', text.substring(0, 200));
+          if (typeof Toast !== 'undefined') Toast.error('Server error: Invalid response', { title: 'Error' });
+          return;
+        }
+        
         const data = await res.json();
         
         if (res.ok) {
@@ -603,11 +632,11 @@ async function purgeSnapshot(id, cameraName) {
           loadSnapshots(currentPage.snapshots);
           loadStats();
         } else {
-          if (typeof Toast !== 'undefined') Toast.error(data.message || 'Failed to purge', { title: 'Error' });
+          if (typeof Toast !== 'undefined') Toast.error(data.detail || data.message || 'Failed to purge', { title: 'Error' });
         }
       } catch (err) {
         console.error('Purge error:', err);
-        if (typeof Toast !== 'undefined') Toast.error('Network error', { title: 'Error' });
+        if (typeof Toast !== 'undefined') Toast.error('Network error: ' + err.message, { title: 'Error' });
       }
     }, { title: '⚠️ Purge Permanently', confirmText: 'Purge', confirmClasses: 'bg-red-600 hover:bg-red-700' });
   }
@@ -668,17 +697,39 @@ async function executeBulkPurge() {
   try {
     if (includeSnapshots) {
       const res = await fetch(`/admin/snapshots/purge?days_old=${days}`, { method: 'POST' });
-      const data = await res.json();
-      if (res.ok) {
-        if (typeof Toast !== 'undefined') Toast.success(`Purged ${data.purged_count} snapshots`, { title: 'Success' });
+      
+      // Check if response is JSON
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await res.text();
+        console.error('Non-JSON response from snapshots purge:', text.substring(0, 200));
+        if (typeof Toast !== 'undefined') Toast.error('Server error: Invalid response from snapshots purge', { title: 'Error' });
+      } else {
+        const data = await res.json();
+        if (res.ok) {
+          if (typeof Toast !== 'undefined') Toast.success(`Purged ${data.purged_count} snapshots`, { title: 'Success' });
+        } else {
+          if (typeof Toast !== 'undefined') Toast.error(data.detail || data.message || 'Failed to purge snapshots', { title: 'Error' });
+        }
       }
     }
     
     if (includeVideos) {
       const res = await fetch(`/admin/videos/purge?days_old=${days}`, { method: 'POST' });
-      const data = await res.json();
-      if (res.ok) {
-        if (typeof Toast !== 'undefined') Toast.success(`Purged ${data.purged_count} videos`, { title: 'Success' });
+      
+      // Check if response is JSON
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await res.text();
+        console.error('Non-JSON response from videos purge:', text.substring(0, 200));
+        if (typeof Toast !== 'undefined') Toast.error('Server error: Invalid response from videos purge', { title: 'Error' });
+      } else {
+        const data = await res.json();
+        if (res.ok) {
+          if (typeof Toast !== 'undefined') Toast.success(`Purged ${data.purged_count} videos`, { title: 'Success' });
+        } else {
+          if (typeof Toast !== 'undefined') Toast.error(data.detail || data.message || 'Failed to purge videos', { title: 'Error' });
+        }
       }
     }
     
@@ -686,7 +737,7 @@ async function executeBulkPurge() {
     loadStats();
   } catch (err) {
     console.error('Bulk purge error:', err);
-    if (typeof Toast !== 'undefined') Toast.error('Failed to complete purge', { title: 'Error' });
+    if (typeof Toast !== 'undefined') Toast.error('Failed to complete purge: ' + err.message, { title: 'Error' });
   } finally {
     showLoading(false);
   }
@@ -764,6 +815,16 @@ async function purgeVideo(id, cameraName) {
     showGlobalConfirm(message, async () => {
       try {
         const res = await fetch(`/admin/videos/${id}/purge`, { method: 'DELETE' });
+        
+        // Check if response is JSON
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await res.text();
+          console.error('Non-JSON response:', text.substring(0, 200));
+          if (typeof Toast !== 'undefined') Toast.error('Server error: Invalid response', { title: 'Error' });
+          return;
+        }
+        
         const data = await res.json();
         
         if (res.ok) {
@@ -771,11 +832,11 @@ async function purgeVideo(id, cameraName) {
           loadVideos(currentPage.videos);
           loadStats();
         } else {
-          if (typeof Toast !== 'undefined') Toast.error(data.message || 'Failed to purge', { title: 'Error' });
+          if (typeof Toast !== 'undefined') Toast.error(data.detail || data.message || 'Failed to purge', { title: 'Error' });
         }
       } catch (err) {
         console.error('Purge error:', err);
-        if (typeof Toast !== 'undefined') Toast.error('Network error', { title: 'Error' });
+        if (typeof Toast !== 'undefined') Toast.error('Network error: ' + err.message, { title: 'Error' });
       }
     }, { title: '⚠️ Purge Permanently', confirmText: 'Purge', confirmClasses: 'bg-red-600 hover:bg-red-700' });
   }

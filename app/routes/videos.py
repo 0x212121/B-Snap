@@ -291,38 +291,56 @@ def purge_deleted_videos(
         ).count()
     
     purged_count = 0
+    failed_count = 0
     for video in videos_to_purge:
         try:
-            # Delete file
+            # Delete file (if exists - dummy data may not have files)
             if video.file_path:
                 path_parts = video.file_path.replace('\\', '/').split('/')
                 full_file_path = os.path.join(VIDEO_FILESYSTEM_BASE, *path_parts)
                 if os.path.exists(full_file_path):
-                    os.remove(full_file_path)
+                    try:
+                        os.remove(full_file_path)
+                        logger.info("[PURGE] Deleted video file: %s", full_file_path)
+                    except Exception as file_err:
+                        logger.warning("[PURGE] Could not delete video file %s: %s", full_file_path, file_err)
+                else:
+                    logger.info("[PURGE] Video file not found (dummy data): %s", full_file_path)
             
             db.delete(video)
             purged_count += 1
         except Exception as e:
-            logger.error("Failed to purge video %s: %s", video.id, e)
+            failed_count += 1
+            logger.error("[PURGE] Failed to purge video %s: %s", video.id, e)
     
     if purged_count > 0:
-        db.commit()
+        try:
+            db.commit()
+        except Exception as commit_err:
+            db.rollback()
+            logger.error("[PURGE] Failed to commit purge: %s", commit_err)
+            raise HTTPException(status_code=500, detail=f"Failed to commit purge: {str(commit_err)}")
         logger.info("Purged %d soft-deleted videos older than %d days by %s", 
                     purged_count, days_old, request.session.get("user_name"))
     
-    log_audit(
-        db=db,
-        user=request.session.get("user_name", "Unknown"),
-        action="purge_deleted_videos",
-        target="system",
-        ip=request.client.host,
-        extra=f"Purged {purged_count} videos older than {days_old} days"
-    )
+    # Log audit (non-critical)
+    try:
+        log_audit(
+            db=db,
+            user=request.session.get("user_name", "Unknown"),
+            action="purge_deleted_videos",
+            target="system",
+            ip=request.client.host,
+            extra=f"Purged {purged_count} videos older than {days_old} days"
+        )
+    except Exception as audit_err:
+        logger.warning("[PURGE] Audit log failed (non-critical): %s", audit_err)
     
     return JSONResponse(status_code=200, content={
         "status": "success", 
         "message": f"Purged {purged_count} videos" + (f" ({retention_hold_count} skipped due to retention hold)" if retention_hold_count > 0 else ""),
         "purged_count": purged_count,
+        "failed_count": failed_count,
         "retention_hold_skipped": retention_hold_count,
         "days_threshold": days_old
     })
@@ -424,42 +442,65 @@ async def purge_video(
     current_admin: User = Depends(admin_access_required)
 ):
     """Admin only: Permanently delete a soft-deleted video."""
-    from app.routes.cameras import delete_camera_entity
-    
-    video = db.query(Video).filter(Video.id == video_id, Video.deleted_at.isnot(None)).first()
-    if not video:
-        raise HTTPException(status_code=404, detail="Deleted video not found")
+    logger.info("[PURGE] Starting purge for video_id: %s", video_id)
     
     try:
-        # Delete from filesystem
+        video = db.query(Video).filter(Video.id == video_id, Video.deleted_at.isnot(None)).first()
+        if not video:
+            logger.warning("[PURGE] Video not found or not soft-deleted: %s", video_id)
+            raise HTTPException(status_code=404, detail="Deleted video not found")
+        
+        camera_name = video.camera_name or "Unknown"
+        
+        # Delete from filesystem (if file exists)
         if video.file_path:
-            full_path = os.path.join(VIDEO_FILESYSTEM_BASE, video.file_path)
-            if os.path.exists(full_path):
-                os.remove(full_path)
+            try:
+                path_parts = video.file_path.replace('\\', '/').split('/')
+                full_path = os.path.join(VIDEO_FILESYSTEM_BASE, *path_parts)
+                if os.path.exists(full_path):
+                    os.remove(full_path)
+                    logger.info("[PURGE] Deleted video file: %s", full_path)
+                else:
+                    logger.info("[PURGE] Video file not found (dummy data): %s", full_path)
+            except Exception as file_err:
+                logger.warning("[PURGE] Could not delete video file: %s", file_err)
+                # Continue to delete DB record even if file delete fails
         
         # Delete from database
-        db.delete(video)
-        db.commit()
+        try:
+            db.delete(video)
+            db.commit()
+            logger.info("[PURGE] Deleted video record from DB: %s", video_id)
+        except Exception as db_err:
+            db.rollback()
+            logger.error("[PURGE] Failed to delete video from DB: %s", db_err)
+            raise HTTPException(status_code=500, detail=f"Database error: {str(db_err)}")
         
-        log_audit(
-            db=db,
-            user=request.session.get("user_name", "Unknown"),
-            action="purge_video",
-            target=video.camera_name,
-            ip=request.client.host,
-            extra=f"Permanently deleted video {video_id}"
-        )
+        # Log audit
+        try:
+            log_audit(
+                db=db,
+                user=request.session.get("user_name", "Unknown"),
+                action="purge_video",
+                target=camera_name,
+                ip=request.client.host,
+                extra=f"Permanently deleted video {video_id}"
+            )
+        except Exception as audit_err:
+            logger.warning("[PURGE] Audit log failed (non-critical): %s", audit_err)
         
         return JSONResponse(
             status_code=200,
             content={"status": "success", "message": "Video permanently deleted"}
         )
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        db.rollback()
-        logger.error("Failed to purge video %s: %s", video_id, e)
+        logger.exception("[PURGE] Unexpected error purging video %s: %s", video_id, e)
         raise HTTPException(
             status_code=500,
-            detail="Failed to purge video"
+            detail=f"Internal server error: {str(e)}"
         )
 
 
