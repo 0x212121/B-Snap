@@ -35,7 +35,7 @@ import app.models  # noqa: F401 - imports all models via __init__.py
 from app.routes import (
     admin, auth, audit, audit_log, cameras, camera_groups, config, dev_docs, docs, health, jobs, logs, maps,
     nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
-    user_management, videos, whitelist, group_recipients, email_logs, wa_webhook,
+    user_management, user_profile, videos, whitelist, group_recipients, email_logs, wa_webhook,
     notifications, toast_demo, email_templates
 )
 from app.routes import insights
@@ -286,6 +286,7 @@ app.include_router(ping.router)
 app.include_router(resolve_ip.router)
 app.include_router(maps.router)
 app.include_router(user_management.router)
+app.include_router(user_profile.router)
 app.include_router(logs.router)
 app.include_router(nvrs.router)
 app.include_router(snap_gallery.router)

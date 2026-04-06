@@ -488,6 +488,105 @@ function themedSwal(options = {}) {
 
 ---
 
+## 🍞 Toast Notifications (Toast.js)
+
+Project menggunakan **Toast.js** (via `static/js/toast.js`) untuk menampilkan notifikasi non-blocking. Toast digunakan untuk feedback setelah operasi AJAX/CRUD.
+
+### Setup
+
+Toast.js sudah tersedia global di `base.html`:
+
+```javascript
+// Success toast
+Toast.success('Operation completed', { title: 'Success', duration: 3000 });
+
+// Error toast
+Toast.error('Something went wrong', { title: 'Error', duration: 5000 });
+
+// Info toast
+Toast.info('Please wait...', { title: 'Info' });
+
+// Warning toast
+Toast.warning('Check your input', { title: 'Warning' });
+```
+
+### AJAX Form Submission Best Practice
+
+Ketika membuat form dengan AJAX submission, **PENTING** untuk mengirim header `Accept: application/json` agar backend mengembalikan JSON response, bukan HTML page.
+
+**❌ INCORRECT - Will cause "Unexpected token '<'" error:**
+```javascript
+const response = await fetch('/profile/change-password', {
+    method: 'POST',
+    body: formData  // Missing Accept header!
+});
+const result = await response.json();  // Error: HTML returned instead of JSON
+```
+
+**✅ CORRECT:**
+```javascript
+const response = await fetch('/profile/change-password', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json' },  // Required!
+    body: formData
+});
+const result = await response.json();  // Works: JSON returned
+```
+
+### Backend Response Format
+
+Backend menggunakan header `Accept` untuk mendeteksi AJAX requests:
+
+```python
+@router.post("/some-endpoint")
+async def some_endpoint(request: Request, ...):
+    # Check if request wants JSON (AJAX)
+    if request.headers.get("Accept") == "application/json":
+        return JSONResponse({
+            "status": "success",
+            "message": "Operation completed"
+        })
+    
+    # Otherwise return HTML page (traditional form submission)
+    return templates.TemplateResponse("page.html", {...})
+```
+
+### Complete AJAX Form Example
+
+```javascript
+async function submitForm(formData) {
+    try {
+        const response = await fetch('/api/endpoint', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json' },
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.status === 'success') {
+            Toast.success(result.message, { title: 'Success' });
+            // Update UI or refresh data
+        } else {
+            Toast.error(result.message || 'Operation failed', { title: 'Error' });
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        Toast.error('Network error. Please try again.', { title: 'Error' });
+    }
+}
+```
+
+### Common Toast Error Messages
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `SyntaxError: Unexpected token '<'` | Server returned HTML instead of JSON | Add `headers: { 'Accept': 'application/json' }` to fetch |
+| `Network error` | CORS issue or server unreachable | Check network connection and server status |
+| Toast not showing | Toast.js not loaded | Check if `toast.js` is included in base.html |
+
+---
+
 ## 📧 Notification System - Important Notes
 
 ### Incident Time Accuracy (Critical Fix)

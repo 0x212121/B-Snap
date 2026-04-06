@@ -482,7 +482,8 @@ async def admin_access_required(
 
 @router.get("/change-password")
 async def change_password_page(request: Request, current_user: User = Depends(get_current_user)):
-    return templates.TemplateResponse("change_password.html", {"request": request})
+    """Redirect to new profile page."""
+    return RedirectResponse(url="/profile", status_code=status.HTTP_302_FOUND)
 
 
 @router.post("/change-password")
@@ -494,22 +495,36 @@ async def change_password(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """Legacy endpoint - redirects to profile page with error/success message."""
+    from urllib.parse import urlencode
+    
     if not verify_password(current_password, current_user.password):
-        return templates.TemplateResponse("change_password.html", {
-            "request": request,
-            "error": "Incorrect current password"
-        })
+        params = urlencode({"error": "Incorrect current password", "tab": "password"})
+        return RedirectResponse(url=f"/profile?{params}", status_code=status.HTTP_302_FOUND)
 
     if new_password != confirm_password:
-        return templates.TemplateResponse("change_password.html", {
-            "request": request,
-            "error": "New passwords do not match"
-        })
+        params = urlencode({"error": "New passwords do not match", "tab": "password"})
+        return RedirectResponse(url=f"/profile?{params}", status_code=status.HTTP_302_FOUND)
+
+    if len(new_password) < 8:
+        params = urlencode({"error": "Password must be at least 8 characters", "tab": "password"})
+        return RedirectResponse(url=f"/profile?{params}", status_code=status.HTTP_302_FOUND)
 
     current_user.password = get_password_hash(new_password)
     db.commit()
+    
+    # Log the action
+    log_audit(
+        db=db,
+        user=current_user.username,
+        action="password_changed",
+        target=f"user:{current_user.username}",
+        ip=request.client.host if request.client else "unknown",
+        extra=""
+    )
 
-    return RedirectResponse(url="/", status_code=302)
+    params = urlencode({"success": "Password changed successfully", "tab": "password"})
+    return RedirectResponse(url=f"/profile?{params}", status_code=status.HTTP_302_FOUND)
 
 
 def user_access_required_optional(
