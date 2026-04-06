@@ -275,7 +275,9 @@ async def delete_snapshot(
 
 @router.get("/snap_gallery")
 def show_snapshots(request: Request, db: Session = Depends(get_db), camera: str = "", current_operator: User = Depends(operator_access_required)):
-    group_id = request.session.get("user_groupid")
+    # FIX: Always get fresh group_id from database to handle group changes without relogin
+    user = db.query(User).filter(User.id == request.session.get("user_id")).first()
+    group_id = user.group_id if user else request.session.get("user_groupid")
     # group_id can be None - meaning user has access to all groups
     
     # --- CHANGE 1: Get camera list for dropdown from snapshots ---
@@ -322,7 +324,9 @@ async def get_gallery_data(
     offset: int = Query(0),
     limit: int = Query(15),
 ):
-    group_id = request.session.get("user_groupid")
+    # FIX: Always get fresh group_id from database to handle group changes without relogin
+    user = db.query(User).filter(User.id == request.session.get("user_id")).first()
+    group_id = user.group_id if user else request.session.get("user_groupid")
     # group_id can be None (access to all cameras) or a specific group ID
     # Check if user is authenticated by checking user_id in session
     if not request.session.get("user_id"):

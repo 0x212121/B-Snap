@@ -100,7 +100,9 @@ def show_videos(
     camera: str = "",
     current_operator: User = Depends(operator_access_required)
 ):
-    group_id = request.session.get("user_groupid")
+    # FIX: Always get fresh group_id from database to handle group changes without relogin
+    user = db.query(User).filter(User.id == request.session.get("user_id")).first()
+    group_id = user.group_id if user else request.session.get("user_groupid")
     # group_id can be None - meaning user has access to all groups
     
     # If group_id is None, user has access to all cameras
@@ -133,7 +135,9 @@ async def get_video_gallery_data(
     db: Session = Depends(get_db),
     current_operator: User = Depends(operator_access_required)
 ):
-    group_id = request.session.get("user_groupid")
+    # FIX: Always get fresh group_id from database to handle group changes without relogin
+    user = db.query(User).filter(User.id == request.session.get("user_id")).first()
+    group_id = user.group_id if user else request.session.get("user_groupid")
     # group_id can be None (access to all cameras) or a specific group ID
     # Check if user is authenticated by checking user_id in session
     if not request.session.get("user_id"):

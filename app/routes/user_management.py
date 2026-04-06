@@ -277,9 +277,10 @@ async def api_update_user(
         db.commit()
         db.refresh(user)
 
-        # Update session if updating own role
+        # Update session if updating own role or group
         if user.id == request.session.get("user_id"):
             request.session["user_role"] = user.role
+            request.session["user_groupid"] = user.group_id
 
         if changes:
             log_audit(
@@ -583,6 +584,7 @@ async def update_user(
 
         if user_to_update.id == request.session.get("user_id"):
             request.session["user_role"] = role
+            request.session["user_groupid"] = group_id
 
         changes = []
         if before_details["role"] != after_details["role"]:
