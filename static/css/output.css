@@ -1336,10 +1336,6 @@ select {
   width: 0.5rem;
 }
 
-.w-2\.5 {
-  width: 0.625rem;
-}
-
 .w-2\/4 {
   width: 50%;
 }
@@ -3043,6 +3039,11 @@ select {
 .text-blue-900 {
   --tw-text-opacity: 1;
   color: rgb(30 58 138 / var(--tw-text-opacity));
+}
+
+.text-emerald-500 {
+  --tw-text-opacity: 1;
+  color: rgb(16 185 129 / var(--tw-text-opacity));
 }
 
 .text-emerald-600 {

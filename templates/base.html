@@ -328,7 +328,7 @@ class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50"
       
       <!-- User Items -->
       <template x-for="user in users" :key="user.user_id">
-        <div class="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+        <div class="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition group">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500">
@@ -339,9 +339,22 @@ class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50"
               </svg>
               <span class="font-medium text-gray-900 dark:text-white text-sm" x-text="user.username"></span>
             </div>
-            <span class="text-xs px-2 py-0.5 rounded-full capitalize"
-                  :class="getRoleBadgeClass(user.role)"
-                  x-text="user.role"></span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs px-2 py-0.5 rounded-full capitalize"
+                    :class="getRoleBadgeClass(user.role)"
+                    x-text="user.role"></span>
+              <!-- Revoke Button -->
+              <button @click="revokeUser(user)"
+                      class="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all"
+                      title="Revoke session">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M10 14l4 -4" />
+                  <path d="M14 10l4 4" />
+                  <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                </svg>
+              </button>
+            </div>
           </div>
           <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
             <span x-text="formatTime(user.last_activity)"></span>
@@ -431,6 +444,46 @@ function onlineUsersPopup() {
       if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
       if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
       return date.toLocaleDateString();
+    },
+    
+    revokeUser(user) {
+      const self = this;
+      
+      showGlobalConfirm(
+        `Are you sure you want to revoke the session for "${user.username}"? This will immediately log them out.`,
+        function() {
+          // Execute revoke
+          self.executeRevoke(user);
+        },
+        {
+          title: 'Revoke User Session',
+          confirmText: 'Revoke',
+          confirmButtonColor: '#dc2626',
+          icon: 'warning'
+        }
+      );
+    },
+    
+    async executeRevoke(user) {
+      try {
+        const response = await fetch(`/api/online-users/${user.user_id}/revoke`, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.status === 'success') {
+          Toast.success(result.message, { title: 'Success' });
+          // Refresh the list
+          this.fetchData();
+        } else {
+          Toast.error(result.message || 'Failed to revoke session', { title: 'Error' });
+        }
+      } catch (error) {
+        console.error('Failed to revoke user:', error);
+        Toast.error('Network error. Please try again.', { title: 'Error' });
+      }
     }
   };
 }
