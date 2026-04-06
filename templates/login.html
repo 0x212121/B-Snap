@@ -121,18 +121,12 @@
         const spinner = submitButton.querySelector('.spinner');
         
         loginForm.addEventListener('submit', function (e) {
-            // To see the loading state, you can prevent immediate submission.
-            // In a real app, you would handle this with fetch/AJAX and remove this line.
-            e.preventDefault(); 
-            
-            // Disable button and show spinner
+            // FIX: Don't use e.preventDefault() + setTimeout as it breaks in Brave with DevTools
+            // Instead, show loading state and let form submit naturally
             submitButton.disabled = true;
             buttonText.textContent = 'Signing In...';
             spinner.classList.remove('hidden');
-            
-            setTimeout(() => {
-                loginForm.submit(); 
-            }, 500); // 0.5 second delay
+            // Form will submit normally after this handler completes
         });
     });
 </script>

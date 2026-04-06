@@ -290,24 +290,35 @@
         // === EVENTS ===
         applyFilter.addEventListener("click", renderAll);
         downloadReport.addEventListener("click", async () => {
-          const s = startDate.value, e = endDate.value;
-          const apiImg = chartApiCommand.toDataURL("image/png");
-          const emailImg = chartEmail.toDataURL("image/png");
-          const fd = new FormData();
-          fd.append("start_date", s);
-          fd.append("end_date", e);
-          fd.append("api_chart", apiImg);
-          fd.append("email_chart", emailImg);
-          const r = await fetch("/log/stats/report-pro", { method: "POST", body: fd });
-          if (!r.ok) {
-            themedSwal({icon: 'error', title: 'Report Failed', text: 'Failed to generate report'});
-            return;
+          try {
+            const s = startDate.value, e = endDate.value;
+            const apiImg = chartApiCommand.toDataURL("image/png");
+            const emailImg = chartEmail.toDataURL("image/png");
+            const fd = new FormData();
+            fd.append("start_date", s);
+            fd.append("end_date", e);
+            fd.append("api_chart", apiImg);
+            fd.append("email_chart", emailImg);
+            
+            console.log('Sending POST request to /log/stats/report-pro');
+            const r = await fetch("/log/stats/report-pro", { method: "POST", body: fd, credentials: 'same-origin' });
+            console.log('Response status:', r.status, r.statusText);
+            
+            if (!r.ok) {
+              const errorText = await r.text();
+              console.error('Error response:', errorText);
+              themedSwal({icon: 'error', title: 'Report Failed', text: `Failed to generate report: ${r.status} ${r.statusText}`});
+              return;
+            }
+            const blob = await r.blob();
+            const url = URL.createObjectURL(blob);
+            const a = Object.assign(document.createElement("a"), { href: url, download: `b-snap-report-${s}_to_${e}.pdf` });
+            document.body.append(a);
+            a.click(); a.remove(); URL.revokeObjectURL(url);
+          } catch (err) {
+            console.error('Download report error:', err);
+            themedSwal({icon: 'error', title: 'Error', text: 'An error occurred while generating report: ' + err.message});
           }
-          const blob = await r.blob();
-          const url = URL.createObjectURL(blob);
-          const a = Object.assign(document.createElement("a"), { href: url, download: `b-snap-report-${s}_to_${e}.pdf` });
-          document.body.append(a);
-          a.click(); a.remove(); URL.revokeObjectURL(url);
         });
         
         renderAll();

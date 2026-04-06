@@ -19,6 +19,11 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Image as RLImage
 from reportlab.lib.utils import ImageReader
+import os
+
+# Get project root directory for resolving static files
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+LOGO_PATH = os.path.join(PROJECT_ROOT, "static", "icons", "logo.png")
 
 router = APIRouter(tags=["Observability"])
 
@@ -404,9 +409,10 @@ async def get_executive_report_pro(
     elems = []
 
     # --- Header ---
-    logo_path = "/app/static/icons/logo.png"
+    logo_path = LOGO_PATH if os.path.exists(LOGO_PATH) else "/app/static/icons/logo.png"
     try:
-        elems.append(RLImage(logo_path, width=3 * cm, height=3 * cm))
+        if os.path.exists(logo_path):
+            elems.append(RLImage(logo_path, width=3 * cm, height=3 * cm))
     except Exception:
         pass
     report_title = f"B-SNAP Executive Report"
