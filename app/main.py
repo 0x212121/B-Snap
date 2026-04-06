@@ -152,6 +152,20 @@ async def lifespan(app: FastAPI):
     try:
         seed_config(db)
         logger.info("Database seeded with initial configuration.")
+        
+        # Load debug mode from database and apply to logging
+        try:
+            from app.models.config import Configuration
+            from app.core.logging_config import set_debug_mode
+            
+            debug_config = db.query(Configuration).filter_by(key="debug_mode").first()
+            if debug_config and debug_config.value == "1":
+                set_debug_mode(True)
+                logger.info("Debug mode loaded from database: ENABLED")
+            else:
+                logger.info("Debug mode loaded from database: DISABLED")
+        except Exception as e:
+            logger.warning(f"Could not load debug mode from database: {e}")
     except Exception as e:
         logger.error(f"Database seeding failed: {e}")
         # Don't raise - allow app to start

@@ -242,6 +242,11 @@ async def config_save(
     
     set_debug_mode(debug_mode)
     
+    # Sanitize loggers to ensure no DEBUG handlers are left behind
+    # This handles cases where uvicorn/gunicorn might have added new handlers
+    from app.core.logging_config import sanitize_loggers
+    sanitize_loggers()
+    
     # Note: Toast notification is handled by frontend
 
     return JSONResponse(status_code=200, content={"message": "Configuration saved successfully."})

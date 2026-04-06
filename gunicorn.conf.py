@@ -45,8 +45,49 @@ def post_fork(server, worker):
     # Re-apply dictConfig di setiap worker (aman untuk multi-process)
     dictConfig(LOGGING_CONFIG)
 
-    # Optional: aktifkan debug level untuk logger aplikasi via ENV
+    # Coba aktifkan debug mode dari database atau environment variable
+    debug_enabled = False
+    
+    # 1. Cek environment variable dulu
     if os.getenv("APP_DEBUG", "0").lower() in ("1", "true", "yes"):
+        debug_enabled = True
+    
+    # 2. Coba baca dari database jika belum enabled via ENV
+    if not debug_enabled:
+        try:
+            # Delay import agar tidak crash saat startup
+            import sys
+            from pathlib import Path
+            ROOT = Path(__file__).resolve().parent
+            if str(ROOT) not in sys.path:
+                sys.path.insert(0, str(ROOT))
+            
+            from sqlalchemy import create_engine
+            from sqlalchemy.orm import sessionmaker
+            from app.models.config import Configuration
+            import app.db.database as db_module
+            
+            # Gunakan database URL dari environment atau default
+            db_url = os.getenv("DATABASE_URL", "sqlite:///./data.db")
+            engine = create_engine(db_url, pool_pre_ping=True)
+            Session = sessionmaker(bind=engine)
+            session = Session()
+            
+            try:
+                debug_config = session.query(Configuration).filter_by(key="debug_mode").first()
+                if debug_config and debug_config.value == "1":
+                    debug_enabled = True
+            finally:
+                session.close()
+                engine.dispose()
+                
+        except Exception:
+            # Jika gagal baca dari database, abaikan saja
+            pass
+    
+    # Terapkan debug mode jika diaktifkan
+    if debug_enabled:
         set_debug_mode(True)
-
+        server.log.info("[Worker %s] Debug mode ENABLED", worker.pid)
+    
     server.log.info("[Worker %s] Logging initialized via logconfig_dict", worker.pid)
