@@ -6,7 +6,7 @@ import logging
 import os
 import uuid
 import html
-from datetime import datetime
+from datetime import datetime, timezone
 from io import StringIO
 from typing import Optional, Union
 
@@ -436,7 +436,7 @@ async def edit_camera_submit(
             health = db.query(CameraHealth).filter(CameraHealth.camera_id == cam.id).first()
             if health:
                 health.status = "Offline"
-                health.checked = datetime.now()
+                health.checked = datetime.now(timezone.utc)
                 db.commit()
                 logger.info("Health record for camera '%s' set to Offline due to deactivation.", cam.hostname)
         

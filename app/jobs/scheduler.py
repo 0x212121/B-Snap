@@ -12,6 +12,7 @@ from app.models.camera import Camera
 from app.models.health import CameraHealth
 from app.models.email_retry_queue import EmailRetryQueue
 from app.models.log import ApiLog, CommandLog
+from app.models.config import Configuration
 from app.snapshot import load_active_cameras
 from app.utils.email_notifier import (
     send_recovery_alert,  # For tampered -> normal transitions
@@ -37,6 +38,7 @@ from ping3 import ping
 import psutil
 import os
 from time import monotonic, sleep
+import pytz
 
 # --- Scheduler Init with Database Job Store ---
 # Use SQLAlchemyJobStore so jobs are persisted and accessible from web app
@@ -815,7 +817,11 @@ def delete_old_camera_stats():
     db: Session = SessionLocal()
     try:
         retention_days = int(get_config("retention_camera_stats_days", 90))
-        cutoff_date = date.today() - timedelta(days=retention_days)
+        # Use configured timezone for date calculation
+        cfg = db.query(Configuration).filter_by(key="timezone").first()
+        tz_name = cfg.value if cfg else "UTC"
+        tz = pytz.timezone(tz_name)
+        cutoff_date = datetime.now(tz).date() - timedelta(days=retention_days)
         deleted_rows = (
             db.query(CameraDailyStats)
             .filter(CameraDailyStats.date < cutoff_date)
@@ -946,7 +952,6 @@ def process_email_retry_queue():
             if task.type == "tamper":
                 # BUG FIX: Use task.created_at as incident_time for retry
                 # This preserves the original detection time from first attempt
-                from datetime import timezone
                 incident_time = task.created_at
                 if incident_time.tzinfo is None:
                     incident_time = incident_time.replace(tzinfo=timezone.utc)

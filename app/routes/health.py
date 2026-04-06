@@ -219,7 +219,10 @@ async def health_history(
     page: int = Query(1, ge=1)
 ):
     ITEMS_PER_PAGE = get_config("items_per_page", default=25)
-    thirty_days_ago = date.today() - timedelta(days=30)
+    # Use configured timezone for date calculation
+    tz_name = get_current_timezone(db)
+    tz = pytz.timezone(tz_name)
+    thirty_days_ago = datetime.now(tz).date() - timedelta(days=30)
 
     # Build subquery untuk aggregate stats
     stats_subq = (

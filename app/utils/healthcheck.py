@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 import time
+import pytz
 from sqlalchemy import and_, desc
 from sqlalchemy.orm import Session
 from app.models.health import CameraHealth
@@ -8,6 +9,7 @@ from app.models.camera import Camera as DBCamera
 from app.models.health_check_status import HealthCheckStatus
 from app.models.camera_daily_stats import CameraDailyStats
 from app.models.camera_status_change_log import CameraStatusChangeLog
+from app.models.config import Configuration
 from app.db.database import SessionLocal
 from ping3 import ping, errors
 from app.core.logging_config import setup_logging
@@ -73,6 +75,12 @@ def log_status_change(db: Session, camera_id: str, prev_status: str, new_status:
     db.add(new_log)
 
 
+def _get_configured_timezone(db: Session):
+    """Get timezone from database configuration."""
+    cfg = db.query(Configuration).filter_by(key="timezone").first()
+    return cfg.value if cfg else "UTC"
+
+
 def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[str, int | None]:
     device_id = device_info["id"]
     device_name = device_info["name"]
@@ -81,6 +89,11 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
 
     is_online, latency_ms = ping_device(device_ip)
     now = datetime.now(timezone.utc)
+    
+    # Get configured timezone for date calculations
+    tz_name = _get_configured_timezone(db)
+    tz = pytz.timezone(tz_name)
+    today_local = datetime.now(tz).date()
 
     # Query by camera_id or nvr_id, not by health record id
     if device_type == 'Camera':
@@ -113,15 +126,14 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
         delta_seconds = max(0, delta_seconds)
 
         if delta_seconds > 0:
-            today = now.date()
             daily_stat = db.query(CameraDailyStats).filter(
                 CameraDailyStats.camera_id == device_id,
-                CameraDailyStats.date == today
+                CameraDailyStats.date == today_local
             ).first()
 
             if not daily_stat:
                 daily_stat = CameraDailyStats(
-                    camera_id=device_id, camera_name=device_name, date=today,
+                    camera_id=device_id, camera_name=device_name, date=today_local,
                     total_uptime_seconds=0, total_downtime_seconds=0
                 )
                 db.add(daily_stat)

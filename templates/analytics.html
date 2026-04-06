@@ -320,18 +320,38 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
+// Server timezone from backend
+const SERVER_TIMEZONE = "{{ server_timezone }}";
+
 document.addEventListener("DOMContentLoaded", () => {
   // ==================== INSIGHTS/OVERVIEW TAB ====================
   let chart1, chart2;
   
-  // Initial date range
+  // Initial date range using server timezone
+  const now = new Date();
+  // Format date to YYYY-MM-DD using server's timezone offset
+  const fmt = (d) => {
+    const tzOffset = d.getTimezoneOffset() * 60000; // offset in milliseconds
+    const localISOTime = (new Date(d - tzOffset)).toISOString().slice(0, 10);
+    return localISOTime;
+  };
+  // Use Intl.DateTimeFormat to format date in server timezone
+  const fmtServerTZ = (d) => {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: SERVER_TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(d);
+  };
+  
   const today = new Date();
   const prior = new Date();
   prior.setDate(today.getDate() - 30);
-  const fmt = d => d.toISOString().split("T")[0];
+  
   if (document.getElementById('startDate')) {
-    document.getElementById('startDate').value = fmt(prior);
-    document.getElementById('endDate').value = fmt(today);
+    document.getElementById('startDate').value = fmtServerTZ(prior);
+    document.getElementById('endDate').value = fmtServerTZ(today);
   }
   
   async function getJSON(url) {

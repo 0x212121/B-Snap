@@ -8,7 +8,9 @@ from app.db.database import get_db
 from app.models.log import ApiLog, CommandLog
 from app.models.camera_email_notification_log import CameraEmailNotificationLog
 from app.utils.template_helper import templates
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import pytz
+from app.utils.timezone_helper import get_current_timezone
 from io import BytesIO
 
 # --- ReportLab for PDF ---
@@ -32,13 +34,16 @@ logger = logging.getLogger("app.insights")
 
 
 # --------- Helpers ---------
-def _local_tz():
-    # Ambil timezone lokal (host) dari sistem, timezone-aware
+def _local_tz(db: Session = None):
+    # Ambil timezone dari config database, fallback ke sistem
+    if db:
+        tz_name = get_current_timezone(db)
+        return pytz.timezone(tz_name)
     return datetime.now().astimezone().tzinfo
 
 
-def _parse_range(start_date: str | None, end_date: str | None):
-    tz = _local_tz()
+def _parse_range(start_date: str | None, end_date: str | None, db: Session = None):
+    tz = _local_tz(db)
     now = datetime.now(tz)
 
     if not start_date or not end_date:
@@ -168,7 +173,7 @@ def get_daily_stats(
     end_date: str | None = Query(None),
 ):
     """Daily aggregated counts for API, Command, and Email (date-range aware)."""
-    start_dt, end_dt, _, _ = _parse_range(start_date, end_date)
+    start_dt, end_dt, _, _ = _parse_range(start_date, end_date, db)
 
     api = _daily_counts(db, ApiLog, "timestamp", start_dt, end_dt)
     cmd = _daily_counts(db, CommandLog, "timestamp", start_dt, end_dt)
@@ -188,7 +193,7 @@ def get_top_commands(
     limit: int = Query(10, ge=1, le=50),
 ):
     """Top-N most executed commands (date-range aware)."""
-    start_dt, end_dt, _, _ = _parse_range(start_date, end_date)
+    start_dt, end_dt, _, _ = _parse_range(start_date, end_date, db)
 
     results = (
         db.query(
@@ -214,7 +219,7 @@ def get_top_cameras_by_email(
     limit: int = Query(5, ge=1, le=50),
 ):
     """Top-N cameras by email notifications sent (date-range aware)."""
-    start_dt, end_dt, _, _ = _parse_range(start_date, end_date)
+    start_dt, end_dt, _, _ = _parse_range(start_date, end_date, db)
 
     rows = (
         db.query(
@@ -245,7 +250,7 @@ def get_summary(
     """KPI summary + delta vs previous period + health index."""
     try:
         logger.info("get_summary called: start_date=%s end_date=%s", start_date, end_date)
-        start_dt, end_dt, prev_start, prev_end = _parse_range(start_date, end_date)
+        start_dt, end_dt, prev_start, prev_end = _parse_range(start_date, end_date, db)
         logger.debug("Parsed ranges: start=%s end=%s prev_start=%s prev_end=%s",
                      start_dt.isoformat(), end_dt.isoformat(), prev_start.isoformat(), prev_end.isoformat())
 
@@ -328,7 +333,7 @@ async def get_executive_report_pro(
     logger.info("Report-Pro request: %s → %s", start_date, end_date)
 
     # --- Data Retrieval ---
-    start_dt, end_dt, prev_start, prev_end = _parse_range(start_date, end_date)
+    start_dt, end_dt, prev_start, prev_end = _parse_range(start_date, end_date, db)
     
     # Get totals
     api_now = _total_count(db, ApiLog, "timestamp", start_dt, end_dt)

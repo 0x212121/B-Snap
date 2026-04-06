@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from email.mime.application import MIMEApplication
 import os
 import smtplib
@@ -196,7 +196,7 @@ def _send_email_with_image(
 
     # attach snapshot sebagai file (bukan inline)
     if image_path and os.path.exists(image_path):
-        ts_str = snapshot_time.strftime("%Y%m%d-%H%M%Z") if snapshot_time else datetime.now().strftime("%Y%m%d-%H%M%Z")
+        ts_str = snapshot_time.strftime("%Y%m%d-%H%M%Z") if snapshot_time else datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%Z")
         snapshot_file_name = f"B-Snap_{cam_group if cam_group else 'NoGroup'}_{cam_hostname}_LastSnapshot_{ts_str}.jpg"
         
         with open(image_path, "rb") as f:

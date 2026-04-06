@@ -1,6 +1,7 @@
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Query, Request, Depends
+import pytz
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import not_, and_
@@ -12,7 +13,7 @@ from app.models.snapshot_log import SnapshotLog
 from app.models.user import User
 from app.models.task_timing import TaskTiming
 from app.routes.auth import admin_access_required
-from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
+from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz, get_current_timezone
 from app.utils.template_helper import templates
 import logging
 
@@ -30,8 +31,10 @@ async def get_analytics(
     current_admin: User = Depends(admin_access_required) 
 ):
     """Unified Analytics Dashboard - combines Statistics and Insights."""
-    # Calculate date range
-    now = datetime.now(timezone.utc).astimezone()
+    # Calculate date range using user's configured timezone
+    tz_name = get_current_timezone(db)
+    tz = pytz.timezone(tz_name)
+    now = datetime.now(tz)
     end_date = now.date()
     start_date = end_date - timedelta(days=days)
     
@@ -112,6 +115,7 @@ async def get_analytics(
         "no_data_cameras": cameras_without_data,
         "total_cameras_without_data": len(cameras_without_data),
         "timing_logs": timing_logs,
+        "server_timezone": get_current_timezone(db),
     }
 
     return templates.TemplateResponse("analytics.html", context)
@@ -232,8 +236,10 @@ async def get_camera_stats_data(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    # Gunakan timezone-aware date
-    now = datetime.now(timezone.utc).astimezone()
+    # Gunakan timezone-aware date sesuai config user
+    tz_name = get_current_timezone(db)
+    tz = pytz.timezone(tz_name)
+    now = datetime.now(tz)
     end_date = now.date()
     start_date = end_date - timedelta(days=days)
 
@@ -305,8 +311,10 @@ async def get_no_data_cameras(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    # Timezone-aware date
-    now = datetime.now(timezone.utc).astimezone()
+    # Timezone-aware date sesuai config user
+    tz_name = get_current_timezone(db)
+    tz = pytz.timezone(tz_name)
+    now = datetime.now(tz)
     end_date = now.date()
     start_date = end_date - timedelta(days=days)
 

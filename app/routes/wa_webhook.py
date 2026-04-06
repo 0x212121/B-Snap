@@ -4,7 +4,9 @@ Handles incoming messages from GoWA webhook and responds to commands.
 """
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import pytz
+from app.utils.timezone_helper import get_current_timezone
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from typing import Optional
@@ -126,8 +128,10 @@ Type any command to get started!"""
                 .count()
             )
             
-            # Today's snapshots
-            today = datetime.now().date()
+            # Today's snapshots (using user's configured timezone)
+            tz_name = get_current_timezone(self.db)
+            tz = pytz.timezone(tz_name)
+            today = datetime.now(tz).date()
             today_stats = (
                 self.db.query(CameraDailyStats)
                 .filter(CameraDailyStats.date == today)
@@ -143,7 +147,7 @@ Type any command to get started!"""
 ⚠️ Issues: {unhealthy} camera(s)
 📸 Today's Snapshots: {total_snapshots:,}
 
-_Last updated: {datetime.now().strftime('%H:%M:%S')}_"""
+_Last updated: {datetime.now(tz).strftime('%H:%M:%S')}_"""
             
         except Exception as e:
             logger.error(f"Error getting status: {e}")
@@ -241,8 +245,10 @@ _Snapshot feature coming soon!_"""
     def _cmd_report(self, sender: str, args: list) -> str:
         """Daily report command."""
         try:
-            # Get yesterday's stats
-            yesterday = datetime.now().date() - timedelta(days=1)
+            # Get yesterday's stats (using user's configured timezone)
+            tz_name = get_current_timezone(self.db)
+            tz = pytz.timezone(tz_name)
+            yesterday = datetime.now(tz).date() - timedelta(days=1)
             stats = (
                 self.db.query(CameraDailyStats)
                 .filter(CameraDailyStats.date == yesterday)

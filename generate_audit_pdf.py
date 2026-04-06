@@ -5,7 +5,7 @@ Converts the markdown audit report to a professionally formatted PDF
 """
 
 from fpdf import FPDF
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 
 class AuditReportPDF(FPDF):
@@ -67,7 +67,7 @@ class AuditReportPDF(FPDF):
         self.ln(50)
         self.set_font('Arial', '', 11)
         self.set_text_color(0, 0, 0)
-        self.cell(0, 8, f'Audit Date: {datetime.now().strftime("%B %d, %Y")}', 0, 1, 'C')
+        self.cell(0, 8, f'Audit Date: {datetime.now(timezone.utc).strftime("%B %d, %Y")}', 0, 1, 'C')
         self.cell(0, 8, 'Auditor: Senior IT Auditor - Mining Surveillance Systems', 0, 1, 'C')
         self.cell(0, 8, 'System: B-SNAP (CCTV Management System)', 0, 1, 'C')
         self.cell(0, 8, 'Classification: CONFIDENTIAL', 0, 1, 'C')

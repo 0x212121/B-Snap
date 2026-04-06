@@ -774,8 +774,8 @@ async def serve_snapshot_by_id(
     filename = os.path.basename(snapshot.file_path)
     if download and snapshot.camera_name:
         # Create meaningful filename: CameraName_YYYYMMDD_HHMMSS.jpg
-        from datetime import datetime
-        timestamp_str = snapshot.timestamp.strftime("%Y%m%d_%H%M%S") if snapshot.timestamp else datetime.now().strftime("%Y%m%d_%H%M%S")
+        from datetime import datetime, timezone
+        timestamp_str = snapshot.timestamp.strftime("%Y%m%d_%H%M%S") if snapshot.timestamp else datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         ext = os.path.splitext(filename)[1]
         safe_camera_name = "".join(c if c.isalnum() or c in ('-', '_') else '_' for c in snapshot.camera_name)
         filename = f"{safe_camera_name}_{timestamp_str}{ext}"
