@@ -564,7 +564,7 @@ def start_scheduler():
         IntervalTrigger(minutes=config["healthcheck_interval_minutes"])
     )
     scheduler.add_job(
-        logged_job("health_check", "Health Check")(ping_all_devices),
+        health_check_job,
         trigger=healthcheck_trigger,
         id='health_check',
         max_instances=1,
@@ -585,9 +585,15 @@ def start_scheduler():
         ('cleanup_command_logs', delete_old_command_logs),
     ]
     
+    cleanup_job_wrappers = {
+        'cleanup_audit_logs': cleanup_audit_logs_job,
+        'cleanup_camera_stats': cleanup_camera_stats_job,
+        'cleanup_api_logs': cleanup_api_logs_job,
+        'cleanup_command_logs': cleanup_command_logs_job,
+    }
     for job_id, func in cleanup_jobs:
         scheduler.add_job(
-            logged_job(job_id, job_id.replace('_', ' ').title())(func),
+            cleanup_job_wrappers[job_id],
             trigger=cleanup_trigger,
             id=job_id,
             max_instances=1,
@@ -601,7 +607,7 @@ def start_scheduler():
         IntervalTrigger(minutes=config["email_retry_interval_minutes"])
     )
     scheduler.add_job(
-        logged_job("email_retry", "Email Retry")(process_email_retry_queue),
+        email_retry_job,
         trigger=email_retry_trigger,
         id='email_retry',
         max_instances=1,
@@ -610,7 +616,7 @@ def start_scheduler():
     )
     
     scheduler.add_job(
-        logged_job("cleanup_email_retry", "Email Retry Cleanup")(cleanup_email_retry_queue),
+        cleanup_email_retry_job,
         trigger=IntervalTrigger(days=config["cleanup_retry_queue_interval_days"]),
         id='cleanup_email_retry',
         max_instances=1,
@@ -624,7 +630,7 @@ def start_scheduler():
         IntervalTrigger(hours=config["storage_check_interval_hours"])
     )
     scheduler.add_job(
-        logged_job("storage_check", "Storage Check")(check_storage_job),
+        storage_check_job,
         trigger=storage_trigger,
         id='storage_check',
         max_instances=1,
@@ -635,7 +641,7 @@ def start_scheduler():
     
     # WhatsApp daily report with configurable time
     scheduler.add_job(
-        logged_job("wa_daily_report", "WhatsApp Daily Report")(send_wa_camera_no_snapshot_report),
+        wa_daily_report_job,
         trigger=CronTrigger(hour=config["wa_daily_report_hour"], minute=config["wa_daily_report_minute"]),
         id='wa_daily_report',
         max_instances=1,
@@ -646,7 +652,7 @@ def start_scheduler():
     
     # WhatsApp storage alert with configurable interval
     scheduler.add_job(
-        logged_job("wa_storage_alert", "WhatsApp Storage Alert")(send_wa_storage_alert),
+        wa_storage_alert_job,
         trigger=IntervalTrigger(hours=config["wa_storage_alert_interval_hours"]),
         id='wa_storage_alert',
         max_instances=1,
@@ -657,7 +663,7 @@ def start_scheduler():
     
     # Orphaned snapshots check - runs every hour
     scheduler.add_job(
-        logged_job("orphaned_snapshots_check", "Orphaned Snapshots Check")(check_orphaned_snapshots_job),
+        orphaned_snapshots_check_job,
         trigger=IntervalTrigger(hours=1),
         id='orphaned_snapshots_check',
         max_instances=1,
@@ -756,6 +762,79 @@ def update_scheduler_config():
 
     except Exception as e:
         logger.warning("[Scheduler] Failed to reload config: %s", e)
+
+
+# ----------------------------
+# Job Wrappers with logged_job decorator
+# These wrapper functions are needed for proper APScheduler serialization
+# when using SQLAlchemyJobStore. Inline decorator application doesn't work
+# because the wrapper function can't be properly serialized/deserialized.
+# ----------------------------
+
+@logged_job("health_check", "Health Check")
+def health_check_job():
+    """Wrapper for health check job with logging."""
+    return ping_all_devices()
+
+
+@logged_job("storage_check", "Storage Check")
+def storage_check_job():
+    """Wrapper for storage check job with logging."""
+    return check_storage_job()
+
+
+@logged_job("email_retry", "Email Retry")
+def email_retry_job():
+    """Wrapper for email retry job with logging."""
+    return process_email_retry_queue()
+
+
+@logged_job("cleanup_email_retry", "Email Retry Cleanup")
+def cleanup_email_retry_job():
+    """Wrapper for cleanup email retry job with logging."""
+    return cleanup_email_retry_queue()
+
+
+@logged_job("cleanup_audit_logs", "Cleanup Audit Logs")
+def cleanup_audit_logs_job():
+    """Wrapper for cleanup audit logs job with logging."""
+    return delete_old_audit_logs()
+
+
+@logged_job("cleanup_camera_stats", "Cleanup Camera Stats")
+def cleanup_camera_stats_job():
+    """Wrapper for cleanup camera stats job with logging."""
+    return delete_old_camera_stats()
+
+
+@logged_job("cleanup_api_logs", "Cleanup API Logs")
+def cleanup_api_logs_job():
+    """Wrapper for cleanup API logs job with logging."""
+    return delete_old_api_logs()
+
+
+@logged_job("cleanup_command_logs", "Cleanup Command Logs")
+def cleanup_command_logs_job():
+    """Wrapper for cleanup command logs job with logging."""
+    return delete_old_command_logs()
+
+
+@logged_job("wa_daily_report", "WhatsApp Daily Report")
+def wa_daily_report_job():
+    """Wrapper for WhatsApp daily report job with logging."""
+    return send_wa_camera_no_snapshot_report()
+
+
+@logged_job("wa_storage_alert", "WhatsApp Storage Alert")
+def wa_storage_alert_job():
+    """Wrapper for WhatsApp storage alert job with logging."""
+    return send_wa_storage_alert()
+
+
+@logged_job("orphaned_snapshots_check", "Orphaned Snapshots Check")
+def orphaned_snapshots_check_job():
+    """Wrapper for orphaned snapshots check job with logging."""
+    return check_orphaned_snapshots_job()
 
 
 # ----------------------------

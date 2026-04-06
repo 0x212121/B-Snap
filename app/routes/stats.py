@@ -330,8 +330,8 @@ async def get_no_data_cameras(
         .all()
     )
 
-    print(f"📅 Checking cameras with no data from {start_date} to {end_date}")
-    print(f"🎥 Total cameras: {len(all_cameras)}")
+    # print(f"📅 Checking cameras with no data from {start_date} to {end_date}")
+    # print(f"🎥 Total cameras: {len(all_cameras)}")
 
     # Ambil camera_name dari snapshot
     snapshot_camera_names = (
@@ -343,7 +343,7 @@ async def get_no_data_cameras(
     )
     snapshot_camera_names = {c[0].strip() for c in snapshot_camera_names if c[0]}
 
-    print(f"🎞️ Snapshot camera names: {len(snapshot_camera_names)}")
+    # print(f"🎞️ Snapshot camera names: {len(snapshot_camera_names)}")
 
     # Bandingkan berdasarkan nama kamera
     no_data_cameras = [
@@ -352,7 +352,7 @@ async def get_no_data_cameras(
         if hostname.strip() not in snapshot_camera_names
     ]
 
-    print(f"❌ Cameras with no data: {len(no_data_cameras)}")
+    # print(f"❌ Cameras with no data: {len(no_data_cameras)}")
 
     return {
         "days_range": days,

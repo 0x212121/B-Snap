@@ -6,6 +6,37 @@ from app.models.camera import Camera
 
 logger = logging.getLogger("snapshot")
 
+
+def _mask_password_in_url(url: str) -> str:
+    """Mask password in URL for logging purposes.
+    
+    Args:
+        url: URL that may contain credentials
+        
+    Returns:
+        URL with password masked as '***'
+    """
+    if not url or '@' not in url:
+        return url
+    try:
+        parsed = urlparse(url)
+        if parsed.username or parsed.password:
+            # Rebuild netloc with masked password
+            netloc = parsed.hostname or ''
+            if parsed.port:
+                netloc += f":{parsed.port}"
+            if parsed.username:
+                auth = parsed.username
+                if parsed.password:
+                    auth += ":***"
+                netloc = f"{auth}@{netloc}"
+            parsed = parsed._replace(netloc=netloc)
+            return urlunparse(parsed)
+    except Exception:
+        pass
+    return url
+
+
 def get_rtsp_url(camera: Camera):
     """Ambil RTSP URL kamera Hikvision, fallback ke ONVIF jika perlu."""
     encoded_user = quote(camera.username or "", safe="")
@@ -22,7 +53,7 @@ def get_rtsp_url(camera: Camera):
         cap = cv2.VideoCapture(url)
         if cap.isOpened():
             cap.release()
-            logger.info("✅ RTSP URL resolved via Hikvision template: %s", url)
+            logger.info("✅ RTSP URL resolved via Hikvision template: %s", _mask_password_in_url(url))
             return url
         cap.release()
 
@@ -45,7 +76,7 @@ def get_rtsp_url(camera: Camera):
             parsed = parsed._replace(netloc=netloc)
 
         final_uri = urlunparse(parsed)
-        logger.info("✅ RTSP URL resolved via ONVIF: %s", final_uri)
+        logger.info("✅ RTSP URL resolved via ONVIF: %s", _mask_password_in_url(final_uri))
         return final_uri
 
     except Exception as e:

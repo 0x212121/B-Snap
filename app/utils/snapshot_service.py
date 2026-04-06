@@ -20,6 +20,36 @@ from app.utils.check_stats import check_stats
 logger = logging.getLogger("snapshot_service")
 
 
+def _mask_password_in_url(url: str) -> str:
+    """Mask password in URL for logging purposes.
+    
+    Args:
+        url: URL that may contain credentials
+        
+    Returns:
+        URL with password masked as '***'
+    """
+    if not url or '@' not in url:
+        return url
+    try:
+        parsed = urlparse(url)
+        if parsed.username or parsed.password:
+            # Rebuild netloc with masked password
+            netloc = parsed.hostname or ''
+            if parsed.port:
+                netloc += f":{parsed.port}"
+            if parsed.username:
+                auth = parsed.username
+                if parsed.password:
+                    auth += ":***"
+                netloc = f"{auth}@{netloc}"
+            parsed = parsed._replace(netloc=netloc)
+            return urlunparse(parsed)
+    except Exception:
+        pass
+    return url
+
+
 def _take_snapshot_from_url(camera: Camera, url: str) -> Dict[str, Any]:
     """Take snapshot from a direct HTTP URL (e.g., http://camera_ip/cgi-bin/snapshot.cgi).
     
@@ -67,7 +97,7 @@ def _take_snapshot_from_url(camera: Camera, url: str) -> Dict[str, Any]:
                     
                 cap.release()  # Release the failed capture
             except Exception as e:
-                logger.error(f"Failed to download snapshot from URL {url}: {e}")
+                logger.error(f"Failed to download snapshot from URL {_mask_password_in_url(url)}: {e}")
                 return {
                     "status": "error",
                     "message": f"Cannot access snapshot URL for {camera.hostname}: {str(e)}"
@@ -155,7 +185,7 @@ def take_snapshot(camera: Camera, db: Session) -> Dict[str, Any]:
     try:
         # Check if camera has direct snapshot URL first
         if camera.snapshot_url:
-            logger.info(f"Taking snapshot from {camera.hostname} using direct URL: {camera.snapshot_url}")
+            logger.info(f"Taking snapshot from {camera.hostname} using direct URL: {_mask_password_in_url(camera.snapshot_url)}")
             return _take_snapshot_from_url(camera, camera.snapshot_url)
         
         # Otherwise, use RTSP via ONVIF helper
@@ -169,7 +199,7 @@ def take_snapshot(camera: Camera, db: Session) -> Dict[str, Any]:
                 "message": f"Cannot determine RTSP URL for camera {camera.hostname}. Check camera settings."
             }
         
-        logger.info(f"Taking snapshot from {camera.hostname} at {rtsp_url}")
+        logger.info(f"Taking snapshot from {camera.hostname} at {_mask_password_in_url(rtsp_url)}")
         
         # Open video capture
         cap = cv2.VideoCapture(rtsp_url)
