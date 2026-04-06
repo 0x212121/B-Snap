@@ -17,11 +17,22 @@
         Manage Network Video Recorders and their configurations
       </p>
     </div>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
       <button id="btnAddNVR" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
         {{ icon_plus("w-5 h-5") }}
         Add NVR
       </button>
+      <form method="post" enctype="multipart/form-data" action="/nvrs/upload_csv" class="flex items-center gap-2">
+        <input type="file" name="file" accept=".csv" class="hidden" id="csvFileInput" onchange="this.form.submit()">
+        <button type="button" onclick="document.getElementById('csvFileInput').click()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+          {{ icon_upload("w-5 h-5") }}
+          Upload CSV
+        </button>
+      </form>
+      <a href="/nvrs/export_csv" class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+        {{ icon_download("w-5 h-5") }}
+        Export CSV
+      </a>
     </div>
   </div>
 </div>
@@ -118,21 +129,6 @@
       <button id="btnResetFilters" class="p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
         {{ icon_arrow_path("h-5 w-5") }}
       </button>
-      
-      <div class="h-8 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
-      
-      <form method="post" enctype="multipart/form-data" action="/nvrs/upload_csv" class="flex items-center gap-2" id="csvUploadForm">
-        <input type="file" name="file" accept=".csv" class="hidden" id="csvFileInput">
-        <button type="button" id="btnUploadCSV" class="inline-flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition text-sm font-medium">
-          {{ icon_upload("w-4 h-4") }}
-          CSV
-        </button>
-      </form>
-      
-      <a href="/nvrs/export_csv" class="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition text-sm font-medium">
-        {{ icon_download("w-4 h-4") }}
-        CSV
-      </a>
     </div>
   </div>
 </div>
@@ -595,7 +591,7 @@
     const select = getElement('group_name');
     if (!select) return;
     
-    select.innerHTML = '<option value="">-- Select Division --</option>';
+    select.innerHTML = '<option value="">-- Select Group --</option>';
     cameraGroups.forEach(group => {
       const option = document.createElement('option');
       option.value = group.name;
@@ -886,16 +882,6 @@
       perPageSelect.addEventListener('change', function() {
         perPage = parseInt(this.value) || 20;
         window.loadNVRPage(1);
-      });
-    }
-    
-    // CSV file input
-    const csvInput = getElement('csvFileInput');
-    const btnUpload = getElement('btnUploadCSV');
-    if (csvInput && btnUpload) {
-      btnUpload.addEventListener('click', () => csvInput.click());
-      csvInput.addEventListener('change', function() {
-        if (this.form) this.form.submit();
       });
     }
     

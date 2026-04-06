@@ -13,6 +13,28 @@
   .ts-control:focus {
     @apply border-blue-500 ring-2 ring-blue-500/20 !important;
   }
+
+  .ts-control > input#cameraSelect-ts-control,
+  .ts-control > input[type="select-one"] {
+    color: #111827 !important; /* gray-900 */
+  }
+  
+  .ts-control > input#cameraSelect-ts-control::placeholder,
+  .ts-control > input[type="select-one"]::placeholder {
+    color: #9ca3af !important; /* gray-400 */
+  }
+
+  /* DARK MODE - Teks (white) & Placeholder (gray-300) */
+  html.dark .ts-control > input#cameraSelect-ts-control,
+  html.dark .ts-control > input[type="select-one"] {
+    color: #ffffff !important;
+  }
+  
+  html.dark .ts-control > input#cameraSelect-ts-control::placeholder,
+  html.dark .ts-control > input[type="select-one"]::placeholder {
+    color: #d1d5db !important; /* gray-300, lebih soft dari pure white */
+  }
+  
   .ts-dropdown {
     @apply bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl mt-1 !important;
   }
@@ -41,7 +63,7 @@
 <div class="min-h-screen bg-slate-50 dark:bg-gray-800 pb-12">
   <!-- Header: Inline Layout (Title rata dengan Search) -->
   <header class="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 px-6 py-4">
-    <div class="max-w-[1400px] mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div class="max-w-[1400px] mx-0 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
       <!-- Title -->
       <div class="flex items-center gap-3 shrink-0">
         <div class="p-2 bg-blue-600 rounded-lg text-white">

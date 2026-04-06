@@ -938,6 +938,11 @@ select {
   grid-column: 1 / -1;
 }
 
+.mx-0 {
+  margin-left: 0px;
+  margin-right: 0px;
+}
+
 .mx-1 {
   margin-left: 0.25rem;
   margin-right: 0.25rem;
@@ -4678,6 +4683,11 @@ select {
 :is(.dark .dark\:text-red-500) {
   --tw-text-opacity: 1;
   color: rgb(239 68 68 / var(--tw-text-opacity));
+}
+
+:is(.dark .dark\:text-red-700) {
+  --tw-text-opacity: 1;
+  color: rgb(185 28 28 / var(--tw-text-opacity));
 }
 
 :is(.dark .dark\:text-sky-400) {

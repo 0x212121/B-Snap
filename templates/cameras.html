@@ -775,7 +775,7 @@
     
     function populateGroupSelect(selectedValue = "") {
       const select = document.getElementById('group_name');
-      select.innerHTML = '<option value="">-- Select Division --</option>';
+      select.innerHTML = '<option value="">-- Select Group --</option>';
       cameraGroups.forEach(group => {
         const option = document.createElement('option');
         option.value = group.name;
