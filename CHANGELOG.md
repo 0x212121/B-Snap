@@ -96,6 +96,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - No hardcoded references to group "ALL" remain in codebase
 - **Files Modified:** `app/models/camera.py`
 
+### Documentation: Environment Variables
+- **New Documentation System**
+  - New endpoint `/docs/environment` - Web-based env var documentation
+  - Updated `.env.example` with comprehensive variable descriptions
+  - Categories: Core, Session, Security, Email, Retention, Camera, Logging, Paths, Server, Timezone
+  - 40+ environment variables documented with usage examples
+  
+- **Documentation Templates**
+  - `templates/docs/environment.html` - Interactive env var browser
+  - `templates/docs/api.html` - API documentation
+  - `templates/docs/security.html` - Security best practices
+  
+- **Navigation**
+  - Quick navigation between variable categories
+  - Security level indicators (CRITICAL, HIGH, etc.)
+  - Usage recommendations for each variable
+  
+- **Files Modified:** `.env.example`, `app/routes/docs.py`, `templates/docs/*`
+
+### Documentation: Sphinx
+- **Sphinx Documentation Updated**
+  - New `docs/source/configuration.md` - Environment variables in Sphinx format
+  - New `docs/source/api.md` - API reference documentation
+  - Updated `docs/source/index.rst` - Added new pages to toctree
+  - Added `docs/source/README.md` - Documentation guide
+  - Build: `cd docs && make html`
+  
+- **Files Modified:** `docs/source/*`
+
 ---
 
 ## [1.15.0] - 2026-04-01

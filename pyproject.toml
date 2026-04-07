@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "b-snap"
-version = "1.15.0"
+version = "2.0.0"
 description = "Self-hosted web-based application to capture, manage, and monitor snapshots from ONVIF-enabled or RTSP-compatible IP cameras"
 readme = "README.md"
 license = {text = "MIT"}

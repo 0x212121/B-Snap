@@ -885,3 +885,78 @@ stats = tracker.get_stats()
   - Added comment explaining NULL group_id gives access to all cameras
   - Migration `20260330_remove_all_group.py` sudah handle database cleanup
 - **Files Modified:** `app/models/camera_group.py`
+---
+
+## 📚 Environment Variables Documentation
+
+All environment variables are documented at `/docs/environment` endpoint:
+
+### Accessing Documentation
+- **Web UI**: Navigate to `/docs/environment` (e.g., http://localhost:8080/docs/environment)
+- **Categories**: 10 categories covering 40+ environment variables
+- **Sections**:
+  1. **Core** - SECRET_KEY, ENCRYPTION_KEY, DATABASE_URL, ENVIRONMENT
+  2. **Session** - SESSION_MAX_AGE_SECONDS, MAX_WEB_SESSIONS
+  3. **Security** - TRUSTED_HOSTS, DEBUG
+  4. **Email** - SMTP_HOST, SMTP_PORT, SMTP_USER, etc.
+  5. **Storage** - SNAPSHOT_PATH, VIDEO_PATH, LOG_DIR
+  6. **Retention** - RETENTION_SNAPSHOT_DAYS, RETENTION_VIDEO_DAYS
+  7. **Camera** - OFFLINE_ALERT_THRESHOLD_SECONDS, CAMERA_TIMEOUT
+  8. **Logging** - LOG_LEVEL, LOG_DIR, BSNAP_LOG_VIA_GUNICORN
+  9. **Server** - WORKERS, PORT, BIND
+  10. **Timezone** - TZ, SCHEDULER_ENABLED
+
+### Configuration Files
+- `.env.example` - Template with all variables and descriptions
+- `.env` - Your local configuration (DO NOT COMMIT)
+- Config location: Project root
+
+### Critical Variables (Must Change in Production)
+| Variable | Purpose | Security Level |
+|----------|---------|----------------|
+| `SECRET_KEY` | Session & CSRF protection | CRITICAL |
+| `ENCRYPTION_KEY` | Camera password encryption | CRITICAL |
+| `DATABASE_URL` | Database connection | CRITICAL |
+| `ENVIRONMENT` | App mode (dev/test/prod) | HIGH |
+
+### Configuration Priority
+1. Environment Variables (highest priority)
+2. Database Configuration (via admin UI)
+3. Default values (lowest priority)
+
+### Usage Example
+```bash
+# Copy template
+cp .env.example .env
+
+# Edit configuration
+nano .env
+
+# Important variables to set
+SECRET_KEY=$(openssl rand -hex 32)
+ENCRYPTION_KEY=$(openssl rand -hex 32)
+DATABASE_URL="postgresql+psycopg2://user:pass@localhost/bsnap_db"
+ENVIRONMENT=production
+```
+
+### Sphinx Documentation
+
+Documentation juga tersedia dalam format Sphinx:
+
+```bash
+# Build documentation
+cd docs
+make html
+
+# View documentation
+open build/html/index.html
+```
+
+**Location**: `docs/source/configuration.md`  
+**Files**:
+- `docs/source/configuration.md` - Environment variables
+- `docs/source/api.md` - API reference
+- `docs/source/security.md` - Security documentation
+
+**Version**: 1.17.0  
+**Last Updated**: 2026-04-07

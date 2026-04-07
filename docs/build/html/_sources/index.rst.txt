@@ -11,6 +11,8 @@ Welcome to B-Snap Documentation!
    :caption: Contents:
 
    architecture
+   configuration
+   api
    security
    audit_logging
    notifications

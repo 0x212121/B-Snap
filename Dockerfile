@@ -34,5 +34,5 @@ RUN dos2unix /app/start.sh && \
     dos2unix /app/gunicorn.conf.py 2>/dev/null || true
 
 EXPOSE 8080
-
+`
 CMD ["/app/start.sh"]

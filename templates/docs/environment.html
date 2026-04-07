@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Environment Variables Documentation - B-Snap{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 dark:bg-gray-900">
+  <!-- Header -->
+  <header class="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Environment Variables</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Total: {{ total_vars }} variables across {{ env_docs|length }} categories
+          </p>
+        </div>
+        <a href="/" class="text-blue-600 dark:text-blue-400 hover:underline">← Back to Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Important Notice -->
+    <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-8">
+      <div class="flex items-start gap-3">
+        <svg class="w-6 h-6 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <div>
+          <h3 class="font-semibold text-amber-900 dark:text-amber-100">Security Notice</h3>
+          <p class="text-amber-800 dark:text-amber-200 text-sm mt-1">
+            Never commit <code>.env</code> files to version control! Copy <code>.env.example</code> to <code>.env</code> 
+            and configure values for your environment.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table of Contents -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6 mb-8">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Navigation</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {% for key, section in env_docs.items() %}
+        <a href="#{{ key }}" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border border-gray-100 dark:border-slate-700">
+          <span class="text-blue-600 dark:text-blue-400 font-medium">{{ section.title }}</span>
+          <span class="text-xs text-gray-400 ml-auto">{{ section.vars|length }} vars</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Environment Variable Sections -->
+    {% for key, section in env_docs.items() %}
+    <section id="{{ key }}" class="mb-12">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+        <!-- Section Header -->
+        <div class="bg-gray-50 dark:bg-slate-700 border-b border-gray-200 dark:border-slate-700 px-6 py-4">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ section.title }}</h2>
+          <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">{{ section.description }}</p>
+        </div>
+
+        <!-- Variables Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-slate-700 text-left">
+              <tr>
+                <th class="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Variable</th>
+                <th class="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Required</th>
+                <th class="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Default</th>
+                <th class="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-slate-700">
+              {% for var in section.vars %}
+              <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                <td class="px-6 py-4">
+                  <code class="text-sm font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">{{ var.name }}</code>
+                  {% if var.security and 'CRITICAL' in var.security %}
+                  <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">CRITICAL</span>
+                  {% endif %}
+                </td>
+                <td class="px-6 py-4">
+                  {% if var.required %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                    Required
+                  </span>
+                  {% else %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                    Optional
+                  </span>
+                  {% endif %}
+                </td>
+                <td class="px-6 py-4">
+                  {% if var.default %}
+                  <code class="text-xs text-gray-600 dark:text-gray-400">{{ var.default }}</code>
+                  {% else %}
+                  <span class="text-xs text-gray-400 italic">None</span>
+                  {% endif %}
+                </td>
+                <td class="px-6 py-4">
+                  <p class="text-sm text-gray-700 dark:text-gray-300">{{ var.description }}</p>
+                  
+                  {% if var.security %}
+                  <p class="text-xs text-red-600 dark:text-red-400 mt-1 font-medium">
+                    ⚠️ {{ var.security }}
+                  </p>
+                  {% endif %}
+                  
+                  {% if var.recommendation %}
+                  <p class="text-xs text-green-600 dark:text-green-400 mt-1">
+                    💡 {{ var.recommendation }}
+                  </p>
+                  {% endif %}
+                  
+                  {% if var.used_in %}
+                  <div class="mt-2">
+                    <span class="text-xs text-gray-500 dark:text-gray-500">Used in:</span>
+                    <div class="flex flex-wrap gap-1 mt-1">
+                      {% for file in var.used_in %}
+                      <code class="text-xs bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded">{{ file }}</code>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  {% endif %}
+                  
+                  {% if var.options %}
+                  <div class="mt-2">
+                    <span class="text-xs text-gray-500 dark:text-gray-500">Options:</span>
+                    <div class="flex flex-wrap gap-1 mt-1">
+                      {% for opt in var.options %}
+                      <span class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">{{ opt }}</span>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    {% endfor %}
+
+    <!-- Quick Reference Card -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-6 text-white">
+      <h2 class="text-xl font-bold mb-4">Quick Reference</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h3 class="font-semibold mb-2">Critical (Must Change)</h3>
+          <ul class="space-y-1 text-sm text-blue-100">
+            <li><code class="bg-white/20 px-1.5 py-0.5 rounded">SECRET_KEY</code> - Session security</li>
+            <li><code class="bg-white/20 px-1.5 py-0.5 rounded">ENCRYPTION_KEY</code> - Camera password encryption</li>
+            <li><code class="bg-white/20 px-1.5 py-0.5 rounded">DATABASE_URL</code> - Database connection</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-semibold mb-2">Production Checklist</h3>
+          <ul class="space-y-1 text-sm text-blue-100">
+            <li>✓ Set ENVIRONMENT=production</li>
+            <li>✓ Change DEBUG=false</li>
+            <li>✓ Restrict TRUSTED_HOSTS</li>
+            <li>✓ Configure SMTP for alerts</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-gray-500 dark:text-gray-400 text-sm">
+      <p>B-Snap v{{ version }} | Environment Documentation</p>
+      <p class="mt-1">Last updated: 2026-04-07</p>
+    </footer>
+  </div>
+</div>
+
+<!-- Smooth scroll for anchor links -->
+<script>
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function (e) {
+    e.preventDefault();
+    document.querySelector(this.getAttribute('href')).scrollIntoView({
+      behavior: 'smooth'
+    });
+  });
+});
+</script>
+{% endblock %}
