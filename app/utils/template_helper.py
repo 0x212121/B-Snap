@@ -82,7 +82,8 @@ nav_items = [
         "roles": ["admin"],
         "items": [
             {"label": "API Docs", "href": "/developer/docs", "icon": "book-open", "roles": ["admin"]},
-            {"label": "Documentation", "href": "/documentation/index.html", "icon": "book-open", "roles": ["admin"], "external": True},
+            {"label": "Environment", "href": "/docs/environment", "icon": "settings", "roles": ["admin"]},
+            {"label": "Documentation", "href": "/documentation/index.html", "icon": "git-branch", "roles": ["admin"], "external": True},
         ],
     },
     {

@@ -4966,6 +4966,11 @@ select {
   border-color: rgb(71 85 105 / var(--tw-border-opacity));
 }
 
+:is(.dark .dark\:hover\:border-gray-600:hover) {
+  --tw-border-opacity: 1;
+  border-color: rgb(75 85 99 / var(--tw-border-opacity));
+}
+
 :is(.dark .dark\:hover\:bg-amber-900\/20:hover) {
   background-color: rgb(120 53 15 / 0.2);
 }

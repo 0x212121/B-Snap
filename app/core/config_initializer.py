@@ -42,7 +42,7 @@ DEFAULT_CONFIG = {
     "email_cc": "",
     
     # Email retry settings
-    "email_retry_interval_minutes": "1",  # New: configurable email retry interval
+    "email_retry_interval_minutes": "10",  # New: configurable email retry interval
     "email_retry_max_attempts": "5",
     
     # Cleanup job settings
