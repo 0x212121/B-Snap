@@ -94,6 +94,36 @@ class Camera(Base):
         if value not in valid_values:
             raise ValueError(f"Invalid safety_classification. Must be one of: {', '.join(valid_values)}")
         return value
+    
+    @validates('latitude')
+    def validate_latitude(self, key, value):
+        """MED-004: Validate latitude is within valid range (-90 to 90)."""
+        if value is not None:
+            try:
+                lat = float(value)
+                if lat < -90 or lat > 90:
+                    raise ValueError(f"Latitude must be between -90 and 90, got {lat}")
+                return lat
+            except (TypeError, ValueError) as e:
+                if "Latitude must be between" in str(e):
+                    raise
+                raise ValueError(f"Invalid latitude value: {value}")
+        return value
+    
+    @validates('longitude')
+    def validate_longitude(self, key, value):
+        """MED-004: Validate longitude is within valid range (-180 to 180)."""
+        if value is not None:
+            try:
+                lon = float(value)
+                if lon < -180 or lon > 180:
+                    raise ValueError(f"Longitude must be between -180 and 180, got {lon}")
+                return lon
+            except (TypeError, ValueError) as e:
+                if "Longitude must be between" in str(e):
+                    raise
+                raise ValueError(f"Invalid longitude value: {value}")
+        return value
 
 
 # Event listener to mark snapshots as orphaned before camera delete

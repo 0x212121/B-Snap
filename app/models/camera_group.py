@@ -2,13 +2,15 @@ from sqlalchemy import Column, Integer, String, event
 from sqlalchemy.orm import relationship
 from app.db.database import Base
 
+# LOW-002: Removed "ALL" group - users with NULL group_id now have access to all cameras
+# This simplifies the permission model and avoids confusion
 default_groups = [
     {"id": 1, "name": "CPHD"}, {"id": 2, "name": "MSD"},
     {"id": 3, "name": "MOD"}, {"id": 4, "name": "ESD"},
     {"id": 5, "name": "SCD"}, {"id": 6, "name": "CMD"},
     {"id": 7, "name": "IT"}, {"id": 8, "name": "HR"},
     {"id": 9, "name": "MDD"}, {"id": 10, "name": "HSES"},
-    {"id": 11, "name": "ALL"},
+    # NOTE: "ALL" group removed - use NULL group_id for access to all cameras
 ]
 
 class CameraGroup(Base):

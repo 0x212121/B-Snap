@@ -829,3 +829,59 @@ stats = tracker.get_stats()
   - Log warning untuk "critical" classification (require verification)
   - Log warning untuk password yang terlalu lemah (< 4 karakter)
 - **Files Modified:** `app/routes/cameras.py`
+
+---
+
+## 🔧 Medium Security Fixes (MED)
+
+### Session Cookie Consistency (MED-001)
+- **Issue:** Session token max_age (24 jam) tidak konsisten dengan expires_at (30 hari)
+- **Fix:**
+  - Align token expiration dengan cookie max_age (24 jam untuk mining environment)
+  - Configurable via `SESSION_MAX_AGE_SECONDS` environment variable
+  - Default: 86400 seconds (24 hours)
+  - **Remember Me Integration:** Session di-auto-refresh untuk user dengan Remember Me aktif
+    - Memungkinkan CCTV monitoring 24/7 tanpa manual re-login
+    - Session tetap 24 jam tapi di-refresh otomatis setiap request
+    - Remember Me token tetap 1 tahun
+- **Files Modified:** `app/routes/auth.py`, `app/middleware/auth_and_setup.py`
+
+### API Token Expiration Enforcement (MED-002)
+- **Issue:** API tokens tanpa expires_at diterima indefinitely
+- **Fix:**
+  - Tokens tanpa expiration ditolak dengan error 401
+  - Token generation memerlukan expires_in_days > 0
+  - Clear error message: "Token has no expiration. Please generate a new token."
+- **Files Modified:** `app/routes/auth.py`, `app/routes/user_management.py`
+
+### Automated Retention Policy (MED-003)
+- **Issue:** `MAX_SNAPSHOT_AGE_DAYS` dan `MAX_VIDEO_AGE_DAYS` ada di config tapi tidak di-enforce
+- **Fix:**
+  - New scheduled job: `retention_policy` - runs daily at 3 AM
+  - Soft-deletes snapshots/videos older than retention period
+  - Items dengan `retention_hold=True` di-skip
+  - Configurable via:
+    - `retention_snapshot_days` (default: 30)
+    - `retention_video_days` (default: 7)
+- **Files Modified:** `app/jobs/scheduler.py`
+
+### GPS Coordinate Validation (MED-004)
+- **Issue:** GPS coordinates tidak divalidasi untuk valid ranges
+- **Fix:**
+  - Latitude validation: -90 to 90
+  - Longitude validation: -180 to 180
+  - SQLAlchemy `@validates` decorator pada model
+  - Raises ValueError untuk invalid coordinates
+- **Files Modified:** `app/models/camera.py`
+
+---
+
+## 🟢 Low Fixes (LOW)
+
+### Remove Default Group "ALL" References (LOW-002)
+- **Issue:** Group "ALL" sudah dihapus dari database tapi masih ada di `default_groups`
+- **Fix:**
+  - Removed `{"id": 11, "name": "ALL"}` dari `default_groups` list
+  - Added comment explaining NULL group_id gives access to all cameras
+  - Migration `20260330_remove_all_group.py` sudah handle database cleanup
+- **Files Modified:** `app/models/camera_group.py`

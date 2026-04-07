@@ -24,6 +24,11 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 COOKIE_SECURE = ENVIRONMENT == "production"
 COOKIE_SAMESITE = "strict" if ENVIRONMENT == "production" else "lax"
 
+# MED-001: Session configuration - aligned max_age with token expiration
+# Session expires in 24 hours (86400 seconds) - mining environment best practice
+SESSION_MAX_AGE_SECONDS = int(os.getenv("SESSION_MAX_AGE_SECONDS", 86400))  # 24 hours default
+SESSION_MAX_AGE_DAYS = SESSION_MAX_AGE_SECONDS // 86400
+
 # --- Setup Router and Template ---
 router = APIRouter(tags=["Authentication"])
 from app.utils.template_helper import templates
@@ -131,7 +136,8 @@ def otp_post(
 
     # Create and attach the session token to the DB.
     token = secrets.token_urlsafe(32)
-    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+    # MED-001: Align token expiration with cookie max_age (24 hours for mining environment)
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=SESSION_MAX_AGE_SECONDS)
     
     
     web_tokens = user.web_tokens or []
@@ -156,12 +162,13 @@ def otp_post(
     )
 
     # Create redirect response and set cookie.
+    # MED-001: Use consistent session max_age from configuration
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(
         "session_token",
         token,
         httponly=True,
-        max_age=60*60*24,
+        max_age=SESSION_MAX_AGE_SECONDS,
         samesite=COOKIE_SAMESITE,
         secure=COOKIE_SECURE
     )
@@ -275,8 +282,9 @@ def mfa_setup_post(
     user.last_login = datetime.now(timezone.utc)
 
     # Add session token to DB and cookie.
+    # MED-001: Align token expiration with cookie max_age (24 hours for mining environment)
     token = secrets.token_urlsafe(32)
-    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=SESSION_MAX_AGE_SECONDS)
     
     web_tokens = user.web_tokens or []
     web_tokens.append({
@@ -292,7 +300,7 @@ def mfa_setup_post(
         key="session_token",
         value=token,
         httponly=True,
-        max_age=60*60*24,
+        max_age=SESSION_MAX_AGE_SECONDS,
         samesite=COOKIE_SAMESITE,
         secure=COOKIE_SECURE
     )
@@ -426,9 +434,16 @@ async def get_current_user(
             tokens = user.api_tokens or []
             for t in tokens:
                 if t.get("token") == token:
+                    # MED-002: Enforce API token expiration - tokens without expires_at are rejected
                     expires_at_str = t.get("expires_at")
                     if not expires_at_str:
-                        return user
+                        # MED-002: Reject tokens without expiration
+                        logger.warning(f"API token without expiration rejected for user {user.username}")
+                        raise HTTPException(
+                            status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Token has no expiration. Please generate a new token.",
+                            headers={"WWW-Authenticate": "Bearer"},
+                        )
 
                     try:
                         expires_at = datetime.fromisoformat(expires_at_str)
@@ -437,8 +452,18 @@ async def get_current_user(
 
                         if expires_at > datetime.now(timezone.utc):
                             return user
+                        else:
+                            # MED-002: Token expired - reject with clear message
+                            logger.warning(f"Expired API token used for user {user.username}")
+                            raise HTTPException(
+                                status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="Token has expired. Please generate a new token.",
+                                headers={"WWW-Authenticate": "Bearer"},
+                            )
+                    except HTTPException:
+                        raise
                     except Exception as e:
-                        print(f"⚠️ Token parse error: {e}")
+                        logger.warning(f"Token parse error for user {user.username}: {e}")
                         continue
 
     # === 3. No valid authentication method ===

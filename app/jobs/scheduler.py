@@ -672,6 +672,17 @@ def start_scheduler():
         replace_existing=True
     )
     
+    # MED-003: Retention policy enforcement - runs daily at 3 AM
+    scheduler.add_job(
+        retention_policy_job,
+        trigger=CronTrigger(hour=3, minute=0),
+        id='retention_policy',
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=3600,
+        replace_existing=True
+    )
+    
     scheduler.start()
     logger.info("[Scheduler] Started with %d jobs", len(scheduler.get_jobs()))
     return scheduler
@@ -837,6 +848,12 @@ def orphaned_snapshots_check_job():
     return check_orphaned_snapshots_job()
 
 
+@logged_job("retention_policy", "Retention Policy Enforcement")
+def retention_policy_job():
+    """MED-003: Wrapper for retention policy enforcement job with logging."""
+    return enforce_retention_policy()
+
+
 # ----------------------------
 # Cleanup Jobs
 # ----------------------------
@@ -954,6 +971,88 @@ def delete_old_command_logs():
     except Exception as e:
         db.rollback()
         logger.error("[delete_old_command_logs] Error: %s", e, exc_info=True)
+        raise
+    finally:
+        db.close()
+
+
+# MED-003: Retention Policy Enforcement for Snapshots and Videos
+def enforce_retention_policy():
+    """MED-003: Automated retention policy enforcement for snapshots and videos.
+    
+    Soft-deletes snapshots and videos older than retention period.
+    Items with retention_hold=True are skipped.
+    """
+    db: Session = SessionLocal()
+    try:
+        from app.models.snapshot import Snapshot
+        from app.models.video import Video
+        
+        # Get retention settings from config
+        snapshot_retention_days = int(get_config("retention_snapshot_days", 30))
+        video_retention_days = int(get_config("retention_video_days", 7))
+        
+        now = datetime.now(timezone.utc)
+        results = {
+            "snapshots_soft_deleted": 0,
+            "videos_soft_deleted": 0,
+            "snapshots_skipped_retention_hold": 0,
+            "videos_skipped_retention_hold": 0
+        }
+        
+        # Process snapshots
+        snapshot_cutoff = now - timedelta(days=snapshot_retention_days)
+        old_snapshots = db.query(Snapshot).filter(
+            Snapshot.timestamp < snapshot_cutoff,
+            Snapshot.deleted_at.is_(None)  # Not already soft-deleted
+        ).all()
+        
+        for snapshot in old_snapshots:
+            # MED-003: Skip items with retention hold
+            if getattr(snapshot, 'retention_hold', False):
+                results["snapshots_skipped_retention_hold"] += 1
+                logger.info("[Retention Policy] Snapshot %s skipped due to retention hold", snapshot.id)
+                continue
+            
+            # Soft delete
+            snapshot.soft_delete()
+            results["snapshots_soft_deleted"] += 1
+        
+        # Process videos
+        video_cutoff = now - timedelta(days=video_retention_days)
+        old_videos = db.query(Video).filter(
+            Video.timestamp < video_cutoff,
+            Video.deleted_at.is_(None)  # Not already soft-deleted
+        ).all()
+        
+        for video in old_videos:
+            # MED-003: Skip items with retention hold
+            if getattr(video, 'retention_hold', False):
+                results["videos_skipped_retention_hold"] += 1
+                logger.info("[Retention Policy] Video %s skipped due to retention hold", video.id)
+                continue
+            
+            # Soft delete
+            video.soft_delete()
+            results["videos_soft_deleted"] += 1
+        
+        db.commit()
+        
+        total_processed = results["snapshots_soft_deleted"] + results["videos_soft_deleted"]
+        logger.info(
+            "[Retention Policy] Enforced: %d snapshots, %d videos soft-deleted. "
+            "Skipped: %d snapshots, %d videos (retention hold)",
+            results["snapshots_soft_deleted"],
+            results["videos_soft_deleted"],
+            results["snapshots_skipped_retention_hold"],
+            results["videos_skipped_retention_hold"]
+        )
+        
+        return {"records_processed": total_processed, "details": results}
+        
+    except Exception as e:
+        db.rollback()
+        logger.error("[Retention Policy] Error: %s", e, exc_info=True)
         raise
     finally:
         db.close()

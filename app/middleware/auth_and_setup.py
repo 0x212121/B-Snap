@@ -11,7 +11,7 @@ from sqlalchemy import text
 from app.models.user import User
 from app.models.config import Configuration
 from app.utils.auth_token import is_valid_web_token
-from app.utils.remember_me import validate_remember_token, get_cookie_settings
+from app.utils.remember_me import get_cookie_settings
 from app.db.database import SessionLocal
 
 logger = logging.getLogger("auth")
@@ -72,6 +72,9 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                     logger.warning("Failed to restore session data from user_id: %s", e)
 
             # Step 3: Early validation using both session + session_token
+            # MED-001-FIX: Check for Remember Me and auto-refresh session if needed
+            remember_me_cookie = request.cookies.get(get_cookie_settings()["key"])
+            
             if session_user_id and session_token:
                 try:
                     user_id = int(session_user_id)
@@ -85,6 +88,16 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                             request.state.debug_mode = False
                         tokens = self.parse_tokens(user.web_tokens)
                         if is_valid_web_token(session_token, tokens):
+                            # MED-001-FIX: Auto-refresh session for Remember Me users
+                            # This allows 24/7 CCTV monitoring without manual re-login
+                            if remember_me_cookie:
+                                remember_user = validate_remember_token(db, remember_me_cookie)
+                                if remember_user and remember_user.id == user.id:
+                                    # Refresh session token to extend 24h window
+                                    response = await call_next(request)
+                                    return self._refresh_session_cookie(
+                                        response, user, session_token, db
+                                    )
                             return await call_next(request)
                         else:
                             logger.warning("Session token is invalid or expired.")
@@ -163,13 +176,15 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                     logger.info(f"Session restored via Remember Me for user={user.username}")
                     
                     response = await call_next(request)
+                    # MED-001: Use consistent session max_age from configuration
+                    from app.routes.auth import SESSION_MAX_AGE_SECONDS, COOKIE_SAMESITE, COOKIE_SECURE
                     response.set_cookie(
                         "session_token",
                         new_token,
                         httponly=True,
-                        max_age=60 * 60 * 24 * 7,
-                        samesite="lax",
-                        secure=request.url.scheme == "https"
+                        max_age=SESSION_MAX_AGE_SECONDS,
+                        samesite=COOKIE_SAMESITE,
+                        secure=COOKIE_SECURE
                     )
                     return response
                 else:
@@ -225,8 +240,46 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
     def generate_new_token(self):
         now = datetime.now(timezone.utc)
         new_token = token_urlsafe(32)
-        expires_at = (now + timedelta(days=7)).isoformat()
+        # MED-001: Use 24-hour expiration for security
+        from app.routes.auth import SESSION_MAX_AGE_SECONDS
+        expires_at = (now + timedelta(seconds=SESSION_MAX_AGE_SECONDS)).isoformat()
         return new_token, expires_at
+    
+    def _refresh_session_cookie(self, response, user, current_token, db):
+        """MED-001-FIX: Refresh session cookie for Remember Me users.
+        
+        This allows 24/7 CCTV monitoring without manual re-login,
+        while maintaining 24-hour session security for non-remember users.
+        """
+        try:
+            # Generate new session token
+            tokens = self.parse_tokens(user.web_tokens)
+            new_token, expires_at = self.generate_new_token()
+            
+            # Remove old token and add new one
+            tokens = [t for t in tokens if t.get("token") != current_token]
+            tokens.append({
+                "token": new_token,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "expires_at": expires_at
+            })
+            user.web_tokens = tokens
+            db.commit()
+            
+            # Set new cookie with refreshed expiration
+            from app.routes.auth import SESSION_MAX_AGE_SECONDS, COOKIE_SAMESITE, COOKIE_SECURE
+            response.set_cookie(
+                "session_token",
+                new_token,
+                httponly=True,
+                max_age=SESSION_MAX_AGE_SECONDS,
+                samesite=COOKIE_SAMESITE,
+                secure=COOKIE_SECURE
+            )
+            logger.debug(f"Session refreshed for Remember Me user: {user.username}")
+        except Exception as e:
+            logger.warning(f"Failed to refresh session: {e}")
+        return response
 
 def get_debug_mode_flag(db) -> bool:
     from app.models.config import Configuration

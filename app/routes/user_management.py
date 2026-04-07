@@ -625,22 +625,28 @@ async def api_generate_token(
 ):
     """
     Generates a new API token for a user (already JSON API)
+    MED-002: Tokens without expiration are no longer allowed
     """
     user = db.query(User).filter(User.id == token_request.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
 
+    # MED-002: Enforce token expiration - reject tokens without expires_in_days
+    if token_request.expires_in_days <= 0:
+        raise HTTPException(
+            status_code=400, 
+            detail="Token expiration is required. Please specify expires_in_days > 0."
+        )
+
     token = secrets.token_hex(32)
     now = datetime.now(timezone.utc)
-    expires_at = None
-
-    if token_request.expires_in_days > 0:
-        expires_at = now + timedelta(days=token_request.expires_in_days)
+    # MED-002: Always set expiration (no more None)
+    expires_at = now + timedelta(days=token_request.expires_in_days)
 
     new_entry = {
         "token": token,
         "created_at": now.isoformat(),
-        "expires_at": expires_at.isoformat() if expires_at else None
+        "expires_at": expires_at.isoformat()  # MED-002: Always has expiration
     }
 
     current_tokens = user.api_tokens or []
@@ -672,10 +678,10 @@ async def api_generate_token(
             action="generate_api_token",
             target=user.username,
             ip=request.client.host,
-            extra=f"Token expires at {expires_at or 'Never'}"
+            extra=f"Token expires at {expires_at}"
         )
 
-        expires_str = format_datetime_standard(expires_at, db=db) if expires_at else "Never"
+        expires_str = format_datetime_standard(expires_at, db=db)
         
         return JSONResponse(status_code=200, content={
             "token": token,

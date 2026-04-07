@@ -57,6 +57,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+### Medium: Session Cookie Consistency (MED-001)
+- **Fixed session token inconsistency** - Aligned max_age with expires_at (24 hours)
+  - Before: Cookie max_age=24h but token expires_at=30 days
+  - After: Both aligned to 24 hours (configurable via `SESSION_MAX_AGE_SECONDS`)
+  - Better security for mining environment with shorter sessions
+  - Environment variable: `SESSION_MAX_AGE_SECONDS` (default: 86400 = 24 hours)
+- **Files Modified:** `app/routes/auth.py`
+
+### Medium: API Token Expiration Enforcement (MED-002)
+- **Breaking Change:** API tokens without expiration are now rejected
+  - Before: Tokens with `expires_at=null` accepted indefinitely
+  - After: Returns 401 "Token has no expiration. Please generate a new token."
+  - Token generation requires `expires_in_days > 0`
+  - Expired tokens return clear error: "Token has expired. Please generate a new token."
+- **Files Modified:** `app/routes/auth.py`, `app/routes/user_management.py`
+
+### Medium: Automated Retention Policy (MED-003)
+- **New scheduled job:** `retention_policy` - runs daily at 3 AM
+  - Automatically soft-deletes snapshots older than `retention_snapshot_days` (default: 30)
+  - Automatically soft-deletes videos older than `retention_video_days` (default: 7)
+  - Items with `retention_hold=True` are preserved (legal hold compliance)
+  - Configurable via Configuration table or environment variables
+- **Files Modified:** `app/jobs/scheduler.py`
+
+### Medium: GPS Coordinate Validation (MED-004)
+- **Added validation for camera coordinates**
+  - Latitude: must be between -90 and 90
+  - Longitude: must be between -180 and 180
+  - Uses SQLAlchemy `@validates` decorator
+  - Raises ValueError for invalid coordinates on create/update
+- **Files Modified:** `app/models/camera.py`
+
+### Low: Remove Default Group "ALL" References (LOW-002)
+- **Cleanup:** Removed "ALL" group from `default_groups` in code
+  - Migration already removed "ALL" group from database
+  - Users with `NULL` group_id have access to all cameras (new permission model)
+  - No hardcoded references to group "ALL" remain in codebase
+- **Files Modified:** `app/models/camera.py`
+
+---
+
 ## [1.15.0] - 2026-04-01
 
 ### Added

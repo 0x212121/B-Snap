@@ -15,7 +15,9 @@
 | Medium (P2) | 4 | 0 | 0 | 4 |
 | Low (P3) | 1 | 0 | 0 | 1 |
 | **Post-Audit Critical (CRIT)** | **3** | **0** | **0** | **3** |
-| **TOTAL** | **13** | **0** | **0** | **13** |
+| **Post-Audit Medium (MED)** | **4** | **0** | **0** | **4** |
+| **Post-Audit Low (LOW)** | **1** | **0** | **0** | **1** |
+| **TOTAL** | **18** | **0** | **0** | **18** |
 
 **Overall Progress:** 100% Complete  
 **Overall Status:** 🟢 **ALL COMPLETE - Production Ready**
@@ -268,6 +270,61 @@
   - `app/routes/auth.py` - Environment-based COOKIE_SECURE and COOKIE_SAMESITE
   - `app/utils/remember_me.py` - Production-aware cookie settings
 - **Completed Date:** 2026-03-31
+
+### [x] MED-001: Session Cookie Consistency
+- **Finding:** Session token max_age (24h) tidak konsisten dengan expires_at (30 hari)
+- **Status:** ✅ **DONE**
+- **Implemented:**
+  - Align token expiration dengan cookie max_age (24 jam untuk mining environment)
+  - Configurable via `SESSION_MAX_AGE_SECONDS` environment variable
+  - Default: 86400 seconds (24 hours)
+- **Files Modified:** `app/routes/auth.py`
+- **Completed Date:** 2026-04-07
+
+### [x] MED-002: API Token Expiration Enforcement
+- **Finding:** API tokens tanpa expires_at diterima indefinitely
+- **Status:** ✅ **DONE**
+- **Implemented:**
+  - Tokens tanpa expiration ditolak dengan error 401
+  - Token generation memerlukan expires_in_days > 0
+  - Clear error message untuk expired tokens
+- **Files Modified:** `app/routes/auth.py`, `app/routes/user_management.py`
+- **Completed Date:** 2026-04-07
+
+### [x] MED-003: Automated Retention Policy
+- **Finding:** `MAX_SNAPSHOT_AGE_DAYS` dan `MAX_VIDEO_AGE_DAYS` tidak di-enforce
+- **Status:** ✅ **DONE**
+- **Implemented:**
+  - New scheduled job: `retention_policy` - runs daily at 3 AM
+  - Soft-deletes snapshots/videos older than retention period
+  - Items dengan `retention_hold=True` di-skip
+  - Configurable via `retention_snapshot_days` dan `retention_video_days`
+- **Files Modified:** `app/jobs/scheduler.py`
+- **Completed Date:** 2026-04-07
+
+### [x] MED-004: GPS Coordinate Validation
+- **Finding:** GPS coordinates tidak divalidasi untuk valid ranges
+- **Status:** ✅ **DONE**
+- **Implemented:**
+  - Latitude validation: -90 to 90
+  - Longitude validation: -180 to 180
+  - SQLAlchemy `@validates` decorator pada model
+- **Files Modified:** `app/models/camera.py`
+- **Completed Date:** 2026-04-07
+
+---
+
+## 🟢 P3 - LOW (3-6 months)
+
+### [x] LOW-002: Remove Default Group "ALL" References
+- **Finding:** Group "ALL" sudah dihapus dari database tapi masih ada di `default_groups`
+- **Status:** ✅ **DONE**
+- **Implemented:**
+  - Removed `{"id": 11, "name": "ALL"}` dari `default_groups` list
+  - Added comment explaining NULL group_id gives access to all cameras
+  - Verified no hardcoded references to group "ALL" in codebase
+- **Files Modified:** `app/models/camera_group.py`
+- **Completed Date:** 2026-04-07
 
 ### [ ] P3-002: Blockchain Anchoring for Audit Logs
 - **Finding:** No cryptographic proof of audit log integrity
