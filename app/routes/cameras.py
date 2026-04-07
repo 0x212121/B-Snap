@@ -768,12 +768,36 @@ async def upload_csv(request: Request, db: Session = Depends(get_db), file: Uplo
                 new_cam.previous_name = row.get("previous_name", "").strip() or None
                 new_cam.snapshot_url = row.get("snapshot_url", "").strip() or None
                 
-                # P2-002: Handle safety_classification
+                # CRIT-003: Handle safety_classification dengan validasi ketat
                 safety_classification = row.get("safety_classification", "").strip().lower()
-                if safety_classification in ("critical", "standard", "low"):
+                valid_classifications = ("critical", "standard", "low")
+                
+                if safety_classification in valid_classifications:
                     new_cam.safety_classification = safety_classification
+                    # CRIT-003: Log warning untuk critical classification
+                    if safety_classification == "critical":
+                        logger.warning(
+                            "CRITICAL safety classification imported for camera '%s' via CSV (row %s). "
+                            "Verify this classification is correct.", hostname, row_num
+                        )
                 else:
+                    # CRIT-003: Invalid value, gunakan default dan log warning
+                    if safety_classification:
+                        failed_rows.append(
+                            f"Row {row_num}: Invalid safety_classification '{safety_classification}' "
+                            f"for camera '{hostname}'. Must be one of: {', '.join(valid_classifications)}"
+                        )
+                        continue  # Skip this row
                     new_cam.safety_classification = "standard"  # Default value
+                
+                # CRIT-003: Validasi password - password akan otomatis ter-enkripsi oleh model property
+                # Tapi kita perlu log jika password terlalu lemah atau kosong
+                password = row.get("password", "").strip()
+                if password and len(password) < 4:
+                    logger.warning(
+                        "Weak password detected for camera '%s' (row %s). "
+                        "Consider using a stronger password.", hostname, row_num
+                    )
                 
                 # Handle is_flipped (boolean field)
                 is_flipped_str = row.get("is_flipped", "").strip().lower()

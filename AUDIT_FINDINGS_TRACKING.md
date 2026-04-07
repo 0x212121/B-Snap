@@ -14,7 +14,8 @@
 | High (P1) | 3 | 0 | 0 | 3 |
 | Medium (P2) | 4 | 0 | 0 | 4 |
 | Low (P3) | 1 | 0 | 0 | 1 |
-| **TOTAL** | **10** | **0** | **0** | **10** |
+| **Post-Audit Critical (CRIT)** | **3** | **0** | **0** | **3** |
+| **TOTAL** | **13** | **0** | **0** | **13** |
 
 **Overall Progress:** 100% Complete  
 **Overall Status:** 🟢 **ALL COMPLETE - Production Ready**
@@ -207,6 +208,52 @@
 
 ---
 
+## 🔴 CRITICAL FIXES (Post-Audit)
+
+### [x] CRIT-001: Secure Video Serving
+- **Finding:** Video files served via direct static access without authentication
+- **Status:** ✅ **DONE**
+- **Implemented:**
+  - Blocked direct access to `/static/videos/*` → 403 Forbidden
+  - Created authenticated API endpoints:
+    - `GET /api/videos/secure/{video_id}` - Serve video with auth
+    - `GET /api/videos/file/{file_path}` - Serve by file path
+    - `POST /api/videos/gallery-view` - Batch audit logging
+  - Download support with `?download=true` parameter
+  - Anti-flooding audit log (gallery view logged once per page)
+- **Files Modified:**
+  - `app/main.py` - Route blocker
+  - `app/routes/videos.py` - API endpoints dengan audit logging
+  - `templates/video_gallery.html` - Updated to use secure URLs
+  - `templates/_video_grid.html` - Updated thumbnail and modal
+- **Completed Date:** 2026-04-07
+
+### [x] CRIT-002: Fix Group-Based Access Control
+- **Finding:** Group filtering menggunakan camera name matching yang bisa menyebabkan akses tidak sah
+- **Status:** ✅ **DONE**
+- **Implemented:**
+  - Changed from `Snapshot.camera_group == user_group.name` to foreign key join
+  - Uses `db.query(Snapshot).join(Camera, Snapshot.camera_id == Camera.id).filter(Camera.group_id == group_id)`
+  - Applied to both snapshots (`snap_gallery.py`) and videos (`videos.py`)
+- **Files Modified:**
+  - `app/routes/snap_gallery.py` - `_get_filtered_snapshots()` function
+  - `app/routes/videos.py` - `_get_filtered_videos()` function
+- **Completed Date:** 2026-04-07
+
+### [x] CRIT-003: CSV Import Validation
+- **Finding:** CSV import tidak memvalidasi safety_classification dengan ketat
+- **Status:** ✅ **DONE**
+- **Implemented:**
+  - Strict validation untuk safety_classification (critical/standard/low)
+  - Skip row dengan invalid safety_classification (continue ke row berikutnya)
+  - Log warning untuk "critical" classification (require verification)
+  - Log warning untuk password yang terlalu lemah (< 4 karakter)
+- **Files Modified:**
+  - `app/routes/cameras.py` - CSV upload validation
+- **Completed Date:** 2026-04-07
+
+---
+
 ## 🟢 P3 - LOW (3-6 months)
 
 ### [x] P3-001: Session Cookie Security Hardening
@@ -291,5 +338,5 @@ Before marking as complete, verify:
 ---
 
 **Document Owner:** Security Team  
-**Last Updated:** 2026-03-31  
+**Last Updated:** 2026-04-07  
 **Next Review:** Quarterly

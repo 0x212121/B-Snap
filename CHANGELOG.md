@@ -4,6 +4,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2026-04-07
+
+### Security
+
+#### CRITICAL: Secure Video Serving (CRIT-001)
+- **Blocked direct video access** - `/static/videos/*` now returns 403 Forbidden
+  - Videos must be accessed via authenticated API endpoints
+  - Prevents unauthorized access to safety-critical footage
+  - All video access now logged to audit_logs
+
+- **New API Endpoints**
+  - `GET /api/videos/secure/{video_id}` - Serve video file by ID with authentication
+  - `GET /api/videos/file/{file_path}` - Serve video file by path with authentication  
+  - `POST /api/videos/gallery-view` - Batch audit logging for gallery views
+  - Download support: `GET /api/videos/secure/{id}?download=true`
+
+- **Anti-Flooding Audit Log**
+  - Gallery view logged once per page load (not per video)
+  - Individual video access logged with full context
+  - Download actions separately tracked
+  - Prevents audit log flooding when browsing gallery
+
+- **Files Modified**
+  - `app/main.py` - Route blocker for `/static/videos/*`
+  - `app/routes/videos.py` - New API endpoints with audit logging
+  - `templates/video_gallery.html` - Updated to use secure URLs
+  - `templates/_video_grid.html` - Updated thumbnail and modal handlers
+
+#### CRITICAL: Group-Based Access Control Fix (CRIT-002)
+- **Fixed insecure group filtering** - Changed from name matching to foreign key joins
+  - Before: `Snapshot.camera_group == user_group.name` (vulnerable to name changes)
+  - After: `JOIN Camera ON Snapshot.camera_id = Camera.id WHERE Camera.group_id = group_id`
+  - Prevents unauthorized access when camera group names change
+
+- **Applied to**
+  - Snapshot gallery filtering (`app/routes/snap_gallery.py`)
+  - Video gallery filtering (`app/routes/videos.py`)
+
+#### CRITICAL: CSV Import Validation (CRIT-003)
+- **Strict safety_classification validation**
+  - Invalid values now cause row skip (not silently defaulted to "standard")
+  - Valid values: `critical`, `standard`, `low`
+  - Warning logged when "critical" classification imported (requires verification)
+
+- **Password strength warning**
+  - Logs warning for passwords shorter than 4 characters
+  - Helps identify weak credentials during bulk import
+
+- **Files Modified**
+  - `app/routes/cameras.py` - Enhanced CSV upload validation
+
+---
+
 ## [1.15.0] - 2026-04-01
 
 ### Added

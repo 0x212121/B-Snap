@@ -745,8 +745,8 @@ stats = tracker.get_stats()
 
 ---
 
-**Version**: 1.16.0  
-**Last Updated**: 2026-03-28
+**Version**: 1.17.0  
+**Last Updated**: 2026-04-07
 
 ---
 
@@ -794,3 +794,38 @@ stats = tracker.get_stats()
   - `GET /api/snapshots/secure/{snapshot_id}`
 - Download: `GET /api/snapshots/secure/{id}?download=true`
 - Semua akses dilog ke audit_logs dengan konteks yang sesuai
+
+---
+
+## 🔒 Critical Security Fixes (CRIT)
+
+### Secure Video Serving (CRIT-001)
+- **Issue:** Video files bisa diakses langsung via `/static/videos/*` tanpa autentikasi
+- **Fix:** 
+  - Direct access ke `/static/videos/*` → 403 Forbidden
+  - API endpoints dengan autentikasi:
+    - `GET /api/videos/file/{file_path}`
+    - `GET /api/videos/secure/{video_id}`
+  - Download: `GET /api/videos/secure/{id}?download=true`
+  - Batch logging: `POST /api/videos/gallery-view`
+  - Semua akses dilog ke audit_logs
+- **Files Modified:** `app/main.py`, `app/routes/videos.py`, `templates/video_gallery.html`, `templates/_video_grid.html`
+
+### Group-Based Access Control Fix (CRIT-002)
+- **Issue:** Group filtering menggunakan camera name matching (`Snapshot.camera_group == user_group.name`) yang bisa menyebabkan akses tidak sah jika nama grup berubah
+- **Fix:** Menggunakan foreign key relationship via JOIN dengan Camera table:
+  ```python
+  db.query(Snapshot).join(
+      Camera, Snapshot.camera_id == Camera.id, isouter=True
+  ).filter(Camera.group_id == group_id)
+  ```
+- **Files Modified:** `app/routes/snap_gallery.py`, `app/routes/videos.py`
+
+### CSV Import Validation (CRIT-003)
+- **Issue:** CSV import tidak memvalidasi safety_classification dengan ketat dan tidak warning untuk password lemah
+- **Fix:**
+  - Validasi strict untuk safety_classification (critical/standard/low)
+  - Skip row dengan invalid safety_classification
+  - Log warning untuk "critical" classification (require verification)
+  - Log warning untuk password yang terlalu lemah (< 4 karakter)
+- **Files Modified:** `app/routes/cameras.py`

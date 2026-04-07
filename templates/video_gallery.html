@@ -106,7 +106,8 @@
         <h3 id="modal-info" class="font-semibold text-gray-900 dark:text-white"></h3>
       </div>
       <div class="flex gap-2">
-        <a id="download-btn" href="#" download class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
+        <!-- CRIT-001: Download uses secure API endpoint with download=true -->
+        <a id="download-btn" href="#" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
           Download
         </a>
@@ -133,13 +134,19 @@
     currentPage: 1,
     currentFilter: { camera: "", q: "" },
     observer: null,
-    lastRequestId: 0
+    lastRequestId: 0,
+    // CRIT-001: Store current video info for download
+    currentVideoUrl: null,
+    currentVideoName: null,
+    currentVideoTime: null
   };
 
   document.addEventListener("DOMContentLoaded", () => {
     initTomSelect();
     setupEventListeners();
     setupInfiniteScroll();
+    
+    // CRIT-001: Log gallery view akan dipanggil setelah videos loaded
     
     // Check initial content count
     const initialCount = document.querySelectorAll("[data-video-card]").length;
@@ -155,6 +162,25 @@
     }
     console.log("Initial count:", initialCount, "hasMore:", VideoState.hasMore);
   });
+  
+  // CRIT-001: Log gallery view for audit compliance (batch logging)
+  async function logGalleryView() {
+    try {
+      const videoCount = document.querySelectorAll("[data-video-card]").length;
+      await fetch("/api/videos/gallery-view", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          camera_filter: VideoState.currentFilter.camera || null,
+          video_count: videoCount,
+          search_query: VideoState.currentFilter.q || null
+        })
+      });
+    } catch (err) {
+      // Non-critical error
+      console.log("Gallery view logging failed (non-critical):", err);
+    }
+  }
 
   function initTomSelect() {
     VideoState.tomSelect = new TomSelect("#cameraSelect", {
@@ -289,6 +315,10 @@
           sentinel.classList.add("hidden");
           sentinel.classList.remove("flex");
         }
+        // CRIT-001: Log gallery view setelah videos loaded (hanya untuk initial load)
+        if (!append && VideoState.currentPage === 1) {
+          logGalleryView();
+        }
       }
     }
   }
@@ -338,12 +368,18 @@ function showModal(videoUrl, cameraName, timestamp) {
     const info = document.getElementById("modal-info");
     const downloadBtn = document.getElementById("download-btn");
     
+    // CRIT-001: Store current video URL for download
+    VideoState.currentVideoUrl = videoUrl;
+    VideoState.currentVideoName = cameraName;
+    VideoState.currentVideoTime = timestamp;
+    
     // 1. Reset video state
     video.pause();
     video.removeAttribute('src');
     video.load(); // Force reset
     
-    // 2. Set source langsung (lebih reliable daripada appendChild source)
+    // 2. Set source langsung (gunakan secure API endpoint)
+    // CRIT-001: videoUrl sudah dalam format /api/videos/secure/{id}
     video.src = videoUrl;
     
     // 3. Load dan play
@@ -364,13 +400,47 @@ function showModal(videoUrl, cameraName, timestamp) {
     
     // 6. Set info dan download
     info.textContent = `${cameraName} • ${timestamp}`;
-    downloadBtn.href = videoUrl;
-    downloadBtn.download = `video_${cameraName}_${timestamp.replace(/[\s,:]/g, '-')}.mp4`;
+    // CRIT-001: Download akan ditangani oleh event handler, bukan href langsung
+    downloadBtn.onclick = handleVideoDownload;
     
     // 7. Show modal
     modal.classList.remove("hidden");
     modal.classList.add("flex");
     document.body.style.overflow = "hidden";
+}
+
+// CRIT-001: Handle video download dengan secure API endpoint
+function handleVideoDownload(e) {
+    e.preventDefault();
+    if (!VideoState.currentVideoUrl) return;
+    
+    // Tambahkan ?download=true ke URL
+    const downloadUrl = VideoState.currentVideoUrl + (VideoState.currentVideoUrl.includes('?') ? '&' : '?') + 'download=true';
+    const safeCameraName = VideoState.currentVideoName.replace(/[^a-zA-Z0-9\-_]/g, '_');
+    const safeTimestamp = VideoState.currentVideoTime.replace(/[\s,:]/g, '-');
+    const filename = `video_${safeCameraName}_${safeTimestamp}.mp4`;
+    
+    // Fetch dan download
+    fetch(downloadUrl)
+        .then(response => {
+            if (!response.ok) throw new Error('Download failed');
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            Toast.success("Video downloaded successfully", { title: "Success" });
+        })
+        .catch(err => {
+            console.error("Download error:", err);
+            Toast.error("Failed to download video", { title: "Error" });
+        });
 }
 
 function hideModal() {
@@ -397,5 +467,6 @@ function hideModal() {
   window.deleteVideo = deleteVideo;
   window.showModal = showModal;
   window.hideModal = hideModal;
+  window.handleVideoDownload = handleVideoDownload;
 </script>
 {% endblock %}

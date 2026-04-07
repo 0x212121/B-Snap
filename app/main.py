@@ -271,6 +271,26 @@ async def block_snapshot_access(request: Request, path: str):
         }
     )
 
+# CRIT-001: Block direct access to /static/videos - MUST be before StaticFiles mount
+@app.get("/static/videos/{path:path}", include_in_schema=False)
+async def block_video_access(request: Request, path: str):
+    """Block direct access to video files (CRIT-001).
+    
+    Videos must be accessed via authenticated API:
+    - GET /api/videos/secure/{video_id}
+    - GET /api/videos/file/{file_path}
+    """
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=403,
+        content={
+            "status": "error",
+            "detail": "Direct video access blocked (CRIT-001). Use authenticated API endpoints.",
+            "code": "VIDEO_ACCESS_BLOCKED",
+            "help": "Access videos via: /api/videos/secure/{video_id}"
+        }
+    )
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/documentation", StaticFiles(directory="docs/build/html"), name="docs")
 

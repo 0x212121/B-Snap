@@ -647,11 +647,57 @@ async function purgeSnapshot(id, cameraName) {
   }
 }
 
+async function verifyTrashIntegrity(id, btn) {
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<svg class="animate-spin w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Checking...`;
+
+  try {
+    const res = await fetch(`/snap/${id}/verify`);
+    const data = await res.json();
+
+    if (data.integrity_verified === true) {
+      btn.outerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" title="Hash: ${data.stored_hash.substring(0, 16)}...">Verified</span>`;
+    } else if (data.integrity_verified === false) {
+      btn.outerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" title="${data.message}">Corrupted</span>`;
+    } else {
+      btn.outerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" title="${data.message}">No Hash</span>`;
+    }
+  } catch (err) {
+    console.error('Verify error:', err);
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+    if (typeof Toast !== 'undefined') Toast.error('Failed to verify integrity', { title: 'Error' });
+  }
+}
+
 async function toggleRetentionHold(id, type, enable) {
-  const reason = enable ? prompt('Enter reason for retention hold (e.g., Legal case #12345):') : null;
-  if (enable && !reason) {
-    if (typeof Toast !== 'undefined') Toast.warning('Reason is required for retention hold', { title: 'Warning' });
-    return;
+  let reason = null;
+  
+  if (enable) {
+    // Use themedSwal modal instead of native prompt
+    const { value: inputReason, isConfirmed } = await themedSwal({
+      title: 'Apply Retention Hold',
+      text: 'Enter reason for retention hold (e.g., Legal case #12345):',
+      input: 'text',
+      inputPlaceholder: 'Enter reason...',
+      inputAttributes: {
+        autocapitalize: 'off',
+        autocorrect: 'off'
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Apply Hold',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#d97706', // amber-600
+      cancelButtonColor: '#6b7280',  // gray-500
+      allowOutsideClick: () => !Swal.isLoading()
+    });
+    
+    if (!isConfirmed || !inputReason || inputReason.trim() === '') {
+      if (typeof Toast !== 'undefined') Toast.warning('Reason is required for retention hold', { title: 'Warning' });
+      return;
+    }
+    reason = inputReason.trim();
   }
   
   try {

@@ -41,17 +41,18 @@ def _get_filtered_snapshots(db: Session, group_id: Optional[int], camera_filter:
     This function now correctly fetches all snapshots, even if the camera has been deleted.
     
     NOTE: If group_id is None, user has access to all cameras (no group restriction).
+    CRIT-002: Uses foreign key relationship instead of camera_group name matching.
     """
-    # Base query on the Snapshot table
+    # CRIT-002 FIX: Use foreign key relationship instead of camera_group name matching
     if group_id is None:
         # User has no specific group - access to all cameras
         snapshot_query = db.query(Snapshot)
     else:
-        user_group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
-        if not user_group:
-            raise HTTPException(status_code=403, detail="User group not found")
-        # Filter by user's group
-        snapshot_query = db.query(Snapshot).filter(Snapshot.camera_group == user_group.name)
+        # CRIT-002: Use join with Camera table to filter by group_id via foreign key
+        # This is more reliable than matching camera_group name which can change
+        snapshot_query = db.query(Snapshot).join(
+            Camera, Snapshot.camera_id == Camera.id, isouter=True
+        ).filter(Camera.group_id == group_id)
 
     # P0-002: Filter out soft-deleted snapshots unless explicitly requested
     if not include_deleted:
@@ -286,13 +287,14 @@ def show_snapshots(request: Request, db: Session = Depends(get_db), camera: str 
     # --- CHANGE 1: Get camera list for dropdown from snapshots ---
     # This query gets the names of only those cameras that have snapshots.
     # If group_id is None, user has access to all cameras (no group restriction)
+    # CRIT-002 FIX: Use foreign key relationship instead of camera_group name matching
     if group_id is None:
         cameras_with_snapshots_query = db.query(Snapshot.camera_name)
     else:
-        user_group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
-        if not user_group:
-            raise HTTPException(status_code=403, detail="User group not found")
-        cameras_with_snapshots_query = db.query(Snapshot.camera_name).filter(Snapshot.camera_group == user_group.name)
+        # CRIT-002: Use join with Camera table to filter by group_id via foreign key
+        cameras_with_snapshots_query = db.query(Snapshot.camera_name).join(
+            Camera, Snapshot.camera_id == Camera.id, isouter=True
+        ).filter(Camera.group_id == group_id)
     
     # Get distinct names and sort them
     camera_name_tuples = cameras_with_snapshots_query.distinct().all()

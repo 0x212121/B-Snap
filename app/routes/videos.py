@@ -48,16 +48,18 @@ def _get_filtered_videos(
     Helper function to fetch and filter videos from the database.
     
     NOTE: If group_id is None, user has access to all cameras (no group restriction).
+    CRIT-001: Returns secure API URLs instead of direct static URLs.
     """
-    # If group_id is None, user has no specific group - access to all cameras
+    # CRIT-002: Use foreign key relationship instead of camera_group name matching
     if group_id is None:
+        # User has no specific group - access to all cameras
         video_query = db.query(Video).filter(Video.deleted_at.is_(None))
     else:
-        user_group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
-        if not user_group:
-            raise HTTPException(status_code=403, detail="User group not found")
-        video_query = db.query(Video).filter(
-            Video.camera_group == user_group.name,
+        # CRIT-002 FIX: Use join with Camera table to filter by group_id via foreign key
+        video_query = db.query(Video).join(
+            Camera, Video.camera_id == Camera.id, isouter=True
+        ).filter(
+            Camera.group_id == group_id,
             Video.deleted_at.is_(None)
         )
 
@@ -75,14 +77,17 @@ def _get_filtered_videos(
 
         formatted_videos.append({
             "id": v.id,
-            "url": f"/{VIDEO_URL_BASE}/{v.file_path.replace('\\', '/')}",
+            # CRIT-001: Use authenticated API endpoint instead of direct static URL
+            "url": f"/api/videos/secure/{v.id}",
+            "thumb_url": f"/api/videos/secure/{v.id}?thumb=true",
+            "detail_url": f"/api/videos/secure/{v.id}",
+            "file_path": v.file_path,  # Keep for reference
             "ip": v.camera_ip,
             "camera": v.camera_name,
             "time": formatted_time,
             "group": v.camera_group,
-            "file_size": int(v.file_size / 1024) if v.file_size else 0,
+            "file_size": int(v.file_size / 1024 / 1024) if v.file_size else 0,  # MB
             "duration": v.duration,
-            "resolution": v.resolution,
             "resolution": v.resolution,
         })
 
@@ -503,6 +508,195 @@ async def purge_video(
             detail=f"Internal server error: {str(e)}"
         )
 
+
+
+# CRIT-001: Secure Video Serving - Authenticated access only
+
+@router.get("/api/videos/file/{file_path:path}")
+async def serve_video_file(
+    request: Request,
+    file_path: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(operator_access_required)
+):
+    """Serve video file through authenticated API (CRIT-001).
+    
+    This endpoint replaces direct static file access to enforce authentication
+    and audit logging for all video access.
+    """
+    import mimetypes
+    from fastapi.responses import FileResponse, StreamingResponse
+    
+    # Security: Prevent directory traversal
+    if ".." in file_path or file_path.startswith("/"):
+        raise HTTPException(status_code=403, detail="Invalid file path")
+    
+    # Build full path
+    full_path = os.path.join(VIDEO_FILESYSTEM_BASE, file_path)
+    
+    # Verify file exists and is within videos directory
+    try:
+        real_path = os.path.realpath(full_path)
+        base_dir = os.path.realpath(VIDEO_FILESYSTEM_BASE)
+        if not real_path.startswith(base_dir):
+            raise HTTPException(status_code=403, detail="Access denied")
+    except Exception:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    if not os.path.exists(real_path) or not os.path.isfile(real_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Log access for audit trail
+    log_audit(
+        db=db,
+        user=request.session.get("user_name", "unknown"),
+        action="view_video",
+        target=file_path,
+        ip=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        request_path=str(request.url.path),
+        request_method=request.method,
+        response_status=200,
+    )
+    
+    # Determine content type
+    content_type, _ = mimetypes.guess_type(real_path)
+    if not content_type:
+        content_type = "video/mp4"
+    
+    # Serve file
+    return FileResponse(
+        path=real_path,
+        media_type=content_type,
+        filename=os.path.basename(file_path),
+    )
+
+
+@router.get("/api/videos/secure/{video_id}")
+async def serve_video_by_id(
+    request: Request,
+    video_id: str,
+    download: bool = Query(False, description="Set Content-Disposition to attachment for download"),
+    thumb: bool = Query(False, description="Thumbnail view - minimal logging"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(operator_access_required)
+):
+    """Serve video file by video ID with authentication (CRIT-001).
+    
+    Preferred method: Uses video ID instead of file path for better security.
+    
+    Args:
+        download: If True, sets Content-Disposition to attachment for file download
+        thumb: If True, this is a thumbnail view (minimal logging)
+    """
+    import mimetypes
+    from fastapi.responses import FileResponse
+    
+    # Find video in database
+    video = db.query(Video).filter(Video.id == video_id).first()
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    
+    # Check if video is soft-deleted (only admin can view deleted)
+    if video.deleted_at and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Access denied to deleted video")
+    
+    if not video.file_path:
+        raise HTTPException(status_code=404, detail="Video file path not found")
+    
+    # Build full path
+    full_path = os.path.join(VIDEO_FILESYSTEM_BASE, video.file_path)
+    
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=404, detail="Video file not found on disk")
+    
+    # Log access (CRIT-001 compliance)
+    if download:
+        action = "download_video"
+    elif thumb:
+        action = "gallery_thumbnail_video"
+    else:
+        action = "view_video"
+    
+    log_audit(
+        db=db,
+        user=request.session.get("user_name", "unknown"),
+        action=action,
+        target=f"{video.camera_name}/{video_id}",
+        ip=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        request_path=str(request.url.path),
+        request_method=request.method,
+        response_status=200,
+    )
+    
+    # Build filename for download
+    filename = os.path.basename(video.file_path)
+    if download and video.camera_name:
+        # Create meaningful filename: CameraName_YYYYMMDD_HHMMSS.mp4
+        from datetime import datetime, timezone
+        timestamp_str = video.timestamp.strftime("%Y%m%d_%H%M%S") if video.timestamp else datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        ext = os.path.splitext(filename)[1]
+        safe_camera_name = "".join(c if c.isalnum() or c in ('-', '_') else '_' for c in video.camera_name)
+        filename = f"{safe_camera_name}_{timestamp_str}{ext}"
+    
+    # Determine content type
+    content_type, _ = mimetypes.guess_type(full_path)
+    if not content_type:
+        content_type = "video/mp4"
+    
+    return FileResponse(
+        path=full_path,
+        media_type=content_type,
+        filename=filename if download else None,
+    )
+
+
+@router.post("/api/videos/gallery-view", response_class=JSONResponse)
+async def log_video_gallery_view(
+    request: Request,
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(operator_access_required)
+):
+    """Log video gallery batch view untuk compliance tanpa flooding (CRIT-001).
+    
+    Frontend memanggil endpoint ini sekali ketika load gallery page,
+    daripada log setiap video individual.
+    
+    Request body:
+    {
+        "camera_filter": "Camera Name" | null,
+        "video_count": 12,
+        "search_query": "search term" | null
+    }
+    """
+    camera_filter = data.get("camera_filter")
+    video_count = data.get("video_count", 0)
+    search_query = data.get("search_query")
+    
+    # Build target description
+    target_parts = []
+    if camera_filter:
+        target_parts.append(f"camera:{camera_filter}")
+    if search_query:
+        target_parts.append(f"search:{search_query}")
+    target_parts.append(f"count:{video_count}")
+    target = " | ".join(target_parts) if target_parts else f"all_cameras:{video_count}"
+    
+    log_audit(
+        db=db,
+        user=request.session.get("user_name", "unknown"),
+        action="video_gallery_view",
+        target=target,
+        ip=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        request_path=str(request.url.path),
+        request_method=request.method,
+        response_status=200,
+    )
+    
+    return JSONResponse({"status": "logged"})
 
 
 # P2-001: Retention Hold Management Endpoints for Videos

@@ -1,15 +1,17 @@
 <!-- _video_grid.html - Tailwind No Overlay -->
+<!-- CRIT-001: Uses secure API endpoints for video access -->
 {% for video in videos %}
-<div data-video-card class="group bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden hover:shadow-xl hover:shadow-purple-500/10 dark:hover:shadow-black/20 transition-all duration-300 hover:-translate-y-1" data-camera="{{ video.camera }}">
+<div data-video-card class="group bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden hover:shadow-xl hover:shadow-purple-500/10 dark:hover:shadow-black/20 transition-all duration-300 hover:-translate-y-1" data-camera="{{ video.camera }}" data-video-id="{{ video.id }}">
     
     <!-- Thumbnail - No Overlay -->
     <div class="relative aspect-video bg-gray-100 dark:bg-slate-700 overflow-hidden">
-        <img src="{{ video.url.replace('.mp4', '.jpg') | urlencode }}"
-             onerror="this.src='/static/video-placeholder.jpg'"
+        <!-- CRIT-001: Thumbnail masih menggunakan placeholder karena tidak ada thumbnail API -->
+        <img src="/static/video-placeholder.jpg"
              alt="Video thumbnail"
              class="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-105"
              loading="lazy"
-             onclick='showModal({{ video.url | urlencode |tojson }}, {{ video.camera | tojson }}, {{ video.time | tojson }})'>
+             data-video-url="{{ video.detail_url }}"
+             onclick='showModal({{ video.detail_url | tojson }}, {{ video.camera | tojson }}, {{ video.time | tojson }})'>
         
         <!-- Play Icon (Static, bukan overlay yang menghalangi) -->
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
