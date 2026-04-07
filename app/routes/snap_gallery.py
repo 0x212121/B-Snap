@@ -96,7 +96,9 @@ def _get_filtered_snapshots(db: Session, group_id: Optional[int], camera_filter:
             "tamper_reason": s.tamper_reason,
             "is_orphaned": is_orphaned,
             "is_deleted": is_deleted,  # P0-002
-            "retention_hold": getattr(s, 'retention_hold', False)  # P2-003
+            "retention_hold": getattr(s, 'retention_hold', False),  # P2-003
+            "file_hash": s.file_hash,  # P0-001: Integrity hash
+            "has_hash": bool(s.file_hash)  # P0-001: Quick check for UI
         })
     return result
 
@@ -569,7 +571,21 @@ async def verify_snapshot_integrity(
     if not snapshot:
         raise HTTPException(status_code=404, detail="Snapshot not found")
     
+    user_name = request.session.get("user_name", "unknown")
+    
     if not snapshot.file_hash:
+        log_audit(
+            db=db,
+            user=user_name,
+            action="verify_integrity_no_hash",
+            target=f"snapshot:{snapshot_id}|camera:{snapshot.camera_name}",
+            ip=request.client.host if request.client else None,
+            extra={"snapshot_id": snapshot_id, "camera": snapshot.camera_name},
+            user_agent=request.headers.get("user-agent"),
+            request_path=str(request.url.path),
+            request_method=request.method,
+            response_status=200,
+        )
         return JSONResponse({
             "status": "warning",
             "message": "No hash stored for this snapshot (legacy data)",
@@ -577,6 +593,24 @@ async def verify_snapshot_integrity(
         })
     
     is_valid = snapshot.verify_integrity()
+    
+    log_audit(
+        db=db,
+        user=user_name,
+        action="verify_integrity_success" if is_valid else "verify_integrity_failed",
+        target=f"snapshot:{snapshot_id}|camera:{snapshot.camera_name}",
+        ip=request.client.host if request.client else None,
+        extra={
+            "snapshot_id": snapshot_id,
+            "camera": snapshot.camera_name,
+            "integrity_verified": is_valid,
+            "stored_hash": snapshot.file_hash,
+        },
+        user_agent=request.headers.get("user-agent"),
+        request_path=str(request.url.path),
+        request_method=request.method,
+        response_status=200,
+    )
     
     return JSONResponse({
         "status": "success" if is_valid else "failed",

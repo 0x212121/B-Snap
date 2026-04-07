@@ -96,8 +96,8 @@
       <div class="relative w-40">
         <select id="daysFilter" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
           <option value="0">All items</option>
-          <option value="7">> 7 days old</option>
-          <option value="30" selected>> 30 days old</option>
+          <option value="7" selected>> 7 days old</option>
+          <option value="30">> 30 days old</option>
           <option value="90">> 90 days old</option>
         </select>
         <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -427,8 +427,13 @@ function renderSnapshots(snapshots, total, page) {
       <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs">${s.file_size} KB</td>
       <td class="px-4 py-3 text-center">
         ${s.file_hash ? 
-          `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" title="Hash: ${s.file_hash.substring(0, 16)}...">Verified</span>` :
-          `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400">Legacy</span>`
+          `<button onclick="verifyTrashIntegrity('${s.id}', this)" 
+                   class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition"
+                   data-hash="${s.file_hash}">
+             <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+             Verify
+           </button>` :
+          `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">Legacy</span>`
         }
       </td>
       <td class="px-4 py-3 text-center">

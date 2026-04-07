@@ -419,8 +419,50 @@
     }
   }
 
+  async function verifySnapshot(id, btn) {
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<svg class="animate-spin -ml-1 mr-1 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Checking...`;
+
+    try {
+      const res = await fetch(`/snap/${id}/verify`);
+      const data = await res.json();
+
+      if (data.integrity_verified === true) {
+        themedSwal({
+          icon: 'success',
+          title: 'Integrity Verified',
+          html: `<div class="text-left"><p class="mb-2">${data.message}</p><p class="text-xs text-gray-500 dark:text-slate-400 font-mono break-all">Hash: ${data.stored_hash}</p></div>`,
+          confirmButtonText: 'OK'
+        });
+      } else if (data.integrity_verified === false) {
+        themedSwal({
+          icon: 'error',
+          title: 'Integrity Check Failed',
+          html: `<div class="text-left"><p class="mb-2 text-red-600 dark:text-red-400">${data.message}</p><p class="text-xs text-gray-500 dark:text-slate-400 font-mono break-all">Stored Hash: ${data.stored_hash}</p></div>`,
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#dc2626'
+        });
+      } else {
+        themedSwal({
+          icon: 'warning',
+          title: 'No Hash Available',
+          text: data.message,
+          confirmButtonText: 'OK'
+        });
+      }
+    } catch (err) {
+      console.error('Verify error:', err);
+      Toast.error('Failed to verify snapshot integrity', { title: 'Error' });
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalContent;
+    }
+  }
+
   window.deleteSnapshot = deleteSnapshot;
   window.showModal = showModal;
   window.hideModal = hideModal;
+  window.verifySnapshot = verifySnapshot;
 </script>
 {% endblock %}
