@@ -83,11 +83,15 @@ async def list_jobs(
     """Get list of all configured jobs with their settings."""
     try:
         # Get cron expressions from config
+        cleanup_cron = get_config('cleanup_cron', '0 2 * * *')
         cron_configs = {
             'scheduled_snapshot': get_config('snapshot_cron', ''),
             'health_check': get_config('healthcheck_cron', ''),
             'storage_check': get_config('storage_check_cron', ''),
-            'cleanup_audit_logs': get_config('cleanup_cron', '0 2 * * *'),
+            'cleanup_audit_logs': cleanup_cron,
+            'cleanup_camera_stats': cleanup_cron,
+            'cleanup_api_logs': cleanup_cron,
+            'cleanup_command_logs': cleanup_cron,
             'email_retry': get_config('email_retry_cron', ''),
         }
         

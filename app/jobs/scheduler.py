@@ -386,6 +386,11 @@ def scheduled_snapshot():
 # Config Handlers
 # ----------------------------
 def handle_snapshot_interval(scheduler, new_value):
+    # Check if cron expression is set - if so, don't override with interval
+    cron_expr = get_config("snapshot_cron", "").strip()
+    if cron_expr:
+        logger.info("[Scheduler] Snapshot job has cron expression '%s', skipping interval update", cron_expr)
+        return
     try:
         scheduler.reschedule_job("scheduled_snapshot", trigger=IntervalTrigger(minutes=new_value))
         logger.info("[Scheduler] Snapshot job interval updated to %d minutes", new_value)
@@ -394,6 +399,11 @@ def handle_snapshot_interval(scheduler, new_value):
 
 
 def handle_healthcheck_interval(scheduler, new_value):
+    # Check if cron expression is set - if so, don't override with interval
+    cron_expr = get_config("healthcheck_cron", "").strip()
+    if cron_expr:
+        logger.info("[Scheduler] Healthcheck job has cron expression '%s', skipping interval update", cron_expr)
+        return
     try:
         scheduler.reschedule_job("health_check", trigger=IntervalTrigger(minutes=new_value))
         logger.info("[Scheduler] Healthcheck job interval updated to %d minutes", new_value)
@@ -423,6 +433,11 @@ def handle_batch_delay(_, new_value):
 
 
 def handle_storage_check_interval(scheduler, new_value):
+    # Check if cron expression is set - if so, don't override with interval
+    cron_expr = get_config("storage_check_cron", "").strip()
+    if cron_expr:
+        logger.info("[Scheduler] Storage check job has cron expression '%s', skipping interval update", cron_expr)
+        return
     try:
         scheduler.reschedule_job("storage_check", trigger=IntervalTrigger(hours=new_value))
         logger.info("[Scheduler] Storage check interval updated to %d hours", new_value)
@@ -431,6 +446,12 @@ def handle_storage_check_interval(scheduler, new_value):
 
 
 def handle_email_retry_interval(scheduler, new_value):
+    # Check if cron expression is set - if so, don't override with interval
+    cron_expr = get_config("email_retry_cron", "").strip()
+    if cron_expr:
+        # Cron takes precedence, only update the fallback default
+        logger.info("[Scheduler] Email retry has cron expression '%s', skipping interval update", cron_expr)
+        return
     try:
         scheduler.reschedule_job("email_retry", trigger=IntervalTrigger(minutes=new_value))
         logger.info("[Scheduler] Email retry interval updated to %d minutes", new_value)
@@ -439,6 +460,11 @@ def handle_email_retry_interval(scheduler, new_value):
 
 
 def handle_cleanup_interval(scheduler, new_value):
+    # Check if cron expression is set - if so, don't override with interval
+    cron_expr = get_config("cleanup_cron", "").strip()
+    if cron_expr:
+        logger.info("[Scheduler] Cleanup jobs have cron expression '%s', skipping interval update", cron_expr)
+        return
     jobs = ['cleanup_audit_logs', 'cleanup_camera_stats', 'cleanup_api_logs', 'cleanup_command_logs']
     for job_id in jobs:
         try:

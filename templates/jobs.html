@@ -275,7 +275,7 @@
   }
   
   // Editable job IDs that support cron scheduling
-  const editableJobs = ['scheduled_snapshot', 'health_check', 'storage_check', 'cleanup_audit_logs', 'email_retry'];
+  const editableJobs = ['scheduled_snapshot', 'health_check', 'storage_check', 'cleanup_audit_logs', 'cleanup_camera_stats', 'cleanup_api_logs', 'cleanup_command_logs', 'email_retry'];
   
   function renderJobs(jobs) {
     const tbody = document.getElementById('jobs-table-body');
@@ -313,11 +313,14 @@
       
       const canEditSchedule = editableJobs.includes(job.id);
       
+      // Escape values for JavaScript
+      const escapeJs = (str) => str ? str.replace(/'/g, "\\'") : '';
+      
       // Schedule display with edit button
       const scheduleDisplay = canEditSchedule ? `
         <div class="flex items-center gap-2">
           <span class="text-gray-600 dark:text-gray-400 text-sm">${job.trigger}</span>
-          <button onclick="editSchedule('${job.id}', '${job.name}', '${job.cron_expression || ''}')" 
+          <button onclick="editSchedule('${escapeJs(job.id)}', '${escapeJs(job.name)}', '${escapeJs(job.cron_expression)}')" 
             class="p-1 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded transition"
             title="${job.cron_expression ? 'Edit Cron Schedule' : 'Set Cron Schedule'}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -406,6 +409,7 @@
   function saveSchedule() {
     if (!currentEditingJobId) return;
     
+    const jobId = currentEditingJobId;  // Save before closing modal
     const cronValue = document.getElementById('cron-input').value.trim();
     
     // Validate basic format
@@ -418,7 +422,7 @@
     }
     
     closeScheduleModal();
-    updateJobSchedule(currentEditingJobId, cronValue);
+    updateJobSchedule(jobId, cronValue);
   }
   
   async function updateJobSchedule(jobId, cronExpression) {
