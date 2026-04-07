@@ -18,13 +18,14 @@ class OnlineUserInfo(TypedDict):
     last_activity: str
     ip_address: Optional[str]
     user_agent: Optional[str]
+    session_count: int  # NEW: Track berapa session aktif untuk user ini
 
 
 class OnlineUserTracker:
     """Thread-safe tracker for online users.
     
-    Tracks users based on their session activity. A user is considered "online"
-    if they have made a request within the timeout period (default 5 minutes).
+    Tracks users based on user_id (bukan session_token) untuk menghindari
+    duplicate counting saat session rotation (Remember Me).
     """
     
     def __init__(self, timeout_seconds: int = 300):
@@ -34,7 +35,9 @@ class OnlineUserTracker:
             timeout_seconds: Time in seconds after which a user is considered offline
                            (default: 300 = 5 minutes)
         """
-        self._users: Dict[str, dict] = {}  # session_token -> user info
+        # KEY CHANGE: Gunakan user_id sebagai key, bukan session_token
+        self._users: Dict[int, dict] = {}  # user_id -> user info
+        self._session_map: Dict[str, int] = {}  # session_token -> user_id (untuk lookup reverse)
         self._timeout = timeout_seconds
         self._lock = Lock()
     
@@ -50,33 +53,131 @@ class OnlineUserTracker:
         """Update user activity timestamp.
         
         Called on each request to keep track of active users.
+        Menggunakan user_id sebagai primary key untuk menghindari duplicate
+        saat session token berubah (Remember Me rotation).
         
         Args:
-            session_token: Unique session identifier
-            user_id: User's database ID
+            session_token: Unique session identifier (secondary key)
+            user_id: User's database ID (primary key)
             username: User's username
             role: User's role (admin, operator, viewer)
             ip_address: Client IP address
             user_agent: Client user agent string
         """
         with self._lock:
-            self._users[session_token] = {
-                "user_id": user_id,
-                "username": username,
-                "role": role,
-                "last_activity": time.time(),
-                "ip_address": ip_address,
-                "user_agent": user_agent,
-            }
+            current_time = time.time()
+            
+            # Cek apakah user sudah ada
+            if user_id in self._users:
+                # Update existing user
+                user_data = self._users[user_id]
+                user_data["last_activity"] = current_time
+                user_data["ip_address"] = ip_address
+                user_data["user_agent"] = user_agent
+                
+                # Track session token baru (untuk keperluan revoke)
+                old_session = user_data.get("session_token")
+                if old_session != session_token:
+                    # Hapus mapping lama, tambah mapping baru
+                    self._session_map.pop(old_session, None)
+                    self._session_map[session_token] = user_id
+                    user_data["session_token"] = session_token
+                    # Increment session count jika token berbeda (rotation)
+                    if old_session:
+                        user_data["session_count"] = user_data.get("session_count", 1) + 1
+                        logger.debug(f"Session rotated for user {username}: {old_session[:8]}... -> {session_token[:8]}...")
+            else:
+                # User baru - create entry
+                self._users[user_id] = {
+                    "user_id": user_id,
+                    "username": username,
+                    "role": role,
+                    "last_activity": current_time,
+                    "ip_address": ip_address,
+                    "user_agent": user_agent,
+                    "session_token": session_token,
+                    "session_count": 1,
+                }
+                self._session_map[session_token] = user_id
     
-    def remove_user(self, session_token: str) -> None:
-        """Remove a user from tracking (e.g., on logout).
+    def remove_user(self, session_token: str) -> Optional[int]:
+        """Remove a user session dari tracking.
         
         Args:
             session_token: Unique session identifier
+            
+        Returns:
+            user_id yang di-remove, atau None jika tidak ditemukan
         """
         with self._lock:
-            self._users.pop(session_token, None)
+            user_id = self._session_map.pop(session_token, None)
+            if user_id and user_id in self._users:
+                user_data = self._users[user_id]
+                current_count = user_data.get("session_count", 1)
+                
+                if current_count <= 1:
+                    # Last session - remove user entirely
+                    del self._users[user_id]
+                    logger.info(f"User {user_data['username']} (ID: {user_id}) removed from online users (last session)")
+                else:
+                    # Decrement session count tapi keep user (masih ada session lain)
+                    user_data["session_count"] = current_count - 1
+                    logger.info(f"User {user_data['username']} session reduced to {current_count - 1}")
+                
+                return user_id
+            return None
+    
+    def remove_user_by_id(self, user_id: int) -> bool:
+        """Remove semua session untuk user tertentu (force logout).
+        
+        Args:
+            user_id: User ID yang mau di-remove
+            
+        Returns:
+            True jika berhasil di-remove, False jika tidak ditemukan
+        """
+        with self._lock:
+            if user_id in self._users:
+                user_data = self._users.pop(user_id)
+                # Bersihkan semua session mapping untuk user ini
+                sessions_to_remove = [
+                    token for token, uid in self._session_map.items() 
+                    if uid == user_id
+                ]
+                for token in sessions_to_remove:
+                    self._session_map.pop(token, None)
+                logger.info(f"Force removed user {user_data['username']} (ID: {user_id}) and {len(sessions_to_remove)} session(s)")
+                return True
+            return False
+    
+    def cleanup_expired(self) -> List[int]:
+        """Remove expired users (tidak ada aktivitas dalam timeout period).
+        
+        Returns:
+            List of user_ids yang di-remove karena expired
+        """
+        current_time = time.time()
+        expired_users = []
+        
+        with self._lock:
+            expired_user_ids = [
+                user_id for user_id, info in self._users.items()
+                if current_time - info["last_activity"] > self._timeout
+            ]
+            
+            for user_id in expired_user_ids:
+                user_data = self._users.pop(user_id)
+                # Bersihkan session mapping
+                sessions_to_remove = [
+                    token for token, uid in self._session_map.items()
+                    if uid == user_id
+                ]
+                for token in sessions_to_remove:
+                    self._session_map.pop(token, None)
+                expired_users.append(user_id)
+                logger.debug(f"Expired user removed: {user_data['username']} (ID: {user_id})")
+        
+        return expired_users
     
     def get_online_users(self) -> List[OnlineUserInfo]:
         """Get list of currently online users.
@@ -88,13 +189,13 @@ class OnlineUserTracker:
         online_users = []
         
         with self._lock:
-            # Clean up expired sessions
-            expired_tokens = [
-                token for token, info in self._users.items()
+            # Cleanup inline (opsional, bisa juga rely pada scheduler)
+            expired_ids = [
+                uid for uid, info in self._users.items()
                 if current_time - info["last_activity"] > self._timeout
             ]
-            for token in expired_tokens:
-                del self._users[token]
+            for uid in expired_ids:
+                self._users.pop(uid, None)
             
             # Build response
             for info in self._users.values():
@@ -107,6 +208,7 @@ class OnlineUserTracker:
                     ).isoformat(),
                     "ip_address": info.get("ip_address"),
                     "user_agent": info.get("user_agent"),
+                    "session_count": info.get("session_count", 1),
                 })
         
         # Sort by username
@@ -114,28 +216,23 @@ class OnlineUserTracker:
         return online_users
     
     def get_online_count(self) -> int:
-        """Get count of currently online users.
-        
-        Returns:
-            Number of unique users currently online
-        """
+        """Get count of unique users currently online."""
         return len(self.get_online_users())
     
     def get_stats(self) -> dict:
-        """Get statistics about online users.
-        
-        Returns:
-            Dictionary containing online user statistics
-        """
+        """Get statistics about online users."""
         users = self.get_online_users()
         
         role_counts = {}
+        total_sessions = 0
         for user in users:
             role = user["role"]
             role_counts[role] = role_counts.get(role, 0) + 1
+            total_sessions += user.get("session_count", 1)
         
         return {
-            "total_online": len(users),
+            "total_online": len(users),  # UNIQUE users, bukan total sessions
+            "total_sessions": total_sessions,  # NEW: Total session count
             "by_role": role_counts,
             "users": users,
         }
@@ -143,14 +240,12 @@ class OnlineUserTracker:
 
 # Global instance
 _online_tracker: Optional[OnlineUserTracker] = None
+import logging
+logger = logging.getLogger("online_users")
 
 
 def get_online_tracker() -> OnlineUserTracker:
-    """Get or create the global online tracker instance.
-    
-    Returns:
-        OnlineUserTracker singleton instance
-    """
+    """Get or create the global online tracker instance."""
     global _online_tracker
     if _online_tracker is None:
         _online_tracker = OnlineUserTracker()

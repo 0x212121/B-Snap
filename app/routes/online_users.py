@@ -71,63 +71,32 @@ async def revoke_user_session(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required),
 ):
-    """Revoke a user's session (force logout).
-    
-    This endpoint allows admin to force logout a specific user by:
-    1. Removing all web tokens from the user's record
-    2. Removing the user from online tracker
-    
-    Args:
-        user_id: The ID of the user to revoke
-        
-    Returns:
-        JSON response indicating success or failure
-    """
-    # Get admin info for audit log
+    """Revoke a user's session (force logout)."""
     admin_username = request.session.get("user_name", "unknown")
     
-    # Find the user
     target_user = db.query(User).filter(User.id == user_id).first()
     if not target_user:
         return JSONResponse(
             status_code=404,
-            content={
-                "status": "error",
-                "message": "User not found"
-            }
+            content={"status": "error", "message": "User not found"}
         )
     
-    # Prevent admin from revoking their own session
     if target_user.id == current_admin.id:
         return JSONResponse(
             status_code=400,
-            content={
-                "status": "error",
-                "message": "Cannot revoke your own session"
-            }
+            content={"status": "error", "message": "Cannot revoke your own session"}
         )
     
-    # Get username before clearing tokens
     target_username = target_user.username
     
-    # Clear all web tokens (forces re-authentication)
+    # Clear all web tokens
     target_user.web_tokens = []
-    
-    # Commit changes
     db.commit()
     
-    # Remove from online tracker
+    # Remove from online tracker - sekarang pakai user_id based removal
     tracker = get_online_tracker()
-    # Find and remove all sessions for this user
-    sessions_to_remove = []
-    for session_token, info in tracker._users.items():
-        if info.get("user_id") == user_id:
-            sessions_to_remove.append(session_token)
+    tracker.remove_user_by_id(user_id)  # Ganti dari loop session ke method baru
     
-    for session_token in sessions_to_remove:
-        tracker.remove_user(session_token)
-    
-    # Log the action
     log_audit(
         db=db,
         user=admin_username,
