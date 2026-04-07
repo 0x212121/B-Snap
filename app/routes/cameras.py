@@ -768,6 +768,13 @@ async def upload_csv(request: Request, db: Session = Depends(get_db), file: Uplo
                 new_cam.previous_name = row.get("previous_name", "").strip() or None
                 new_cam.snapshot_url = row.get("snapshot_url", "").strip() or None
                 
+                # P2-002: Handle safety_classification
+                safety_classification = row.get("safety_classification", "").strip().lower()
+                if safety_classification in ("critical", "standard", "low"):
+                    new_cam.safety_classification = safety_classification
+                else:
+                    new_cam.safety_classification = "standard"  # Default value
+                
                 # Handle is_flipped (boolean field)
                 is_flipped_str = row.get("is_flipped", "").strip().lower()
                 if is_flipped_str in ("true", "yes", "1", "on"):
@@ -861,7 +868,6 @@ async def export_csv(request: Request, db: Session = Depends(get_db)):
     """Exports all camera data to a CSV file with all Camera and CameraGroup fields."""
     logger.info("Starting CSV export process.")
     cameras = db.query(DBCamera).options(joinedload(DBCamera.group)).all()
-    db.close()
     logger.debug("Fetched %s cameras for export.", len(cameras))
 
     output = io.StringIO()
@@ -873,8 +879,10 @@ async def export_csv(request: Request, db: Session = Depends(get_db)):
         "id", "hostname", "previous_name", "ip", "port", "username", "password",
         "latitude", "longitude", "previous_latitude", "previous_longitude",
         "asset_no", "location", "status", "is_flipped", "note", "snapshot_url",
+        # P2-002: Safety classification
+        "safety_classification",
         # CameraGroup fields
-        "group_id", "group_name", "group_latitude", "group_longitude"
+        "group_id", "group_name"
     ])
 
     for cam in cameras:
@@ -884,14 +892,16 @@ async def export_csv(request: Request, db: Session = Depends(get_db)):
             cam.latitude, cam.longitude, cam.previous_latitude, cam.previous_longitude,
             cam.asset_no, cam.location, cam.status,
             cam.is_flipped, cam.note, cam.snapshot_url,
+            # P2-002: Safety classification
+            cam.safety_classification or "standard",
             # CameraGroup fields
             cam.group_id if cam.group else "",
-            cam.group.name if cam.group else "",
-            cam.group.latitude if cam.group else "",
-            cam.group.longitude if cam.group else ""
+            cam.group.name if cam.group else ""
         ])
 
     output.seek(0)
+    
+    # Log audit before closing db
     log_audit(
         db=db,
         user=request.session.get("user_name", "unknown"),
@@ -900,11 +910,13 @@ async def export_csv(request: Request, db: Session = Depends(get_db)):
         ip=request.client.host,
         extra="via Camera Management"
     )
+    
+    db.close()
     logger.info("CSV export completed successfully.")
     return StreamingResponse(
         output,
         media_type="text/csv",
-        headers={"Content-Disposition": "attachment; file_path=cameras.csv"}
+        headers={"Content-Disposition": "attachment; filename=cameras.csv"}
     )
 
 

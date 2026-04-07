@@ -165,7 +165,7 @@
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap">IP Address</th>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Username</th>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Location</th>
-          <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Division</th>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Group</th>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap text-center">Status</th>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap text-center">Actions</th>
         </tr>
@@ -885,23 +885,8 @@
       });
     }
     
-    // Modal click outside
-    const modal = getElement('nvrModal');
-    if (modal) {
-      modal.addEventListener('click', function(e) {
-        if (e.target === this) hideModal();
-      });
-    }
-    
-    // Escape key
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
-        const modalEl = getElement('nvrModal');
-        if (modalEl && !modalEl.classList.contains('hidden')) {
-          hideModal();
-        }
-      }
-    });
+    // Modal no longer closes when clicking outside or pressing Escape - prevents accidental data loss
+    // User must click Cancel or Submit button to close modal
     
     // Show upload status if URL params exist
     const urlParams = new URLSearchParams(window.location.search);

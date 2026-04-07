@@ -282,7 +282,7 @@ def send_offline_incident_email_once(
         return False
 
     # siapkan data email
-    camera_group = camera.group.name if camera.group else "No Division"
+    camera_group = camera.group.name if camera.group else "No Group"
     minutes = offline_duration_seconds // 60
     local_incident = format_datetime_with_tz(
         to_current_timezone(incident_started_at, db)
@@ -490,7 +490,7 @@ def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str, inci
             health.alert_cooldown_until.isoformat()
         )
     
-    camera_group = camera.group.name if camera.group else "No Division"
+    camera_group = camera.group.name if camera.group else "No Group"
     recipients = get_recipients_for_camera(db, camera)
     if not recipients:
         logger.warning("No recipients found for %s", camera.hostname)
@@ -603,7 +603,7 @@ def send_recovery_alert(db: Session, camera, last_reason: str = None):
         logger.warning("No recipients for recovery alert: %s", camera.hostname)
         return False
     
-    camera_group = camera.group.name if camera.group else "No Division"
+    camera_group = camera.group.name if camera.group else "No Group"
     
     # Get current time for recovery
     recovery_time = datetime.now(timezone.utc)

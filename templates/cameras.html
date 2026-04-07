@@ -961,9 +961,8 @@
       loadPage(1);
     });
     
-    modalElement.addEventListener('click', (e) => {
-      if (e.target === modalElement) hideCameraModal();
-    });
+    // Modal no longer closes when clicking outside - prevents accidental data loss
+    // User must click Cancel or Submit button to close modal
 
     function showUploadStatus() {
       const urlParams = new URLSearchParams(window.location.search);
