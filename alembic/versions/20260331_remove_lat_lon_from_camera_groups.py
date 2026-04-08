@@ -9,6 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
@@ -18,13 +19,25 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def column_exists(table_name: str, column_name: str) -> bool:
+    """Check if column exists in table."""
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    columns = inspector.get_columns(table_name)
+    return any(col['name'] == column_name for col in columns)
+
+
 def upgrade():
-    # Drop latitude and longitude columns from camera_groups table
-    op.drop_column('camera_groups', 'latitude')
-    op.drop_column('camera_groups', 'longitude')
+    # FIX: Check existence before drop
+    if column_exists('camera_groups', 'latitude'):
+        op.drop_column('camera_groups', 'latitude')
+    if column_exists('camera_groups', 'longitude'):
+        op.drop_column('camera_groups', 'longitude')
 
 
 def downgrade():
-    # Add back latitude and longitude columns
-    op.add_column('camera_groups', sa.Column('latitude', sa.Float(), nullable=True))
-    op.add_column('camera_groups', sa.Column('longitude', sa.Float(), nullable=True))
+    # FIX: Check existence before add
+    if not column_exists('camera_groups', 'latitude'):
+        op.add_column('camera_groups', sa.Column('latitude', sa.Float(), nullable=True))
+    if not column_exists('camera_groups', 'longitude'):
+        op.add_column('camera_groups', sa.Column('longitude', sa.Float(), nullable=True))
