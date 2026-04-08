@@ -2,11 +2,12 @@ node_modules/
 secret/
 *.log
 *.env
-static/snapshots
-static/videos
-static/images
+static/snapshots/
+static/videos/
+static/images/
 Backlog.md
 .venv
+venv/
 __pycache__/
 *.pyc
 *.pyo
@@ -21,3 +22,8 @@ logs
 app/*.exe
 app/logs
 backup.sql
+ffmpeg.exe
+test_*.py
+ffprobe.exe
+ffplay.exe
+AGENTS.md
