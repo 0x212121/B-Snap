@@ -63,7 +63,7 @@ services:
     environment:
       POSTGRES_DB: bsnap_db
       POSTGRES_USER: bsnap_user
-      POSTGRES_PASSWORD: bsnap_pass
+      POSTGRES_PASSWORD: bsnapDBP4ss2025
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
     ports:
       - "5432:5432"
@@ -92,3 +92,7 @@ services:
 volumes:
   postgres_data:
   shared_tmp:
+
+external:
+  b-snap2_postgres_data:
+    name: b-snap2_postgres_data
