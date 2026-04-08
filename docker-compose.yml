@@ -92,7 +92,3 @@ services:
 volumes:
   postgres_data:
   shared_tmp:
-
-external:
-  b-snap2_postgres_data:
-    name: b-snap2_postgres_data

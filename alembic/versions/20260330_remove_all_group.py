@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision: str = '20260330_remove_all_group'
@@ -20,7 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """
-    Remove group "ALL" and set users with that group to have no group (NULL).
+    Remove group "ALL" and set users/cameras/nvr with that group to have no group (NULL).
     Users with NULL group_id now have access to all cameras.
     """
     # Get database connection
@@ -33,20 +33,48 @@ def upgrade() -> None:
     if all_group:
         all_group_id = all_group[0]
         
-        # Update users who had the "ALL" group to have NULL group_id
-        # This gives them access to all cameras (new permission model)
+        # FIX 1: Update NVR yang pakai group ALL ke NULL (hindari FK violation)
+        conn.execute(
+            sa.text("UPDATE nvr SET group_id = NULL WHERE group_id = :group_id"),
+            {"group_id": all_group_id}
+        )
+        print(f"Updated NVR with group_id={all_group_id} to NULL")
+        
+        # FIX 2: Update cameras yang pakai group ALL ke NULL (hindari FK violation)
+        conn.execute(
+            sa.text("UPDATE cameras SET group_id = NULL WHERE group_id = :group_id"),
+            {"group_id": all_group_id}
+        )
+        print(f"Updated cameras with group_id={all_group_id} to NULL")
+        
+        # FIX 3: Update users yang pakai group ALL ke NULL (sudah ada sebelumnya)
         conn.execute(
             sa.text("UPDATE users SET group_id = NULL WHERE group_id = :group_id"),
             {"group_id": all_group_id}
         )
+        print(f"Updated users with group_id={all_group_id} to NULL")
         
-        # Delete the "ALL" group
+        # FIX 4: Update whatsapp_whitelist jika ada yang pakai group ALL
+        conn.execute(
+            sa.text("UPDATE whatsapp_whitelist SET group_id = NULL WHERE group_id = :group_id"),
+            {"group_id": all_group_id}
+        )
+        print(f"Updated whatsapp_whitelist with group_id={all_group_id} to NULL")
+        
+        # FIX 5: Update group_recipients jika ada yang pakai group ALL  
+        conn.execute(
+            sa.text("UPDATE group_recipients SET group_id = NULL WHERE group_id = :group_id"),
+            {"group_id": all_group_id}
+        )
+        print(f"Updated group_recipients with group_id={all_group_id} to NULL")
+        
+        # Baru delete group ALL setelah semua referensi di-set NULL
         conn.execute(
             sa.text("DELETE FROM camera_groups WHERE id = :group_id"),
             {"group_id": all_group_id}
         )
         
-        print(f"Removed group 'ALL' (id={all_group_id}) and updated users to have NULL group_id")
+        print(f"Removed group 'ALL' (id={all_group_id}) and updated all references to NULL")
     else:
         print("Group 'ALL' not found - nothing to remove")
 
@@ -69,5 +97,7 @@ def downgrade() -> None:
         sa.text("UPDATE users SET group_id = :group_id WHERE group_id IS NULL"),
         {"group_id": all_group_id}
     )
+    
+    # Note: NVR, cameras, whatsapp_whitelist, group_recipients tetap NULL karena tidak tahu yang mana sebelumnya
     
     print(f"Restored group 'ALL' (id={all_group_id}) and reassigned users")

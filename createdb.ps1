@@ -73,3 +73,13 @@ docker exec -i $CONTAINER_NAME psql -U $DB_USER -d $DB_NAME -f /backup.sql
 Write-Host "List tabel:"
 
 docker exec -it $CONTAINER_NAME psql -U $DB_USER -d $DB_NAME -c "\dt"
+
+# ==============================
+# HAPUS CONTAINER (cleanup akhir)
+# ==============================
+
+Write-Host "Menghapus container..."
+
+docker rm -f $CONTAINER_NAME
+
+Write-Host "Selesai!"
