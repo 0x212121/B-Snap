@@ -43,6 +43,8 @@
         {% endif %}
 
         <form class="space-y-6" action="/login/otp" method="post">
+            <input type="hidden" name="token_2fa" value="{{ token_2fa }}">
+
             <div>
                 <label for="otp" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200">
                     6-Digit Authentication Code

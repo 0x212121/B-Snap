@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 import traceback
 
 from fastapi import FastAPI, HTTPException, Request, Response, status
-from fastapi.responses import ORJSONResponse, RedirectResponse, HTMLResponse
+from fastapi.responses import ORJSONResponse, RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.docs import get_swagger_ui_html
 from sqlalchemy import inspect
@@ -202,10 +202,16 @@ from app.middleware.real_ip_fix import RealIPFixMiddleware
 middleware = [
     Middleware(ProxyHeadersMiddleware, trusted_hosts=TRUSTED_HOSTS),
     Middleware(HTTPSProxyFixMiddleware),
-    Middleware(RealIPFixMiddleware),   # ✅ Tambahkan ini
+    Middleware(RealIPFixMiddleware),
     Middleware(GZipMiddleware, minimum_size=1000),
-    Middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=3600),
-    Middleware(RestoreSessionMiddleware),
+    Middleware(
+        SessionMiddleware, 
+        secret_key=SECRET_KEY, 
+        max_age=86400,  # FIX: 24 jam sama seperti SESSION_MAX_AGE_SECONDS di auth.py
+        path="/",       # FIX: Penting! Pastikan cookie berlaku di seluruh path
+        same_site="lax",
+        https_only=False  # True jika HTTPS
+    ),
     Middleware(OnlineUserTrackerMiddleware),
     Middleware(AuthAndSetupMiddleware),
 ]
@@ -357,8 +363,13 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
             url="/login?reason=invalid_session",
             status_code=status.HTTP_303_SEE_OTHER
         )
-        response.delete_cookie("session")
-        response.delete_cookie("session_token")
+        # FIX: Tambahkan path="/" agar cookie benar-benar terhapus
+        response.delete_cookie("session", path="/")
+        response.delete_cookie("session_token", path="/")
+        # FIX: Hapus juga remember_me cookie
+        from app.utils.remember_me import get_cookie_settings
+        cookie_settings = get_cookie_settings()
+        response.delete_cookie(cookie_settings["key"], path="/")
         return response
 
     if exc.status_code == status.HTTP_403_FORBIDDEN:
@@ -381,6 +392,7 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
         )
 
     return Response(content=f"An error occurred: {exc.detail}", status_code=exc.status_code)
+
 
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui():
@@ -426,14 +438,24 @@ async def forbidden_403(request: Request, exc):
 import traceback
 
 @app.exception_handler(Exception)
-async def debug_exception_handler(request: Request, exc: Exception):
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    
+    # Jika development, tampilkan detail
+    if ENVIRONMENT == "development":
+        return HTMLResponse(
+            content=f"""
+            <h1>INTERNAL SERVER ERROR - DEBUG MODE</h1>
+            <h2>Error Type: {type(exc).__name__}</h2>
+            <h2>Message: {str(exc)}</h2>
+            <hr>
+            <pre style="background: #f0f0f0; padding: 20px; overflow: auto;">{traceback.format_exc()}</pre>
+            """,
+            status_code=500
+        )
+    
+    # Production: tampilkan pesan generic
     return HTMLResponse(
-        content=f"""
-        <h1>INTERNAL SERVER ERROR - DEBUG MODE</h1>
-        <h2>Error Type: {type(exc).__name__}</h2>
-        <h2>Message: {str(exc)}</h2>
-        <hr>
-        <pre style="background: #f0f0f0; padding: 20px; overflow: auto;">{traceback.format_exc()}</pre>
-        """,
+        content="<h1>Internal Server Error</h1><p>Please try again later.</p>",
         status_code=500
     )

@@ -40,11 +40,23 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
         try:
             return await self._do_dispatch(request, call_next, db)
         except Exception as e:
-            logger.critical(f"Middleware critical error: {e}", exc_info=True)
+            # CRITICAL: Log detail error untuk debugging
+            logger.critical(f"Middleware critical error: {str(e)}", exc_info=True)
+            
             path = request.url.path
             if any(path.startswith(p) for p in ALLOWED_PUBLIC_PATHS):
                 return await call_next(request)
-            return RedirectResponse("/login?error=system", status_code=307)
+            
+            # Hapus semua cookies untuk mencegah redirect loop
+            response = RedirectResponse("/login?error=system", status_code=307)
+            response.delete_cookie("session_token", path="/")
+            response.delete_cookie("session", path="/")
+            try:
+                cookie_settings = get_cookie_settings()
+                response.delete_cookie(cookie_settings["key"], path="/")
+            except:
+                pass
+            return response
         finally:
             db.close()
     
@@ -56,69 +68,48 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
         token_query = request.query_params.get("token")
         session_user_id = session.get("user_id")
 
-        # Step 0: Setup mode if no users exist
-        if not db.query(User).first():
+        logger.debug(f"[AuthMiddleware] Path: {path}, SessionUser: {session_user_id}, Token: {session_token is not None}")
+
+        # Step 0: Setup mode
+        try:
+            user_exists = db.query(User).first() is not None
+        except Exception as e:
+            logger.error(f"[AuthMiddleware] DB error checking users: {e}")
+            user_exists = True  # Asumsikan ada user untuk mencegah setup loop
+
+        if not user_exists:
             if not path.startswith("/setup") and not path.startswith("/static"):
                 return RedirectResponse("/setup", status_code=307)
             return await call_next(request)
 
-        # Step 1: Allow public and tokenized access
+        # Step 1: Allow public paths
         if any(path.startswith(p) for p in ALLOWED_PUBLIC_PATHS) or token_query:
             return await call_next(request)
 
-        # Step 2: Bearer token-based API access
+        # Step 2: Bearer token
         if auth_header and auth_header.lower().startswith("bearer "):
             return await call_next(request)
 
-        # Fix incomplete session (missing username or group id)
-        if session_user_id and (not session.get("user_name") or not session.get("user_groupid")):
-            try:
-                user = db.query(User).filter(User.id == int(session_user_id)).first()
-                if user:
-                    if user.role == "admin":
-                        val = db.query(Configuration).filter_by(key="debug_mode").first()
-                        request.state.debug_mode = (val and val.value == "1")
-                    else:
-                        request.state.debug_mode = False
-
-                    if not session.get("user_name"):
-                        session["user_name"] = user.username
-                    if not session.get("user_groupid"):
-                        session["user_groupid"] = user.group_id
-            except Exception as e:
-                logger.warning("Failed to restore session data from user_id: %s", e)
-
-        # Step 3: Early validation using both session + session_token
-        remember_me_cookie = request.cookies.get(get_cookie_settings()["key"])
-        
+        # Step 3: Validate session + token
         if session_user_id and session_token:
             try:
                 user_id = int(session_user_id)
                 user = db.query(User).filter(User.id == user_id).first()
 
                 if user:
+                    # Set debug mode
                     if user.role == "admin":
                         val = db.query(Configuration).filter_by(key="debug_mode").first()
                         request.state.debug_mode = (val and val.value == "1")
                     else:
                         request.state.debug_mode = False
-                    tokens = self.parse_tokens(user.web_tokens)
+                    
+                    # FIX: Parse tokens dengan aman
+                    tokens = self._safe_parse_tokens(user.web_tokens)
+                    logger.debug(f"[AuthMiddleware] User: {user.username}, Tokens count: {len(tokens)}")
+                    
                     if is_valid_web_token(session_token, tokens):
-                        # MED-001-FIX: Auto-refresh session for Remember Me users
-                        if remember_me_cookie:
-                            try:
-                                remember_user = validate_remember_token(db, remember_me_cookie)
-                                if remember_user and remember_user.id == user.id:
-                                    # Refresh session token to extend 24h window
-                                    response = await call_next(request)
-                                    # FIX: Refresh dengan tracker update
-                                    return self._refresh_session_cookie(
-                                        response, user, session_token, db, request
-                                    )
-                            except Exception as e:
-                                logger.error(f"Remember me refresh failed in Step 3: {e}")
-                        
-                        # NORMAL SESSION: Update tracker dengan existing token
+                        # Token valid - update tracker
                         tracker = get_online_tracker()
                         tracker.update_activity(
                             session_token=session_token,
@@ -130,83 +121,73 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                         )
                         return await call_next(request)
                     else:
-                        logger.warning("Session token is invalid or expired.")
-            except (ValueError, TypeError):
-                logger.warning("Invalid session_user_id format in session.")
+                        logger.warning(f"[AuthMiddleware] Invalid/expired token for user {user_id}")
+                        # Token tidak valid - clear session
+                        session.clear()
+                else:
+                    logger.warning(f"[AuthMiddleware] User {user_id} not found")
+                    session.clear()
+                    
+            except (ValueError, TypeError) as e:
+                logger.warning(f"[AuthMiddleware] Invalid session data: {e}")
+                session.clear()
 
-        # Step 4: Fallback – Restore session from cookie
+        # Step 4: Fallback - restore dari cookie
         if session_token:
-            user = self.get_user_by_session_token(db, session_token)
-            if user:
-                if user.role == "admin":
-                    val = db.query(Configuration).filter_by(key="debug_mode").first()
-                    request.state.debug_mode = (val and val.value == "1")
-                else:
-                    request.state.debug_mode = False
-                tokens = self.parse_tokens(user.web_tokens)
-                if is_valid_web_token(session_token, tokens):
-                    new_token, expires_at = self.generate_new_token()
-                    tokens.append({
-                        "token": new_token,
-                        "created_at": datetime.now(timezone.utc).isoformat(),
-                        "expires_at": expires_at
-                    })
-                    user.web_tokens = tokens
-                    db.commit()
-
-                    session["user_id"] = user.id
-                    session["user_role"] = user.role
-                    session["user_name"] = user.username
-                    session["user_groupid"] = user.group_id
-
-                    response = await call_next(request)
+            try:
+                user = self._get_user_by_session_token(db, session_token)
+                if user:
+                    tokens = self._safe_parse_tokens(user.web_tokens)
                     
-                    # FIX: Tambah import config
-                    from app.routes.auth import SESSION_MAX_AGE_SECONDS, COOKIE_SAMESITE, COOKIE_SECURE
-                    response.set_cookie(
-                        "session_token",
-                        new_token,
-                        httponly=True,
-                        max_age=SESSION_MAX_AGE_SECONDS,
-                        samesite=COOKIE_SAMESITE,
-                        secure=COOKIE_SECURE
-                    )
-                    
-                    # FIX: Update tracker dengan token baru (Step 4 Fallback)
-                    tracker = get_online_tracker()
-                    tracker.update_activity(
-                        session_token=new_token,
-                        user_id=user.id,
-                        username=user.username,
-                        role=user.role,
-                        ip_address=request.client.host if request.client else None,
-                        user_agent=request.headers.get("user-agent")
-                    )
-                    
-                    return response
-                else:
-                    logger.warning("Token found but failed validation.")
-            else:
-                logger.warning("No user found for session token.")
+                    if is_valid_web_token(session_token, tokens):
+                        # Restore session
+                        session["user_id"] = user.id
+                        session["user_role"] = user.role
+                        session["user_name"] = user.username
+                        session["user_groupid"] = user.group_id
+                        
+                        # Rotate token untuk keamanan
+                        new_token, expires_at = self._generate_new_token()
+                        tokens.append({
+                            "token": new_token,
+                            "created_at": datetime.now(timezone.utc).isoformat(),
+                            "expires_at": expires_at
+                        })
+                        user.web_tokens = tokens
+                        db.commit()
+                        
+                        response = await call_next(request)
+                        
+                        # Set cookie baru
+                        from app.routes.auth import SESSION_MAX_AGE_SECONDS, COOKIE_SAMESITE, COOKIE_SECURE
+                        response.set_cookie(
+                            "session_token",
+                            new_token,
+                            httponly=True,
+                            max_age=SESSION_MAX_AGE_SECONDS,
+                            samesite=COOKIE_SAMESITE,
+                            secure=COOKIE_SECURE,
+                            path="/"
+                        )
+                        return response
+                        
+            except Exception as e:
+                logger.error(f"[AuthMiddleware] Fallback error: {e}")
 
-        # Step 5: Remember Me - Check for persistent login token with ROTATION
+        # Step 5: Remember Me
         remember_token = request.cookies.get(get_cookie_settings()["key"])
         if remember_token:
             try:
                 user = validate_remember_token(db, remember_token)
                 if user:
-                    # Valid remember token - create new session
-                    if user.role == "admin":
-                        val = db.query(Configuration).filter_by(key="debug_mode").first()
-                        request.state.debug_mode = (val and val.value == "1")
-                    else:
-                        request.state.debug_mode = False
+                    # Buat session baru
+                    session["user_id"] = user.id
+                    session["user_role"] = user.role
+                    session["user_name"] = user.username
+                    session["user_groupid"] = user.group_id
                     
-                    # ===== TOKEN ROTATION PATTERN =====
-                    # 1. Revoke token yang baru dipakai
+                    # Rotate remember token
                     revoke_token(db, remember_token)
-                    
-                    # 2. Generate token baru dengan metadata device yang sama
                     device_name = f"{request.headers.get('sec-ch-ua-platform', 'Unknown').strip(chr(34))} Browser"
                     new_remember_token = create_remember_token(
                         db=db,
@@ -216,9 +197,9 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                         user_agent=request.headers.get("user-agent")
                     )
                     
-                    # 3. Generate new session token
-                    tokens = self.parse_tokens(user.web_tokens)
-                    new_token, expires_at = self.generate_new_token()
+                    # Generate session token
+                    new_token, expires_at = self._generate_new_token()
+                    tokens = self._safe_parse_tokens(user.web_tokens)
                     tokens.append({
                         "token": new_token,
                         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -227,78 +208,57 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                     user.web_tokens = tokens
                     db.commit()
                     
-                    # Set session
-                    session["user_id"] = user.id
-                    session["user_role"] = user.role
-                    session["user_name"] = user.username
-                    session["user_groupid"] = user.group_id
-                    
-                    logger.info(f"Session restored via Remember Me for user={user.username} with token rotation")
-                    
                     response = await call_next(request)
                     
                     # Set cookies
                     from app.routes.auth import SESSION_MAX_AGE_SECONDS, COOKIE_SAMESITE, COOKIE_SECURE
-                    response.set_cookie(
-                        "session_token",
-                        new_token,
-                        httponly=True,
-                        max_age=SESSION_MAX_AGE_SECONDS,
-                        samesite=COOKIE_SAMESITE,
-                        secure=COOKIE_SECURE
-                    )
+                    response.set_cookie("session_token", new_token, httponly=True, 
+                                      max_age=SESSION_MAX_AGE_SECONDS, samesite=COOKIE_SAMESITE, 
+                                      secure=COOKIE_SECURE, path="/")
                     
                     cookie_settings = get_cookie_settings()
-                    response.set_cookie(
-                        key=cookie_settings["key"],
-                        value=new_remember_token,
-                        max_age=cookie_settings["max_age"],
-                        httponly=cookie_settings["httponly"],
-                        secure=cookie_settings["secure"],
-                        samesite=cookie_settings["samesite"],
-                        path=cookie_settings["path"]
-                    )
-                    
-                    # FIX: Update tracker dengan token baru (Step 5 Remember Me)
-                    tracker = get_online_tracker()
-                    tracker.update_activity(
-                        session_token=new_token,
-                        user_id=user.id,
-                        username=user.username,
-                        role=user.role,
-                        ip_address=request.client.host if request.client else None,
-                        user_agent=request.headers.get("user-agent")
-                    )
-                    
+                    response.set_cookie(key=cookie_settings["key"], value=new_remember_token,
+                                      max_age=cookie_settings["max_age"], httponly=True,
+                                      secure=cookie_settings["secure"], samesite=cookie_settings["samesite"],
+                                      path="/")
                     return response
                 else:
-                    # Invalid remember token - clear it
-                    logger.warning("Invalid remember token found, clearing cookie")
+                    # Invalid remember token
                     response = RedirectResponse("/login?reason=session_expired", status_code=303)
-                    response.delete_cookie("session_token")
-                    response.delete_cookie("session")
                     cookie_settings = get_cookie_settings()
-                    response.delete_cookie(cookie_settings["key"])
+                    response.delete_cookie(cookie_settings["key"], path="/")
                     return response
+                    
             except Exception as e:
-                logger.error(f"Remember token validation/rotation failed: {e}")
-                response = RedirectResponse("/login?reason=session_expired", status_code=303)
-                cookie_settings = get_cookie_settings()
-                response.delete_cookie(cookie_settings["key"])
-                return response
+                logger.error(f"[AuthMiddleware] Remember me error: {e}")
 
-        # Step 6: Final fallback – force re-authentication
+        # Step 6: Force login
+        logger.info(f"[AuthMiddleware] Unauthenticated request to {path}, redirecting to login")
         session.clear()
         response = RedirectResponse("/login?reason=session_expired", status_code=303)
-        response.delete_cookie("session_token")
-        response.delete_cookie("session")
+        response.delete_cookie("session_token", path="/")
         return response
 
-    def get_user_by_session_token(self, db, token: str):
+    def _safe_parse_tokens(self, raw_tokens):
+        """Safely parse web_tokens, always return list"""
+        try:
+            if raw_tokens is None:
+                return []
+            if isinstance(raw_tokens, str):
+                return json.loads(raw_tokens) if raw_tokens else []
+            if isinstance(raw_tokens, list):
+                return raw_tokens
+            return []
+        except Exception as e:
+            logger.warning(f"Failed to parse web_tokens: {e}, type: {type(raw_tokens)}")
+            return []
+
+    def _get_user_by_session_token(self, db, token: str):
+        """Get user by session token"""
         try:
             result = db.execute(
                 text("""
-                    SELECT * FROM users
+                    SELECT id FROM users
                     WHERE EXISTS (
                         SELECT 1 FROM jsonb_array_elements(web_tokens) AS elem
                         WHERE elem->>'token' = :token
@@ -307,69 +267,20 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                 """),
                 {"token": token}
             ).first()
-
+            
             if result:
                 return db.query(User).get(result.id)
         except Exception as e:
-            logger.warning("Error while retrieving user by token: %s", e)
+            logger.error(f"Error getting user by token: {e}")
         return None
 
-    def parse_tokens(self, raw_tokens):
-        try:
-            return json.loads(raw_tokens) if isinstance(raw_tokens, str) else raw_tokens
-        except (json.JSONDecodeError, TypeError) as e:
-            logger.warning("Failed to parse web_tokens: %s", e)
-            return []
-
-    def generate_new_token(self):
+    def _generate_new_token(self):
+        """Generate new token with expiry"""
         now = datetime.now(timezone.utc)
         new_token = token_urlsafe(32)
         from app.routes.auth import SESSION_MAX_AGE_SECONDS
         expires_at = (now + timedelta(seconds=SESSION_MAX_AGE_SECONDS)).isoformat()
         return new_token, expires_at
-    
-    def _refresh_session_cookie(self, response, user, current_token, db, request):
-        """Refresh session cookie untuk Remember Me users dengan tracker update."""
-        try:
-            tokens = self.parse_tokens(user.web_tokens)
-            new_token, expires_at = self.generate_new_token()
-            
-            # Remove old token and add new one
-            tokens = [t for t in tokens if t.get("token") != current_token]
-            tokens.append({
-                "token": new_token,
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "expires_at": expires_at
-            })
-            user.web_tokens = tokens
-            db.commit()
-            
-            # Set new cookie
-            from app.routes.auth import SESSION_MAX_AGE_SECONDS, COOKIE_SAMESITE, COOKIE_SECURE
-            response.set_cookie(
-                "session_token",
-                new_token,
-                httponly=True,
-                max_age=SESSION_MAX_AGE_SECONDS,
-                samesite=COOKIE_SAMESITE,
-                secure=COOKIE_SECURE
-            )
-            
-            # FIX: Update tracker dengan token baru (Step 3 Refresh)
-            tracker = get_online_tracker()
-            tracker.update_activity(
-                session_token=new_token,
-                user_id=user.id,
-                username=user.username,
-                role=user.role,
-                ip_address=request.client.host if request.client else None,
-                user_agent=request.headers.get("user-agent")
-            )
-            
-            logger.debug(f"Session refreshed for Remember Me user: {user.username}")
-        except Exception as e:
-            logger.warning(f"Failed to refresh session: {e}")
-        return response
 
 
 def get_debug_mode_flag(db) -> bool:

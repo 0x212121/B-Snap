@@ -62,6 +62,8 @@
 
         <!-- OTP Form -->
         <form class="space-y-6" action="/mfa/setup" method="post">
+            <input type="hidden" name="token_mfa" value="{{ token_mfa }}">
+
             <div>
                 <label for="otp" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200">
                     6-Digit Verification Code
