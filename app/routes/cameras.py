@@ -243,8 +243,8 @@ async def add_camera_submit(
     group_name: str = Form(...),  # Changed: now required
     status: str = Form(...),
     is_flipped: Optional[str] = Form(None),
-    note: Optional[str] = Form(None),
-    snapshot_url: Optional[str] = Form(None),
+    note: Optional[str] = Form(...),
+    snapshot_url: Optional[str] = Form(...),
     safety_classification: Optional[str] = Form('standard'),  # P2-002
 ):
     """Handles the form submission to add a new camera."""
@@ -343,8 +343,8 @@ async def edit_camera_submit(
     group_name: Optional[str] = Form(None),
     is_flipped: Optional[str] = Form(None),
     status: str = Form(...),
-    note: Optional[str] = Form(None),
-    snapshot_url: Optional[str] = Form(None),
+    note: Optional[str] = Form(...),
+    snapshot_url: Optional[str] = Form(...),
     safety_classification: Optional[str] = Form(None),  # P2-002
 ):
     """Handles the form submission to edit an existing camera."""
@@ -360,7 +360,8 @@ async def edit_camera_submit(
         "hostname": cam.hostname, "ip": cam.ip, "port": cam.port, "username": cam.username,
         "latitude": cam.latitude, "longitude": cam.longitude, "asset_no": cam.asset_no,
         "location": cam.location, "group_id": cam.group_id, "status": cam.status,
-        "is_flipped": cam.is_flipped, "note": cam.note, "snapshot_url": cam.snapshot_url
+        "is_flipped": cam.is_flipped, "note": cam.note, "snapshot_url": cam.snapshot_url,
+        "safety_classification": cam.safety_classification,
     }
 
     try:
@@ -411,7 +412,8 @@ async def edit_camera_submit(
             "hostname": cam.hostname, "ip": cam.ip, "port": cam.port, "username": cam.username,
             "latitude": cam.latitude, "longitude": cam.longitude, "asset_no": cam.asset_no,
             "location": cam.location, "group_id": cam.group_id, "status": cam.status,
-            "is_flipped": cam.is_flipped, "note": cam.note, "snapshot_url": cam.snapshot_url
+            "is_flipped": cam.is_flipped, "note": cam.note, "snapshot_url": cam.snapshot_url,
+            "safety_classification": cam.safety_classification,
         }
         
         changes = []
@@ -915,7 +917,8 @@ async def export_csv(request: Request, db: Session = Depends(get_db)):
             cam.id, cam.hostname, cam.previous_name, cam.ip, cam.port, cam.username, cam.password,
             cam.latitude, cam.longitude, cam.previous_latitude, cam.previous_longitude,
             cam.asset_no, cam.location, cam.status,
-            cam.is_flipped, cam.note, cam.snapshot_url,
+            cam.is_flipped, cam.note if cam.note else "", 
+            cam.snapshot_url if cam.snapshot_url else "",
             # P2-002: Safety classification
             cam.safety_classification or "standard",
             # CameraGroup fields
