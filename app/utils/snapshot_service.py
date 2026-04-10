@@ -78,6 +78,9 @@ def _take_snapshot_from_url(camera: Camera, url: str) -> Dict[str, Any]:
         
         # Try to open as video capture (works for both HTTP MJPEG streams and direct image URLs)
         cap = cv2.VideoCapture(url)
+
+        cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 3000)
+
         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         
         if not cap.isOpened():
@@ -103,14 +106,16 @@ def _take_snapshot_from_url(camera: Camera, url: str) -> Dict[str, Any]:
                     "message": f"Cannot access snapshot URL for {camera.hostname}: {str(e)}"
                 }
         else:
+            for _ in range(3):
+                cap.read()
             # Read frame from video capture
             ret, frame = cap.read()
             cap.release()
             
-            if not ret or frame is None:
+            if not ret or frame is None or frame.size == 0:
                 return {
-                    "status": "error",
-                    "message": f"Failed to capture frame from {camera.hostname}"
+                    "status": "error", 
+                    "message": f"Empty or invalid frame from {camera.hostname}"
                 }
         
         # Get resolution
@@ -203,6 +208,9 @@ def take_snapshot(camera: Camera, db: Session) -> Dict[str, Any]:
         
         # Open video capture
         cap = cv2.VideoCapture(rtsp_url)
+
+        cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 3000)
+
         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         
         if not cap.isOpened():
@@ -212,15 +220,17 @@ def take_snapshot(camera: Camera, db: Session) -> Dict[str, Any]:
                 "message": f"Cannot connect to camera {camera.hostname}"
             }
         
+        for _ in range(3):
+            cap.read()
+
         # Read frame
         ret, frame = cap.read()
         cap.release()
         
-        if not ret or frame is None:
-            logger.error(f"Failed to capture frame from {camera.hostname}")
+        if not ret or frame is None or frame.size == 0:
             return {
-                "status": "error", 
-                "message": f"Failed to capture frame from {camera.hostname}"
+                "status": "error",
+                "message": f"Empty or invalid frame from {camera.hostname}"
             }
         
         # Get resolution

@@ -16,11 +16,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Now: group_id correctly updates to NULL when null is provided in request
   - Behavior aligns with UI option "All Groups"
 
+#### Video Gallery (Thumbnail & UI)
+- Fix: Thumbnail Not Displayed in Frontend
+  - Previously: Frontend always used static placeholder image instead of actual video thumbnail
+  - Root cause: `<img>` source was hardcoded to `/static/video-placeholder.jpg`
+  - Fixed: Frontend now uses `video.thumb_url` from secure API endpoint
+
+- Fix: Thumbnail Not Generated for Some Videos
+  - Previously: Thumbnail generation depended on `duration > 0` from metadata
+  - Root cause: `ffprobe` sometimes returned duration = 0, preventing thumbnail generation
+  - Fixed: Thumbnail generation is now always attempted regardless of duration
+
+- Improvement: Robust Thumbnail Generation
+  - Added retry mechanism using multiple seek timestamps (`0.3s` and fallback `0s`)
+  - Prevents failures on short or edge-case video files
+  - Added slight delay after recording to ensure file is fully written before processing
+
+- Fix: Broken Image When Thumbnail Missing
+  - Previously: Missing thumbnails caused broken image display in UI
+  - Fixed: Added frontend fallback to placeholder image using `onerror` handler
+
+- Fix: Video Playback Not Triggered from Thumbnail
+  - Previously: Refactoring removed `onclick` handler, preventing modal from opening
+  - Fixed: Restored `showModal()` trigger on thumbnail click
+
+- Fix: Inconsistent File Size Display
+  - Previously: Backend returned size in MB while frontend labeled it as kB
+  - Fixed: Standardized file size formatting to MB in frontend
+
+- Improvement: UI Consistency Preserved
+  - Restored original SVG icons and layout styling in video cards
+  - Ensured no visual regression while applying thumbnail and interaction fixes
+
 #### Maps
 - Fix: "Updated" Timestamp Not Refreshing
   - Previously, the "Updated" time remained static after initial page load.
   - Root cause: Timestamp was sourced from a static server-rendered value and not updated during auto-refresh.
   - Fixed: Timestamp now updates correctly on each data refresh.
+
 - Performance Improvement: Eliminated N+1 Query
   - Optimized camera status log retrieval by prefetching data in a single query.
   - Removed per-camera database queries inside processing loop.
@@ -32,6 +65,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Analytics Dashboard
 - Fix: incorrect daily chart aggregation caused by timezone misalignment with user-configured settings.
 - Ensured log counts are now accurately grouped based on the configured timezone (e.g., WIB/WITA/WIT).
+
+#### Snapshot (Performance & Stability Improvements)
+- Improvement: Faster Snapshot Capture Handling
+  - Added RTSP connection timeout using OpenCV `CAP_PROP_OPEN_TIMEOUT_MSEC`
+  - Prevents long blocking when camera is unreachable or slow to respond
+  - Improves responsiveness of snapshot operations
+
+- Improvement: Frame Warm-up Before Capture
+  - Added initial frame skipping (3–5 frames) before capturing snapshot
+  - Prevents blank/black images caused by early unstable frames
+  - Improves snapshot reliability across RTSP streams
+
+- Fix: Empty/Invalid Frame Handling
+  - Added validation to detect empty or corrupt frames (`frame is None`, `frame.size == 0`)
+  - Prevents saving invalid snapshot files
+  - Improves frontend image rendering stability
+
+- Improvement: Snapshot Robustness for Network Cameras
+  - Better handling of unstable RTSP streams and delayed frame availability
+  - Reduces occurrence of blank or partially rendered snapshots
 
 ## [2.0.0] - 2026-04-07
 

@@ -319,7 +319,7 @@ def scheduled_snapshot():
             for future in as_completed(futures):
                 cam = futures[future]
                 try:
-                    result = future.result(timeout=120)
+                    result = future.result(timeout=20)
                     if result and result.get("status") == "success":
                         batch_success += 1
                     else:
