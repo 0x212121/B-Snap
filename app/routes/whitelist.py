@@ -196,13 +196,12 @@ def edit_whitelist(
         if not entry:
             raise HTTPException(404, "Not found")
 
-        if data.name is not None:
-            entry.name = data.name
-        if data.role is not None:
-            entry.role = RoleEnum(data.role)
+        # 🔥 Ambil hanya field yang dikirim user
+        update_data = data.model_dump(exclude_unset=True)
 
-        if data.group_id is not None:
-            entry.group_id = data.group_id
+        # 🔥 Apply semua field (termasuk null)
+        for key, value in update_data.items():
+            setattr(entry, key, value)
 
         db.commit()
         db.refresh(entry)
@@ -213,9 +212,11 @@ def edit_whitelist(
             action="edit_whitelist",
             target=phone_number,
             ip=request.client.host,
-            extra=data.model_dump()
+            extra=update_data
         )
+
         return {"status": "updated"}
+
     except Exception as e:
         logger.error("Error in edit_whitelist: %s", e, exc_info=True)
         db.rollback()

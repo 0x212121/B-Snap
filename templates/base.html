@@ -608,7 +608,6 @@ function onlineUsersPopup() {
                       <ul class="space-y-1.5">
                         <template x-for="item in cat.items" :key="item.text">
                           <li class="text-gray-700 dark:text-gray-300 text-sm">
-                            <span :class="cat.color">•</span> 
                             <span x-html="item.html"></span>
                           </li>
                         </template>

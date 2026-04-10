@@ -270,13 +270,12 @@
     
     return `
       <div class="border-l-4 ${cat.border} ${cat.dark_border} pl-4">
-        <h3 class="flex items-center gap-2 ${cat.text} ${cat.dark_text} font-semibold mb-2">
+        <h3 class="flex items-center gap-2 ${cat.text} ${cat.dark_text} font-semibold mb-2 mt-2">
           <span class="${cat.bg} ${cat.dark_bg} px-2 py-0.5 rounded-full text-xs">${cat.icon} ${cat.label}</span>
         </h3>
         <ul class="space-y-2">
           ${items.map(item => `
             <li class="text-gray-700 dark:text-gray-300">
-              <span class="${cat.text} ${cat.dark_text}">•</span> 
               <span class="markdown-content">${formatMarkdown(item.text)}</span>
               ${item.subitems && item.subitems.length > 0 ? `
                 <ul class="ml-5 mt-1 space-y-1">

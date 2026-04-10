@@ -441,26 +441,20 @@
     function updateLastRefreshTime() {
       const timeElement = document.getElementById('last-refresh-time');
       if (!timeElement) return;
-      
-      // Get refresh time from server (format: "09:00:00 WITA")
+
       const mapElement = document.getElementById('map');
-      const serverRefreshTime = mapElement.dataset.refreshTime;
-      
-      if (serverRefreshTime && serverRefreshTime !== 'N/A') {
-        timeElement.textContent = `Updated: ${serverRefreshTime}`;
-      } else {
-        // Fallback: use browser time with timezone
-        const timezone = mapElement.dataset.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const now = new Date();
-        const timeString = now.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false,
-          timeZone: timezone
-        });
-        timeElement.textContent = `Updated: ${timeString}`;
-      }
+      const timezone = mapElement.dataset.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: timezone
+      });
+
+      timeElement.textContent = `Updated: ${timeString}`;
     }
     
     /**
@@ -500,7 +494,8 @@
     
     // Initial data load and periodic refresh
     fetchAndUpdateMap();
-    setInterval(fetchAndUpdateMap, 600000); // 10 minutes
+    setInterval(fetchAndUpdateMap, 60000); // 10 minutes
+    // setInterval(fetchAndUpdateMap, 600000); // 10 minutes
   });
 </script>
 

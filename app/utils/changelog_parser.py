@@ -70,7 +70,7 @@ def parse_changelog_md(filepath: str = None) -> List[Dict]:
             continue
 
         # Match section headers
-        section_match = re.match(r"^### (\w+)", line)
+        section_match = re.match(r"^###\s+(.+)", line)
         if section_match:
             section = section_match.group(1).lower()
             valid_sections = ["added", "changed", "fixed", "deprecated", "removed", "security"]
@@ -81,19 +81,27 @@ def parse_changelog_md(filepath: str = None) -> List[Dict]:
         if not current_section or not current_version:
             continue
 
-        # Match sub-item (2-space indent)
-        sub_item_match = re.match(r"^  - (.+)", line)
-        if sub_item_match and last_item:
-            sub_item = sub_item_match.group(1).strip()
-            if isinstance(last_item, dict) and "subitems" in last_item:
-                last_item["subitems"].append(sub_item)
+        # Match sub-header (#### ...)
+        sub_header_match = re.match(r"^####\s+(.+)", line)
+        if sub_header_match and current_section and current_version:
+            title = sub_header_match.group(1).strip()
+
+            # Masukin sebagai item juga
+            last_item = {"text": f"**{title}**"}
+            current_version[current_section].append(last_item)
             continue
 
-        # Match top-level list item
-        top_item_match = re.match(r"^- (.+)", line)
-        if top_item_match:
-            item_text = top_item_match.group(1).strip()
-            last_item = {"text": item_text, "subitems": []}
+        # Match ANY list item (top-level or nested)
+        list_match = re.match(r"^(\s*)- (.+)", line)
+        if list_match:
+            indent = len(list_match.group(1))
+            item_text = list_match.group(2).strip()
+
+            # 🔥 Normalize nested items → jadi flat
+            if indent > 0:
+                item_text = f"↳ {item_text}"
+
+            last_item = {"text": item_text}
             current_version[current_section].append(last_item)
             continue
 
