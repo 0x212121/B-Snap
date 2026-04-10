@@ -50,40 +50,49 @@ def _parse_range(start_date: str | None, end_date: str | None, db: Session = Non
         end_dt = now
         start_dt = now - timedelta(days=30)
     else:
-        # fromisoformat menerima 'YYYY-MM-DD' atau 'YYYY-MM-DDTHH:MM:SS'
         start_dt = datetime.fromisoformat(start_date)
         end_dt = datetime.fromisoformat(end_date)
-        if start_dt.tzinfo is None:
-            start_dt = start_dt.replace(tzinfo=tz)
-        if end_dt.tzinfo is None:
-            end_dt = end_dt.replace(tzinfo=tz)
 
-        # Normalisasi agar end_dt >= start_dt
+        if start_dt.tzinfo is None:
+            start_dt = tz.localize(start_dt)
+        if end_dt.tzinfo is None:
+            end_dt = tz.localize(end_dt)
+
         if end_dt < start_dt:
             start_dt, end_dt = end_dt, start_dt
 
-        # Paksa end_dt ke akhir hari jika user pilih hanya tanggal (supaya inklusif)
         end_dt = end_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
 
-    # Tentukan periode sebelumnya (panjang sama, berakhir tepat sebelum start_dt)
-    span = end_dt - start_dt
-    prev_end = start_dt - timedelta(microseconds=1)
+    # convert ke UTC untuk query DB
+    start_dt_utc = start_dt.astimezone(pytz.UTC)
+    end_dt_utc = end_dt.astimezone(pytz.UTC)
+
+    span = end_dt_utc - start_dt_utc
+    prev_end = start_dt_utc - timedelta(microseconds=1)
     prev_start = prev_end - span
 
-    return start_dt, end_dt, prev_start, prev_end
+    return start_dt_utc, end_dt_utc, prev_start, prev_end
 
 
 def _daily_counts(db: Session, model, ts_field, start_dt, end_dt, success_only=False):
-    """Ambil agregasi per-hari (date, count) untuk model & kolom timestamp tertentu."""
-    date_expr = func.date(getattr(model, ts_field))
+    tz_name = get_current_timezone(db)
+
+    # convert ke local timezone sebelum DATE()
+    date_expr = func.date(
+        func.timezone(tz_name, getattr(model, ts_field))
+    )
+
     query = (
         db.query(date_expr.label("date"), func.count("*").label("count"))
-        .filter(getattr(model, ts_field) >= start_dt,
-                getattr(model, ts_field) <= end_dt)
+        .filter(
+            getattr(model, ts_field) >= start_dt,
+            getattr(model, ts_field) <= end_dt
+        )
     )
-    # Filter success=True untuk email logs jika diminta
+
     if success_only and hasattr(model, 'success'):
         query = query.filter(model.success == True)
+
     rows = query.group_by(date_expr).order_by(date_expr).all()
     return [{"date": str(r.date), "count": r.count} for r in rows]
 

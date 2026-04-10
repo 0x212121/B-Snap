@@ -26,7 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed per-camera database queries inside processing loop.
   - Result: Significantly faster initial load and refresh times, especially with large datasets (e.g., 400+ cameras).
 
+#### Cameras
+- Fix: where certain audit log variables were not properly recorded during camera updates.
 
+#### Analytics Dashboard
+- Fix: incorrect daily chart aggregation caused by timezone misalignment with user-configured settings.
+- Ensured log counts are now accurately grouped based on the configured timezone (e.g., WIB/WITA/WIT).
 
 ## [2.0.0] - 2026-04-07
 
