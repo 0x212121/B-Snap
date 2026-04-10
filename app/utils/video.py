@@ -186,21 +186,31 @@ def get_video_metadata(file_path: str) -> Dict[str, Any]:
         }
 
 def generate_thumbnail(video_path: str, output_thumb_path: str):
-    try:
-        subprocess.run([
-            "ffmpeg",
-            "-ss", "00:00:01",
-            "-i", video_path,
-            "-vframes", "1",
-            "-q:v", "2",
-            "-update", "1",
-            output_thumb_path
-        ], check=True)
-        logger.info("🖼️ Thumbnail generated: %s", output_thumb_path)
-        return True
-    except subprocess.CalledProcessError as e:
-        logger.warning("❌ Failed to generate thumbnail for %s: %s", video_path, e)
-        return False
+    """
+    Generate thumbnail dengan retry & fallback time
+    """
+    for t in ["0.3", "0"]:
+        try:
+            result = subprocess.run([
+                "ffmpeg",
+                "-y",
+                "-ss", t,
+                "-i", video_path,
+                "-frames:v", "1",
+                "-q:v", "2",
+                "-vf", "scale=320:-1"
+            ], capture_output=True, text=True)
+
+            if result.returncode == 0 and os.path.exists(output_thumb_path):
+                logger.info(f"🖼️ Thumbnail generated ({t}s): {output_thumb_path}")
+                return True
+            else:
+                logger.warning(f"⚠️ FFmpeg failed at {t}s: {result.stderr}")
+
+        except Exception as e:
+            logger.warning(f"⚠️ Thumbnail attempt {t}s failed: {e}")
+
+    return False
 
 
 def get_config_value(key: str, default: str = "") -> str:
@@ -335,11 +345,16 @@ async def record_video_and_save_db(
     if metadata.get("duration", 0) == 0:
         logger.warning("⚠️ Video from %s may be corrupted or too short (duration=0)", camera.hostname)
 
-    if metadata.get("duration", 0) > 0:
-        thumb_path = output_path.with_suffix(".jpg")
-        success_thumb = await asyncio.to_thread(generate_thumbnail, str(output_path), str(thumb_path))
-        if not success_thumb:
-            logger.warning("⚠️ Thumbnail generation failed for %s", output_path)
+    thumb_path = output_path.with_suffix(".jpg")
+
+    success_thumb = await asyncio.to_thread(
+        generate_thumbnail,
+        str(output_path),
+        str(thumb_path)
+    )
+
+    if not success_thumb:
+        logger.warning("⚠️ Thumbnail generation failed for %s", output_path)
 
     # P0-001: Calculate file hash for integrity verification
     file_hash = None

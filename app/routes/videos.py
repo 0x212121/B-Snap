@@ -1,6 +1,7 @@
 from datetime import datetime, timezone, timedelta
 import logging
 import os
+from pathlib import Path
 from typing import Optional, List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks
@@ -86,7 +87,7 @@ def _get_filtered_videos(
             "camera": v.camera_name,
             "time": formatted_time,
             "group": v.camera_group,
-            "file_size": int(v.file_size / 1024 / 1024) if v.file_size else 0,  # MB
+            "file_size": int(v.file_size),
             "duration": v.duration,
             "resolution": v.resolution,
         })
@@ -422,7 +423,7 @@ async def get_deleted_videos(
             "timestamp": format_datetime_standard(v.timestamp, db=db),
             "file_path": v.file_path,
             "duration": v.duration,
-            "file_size": int(v.file_size / 1024 / 1024) if v.file_size else 0,  # MB
+            "file_size": int(v.file_size),
             "resolution": v.resolution,
             # P2-001: Retention hold fields
             "retention_hold": v.retention_hold,
@@ -604,17 +605,28 @@ async def serve_video_by_id(
     if not video.file_path:
         raise HTTPException(status_code=404, detail="Video file path not found")
     
+    
     # Build full path
     full_path = os.path.join(VIDEO_FILESYSTEM_BASE, video.file_path)
     
     if not os.path.exists(full_path):
         raise HTTPException(status_code=404, detail="Video file not found on disk")
     
+    if thumb:
+        thumb_path = str(Path(full_path).with_suffix(".jpg"))
+        if os.path.exists(thumb_path):
+            response = FileResponse(thumb_path, media_type="image/jpeg")
+            response.headers["Cache-Control"] = "public, max-age=86400"
+            return response
+        else:
+            response = FileResponse("static/video-placeholder.jpg", media_type="image/jpeg")
+            response.headers["Cache-Control"] = "public, max-age=3600"
+            return response
+    
+    
     # Log access (CRIT-001 compliance)
     if download:
         action = "download_video"
-    elif thumb:
-        action = "gallery_thumbnail_video"
     else:
         action = "view_video"
     

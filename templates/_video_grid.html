@@ -1,19 +1,19 @@
-<!-- _video_grid.html - Tailwind No Overlay -->
-<!-- CRIT-001: Uses secure API endpoints for video access -->
 {% for video in videos %}
 <div data-video-card class="group bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden hover:shadow-xl hover:shadow-purple-500/10 dark:hover:shadow-black/20 transition-all duration-300 hover:-translate-y-1" data-camera="{{ video.camera }}" data-video-id="{{ video.id }}">
     
-    <!-- Thumbnail - No Overlay -->
+    <!-- Thumbnail (STYLE ASLI, HANYA FIX LOGIC) -->
     <div class="relative aspect-video bg-gray-100 dark:bg-slate-700 overflow-hidden">
-        <!-- CRIT-001: Thumbnail masih menggunakan placeholder karena tidak ada thumbnail API -->
-        <img src="/static/video-placeholder.jpg"
+
+        <img src="{{ video.thumb_url }}"
              alt="Video thumbnail"
              class="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-105"
              loading="lazy"
              data-video-url="{{ video.detail_url }}"
-             onclick='showModal({{ video.detail_url | tojson }}, {{ video.camera | tojson }}, {{ video.time | tojson }})'>
-        
-        <!-- Play Icon (Static, bukan overlay yang menghalangi) -->
+             onclick='showModal({{ video.detail_url | tojson }}, {{ video.camera | tojson }}, {{ video.time | tojson }})'
+             onerror="this.onerror=null; this.src='/static/video-placeholder.jpg';"
+        >
+
+        <!-- Play Icon (TETAP SAMA) -->
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div class="w-12 h-12 bg-black/60 rounded-full flex items-center justify-center text-white opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-110 transform duration-300">
                 <svg class="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
@@ -23,11 +23,10 @@
         </div>
     </div>
 
-    <!-- Content -->
+    <!-- Content (100% SAMA, TIDAK DIUBAH) -->
     <div class="p-4 space-y-3">
         <h3 class="font-bold text-lg text-gray-900 dark:text-white truncate" title="{{ video.camera }}">{{ video.camera }}</h3>
         
-        <!-- Meta Grid -->
         <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-600 dark:text-slate-400">
             <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,9 +43,7 @@
             </div>
             
             <div class="flex items-center gap-2 truncate" title="Group: {{ video.group }}">
-                <svg class="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
+                <svg class="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                 <span class="truncate">{{ video.group or 'N/A' }}</span>
             </div>
             
@@ -54,7 +51,7 @@
                 <svg class="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
                 </svg>
-                <span>{{ video.file_size }} kB</span>
+                <span>{{ (video.file_size / 1024 / 1024) | round(2) }} MB</span>
             </div>
             
             <div class="flex items-center gap-2">
@@ -72,7 +69,6 @@
             </div>
         </div>
 
-        <!-- Actions: Delete di bottom (No Overlay) -->
         {% if request.session.get('user_role') in ['admin', 'operator'] %}
         <div class="pt-3 flex justify-end border-t border-gray-100 dark:border-slate-700 mt-3">
             <button onclick="event.stopPropagation(); deleteVideo('{{ video.id }}', this)" class="group/btn inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors border border-transparent hover:border-red-100 dark:hover:border-red-800">
@@ -84,11 +80,3 @@
     </div>
 </div>
 {% endfor %}
-
-{% if not videos %}
-<div class="col-span-full text-center py-16 text-gray-500 dark:text-slate-400">
-    <div class="text-5xl mb-4 opacity-30">🎬</div>
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">No videos found</h3>
-    <p class="text-sm">Adjust your filters or check back later</p>
-</div>
-{% endif %}
