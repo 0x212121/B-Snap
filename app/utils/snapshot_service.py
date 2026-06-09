@@ -66,46 +66,104 @@ def _take_snapshot_from_url(camera: Camera, url: str) -> Dict[str, Any]:
     from urllib.parse import quote
     
     try:
-        # Add authentication if username/password provided and URL is HTTP/HTTPS
-        if url.startswith(('http://', 'https://')) and camera.username:
+        request_url = url
+        capture_url = url
+
+        # Add authentication for OpenCV only. Requests handles auth explicitly so it can
+        # retry with Digest auth when camera endpoints reject Basic auth.
+        if capture_url.startswith(('http://', 'https://')) and camera.username:
             parsed = list(urlparse(url))
             # Insert credentials into URL
             auth = f"{quote(camera.username)}:{quote(camera.password or '')}@"
             # Find where netloc starts and insert auth
             if '@' not in parsed[1]:  # Check if auth not already in URL
                 parsed[1] = auth + parsed[1]
-            url = urlunparse(parsed)
-        
-        # Try to open as video capture (works for both HTTP MJPEG streams and direct image URLs)
-        cap = cv2.VideoCapture(url)
+            capture_url = urlunparse(parsed)
 
-        cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 3000)
+        frame = None
+        http_error = None
 
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        
-        if not cap.isOpened():
-            # If direct capture fails, try downloading as image
+        # Direct HTTP snapshot endpoints (for example /oneshotimage) are usually a
+        # single JPEG response, not a video stream. Try HTTP first so we can identify
+        # auth/status/content-type failures clearly and support Digest auth.
+        if request_url.startswith(('http://', 'https://')):
             import requests
-            from io import BytesIO
             import numpy as np
+            from requests.auth import HTTPBasicAuth, HTTPDigestAuth
+
+            auth_attempts = [("none", None)]
+            if camera.username:
+                auth_attempts = [
+                    ("basic", HTTPBasicAuth(camera.username, camera.password or "")),
+                    ("digest", HTTPDigestAuth(camera.username, camera.password or "")),
+                ]
+
+            last_error = None
+            for auth_name, auth in auth_attempts:
+                try:
+                    resp = requests.get(request_url, timeout=10, auth=auth)
+                    content_type = resp.headers.get("content-type", "")
+
+                    if resp.status_code in (401, 403):
+                        last_error = (
+                            f"HTTP {resp.status_code} with {auth_name} auth "
+                            f"(content-type: {content_type or 'unknown'})"
+                        )
+                        logger.warning(
+                            "Snapshot URL auth failed for %s via %s auth: HTTP %s",
+                            camera.hostname,
+                            auth_name,
+                            resp.status_code,
+                        )
+                        continue
+
+                    resp.raise_for_status()
+                    img_array = np.frombuffer(resp.content, np.uint8)
+                    frame = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+
+                    if frame is not None:
+                        logger.info(
+                            "Snapshot URL fetched for %s via HTTP %s auth: HTTP %s, content-type=%s, bytes=%d",
+                            camera.hostname,
+                            auth_name,
+                            resp.status_code,
+                            content_type or "unknown",
+                            len(resp.content),
+                        )
+                        break
+
+                    last_error = (
+                        f"HTTP {resp.status_code} returned undecodable image "
+                        f"(content-type: {content_type or 'unknown'}, bytes: {len(resp.content)})"
+                    )
+                except Exception as e:
+                    last_error = str(e)
+
+            if frame is None and last_error:
+                http_error = last_error
+                logger.warning(
+                    "Direct HTTP snapshot fetch failed for %s from %s: %s. Falling back to OpenCV.",
+                    camera.hostname,
+                    _mask_password_in_url(request_url),
+                    last_error,
+                )
+        
+        if frame is None:
+            # Try to open as video capture (works for RTSP/HTTP MJPEG streams and some direct image URLs)
+            cap = cv2.VideoCapture(capture_url)
+
+            cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 3000)
+
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
             
-            try:
-                resp = requests.get(url, timeout=10, auth=(camera.username, camera.password) if camera.username else None)
-                resp.raise_for_status()
-                img_array = np.frombuffer(resp.content, np.uint8)
-                frame = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-                
-                if frame is None:
-                    raise ValueError("Failed to decode image from URL")
-                    
-                cap.release()  # Release the failed capture
-            except Exception as e:
-                logger.error(f"Failed to download snapshot from URL {_mask_password_in_url(url)}: {e}")
+            if not cap.isOpened():
+                cap.release()
+                logger.error("Failed to open snapshot URL with OpenCV: %s", _mask_password_in_url(capture_url))
                 return {
                     "status": "error",
-                    "message": f"Cannot access snapshot URL for {camera.hostname}: {str(e)}"
+                    "message": f"Cannot access snapshot URL for {camera.hostname}: {http_error or 'OpenCV connection failed'}"
                 }
-        else:
+
             for _ in range(3):
                 cap.read()
             # Read frame from video capture
@@ -142,8 +200,8 @@ def _take_snapshot_from_url(camera: Camera, url: str) -> Dict[str, Any]:
         # Add watermark
         try:
             from app.utils.image_utils import add_watermark
-            from app.core.config import get_config_value
-            watermark_text = get_config_value("watermark_text", "Property of B-SNAP")
+            from app.core.config import get_config
+            watermark_text = get_config("watermark_text", "Property of B-SNAP")
             add_watermark(str(file_path), watermark_text)
         except Exception as e:
             logger.warning(f"Failed to add watermark: {e}")
