@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2026-06-09
+
+### Fixed
+
+#### Snapshot URL Capture
+- Fixed direct HTTP snapshot capture for camera endpoints such as `/oneshotimage`.
+  - Snapshot URL capture now fetches direct image endpoints via HTTP first instead of relying on OpenCV stream capture first.
+  - Added clearer failure identification for HTTP status, content type, response size, and authentication failures.
+  - Added Basic and Digest authentication handling for protected snapshot URLs.
+  - Preserved OpenCV fallback for MJPEG/stream-like snapshot URLs.
+  - Fixed watermark configuration lookup in the direct snapshot URL path.
+
 ## [2.0.1] - 2026-04-10
 
 ### Fixed
