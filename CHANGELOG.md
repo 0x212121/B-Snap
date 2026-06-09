@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Preserved OpenCV fallback for MJPEG/stream-like snapshot URLs.
   - Fixed watermark configuration lookup in the direct snapshot URL path.
 
+#### Remember Me Session Refresh
+- Fixed `Keep me signed in` sessions expiring after 24 hours on long-running pages such as `/maps`.
+  - Active sessions with a valid Remember Me token now refresh their web token before expiry.
+  - The `session_token` cookie is refreshed together with the server-side token expiry.
+  - Refresh is threshold-based to avoid database writes on every periodic map refresh.
+  - Remember Me token ownership is validated before extending the active session.
+
 ## [2.0.1] - 2026-04-10
 
 ### Fixed

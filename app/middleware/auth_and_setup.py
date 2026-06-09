@@ -22,6 +22,11 @@ from app.db.database import SessionLocal
 
 logger = logging.getLogger("auth")
 
+# Refresh web sessions for users who enabled Remember Me shortly before the
+# normal 24-hour session expires. This avoids writing to the database on every
+# polling request while keeping long-running pages like /maps authenticated.
+REMEMBER_ME_SESSION_REFRESH_THRESHOLD_SECONDS = 3600
+
 ALLOWED_PUBLIC_PATHS = [
     "/login",
     "/logout",
@@ -109,6 +114,14 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                     logger.debug(f"[AuthMiddleware] User: {user.username}, Tokens count: {len(tokens)}")
                     
                     if is_valid_web_token(session_token, tokens):
+                        response_cookie_refresh = self._refresh_session_token_if_needed(
+                            db=db,
+                            user=user,
+                            tokens=tokens,
+                            session_token=session_token,
+                            remember_token=request.cookies.get(get_cookie_settings()["key"]),
+                        )
+
                         # Token valid - update tracker
                         tracker = get_online_tracker()
                         tracker.update_activity(
@@ -119,7 +132,10 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                             ip_address=request.client.host if request.client else None,
                             user_agent=request.headers.get("user-agent")
                         )
-                        return await call_next(request)
+                        response = await call_next(request)
+                        if response_cookie_refresh:
+                            self._set_session_cookie(response, session_token)
+                        return response
                     else:
                         logger.warning(f"[AuthMiddleware] Invalid/expired token for user {user_id}")
                         # Token tidak valid - clear session
@@ -159,16 +175,7 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                         response = await call_next(request)
                         
                         # Set cookie baru
-                        from app.routes.auth import SESSION_MAX_AGE_SECONDS, COOKIE_SAMESITE, COOKIE_SECURE
-                        response.set_cookie(
-                            "session_token",
-                            new_token,
-                            httponly=True,
-                            max_age=SESSION_MAX_AGE_SECONDS,
-                            samesite=COOKIE_SAMESITE,
-                            secure=COOKIE_SECURE,
-                            path="/"
-                        )
+                        self._set_session_cookie(response, new_token)
                         return response
                         
             except Exception as e:
@@ -211,10 +218,7 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                     response = await call_next(request)
                     
                     # Set cookies
-                    from app.routes.auth import SESSION_MAX_AGE_SECONDS, COOKIE_SAMESITE, COOKIE_SECURE
-                    response.set_cookie("session_token", new_token, httponly=True, 
-                                      max_age=SESSION_MAX_AGE_SECONDS, samesite=COOKIE_SAMESITE, 
-                                      secure=COOKIE_SECURE, path="/")
+                    self._set_session_cookie(response, new_token)
                     
                     cookie_settings = get_cookie_settings()
                     response.set_cookie(key=cookie_settings["key"], value=new_remember_token,
@@ -273,6 +277,83 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
         except Exception as e:
             logger.error(f"Error getting user by token: {e}")
         return None
+
+    def _refresh_session_token_if_needed(
+        self,
+        db,
+        user,
+        tokens: list[dict],
+        session_token: str,
+        remember_token: str | None,
+    ) -> bool:
+        """Extend active web token expiry for Remember Me sessions.
+
+        Returns True when the browser cookie should be refreshed too.
+        """
+        if not remember_token:
+            return False
+
+        now = datetime.now(timezone.utc)
+        matching_token = None
+
+        for token_data in tokens:
+            if token_data.get("token") == session_token:
+                matching_token = token_data
+                break
+
+        if not matching_token:
+            return False
+
+        try:
+            expires_at = datetime.fromisoformat(matching_token.get("expires_at", ""))
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+        except Exception as e:
+            logger.warning(
+                "[AuthMiddleware] Failed to parse session expiry for user %s: %s",
+                getattr(user, "id", "unknown"),
+                e,
+            )
+            return False
+
+        seconds_left = (expires_at - now).total_seconds()
+        if seconds_left > REMEMBER_ME_SESSION_REFRESH_THRESHOLD_SECONDS:
+            return False
+
+        remember_user = validate_remember_token(db, remember_token)
+        if not remember_user or remember_user.id != user.id:
+            logger.warning(
+                "[AuthMiddleware] Remember Me token mismatch for active session user %s",
+                getattr(user, "id", "unknown"),
+            )
+            return False
+
+        from app.routes.auth import SESSION_MAX_AGE_SECONDS
+
+        matching_token["expires_at"] = (
+            now + timedelta(seconds=SESSION_MAX_AGE_SECONDS)
+        ).isoformat()
+        user.web_tokens = tokens
+        db.commit()
+
+        logger.info(
+            "[AuthMiddleware] Refreshed Remember Me web session for user %s",
+            getattr(user, "id", "unknown"),
+        )
+        return True
+
+    def _set_session_cookie(self, response: Response, token: str) -> None:
+        from app.routes.auth import SESSION_MAX_AGE_SECONDS, COOKIE_SAMESITE, COOKIE_SECURE
+
+        response.set_cookie(
+            "session_token",
+            token,
+            httponly=True,
+            max_age=SESSION_MAX_AGE_SECONDS,
+            samesite=COOKIE_SAMESITE,
+            secure=COOKIE_SECURE,
+            path="/",
+        )
 
     def _generate_new_token(self):
         """Generate new token with expiry"""
