@@ -450,21 +450,36 @@
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">GoWA API endpoint (e.g., http://localhost:3000)</p>
       </div>
       <div>
-        <label for="gowa_api_key" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">API Key (Optional)</label>
+        <label for="gowa_api_key" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">API Key / Auth Secret (Optional)</label>
         <input type="password" id="gowa_api_key" name="gowa_api_key" value="{{ configs.get('gowa_api_key', '') }}" 
-          placeholder="Leave empty if no auth"
+          placeholder="user:password, token, or leave empty"
           class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          Only needed if GoWA runs with <code>-e AUTH_TOKEN=your_token</code>. 
+          Fill <code>user:password</code> when GoWA uses <code>APP_BASIC_AUTH</code>. For older <code>AUTH_TOKEN</code> deployments, fill the token only. Leave empty if GoWA has no auth.
           <a href="#" onclick="document.getElementById('gowa-setup-help').classList.toggle('hidden'); return false;" class="text-blue-600 hover:underline">How to setup?</a>
         </p>
       </div>
       <div>
         <label for="gowa_default_receiver" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Default Receiver(s)</label>
         <input type="text" id="gowa_default_receiver" name="gowa_default_receiver" value="{{ configs.get('gowa_default_receiver', '') }}" 
-          placeholder="6281234567890, 6289876543210"
+          placeholder="6281234567890, 120363xxxxxxxx@g.us"
           class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Phone number(s) for reports, comma separated (e.g., 6281234567890)</p>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          WhatsApp personal number or group JID for alerts, comma separated. Use number format like <code>6281234567890</code> or group format like <code>120363xxxxxxxx@g.us</code>.
+        </p>
+        <div class="mt-3 flex flex-col gap-2 sm:flex-row">
+          <button type="button" id="loadWaGroupsBtn"
+            class="inline-flex items-center justify-center rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/40">
+            Load Groups from GoWA
+          </button>
+          <select id="gowa_group_select"
+            class="hidden flex-1 p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
+          </select>
+          <button type="button" id="addWaGroupBtn"
+            class="hidden inline-flex items-center justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-green-700">
+            Add Group
+          </button>
+        </div>
       </div>
       <div class="flex items-end">
         <button type="button" id="testWaBtn" 
@@ -485,10 +500,11 @@
           <code class="block bg-blue-100 dark:bg-blue-800 p-2 rounded mt-1 text-xs">
             docker run -d --name gowa -p 3000:3000 aldinokemal/go-whatsapp-web-multidevice
           </code>
-          <p class="mt-1 text-xs">Or with authentication (optional):</p>
+          <p class="mt-1 text-xs">Or with Basic Auth (optional, recommended when exposed to the network):</p>
           <code class="block bg-blue-100 dark:bg-blue-800 p-2 rounded mt-1 text-xs">
-            docker run -d --name gowa -p 3000:3000 -e AUTH_TOKEN=your_secret_key aldinokemal/go-whatsapp-web-multidevice
+            docker run -d --name gowa -p 3000:3000 -e APP_BASIC_AUTH=admin:strong_password aldinokemal/go-whatsapp-web-multidevice
           </code>
+          <p class="mt-1 text-xs">Then enter <code>admin:strong_password</code> in API Key / Auth Secret. If your older GoWA image uses <code>AUTH_TOKEN</code>, enter only that token.</p>
         </div>
         
         <div>
@@ -503,7 +519,7 @@
         
         <div>
           <p class="font-medium">4. Save Configuration:</p>
-          <p class="text-xs">Enter GoWA URL above, click Test Connection, then Save</p>
+          <p class="text-xs">Enter GoWA URL, auth secret if used, and default receiver. Receiver can be a personal number or group JID. Click Test Connection, then Save.</p>
         </div>
       </div>
     </div>
@@ -698,7 +714,12 @@
         testWaBtn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Testing...`;
         
         try {
-          const response = await fetch('/api/wa/status');
+          const params = new URLSearchParams({
+            enabled: document.getElementById('gowa_enabled')?.checked ? 'true' : 'false',
+            base_url: baseUrl,
+            api_key: document.getElementById('gowa_api_key')?.value || '',
+          });
+          const response = await fetch(`/api/wa/status?${params.toString()}`);
           const contentType = response.headers.get('content-type') || '';
           
           // Check if response is JSON
@@ -739,6 +760,83 @@
           testWaBtn.disabled = false;
           testWaBtn.innerHTML = originalText;
         }
+      });
+    }
+
+    // Load GoWA groups for default receiver selection
+    const loadWaGroupsBtn = document.getElementById('loadWaGroupsBtn');
+    const gowaGroupSelect = document.getElementById('gowa_group_select');
+    const addWaGroupBtn = document.getElementById('addWaGroupBtn');
+    const gowaReceiverInput = document.getElementById('gowa_default_receiver');
+
+    function appendWaReceiver(receiver) {
+      if (!gowaReceiverInput || !receiver) return;
+      const current = gowaReceiverInput.value
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
+      if (!current.includes(receiver)) {
+        current.push(receiver);
+      }
+      gowaReceiverInput.value = current.join(', ');
+    }
+
+    if (loadWaGroupsBtn && gowaGroupSelect && addWaGroupBtn) {
+      loadWaGroupsBtn.addEventListener('click', async function() {
+        const baseUrl = document.getElementById('gowa_base_url')?.value || '';
+        if (!baseUrl) {
+          Toast.error('Please enter GoWA Base URL first', { title: 'Error' });
+          return;
+        }
+
+        loadWaGroupsBtn.disabled = true;
+        const originalText = loadWaGroupsBtn.innerHTML;
+        loadWaGroupsBtn.innerHTML = 'Loading groups...';
+
+        try {
+          const params = new URLSearchParams({
+            enabled: document.getElementById('gowa_enabled')?.checked ? 'true' : 'false',
+            base_url: baseUrl,
+            api_key: document.getElementById('gowa_api_key')?.value || '',
+          });
+          const response = await fetch(`/api/wa/groups?${params.toString()}`, {
+            headers: { 'Accept': 'application/json' },
+          });
+          const result = await response.json();
+
+          if (!response.ok || result.status !== 'success') {
+            Toast.error(result.message || result.error || 'Failed to load GoWA groups', { title: 'Error' });
+            return;
+          }
+
+          const groups = result.data?.groups || [];
+          gowaGroupSelect.innerHTML = '';
+          groups.forEach(group => {
+            const option = document.createElement('option');
+            option.value = group.jid;
+            option.textContent = `${group.name || group.jid} (${group.jid})`;
+            gowaGroupSelect.appendChild(option);
+          });
+
+          if (groups.length) {
+            gowaGroupSelect.classList.remove('hidden');
+            addWaGroupBtn.classList.remove('hidden');
+            Toast.success(`${groups.length} GoWA group(s) loaded`, { title: 'Groups Loaded' });
+          } else {
+            gowaGroupSelect.classList.add('hidden');
+            addWaGroupBtn.classList.add('hidden');
+            Toast.info('No WhatsApp groups returned by GoWA', { title: 'No Groups' });
+          }
+        } catch (error) {
+          Toast.error(error.message || 'Failed to load GoWA groups', { title: 'Error' });
+        } finally {
+          loadWaGroupsBtn.disabled = false;
+          loadWaGroupsBtn.innerHTML = originalText;
+        }
+      });
+
+      addWaGroupBtn.addEventListener('click', function() {
+        appendWaReceiver(gowaGroupSelect.value);
       });
     }
     

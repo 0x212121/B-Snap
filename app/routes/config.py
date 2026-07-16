@@ -86,6 +86,10 @@ async def config_save(
     smtp_pass: str = Form(""),
     email_from: str = Form(""),
     email_cc: str = Form(""),
+    gowa_enabled: Optional[bool] = Form(False),
+    gowa_base_url: str = Form("http://localhost:3000"),
+    gowa_api_key: str = Form(""),
+    gowa_default_receiver: str = Form(""),
     app_logo: UploadFile = File(None)
 ):
     # Validasi timezone
@@ -170,6 +174,19 @@ async def config_save(
             content={"message": "Invalid 'CC Email' format."}
         )
 
+    gowa_base_url = gowa_base_url.strip().rstrip("/")
+    if gowa_enabled:
+        if not gowa_base_url.startswith(("http://", "https://")):
+            return JSONResponse(
+                status_code=400,
+                content={"message": "GoWA Base URL must start with http:// or https://."}
+            )
+        if not gowa_default_receiver.strip():
+            return JSONResponse(
+                status_code=400,
+                content={"message": "Default Receiver is required when WhatsApp notifications are enabled."}
+            )
+
     keys = {
         "snapshot_interval_minutes": snapshot_interval_minutes,
         "healthcheck_interval_minutes": healthcheck_interval_minutes,
@@ -198,6 +215,10 @@ async def config_save(
         "smtp_pass": smtp_pass,
         "email_from": email_from.strip(),
         "email_cc": email_cc.strip(),
+        "gowa_enabled": str(int(gowa_enabled)),
+        "gowa_base_url": gowa_base_url,
+        "gowa_api_key": gowa_api_key.strip(),
+        "gowa_default_receiver": gowa_default_receiver.strip(),
     }
 
     for config_key, config_value in keys.items():

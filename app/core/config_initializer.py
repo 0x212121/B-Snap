@@ -48,12 +48,15 @@ DEFAULT_CONFIG = {
     # Cleanup job settings
     "storage_check_interval_hours": "1",  # New: storage check interval
     "cleanup_interval_days": "1",  # New: configurable cleanup interval
+    "record_check_interval_minutes": "10",
+    "retention_record_check_days": "30",
     
     # Job Cron Schedules (NEW) - Cron expressions override interval settings
     # Format: "minute hour day month weekday" (e.g., "0 8,13,23 * * *" = jam 8, 13, 23)
     "snapshot_cron": "",  # Empty = use interval, e.g., "0 8,13,23 * * *" for specific times
     "healthcheck_cron": "",  # Empty = use interval
     "storage_check_cron": "",  # Empty = use interval
+    "record_check_cron": "",  # Empty = use interval
     "cleanup_cron": "0 2 * * *",  # Default: 2 AM daily
     "email_retry_cron": "",  # Empty = use interval
     

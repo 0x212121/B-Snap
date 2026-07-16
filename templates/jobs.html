@@ -275,7 +275,7 @@
   }
   
   // Editable job IDs that support cron scheduling
-  const editableJobs = ['scheduled_snapshot', 'health_check', 'storage_check', 'cleanup_audit_logs', 'cleanup_camera_stats', 'cleanup_api_logs', 'cleanup_command_logs', 'email_retry'];
+  const editableJobs = ['scheduled_snapshot', 'health_check', 'storage_check', 'record_folder_check', 'cleanup_audit_logs', 'cleanup_camera_stats', 'cleanup_api_logs', 'cleanup_command_logs', 'email_retry'];
   
   function renderJobs(jobs) {
     const tbody = document.getElementById('jobs-table-body');
@@ -346,6 +346,7 @@
               <div>
                 <div class="font-medium text-gray-900 dark:text-white">${job.name}</div>
                 <div class="text-xs text-gray-500 font-mono">${job.id}</div>
+                ${job.registered === false ? '<div class="mt-1 text-xs text-amber-600 dark:text-amber-400">Configured, waiting for scheduler reload</div>' : ''}
               </div>
             </div>
           </td>

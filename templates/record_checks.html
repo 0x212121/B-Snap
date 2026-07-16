@@ -1,0 +1,654 @@
+{% extends "base.html" %}
+{% block title %}B-SNAP - Record Checks{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Record Checks</h2>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Monitor mounted SMB recording folders and save channel status history.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button onclick="openSourceModal()" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5"></path>
+        </svg>
+        Add Source
+      </button>
+      <button onclick="refreshAll()" class="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-gray-700 transition hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-offset-gray-900">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M5 15a7 7 0 0 0 11.9 3.2M19 9A7 7 0 0 0 7.1 5.8"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-6">
+  <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Healthy</p>
+        <p id="sum-healthy" class="mt-1 text-2xl font-bold text-green-600">0</p>
+      </div>
+      <div class="rounded-lg bg-green-100 p-3 text-green-600 dark:bg-green-900/30 dark:text-green-300">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 13 4 4L19 7"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Missing</p>
+        <p id="sum-missing" class="mt-1 text-2xl font-bold text-fuchsia-600">0</p>
+      </div>
+      <div class="rounded-lg bg-fuchsia-100 p-3 text-fuchsia-600 dark:bg-fuchsia-900/30 dark:text-fuchsia-300">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2M3 7v10a2 2 0 0 0 2 2h6"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m16 16 5 5m0-5-5 5"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Stale</p>
+        <p id="sum-stale" class="mt-1 text-2xl font-bold text-red-600">0</p>
+      </div>
+      <div class="rounded-lg bg-red-100 p-3 text-red-600 dark:bg-red-900/30 dark:text-red-300">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M10.3 3.9 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Long Dead</p>
+        <p id="sum-long-dead" class="mt-1 text-2xl font-bold text-gray-700 dark:text-gray-200">0</p>
+      </div>
+      <div class="rounded-lg bg-gray-100 p-3 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Unknown</p>
+        <p id="sum-unknown" class="mt-1 text-2xl font-bold text-amber-600">0</p>
+      </div>
+      <div class="rounded-lg bg-amber-100 p-3 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.9 9a3 3 0 1 1 4.2 2.8c-.9.5-1.1.9-1.1 2.2M12 18h.01"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+  <div class="xl:col-span-1 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+    <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+      <h3 class="font-semibold text-gray-900 dark:text-white">Sources</h3>
+    </div>
+    <div id="sources-list" class="divide-y divide-gray-200 dark:divide-gray-700"></div>
+  </div>
+
+  <div class="xl:col-span-2 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+    <div class="flex flex-col gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-700 md:flex-row md:items-center md:justify-between">
+      <h3 class="font-semibold text-gray-900 dark:text-white">Folder Status</h3>
+      <div class="flex gap-2">
+        <select id="status-filter" onchange="loadStatuses()" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+          <option value="">All status</option>
+          <option value="healthy">Healthy</option>
+          <option value="stale">Stale</option>
+          <option value="long_dead">Long dead</option>
+          <option value="missing">Missing</option>
+          <option value="unknown">Unknown</option>
+        </select>
+      <input id="search-input" oninput="debouncedLoadStatuses()" placeholder="Search folder/camera" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+      </div>
+    </div>
+    <datalist id="camera-options"></datalist>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-left text-sm">
+        <thead class="bg-gray-50 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300">
+          <tr>
+            <th class="px-4 py-3 font-semibold">Folder</th>
+            <th class="px-4 py-3 font-semibold">Source</th>
+            <th class="px-4 py-3 font-semibold">Camera</th>
+            <th class="px-4 py-3 font-semibold">Last Update</th>
+            <th class="px-4 py-3 font-semibold">Age</th>
+            <th class="px-4 py-3 font-semibold">Status</th>
+          </tr>
+        </thead>
+        <tbody id="status-body" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="mt-6 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+  <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+    <h3 class="font-semibold text-gray-900 dark:text-white">Recent Runs</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-left text-sm">
+      <thead class="bg-gray-50 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300">
+        <tr>
+          <th class="px-4 py-3 font-semibold">Time</th>
+          <th class="px-4 py-3 font-semibold">Source</th>
+          <th class="px-4 py-3 font-semibold">Status</th>
+          <th class="px-4 py-3 font-semibold">Summary</th>
+          <th class="px-4 py-3 font-semibold">Error</th>
+        </tr>
+      </thead>
+      <tbody id="runs-body" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="source-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+  <div class="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-xl dark:bg-gray-800">
+    <div class="flex items-start justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+      <div>
+        <h3 id="source-modal-title" class="text-lg font-bold text-gray-900 dark:text-white">Add Source</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Configure a read-only mounted recording folder source.</p>
+      </div>
+      <button type="button" onclick="closeSourceModal()" class="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200" title="Close">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    <form id="source-form" class="flex min-h-0 flex-1 flex-col">
+      <div class="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
+        <input type="hidden" id="source-id">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+            <input id="source-name" required class="w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">NVR</label>
+            <select id="source-nvr" class="w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+              <option value="">No NVR link</option>
+              {% for nvr in nvrs %}
+              <option value="{{ nvr.id }}">{{ nvr.hostname }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Mounted Base Path</label>
+          <input id="source-path" required placeholder="/mnt/cctv33-recordings" class="w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+        </div>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Stale minutes</label>
+            <input id="source-stale" type="number" min="1" value="70" class="w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Long-dead days</label>
+            <input id="source-long-dead" type="number" min="1" value="7" class="w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+          </div>
+          <label class="flex h-[42px] items-center gap-3 self-end rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900/30 dark:text-gray-300">
+            <input id="source-enabled" type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+            Enabled
+          </label>
+        </div>
+      </div>
+      <div class="flex flex-col-reverse gap-2 border-t border-gray-200 bg-gray-50 px-5 py-4 dark:border-gray-700 dark:bg-gray-900/30 sm:flex-row sm:items-center sm:justify-end">
+        <button type="button" onclick="closeSourceModal()" class="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-700">Cancel</button>
+        <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 13 4 4L19 7"></path>
+          </svg>
+          Save Source
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .record-delete-popup {
+    width: min(92vw, 520px);
+    padding: 1.25rem 1.5rem 1.5rem;
+  }
+  .record-delete-popup .swal2-icon {
+    width: 4rem;
+    height: 4rem;
+    margin: 0.5rem auto 0.75rem;
+  }
+  .record-delete-popup .swal2-title {
+    margin: 0.5rem 0 0;
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+  .record-delete-popup .swal2-html-container {
+    margin: 1rem 0 0;
+    overflow: visible;
+  }
+  .record-delete-popup .swal2-actions {
+    width: 100%;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+  }
+  .record-delete-field {
+    width: 100%;
+    height: 2.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    background: #ffffff;
+    color: #111827;
+    outline: none;
+  }
+  .record-delete-field:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  }
+  .dark .record-delete-field {
+    border-color: #4b5563;
+    background: #374151;
+    color: #f9fafb;
+  }
+  .record-delete-confirm,
+  .record-delete-cancel {
+    min-width: 6rem;
+    border-radius: 0.5rem !important;
+    padding: 0.625rem 1rem !important;
+    font-weight: 600 !important;
+  }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let sources = [];
+let cameras = [];
+let selectedSourceId = '';
+let statusTimer = null;
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function formatDate(value) {
+  if (!value) return '-';
+  return new Date(value).toLocaleString();
+}
+
+function formatAge(seconds) {
+  if (seconds === null || seconds === undefined) return '-';
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
+  if (seconds < 86400) return `${(seconds / 3600).toFixed(1)}h`;
+  return `${(seconds / 86400).toFixed(1)}d`;
+}
+
+function statusBadge(status) {
+  const cls = {
+    healthy: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    stale: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    long_dead: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+    missing: 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/30 dark:text-fuchsia-300',
+    unknown: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+    success: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    fail: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  }[status] || 'bg-gray-100 text-gray-800';
+  return `<span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${cls}">${escapeHtml(status || '-')}</span>`;
+}
+
+function iconSvg(name, cls = 'h-4 w-4') {
+  const icons = {
+    play: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5v14l11-7-11-7Z"></path>',
+    edit: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m16.862 4.487 1.688-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"></path>',
+    trash: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12m-9 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m2 0-.7 12.2A2 2 0 0 1 14.3 21H9.7a2 2 0 0 1-2-1.8L7 7m3 4v6m4-6v6"></path>',
+    folder: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"></path>',
+    x: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 18 6M6 6l12 12"></path>',
+  };
+  return `<svg class="${cls}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">${icons[name] || ''}</svg>`;
+}
+
+function cameraSelect(item) {
+  const current = cameras.find(camera => camera.id === item.camera_id);
+  const value = current ? cameraLabel(current) : '';
+  return `
+    <div class="flex min-w-64 items-center gap-2">
+      <input
+        value="${escapeHtml(value)}"
+        list="camera-options"
+        placeholder="Search camera..."
+        onchange="updateMappingFromLabel('${item.id}', this.value)"
+        class="w-56 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+      >
+      ${item.camera_id ? `<button onclick="updateMapping('${item.id}', '')" title="Clear mapping" class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700">${iconSvg('x', 'h-4 w-4')}</button>` : ''}
+    </div>
+  `;
+}
+
+function cameraLabel(camera) {
+  return `${camera.hostname}${camera.ip ? ' - ' + camera.ip : ''}`;
+}
+
+function refreshCameraOptions() {
+  const datalist = document.getElementById('camera-options');
+  if (!datalist) return;
+  datalist.innerHTML = cameras.map(camera => `<option value="${escapeHtml(cameraLabel(camera))}"></option>`).join('');
+}
+
+async function loadSources() {
+  const res = await fetch('/api/record-checks/sources');
+  const data = await res.json();
+  sources = data.sources || [];
+  renderSources();
+}
+
+async function loadCameras() {
+  const res = await fetch('/api/record-checks/cameras');
+  const data = await res.json();
+  cameras = data.cameras || [];
+  refreshCameraOptions();
+}
+
+function renderSources() {
+  const root = document.getElementById('sources-list');
+  if (!sources.length) {
+    root.innerHTML = `
+      <div class="flex flex-col items-center justify-center px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+        <div class="mb-3 rounded-lg bg-gray-100 p-3 text-gray-400 dark:bg-gray-700 dark:text-gray-300">${iconSvg('folder', 'h-6 w-6')}</div>
+        <p>No record sources configured.</p>
+      </div>
+    `;
+    return;
+  }
+  root.innerHTML = sources.map(source => `
+    <div class="p-4 transition ${selectedSourceId === source.id ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/30'}">
+      <div class="flex items-start justify-between gap-3">
+        <button onclick="selectSource('${source.id}')" class="min-w-0 flex-1 text-left">
+          <div class="flex items-center gap-2 font-semibold text-gray-900 dark:text-white">
+            <span class="text-indigo-600 dark:text-indigo-400">${iconSvg('folder')}</span>
+            <span class="truncate">${escapeHtml(source.name)}</span>
+          </div>
+          <div class="mt-1 truncate font-mono text-xs text-gray-500" title="${escapeHtml(source.base_path)}">${escapeHtml(source.base_path)}</div>
+          <div class="mt-2 text-xs text-gray-500">${source.enabled ? 'Enabled' : 'Disabled'}${source.nvr_name ? ' | ' + escapeHtml(source.nvr_name) : ''}</div>
+        </button>
+        <div class="flex shrink-0 gap-1">
+          <button onclick="runSource('${source.id}')" title="Run now" class="rounded p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20">▶</button>
+          <button onclick="editSource('${source.id}')" title="Edit" class="rounded p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">✎</button>
+          <button onclick="deleteSource('${source.id}')" title="Delete" class="rounded p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">×</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  root.querySelectorAll('button[title="Run now"]').forEach((button) => {
+    button.className = 'rounded-lg p-2 text-green-600 transition hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 dark:hover:bg-green-900/20';
+    button.innerHTML = iconSvg('play');
+  });
+  root.querySelectorAll('button[title="Edit"]').forEach((button) => {
+    button.title = 'Edit source';
+    button.className = 'rounded-lg p-2 text-indigo-600 transition hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:hover:bg-indigo-900/20';
+    button.innerHTML = iconSvg('edit');
+  });
+  root.querySelectorAll('button[title="Delete"]').forEach((button) => {
+    button.title = 'Delete source';
+    button.className = 'rounded-lg p-2 text-red-600 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 dark:hover:bg-red-900/20';
+    button.innerHTML = iconSvg('trash');
+  });
+}
+
+function selectSource(id) {
+  selectedSourceId = selectedSourceId === id ? '' : id;
+  renderSources();
+  loadStatuses();
+  loadRuns();
+}
+
+async function loadStatuses() {
+  const params = new URLSearchParams();
+  if (selectedSourceId) params.set('source_id', selectedSourceId);
+  const status = document.getElementById('status-filter').value;
+  const q = document.getElementById('search-input').value.trim();
+  if (status) params.set('status', status);
+  if (q) params.set('q', q);
+  const res = await fetch(`/api/record-checks/status?${params.toString()}`);
+  const data = await res.json();
+  document.getElementById('sum-healthy').textContent = data.summary.healthy || 0;
+  document.getElementById('sum-stale').textContent = data.summary.stale || 0;
+  document.getElementById('sum-long-dead').textContent = data.summary.long_dead || 0;
+  document.getElementById('sum-missing').textContent = data.summary.missing || 0;
+  document.getElementById('sum-unknown').textContent = data.summary.unknown || 0;
+  const rows = data.items || [];
+  document.getElementById('status-body').innerHTML = rows.length ? rows.map(item => `
+    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+      <td class="px-4 py-3">
+        <div class="font-medium text-gray-900 dark:text-white">${escapeHtml(item.folder_name)}</div>
+        <div class="max-w-sm truncate font-mono text-xs text-gray-500" title="${escapeHtml(item.folder_path)}">${escapeHtml(item.folder_path)}</div>
+      </td>
+      <td class="px-4 py-3 text-gray-600 dark:text-gray-300">${escapeHtml(item.source)}</td>
+      <td class="px-4 py-3">${cameraSelect(item)}</td>
+      <td class="px-4 py-3 text-gray-600 dark:text-gray-300">${formatDate(item.last_mtime)}</td>
+      <td class="px-4 py-3 text-gray-600 dark:text-gray-300">${formatAge(item.age_seconds)}</td>
+      <td class="px-4 py-3">${statusBadge(item.status)}</td>
+    </tr>
+  `).join('') : '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No folder status found.</td></tr>';
+}
+
+async function loadRuns() {
+  const params = new URLSearchParams();
+  if (selectedSourceId) params.set('source_id', selectedSourceId);
+  const res = await fetch(`/api/record-checks/runs?${params.toString()}`);
+  const data = await res.json();
+  const rows = data.runs || [];
+  document.getElementById('runs-body').innerHTML = rows.length ? rows.map(run => `
+    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+      <td class="px-4 py-3 text-gray-600 dark:text-gray-300">${formatDate(run.started_at)}</td>
+      <td class="px-4 py-3 text-gray-600 dark:text-gray-300">${escapeHtml(run.source)}</td>
+      <td class="px-4 py-3">${statusBadge(run.status)}</td>
+      <td class="px-4 py-3 text-gray-600 dark:text-gray-300">H ${run.healthy_count} | S ${run.stale_count} | D ${run.long_dead_count} | U ${run.unknown_count} | T ${run.total_folders}</td>
+      <td class="px-4 py-3 text-red-600">${escapeHtml(run.error_message || '')}</td>
+    </tr>
+  `).join('') : '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No runs yet.</td></tr>';
+}
+
+function debouncedLoadStatuses() {
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(loadStatuses, 250);
+}
+
+async function updateMapping(statusId, cameraId) {
+  const res = await fetch(`/api/record-checks/status/${statusId}/mapping`, {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+    body: JSON.stringify({camera_id: cameraId || null}),
+  });
+  const data = await res.json();
+  if (res.ok && data.status === 'success') {
+    Toast.success(data.message, {title: 'Success'});
+    await loadStatuses();
+  } else {
+    Toast.error(data.message || data.detail || 'Failed to update mapping', {title: 'Error'});
+  }
+}
+
+async function updateMappingFromLabel(statusId, label) {
+  const normalized = label.trim().toLowerCase();
+  if (!normalized) {
+    await updateMapping(statusId, '');
+    return;
+  }
+  const selected = cameras.find(camera => cameraLabel(camera).toLowerCase() === normalized);
+  if (!selected) {
+    Toast.error('Select a camera from the search suggestions.', {title: 'Invalid Camera'});
+    await loadStatuses();
+    return;
+  }
+  await updateMapping(statusId, selected.id);
+}
+
+function openSourceModal() {
+  document.getElementById('source-modal-title').textContent = 'Add Source';
+  document.getElementById('source-form').reset();
+  document.getElementById('source-id').value = '';
+  document.getElementById('source-stale').value = '70';
+  document.getElementById('source-long-dead').value = '7';
+  document.getElementById('source-enabled').checked = true;
+  document.getElementById('source-modal').classList.remove('hidden');
+  document.getElementById('source-modal').classList.add('flex');
+}
+
+function closeSourceModal() {
+  document.getElementById('source-modal').classList.add('hidden');
+  document.getElementById('source-modal').classList.remove('flex');
+}
+
+function editSource(id) {
+  const source = sources.find(item => item.id === id);
+  if (!source) return;
+  openSourceModal();
+  document.getElementById('source-modal-title').textContent = 'Edit Source';
+  document.getElementById('source-id').value = source.id;
+  document.getElementById('source-name').value = source.name;
+  document.getElementById('source-path').value = source.base_path;
+  document.getElementById('source-nvr').value = source.nvr_id || '';
+  document.getElementById('source-stale').value = Math.round(source.stale_threshold_seconds / 60);
+  document.getElementById('source-long-dead').value = Math.round(source.long_dead_threshold_seconds / 86400);
+  document.getElementById('source-enabled').checked = source.enabled;
+}
+
+document.getElementById('source-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const id = document.getElementById('source-id').value;
+  const payload = {
+    name: document.getElementById('source-name').value.trim(),
+    base_path: document.getElementById('source-path').value.trim(),
+    nvr_id: document.getElementById('source-nvr').value || null,
+    enabled: document.getElementById('source-enabled').checked,
+    stale_threshold_seconds: Number(document.getElementById('source-stale').value) * 60,
+    long_dead_threshold_seconds: Number(document.getElementById('source-long-dead').value) * 86400,
+    scan_depth: 1,
+  };
+  const res = await fetch(id ? `/api/record-checks/sources/${id}` : '/api/record-checks/sources', {
+    method: id ? 'PUT' : 'POST',
+    headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (res.ok && data.status === 'success') {
+    Toast.success(data.message, {title: 'Success'});
+    closeSourceModal();
+    await refreshAll();
+  } else {
+    Toast.error(data.message || data.detail || 'Failed to save source', {title: 'Error'});
+  }
+});
+
+async function runSource(id) {
+  const res = await fetch(`/api/record-checks/sources/${id}/run`, {method: 'POST', headers: {'Accept': 'application/json'}});
+  const data = await res.json();
+  if (res.ok && data.status === 'success') {
+    Toast.success(data.message, {title: 'Success'});
+    await refreshAll();
+  } else {
+    Toast.error(data.message || data.detail || 'Record check failed', {title: 'Error'});
+  }
+}
+
+async function deleteSource(id) {
+  const source = sources.find(item => item.id === id);
+  if (!source) return;
+
+  const confirmationName = source.nvr_name || source.name;
+  const confirmationLabel = source.nvr_name ? 'NVR hostname' : 'record source name';
+
+  const result = await themedSwal({
+    icon: 'warning',
+    title: 'Delete Record Source',
+    html: `
+      <div class="text-left">
+        <p class="mb-4 text-sm leading-6 text-gray-600 dark:text-gray-300">
+          This will delete the record source and its record-check history.
+        </p>
+        <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-3 text-sm leading-5 text-red-800 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-200">
+          Type <strong>${escapeHtml(confirmationName)}</strong> to confirm the ${confirmationLabel}.
+        </div>
+        <div class="space-y-4">
+          <div>
+            <label for="delete-source-password" class="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-200">Admin password</label>
+            <input id="delete-source-password" type="password" class="record-delete-field" placeholder="Enter your password" autocomplete="current-password">
+          </div>
+          <div>
+            <label for="delete-source-confirmation" class="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-200">Confirmation name</label>
+            <input id="delete-source-confirmation" class="record-delete-field" placeholder="${escapeHtml(confirmationName)}" autocomplete="off">
+          </div>
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: 'Delete',
+    cancelButtonText: 'Cancel',
+    reverseButtons: true,
+    iconColor: '#f59e0b',
+    confirmButtonColor: '#dc2626',
+    customClass: {
+      popup: 'record-delete-popup',
+      confirmButton: 'record-delete-confirm',
+      cancelButton: 'record-delete-cancel',
+    },
+    buttonsStyling: true,
+    didOpen: () => {
+      document.getElementById('delete-source-password')?.focus();
+    },
+    preConfirm: () => {
+      const password = document.getElementById('delete-source-password')?.value || '';
+      const confirmation = document.getElementById('delete-source-confirmation')?.value || '';
+      if (!password || !confirmation) {
+        Swal.showValidationMessage('Password and confirmation name are required.');
+        return false;
+      }
+      if (confirmation.trim() !== confirmationName) {
+        Swal.showValidationMessage(`Confirmation must match "${confirmationName}".`);
+        return false;
+      }
+      return {password, confirmation_name: confirmation};
+    }
+  });
+
+  if (!result.isConfirmed || !result.value) return;
+
+  const res = await fetch(`/api/record-checks/sources/${id}`, {
+    method: 'DELETE',
+    headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+    body: JSON.stringify(result.value),
+  });
+  const data = await res.json();
+  if (res.ok && data.status === 'success') {
+    Toast.success(data.message, {title: 'Success'});
+    if (selectedSourceId === id) selectedSourceId = '';
+    await refreshAll();
+  } else {
+    Toast.error(data.message || data.detail || 'Failed to delete source', {title: 'Error'});
+  }
+}
+
+async function refreshAll() {
+  await loadCameras();
+  await loadSources();
+  await loadStatuses();
+  await loadRuns();
+}
+
+document.addEventListener('DOMContentLoaded', refreshAll);
+</script>
+{% endblock %}

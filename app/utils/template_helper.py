@@ -48,6 +48,7 @@ nav_items = [
         "items": [
             {"label": "Cameras", "href": "/cameras", "icon": "camera", "roles": ["admin"]},
             {"label": "NVRs", "href": "/nvrs", "icon": "hard-drive", "roles": ["admin"]},
+            {"label": "Record Checks", "href": "/admin/record-checks", "icon": "activity", "roles": ["admin"]},
             {"label": "Status", "href": "/health", "icon": "activity", "roles": ["admin"]},
         ],
     },

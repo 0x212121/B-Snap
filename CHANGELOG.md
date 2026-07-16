@@ -4,6 +4,123 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-07-16
+
+### Added
+
+#### Record Folder Check for Mounted SMB/NVR Shares
+- Added monitoring for mounted recording folders, intended for SMB shares mounted read-only on the host/container.
+  - Scans first-level channel folders under a configured base path.
+  - Classifies folders as `healthy`, `stale`, `long_dead`, or `unknown` based on last modified time.
+  - Default thresholds:
+    - Stale: 70 minutes.
+    - Long dead: 7 days.
+  - Skips symlinks and validates configured paths as absolute paths.
+
+- Added persistent database records for record-check monitoring:
+  - `record_sources` - configured mounted record sources.
+  - `record_check_runs` - one row per scan run.
+  - `record_folder_checks` - per-folder result for each run.
+  - `record_folder_statuses` - current state per source/folder.
+  - `record_folder_mappings` - manual folder-to-camera mappings.
+  - `record_status_events` - status-change, alert, and recovery events.
+  - Migration: `20260716_add_record_check_tables.py`.
+
+- Added admin UI for record-check operations:
+  - New page: `/admin/record-checks`.
+  - Create, edit, delete, and manually run record sources.
+  - View current folder status summaries and recent run history.
+  - Manually map folder names to cameras from the `cameras` database table.
+  - Searchable camera mapping input for faster manual folder-to-camera assignment.
+  - Added navigation entry: Devices -> Record Checks.
+
+- Added scheduler support:
+  - New job: `record_folder_check`.
+  - Default interval config: `record_check_interval_minutes=10`.
+  - Cron override config: `record_check_cron`.
+  - Retention config: `retention_record_check_days=30`.
+  - Record-check job logs through `JobExecutionLog`.
+
+- Added GoWA WhatsApp notification integration for record checks:
+  - Sends alert when a folder newly enters `stale`.
+  - Sends alert when a previously known folder becomes `missing` because it was renamed or deleted.
+  - Sends recovery when an alerted folder returns to `healthy`.
+  - Recovery notifications include remaining stale/missing folders that still need attention.
+  - Alert item labels now include mapped camera hostname after the channel/folder name.
+  - Uses existing GoWA config and `gowa_default_receiver`.
+  - Stores notification result on `record_status_events`.
+  - Failed stale/missing alerts are retried after the retry window if no successful alert exists for the active incident.
+
+- Added secure delete confirmation for record sources:
+  - Delete requires the current admin password.
+  - Delete also requires typing the linked NVR hostname, or source name when no NVR is linked.
+  - Delete attempts are audited.
+
+- Added GoWA group receiver discovery:
+  - New admin endpoint: `GET /api/wa/groups`.
+  - Config UI can load WhatsApp groups from GoWA and append a selected group JID to default receivers.
+  - Default receivers now support both personal numbers and group JIDs.
+
+- Added tests and smoke coverage:
+  - Unit test file for record-check classifier and path validation.
+  - Manual smoke tests verified classification, database persistence, and manual mapping behavior.
+
+### Changed
+
+#### Job Management
+- Job Management now lists configured jobs even if APScheduler has not registered them yet.
+  - `record_folder_check` appears before scheduler reload/start.
+  - Jobs not yet present in `apscheduler_jobs` show `Configured, waiting for scheduler reload`.
+  - Cron schedule editing now supports `record_folder_check`.
+  - Empty cron expressions are accepted and use interval fallback.
+
+#### Record Check UI
+- Improved Record Checks page layout:
+  - Replaced text/symbol action buttons with SVG icon buttons.
+  - Added icons to summary cards.
+  - Improved empty source state.
+  - Improved add/edit source modal layout, close button, footer actions, and responsive spacing.
+  - Improved destructive delete confirmation modal with password and hostname confirmation fields.
+  - Centered delete confirmation actions and improved dark-mode spacing/contrast.
+
+#### GoWA Configuration
+- Configuration save now persists WhatsApp Gateway settings:
+  - `gowa_enabled`
+  - `gowa_base_url`
+  - `gowa_api_key`
+  - `gowa_default_receiver`
+- GoWA Test Connection now tests the values currently typed in the form before saving.
+- `/api/wa/status` and `/api/wa/send-test` are now admin-only.
+- GoWA auth help now documents current `APP_BASIC_AUTH=user:password` usage while keeping older bearer token support.
+- Default receiver help now documents group JID format such as `120363xxxxxxxx@g.us`.
+
+#### WhatsApp Daily Reports
+- Daily camera report receiver handling now preserves group JIDs instead of formatting them as phone numbers.
+
+### Fixed
+
+#### Job Execution Logging
+- Fixed `logged_job()` so dictionary job results correctly populate `records_processed`.
+  - Previously dict results always logged `0` due to using `getattr()` on dicts.
+
+#### Record Folder Mapping
+- Manual folder-to-camera mapping now takes precedence over automatic hostname matching.
+- Scanner no longer overwrites admin-selected mappings during later scans.
+
+#### Record Folder State Handling
+- Previously known folders that disappear from a source are now marked `missing` instead of silently disappearing.
+- Missing folders are retained in current status so operators can see renamed/deleted recording folders.
+- Missing folder counts are included in current status summaries.
+
+#### GoWA Integration
+- Added support for current GoWA endpoint paths such as `/app/status`, `/send/message`, `/send/image`, and `/send/file`, with fallback to older `/api/*` endpoints.
+- Added Basic Auth header generation when the configured GoWA auth secret contains `user:password`.
+- GoWA status parsing now supports the current `results` response wrapper.
+
+#### WhatsApp Daily Reports
+- Fixed daily report crash caused by querying non-existent `SnapshotLog.created_at`; it now uses `SnapshotLog.timestamp`.
+- Fixed daily report crash caused by reading non-existent `Camera.name`; it now uses `Camera.hostname` with IP context when available.
+
 ## [2.0.2] - 2026-06-09
 
 ### Fixed

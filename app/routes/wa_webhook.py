@@ -16,6 +16,7 @@ from app.models.user import User
 from app.models.camera import Camera
 from app.models.health import CameraHealth
 from app.models.camera_daily_stats import CameraDailyStats
+from app.routes.auth import admin_access_required
 from app.utils.wa_gateway import WAGatewayService, format_phone_number
 from app.utils.response_helper import json_success_response, json_error_response
 
@@ -325,9 +326,24 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/api/wa/status")
-def get_wa_status(db: Session = Depends(get_db)):
+def get_wa_status(
+    enabled: Optional[bool] = None,
+    base_url: Optional[str] = None,
+    api_key: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required),
+):
     """Check WhatsApp gateway connection status."""
     service = WAGatewayService(db)
+    if enabled is not None:
+        service.config._cache["gowa_enabled"] = "1" if enabled else "0"
+    if base_url is not None:
+        service.config._cache["gowa_base_url"] = base_url.strip().rstrip("/")
+    if api_key is not None:
+        service.config._cache["gowa_api_key"] = api_key.strip()
+        service.session.headers.pop("Authorization", None)
+        if api_key.strip():
+            service.session.headers.update(WAGatewayService._auth_headers(api_key.strip()))
     status = service.check_connection()
     
     if status["connected"]:
@@ -336,11 +352,38 @@ def get_wa_status(db: Session = Depends(get_db)):
         return json_error_response(status.get("error", "Not connected"), 503)
 
 
+@router.get("/api/wa/groups")
+def get_wa_groups(
+    enabled: Optional[bool] = None,
+    base_url: Optional[str] = None,
+    api_key: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required),
+):
+    """List WhatsApp groups from GoWA for receiver selection."""
+    service = WAGatewayService(db)
+    if enabled is not None:
+        service.config._cache["gowa_enabled"] = "1" if enabled else "0"
+    if base_url is not None:
+        service.config._cache["gowa_base_url"] = base_url.strip().rstrip("/")
+    if api_key is not None:
+        service.config._cache["gowa_api_key"] = api_key.strip()
+        service.session.headers.pop("Authorization", None)
+        if api_key.strip():
+            service.session.headers.update(WAGatewayService._auth_headers(api_key.strip()))
+
+    result = service.list_groups()
+    if result["success"]:
+        return json_success_response("Groups loaded", {"groups": result.get("groups", [])})
+    return json_error_response(result.get("error", "Failed to load groups"), 502)
+
+
 @router.post("/api/wa/send-test")
 def send_test_wa(
     phone: str,
     message: str = "🤖 Test message from B-SNAP",
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required)
 ):
     """Send test WhatsApp message."""
     service = WAGatewayService(db)

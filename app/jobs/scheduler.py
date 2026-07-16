@@ -30,6 +30,7 @@ from app.models.snapshot_log import SnapshotLog
 from app.models.job_execution_log import JobExecutionLog
 from app.utils.snapshot_utils import record_snapshot_metadata, check_orphaned_snapshots
 from app.utils.check_stats import check_stats
+from app.utils.record_check import cleanup_old_record_checks, run_all_record_checks
 from sqlalchemy.orm import Session
 from app.models.task_timing import TaskTiming
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -111,6 +112,7 @@ last_config = {
     "snapshot_batch_size": None,
     "snapshot_batch_delay_seconds": None,
     "storage_check_interval_hours": None,
+    "record_check_interval_minutes": None,
     "email_retry_interval_minutes": None,
     "cleanup_interval_days": None,
     "cleanup_retry_queue_interval_days": None,
@@ -121,6 +123,7 @@ last_config = {
     "snapshot_cron": None,
     "healthcheck_cron": None,
     "storage_check_cron": None,
+    "record_check_cron": None,
     "cleanup_cron": None,
     "email_retry_cron": None,
 }
@@ -147,7 +150,7 @@ def logged_job(job_id: str, job_name: str):
                 result = func(*args, **kwargs)
                 
                 # Complete successfully
-                records = getattr(result, 'records_processed', 0) if isinstance(result, dict) else 0
+                records = result.get('records_processed', 0) if isinstance(result, dict) else 0
                 log.complete(db, status="success", records=records)
                 return result
                 
@@ -445,6 +448,18 @@ def handle_storage_check_interval(scheduler, new_value):
         logger.warning("[Scheduler] Job 'storage_check' not found.")
 
 
+def handle_record_check_interval(scheduler, new_value):
+    cron_expr = get_config("record_check_cron", "").strip()
+    if cron_expr:
+        logger.info("[Scheduler] Record check job has cron expression '%s', skipping interval update", cron_expr)
+        return
+    try:
+        scheduler.reschedule_job("record_folder_check", trigger=IntervalTrigger(minutes=new_value))
+        logger.info("[Scheduler] Record check interval updated to %d minutes", new_value)
+    except JobLookupError:
+        logger.warning("[Scheduler] Job 'record_folder_check' not found.")
+
+
 def handle_email_retry_interval(scheduler, new_value):
     # Check if cron expression is set - if so, don't override with interval
     cron_expr = get_config("email_retry_cron", "").strip()
@@ -497,6 +512,7 @@ CONFIG_HANDLERS = {
     "snapshot_batch_size": handle_batch_size,
     "snapshot_batch_delay_seconds": handle_batch_delay,
     "storage_check_interval_hours": handle_storage_check_interval,
+    "record_check_interval_minutes": handle_record_check_interval,
     "email_retry_interval_minutes": handle_email_retry_interval,
     "cleanup_interval_days": handle_cleanup_interval,
 }
@@ -554,6 +570,7 @@ def start_scheduler():
         "snapshot_batch_size": int(get_config("snapshot_batch_size", 50)),
         "snapshot_batch_delay_seconds": int(get_config("snapshot_batch_delay_seconds", 5)),
         "storage_check_interval_hours": int(get_config("storage_check_interval_hours", 1)),
+        "record_check_interval_minutes": int(get_config("record_check_interval_minutes", 10)),
         "email_retry_interval_minutes": int(get_config("email_retry_interval_minutes", 1)),
         "cleanup_interval_days": int(get_config("cleanup_interval_days", 1)),
         "cleanup_retry_queue_interval_days": int(get_config("cleanup_retry_queue_interval_days", 1)),
@@ -564,6 +581,7 @@ def start_scheduler():
         "snapshot_cron": get_config("snapshot_cron", ""),
         "healthcheck_cron": get_config("healthcheck_cron", ""),
         "storage_check_cron": get_config("storage_check_cron", ""),
+        "record_check_cron": get_config("record_check_cron", ""),
         "cleanup_cron": get_config("cleanup_cron", "0 2 * * *"),
         "email_retry_cron": get_config("email_retry_cron", ""),
     }
@@ -664,6 +682,20 @@ def start_scheduler():
         misfire_grace_time=300,
         replace_existing=True
     )
+
+    record_check_trigger = create_trigger(
+        config["record_check_cron"],
+        IntervalTrigger(minutes=config["record_check_interval_minutes"])
+    )
+    scheduler.add_job(
+        record_folder_check_job,
+        trigger=record_check_trigger,
+        id='record_folder_check',
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=300,
+        replace_existing=True
+    )
     
     # WhatsApp daily report with configurable time
     scheduler.add_job(
@@ -723,6 +755,7 @@ def update_scheduler_config():
             "snapshot_batch_size": int(get_config("snapshot_batch_size", 50)),
             "snapshot_batch_delay_seconds": int(get_config("snapshot_batch_delay_seconds", 5)),
             "storage_check_interval_hours": int(get_config("storage_check_interval_hours", 1)),
+            "record_check_interval_minutes": int(get_config("record_check_interval_minutes", 10)),
             "email_retry_interval_minutes": int(get_config("email_retry_interval_minutes", 1)),
             "cleanup_interval_days": int(get_config("cleanup_interval_days", 1)),
             "wa_storage_alert_interval_hours": int(get_config("wa_storage_alert_interval_hours", 2)),
@@ -730,6 +763,7 @@ def update_scheduler_config():
             "snapshot_cron": get_config("snapshot_cron", ""),
             "healthcheck_cron": get_config("healthcheck_cron", ""),
             "storage_check_cron": get_config("storage_check_cron", ""),
+            "record_check_cron": get_config("record_check_cron", ""),
             "cleanup_cron": get_config("cleanup_cron", "0 2 * * *"),
             "email_retry_cron": get_config("email_retry_cron", ""),
         }
@@ -739,6 +773,7 @@ def update_scheduler_config():
             'snapshot_cron': 'scheduled_snapshot',
             'healthcheck_cron': 'health_check',
             'storage_check_cron': 'storage_check',
+            'record_check_cron': 'record_folder_check',
             'cleanup_cron': 'cleanup_audit_logs',  # All cleanup jobs use same trigger
             'email_retry_cron': 'email_retry',
         }
@@ -757,6 +792,8 @@ def update_scheduler_config():
                         default_trigger = IntervalTrigger(minutes=new_config["healthcheck_interval_minutes"])
                     elif cron_key == 'storage_check_cron':
                         default_trigger = IntervalTrigger(hours=new_config["storage_check_interval_hours"])
+                    elif cron_key == 'record_check_cron':
+                        default_trigger = IntervalTrigger(minutes=new_config["record_check_interval_minutes"])
                     elif cron_key == 'cleanup_cron':
                         default_trigger = IntervalTrigger(days=new_config["cleanup_interval_days"])
                     elif cron_key == 'email_retry_cron':
@@ -772,7 +809,8 @@ def update_scheduler_config():
         # Handle regular interval changes
         for key in ["snapshot_interval_minutes", "healthcheck_interval_minutes", 
                     "storage_check_interval_hours", "email_retry_interval_minutes",
-                    "cleanup_interval_days", "wa_storage_alert_interval_hours"]:
+                    "record_check_interval_minutes", "cleanup_interval_days",
+                    "wa_storage_alert_interval_hours"]:
             new_value = new_config[key]
             old_value = last_config.get(key)
             if new_value != old_value:
@@ -818,6 +856,12 @@ def health_check_job():
 def storage_check_job():
     """Wrapper for storage check job with logging."""
     return check_storage_job()
+
+
+@logged_job("record_folder_check", "Record Folder Check")
+def record_folder_check_job():
+    """Wrapper for mounted record folder checks with logging."""
+    return check_record_folders_job()
 
 
 @logged_job("email_retry", "Email Retry")
@@ -1105,6 +1149,29 @@ def check_storage_job():
         db.close()
 
 
+def check_record_folders_job():
+    """Monitor mounted SMB/NVR recording folders."""
+    db: Session = SessionLocal()
+    try:
+        result = run_all_record_checks(db, send_notifications=True)
+        retention_days = int(get_config("retention_record_check_days", 30))
+        if retention_days > 0:
+            deleted = cleanup_old_record_checks(db, retention_days)
+            result["old_rows_deleted"] = deleted
+        logger.info(
+            "[Record Check] Checked %d sources, failed %d, processed %d folders",
+            result.get("sources_checked", 0),
+            result.get("sources_failed", 0),
+            result.get("records_processed", 0),
+        )
+        return result
+    except Exception as e:
+        logger.error("[Record Check] Error: %s", e, exc_info=True)
+        raise
+    finally:
+        db.close()
+
+
 def process_email_retry_queue():
     """Process queued emails with adaptive retry."""
     db = SessionLocal()
@@ -1271,7 +1338,7 @@ def send_wa_camera_no_snapshot_report():
             recent_snapshot = (
                 db.query(SnapshotLog)
                 .filter(SnapshotLog.camera_id == cam.id)
-                .filter(SnapshotLog.created_at >= yesterday)
+                .filter(SnapshotLog.timestamp >= yesterday)
                 .first()
             )
             if not recent_snapshot:
@@ -1291,8 +1358,11 @@ def send_wa_camera_no_snapshot_report():
         
         if no_snapshot_cameras:
             lines.append(f"⚠️ *Cameras without snapshots:* {len(no_snapshot_cameras)}")
-            for cam in no_snapshot_cameras[:10]:
-                lines.append(f"• {cam.name}")
+            for cam in no_snapshot_cameras[:50]:
+                camera_label = cam.hostname or cam.ip or str(cam.id)
+                if cam.ip and cam.hostname:
+                    camera_label = f"{cam.hostname} ({cam.ip})"
+                lines.append(f"• {camera_label}")
             lines.append("")
         
         message = "\n".join(lines)
@@ -1300,7 +1370,7 @@ def send_wa_camera_no_snapshot_report():
         receivers = [r.strip() for r in receiver.split(",") if r.strip()]
         sent_count = 0
         for phone in receivers:
-            phone = format_phone_number(phone)
+            phone = phone if "@" in phone else format_phone_number(phone)
             result = wa_service.send_text(phone, message)
             if result["success"]:
                 sent_count += 1

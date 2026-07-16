@@ -32,6 +32,14 @@ from .health_check_status import HealthCheckStatus
 from .job_execution_log import JobExecutionLog
 from .sla_report import SLAReport, ScheduledReport
 from .email_template import EmailTemplate
+from .record_check import (
+    RecordCheckRun,
+    RecordFolderCheck,
+    RecordFolderMapping,
+    RecordFolderStatus,
+    RecordSource,
+    RecordStatusEvent,
+)
 
 __all__ = [
     "Camera",
@@ -66,4 +74,10 @@ __all__ = [
     "SLAReport",
     "ScheduledReport",
     "EmailTemplate",
+    "RecordSource",
+    "RecordCheckRun",
+    "RecordFolderCheck",
+    "RecordFolderMapping",
+    "RecordFolderStatus",
+    "RecordStatusEvent",
 ]

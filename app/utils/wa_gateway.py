@@ -10,6 +10,7 @@ Setup:
 """
 import logging
 import requests
+import base64
 from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
 from app.models.config import Configuration
@@ -80,10 +81,25 @@ class WAGatewayService:
         self.config = GoWAConfig(db)
         self.session = requests.Session()
         if self.config.api_key:
-            self.session.headers.update({"Authorization": f"Bearer {self.config.api_key}"})
-            logger.debug("GoWA initialized with API key authentication")
+            self.session.headers.update(self._auth_headers(self.config.api_key))
+            logger.debug("GoWA initialized with authentication")
         else:
             logger.debug("GoWA initialized without authentication (no API key)")
+
+    @staticmethod
+    def _auth_headers(secret: str) -> Dict[str, str]:
+        """Build GoWA auth headers.
+
+        Current GoWA uses HTTP Basic auth (`APP_BASIC_AUTH=user:pass`).
+        Older deployments may use bearer-style tokens, so keep bearer as fallback metadata.
+        """
+        secret = (secret or "").strip()
+        if not secret:
+            return {}
+        if ":" in secret:
+            encoded = base64.b64encode(secret.encode("utf-8")).decode("ascii")
+            return {"Authorization": f"Basic {encoded}"}
+        return {"Authorization": f"Bearer {secret}"}
     
     def _make_url(self, endpoint: str) -> str:
         """Build full URL from endpoint."""
@@ -114,11 +130,9 @@ class WAGatewayService:
             if reply_to:
                 payload["reply_to"] = reply_to
             
-            response = self.session.post(
-                self._make_url("/api/send-message"),
-                json=payload,
-                timeout=30
-            )
+            response = self.session.post(self._make_url("/send/message"), json=payload, timeout=30)
+            if response.status_code == 404:
+                response = self.session.post(self._make_url("/api/send-message"), json=payload, timeout=30)
             response.raise_for_status()
             result = response.json()
             
@@ -156,11 +170,9 @@ class WAGatewayService:
             if caption:
                 payload["caption"] = caption
             
-            response = self.session.post(
-                self._make_url("/api/send-image"),
-                json=payload,
-                timeout=60
-            )
+            response = self.session.post(self._make_url("/send/image"), json=payload, timeout=60)
+            if response.status_code == 404:
+                response = self.session.post(self._make_url("/api/send-image"), json=payload, timeout=60)
             response.raise_for_status()
             result = response.json()
             
@@ -184,11 +196,9 @@ class WAGatewayService:
             if filename:
                 payload["filename"] = filename
             
-            response = self.session.post(
-                self._make_url("/api/send-document"),
-                json=payload,
-                timeout=60
-            )
+            response = self.session.post(self._make_url("/send/file"), json=payload, timeout=60)
+            if response.status_code == 404:
+                response = self.session.post(self._make_url("/api/send-document"), json=payload, timeout=60)
             response.raise_for_status()
             return {"success": True, "data": response.json()}
             
@@ -202,10 +212,9 @@ class WAGatewayService:
             return {"connected": False, "error": "Not configured"}
         
         try:
-            response = self.session.get(
-                self._make_url("/api/status"),
-                timeout=10
-            )
+            response = self.session.get(self._make_url("/app/status"), timeout=10)
+            if response.status_code == 404:
+                response = self.session.get(self._make_url("/api/status"), timeout=10)
             
             # Check content type to detect HTML error pages
             content_type = response.headers.get('content-type', '')
@@ -227,10 +236,14 @@ class WAGatewayService:
                     "error": "Invalid response from GoWA (not valid JSON)"
                 }
             
+            status_payload = result.get("results", result)
             return {
-                "connected": result.get("connected", False),
-                "logged_in": result.get("logged_in", False),
-                "user": result.get("user", {}),
+                "connected": status_payload.get("connected", status_payload.get("is_connected", False)),
+                "logged_in": status_payload.get(
+                    "logged_in",
+                    status_payload.get("is_logged_in", status_payload.get("connected", False)),
+                ),
+                "user": status_payload.get("user", status_payload),
                 "error": None
             }
             
@@ -246,6 +259,42 @@ class WAGatewayService:
         except Exception as e:
             logger.error(f"GoWA connection check failed: {e}")
             return {"connected": False, "error": str(e)}
+
+    def list_groups(self) -> Dict[str, Any]:
+        """List WhatsApp groups available to the connected GoWA account."""
+        if not self.config.is_configured():
+            return {"success": False, "error": "GoWA not configured"}
+
+        try:
+            response = self.session.get(self._make_url("/user/my/groups"), timeout=15)
+            response.raise_for_status()
+            result = response.json()
+            payload = result.get("results", result)
+            raw_groups = payload.get("data", payload if isinstance(payload, list) else [])
+
+            groups = []
+            for item in raw_groups:
+                if not isinstance(item, dict):
+                    continue
+                jid = item.get("JID") or item.get("jid") or item.get("id")
+                name = item.get("Name") or item.get("name") or item.get("subject") or jid
+                if not jid:
+                    continue
+                groups.append(
+                    {
+                        "jid": jid,
+                        "name": name,
+                        "participants": item.get("ParticipantCount") or item.get("participants_count"),
+                    }
+                )
+
+            return {"success": True, "groups": groups}
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to list GoWA groups: {e}")
+            return {"success": False, "error": str(e)}
+        except Exception as e:
+            logger.error(f"Unexpected error listing GoWA groups: {e}")
+            return {"success": False, "error": str(e)}
 
 
 def send_wa_notification(db: Session, phone: str, message: str, notification_type: str = "alert") -> bool:

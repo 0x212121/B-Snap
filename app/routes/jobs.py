@@ -25,6 +25,23 @@ router = APIRouter(prefix="/admin/jobs", tags=["Job Management"])
 # Direct database access for reading jobs (no scheduler needed)
 from sqlalchemy import text
 
+CONFIGURED_JOBS = {
+    'scheduled_snapshot': 'Scheduled Snapshot',
+    'health_check': 'Health Check',
+    'storage_check': 'Storage Check',
+    'record_folder_check': 'Record Folder Check',
+    'cleanup_audit_logs': 'Cleanup Audit Logs',
+    'cleanup_camera_stats': 'Cleanup Camera Stats',
+    'cleanup_api_logs': 'Cleanup Api Logs',
+    'cleanup_command_logs': 'Cleanup Command Logs',
+    'email_retry': 'Email Retry',
+    'cleanup_email_retry': 'Cleanup Email Retry',
+    'wa_daily_report': 'Whatsapp Daily Report',
+    'wa_storage_alert': 'Whatsapp Storage Alert',
+    'orphaned_snapshots_check': 'Orphaned Snapshots Check',
+    'retention_policy': 'Retention Policy',
+}
+
 def get_jobs_from_db():
     """Read jobs directly from apscheduler_jobs table."""
     try:
@@ -88,6 +105,7 @@ async def list_jobs(
             'scheduled_snapshot': get_config('snapshot_cron', ''),
             'health_check': get_config('healthcheck_cron', ''),
             'storage_check': get_config('storage_check_cron', ''),
+            'record_folder_check': get_config('record_check_cron', ''),
             'cleanup_audit_logs': cleanup_cron,
             'cleanup_camera_stats': cleanup_cron,
             'cleanup_api_logs': cleanup_cron,
@@ -96,11 +114,11 @@ async def list_jobs(
         }
         
         # Read jobs directly from database
-        db_jobs = get_jobs_from_db()
+        db_jobs_by_id = {job['id']: job for job in get_jobs_from_db()}
         
         jobs = []
-        for db_job in db_jobs:
-            job_id = db_job['id']
+        for job_id, job_name in CONFIGURED_JOBS.items():
+            db_job = db_jobs_by_id.get(job_id, {'id': job_id, 'next_run_time': None})
             
             # Get last execution
             last_run = db.query(JobExecutionLog).filter(
@@ -123,10 +141,11 @@ async def list_jobs(
             
             jobs.append({
                 "id": job_id,
-                "name": job_id.replace('_', ' ').title(),
+                "name": job_name,
                 "trigger": "Cron/Interval",  # Simplified, read from config
                 "cron_expression": cron_expr,
                 "next_run_time": next_run_iso,
+                "registered": job_id in db_jobs_by_id,
                 "last_run": {
                     "started_at": last_run.started_at.isoformat() if last_run else None,
                     "status": last_run.status if last_run else None,
@@ -137,6 +156,7 @@ async def list_jobs(
         
         return JSONResponse({
             "jobs": jobs,
+            "registered_job_ids": list(db_jobs_by_id.keys()),
             "cron_configs": cron_configs,
         })
     except Exception as e:
@@ -322,6 +342,7 @@ async def get_job_config(
         "snapshot_interval_minutes": int(get_config("snapshot_interval_minutes", 480)),
         "healthcheck_interval_minutes": int(get_config("healthcheck_interval_minutes", 15)),
         "storage_check_interval_hours": int(get_config("storage_check_interval_hours", 1)),
+        "record_check_interval_minutes": int(get_config("record_check_interval_minutes", 10)),
         "email_retry_interval_minutes": int(get_config("email_retry_interval_minutes", 1)),
         "cleanup_interval_days": int(get_config("cleanup_interval_days", 1)),
         "wa_daily_report_hour": int(get_config("wa_daily_report_hour", 8)),
@@ -344,6 +365,7 @@ async def update_job_schedule(
     - scheduled_snapshot -> snapshot_cron
     - health_check -> healthcheck_cron
     - storage_check -> storage_check_cron
+    - record_folder_check -> record_check_cron
     - cleanup_* -> cleanup_cron
     - email_retry -> email_retry_cron
     """
@@ -352,6 +374,7 @@ async def update_job_schedule(
         'scheduled_snapshot': 'snapshot_cron',
         'health_check': 'healthcheck_cron',
         'storage_check': 'storage_check_cron',
+        'record_folder_check': 'record_check_cron',
         'cleanup_audit_logs': 'cleanup_cron',
         'cleanup_camera_stats': 'cleanup_cron',
         'cleanup_api_logs': 'cleanup_cron',
@@ -366,9 +389,11 @@ async def update_job_schedule(
             content={"status": "error", "message": f"Cannot update schedule for job '{job_id}'"}
         )
     
-    # Validate cron expression (basic check)
-    cron_parts = cron_expression.strip().split()
-    if len(cron_parts) != 5:
+    cron_value = cron_expression.strip()
+
+    # Validate cron expression (basic check). Empty means use interval fallback.
+    cron_parts = cron_value.split()
+    if cron_value and len(cron_parts) != 5:
         return JSONResponse(
             status_code=400,
             content={"status": "error", "message": "Invalid cron expression. Must have 5 parts: minute hour day month weekday"}
@@ -378,16 +403,16 @@ async def update_job_schedule(
         # Update config in database
         config = db.query(Configuration).filter(Configuration.key == config_key).first()
         if config:
-            config.value = cron_expression
+            config.value = cron_value
         else:
-            config = Configuration(key=config_key, value=cron_expression)
+            config = Configuration(key=config_key, value=cron_value)
             db.add(config)
         db.commit()
         
         return JSONResponse({
             "status": "success",
             "message": f"Schedule updated for '{job_id}'. Changes will take effect on next config reload.",
-            "cron_expression": cron_expression
+            "cron_expression": cron_value
         })
     except Exception as e:
         db.rollback()
