@@ -231,6 +231,23 @@
     const date = new Date(isoString);
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
+
+  function formatDateTime(isoString) {
+    if (!isoString) return 'Never';
+    const date = new Date(isoString);
+    return date.toLocaleString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  }
+
+  function escapeAttr(value) {
+    return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
   
   function getStatusBadge(status) {
     const badges = {
@@ -275,7 +292,7 @@
   }
   
   // Editable job IDs that support cron scheduling
-  const editableJobs = ['scheduled_snapshot', 'health_check', 'storage_check', 'record_folder_check', 'cleanup_audit_logs', 'cleanup_camera_stats', 'cleanup_api_logs', 'cleanup_command_logs', 'email_retry'];
+  const editableJobs = ['scheduled_snapshot', 'health_check', 'storage_check', 'record_folder_check', 'cleanup_audit_logs', 'cleanup_camera_stats', 'cleanup_api_logs', 'cleanup_command_logs', 'cleanup_record_checks', 'email_retry'];
   
   function renderJobs(jobs) {
     const tbody = document.getElementById('jobs-table-body');
@@ -344,7 +361,14 @@
                 </svg>
               </div>
               <div>
-                <div class="font-medium text-gray-900 dark:text-white">${job.name}</div>
+                <div class="flex items-center gap-1.5 font-medium text-gray-900 dark:text-white">
+                  <span>${job.name}</span>
+                  <span title="${escapeAttr(job.description || 'Background scheduler job.')}" class="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 18.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13Z"></path>
+                    </svg>
+                  </span>
+                </div>
                 <div class="text-xs text-gray-500 font-mono">${job.id}</div>
                 ${job.registered === false ? '<div class="mt-1 text-xs text-amber-600 dark:text-amber-400">Configured, waiting for scheduler reload</div>' : ''}
               </div>
@@ -356,7 +380,7 @@
           <td class="px-6 py-4">
             ${job.last_run?.started_at ? `
               <div class="flex items-center gap-2">
-                <span class="text-gray-600 dark:text-gray-400">${formatTime(job.last_run.started_at)}</span>
+                <span class="text-gray-600 dark:text-gray-400">${formatDateTime(job.last_run.started_at)}</span>
                 ${getStatusBadge(job.last_run.status)}
               </div>
             ` : '<span class="text-gray-400 text-sm">Never</span>'}

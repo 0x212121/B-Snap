@@ -3,6 +3,8 @@ import logging
 import asyncio
 import subprocess
 import uuid
+import shutil
+import re
 from datetime import datetime, timezone
 from fastapi import Request
 from sqlalchemy import text
@@ -27,6 +29,17 @@ os.makedirs(STATIC_VIDEO_DIR, exist_ok=True)
 # --- Logger Setup ---
 setup_logging()
 logger = logging.getLogger("snapshot")
+
+
+def _ffmpeg_executable() -> str:
+    """Resolve ffmpeg from PATH or project-local binary."""
+    return shutil.which("ffmpeg") or str(Path("ffmpeg.exe").resolve())
+
+
+def _ffprobe_executable() -> str | None:
+    """Resolve ffprobe when available."""
+    local = Path("ffprobe.exe").resolve()
+    return shutil.which("ffprobe") or (str(local) if local.exists() else None)
 
 def _run_ffmpeg_sync(cmd: str) -> Tuple[int, str, str]:
     logger.info("Running FFMPEG command: %s", cmd)
@@ -90,7 +103,7 @@ def build_ffmpeg_watermark_cmd(rtsp_url: str, output_path: Path, duration: int, 
     width, height = 1920, 1080  # default fallback
     try:
         meta_cmd = [
-            "ffprobe", "-v", "error",
+            _ffprobe_executable() or "ffprobe", "-v", "error",
             "-select_streams", "v:0",
             "-show_entries", "stream=width,height",
             "-of", "csv=p=0", rtsp_url
@@ -154,10 +167,17 @@ def get_video_metadata(file_path: str) -> Dict[str, Any]:
         return {"duration": 0, "size": 0, "width": 0, "height": 0}
 
     size = os.path.getsize(file_path)
-    cmd = f'ffprobe -v quiet -print_format json -show_format -show_streams "{file_path}"'
+    ffprobe = _ffprobe_executable()
 
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
+        if not ffprobe:
+            raise FileNotFoundError("ffprobe executable not found")
+        result = subprocess.run(
+            [ffprobe, "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", file_path],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
         data = json.loads(result.stdout)
 
         duration = float(data.get('format', {}).get('duration', 0))
@@ -176,14 +196,54 @@ def get_video_metadata(file_path: str) -> Dict[str, Any]:
             "height": height
         }
 
-    except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError) as e:
-        logger.error("Failed to get metadata for %s: %s", file_path, e)
+    except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError, KeyError, ValueError) as e:
+        logger.warning("ffprobe metadata failed for %s: %s; falling back to ffmpeg", file_path, e)
+        fallback = _get_video_metadata_from_ffmpeg(file_path, size)
+        if fallback:
+            return fallback
+        logger.error("Failed to get metadata for %s", file_path)
         return {
             "duration": 0,
             "size": size,
             "width": 0,
             "height": 0
         }
+
+
+def _get_video_metadata_from_ffmpeg(file_path: str, size: int) -> Dict[str, Any] | None:
+    """Fallback metadata parser using ffmpeg stderr when ffprobe is unavailable."""
+    try:
+        result = subprocess.run(
+            [_ffmpeg_executable(), "-i", file_path],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+            timeout=10,
+        )
+        output = f"{result.stdout}\n{result.stderr}"
+
+        duration = 0
+        duration_match = re.search(r"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)", output)
+        if duration_match:
+            hours, minutes, seconds = duration_match.groups()
+            duration = int(float(seconds) + (int(minutes) * 60) + (int(hours) * 3600))
+
+        width = height = 0
+        resolution_match = re.search(r"Video:.*?,\s*(\d{2,5})x(\d{2,5})", output)
+        if resolution_match:
+            width, height = [int(value) for value in resolution_match.groups()]
+
+        if duration or (width and height):
+            return {
+                "duration": duration,
+                "size": size,
+                "width": width,
+                "height": height,
+            }
+    except Exception as e:
+        logger.warning("ffmpeg metadata fallback failed for %s: %s", file_path, e)
+    return None
 
 def generate_thumbnail(video_path: str, output_thumb_path: str):
     """
@@ -192,16 +252,17 @@ def generate_thumbnail(video_path: str, output_thumb_path: str):
     for t in ["0.3", "0"]:
         try:
             result = subprocess.run([
-                "ffmpeg",
+                _ffmpeg_executable(),
                 "-y",
                 "-ss", t,
                 "-i", video_path,
                 "-frames:v", "1",
                 "-q:v", "2",
-                "-vf", "scale=320:-1"
+                "-vf", "scale=320:-1",
+                output_thumb_path,
             ], capture_output=True, text=True)
 
-            if result.returncode == 0 and os.path.exists(output_thumb_path):
+            if result.returncode == 0 and os.path.exists(output_thumb_path) and os.path.getsize(output_thumb_path) > 0:
                 logger.info(f"🖼️ Thumbnail generated ({t}s): {output_thumb_path}")
                 return True
             else:
@@ -229,7 +290,7 @@ def detect_codec(rtsp_url: str) -> str:
     try:
         result = subprocess.run(
             [
-                "ffprobe",
+                _ffprobe_executable() or "ffprobe",
                 "-v", "error",
                 "-select_streams", "v:0",
                 "-show_entries", "stream=codec_name",
@@ -369,6 +430,9 @@ async def record_video_and_save_db(
     except Exception as e:
         logger.warning("Failed to calculate hash for video %s: %s", filename, e)
 
+    width = metadata.get("width") or 0
+    height = metadata.get("height") or 0
+
     video_data = {
         "id": str(uuid.uuid4()),
         "camera_id": camera.id,
@@ -379,7 +443,7 @@ async def record_video_and_save_db(
         "file_path": db_file_path,
         "file_size": metadata.get("size"),
         "duration": metadata.get("duration"),
-        "resolution": f"{metadata.get('width')}x{metadata.get('height')}",
+        "resolution": f"{width}x{height}" if width and height else None,
         "file_hash": file_hash,  # P0-001: Store file hash
     }
 
@@ -391,11 +455,14 @@ async def record_video_and_save_db(
 
             payload = json.dumps({
                 "type": "record_complete",
+                "video_id": data["id"],
                 "camera_name": data["camera_name"],
                 "group": data["camera_group"],
                 "duration": data["duration"],
                 "file_size": data["file_size"],
                 "file_path": data["file_path"],
+                "video_url": f"/api/videos/secure/{data['id']}",
+                "thumb_url": f"/api/videos/secure/{data['id']}?thumb=true",
                 "source": "db_trigger"
             })
             db.execute(text("NOTIFY camera_notifications, :payload"), {"payload": payload})
@@ -429,7 +496,10 @@ async def record_video_and_save_db(
             "group": group_name,
             "duration": metadata.get("duration"),
             "file_size": metadata.get("size"),
-            "file_path": db_file_path
+            "file_path": db_file_path,
+            "video_id": video_data["id"],
+            "video_url": f"/api/videos/secure/{video_data['id']}",
+            "thumb_url": f"/api/videos/secure/{video_data['id']}?thumb=true",
         }
 
         await asyncio.gather(*[

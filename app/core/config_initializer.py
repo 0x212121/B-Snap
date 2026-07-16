@@ -49,7 +49,7 @@ DEFAULT_CONFIG = {
     "storage_check_interval_hours": "1",  # New: storage check interval
     "cleanup_interval_days": "1",  # New: configurable cleanup interval
     "record_check_interval_minutes": "10",
-    "retention_record_check_days": "30",
+    "retention_record_check_days": "90",
     
     # Job Cron Schedules (NEW) - Cron expressions override interval settings
     # Format: "minute hour day month weekday" (e.g., "0 8,13,23 * * *" = jam 8, 13, 23)

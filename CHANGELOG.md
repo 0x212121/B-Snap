@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New job: `record_folder_check`.
   - Default interval config: `record_check_interval_minutes=10`.
   - Cron override config: `record_check_cron`.
-  - Retention config: `retention_record_check_days=30`.
+  - Retention config: `retention_record_check_days=90`.
   - Record-check job logs through `JobExecutionLog`.
 
 - Added GoWA WhatsApp notification integration for record checks:
@@ -97,6 +97,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### WhatsApp Daily Reports
 - Daily camera report receiver handling now preserves group JIDs instead of formatting them as phone numbers.
 
+#### Video Recording and Playback
+- Record-complete WebSocket notifications now include `video_id`, secure playback URL, and thumbnail URL.
+- "View Video" after recording now uses authenticated `/api/videos/secure/{video_id}` instead of blocked direct `/static/videos/*` access.
+- Deleted-video preview now uses authenticated `/api/videos/file/{file_path}`.
+- Video metadata extraction now resolves `ffprobe` when available and falls back to parsing `ffmpeg` output when `ffprobe` is unavailable.
+- Video thumbnail generation now writes the thumbnail output path correctly and falls back to the project-local `ffmpeg.exe` when `ffmpeg` is not on PATH.
+
 ### Fixed
 
 #### Job Execution Logging
@@ -111,6 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Previously known folders that disappear from a source are now marked `missing` instead of silently disappearing.
 - Missing folders are retained in current status so operators can see renamed/deleted recording folders.
 - Missing folder counts are included in current status summaries.
+- Record-check retention now also removes old `record_status_events`, not only run/check history.
+- Record-check history cleanup now runs as its own scheduler job, `cleanup_record_checks`, and appears in Job Management.
 
 #### GoWA Integration
 - Added support for current GoWA endpoint paths such as `/app/status`, `/send/message`, `/send/image`, and `/send/file`, with fallback to older `/api/*` endpoints.

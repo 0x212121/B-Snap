@@ -496,6 +496,11 @@ def cleanup_old_record_checks(db: Session, retention_days: int) -> int:
     from datetime import timedelta
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+    deleted_events = (
+        db.query(RecordStatusEvent)
+        .filter(RecordStatusEvent.created_at < cutoff)
+        .delete(synchronize_session=False)
+    )
     deleted_checks = (
         db.query(RecordFolderCheck)
         .filter(RecordFolderCheck.checked_at < cutoff)
@@ -507,4 +512,4 @@ def cleanup_old_record_checks(db: Session, retention_days: int) -> int:
         .delete(synchronize_session=False)
     )
     db.commit()
-    return int(deleted_checks or 0) + int(old_runs or 0)
+    return int(deleted_events or 0) + int(deleted_checks or 0) + int(old_runs or 0)

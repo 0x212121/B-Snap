@@ -821,7 +821,8 @@ function previewVideo(filePath, camera, deletedAt, duration) {
   const video = document.getElementById('preview-video');
   const details = document.getElementById('preview-details');
   
-  video.src = `/static/videos/${filePath}`;
+  const encodedPath = String(filePath).split('/').map(encodeURIComponent).join('/');
+  video.src = `/api/videos/file/${encodedPath}`;
   video.classList.remove('hidden');
   img.classList.add('hidden');
   

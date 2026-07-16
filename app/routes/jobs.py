@@ -34,12 +34,31 @@ CONFIGURED_JOBS = {
     'cleanup_camera_stats': 'Cleanup Camera Stats',
     'cleanup_api_logs': 'Cleanup Api Logs',
     'cleanup_command_logs': 'Cleanup Command Logs',
+    'cleanup_record_checks': 'Cleanup Record Checks',
     'email_retry': 'Email Retry',
     'cleanup_email_retry': 'Cleanup Email Retry',
     'wa_daily_report': 'Whatsapp Daily Report',
     'wa_storage_alert': 'Whatsapp Storage Alert',
     'orphaned_snapshots_check': 'Orphaned Snapshots Check',
     'retention_policy': 'Retention Policy',
+}
+
+JOB_DESCRIPTIONS = {
+    'scheduled_snapshot': 'Takes scheduled snapshots for active cameras and stores snapshot metadata.',
+    'health_check': 'Checks camera and NVR health status, including online/offline state.',
+    'storage_check': 'Records storage usage metrics and evaluates warning or critical thresholds.',
+    'record_folder_check': 'Scans mounted NVR/SMB record folders, updates current folder status, and sends stale/missing/recovery alerts.',
+    'cleanup_audit_logs': 'Deletes old legacy audit log rows based on audit log retention. Main append-only audit logs are not deleted.',
+    'cleanup_camera_stats': 'Deletes old camera daily statistics based on camera stats retention.',
+    'cleanup_api_logs': 'Deletes old API request logs based on API log retention.',
+    'cleanup_command_logs': 'Deletes old command logs based on command log retention.',
+    'cleanup_record_checks': 'Hard-deletes old record-check run, folder-check, and event history. Sources, mappings, and current statuses are kept.',
+    'email_retry': 'Processes queued email notifications that previously failed and are ready to retry.',
+    'cleanup_email_retry': 'Deletes old completed or exhausted email retry queue rows.',
+    'wa_daily_report': 'Sends a WhatsApp daily summary for cameras without recent snapshots and unhealthy cameras.',
+    'wa_storage_alert': 'Sends WhatsApp storage alerts when storage is warning or critical.',
+    'orphaned_snapshots_check': 'Checks snapshot files and database metadata for orphaned or missing snapshot records.',
+    'retention_policy': 'Soft-deletes old snapshots and videos according to retention settings. Items on retention hold are skipped.',
 }
 
 def get_jobs_from_db():
@@ -110,6 +129,7 @@ async def list_jobs(
             'cleanup_camera_stats': cleanup_cron,
             'cleanup_api_logs': cleanup_cron,
             'cleanup_command_logs': cleanup_cron,
+            'cleanup_record_checks': cleanup_cron,
             'email_retry': get_config('email_retry_cron', ''),
         }
         
@@ -142,6 +162,7 @@ async def list_jobs(
             jobs.append({
                 "id": job_id,
                 "name": job_name,
+                "description": JOB_DESCRIPTIONS.get(job_id, "Background scheduler job."),
                 "trigger": "Cron/Interval",  # Simplified, read from config
                 "cron_expression": cron_expr,
                 "next_run_time": next_run_iso,
@@ -379,6 +400,7 @@ async def update_job_schedule(
         'cleanup_camera_stats': 'cleanup_cron',
         'cleanup_api_logs': 'cleanup_cron',
         'cleanup_command_logs': 'cleanup_cron',
+        'cleanup_record_checks': 'cleanup_cron',
         'email_retry': 'email_retry_cron',
     }
     

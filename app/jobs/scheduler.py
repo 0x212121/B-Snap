@@ -627,6 +627,7 @@ def start_scheduler():
         ('cleanup_camera_stats', delete_old_camera_stats),
         ('cleanup_api_logs', delete_old_api_logs),
         ('cleanup_command_logs', delete_old_command_logs),
+        ('cleanup_record_checks', cleanup_record_checks_job),
     ]
     
     cleanup_job_wrappers = {
@@ -634,6 +635,7 @@ def start_scheduler():
         'cleanup_camera_stats': cleanup_camera_stats_job,
         'cleanup_api_logs': cleanup_api_logs_job,
         'cleanup_command_logs': cleanup_command_logs_job,
+        'cleanup_record_checks': cleanup_record_checks_job,
     }
     for job_id, func in cleanup_jobs:
         scheduler.add_job(
@@ -900,6 +902,12 @@ def cleanup_command_logs_job():
     return delete_old_command_logs()
 
 
+@logged_job("cleanup_record_checks", "Cleanup Record Checks")
+def cleanup_record_checks_job():
+    """Wrapper for record-check history cleanup job with logging."""
+    return delete_old_record_checks()
+
+
 @logged_job("wa_daily_report", "WhatsApp Daily Report")
 def wa_daily_report_job():
     """Wrapper for WhatsApp daily report job with logging."""
@@ -1154,10 +1162,6 @@ def check_record_folders_job():
     db: Session = SessionLocal()
     try:
         result = run_all_record_checks(db, send_notifications=True)
-        retention_days = int(get_config("retention_record_check_days", 30))
-        if retention_days > 0:
-            deleted = cleanup_old_record_checks(db, retention_days)
-            result["old_rows_deleted"] = deleted
         logger.info(
             "[Record Check] Checked %d sources, failed %d, processed %d folders",
             result.get("sources_checked", 0),
@@ -1167,6 +1171,29 @@ def check_record_folders_job():
         return result
     except Exception as e:
         logger.error("[Record Check] Error: %s", e, exc_info=True)
+        raise
+    finally:
+        db.close()
+
+
+def delete_old_record_checks():
+    """Delete old record-check run, folder-check, and event history."""
+    db: Session = SessionLocal()
+    try:
+        retention_days = int(get_config("retention_record_check_days", 90))
+        if retention_days <= 0:
+            logger.info("[Record Check Cleanup] Disabled because retention_record_check_days=%s", retention_days)
+            return {"records_processed": 0, "retention_days": retention_days}
+
+        deleted = cleanup_old_record_checks(db, retention_days)
+        logger.info(
+            "[Record Check Cleanup] Deleted %d rows older than %d days",
+            deleted,
+            retention_days,
+        )
+        return {"records_processed": deleted, "retention_days": retention_days}
+    except Exception as e:
+        logger.error("[Record Check Cleanup] Error: %s", e, exc_info=True)
         raise
     finally:
         db.close()

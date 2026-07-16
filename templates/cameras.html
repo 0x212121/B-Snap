@@ -1117,7 +1117,7 @@
           const data = JSON.parse(event.data);
           if (data.type === "record_complete") {
             const fileSizeMB = (data.file_size / (1024 * 1024)).toFixed(2);
-            const fileUrl = `/static/videos/${encodeURIComponent(data.file_path)}`;
+            const fileUrl = data.video_url || (data.video_id ? `/api/videos/secure/${encodeURIComponent(data.video_id)}` : '/videos');
             if (typeof Toast !== 'undefined') {
               Toast.success(
                 `🎥 ${data.camera_name} (${data.group}) finished recording.\n` +
