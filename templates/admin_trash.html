@@ -129,14 +129,14 @@
 <!-- Snapshots Table -->
 <div id="snapshots-panel" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
   <div class="overflow-x-auto">
-    <table class="min-w-full text-sm text-left" id="snapshots-table">
+    <table class="min-w-full text-sm text-left" id="snapshots-table" data-sortable-table>
       <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
         <tr>
-          <th class="px-4 py-3.5 font-semibold">Snapshot</th>
-          <th class="px-4 py-3.5 font-semibold">Camera</th>
-          <th class="px-4 py-3.5 font-semibold">Deleted At</th>
-          <th class="px-4 py-3.5 font-semibold">Size</th>
-          <th class="px-4 py-3.5 font-semibold text-center">Integrity</th>
+          <th class="px-4 py-3.5 font-semibold" data-sort-key="snapshot">Snapshot</th>
+          <th class="px-4 py-3.5 font-semibold" data-sort-key="camera">Camera</th>
+          <th class="px-4 py-3.5 font-semibold" data-sort-key="deleted-at" data-sort-type="date">Deleted At</th>
+          <th class="px-4 py-3.5 font-semibold" data-sort-key="size" data-sort-type="size">Size</th>
+          <th class="px-4 py-3.5 font-semibold text-center" data-sort-key="integrity">Integrity</th>
           <th class="px-4 py-3.5 font-semibold text-center">Actions</th>
         </tr>
       </thead>
@@ -164,14 +164,14 @@
 <!-- Videos Table -->
 <div id="videos-panel" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hidden">
   <div class="overflow-x-auto">
-    <table class="min-w-full text-sm text-left" id="videos-table">
+    <table class="min-w-full text-sm text-left" id="videos-table" data-sortable-table>
       <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
         <tr>
-          <th class="px-4 py-3.5 font-semibold">Video</th>
-          <th class="px-4 py-3.5 font-semibold">Camera</th>
-          <th class="px-4 py-3.5 font-semibold">Deleted At</th>
-          <th class="px-4 py-3.5 font-semibold">Duration</th>
-          <th class="px-4 py-3.5 font-semibold">Size</th>
+          <th class="px-4 py-3.5 font-semibold" data-sort-key="video">Video</th>
+          <th class="px-4 py-3.5 font-semibold" data-sort-key="camera">Camera</th>
+          <th class="px-4 py-3.5 font-semibold" data-sort-key="deleted-at" data-sort-type="date">Deleted At</th>
+          <th class="px-4 py-3.5 font-semibold" data-sort-key="duration" data-sort-type="number">Duration</th>
+          <th class="px-4 py-3.5 font-semibold" data-sort-key="size" data-sort-type="size">Size</th>
           <th class="px-4 py-3.5 font-semibold text-center">Actions</th>
         </tr>
       </thead>

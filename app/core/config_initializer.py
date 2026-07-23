@@ -50,6 +50,8 @@ DEFAULT_CONFIG = {
     "cleanup_interval_days": "1",  # New: configurable cleanup interval
     "record_check_interval_minutes": "10",
     "retention_record_check_days": "90",
+    "record_check_daily_report_enabled": "1",
+    "app_public_url": "",
     
     # Job Cron Schedules (NEW) - Cron expressions override interval settings
     # Format: "minute hour day month weekday" (e.g., "0 8,13,23 * * *" = jam 8, 13, 23)

@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}B-SNAP - Power BI Record Checks{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="flex items-center gap-3 text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <div class="rounded-xl bg-blue-100 p-2 dark:bg-blue-900/30">
+          <svg class="h-7 w-7 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19V5m0 14h16M8 17V9m4 8V7m4 10v-5"></path>
+          </svg>
+        </div>
+        Power BI Record Checks
+      </h2>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        Preview all read-only record-check datasets exposed for Power BI Gateway.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <select id="limit-select" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
+        <option value="100">100 rows</option>
+        <option value="500">500 rows</option>
+        <option value="1000">1000 rows</option>
+      </select>
+      <button type="button" onclick="refreshActiveDataset()" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 0 0 4.582 9M4.582 9H9m11 11v-5h-.581m0 0a8.003 8.003 0 0 1-15.357-2m15.357 2H15"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="mb-4 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+  <div class="flex flex-wrap border-b border-gray-200 dark:border-gray-700" id="dataset-tabs"></div>
+  <div class="grid grid-cols-1 gap-4 p-4 sm:grid-cols-4">
+    <div>
+      <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Dataset</p>
+      <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white" id="active-dataset-name">-</p>
+    </div>
+    <div>
+      <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Rows Loaded</p>
+      <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white" id="rows-loaded">-</p>
+    </div>
+    <div>
+      <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Total Rows</p>
+      <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white" id="total-rows">-</p>
+    </div>
+    <div>
+      <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Endpoint</p>
+      <p class="mt-1 truncate text-sm font-medium text-gray-900 dark:text-white" id="active-endpoint">-</p>
+    </div>
+  </div>
+</div>
+
+<div class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+  <div id="loading-panel" class="hidden items-center gap-2 border-b border-gray-200 px-4 py-3 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+    <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z"></path>
+    </svg>
+    Loading dataset...
+  </div>
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-left text-sm" data-sortable-table>
+      <thead class="bg-gray-50 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300">
+        <tr id="dataset-head"></tr>
+      </thead>
+      <tbody id="dataset-body" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+    </table>
+  </div>
+  <div id="dataset-empty" class="hidden px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+    No rows returned.
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const datasets = [
+  { key: 'sources', label: 'Sources', endpoint: '/api/powerbi/record-checks/sources' },
+  { key: 'current-status', label: 'Current Status', endpoint: '/api/powerbi/record-checks/current-status' },
+  { key: 'runs', label: 'Runs', endpoint: '/api/powerbi/record-checks/runs' },
+  { key: 'folder-checks', label: 'Folder Checks', endpoint: '/api/powerbi/record-checks/folder-checks' },
+  { key: 'events', label: 'Events', endpoint: '/api/powerbi/record-checks/events' },
+  { key: 'downtime', label: 'Downtime', endpoint: '/api/powerbi/record-checks/downtime' },
+];
+
+let activeKey = datasets[0].key;
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function humanizeKey(key) {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function shouldShowColumn(key) {
+  return key !== 'id' && !key.endsWith('_id');
+}
+
+function renderTabs() {
+  const root = document.getElementById('dataset-tabs');
+  root.innerHTML = datasets.map(dataset => `
+    <button type="button"
+      onclick="selectDataset('${dataset.key}')"
+      class="border-b-2 px-4 py-3 text-sm font-medium transition ${dataset.key === activeKey ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}">
+      ${dataset.label}
+    </button>
+  `).join('');
+}
+
+function getActiveDataset() {
+  return datasets.find(dataset => dataset.key === activeKey) || datasets[0];
+}
+
+function buildUrl(dataset) {
+  const limit = document.getElementById('limit-select').value || '100';
+  const url = new URL(dataset.endpoint, window.location.origin);
+  if (dataset.key === 'downtime') {
+    const end = new Date();
+    const start = new Date(end.getTime() - (24 * 60 * 60 * 1000));
+    url.searchParams.set('start_at', start.toISOString());
+    url.searchParams.set('end_at', end.toISOString());
+    url.searchParams.set('group_by', 'channel');
+    return url;
+  }
+  if (dataset.key !== 'sources') {
+    url.searchParams.set('limit', limit);
+    url.searchParams.set('offset', '0');
+  }
+  return url;
+}
+
+async function loadDataset() {
+  const dataset = getActiveDataset();
+  const loadingPanel = document.getElementById('loading-panel');
+  const emptyPanel = document.getElementById('dataset-empty');
+  const head = document.getElementById('dataset-head');
+  const body = document.getElementById('dataset-body');
+
+  loadingPanel.classList.remove('hidden');
+  loadingPanel.classList.add('flex');
+  emptyPanel.classList.add('hidden');
+  head.innerHTML = '';
+  body.innerHTML = '';
+
+  document.getElementById('active-dataset-name').textContent = dataset.label;
+  document.getElementById('active-endpoint').textContent = dataset.endpoint;
+  document.getElementById('rows-loaded').textContent = '-';
+  document.getElementById('total-rows').textContent = '-';
+
+  try {
+    const response = await fetch(buildUrl(dataset), { headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const payload = await response.json();
+    const rows = payload.data || [];
+    const columns = rows.length ? Object.keys(rows[0]).filter(shouldShowColumn) : [];
+
+    document.getElementById('rows-loaded').textContent = rows.length.toLocaleString();
+    document.getElementById('total-rows').textContent = (payload.pagination?.total ?? rows.length).toLocaleString();
+
+    if (!rows.length) {
+      emptyPanel.classList.remove('hidden');
+      return;
+    }
+
+    head.innerHTML = columns.map(column => `
+      <th class="whitespace-nowrap px-4 py-3 font-semibold" data-sort-key="${escapeHtml(column)}">
+        ${escapeHtml(humanizeKey(column))}
+      </th>
+    `).join('');
+
+    body.innerHTML = rows.map(row => `
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+        ${columns.map(column => `<td class="whitespace-nowrap px-4 py-3 text-gray-700 dark:text-gray-300">${escapeHtml(row[column])}</td>`).join('')}
+      </tr>
+    `).join('');
+  } catch (error) {
+    console.error(error);
+    emptyPanel.textContent = 'Failed to load dataset.';
+    emptyPanel.classList.remove('hidden');
+    if (typeof Toast !== 'undefined') {
+      Toast.error('Failed to load Power BI dataset', { title: 'Error' });
+    }
+  } finally {
+    loadingPanel.classList.add('hidden');
+    loadingPanel.classList.remove('flex');
+  }
+}
+
+function selectDataset(key) {
+  activeKey = key;
+  renderTabs();
+  loadDataset();
+}
+
+function refreshActiveDataset() {
+  loadDataset();
+}
+
+document.getElementById('limit-select').addEventListener('change', loadDataset);
+document.addEventListener('DOMContentLoaded', () => {
+  renderTabs();
+  loadDataset();
+});
+</script>
+{% endblock %}

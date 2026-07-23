@@ -21,6 +21,7 @@ from io import BytesIO
 router = APIRouter(tags=["Config"])
 
 
+@router.get("/admin/config", response_class=HTMLResponse)
 @router.get("/config", response_class=HTMLResponse)
 async def config_page(
     request: Request,

@@ -8,6 +8,7 @@ __pycache__/
 /static/snapshots
 /static/images
 /static/videos
+/static/reports
 /app/utils/logs
 data.db
 /logs

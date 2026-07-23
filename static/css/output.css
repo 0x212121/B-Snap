@@ -1152,6 +1152,10 @@ select {
   display: table;
 }
 
+.\!table {
+  display: table !important;
+}
+
 .grid {
   display: grid;
 }
@@ -1653,6 +1657,10 @@ select {
 
 .cursor-default {
   cursor: default;
+}
+
+.cursor-help {
+  cursor: help;
 }
 
 .cursor-move {
@@ -4106,6 +4114,11 @@ select {
   color: rgb(20 83 45 / var(--tw-text-opacity));
 }
 
+.hover\:text-indigo-600:hover {
+  --tw-text-opacity: 1;
+  color: rgb(79 70 229 / var(--tw-text-opacity));
+}
+
 .hover\:text-orange-600:hover {
   --tw-text-opacity: 1;
   color: rgb(234 88 12 / var(--tw-text-opacity));
@@ -5194,6 +5207,11 @@ select {
   color: rgb(74 222 128 / var(--tw-text-opacity));
 }
 
+:is(.dark .dark\:hover\:text-indigo-400:hover) {
+  --tw-text-opacity: 1;
+  color: rgb(129 140 248 / var(--tw-text-opacity));
+}
+
 :is(.dark .dark\:hover\:text-orange-400:hover) {
   --tw-text-opacity: 1;
   color: rgb(251 146 60 / var(--tw-text-opacity));
@@ -5287,6 +5305,10 @@ select {
 
   .sm\:grid-cols-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sm\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .sm\:flex-row {

@@ -31,6 +31,7 @@ router = APIRouter()
 # ============================================================
 # 1️⃣ RENDER HALAMAN HTML
 # ============================================================
+@router.get("/admin/recipients", name="admin_list_recipients_page")
 @router.get("/recipients", name="list_recipients_page")
 def list_recipients_page(request: Request, db: Session = Depends(get_db)):
     groups = db.query(CameraGroup).all()

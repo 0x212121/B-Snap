@@ -102,14 +102,14 @@
   </div>
   
   <div class="overflow-x-auto">
-    <table class="min-w-full text-sm text-left">
+    <table class="min-w-full text-sm text-left" data-sortable-table>
       <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
         <tr>
-          <th class="px-6 py-3 font-semibold">Job Name</th>
-          <th class="px-6 py-3 font-semibold">Schedule</th>
-          <th class="px-6 py-3 font-semibold">Last Run</th>
-          <th class="px-6 py-3 font-semibold">Next Run</th>
-          <th class="px-6 py-3 font-semibold text-center">24h Stats</th>
+          <th class="px-6 py-3 font-semibold" data-sort-key="job">Job Name</th>
+          <th class="px-6 py-3 font-semibold" data-sort-key="schedule">Schedule</th>
+          <th class="px-6 py-3 font-semibold" data-sort-key="last-run" data-sort-type="date">Last Run</th>
+          <th class="px-6 py-3 font-semibold" data-sort-key="next-run" data-sort-type="date">Next Run</th>
+          <th class="px-6 py-3 font-semibold text-center" data-sort-key="stats">24h Stats</th>
           <th class="px-6 py-3 font-semibold text-center">Actions</th>
         </tr>
       </thead>
@@ -143,13 +143,13 @@
     </div>
     
     <div class="overflow-auto p-6">
-      <table class="min-w-full text-sm">
+      <table class="min-w-full text-sm" data-sortable-table>
         <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
           <tr>
-            <th class="px-4 py-2 text-left font-semibold">Time</th>
-            <th class="px-4 py-2 text-left font-semibold">Duration</th>
-            <th class="px-4 py-2 text-left font-semibold">Status</th>
-            <th class="px-4 py-2 text-left font-semibold">Records</th>
+            <th class="px-4 py-2 text-left font-semibold" data-sort-key="time" data-sort-type="date">Time</th>
+            <th class="px-4 py-2 text-left font-semibold" data-sort-key="duration" data-sort-type="number">Duration</th>
+            <th class="px-4 py-2 text-left font-semibold" data-sort-key="status">Status</th>
+            <th class="px-4 py-2 text-left font-semibold" data-sort-key="records" data-sort-type="number">Records</th>
           </tr>
         </thead>
         <tbody id="history-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">

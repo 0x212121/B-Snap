@@ -11,6 +11,7 @@ Setup:
 import logging
 import requests
 import base64
+from pathlib import Path
 from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
 from app.models.config import Configuration
@@ -182,6 +183,28 @@ class WAGatewayService:
         except Exception as e:
             logger.error(f"Failed to send WA image to {phone}: {e}")
             return {"success": False, "error": str(e)}
+
+    def send_image_file(self, phone: str, image_path: str, caption: Optional[str] = None) -> Dict[str, Any]:
+        """Send local image file via GoWA multipart upload."""
+        if not self.config.is_configured():
+            return {"success": False, "error": "GoWA not configured"}
+
+        path = Path(image_path)
+        if not path.exists():
+            return {"success": False, "error": f"Image not found: {image_path}"}
+
+        try:
+            data = {"phone": phone}
+            if caption:
+                data["caption"] = caption
+            with path.open("rb") as file_obj:
+                files = {"image": (path.name, file_obj, "image/png")}
+                response = self.session.post(self._make_url("/send/image"), data=data, files=files, timeout=60)
+            response.raise_for_status()
+            return {"success": True, "data": response.json()}
+        except Exception as e:
+            logger.error(f"Failed to send WA image file to {phone}: {e}")
+            return {"success": False, "error": str(e)}
     
     def send_document(self, phone: str, document_url: str, filename: Optional[str] = None) -> Dict[str, Any]:
         """Send document via GoWA."""
@@ -204,6 +227,28 @@ class WAGatewayService:
             
         except Exception as e:
             logger.error(f"Failed to send WA document to {phone}: {e}")
+            return {"success": False, "error": str(e)}
+
+    def send_file(self, phone: str, file_path: str, caption: Optional[str] = None) -> Dict[str, Any]:
+        """Send local file via GoWA multipart upload."""
+        if not self.config.is_configured():
+            return {"success": False, "error": "GoWA not configured"}
+
+        path = Path(file_path)
+        if not path.exists():
+            return {"success": False, "error": f"File not found: {file_path}"}
+
+        try:
+            data = {"phone": phone}
+            if caption:
+                data["caption"] = caption
+            with path.open("rb") as file_obj:
+                files = {"file": (path.name, file_obj, "application/pdf")}
+                response = self.session.post(self._make_url("/send/file"), data=data, files=files, timeout=60)
+            response.raise_for_status()
+            return {"success": True, "data": response.json()}
+        except Exception as e:
+            logger.error(f"Failed to send WA file to {phone}: {e}")
             return {"success": False, "error": str(e)}
     
     def check_connection(self) -> Dict[str, Any]:

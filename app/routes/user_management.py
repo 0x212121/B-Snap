@@ -390,6 +390,7 @@ async def api_reset_mfa(
 
 # ============== OLD FORM-BASED ENDPOINTS (Backward Compatibility) ==============
 
+@router.get("/admin/users")
 @router.get("/users")
 async def manage_users(request: Request, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
     """

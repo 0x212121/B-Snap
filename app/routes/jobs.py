@@ -19,6 +19,7 @@ from app.models.config import Configuration
 from app.routes.auth import admin_access_required
 from app.utils.template_helper import templates
 from app.core.config import get_config
+from app.utils.record_check_report import send_record_check_daily_reports
 
 router = APIRouter(prefix="/admin/jobs", tags=["Job Management"])
 
@@ -38,6 +39,7 @@ CONFIGURED_JOBS = {
     'email_retry': 'Email Retry',
     'cleanup_email_retry': 'Cleanup Email Retry',
     'wa_daily_report': 'Whatsapp Daily Report',
+    'record_check_daily_report': 'Record Check Daily Report',
     'wa_storage_alert': 'Whatsapp Storage Alert',
     'orphaned_snapshots_check': 'Orphaned Snapshots Check',
     'retention_policy': 'Retention Policy',
@@ -56,6 +58,7 @@ JOB_DESCRIPTIONS = {
     'email_retry': 'Processes queued email notifications that previously failed and are ready to retry.',
     'cleanup_email_retry': 'Deletes old completed or exhausted email retry queue rows.',
     'wa_daily_report': 'Sends a WhatsApp daily summary for cameras without recent snapshots and unhealthy cameras.',
+    'record_check_daily_report': 'Sends a WhatsApp daily NVR record-check downtime report and optional 14-day trend PDF.',
     'wa_storage_alert': 'Sends WhatsApp storage alerts when storage is warning or critical.',
     'orphaned_snapshots_check': 'Checks snapshot files and database metadata for orphaned or missing snapshot records.',
     'retention_policy': 'Soft-deletes old snapshots and videos according to retention settings. Items on retention hold are skipped.',
@@ -229,10 +232,25 @@ async def run_job_now(
             content={"status": "error", "message": f"Job '{job_id}' not found"}
         )
     
-    # Note: To actually trigger a job immediately, we need to:
-    # 1. Use APScheduler's modify_job (requires scheduler instance)
-    # 2. Or implement a message queue between web app and scheduler
-    # For now, this is a placeholder that requires manual implementation
+    if job_id == "record_check_daily_report":
+        log = JobExecutionLog.start_execution(db, job_id, CONFIGURED_JOBS.get(job_id, job_id))
+        try:
+            result = send_record_check_daily_reports(db)
+            records_processed = int(result.get("records_processed", 0))
+            log.complete(db, "success", records=records_processed, metadata=result)
+            return JSONResponse({
+                "status": "success",
+                "message": f"Job '{job_id}' completed. Sent {records_processed} message(s).",
+                "result": result,
+            })
+        except Exception as exc:
+            db.rollback()
+            log.complete(db, "fail", error=str(exc))
+            return JSONResponse(
+                status_code=500,
+                content={"status": "error", "message": str(exc)},
+            )
+
     return JSONResponse({
         "status": "info",
         "message": f"Job '{job_id}' found. Manual triggering requires scheduler coordination (not yet implemented)."

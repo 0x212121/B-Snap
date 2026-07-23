@@ -32,6 +32,7 @@ class TemplatePreviewRequest(BaseModel):
     html_body: str
 
 
+@router.get("/admin/email-templates", response_class=HTMLResponse)
 @router.get("/email-templates", response_class=HTMLResponse)
 async def email_templates_page(
     request: Request,

@@ -156,6 +156,10 @@
     </table>
   </div>
 </div>
+<div id="runs-pagination" class="mt-3 flex items-center justify-between px-2">
+  <div class="text-sm text-gray-500 dark:text-gray-400" id="runs-page-info"></div>
+  <div class="flex items-center gap-1" id="runs-pagination-buttons"></div>
+</div>
 
 <div id="source-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
   <div class="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-xl dark:bg-gray-800">
@@ -280,6 +284,8 @@ let sources = [];
 let cameras = [];
 let selectedSourceId = '';
 let statusTimer = null;
+let runsPage = 1;
+const runsLimit = 10;
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -410,6 +416,7 @@ function renderSources() {
 
 function selectSource(id) {
   selectedSourceId = selectedSourceId === id ? '' : id;
+  runsPage = 1;
   renderSources();
   loadStatuses();
   loadRuns();
@@ -448,9 +455,13 @@ async function loadStatuses() {
 async function loadRuns() {
   const params = new URLSearchParams();
   if (selectedSourceId) params.set('source_id', selectedSourceId);
+  params.set('page', runsPage);
+  params.set('limit', runsLimit);
   const res = await fetch(`/api/record-checks/runs?${params.toString()}`);
   const data = await res.json();
   const rows = data.runs || [];
+  const pagination = data.pagination || {page: 1, total: rows.length, total_pages: 1, has_prev: false, has_next: false};
+  runsPage = pagination.page || 1;
   document.getElementById('runs-body').innerHTML = rows.length ? rows.map(run => `
     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
       <td class="px-4 py-3 text-gray-600 dark:text-gray-300">${formatDate(run.started_at)}</td>
@@ -460,6 +471,72 @@ async function loadRuns() {
       <td class="px-4 py-3 text-red-600">${escapeHtml(run.error_message || '')}</td>
     </tr>
   `).join('') : '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No runs yet.</td></tr>';
+  renderRunsPagination(pagination);
+}
+
+function renderRunsPagination(pagination) {
+  const paginationButtons = document.getElementById('runs-pagination-buttons');
+  const pageInfo = document.getElementById('runs-page-info');
+  if (!paginationButtons || !pageInfo) return;
+
+  paginationButtons.innerHTML = '';
+  const page = pagination.page || runsPage || 1;
+  const totalPages = pagination.total_pages || 1;
+  pageInfo.textContent = `Page ${page} of ${totalPages}`;
+
+  if (totalPages <= 1) return;
+
+  const windowSize = 2;
+  let buttons = '';
+
+  if (page > 1) {
+    buttons += `
+      <button onclick="changeRunsPage(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+      </button>
+      <button onclick="changeRunsPage(${page - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+      </button>`;
+  }
+
+  let startPage = Math.max(1, page - windowSize);
+  let endPage = Math.min(totalPages, page + windowSize);
+
+  if (startPage > 1) {
+    buttons += `<button onclick="changeRunsPage(1)" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">1</button>`;
+    if (startPage > 2) buttons += `<span class="px-2 text-gray-400">...</span>`;
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    if (i === page) {
+      buttons += `<button class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium shadow-sm">${i}</button>`;
+    } else {
+      buttons += `<button onclick="changeRunsPage(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>`;
+    }
+  }
+
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) buttons += `<span class="px-2 text-gray-400">...</span>`;
+    buttons += `<button onclick="changeRunsPage(${totalPages})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${totalPages}</button>`;
+  }
+
+  if (page < totalPages) {
+    buttons += `
+      <button onclick="changeRunsPage(${page + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+      </button>
+      <button onclick="changeRunsPage(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+      </button>`;
+  }
+
+  paginationButtons.innerHTML = buttons;
+}
+
+function changeRunsPage(page) {
+  if (page < 1 || page === runsPage) return;
+  runsPage = page;
+  loadRuns();
 }
 
 function debouncedLoadStatuses() {
@@ -643,6 +720,7 @@ async function deleteSource(id) {
 }
 
 async function refreshAll() {
+  runsPage = 1;
   await loadCameras();
   await loadSources();
   await loadStatuses();

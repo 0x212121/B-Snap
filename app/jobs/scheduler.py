@@ -31,6 +31,7 @@ from app.models.job_execution_log import JobExecutionLog
 from app.utils.snapshot_utils import record_snapshot_metadata, check_orphaned_snapshots
 from app.utils.check_stats import check_stats
 from app.utils.record_check import cleanup_old_record_checks, run_all_record_checks
+from app.utils.record_check_report import send_record_check_daily_reports
 from sqlalchemy.orm import Session
 from app.models.task_timing import TaskTiming
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -709,6 +710,16 @@ def start_scheduler():
         misfire_grace_time=300,
         replace_existing=True
     )
+
+    scheduler.add_job(
+        record_check_daily_report_job,
+        trigger=CronTrigger(hour=config["wa_daily_report_hour"], minute=config["wa_daily_report_minute"]),
+        id='record_check_daily_report',
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=300,
+        replace_existing=True
+    )
     
     # WhatsApp storage alert with configurable interval
     scheduler.add_job(
@@ -906,6 +917,12 @@ def cleanup_command_logs_job():
 def cleanup_record_checks_job():
     """Wrapper for record-check history cleanup job with logging."""
     return delete_old_record_checks()
+
+
+@logged_job("record_check_daily_report", "Record Check Daily Report")
+def record_check_daily_report_job():
+    """Wrapper for daily record-check WhatsApp reports with trend PDF."""
+    return send_record_check_daily_report()
 
 
 @logged_job("wa_daily_report", "WhatsApp Daily Report")
@@ -1194,6 +1211,24 @@ def delete_old_record_checks():
         return {"records_processed": deleted, "retention_days": retention_days}
     except Exception as e:
         logger.error("[Record Check Cleanup] Error: %s", e, exc_info=True)
+        raise
+    finally:
+        db.close()
+
+
+def send_record_check_daily_report():
+    """Send daily WhatsApp record-check report and optional trend PDF."""
+    db: Session = SessionLocal()
+    try:
+        result = send_record_check_daily_reports(db)
+        logger.info(
+            "[Record Check Daily Report] Sent %d messages for %d sources",
+            result.get("records_processed", 0),
+            result.get("sources", 0),
+        )
+        return result
+    except Exception as e:
+        logger.error("[Record Check Daily Report] Error: %s", e, exc_info=True)
         raise
     finally:
         db.close()

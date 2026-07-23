@@ -106,6 +106,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### API Call Metrics
+- Fixed API call counting in observability logging so normal HTML page views no longer increment API metrics.
+  - API logs now count `/api/*`, `/log/*`, JSON requests, and JSON responses.
+  - Static assets, health checks, websockets, and regular page loads remain excluded from API metrics.
+
 #### Job Execution Logging
 - Fixed `logged_job()` so dictionary job results correctly populate `records_processed`.
   - Previously dict results always logged `0` due to using `getattr()` on dicts.

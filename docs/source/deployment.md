@@ -40,6 +40,7 @@ services:
       - b-snap
     volumes:
       - ./static/snapshots:/static/snapshots
+      - ./static/videos:/static/videos
       - ./logs:/logs
       - shared_tmp:/tmp/shared
 
@@ -109,6 +110,21 @@ EMAIL_CC=admin@admin.com # Optional. This email address as CC for alert notifica
 OFFLINE_ALERT_THRESHOLD_SECONDS=100 # Threshold for system sending notification, default: 1800 seconds.
 ```
 Adjust WORKERS variable as needed: eg. 4 cpu -> 5 worker
+
+Record check deployments must mount the SMB/NVR recording share into the scheduler container as read-only, then configure that mounted path in **Record Checks**:
+
+```yaml
+services:
+  scheduler:
+    volumes:
+      - ./static/snapshots:/static/snapshots
+      - ./static/videos:/static/videos
+      - /mnt/cctv33-recordings:/mnt/cctv33-recordings:ro
+```
+
+On Windows hosts, mount the SMB share on the host first, then bind the host path into Docker. The container should receive a stable absolute path and only needs read access for scanning.
+
+Video recording and metadata extraction require FFmpeg tooling. Put `ffmpeg` on PATH inside the container or provide the project-local `ffmpeg.exe` for Windows/local development. `ffprobe` is preferred for metadata, but B-SNAP can fall back to parsing `ffmpeg` output when `ffprobe` is unavailable.
 
 Run:
 ```bash
