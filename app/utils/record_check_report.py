@@ -18,7 +18,12 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.config import get_config
-from app.models.record_check import RecordFolderStatus, RecordSource, RecordStatusEvent
+from app.models.record_check import (
+    RecordFolderCheck,
+    RecordFolderStatus,
+    RecordSource,
+    RecordStatusEvent,
+)
 from app.utils.wa_gateway import WAGatewayService, format_phone_number
 
 logger = logging.getLogger("record_check")
@@ -92,9 +97,14 @@ def _channel_label(folder_name: str, camera_name: str | None) -> str:
 
 def get_report_window(days_back: int = 0) -> tuple[datetime, datetime]:
     tz = _tz()
-    target_date = datetime.now(tz).date() - timedelta(days=days_back)
+    now = datetime.now(tz)
+    target_date = now.date() - timedelta(days=days_back)
     start = tz.localize(datetime.combine(target_date, time.min)).astimezone(timezone.utc)
-    end = tz.localize(datetime.combine(target_date, time.max)).astimezone(timezone.utc)
+    # A report for today must only include elapsed time.  Using time.max here
+    # projected active downtime into the future until 23:59:59.
+    end = now.astimezone(timezone.utc) if days_back == 0 else tz.localize(
+        datetime.combine(target_date, time.max)
+    ).astimezone(timezone.utc)
     return start, end
 
 
@@ -203,19 +213,50 @@ def build_source_daily_report(db: Session, source: RecordSource, start_at: datet
         active_problem_count=active_problem_count,
         inactive_count=inactive_count,
         total_count=total_count,
-        trend_rows=build_14_day_trend(db, source.id),
+        trend_rows=build_14_day_trend(db, source.id, as_of=end_at),
     )
 
 
-def build_14_day_trend(db: Session, source_id: str) -> list[dict]:
+def build_14_day_trend(
+    db: Session,
+    source_id: str,
+    as_of: datetime | None = None,
+) -> list[dict]:
+    """Build downtime totals from available check data through ``as_of``.
+
+    A new source has no evidence of its state before its first persisted folder
+    check.  Therefore its trend begins at that check time, rather than at
+    midnight (or 14 days earlier).  The current day is likewise capped at the
+    report generation time so active downtime is never projected into the
+    future.
+    """
     tz = _tz()
-    today = datetime.now(tz).date()
+    as_of = _as_aware(as_of or datetime.now(timezone.utc))
+    as_of_local = as_of.astimezone(tz)
+    today = as_of_local.date()
+    first_check_at = (
+        db.query(func.min(RecordFolderCheck.checked_at))
+        .filter(RecordFolderCheck.source_id == source_id)
+        .scalar()
+    )
+    if first_check_at is None:
+        return []
+
+    requested_start = tz.localize(datetime.combine(today - timedelta(days=13), time.min)).astimezone(
+        timezone.utc
+    )
+    available_start = _as_aware(first_check_at)
+    trend_start = max(requested_start, available_start)
     channel_days: dict[tuple[str, str | None, str], dict] = {}
     rows = []
     for days_back in range(13, -1, -1):
         day = today - timedelta(days=days_back)
-        start = tz.localize(datetime.combine(day, time.min)).astimezone(timezone.utc)
-        end = tz.localize(datetime.combine(day, time.max)).astimezone(timezone.utc)
+        day_start = tz.localize(datetime.combine(day, time.min)).astimezone(timezone.utc)
+        day_end = tz.localize(datetime.combine(day, time.max)).astimezone(timezone.utc)
+        start = max(day_start, trend_start)
+        end = min(day_end, as_of)
+        if start > end:
+            continue
         intervals = get_record_downtime_intervals(db, start, end, source_id)
         for item in intervals:
             key = (item.folder_name, item.camera_name, day.isoformat())
