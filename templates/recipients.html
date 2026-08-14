@@ -22,6 +22,14 @@
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage B-SNAP email distribution lists</p>
       </div>
       <div class="flex gap-2">
+        <button onclick="showLocationsWithoutRecipients()" 
+          class="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium" title="View locations without recipients">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+          Missing Recipients
+        </button>
         <button onclick="exportRecipients()" 
           class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
           {{ icon_download("w-5 h-5") }} Export
@@ -1195,6 +1203,134 @@ async function importRecipients(file) {
       background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
       color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#111827'
     })
+  }
+}
+
+/* ===============================
+LOCATIONS WITHOUT RECIPIENTS
+================================ */
+async function showLocationsWithoutRecipients() {
+  const isDark = document.documentElement.classList.contains('dark')
+  
+  try {
+    // Show loading state
+    themedSwal({
+      title: 'Loading...',
+      html: '<div class="flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: async () => {
+        Swal.showLoading()
+        
+        // Fetch locations without recipients
+        const res = await fetch('/api/recipients/locations-without-recipients')
+        if (!res.ok) throw new Error('Failed to fetch data')
+        
+        const json = await res.json()
+        if (json.status !== 'success') throw new Error(json.message || 'Unknown error')
+        
+        const locations = json.data.locations || []
+        const locationCameraCount = json.data.location_camera_count || {}
+        const totalUncovered = json.data.total_uncovered || 0
+        const totalCameras = Object.values(locationCameraCount).reduce((a, b) => a + b, 0)
+        
+        // Close current modal and show new one
+        Swal.close()
+        
+        if (totalUncovered === 0) {
+          themedSwal({
+            icon: 'success',
+            title: 'All Covered!',
+            text: 'Semua lokasi sudah memiliki email recipient.',
+            background: isDark ? '#1f2937' : '#ffffff',
+            color: isDark ? '#f3f4f6' : '#111827'
+          })
+          return
+        }
+        
+        // Build table HTML
+        const tableHtml = `
+          <div class="text-left mb-4">
+            <div class="grid grid-cols-2 gap-2 mb-4">
+              <div class="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
+                <div class="text-xs text-orange-600 dark:text-orange-400 font-medium mb-1">Total Lokasi Tanpa Recipient</div>
+                <div class="text-2xl font-bold text-orange-700 dark:text-orange-300">${totalUncovered}</div>
+              </div>
+              <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div class="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">Total Camera di Lokasi Tersebut</div>
+                <div class="text-2xl font-bold text-blue-700 dark:text-blue-300">${totalCameras}</div>
+              </div>
+            </div>
+            
+            <div class="max-h-96 overflow-y-auto">
+              <table class="w-full text-sm border-collapse">
+                <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                  <tr>
+                    <th class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left font-semibold">#</th>
+                    <th class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left font-semibold">Lokasi</th>
+                    <th class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center font-semibold">Jumlah Camera</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${locations.map((loc, idx) => `
+                    <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">${idx + 1}</td>
+                      <td class="border border-gray-300 dark:border-gray-600 px-3 py-2">${escapeHtml(loc)}</td>
+                      <td class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center font-medium">${locationCameraCount[loc] || 0}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `
+        
+        themedSwal({
+          title: '📍 Lokasi Tanpa Email Recipient',
+          html: tableHtml,
+          width: '90%',
+          showCancelButton: true,
+          confirmButtonText: 'Export ke Excel',
+          confirmButtonColor: '#f59e0b',
+          cancelButtonText: 'Tutup',
+          background: isDark ? '#1f2937' : '#ffffff',
+          color: isDark ? '#f3f4f6' : '#111827',
+          confirmButtonDark: isDark,
+          cancelButtonDark: isDark
+        }).then((result) => {
+          if (result.isConfirmed) {
+            exportLocationsWithoutRecipients()
+          }
+        })
+      }
+    })
+  } catch (err) {
+    console.error('Error:', err)
+    themedSwal({
+      icon: 'error',
+      title: 'Error',
+      text: err.message || 'Failed to load locations without recipients',
+      background: isDark ? '#1f2937' : '#ffffff',
+      color: isDark ? '#f3f4f6' : '#111827'
+    })
+  }
+}
+
+function exportLocationsWithoutRecipients() {
+  // Export to Excel
+  const btn = event ? event.target : null
+  if (btn) {
+    btn.disabled = true
+    btn.innerHTML = `<div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div> Exporting...`
+  }
+  
+  window.location.href = '/api/recipients/export-locations-without-recipients'
+  
+  if (btn) {
+    setTimeout(() => {
+      btn.disabled = false
+      btn.innerHTML = 'Export ke Excel'
+    }, 1000)
   }
 }
 

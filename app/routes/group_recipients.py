@@ -527,3 +527,265 @@ async def import_recipients_csv(
         db.rollback()
         logger.exception("Error importing recipients")
         return json_error_response(str(e), 500)
+
+
+# ============================================================
+# 9️⃣ GET LOCATIONS WITHOUT RECIPIENTS (JSON)
+# ============================================================
+@router.get("/api/recipients/locations-without-recipients")
+def get_locations_without_recipients(
+    db: Session = Depends(get_db),
+    group_id: Optional[int] = None
+):
+    """
+    Get all locations yang tidak memiliki email recipient untuk group tertentu.
+    
+    Jika group_id tidak diberikan, return semua locations di seluruh system.
+    """
+    try:
+        if group_id:
+            # Get all locations untuk group tertentu
+            all_locations = db.query(Camera.location)\
+                .filter(Camera.group_id == group_id, Camera.location.isnot(None))\
+                .distinct()\
+                .all()
+            
+            # Get locations yang sudah memiliki recipient
+            covered_locations = db.query(func.lower(GroupRecipient.locations))\
+                .filter(GroupRecipient.group_id == group_id, GroupRecipient.locations.isnot(None))\
+                .all()
+        else:
+            # Get semua locations di seluruh system
+            all_locations = db.query(Camera.location)\
+                .filter(Camera.location.isnot(None))\
+                .distinct()\
+                .all()
+            
+            # Get semua locations dari recipients
+            covered_locations = db.query(func.lower(GroupRecipient.locations))\
+                .filter(GroupRecipient.locations.isnot(None))\
+                .all()
+        
+        # Parse locations dari recipient (comma-separated)
+        covered_set = set()
+        for loc_tuple in covered_locations:
+            if loc_tuple[0]:
+                # Split comma-separated locations dan normalize
+                locations = [l.strip() for l in loc_tuple[0].split(',')]
+                covered_set.update(l.lower() for l in locations)
+        
+        # Find locations without recipients
+        uncovered_locations = []
+        for loc_tuple in all_locations:
+            if loc_tuple[0]:  # Skip NULL locations
+                loc_normalized = loc_tuple[0].lower().strip()
+                if loc_normalized not in covered_set:
+                    uncovered_locations.append(loc_tuple[0])
+        
+        # Count cameras per uncovered location
+        location_camera_count = {}
+        for loc in uncovered_locations:
+            if group_id:
+                count = db.query(func.count(Camera.id))\
+                    .filter(Camera.group_id == group_id, Camera.location == loc)\
+                    .scalar()
+            else:
+                count = db.query(func.count(Camera.id))\
+                    .filter(Camera.location == loc)\
+                    .scalar()
+            location_camera_count[loc] = count
+        
+        # Sort by location name
+        uncovered_locations = sorted(uncovered_locations)
+        
+        return json_success_response(
+            "Locations without recipients fetched successfully",
+            {
+                "locations": uncovered_locations,
+                "location_camera_count": location_camera_count,
+                "total_uncovered": len(uncovered_locations),
+            }
+        )
+    
+    except Exception as e:
+        logger.exception("Error fetching locations without recipients")
+        return json_error_response(str(e), 500)
+
+
+# ============================================================
+# 🔟 EXPORT LOCATIONS WITHOUT RECIPIENTS TO EXCEL
+# ============================================================
+@router.get("/api/recipients/export-locations-without-recipients")
+def export_locations_without_recipients_excel(
+    db: Session = Depends(get_db),
+    group_id: Optional[int] = None,
+    current_admin: User = Depends(admin_access_required)
+):
+    """Export locations without recipients to Excel file."""
+    try:
+        # Import openpyxl untuk Excel
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+        
+        if group_id:
+            # Get group name
+            group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
+            group_name = group.name if group else "Unknown"
+            
+            # Get all locations untuk group tertentu
+            all_locations = db.query(Camera.location)\
+                .filter(Camera.group_id == group_id, Camera.location.isnot(None))\
+                .distinct()\
+                .all()
+            
+            # Get locations yang sudah memiliki recipient
+            covered_locations = db.query(func.lower(GroupRecipient.locations))\
+                .filter(GroupRecipient.group_id == group_id, GroupRecipient.locations.isnot(None))\
+                .all()
+        else:
+            group_name = "All Groups"
+            # Get semua locations di seluruh system
+            all_locations = db.query(Camera.location)\
+                .filter(Camera.location.isnot(None))\
+                .distinct()\
+                .all()
+            
+            # Get semua locations dari recipients
+            covered_locations = db.query(func.lower(GroupRecipient.locations))\
+                .filter(GroupRecipient.locations.isnot(None))\
+                .all()
+        
+        # Parse locations dari recipient
+        covered_set = set()
+        for loc_tuple in covered_locations:
+            if loc_tuple[0]:
+                locations = [l.strip() for l in loc_tuple[0].split(',')]
+                covered_set.update(l.lower() for l in locations)
+        
+        # Find locations without recipients
+        uncovered_locations = []
+        for loc_tuple in all_locations:
+            if loc_tuple[0]:
+                loc_normalized = loc_tuple[0].lower().strip()
+                if loc_normalized not in covered_set:
+                    uncovered_locations.append(loc_tuple[0])
+        
+        # Count cameras per location
+        location_camera_count = {}
+        for loc in uncovered_locations:
+            if group_id:
+                count = db.query(func.count(Camera.id))\
+                    .filter(Camera.group_id == group_id, Camera.location == loc)\
+                    .scalar()
+            else:
+                count = db.query(func.count(Camera.id))\
+                    .filter(Camera.location == loc)\
+                    .scalar()
+            location_camera_count[loc] = count
+        
+        # Create Excel workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Locations Without Recipients"
+        
+        # Define styles
+        header_fill = PatternFill(start_color="FF3B82F6", end_color="FF3B82F6", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFFFF", size=12)
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        
+        border = Border(
+            left=Side(style="thin"),
+            right=Side(style="thin"),
+            top=Side(style="thin"),
+            bottom=Side(style="thin")
+        )
+        
+        center_alignment = Alignment(horizontal="center", vertical="center")
+        left_alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        
+        # Add title and metadata
+        ws.merge_cells("A1:C1")
+        title_cell = ws["A1"]
+        title_cell.value = f"📍 Locations Without Email Recipients - {group_name}"
+        title_cell.font = Font(bold=True, size=14, color="FF1F2937")
+        title_cell.alignment = center_alignment
+        
+        ws.merge_cells("A2:C2")
+        timestamp_cell = ws["A2"]
+        timestamp_cell.value = f"Generated: {datetime.now(timezone.utc).strftime('%d %b %Y %H:%M:%S UTC')}"
+        timestamp_cell.font = Font(size=10, color="FF6B7280", italic=True)
+        timestamp_cell.alignment = center_alignment
+        
+        # Add headers
+        ws.append([])  # Empty row
+        headers = ["#", "Location", "Camera Count"]
+        ws.append(headers)
+        
+        # Style headers
+        for cell in ws[4]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+            cell.border = border
+        
+        # Add data
+        sorted_locations = sorted(uncovered_locations)
+        for idx, location in enumerate(sorted_locations, 1):
+            camera_count = location_camera_count.get(location, 0)
+            ws.append([idx, location, camera_count])
+            
+            # Style data rows
+            for cell in ws[4 + idx]:
+                cell.border = border
+                if cell.column == 1:  # Index column
+                    cell.alignment = center_alignment
+                elif cell.column == 3:  # Camera count column
+                    cell.alignment = center_alignment
+                else:  # Location column
+                    cell.alignment = left_alignment
+        
+        # Set column widths
+        ws.column_dimensions["A"].width = 5
+        ws.column_dimensions["B"].width = 40
+        ws.column_dimensions["C"].width = 15
+        
+        # Add summary section
+        summary_row = 4 + len(sorted_locations) + 2
+        ws[f"A{summary_row}"] = "Total Locations Without Recipients:"
+        ws[f"A{summary_row}"].font = Font(bold=True)
+        ws[f"B{summary_row}"] = len(sorted_locations)
+        ws[f"B{summary_row}"].font = Font(bold=True)
+        
+        ws[f"A{summary_row + 1}"] = "Total Cameras in These Locations:"
+        ws[f"A{summary_row + 1}"].font = Font(bold=True)
+        ws[f"B{summary_row + 1}"] = sum(location_camera_count.values())
+        ws[f"B{summary_row + 1}"].font = Font(bold=True)
+        
+        # Prepare response
+        from io import BytesIO
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        # Log audit
+        log_audit(
+            db=db,
+            user=request.session.get("user_name", "unknown") if hasattr(request, 'session') else "api_user",
+            action="export_locations_without_recipients",
+            target=group_name,
+            ip=request.client.host if hasattr(request, 'client') else "N/A",
+            extra=f"Exported {len(sorted_locations)} locations without recipients"
+        )
+        
+        filename = f"locations_without_recipients_{group_name.replace(' ', '_')}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.xlsx"
+        
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    
+    except Exception as e:
+        logger.exception("Error exporting locations without recipients to Excel")
+        return json_error_response(str(e), 500)

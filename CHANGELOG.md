@@ -65,6 +65,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Unit test file for record-check classifier and path validation.
   - Manual smoke tests verified classification, database persistence, and manual mapping behavior.
 
+#### Email Recipients - Locations Without Recipients
+- Added feature to identify and monitor locations that lack email recipients.
+  - New API endpoint: `GET /api/recipients/locations-without-recipients`
+    - Lists all locations without assigned email recipients.
+    - Shows camera count per uncovered location.
+    - Supports filtering by group_id.
+  - New API endpoint: `GET /api/recipients/export-locations-without-recipients`
+    - Exports uncovered locations to Excel (.xlsx) format.
+    - Includes professional formatting with styling and metadata.
+    - Contains summary statistics (total uncovered locations, total cameras).
+    - Audit logged for compliance tracking.
+- Added admin UI button: "Missing Recipients" in Email Recipients page.
+  - Opens modal showing all locations without email recipients.
+  - Displays location name and camera count in tabular format.
+  - One-click export to Excel with timestamped filename.
+  - Responsive design with dark mode support.
+- Added dependency: `openpyxl==3.11.1` for Excel export functionality.
+
 ### Changed
 
 #### Job Management
