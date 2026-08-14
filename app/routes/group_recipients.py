@@ -1,6 +1,7 @@
 import logging
 import csv
 import io
+from io import BytesIO
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Request, Form, Path, File, UploadFile
 from fastapi.responses import StreamingResponse
@@ -617,6 +618,7 @@ def get_locations_without_recipients(
 # ============================================================
 @router.get("/api/recipients/export-locations-without-recipients")
 def export_locations_without_recipients_excel(
+    request: Request,
     db: Session = Depends(get_db),
     group_id: Optional[int] = None,
     current_admin: User = Depends(admin_access_required)
@@ -626,7 +628,6 @@ def export_locations_without_recipients_excel(
         # Import openpyxl untuk Excel
         from openpyxl import Workbook
         from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-        from openpyxl.utils import get_column_letter
         
         if group_id:
             # Get group name
@@ -763,7 +764,6 @@ def export_locations_without_recipients_excel(
         ws[f"B{summary_row + 1}"].font = Font(bold=True)
         
         # Prepare response
-        from io import BytesIO
         output = BytesIO()
         wb.save(output)
         output.seek(0)
