@@ -38,6 +38,7 @@ DEFAULT_CONFIG = {
     "smtp_port": "587",
     "smtp_user": "",
     "smtp_pass": "",
+    "smtp_security": "starttls",
     "email_from": "",
     "email_cc": "",
     

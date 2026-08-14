@@ -375,28 +375,38 @@
         <input type="number" id="smtp_port" name="smtp_port" value="{{ configs.get('smtp_port', '587') }}" 
           min="1" max="65535"
           class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">SMTP port (usually 587 for TLS, 465 for SSL, 25 for non-secure)</p>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Usually 587 for STARTTLS, 465 for SSL/TLS, or 25 for non-secure relay.</p>
+      </div>
+      <div>
+        <label for="smtp_security" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">SMTP Security</label>
+        <select id="smtp_security" name="smtp_security"
+          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          <option value="starttls" {% if configs.get('smtp_security', 'starttls') == 'starttls' %}selected{% endif %}>STARTTLS (recommended for port 587)</option>
+          <option value="ssl_tls" {% if configs.get('smtp_security') == 'ssl_tls' %}selected{% endif %}>SSL/TLS (usually port 465)</option>
+          <option value="none" {% if configs.get('smtp_security') == 'none' %}selected{% endif %}>None / non-secure (usually port 25)</option>
+        </select>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Choose None only for a trusted internal SMTP relay.</p>
       </div>
       <div>
         <label for="smtp_user" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">SMTP Username</label>
         <input type="text" id="smtp_user" name="smtp_user" value="{{ configs.get('smtp_user', '') }}" 
           placeholder="your-email@example.com"
           class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Email address or username for SMTP authentication</p>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Optional. Leave both username and password empty for an anonymous relay.</p>
       </div>
       <div>
         <label for="smtp_pass" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">SMTP Password</label>
         <input type="password" id="smtp_pass" name="smtp_pass" value="{{ configs.get('smtp_pass', '') }}" 
           placeholder="••••••••"
           class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Password or app-specific password for SMTP authentication</p>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Optional. Must be filled together with SMTP Username.</p>
       </div>
       <div>
         <label for="email_from" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">From Email</label>
         <input type="email" id="email_from" name="email_from" value="{{ configs.get('email_from', '') }}" 
           placeholder="noreply@example.com"
           class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Sender email address shown in notifications (defaults to SMTP user if empty)</p>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Sender email address shown in notifications. Required when SMTP authentication is not used.</p>
       </div>
       <div>
         <label for="email_cc" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">CC Email (Optional)</label>

@@ -3,6 +3,7 @@ from email.mime.application import MIMEApplication
 import os
 import smtplib
 import socket
+import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from fastapi import BackgroundTasks
@@ -19,6 +20,24 @@ from app.utils.smtp_config import get_smtp_config
 # =========================
 # EMAIL CORE FUNCTIONS
 # =========================
+
+def _open_smtp_connection(config: dict) -> smtplib.SMTP:
+    """Open and prepare an SMTP connection according to the configured security mode."""
+    security = config["smtp_security"]
+    if security == "ssl_tls":
+        server = smtplib.SMTP_SSL(
+            config["smtp_host"], config["smtp_port"], timeout=30, context=ssl.create_default_context()
+        )
+    else:
+        server = smtplib.SMTP(config["smtp_host"], config["smtp_port"], timeout=30)
+        if security == "starttls":
+            server.ehlo()
+            server.starttls(context=ssl.create_default_context())
+            server.ehlo()
+
+    if config["has_credentials"]:
+        server.login(config["smtp_user"], config["smtp_pass"])
+    return server
 
 def _send_email_sync(to: list[str], subject: str, body: str, html: str | None = None):
     """
@@ -45,9 +64,7 @@ def _send_email_sync(to: list[str], subject: str, body: str, html: str | None = 
         msg.attach(MIMEText(html, "html"))
 
     try:
-        with smtplib.SMTP(config["smtp_host"], config["smtp_port"], timeout=30) as server:
-            server.starttls()
-            server.login(config["smtp_user"], config["smtp_pass"])
+        with _open_smtp_connection(config) as server:
             server.sendmail(config["email_from"], to, msg.as_string())
     except socket.gaierror as e:
         raise RuntimeError(f"Cannot resolve SMTP host '{config['smtp_host']}': {e}. Please check your SMTP configuration.")
@@ -208,9 +225,7 @@ def _send_email_with_image(
     all_recipients = to_emails + ([cc_email.strip()] if cc_email and isinstance(cc_email, str) else [])
 
     try:
-        with smtplib.SMTP(config["smtp_host"], config["smtp_port"], timeout=30) as server:
-            server.starttls()
-            server.login(config["smtp_user"], config["smtp_pass"])
+        with _open_smtp_connection(config) as server:
             server.sendmail(config["email_from"], all_recipients, msg.as_string())
     except socket.gaierror as e:
         raise RuntimeError(f"Cannot resolve SMTP host '{config['smtp_host']}': {e}. Please check your SMTP configuration.")

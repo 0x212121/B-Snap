@@ -85,6 +85,7 @@ async def config_save(
     smtp_port: int = Form(587),
     smtp_user: str = Form(""),
     smtp_pass: str = Form(""),
+    smtp_security: str = Form("starttls"),
     email_from: str = Form(""),
     email_cc: str = Form(""),
     gowa_enabled: Optional[bool] = Form(False),
@@ -175,6 +176,18 @@ async def config_save(
             content={"message": "Invalid 'CC Email' format."}
         )
 
+    if smtp_security not in {"starttls", "ssl_tls", "none"}:
+        return JSONResponse(
+            status_code=400,
+            content={"message": "Invalid SMTP security mode."},
+        )
+
+    if bool(smtp_user.strip()) != bool(smtp_pass):
+        return JSONResponse(
+            status_code=400,
+            content={"message": "SMTP username and password must both be filled, or both left empty."},
+        )
+
     gowa_base_url = gowa_base_url.strip().rstrip("/")
     if gowa_enabled:
         if not gowa_base_url.startswith(("http://", "https://")):
@@ -214,6 +227,7 @@ async def config_save(
         "smtp_port": smtp_port,
         "smtp_user": smtp_user.strip(),
         "smtp_pass": smtp_pass,
+        "smtp_security": smtp_security,
         "email_from": email_from.strip(),
         "email_cc": email_cc.strip(),
         "gowa_enabled": str(int(gowa_enabled)),
