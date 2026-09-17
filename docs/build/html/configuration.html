@@ -21,9 +21,9 @@
 <meta content="#ffffff" media="(prefers-color-scheme: light)" name="theme-color"/>
 <meta content="#030711" media="(prefers-color-scheme: dark)" name="theme-color"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Configuration Guide | B-SNAP v2.0.2 documentation</title>
-<meta content="Configuration Guide | B-SNAP v2.0.2 documentation" property="og:title"/>
-<meta content="Configuration Guide | B-SNAP v2.0.2 documentation" name="twitter:title"/>
+<title>Configuration Guide | B-SNAP v2.1.0 documentation</title>
+<meta content="Configuration Guide | B-SNAP v2.1.0 documentation" property="og:title"/>
+<meta content="Configuration Guide | B-SNAP v2.1.0 documentation" name="twitter:title"/>
 <link href="_static/pygments.css?v=e72c8e07" rel="stylesheet" type="text/css"/>
 <link href="_static/theme.css?v=73505e79" rel="stylesheet" type="text/css"/>
 <link href="search.html" rel="search" title="Search"/>
@@ -36,7 +36,7 @@
       Skip to content
     </a><header class="sticky top-0 z-40 w-full border-b shadow-xs border-border bg-background/90 backdrop-blur"><div class="container flex items-center h-14">
 <div class="hidden mr-4 md:flex">
-<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.0.2 documentation</span>
+<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.1.0 documentation</span>
 </a></div><button @click="showSidebar = true" class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden" type="button">
 <svg aria-hidden="true" fill="currentColor" height="24" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
 <path d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z"></path>
@@ -66,7 +66,7 @@
 </div>
 </header>
 <div class="flex-1"><div class="container md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }" class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky" id="left-sidebar">
-<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.0.2 documentation</span>
+<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.1.0 documentation</span>
 </a>
 <div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
 <div class="overflow-y-auto h-full w-full relative pr-6"><nav class="table w-full min-w-full my-6 lg:my-8">
@@ -96,7 +96,7 @@
 <div class="w-full min-w-0 mx-auto">
 <nav aria-label="breadcrumbs" class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
 <a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground" href="index.html">
-<span class="hidden md:inline">B-SNAP v2.0.2 documentation</span>
+<span class="hidden md:inline">B-SNAP v2.1.0 documentation</span>
 <svg aria-label="Home" class="md:hidden" fill="currentColor" height="18" stroke="none" viewbox="0 96 960 960" width="18" xmlns="http://www.w3.org/2000/svg">
 <path d="M240 856h120V616h240v240h120V496L480 316 240 496v360Zm-80 80V456l320-240 320 240v480H520V696h-80v240H160Zm320-350Z"></path>
 </svg>
@@ -293,7 +293,15 @@
 <ul class="simple">
 <li><p><strong>Type</strong>: String (path)</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">./static/videos</span></code></p></li>
-<li><p><strong>Description</strong>: Directory for video storage</p></li>
+<li><p><strong>Description</strong>: Directory for video storage. Browser playback must use authenticated <code class="docutils literal notranslate"><span class="pre">/api/videos/secure/{video_id}</span></code> or <code class="docutils literal notranslate"><span class="pre">/api/videos/file/{file_path}</span></code>, not direct <code class="docutils literal notranslate"><span class="pre">/static/videos/*</span></code>.</p></li>
+</ul>
+</section>
+<section id="ffmpeg-ffprobe">
+<h3>ffmpeg / ffprobe<a class="headerlink" href="#ffmpeg-ffprobe" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ffmpeg-ffprobe'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p><strong>Type</strong>: Executable dependency</p></li>
+<li><p><strong>Description</strong>: Video recording, thumbnail generation, and metadata extraction use FFmpeg tooling</p></li>
+<li><p><strong>Fallback</strong>: If <code class="docutils literal notranslate"><span class="pre">ffmpeg</span></code> is not on PATH, B-Snap uses project-local <code class="docutils literal notranslate"><span class="pre">ffmpeg.exe</span></code> when present. <code class="docutils literal notranslate"><span class="pre">ffprobe</span></code> is preferred for metadata, but B-Snap falls back to parsing <code class="docutils literal notranslate"><span class="pre">ffmpeg</span></code> output if <code class="docutils literal notranslate"><span class="pre">ffprobe</span></code> is unavailable.</p></li>
 </ul>
 </section>
 <section id="log-dir">
@@ -336,6 +344,101 @@
 <li><p><strong>Description</strong>: Videos older than this are soft-deleted</p></li>
 <li><p><strong>Note</strong>: Items with <code class="docutils literal notranslate"><span class="pre">retention_hold=True</span></code> are preserved</p></li>
 <li><p><strong>Used In</strong>: <code class="docutils literal notranslate"><span class="pre">app/jobs/scheduler.py</span></code></p></li>
+</ul>
+</section>
+<section id="retention-record-check-days">
+<h3>retention_record_check_days<a class="headerlink" href="#retention-record-check-days" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#retention-record-check-days'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p><strong>Type</strong>: Integer</p></li>
+<li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">90</span></code></p></li>
+<li><p><strong>Description</strong>: Hard-deletes old record-check run, folder-check, and status-event history older than this many days</p></li>
+<li><p><strong>Note</strong>: Record sources, folder mappings, and current folder statuses are preserved</p></li>
+<li><p><strong>Used In</strong>: <code class="docutils literal notranslate"><span class="pre">app/jobs/scheduler.py</span></code>, <code class="docutils literal notranslate"><span class="pre">app/utils/record_check.py</span></code></p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils"/>
+<section id="job-scheduling">
+<h2>Job Scheduling<a class="headerlink" href="#job-scheduling" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#job-scheduling'"><span>#</span></a></h2>
+<section id="record-check-interval-minutes">
+<h3>record_check_interval_minutes<a class="headerlink" href="#record-check-interval-minutes" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#record-check-interval-minutes'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p><strong>Type</strong>: Integer</p></li>
+<li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">10</span></code></p></li>
+<li><p><strong>Description</strong>: Interval for scanning mounted SMB/NVR recording folders</p></li>
+<li><p><strong>Used In</strong>: <code class="docutils literal notranslate"><span class="pre">app/jobs/scheduler.py</span></code></p></li>
+</ul>
+</section>
+<section id="record-check-cron">
+<h3>record_check_cron<a class="headerlink" href="#record-check-cron" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#record-check-cron'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p><strong>Type</strong>: String (5-part cron)</p></li>
+<li><p><strong>Default</strong>: empty</p></li>
+<li><p><strong>Description</strong>: Optional cron override for <code class="docutils literal notranslate"><span class="pre">record_folder_check</span></code>. Leave empty to use interval scheduling</p></li>
+<li><p><strong>Used In</strong>: <code class="docutils literal notranslate"><span class="pre">app/jobs/scheduler.py</span></code></p></li>
+</ul>
+</section>
+<section id="cleanup-cron">
+<h3>cleanup_cron<a class="headerlink" href="#cleanup-cron" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#cleanup-cron'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p><strong>Type</strong>: String (5-part cron)</p></li>
+<li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">0</span> <span class="pre">2</span> <span class="pre">*</span> <span class="pre">*</span> <span class="pre">*</span></code></p></li>
+<li><p><strong>Description</strong>: Shared cron schedule for cleanup jobs, including <code class="docutils literal notranslate"><span class="pre">cleanup_record_checks</span></code></p></li>
+<li><p><strong>Used In</strong>: <code class="docutils literal notranslate"><span class="pre">app/jobs/scheduler.py</span></code>, <code class="docutils literal notranslate"><span class="pre">app/routes/jobs.py</span></code></p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils"/>
+<section id="whatsapp-gateway-gowa">
+<h2>WhatsApp Gateway (GoWA)<a class="headerlink" href="#whatsapp-gateway-gowa" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#whatsapp-gateway-gowa'"><span>#</span></a></h2>
+<p>These values are normally saved through the Config UI and stored in the database configuration table.</p>
+<section id="gowa-enabled">
+<h3>gowa_enabled<a class="headerlink" href="#gowa-enabled" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#gowa-enabled'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p><strong>Type</strong>: Boolean</p></li>
+<li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">0</span></code></p></li>
+<li><p><strong>Description</strong>: Enables WhatsApp notifications through GoWA</p></li>
+<li><p><strong>Used In</strong>: <code class="docutils literal notranslate"><span class="pre">app/utils/wa_gateway.py</span></code></p></li>
+</ul>
+</section>
+<section id="gowa-base-url">
+<h3>gowa_base_url<a class="headerlink" href="#gowa-base-url" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#gowa-base-url'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p><strong>Type</strong>: URL</p></li>
+<li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">http://localhost:3000</span></code></p></li>
+<li><p><strong>Description</strong>: Base URL for the GoWA gateway</p></li>
+<li><p><strong>Example</strong>: <code class="docutils literal notranslate"><span class="pre">http://172.16.1.200:3434</span></code></p></li>
+<li><p><strong>Used In</strong>: <code class="docutils literal notranslate"><span class="pre">app/utils/wa_gateway.py</span></code></p></li>
+</ul>
+</section>
+<section id="gowa-api-key">
+<h3>gowa_api_key<a class="headerlink" href="#gowa-api-key" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#gowa-api-key'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p><strong>Type</strong>: String</p></li>
+<li><p><strong>Default</strong>: empty</p></li>
+<li><p><strong>Description</strong>: Auth secret for GoWA. Use <code class="docutils literal notranslate"><span class="pre">user:password</span></code> when GoWA runs with <code class="docutils literal notranslate"><span class="pre">APP_BASIC_AUTH</span></code>; use token-only value for older <code class="docutils literal notranslate"><span class="pre">AUTH_TOKEN</span></code> deployments</p></li>
+<li><p><strong>Security</strong>: Keep secure</p></li>
+<li><p><strong>Used In</strong>: <code class="docutils literal notranslate"><span class="pre">app/utils/wa_gateway.py</span></code></p></li>
+</ul>
+</section>
+<section id="gowa-default-receiver">
+<h3>gowa_default_receiver<a class="headerlink" href="#gowa-default-receiver" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#gowa-default-receiver'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p><strong>Type</strong>: String (comma-separated)</p></li>
+<li><p><strong>Default</strong>: empty</p></li>
+<li><p><strong>Description</strong>: Default WhatsApp recipients for reports and alerts. Supports personal numbers and group JIDs</p></li>
+<li><p><strong>Examples</strong>: <code class="docutils literal notranslate"><span class="pre">6281234567890</span></code>, <code class="docutils literal notranslate"><span class="pre">120363xxxxxxxx@g.us</span></code></p></li>
+<li><p><strong>Used In</strong>: <code class="docutils literal notranslate"><span class="pre">app/utils/wa_gateway.py</span></code>, <code class="docutils literal notranslate"><span class="pre">app/utils/record_check.py</span></code></p></li>
+</ul>
+</section>
+<section id="app-public-url">
+<h3>app_public_url<a class="headerlink" href="#app-public-url" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#app-public-url'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p><strong>Type</strong>: URL</p></li>
+<li><p><strong>Default</strong>: empty</p></li>
+<li><p><strong>Description</strong>: B-SNAP URL reachable by GoWA for generated report files such as the record-check 14-day trend PDF</p></li>
+<li><p><strong>Example</strong>: <code class="docutils literal notranslate"><span class="pre">http://b-snap:8080</span></code> or <code class="docutils literal notranslate"><span class="pre">http://172.16.1.50:8080</span></code></p></li>
+<li><p><strong>Used In</strong>: <code class="docutils literal notranslate"><span class="pre">app/utils/record_check_report.py</span></code></p></li>
 </ul>
 </section>
 </section>
@@ -619,6 +722,7 @@
 <li><a :data-current="activeSection === '#storage-paths'" class="reference internal" href="#storage-paths">Storage &amp; Paths</a><ul>
 <li><a :data-current="activeSection === '#snapshot-path'" class="reference internal" href="#snapshot-path">SNAPSHOT_PATH</a></li>
 <li><a :data-current="activeSection === '#video-path'" class="reference internal" href="#video-path">VIDEO_PATH</a></li>
+<li><a :data-current="activeSection === '#ffmpeg-ffprobe'" class="reference internal" href="#ffmpeg-ffprobe">ffmpeg / ffprobe</a></li>
 <li><a :data-current="activeSection === '#log-dir'" class="reference internal" href="#log-dir">LOG_DIR</a></li>
 <li><a :data-current="activeSection === '#alembic-ini-path'" class="reference internal" href="#alembic-ini-path">ALEMBIC_INI_PATH</a></li>
 </ul>
@@ -626,6 +730,21 @@
 <li><a :data-current="activeSection === '#retention-policy-med-003'" class="reference internal" href="#retention-policy-med-003">Retention Policy (MED-003)</a><ul>
 <li><a :data-current="activeSection === '#retention-snapshot-days'" class="reference internal" href="#retention-snapshot-days">RETENTION_SNAPSHOT_DAYS</a></li>
 <li><a :data-current="activeSection === '#retention-video-days'" class="reference internal" href="#retention-video-days">RETENTION_VIDEO_DAYS</a></li>
+<li><a :data-current="activeSection === '#retention-record-check-days'" class="reference internal" href="#retention-record-check-days">retention_record_check_days</a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#job-scheduling'" class="reference internal" href="#job-scheduling">Job Scheduling</a><ul>
+<li><a :data-current="activeSection === '#record-check-interval-minutes'" class="reference internal" href="#record-check-interval-minutes">record_check_interval_minutes</a></li>
+<li><a :data-current="activeSection === '#record-check-cron'" class="reference internal" href="#record-check-cron">record_check_cron</a></li>
+<li><a :data-current="activeSection === '#cleanup-cron'" class="reference internal" href="#cleanup-cron">cleanup_cron</a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#whatsapp-gateway-gowa'" class="reference internal" href="#whatsapp-gateway-gowa">WhatsApp Gateway (GoWA)</a><ul>
+<li><a :data-current="activeSection === '#gowa-enabled'" class="reference internal" href="#gowa-enabled">gowa_enabled</a></li>
+<li><a :data-current="activeSection === '#gowa-base-url'" class="reference internal" href="#gowa-base-url">gowa_base_url</a></li>
+<li><a :data-current="activeSection === '#gowa-api-key'" class="reference internal" href="#gowa-api-key">gowa_api_key</a></li>
+<li><a :data-current="activeSection === '#gowa-default-receiver'" class="reference internal" href="#gowa-default-receiver">gowa_default_receiver</a></li>
+<li><a :data-current="activeSection === '#app-public-url'" class="reference internal" href="#app-public-url">app_public_url</a></li>
 </ul>
 </li>
 <li><a :data-current="activeSection === '#camera-monitoring'" class="reference internal" href="#camera-monitoring">Camera &amp; Monitoring</a><ul>
@@ -685,7 +804,7 @@
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=398391ef"></script>
+<script src="_static/documentation_options.js?v=dbd6d5c5"></script>
 <script src="_static/doctools.js?v=fd6eb6e6"></script>
 <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script defer="defer" src="_static/theme.js?v=582b20c5"></script>

@@ -8,6 +8,39 @@ The notification system sends alerts for:
 - **Offline incidents** - Camera goes offline
 - **Tamper alerts** - Camera tampering detected (blur, etc.)
 - **Recovery alerts** - Camera comes back online
+- **Record-check alerts** - Mounted SMB/NVR record folders become stale or missing
+- **WhatsApp reports** - Daily camera reports and storage alerts through GoWA
+
+## WhatsApp Gateway (GoWA)
+
+B-SNAP can send WhatsApp notifications directly through GoWA.
+
+### Authentication
+
+- Use `APP_BASIC_AUTH=user:password` on current GoWA deployments, then enter `user:password` in the B-SNAP GoWA auth field.
+- Older GoWA deployments using `AUTH_TOKEN` can still use a token-only value.
+- Leave the auth field empty only when GoWA is intentionally unauthenticated and isolated.
+
+### Receivers
+
+Default receivers can be personal numbers or WhatsApp group JIDs:
+
+```text
+6281234567890
+120363xxxxxxxx@g.us
+```
+
+Multiple receivers are comma-separated. The Config UI can query GoWA groups from `GET /user/my/groups` and append the selected group JID automatically.
+
+### Record-Check Notifications
+
+Record-check alerts are sent when:
+
+- a folder enters `stale`
+- a previously known folder becomes `missing`
+- an alerted folder recovers to `healthy`
+
+Recovery notifications include any remaining stale/missing folders so operators can see what still needs attention.
 
 ## Incident Time Accuracy (Bug Fix)
 

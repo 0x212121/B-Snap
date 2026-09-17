@@ -21,9 +21,9 @@
 <meta content="#ffffff" media="(prefers-color-scheme: light)" name="theme-color"/>
 <meta content="#030711" media="(prefers-color-scheme: dark)" name="theme-color"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Email Notifications | B-SNAP v2.0.2 documentation</title>
-<meta content="Email Notifications | B-SNAP v2.0.2 documentation" property="og:title"/>
-<meta content="Email Notifications | B-SNAP v2.0.2 documentation" name="twitter:title"/>
+<title>Email Notifications | B-SNAP v2.1.0 documentation</title>
+<meta content="Email Notifications | B-SNAP v2.1.0 documentation" property="og:title"/>
+<meta content="Email Notifications | B-SNAP v2.1.0 documentation" name="twitter:title"/>
 <link href="_static/pygments.css?v=e72c8e07" rel="stylesheet" type="text/css"/>
 <link href="_static/theme.css?v=73505e79" rel="stylesheet" type="text/css"/>
 <link href="search.html" rel="search" title="Search"/>
@@ -36,7 +36,7 @@
       Skip to content
     </a><header class="sticky top-0 z-40 w-full border-b shadow-xs border-border bg-background/90 backdrop-blur"><div class="container flex items-center h-14">
 <div class="hidden mr-4 md:flex">
-<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.0.2 documentation</span>
+<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.1.0 documentation</span>
 </a></div><button @click="showSidebar = true" class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden" type="button">
 <svg aria-hidden="true" fill="currentColor" height="24" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
 <path d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z"></path>
@@ -66,7 +66,7 @@
 </div>
 </header>
 <div class="flex-1"><div class="container md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }" class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky" id="left-sidebar">
-<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.0.2 documentation</span>
+<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.1.0 documentation</span>
 </a>
 <div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
 <div class="overflow-y-auto h-full w-full relative pr-6"><nav class="table w-full min-w-full my-6 lg:my-8">
@@ -96,7 +96,7 @@
 <div class="w-full min-w-0 mx-auto">
 <nav aria-label="breadcrumbs" class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
 <a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground" href="index.html">
-<span class="hidden md:inline">B-SNAP v2.0.2 documentation</span>
+<span class="hidden md:inline">B-SNAP v2.1.0 documentation</span>
 <svg aria-label="Home" class="md:hidden" fill="currentColor" height="18" stroke="none" viewbox="0 96 960 960" width="18" xmlns="http://www.w3.org/2000/svg">
 <path d="M240 856h120V616h240v240h120V496L480 316 240 496v360Zm-80 80V456l320-240 320 240v480H520V696h-80v240H160Zm320-350Z"></path>
 </svg>
@@ -114,7 +114,40 @@
 <li><p><strong>Offline incidents</strong> - Camera goes offline</p></li>
 <li><p><strong>Tamper alerts</strong> - Camera tampering detected (blur, etc.)</p></li>
 <li><p><strong>Recovery alerts</strong> - Camera comes back online</p></li>
+<li><p><strong>Record-check alerts</strong> - Mounted SMB/NVR record folders become stale or missing</p></li>
+<li><p><strong>WhatsApp reports</strong> - Daily camera reports and storage alerts through GoWA</p></li>
 </ul>
+</section>
+<section id="whatsapp-gateway-gowa">
+<h2>WhatsApp Gateway (GoWA)<a class="headerlink" href="#whatsapp-gateway-gowa" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#whatsapp-gateway-gowa'"><span>#</span></a></h2>
+<p>B-SNAP can send WhatsApp notifications directly through GoWA.</p>
+<section id="authentication">
+<h3>Authentication<a class="headerlink" href="#authentication" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#authentication'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">APP_BASIC_AUTH=user:password</span></code> on current GoWA deployments, then enter <code class="docutils literal notranslate"><span class="pre">user:password</span></code> in the B-SNAP GoWA auth field.</p></li>
+<li><p>Older GoWA deployments using <code class="docutils literal notranslate"><span class="pre">AUTH_TOKEN</span></code> can still use a token-only value.</p></li>
+<li><p>Leave the auth field empty only when GoWA is intentionally unauthenticated and isolated.</p></li>
+</ul>
+</section>
+<section id="receivers">
+<h3>Receivers<a class="headerlink" href="#receivers" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#receivers'"><span>#</span></a></h3>
+<p>Default receivers can be personal numbers or WhatsApp group JIDs:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">6281234567890
+</span><span id="line-2">120363xxxxxxxx@g.us
+</span></code></pre></div>
+</div>
+<p>Multiple receivers are comma-separated. The Config UI can query GoWA groups from <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/user/my/groups</span></code> and append the selected group JID automatically.</p>
+</section>
+<section id="record-check-notifications">
+<h3>Record-Check Notifications<a class="headerlink" href="#record-check-notifications" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#record-check-notifications'"><span>#</span></a></h3>
+<p>Record-check alerts are sent when:</p>
+<ul class="simple">
+<li><p>a folder enters <code class="docutils literal notranslate"><span class="pre">stale</span></code></p></li>
+<li><p>a previously known folder becomes <code class="docutils literal notranslate"><span class="pre">missing</span></code></p></li>
+<li><p>an alerted folder recovers to <code class="docutils literal notranslate"><span class="pre">healthy</span></code></p></li>
+</ul>
+<p>Recovery notifications include any remaining stale/missing folders so operators can see what still needs attention.</p>
+</section>
 </section>
 <section id="incident-time-accuracy-bug-fix">
 <h2>Incident Time Accuracy (Bug Fix)<a class="headerlink" href="#incident-time-accuracy-bug-fix" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#incident-time-accuracy-bug-fix'"><span>#</span></a></h2>
@@ -859,6 +892,12 @@
 <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
 <ul>
 <li><a :data-current="activeSection === '#overview'" class="reference internal" href="#overview">Overview</a></li>
+<li><a :data-current="activeSection === '#whatsapp-gateway-gowa'" class="reference internal" href="#whatsapp-gateway-gowa">WhatsApp Gateway (GoWA)</a><ul>
+<li><a :data-current="activeSection === '#authentication'" class="reference internal" href="#authentication">Authentication</a></li>
+<li><a :data-current="activeSection === '#receivers'" class="reference internal" href="#receivers">Receivers</a></li>
+<li><a :data-current="activeSection === '#record-check-notifications'" class="reference internal" href="#record-check-notifications">Record-Check Notifications</a></li>
+</ul>
+</li>
 <li><a :data-current="activeSection === '#incident-time-accuracy-bug-fix'" class="reference internal" href="#incident-time-accuracy-bug-fix">Incident Time Accuracy (Bug Fix)</a><ul>
 <li><a :data-current="activeSection === '#the-problem'" class="reference internal" href="#the-problem">The Problem</a></li>
 <li><a :data-current="activeSection === '#the-solution'" class="reference internal" href="#the-solution">The Solution</a></li>
@@ -931,7 +970,7 @@
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=398391ef"></script>
+<script src="_static/documentation_options.js?v=dbd6d5c5"></script>
 <script src="_static/doctools.js?v=fd6eb6e6"></script>
 <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script defer="defer" src="_static/theme.js?v=582b20c5"></script>

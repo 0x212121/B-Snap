@@ -1241,7 +1241,7 @@ async function showLocationsWithoutRecipients() {
           themedSwal({
             icon: 'success',
             title: 'All Covered!',
-            text: 'Semua lokasi sudah memiliki email recipient.',
+            text: 'All locations already have email recipients.',
             background: isDark ? '#1f2937' : '#ffffff',
             color: isDark ? '#f3f4f6' : '#111827'
           })
@@ -1253,11 +1253,11 @@ async function showLocationsWithoutRecipients() {
           <div class="text-left mb-4">
             <div class="grid grid-cols-2 gap-2 mb-4">
               <div class="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
-                <div class="text-xs text-orange-600 dark:text-orange-400 font-medium mb-1">Total Lokasi Tanpa Recipient</div>
+                <div class="text-xs text-orange-600 dark:text-orange-400 font-medium mb-1">Locations Without Recipients</div>
                 <div class="text-2xl font-bold text-orange-700 dark:text-orange-300">${totalUncovered}</div>
               </div>
               <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
-                <div class="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">Total Camera di Lokasi Tersebut</div>
+                <div class="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">Total Cameras in These Locations</div>
                 <div class="text-2xl font-bold text-blue-700 dark:text-blue-300">${totalCameras}</div>
               </div>
             </div>
@@ -1267,8 +1267,8 @@ async function showLocationsWithoutRecipients() {
                 <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
                   <tr>
                     <th class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left font-semibold">#</th>
-                    <th class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left font-semibold">Lokasi</th>
-                    <th class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center font-semibold">Jumlah Camera</th>
+                    <th class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left font-semibold">Location</th>
+                    <th class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center font-semibold">Camera Count</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1286,13 +1286,13 @@ async function showLocationsWithoutRecipients() {
         `
         
         themedSwal({
-          title: '📍 Lokasi Tanpa Email Recipient',
+          title: '📍 Locations Without Email Recipients',
           html: tableHtml,
           width: '90%',
           showCancelButton: true,
-          confirmButtonText: 'Export ke Excel',
+          confirmButtonText: '⬇️ Export to Excel',
           confirmButtonColor: '#f59e0b',
-          cancelButtonText: 'Tutup',
+          cancelButtonText: '✕ Close',
           background: isDark ? '#1f2937' : '#ffffff',
           color: isDark ? '#f3f4f6' : '#111827',
           confirmButtonDark: isDark,
@@ -1329,7 +1329,7 @@ function exportLocationsWithoutRecipients() {
   if (btn) {
     setTimeout(() => {
       btn.disabled = false
-      btn.innerHTML = 'Export ke Excel'
+      btn.innerHTML = '⬇️ Export to Excel'
     }, 1000)
   }
 }

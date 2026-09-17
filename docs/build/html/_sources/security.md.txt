@@ -121,6 +121,13 @@ Benefits:
 - Authentication enforced
 - No direct filesystem exposure
 
+**Video Access Update (CRIT-001):**
+- Direct `/static/videos/*` access is also blocked.
+- Use `GET /api/videos/secure/{video_id}` for normal playback and downloads.
+- Use `GET /api/videos/secure/{video_id}?thumb=true` for video thumbnails.
+- Use `GET /api/videos/file/{file_path}` only when an authenticated file-path based preview is required.
+- Record-complete notifications must link to `/api/videos/secure/{video_id}`, not `/static/videos/*`.
+
 ## OWASP Top 10 Mitigations
 
 | Risk | Mitigation |

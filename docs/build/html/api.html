@@ -21,9 +21,9 @@
 <meta content="#ffffff" media="(prefers-color-scheme: light)" name="theme-color"/>
 <meta content="#030711" media="(prefers-color-scheme: dark)" name="theme-color"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>API Documentation | B-SNAP v2.0.2 documentation</title>
-<meta content="API Documentation | B-SNAP v2.0.2 documentation" property="og:title"/>
-<meta content="API Documentation | B-SNAP v2.0.2 documentation" name="twitter:title"/>
+<title>API Documentation | B-SNAP v2.1.0 documentation</title>
+<meta content="API Documentation | B-SNAP v2.1.0 documentation" property="og:title"/>
+<meta content="API Documentation | B-SNAP v2.1.0 documentation" name="twitter:title"/>
 <link href="_static/pygments.css?v=e72c8e07" rel="stylesheet" type="text/css"/>
 <link href="_static/theme.css?v=73505e79" rel="stylesheet" type="text/css"/>
 <link href="search.html" rel="search" title="Search"/>
@@ -36,7 +36,7 @@
       Skip to content
     </a><header class="sticky top-0 z-40 w-full border-b shadow-xs border-border bg-background/90 backdrop-blur"><div class="container flex items-center h-14">
 <div class="hidden mr-4 md:flex">
-<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.0.2 documentation</span>
+<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.1.0 documentation</span>
 </a></div><button @click="showSidebar = true" class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden" type="button">
 <svg aria-hidden="true" fill="currentColor" height="24" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
 <path d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z"></path>
@@ -66,7 +66,7 @@
 </div>
 </header>
 <div class="flex-1"><div class="container md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }" class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky" id="left-sidebar">
-<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.0.2 documentation</span>
+<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.1.0 documentation</span>
 </a>
 <div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
 <div class="overflow-y-auto h-full w-full relative pr-6"><nav class="table w-full min-w-full my-6 lg:my-8">
@@ -96,7 +96,7 @@
 <div class="w-full min-w-0 mx-auto">
 <nav aria-label="breadcrumbs" class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
 <a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground" href="index.html">
-<span class="hidden md:inline">B-SNAP v2.0.2 documentation</span>
+<span class="hidden md:inline">B-SNAP v2.1.0 documentation</span>
 <svg aria-label="Home" class="md:hidden" fill="currentColor" height="18" stroke="none" viewbox="0 96 960 960" width="18" xmlns="http://www.w3.org/2000/svg">
 <path d="M240 856h120V616h240v240h120V496L480 316 240 496v360Zm-80 80V456l320-240 320 240v480H520V696h-80v240H160Zm320-350Z"></path>
 </svg>
@@ -221,6 +221,12 @@
 </span></code></pre></div>
 </div>
 <p><strong>Security</strong>: CRIT-001 - Authenticated video access</p>
+<p><strong>Notes</strong>:</p>
+<ul class="simple">
+<li><p>Direct <code class="docutils literal notranslate"><span class="pre">/static/videos/*</span></code> access is blocked by design.</p></li>
+<li><p>Newly recorded videos use this endpoint in WebSocket <code class="docutils literal notranslate"><span class="pre">record_complete</span></code> notifications through the <code class="docutils literal notranslate"><span class="pre">video_url</span></code> field.</p></li>
+<li><p>Thumbnail previews use <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/api/videos/secure/{video_id}?thumb=true</span></code>.</p></li>
+</ul>
 </section>
 <hr class="docutils"/>
 <section id="get-video-by-file-path">
@@ -229,6 +235,37 @@
 </span></code></pre></div>
 </div>
 <p><strong>Security</strong>: Direct file path access with authentication</p>
+</section>
+<hr class="docutils"/>
+<section id="start-video-recording">
+<h3>Start Video Recording<a class="headerlink" href="#start-video-recording" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#start-video-recording'"><span>#</span></a></h3>
+<p>Trigger an asynchronous video recording for a camera.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">POST /videos/record/{camera_id}?duration=10
+</span></code></pre></div>
+</div>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">camera_id</span></code> (path, required): UUID of the camera</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">duration</span></code> (query, optional): Recording duration in seconds, allowed range <code class="docutils literal notranslate"><span class="pre">5</span></code> to <code class="docutils literal notranslate"><span class="pre">60</span></code></p></li>
+</ul>
+<p><strong>Response</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">202</span> <span class="pre">Accepted</span></code> - Recording started</p></li>
+</ul>
+<p>When the recording completes, B-Snap emits a WebSocket <code class="docutils literal notranslate"><span class="pre">record_complete</span></code> message containing:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="p">{</span>
+</span><span id="line-2"><span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"record_complete"</span><span class="p">,</span>
+</span><span id="line-3"><span class="w">  </span><span class="nt">"video_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"video-uuid"</span><span class="p">,</span>
+</span><span id="line-4"><span class="w">  </span><span class="nt">"video_url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/api/videos/secure/video-uuid"</span><span class="p">,</span>
+</span><span id="line-5"><span class="w">  </span><span class="nt">"thumb_url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/api/videos/secure/video-uuid?thumb=true"</span><span class="p">,</span>
+</span><span id="line-6"><span class="w">  </span><span class="nt">"camera_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Camera-01"</span><span class="p">,</span>
+</span><span id="line-7"><span class="w">  </span><span class="nt">"group"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Plant-A"</span><span class="p">,</span>
+</span><span id="line-8"><span class="w">  </span><span class="nt">"duration"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+</span><span id="line-9"><span class="w">  </span><span class="nt">"file_size"</span><span class="p">:</span><span class="w"> </span><span class="mi">1234567</span>
+</span><span id="line-10"><span class="p">}</span>
+</span></code></pre></div>
+</div>
+<p>Metadata extraction uses <code class="docutils literal notranslate"><span class="pre">ffprobe</span></code> when available and falls back to <code class="docutils literal notranslate"><span class="pre">ffmpeg</span></code> output parsing when <code class="docutils literal notranslate"><span class="pre">ffprobe</span></code> is unavailable. Thumbnail generation uses <code class="docutils literal notranslate"><span class="pre">ffmpeg</span></code> or the project-local <code class="docutils literal notranslate"><span class="pre">ffmpeg.exe</span></code>.</p>
 </section>
 <hr class="docutils"/>
 <section id="log-video-gallery-view">
@@ -272,6 +309,135 @@
 </div>
 <p><strong>Security</strong>: Admin only, logged to audit trail</p>
 </section>
+</section>
+<hr class="docutils"/>
+<section id="record-checks-api">
+<h2>Record Checks API<a class="headerlink" href="#record-checks-api" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#record-checks-api'"><span>#</span></a></h2>
+<p>Record checks monitor mounted SMB/NVR recording folders. All endpoints require admin access.</p>
+<section id="list-sources">
+<h3>List Sources<a class="headerlink" href="#list-sources" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#list-sources'"><span>#</span></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">GET /api/record-checks/sources
+</span></code></pre></div>
+</div>
+</section>
+<section id="create-or-update-source">
+<h3>Create or Update Source<a class="headerlink" href="#create-or-update-source" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#create-or-update-source'"><span>#</span></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">POST /api/record-checks/sources
+</span><span id="line-2">PUT /api/record-checks/sources/{source_id}
+</span></code></pre></div>
+</div>
+<p>Sources should point to an absolute mounted path. Mount SMB shares read-only on the host/container, then configure the mounted path in B-SNAP.</p>
+</section>
+<section id="delete-source">
+<h3>Delete Source<a class="headerlink" href="#delete-source" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#delete-source'"><span>#</span></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">DELETE /api/record-checks/sources/{source_id}
+</span></code></pre></div>
+</div>
+<p>Delete is protected by:</p>
+<ul class="simple">
+<li><p>current admin password</p></li>
+<li><p>confirmation name matching the linked NVR hostname, or source name when no NVR is linked</p></li>
+<li><p>audit logging</p></li>
+</ul>
+</section>
+<section id="run-check-now">
+<h3>Run Check Now<a class="headerlink" href="#run-check-now" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#run-check-now'"><span>#</span></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">POST /api/record-checks/sources/{source_id}/run
+</span></code></pre></div>
+</div>
+</section>
+<section id="current-status-and-history">
+<h3>Current Status and History<a class="headerlink" href="#current-status-and-history" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#current-status-and-history'"><span>#</span></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">GET /api/record-checks/status
+</span><span id="line-2">GET /api/record-checks/runs
+</span></code></pre></div>
+</div>
+<p>Statuses include <code class="docutils literal notranslate"><span class="pre">healthy</span></code>, <code class="docutils literal notranslate"><span class="pre">stale</span></code>, <code class="docutils literal notranslate"><span class="pre">long_dead</span></code>, <code class="docutils literal notranslate"><span class="pre">unknown</span></code>, and <code class="docutils literal notranslate"><span class="pre">missing</span></code>. Previously known folders that disappear are retained as <code class="docutils literal notranslate"><span class="pre">missing</span></code> so operators can investigate renamed or deleted folders.</p>
+</section>
+<section id="power-bi-record-check-endpoints">
+<h3>Power BI Record Check Endpoints<a class="headerlink" href="#power-bi-record-check-endpoints" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#power-bi-record-check-endpoints'"><span>#</span></a></h3>
+<p>These read-only endpoints are designed for Power BI Web connector usage through an on-premises Power BI Gateway. Use a B-SNAP API token in the <code class="docutils literal notranslate"><span class="pre">Authorization</span></code> header:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">Authorization: Bearer &lt;api_token&gt;
+</span></code></pre></div>
+</div>
+<p>Available datasets:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">GET /api/powerbi/record-checks/sources
+</span><span id="line-2">GET /api/powerbi/record-checks/current-status
+</span><span id="line-3">GET /api/powerbi/record-checks/runs
+</span><span id="line-4">GET /api/powerbi/record-checks/folder-checks
+</span><span id="line-5">GET /api/powerbi/record-checks/events
+</span><span id="line-6">GET /api/powerbi/record-checks/downtime
+</span></code></pre></div>
+</div>
+<p>All endpoints return flat JSON rows under <code class="docutils literal notranslate"><span class="pre">data</span></code>. Paginated endpoints also return <code class="docutils literal notranslate"><span class="pre">pagination</span></code> with <code class="docutils literal notranslate"><span class="pre">limit</span></code>, <code class="docutils literal notranslate"><span class="pre">offset</span></code>, <code class="docutils literal notranslate"><span class="pre">count</span></code>, <code class="docutils literal notranslate"><span class="pre">total</span></code>, <code class="docutils literal notranslate"><span class="pre">has_more</span></code>, and <code class="docutils literal notranslate"><span class="pre">next_offset</span></code>.</p>
+<p>Common parameters:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">limit</span></code>: 1-5000 rows per request, default 1000</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">offset</span></code>: zero-based offset for pagination</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">source_id</span></code>: optional source filter</p></li>
+<li><p>date filters use ISO-8601 timestamps, for example <code class="docutils literal notranslate"><span class="pre">2026-07-01T00:00:00+08:00</span></code></p></li>
+</ul>
+<p>Endpoint-specific filters:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">current-status</span></code>: <code class="docutils literal notranslate"><span class="pre">status</span></code>, <code class="docutils literal notranslate"><span class="pre">updated_since</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runs</span></code>: <code class="docutils literal notranslate"><span class="pre">status</span></code>, <code class="docutils literal notranslate"><span class="pre">started_from</span></code>, <code class="docutils literal notranslate"><span class="pre">started_to</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">folder-checks</span></code>: <code class="docutils literal notranslate"><span class="pre">run_id</span></code>, <code class="docutils literal notranslate"><span class="pre">status</span></code>, <code class="docutils literal notranslate"><span class="pre">checked_from</span></code>, <code class="docutils literal notranslate"><span class="pre">checked_to</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">events</span></code>: <code class="docutils literal notranslate"><span class="pre">event_type</span></code>, <code class="docutils literal notranslate"><span class="pre">created_from</span></code>, <code class="docutils literal notranslate"><span class="pre">created_to</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">downtime</span></code>: required <code class="docutils literal notranslate"><span class="pre">start_at</span></code> and <code class="docutils literal notranslate"><span class="pre">end_at</span></code>, optional <code class="docutils literal notranslate"><span class="pre">source_id</span></code>, optional <code class="docutils literal notranslate"><span class="pre">group_by=channel|interval</span></code></p></li>
+</ul>
+<p>Use <code class="docutils literal notranslate"><span class="pre">/api/powerbi/record-checks/downtime</span></code> to calculate how long a channel was not recording in a selected time range. The default <code class="docutils literal notranslate"><span class="pre">group_by=channel</span></code> returns dashboard-ready rows with folder/channel name, camera name, current status, downtime history, incident count, and duration. <code class="docutils literal notranslate"><span class="pre">group_by=interval</span></code> returns each problem/recovery interval.</p>
+<p>Power Query example:</p>
+<div class="highlight-powerquery notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">let
+</span><span id="line-2">    BaseUrl = "http://bsnap.local:8080",
+</span><span id="line-3">    Token = "YOUR_API_TOKEN",
+</span><span id="line-4">    GetPage = (Offset as number) =&gt;
+</span><span id="line-5">        Json.Document(
+</span><span id="line-6">            Web.Contents(
+</span><span id="line-7">                BaseUrl,
+</span><span id="line-8">                [
+</span><span id="line-9">                    RelativePath = "api/powerbi/record-checks/current-status",
+</span><span id="line-10">                    Query = [limit = "1000", offset = Text.From(Offset)],
+</span><span id="line-11">                    Headers = [Authorization = "Bearer " &amp; Token]
+</span><span id="line-12">                ]
+</span><span id="line-13">            )
+</span><span id="line-14">        ),
+</span><span id="line-15">    Pages = List.Generate(
+</span><span id="line-16">        () =&gt; GetPage(0),
+</span><span id="line-17">        each [pagination][count] &gt; 0,
+</span><span id="line-18">        each if [pagination][has_more] then GetPage([pagination][next_offset]) else [pagination = [count = 0]],
+</span><span id="line-19">        each [data]
+</span><span id="line-20">    ),
+</span><span id="line-21">    Rows = List.Combine(Pages),
+</span><span id="line-22">    Table = Table.FromRecords(Rows)
+</span><span id="line-23">in
+</span><span id="line-24">    Table
+</span></code></pre></div>
+</div>
+</section>
+<section id="camera-mapping">
+<h3>Camera Mapping<a class="headerlink" href="#camera-mapping" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#camera-mapping'"><span>#</span></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">GET /api/record-checks/cameras
+</span><span id="line-2">PUT /api/record-checks/status/{status_id}/mapping
+</span></code></pre></div>
+</div>
+<p>Manual folder-to-camera mappings take precedence over automatic hostname matching.</p>
+</section>
+</section>
+<hr class="docutils"/>
+<section id="job-management-api">
+<h2>Job Management API<a class="headerlink" href="#job-management-api" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#job-management-api'"><span>#</span></a></h2>
+<p>Job Management lists all configured scheduler jobs, including jobs that are configured but waiting for scheduler reload.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">GET /admin/jobs/api/jobs
+</span><span id="line-2">GET /admin/jobs/api/jobs/{job_id}/history
+</span><span id="line-3">POST /admin/jobs/api/jobs/{job_id}/schedule
+</span></code></pre></div>
+</div>
+<p>Important record-check jobs:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">record_folder_check</span></code>: scans mounted recording folders and sends stale/missing/recovery alerts.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cleanup_record_checks</span></code>: hard-deletes old record-check run/check/event history based on <code class="docutils literal notranslate"><span class="pre">retention_record_check_days</span></code>.</p></li>
+</ul>
+<p>Each job response includes a description field used by the UI tooltip.</p>
 </section>
 <hr class="docutils"/>
 <section id="snapshot-operations">
@@ -453,9 +619,35 @@
 <hr class="docutils"/>
 <section id="whatsapp-integration">
 <h2>WhatsApp Integration<a class="headerlink" href="#whatsapp-integration" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#whatsapp-integration'"><span>#</span></a></h2>
+<section id="check-gowa-status">
+<h3>Check GoWA Status<a class="headerlink" href="#check-gowa-status" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#check-gowa-status'"><span>#</span></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">GET /api/wa/status
+</span></code></pre></div>
+</div>
+<p>Admin-only endpoint for checking the configured GoWA gateway. Optional query overrides can be passed by the config UI before saving:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">enabled</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">base_url</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">api_key</span></code></p></li>
+</ul>
+</section>
+<section id="list-gowa-groups">
+<h3>List GoWA Groups<a class="headerlink" href="#list-gowa-groups" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#list-gowa-groups'"><span>#</span></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">GET /api/wa/groups
+</span></code></pre></div>
+</div>
+<p>Admin-only endpoint that loads WhatsApp groups from GoWA using <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/user/my/groups</span></code>. The response is used by the config UI to append group JIDs such as <code class="docutils literal notranslate"><span class="pre">120363xxxxxxxx@g.us</span></code> to default receivers.</p>
+</section>
+<section id="send-test-message">
+<h3>Send Test Message<a class="headerlink" href="#send-test-message" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#send-test-message'"><span>#</span></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">POST /api/wa/send-test
+</span></code></pre></div>
+</div>
+<p>Admin-only endpoint for sending a test WhatsApp message through GoWA.</p>
+</section>
 <section id="webhook">
 <h3>Webhook<a class="headerlink" href="#webhook" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#webhook'"><span>#</span></a></h3>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">POST /wa/webhook
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">POST /webhook/gowa
 </span></code></pre></div>
 </div>
 <p><strong>Purpose</strong>: Receive WhatsApp incoming messages</p>
@@ -565,6 +757,7 @@
 <li><a :data-current="activeSection === '#videos-api'" class="reference internal" href="#videos-api">Videos API</a><ul>
 <li><a :data-current="activeSection === '#get-video-file'" class="reference internal" href="#get-video-file">Get Video File</a></li>
 <li><a :data-current="activeSection === '#get-video-by-file-path'" class="reference internal" href="#get-video-by-file-path">Get Video by File Path</a></li>
+<li><a :data-current="activeSection === '#start-video-recording'" class="reference internal" href="#start-video-recording">Start Video Recording</a></li>
 <li><a :data-current="activeSection === '#log-video-gallery-view'" class="reference internal" href="#log-video-gallery-view">Log Video Gallery View</a></li>
 </ul>
 </li>
@@ -574,6 +767,17 @@
 <li><a :data-current="activeSection === '#get-camera-password-admin-only'" class="reference internal" href="#get-camera-password-admin-only">Get Camera Password (Admin Only)</a></li>
 </ul>
 </li>
+<li><a :data-current="activeSection === '#record-checks-api'" class="reference internal" href="#record-checks-api">Record Checks API</a><ul>
+<li><a :data-current="activeSection === '#list-sources'" class="reference internal" href="#list-sources">List Sources</a></li>
+<li><a :data-current="activeSection === '#create-or-update-source'" class="reference internal" href="#create-or-update-source">Create or Update Source</a></li>
+<li><a :data-current="activeSection === '#delete-source'" class="reference internal" href="#delete-source">Delete Source</a></li>
+<li><a :data-current="activeSection === '#run-check-now'" class="reference internal" href="#run-check-now">Run Check Now</a></li>
+<li><a :data-current="activeSection === '#current-status-and-history'" class="reference internal" href="#current-status-and-history">Current Status and History</a></li>
+<li><a :data-current="activeSection === '#power-bi-record-check-endpoints'" class="reference internal" href="#power-bi-record-check-endpoints">Power BI Record Check Endpoints</a></li>
+<li><a :data-current="activeSection === '#camera-mapping'" class="reference internal" href="#camera-mapping">Camera Mapping</a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#job-management-api'" class="reference internal" href="#job-management-api">Job Management API</a></li>
 <li><a :data-current="activeSection === '#snapshot-operations'" class="reference internal" href="#snapshot-operations">Snapshot Operations</a><ul>
 <li><a :data-current="activeSection === '#create-snapshot'" class="reference internal" href="#create-snapshot">Create Snapshot</a></li>
 <li><a :data-current="activeSection === '#delete-snapshot'" class="reference internal" href="#delete-snapshot">Delete Snapshot</a></li>
@@ -608,6 +812,9 @@
 </ul>
 </li>
 <li><a :data-current="activeSection === '#whatsapp-integration'" class="reference internal" href="#whatsapp-integration">WhatsApp Integration</a><ul>
+<li><a :data-current="activeSection === '#check-gowa-status'" class="reference internal" href="#check-gowa-status">Check GoWA Status</a></li>
+<li><a :data-current="activeSection === '#list-gowa-groups'" class="reference internal" href="#list-gowa-groups">List GoWA Groups</a></li>
+<li><a :data-current="activeSection === '#send-test-message'" class="reference internal" href="#send-test-message">Send Test Message</a></li>
 <li><a :data-current="activeSection === '#webhook'" class="reference internal" href="#webhook">Webhook</a></li>
 </ul>
 </li>
@@ -636,7 +843,7 @@
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=398391ef"></script>
+<script src="_static/documentation_options.js?v=dbd6d5c5"></script>
 <script src="_static/doctools.js?v=fd6eb6e6"></script>
 <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script defer="defer" src="_static/theme.js?v=582b20c5"></script>

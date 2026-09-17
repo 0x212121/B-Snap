@@ -21,9 +21,9 @@
 <meta content="#ffffff" media="(prefers-color-scheme: light)" name="theme-color"/>
 <meta content="#030711" media="(prefers-color-scheme: dark)" name="theme-color"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>System Architecture | B-SNAP v2.0.2 documentation</title>
-<meta content="System Architecture | B-SNAP v2.0.2 documentation" property="og:title"/>
-<meta content="System Architecture | B-SNAP v2.0.2 documentation" name="twitter:title"/>
+<title>System Architecture | B-SNAP v2.1.0 documentation</title>
+<meta content="System Architecture | B-SNAP v2.1.0 documentation" property="og:title"/>
+<meta content="System Architecture | B-SNAP v2.1.0 documentation" name="twitter:title"/>
 <link href="_static/pygments.css?v=e72c8e07" rel="stylesheet" type="text/css"/>
 <link href="_static/theme.css?v=73505e79" rel="stylesheet" type="text/css"/>
 <link href="search.html" rel="search" title="Search"/>
@@ -36,7 +36,7 @@
       Skip to content
     </a><header class="sticky top-0 z-40 w-full border-b shadow-xs border-border bg-background/90 backdrop-blur"><div class="container flex items-center h-14">
 <div class="hidden mr-4 md:flex">
-<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.0.2 documentation</span>
+<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.1.0 documentation</span>
 </a></div><button @click="showSidebar = true" class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden" type="button">
 <svg aria-hidden="true" fill="currentColor" height="24" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
 <path d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z"></path>
@@ -66,7 +66,7 @@
 </div>
 </header>
 <div class="flex-1"><div class="container md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }" class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky" id="left-sidebar">
-<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.0.2 documentation</span>
+<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.1.0 documentation</span>
 </a>
 <div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
 <div class="overflow-y-auto h-full w-full relative pr-6"><nav class="table w-full min-w-full my-6 lg:my-8">
@@ -96,7 +96,7 @@
 <div class="w-full min-w-0 mx-auto">
 <nav aria-label="breadcrumbs" class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
 <a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground" href="index.html">
-<span class="hidden md:inline">B-SNAP v2.0.2 documentation</span>
+<span class="hidden md:inline">B-SNAP v2.1.0 documentation</span>
 <svg aria-label="Home" class="md:hidden" fill="currentColor" height="18" stroke="none" viewbox="0 96 960 960" width="18" xmlns="http://www.w3.org/2000/svg">
 <path d="M240 856h120V616h240v240h120V496L480 316 240 496v360Zm-80 80V456l320-240 320 240v480H520V696h-80v240H160Zm320-350Z"></path>
 </svg>
@@ -114,7 +114,8 @@
 <li><p><strong>PostgreSQL database</strong> (cameras, users, snapshots)</p></li>
 <li><p><strong>APScheduler</strong> (scheduling background tasks)</p></li>
 <li><p><strong>Leaflet.js frontend</strong> (map view with CCTV markers &amp; snapshots)</p></li>
-<li><p><strong>n8n</strong> (integration with WhatsApp bot)</p></li>
+<li><p><strong>GoWA</strong> (direct WhatsApp gateway for alerts, reports, and group receivers)</p></li>
+<li><p><strong>n8n</strong> (optional integration layer for external workflows)</p></li>
 </ul>
 </section>
 <section id="data-flow">
@@ -124,8 +125,17 @@
 <li><p>Snapshot/image from camera stored in DB.</p></li>
 <li><p>FastAPI exposes snapshot info via API.</p></li>
 <li><p>Frontend renders camera markers on Leaflet map.</p></li>
-<li><p>Snapshots can be sent to WhatsApp via n8n.</p></li>
+<li><p>Notifications can be sent through GoWA directly. n8n can still be used for external workflow orchestration when required.</p></li>
 </ol>
+</section>
+<section id="background-jobs">
+<h2>Background Jobs<a class="headerlink" href="#background-jobs" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#background-jobs'"><span>#</span></a></h2>
+<p>APScheduler runs operational jobs such as scheduled snapshots, health checks, storage checks, record-folder checks, cleanup jobs, WhatsApp reports, and retention policy enforcement. Job Management lists all configured scheduler jobs, including jobs waiting for scheduler reload.</p>
+<p>Record-folder monitoring is split into two jobs:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">record_folder_check</span></code>: scans mounted SMB/NVR recording folders and updates current folder status.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cleanup_record_checks</span></code>: deletes old record-check run/check/event history according to <code class="docutils literal notranslate"><span class="pre">retention_record_check_days</span></code>.</p></li>
+</ul>
 </section>
 <section id="flowchart">
 <h2>Flowchart<a class="headerlink" href="#flowchart" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#flowchart'"><span>#</span></a></h2>
@@ -141,6 +151,7 @@
 <ul>
 <li><a :data-current="activeSection === '#overview'" class="reference internal" href="#overview">Overview</a></li>
 <li><a :data-current="activeSection === '#data-flow'" class="reference internal" href="#data-flow">Data Flow</a></li>
+<li><a :data-current="activeSection === '#background-jobs'" class="reference internal" href="#background-jobs">Background Jobs</a></li>
 <li><a :data-current="activeSection === '#flowchart'" class="reference internal" href="#flowchart">Flowchart</a></li>
 <li><a :data-current="activeSection === '#sequence-diagram'" class="reference internal" href="#sequence-diagram">Sequence Diagram</a></li>
 </ul>
@@ -156,7 +167,7 @@
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=398391ef"></script>
+<script src="_static/documentation_options.js?v=dbd6d5c5"></script>
 <script src="_static/doctools.js?v=fd6eb6e6"></script>
 <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script defer="defer" src="_static/theme.js?v=582b20c5"></script>

@@ -148,7 +148,12 @@ nano .env
 ### VIDEO_PATH
 - **Type**: String (path)
 - **Default**: `./static/videos`
-- **Description**: Directory for video storage
+- **Description**: Directory for video storage. Browser playback must use authenticated `/api/videos/secure/{video_id}` or `/api/videos/file/{file_path}`, not direct `/static/videos/*`.
+
+### ffmpeg / ffprobe
+- **Type**: Executable dependency
+- **Description**: Video recording, thumbnail generation, and metadata extraction use FFmpeg tooling
+- **Fallback**: If `ffmpeg` is not on PATH, B-Snap uses project-local `ffmpeg.exe` when present. `ffprobe` is preferred for metadata, but B-Snap falls back to parsing `ffmpeg` output if `ffprobe` is unavailable.
 
 ### LOG_DIR
 - **Type**: String (path)
@@ -179,6 +184,75 @@ nano .env
 - **Description**: Videos older than this are soft-deleted
 - **Note**: Items with `retention_hold=True` are preserved
 - **Used In**: `app/jobs/scheduler.py`
+
+### retention_record_check_days
+- **Type**: Integer
+- **Default**: `90`
+- **Description**: Hard-deletes old record-check run, folder-check, and status-event history older than this many days
+- **Note**: Record sources, folder mappings, and current folder statuses are preserved
+- **Used In**: `app/jobs/scheduler.py`, `app/utils/record_check.py`
+
+---
+
+## Job Scheduling
+
+### record_check_interval_minutes
+- **Type**: Integer
+- **Default**: `10`
+- **Description**: Interval for scanning mounted SMB/NVR recording folders
+- **Used In**: `app/jobs/scheduler.py`
+
+### record_check_cron
+- **Type**: String (5-part cron)
+- **Default**: empty
+- **Description**: Optional cron override for `record_folder_check`. Leave empty to use interval scheduling
+- **Used In**: `app/jobs/scheduler.py`
+
+### cleanup_cron
+- **Type**: String (5-part cron)
+- **Default**: `0 2 * * *`
+- **Description**: Shared cron schedule for cleanup jobs, including `cleanup_record_checks`
+- **Used In**: `app/jobs/scheduler.py`, `app/routes/jobs.py`
+
+---
+
+## WhatsApp Gateway (GoWA)
+
+These values are normally saved through the Config UI and stored in the database configuration table.
+
+### gowa_enabled
+- **Type**: Boolean
+- **Default**: `0`
+- **Description**: Enables WhatsApp notifications through GoWA
+- **Used In**: `app/utils/wa_gateway.py`
+
+### gowa_base_url
+- **Type**: URL
+- **Default**: `http://localhost:3000`
+- **Description**: Base URL for the GoWA gateway
+- **Example**: `http://172.16.1.200:3434`
+- **Used In**: `app/utils/wa_gateway.py`
+
+### gowa_api_key
+- **Type**: String
+- **Default**: empty
+- **Description**: Auth secret for GoWA. Use `user:password` when GoWA runs with `APP_BASIC_AUTH`; use token-only value for older `AUTH_TOKEN` deployments
+- **Security**: Keep secure
+- **Used In**: `app/utils/wa_gateway.py`
+
+### gowa_default_receiver
+- **Type**: String (comma-separated)
+- **Default**: empty
+- **Description**: Default WhatsApp recipients for reports and alerts. Supports personal numbers and group JIDs
+- **Examples**: `6281234567890`, `120363xxxxxxxx@g.us`
+- **Used In**: `app/utils/wa_gateway.py`, `app/utils/record_check.py`
+
+### app_public_url
+- **Type**: URL
+- **Default**: empty
+- **Description**: B-SNAP URL reachable by GoWA for generated report files such as the record-check 14-day trend PDF
+- **Example**: `http://b-snap:8080` or `http://172.16.1.50:8080`
+- **Used In**: `app/utils/record_check_report.py`
 
 ---
 
