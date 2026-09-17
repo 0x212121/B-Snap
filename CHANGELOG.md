@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-17
+
+### Fixed
+
+#### Scheduled Snapshot Resilience
+- Isolated each scheduled camera capture in a disposable worker process so stalled native camera operations can be terminated safely.
+- Added bounded per-camera timeout via `SNAPSHOT_JOB_CAMERA_TIMEOUT` (default: 90 seconds, configurable from 10 to 600 seconds).
+- Fixed scheduler handling so a timed-out camera cannot block later cameras or leave overlapping scheduled jobs running.
+- Limited scheduled snapshot jobs to one running job at a time and record partial results with timeout metadata.
+- Added OpenCV FFmpeg open/read timeouts and guaranteed capture release on every exit path.
+- Replaced expiring file locks with OS-owned locks that are released automatically when a worker exits.
+- Added timeout cooldown after repeated camera failures and improved job status badges for partial results.
+- Added resilience tests covering hung workers, lock release, capture cleanup, and partial batch reporting.
+
 ## [2.1.0] - 2026-07-16
 
 ### Added

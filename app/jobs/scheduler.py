@@ -20,6 +20,7 @@ from app.utils.email_notifier import (
     send_offline_incident_email_once  # For offline alerts (online alerts intentionally disabled)
 )
 from app.utils.snapshot_locker import get_camera_lock
+from app.utils.snapshot_process import run_camera_process
 from app.utils.snapshot_service import take_snapshot
 from app.utils.healthcheck import ping_all_devices
 from app.utils.wa_gateway import WAGatewayService, format_phone_number
@@ -59,17 +60,6 @@ scheduler = BackgroundScheduler(
 
 setup_logging()
 logger = logging.getLogger("scheduler")
-
-# --- Thread Pool ---
-WORKERS = None
-thread_pool = None
-
-def init_thread_pool():
-    global WORKERS, thread_pool
-    if thread_pool is None:
-        WORKERS = int(get_config("snapshot_concurrent_workers", 5))
-        thread_pool = ThreadPoolExecutor(max_workers=WORKERS)
-
 
 def create_trigger(cron_expr: str, default_trigger):
     """Create trigger from cron expression or return default trigger.
@@ -152,7 +142,9 @@ def logged_job(job_id: str, job_name: str):
                 
                 # Complete successfully
                 records = result.get('records_processed', 0) if isinstance(result, dict) else 0
-                log.complete(db, status="success", records=records)
+                metadata = result if job_id == "scheduled_snapshot" and isinstance(result, dict) else None
+                status = metadata.get("status", "success") if metadata else "success"
+                log.complete(db, status=status, records=records, metadata=metadata)
                 return result
                 
             except Exception as e:
@@ -175,7 +167,17 @@ def logged_job(job_id: str, job_name: str):
 _snapshot_rate_limit_cache = {}
 MIN_SNAPSHOT_INTERVAL_SECONDS = 30  # Minimum 30 detik antar snapshot untuk kamera yang sama
 
-def run_snapshot(camera):
+def run_snapshot(camera: Camera) -> dict:
+    """Hold the camera lock through capture, metadata and health updates."""
+    try:
+        with get_camera_lock(str(camera.id)):
+            return _run_snapshot(camera)
+    except Exception:
+        logger.exception("[ERROR] Snapshot worker failed for camera %s", camera.id)
+        return {"status": "error"}
+
+
+def _run_snapshot(camera: Camera) -> dict:
     
     # --- RATE LIMITING: Cek apakah kamera baru saja di-snapshot ---
     now = datetime.now(timezone.utc)
@@ -245,10 +247,8 @@ def run_snapshot(camera):
         # Lanjutkan ke snapshot sebagai fallback (fail-open)
     
     with SessionLocal() as db:
-        lock = get_camera_lock(str(camera.id))
         try:
-            with lock:
-                result = take_snapshot(camera, db)
+            result = take_snapshot(camera, db)
 
             if result["status"] == "success":
                 path = result["file_path"]
@@ -290,10 +290,8 @@ def run_snapshot(camera):
 @logged_job("scheduled_snapshot", "Scheduled Snapshot")
 def scheduled_snapshot():
     """Take snapshots from all active cameras."""
-    init_thread_pool()
-    
     all_cameras = load_active_cameras()
-    workers = int(get_config("snapshot_concurrent_workers", 5))
+    workers = max(1, min(32, int(get_config("snapshot_concurrent_workers", 5))))
 
     logger.info(
         "[SCHEDULED] Running snapshot for %d cameras with %d workers.",
@@ -305,9 +303,17 @@ def scheduled_snapshot():
 
     total_success_count = 0
     total_fail_count = 0
+    total_timeout_count = 0
+    try:
+        camera_timeout = max(10, min(600, int(os.environ.get("SNAPSHOT_JOB_CAMERA_TIMEOUT", "90"))))
+    except ValueError:
+        camera_timeout = 90
 
-    BATCH_SIZE = int(get_config("snapshot_batch_size", 50))
-    batch_delay = int(get_config("snapshot_batch_delay_seconds", 5))
+    BATCH_SIZE = max(1, int(get_config("snapshot_batch_size", 50)))
+    batch_delay = max(0, int(get_config("snapshot_batch_delay_seconds", 5)))
+    fatal_error = None
+    # Config reload applies to the next run and cannot cancel queued cameras.
+    thread_pool = ThreadPoolExecutor(max_workers=workers)
 
     try:
         for i in range(0, len(all_cameras), BATCH_SIZE):
@@ -318,16 +324,25 @@ def scheduled_snapshot():
             batch_success = 0
             batch_fail = 0
 
-            futures = {thread_pool.submit(run_snapshot, cam): cam for cam in current_batch}
+            # Deadlines start on execution, not while waiting in the queue.
+            futures = {
+                thread_pool.submit(run_camera_process, str(cam.id), camera_timeout): cam
+                for cam in current_batch
+            }
 
             for future in as_completed(futures):
                 cam = futures[future]
                 try:
-                    result = future.result(timeout=20)
+                    result = future.result()
+                    if result and result.get("status") == "timeout":
+                        total_timeout_count += 1
+                        logger.error("[TIMEOUT] Camera %s (%s) exceeded %ss; worker terminated",
+                                     cam.hostname, cam.id, camera_timeout)
                     if result and result.get("status") == "success":
                         batch_success += 1
                     else:
                         batch_fail += 1
+                        logger.warning("[CAMERA RESULT] %s (%s): %s", cam.hostname, cam.id, result)
                 except TimeoutError:
                     batch_fail += 1
                     logger.error("[TIMEOUT] Snapshot timed out for %s", cam.hostname)
@@ -344,12 +359,16 @@ def scheduled_snapshot():
                 sleep(batch_delay)
 
     except Exception as e:
+        fatal_error = str(e)
         logger.exception("[SCHEDULER ERROR] Critical failure: %s", e)
 
     finally:
+        thread_pool.shutdown(wait=True, cancel_futures=True)
         duration_ms = int((monotonic() - time_start) * 1000)
         
-        if total_success_count == 0 and total_fail_count == 0:
+        if fatal_error:
+            status = "fail"
+        elif total_success_count == 0 and total_fail_count == 0:
             status = "no_camera"
         elif total_success_count == 0:
             status = "fail"
@@ -378,12 +397,14 @@ def scheduled_snapshot():
             except Exception as e:
                 logger.exception("[TimingLog] Failed: %s", e)
         
-        # Return result for JobExecutionLog
-        return {
-            "records_processed": total_success_count,
-            "total_failed": total_fail_count,
-            "status": status
-        }
+    # Do not suppress cancellation or unexpected exceptions by returning in finally.
+    return {
+        "records_processed": total_success_count,
+        "total_failed": total_fail_count,
+        "timed_out": total_timeout_count,
+        "status": status,
+        "error": fatal_error,
+    }
 
 
 # ----------------------------
@@ -416,16 +437,12 @@ def handle_healthcheck_interval(scheduler, new_value):
 
 
 def handle_workers_update(scheduler, new_value):
-    global thread_pool
     try:
-        scheduler.modify_job("scheduled_snapshot", max_instances=new_value)
+        scheduler.modify_job("scheduled_snapshot", max_instances=1)
     except JobLookupError:
         logger.warning("[Scheduler] Job 'scheduled_snapshot' not found.")
 
-    if thread_pool:
-        thread_pool.shutdown(wait=False, cancel_futures=True)
-    thread_pool = ThreadPoolExecutor(max_workers=new_value)
-    logger.info("[Scheduler] Thread pool recreated with %d workers", new_value)
+    logger.info("[Scheduler] Next snapshot run will use %d workers", new_value)
 
 
 def handle_batch_size(_, new_value):
@@ -523,7 +540,6 @@ CONFIG_HANDLERS = {
 # Scheduler Lifecycle
 # ----------------------------
 def start_scheduler():
-    init_thread_pool()
     
     # Ensure APScheduler tables exist before starting scheduler
     # This prevents errors when the table doesn't exist yet (first run or fresh database)
@@ -598,7 +614,7 @@ def start_scheduler():
         scheduled_snapshot,
         trigger=snapshot_trigger,
         id='scheduled_snapshot',
-        max_instances=config["snapshot_concurrent_workers"],
+        max_instances=1,
         coalesce=True,
         misfire_grace_time=60,
         replace_existing=True

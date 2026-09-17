@@ -1,8 +1,8 @@
 import logging
-import cv2
 from urllib.parse import quote, urlparse, urlunparse
 from onvif import ONVIFCamera
 from app.models.camera import Camera
+from app.utils.camera_capture import open_capture
 
 logger = logging.getLogger("snapshot")
 
@@ -50,12 +50,14 @@ def get_rtsp_url(camera: Camera):
     ]
 
     for url in hikvision_candidates:
-        cap = cv2.VideoCapture(url)
-        if cap.isOpened():
+        cap = open_capture(url)
+        try:
+            opened = cap.isOpened()
+        finally:
             cap.release()
+        if opened:
             logger.info("✅ RTSP URL resolved via Hikvision template: %s", _mask_password_in_url(url))
             return url
-        cap.release()
 
     # --- 2. Fallback ke ONVIF ---
     try:

@@ -16,6 +16,7 @@ from app.models.camera import Camera
 from app.models.snapshot import Snapshot
 from app.utils.notification_service import NotificationService
 from app.utils.check_stats import check_stats
+from app.utils.camera_capture import read_frame
 
 logger = logging.getLogger("snapshot_service")
 
@@ -150,31 +151,14 @@ def _take_snapshot_from_url(camera: Camera, url: str) -> Dict[str, Any]:
         
         if frame is None:
             # Try to open as video capture (works for RTSP/HTTP MJPEG streams and some direct image URLs)
-            cap = cv2.VideoCapture(capture_url)
-
-            cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 3000)
-
-            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-            
-            if not cap.isOpened():
-                cap.release()
+            frame = read_frame(capture_url)
+            if frame is None:
                 logger.error("Failed to open snapshot URL with OpenCV: %s", _mask_password_in_url(capture_url))
                 return {
                     "status": "error",
                     "message": f"Cannot access snapshot URL for {camera.hostname}: {http_error or 'OpenCV connection failed'}"
                 }
 
-            for _ in range(3):
-                cap.read()
-            # Read frame from video capture
-            ret, frame = cap.read()
-            cap.release()
-            
-            if not ret or frame is None or frame.size == 0:
-                return {
-                    "status": "error", 
-                    "message": f"Empty or invalid frame from {camera.hostname}"
-                }
         
         # Get resolution
         height, width = frame.shape[:2]
@@ -265,31 +249,14 @@ def take_snapshot(camera: Camera, db: Session) -> Dict[str, Any]:
         logger.info(f"Taking snapshot from {camera.hostname} at {_mask_password_in_url(rtsp_url)}")
         
         # Open video capture
-        cap = cv2.VideoCapture(rtsp_url)
-
-        cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 3000)
-
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        
-        if not cap.isOpened():
+        frame = read_frame(rtsp_url)
+        if frame is None:
             logger.error(f"Failed to connect to camera {camera.hostname}")
             return {
                 "status": "error",
                 "message": f"Cannot connect to camera {camera.hostname}"
             }
         
-        for _ in range(3):
-            cap.read()
-
-        # Read frame
-        ret, frame = cap.read()
-        cap.release()
-        
-        if not ret or frame is None or frame.size == 0:
-            return {
-                "status": "error",
-                "message": f"Empty or invalid frame from {camera.hostname}"
-            }
         
         # Get resolution
         height, width = frame.shape[:2]
