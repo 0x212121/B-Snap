@@ -1,11 +1,11 @@
-FROM python:3.13.6-slim
+FROM python:3.14.7-slim
 
 LABEL maintainer="Indra W. <wijaya.indra2196@gmail.com>"
 LABEL org.opencontainers.image.version="1.15.0"
 LABEL org.opencontainers.image.authors="Indra W. <wijaya.indra2196@gmail.com>"
 LABEL org.opencontainers.image.source="https://github.com/0x212121/b-snap"
 
-# Install ffmpeg + Liberation Sans font + curl for healthcheck + dos2unix for line endings
+# Install runtime packages and temporary native build dependencies for Python wheels
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ffmpeg \
@@ -13,13 +13,40 @@ RUN apt-get update && \
         fontconfig \
         curl \
         dos2unix \
+        build-essential \
+        cargo \
+        rustc \
+        libffi-dev \
+        libjpeg62-turbo-dev \
+        libfreetype6-dev \
+        libxml2-dev \
+        libxslt1-dev \
+        zlib1g-dev \
+        libpq-dev \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_PREFER_BINARY=1
+RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    python -m pip install --no-cache-dir --prefer-binary -r requirements.txt
+
+# Native build packages are needed only while compiling source distributions
+RUN apt-get purge -y --auto-remove \
+        build-essential \
+        cargo \
+        rustc \
+        libffi-dev \
+        libjpeg62-turbo-dev \
+        libfreetype6-dev \
+        libxml2-dev \
+        libxslt1-dev \
+        zlib1g-dev \
+        libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Test ffmpeg install
 RUN ffprobe -version
