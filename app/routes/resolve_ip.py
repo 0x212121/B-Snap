@@ -52,8 +52,7 @@ def resolve_ip_by_name(
         # --- Base query kamera ---
         base_query = (
             db.query(Camera)
-            .outerjoin(Camera.group)
-            .options(joinedload(Camera.group))
+            .options(joinedload(Camera.groups))
             .filter(
                 Camera.ip.isnot(None),
                 Camera.ip != "",
@@ -61,9 +60,9 @@ def resolve_ip_by_name(
         )
 
         # Step 1: cari berdasarkan group name
-        group_match = base_query.filter(Camera.group.has(CameraGroup.name.ilike(f"%{keyword_clean}%")))
+        group_match = base_query.filter(Camera.groups.any(CameraGroup.name.ilike(f"%{keyword_clean}%")))
         if not has_all:
-            group_match = group_match.filter(Camera.group_id.in_(whitelisted_group_ids))
+            group_match = group_match.filter(Camera.groups.any(CameraGroup.id.in_(whitelisted_group_ids)))
 
         cameras = group_match.all()
 
@@ -71,7 +70,7 @@ def resolve_ip_by_name(
         if not cameras:
             host_match = base_query.filter(Camera.hostname.ilike(f"%{keyword_clean}%"))
             if not has_all:
-                host_match = host_match.filter(Camera.group_id.in_(whitelisted_group_ids))
+                host_match = host_match.filter(Camera.groups.any(CameraGroup.id.in_(whitelisted_group_ids)))
             cameras = host_match.all()
 
         results = [
@@ -81,6 +80,7 @@ def resolve_ip_by_name(
                 "ip": cam.ip,
                 "group_id": cam.group_id,
                 "group": cam.group.name if cam.group else None,
+                "camera_groups": [{"id": group.id, "name": group.name} for group in cam.groups],
             }
             for cam in cameras
         ]

@@ -52,7 +52,7 @@ def _get_filtered_snapshots(db: Session, group_id: Optional[int], camera_filter:
         # This is more reliable than matching camera_group name which can change
         snapshot_query = db.query(Snapshot).join(
             Camera, Snapshot.camera_id == Camera.id, isouter=True
-        ).filter(Camera.group_id == group_id)
+        ).filter(Camera.groups.any(CameraGroup.id == group_id))
 
     # P0-002: Filter out soft-deleted snapshots unless explicitly requested
     if not include_deleted:
@@ -294,7 +294,7 @@ def show_snapshots(request: Request, db: Session = Depends(get_db), camera: str 
         # CRIT-002: Use join with Camera table to filter by group_id via foreign key
         cameras_with_snapshots_query = db.query(Snapshot.camera_name).join(
             Camera, Snapshot.camera_id == Camera.id, isouter=True
-        ).filter(Camera.group_id == group_id)
+        ).filter(Camera.groups.any(CameraGroup.id == group_id))
     
     # Get distinct names and sort them
     camera_name_tuples = cameras_with_snapshots_query.distinct().all()

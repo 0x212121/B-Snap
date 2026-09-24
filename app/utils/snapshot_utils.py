@@ -135,7 +135,7 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
         camera_ip=camera.ip,
         camera_port=camera.port,
         camera_location=camera.location,
-        camera_group=camera.group.name if camera.group else None,
+        camera_group=", ".join(group.name for group in camera.groups) or (camera.group.name if camera.group else None),
         file_path=file_path,
         file_size=file_size,
         resolution=resolution,

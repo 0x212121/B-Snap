@@ -1,5 +1,5 @@
 from app.db.database import Base
-from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey, event, text, Text, DateTime
+from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey, event, text, Text, DateTime, Table
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.sql import expression
 from datetime import datetime, timezone
@@ -10,6 +10,13 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 logger = logging.getLogger("camera")
+
+camera_camera_groups = Table(
+    "camera_camera_groups",
+    Base.metadata,
+    Column("camera_id", String(36), ForeignKey("cameras.id", ondelete="CASCADE"), primary_key=True),
+    Column("camera_group_id", Integer, ForeignKey("camera_groups.id", ondelete="CASCADE"), primary_key=True),
+)
 
 class Camera(Base):
     __tablename__ = "cameras"
@@ -43,6 +50,7 @@ class Camera(Base):
     
     group_id = Column(Integer, ForeignKey('camera_groups.id'))
     group = relationship("CameraGroup", back_populates="cameras")
+    groups = relationship("CameraGroup", secondary=camera_camera_groups, back_populates="assigned_cameras")
 
     snapshot_logs = relationship("SnapshotLog", back_populates="camera", cascade="all, delete-orphan")
     health = relationship("CameraHealth", back_populates="camera", uselist=False, cascade="all, delete-orphan")

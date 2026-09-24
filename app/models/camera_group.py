@@ -19,7 +19,8 @@ class CameraGroup(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True, nullable=False)
 
-    cameras = relationship("Camera", back_populates="group")  # pakai string
+    cameras = relationship("Camera", back_populates="group")  # Legacy primary group relationship
+    assigned_cameras = relationship("Camera", secondary="camera_camera_groups", back_populates="groups")
     nvr = relationship("NVR", back_populates="group")
     users = relationship("User", back_populates="group")
     whatsapp_whitelist = relationship("WhatsappWhitelist", back_populates="group", cascade="all, delete-orphan")

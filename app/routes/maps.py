@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from app.core.config import get_config
 from app.db.database import get_db
 from app.models.camera import Camera as DBCamera
+from app.models.camera_group import CameraGroup
 from app.models.snapshot import Snapshot
 from app.models.user import User
 from app.routes.auth import get_current_user
@@ -94,7 +95,7 @@ async def get_camera_locations(
         .options(joinedload(DBCamera.health))
     )
     if group_id is not None:
-        query = query.filter(DBCamera.group_id == group_id)
+        query = query.filter(DBCamera.groups.any(CameraGroup.id == group_id))
 
     cameras = query.all()
     if not cameras:

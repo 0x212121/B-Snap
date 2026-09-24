@@ -77,13 +77,13 @@ async def manage_data(
     logger.debug("Received request for camera data. Page: %s, Search: %s, Filters: group=%s, location=%s, safety=%s, status=%s", 
                  page, search, group_id, location, safety, status)
 
-    query = db.query(DBCamera).options(joinedload(DBCamera.group))
+    query = db.query(DBCamera).options(joinedload(DBCamera.group), joinedload(DBCamera.groups))
     stats_query = db.query(DBCamera)
     
     # Apply filters to both queries
     if group_id:
-        query = query.filter(DBCamera.group_id == group_id)
-        stats_query = stats_query.filter(DBCamera.group_id == group_id)
+        query = query.filter(DBCamera.groups.any(CameraGroup.id == group_id))
+        stats_query = stats_query.filter(DBCamera.groups.any(CameraGroup.id == group_id))
     
     if location:
         query = query.filter(DBCamera.location.ilike(f"%{location}%"))
@@ -100,7 +100,7 @@ async def manage_data(
     # Calculate stats before applying pagination
     if search:
         search_term = f"%{search}%"
-        stats_query = stats_query.join(CameraGroup, DBCamera.group_id == CameraGroup.id, isouter=True).filter(
+        stats_query = stats_query.outerjoin(DBCamera.groups).filter(
             or_(
                 DBCamera.hostname.ilike(search_term),
                 DBCamera.ip.ilike(search_term),
@@ -111,12 +111,12 @@ async def manage_data(
             )
         )
     
-    total_count = stats_query.count()
-    active_count = stats_query.filter(DBCamera.status == 'Active').count()
-    deactivated_count = stats_query.filter(DBCamera.status == 'Deactivated').count()
-    maintenance_count = stats_query.filter(DBCamera.status == 'Maintenance').count()
+    total_count = stats_query.distinct().count()
+    active_count = stats_query.filter(DBCamera.status == 'Active').distinct().count()
+    deactivated_count = stats_query.filter(DBCamera.status == 'Deactivated').distinct().count()
+    maintenance_count = stats_query.filter(DBCamera.status == 'Maintenance').distinct().count()
     # P2-002: Safety classification stats
-    critical_count = stats_query.filter(DBCamera.safety_classification == 'critical').count()
+    critical_count = stats_query.filter(DBCamera.safety_classification == 'critical').distinct().count()
     
     stats = {
         "total": total_count,
@@ -129,7 +129,7 @@ async def manage_data(
     # Apply search filter to main query
     if search:
         search_term = f"%{search}%"
-        query = query.join(CameraGroup, DBCamera.group_id == CameraGroup.id, isouter=True).filter(
+        query = query.outerjoin(DBCamera.groups).filter(
             or_(
                 DBCamera.hostname.ilike(search_term),
                 DBCamera.ip.ilike(search_term),
@@ -141,8 +141,8 @@ async def manage_data(
         )
 
     query = query.order_by(DBCamera.hostname.asc())
-    total = query.count()
-    cameras = query.offset((page - 1) * per_page).limit(per_page).all()
+    total = query.distinct().count()
+    cameras = query.distinct().offset((page - 1) * per_page).limit(per_page).all()
     total_pages = (total + per_page - 1) // per_page if total > 0 else 1
 
     ICONS = {
@@ -181,7 +181,7 @@ async def manage_data(
                 <td class="px-4 py-3.5 text-xs">{gps_loc}</td>
                 <td class="px-4 py-3.5">{cam.asset_no or ''}</td>
                 <td class="px-4 py-3.5">{cam.location or ''}</td>
-                <td class="px-4 py-3.5">{cam.group.name if cam.group else ''}</td>
+                <td class="px-4 py-3.5">{', '.join(group.name for group in cam.groups)}</td>
                 <td class="px-4 py-3.5">{safety_badge}</td>
                 <td class="px-4 py-3.5">
                     <span class="px-2.5 py-1 text-xs font-semibold rounded-full {status_classes}">
@@ -240,7 +240,7 @@ async def add_camera_submit(
     longitude: str = Form(None),
     asset_no: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
-    group_name: str = Form(...),  # Changed: now required
+    group_name: list[str] = Form(default=[]),
     status: str = Form(...),
     is_flipped: Optional[str] = Form(None),
     note: Optional[str] = Form(...),
@@ -251,7 +251,8 @@ async def add_camera_submit(
     logger.info("Attempting to add new camera with hostname: %s", name)
     try:
         # Validate group_name is provided
-        if not group_name or not group_name.strip():
+        group_names = list(dict.fromkeys(name.strip() for name in group_name if name and name.strip()))
+        if not group_names:
             logger.warning("Attempted to add camera without group: %s", name)
             return JSONResponse(status_code=400, content={"status": "error", "message": "Group is required. Please select a group."})
         
@@ -263,25 +264,21 @@ async def add_camera_submit(
         lat = float(latitude) if latitude else None
         lon = float(longitude) if longitude else None
 
-        group_id = None
-        if group_name:
-            logger.debug("Processing group_name: %s", group_name)
-            group = db.query(CameraGroup).filter(CameraGroup.name == group_name).first()
-            if not group:
-                logger.info("Creating new camera group: %s", group_name)
-                group = CameraGroup(name=group_name)
-                db.add(group)
-                db.flush()
-            group_id = group.id
+        groups = db.query(CameraGroup).filter(CameraGroup.name.in_(group_names)).all()
+        found_names = {group.name for group in groups}
+        if found_names != set(group_names):
+            raise HTTPException(status_code=400, detail="One or more camera groups are invalid.")
         
         port_val = int(port) if port not in [None, ""] else None
         
         new_cam = DBCamera(
             hostname=name, ip=ip, port=port_val, username=username, password=password,
             latitude=lat, longitude=lon, asset_no=asset_no, location=location,
-            group_id=group_id, status=status, is_flipped=is_flipped, note=note, snapshot_url=snapshot_url,
+            status=status, is_flipped=is_flipped, note=note, snapshot_url=snapshot_url,
             safety_classification=safety_classification
         )
+        new_cam.groups = groups
+        new_cam.group_id = groups[0].id if groups else None
         db.add(new_cam)
         db.commit()
         db.refresh(new_cam)
@@ -304,6 +301,9 @@ async def add_camera_submit(
         
         return JSONResponse(status_code=201, content={"status": "success", "message": "Camera added successfully!"})
 
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         logger.error("Error adding camera '%s'. Error: %s", name, e, exc_info=True)
@@ -340,7 +340,7 @@ async def edit_camera_submit(
     longitude: Optional[str] = Form(None),
     asset_no: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
-    group_name: Optional[str] = Form(None),
+    group_name: list[str] = Form(default=[]),
     is_flipped: Optional[str] = Form(None),
     status: str = Form(...),
     note: Optional[str] = Form(...),
@@ -359,7 +359,7 @@ async def edit_camera_submit(
     before = {
         "hostname": cam.hostname, "ip": cam.ip, "port": cam.port, "username": cam.username,
         "latitude": cam.latitude, "longitude": cam.longitude, "asset_no": cam.asset_no,
-        "location": cam.location, "group_id": cam.group_id, "status": cam.status,
+        "location": cam.location, "group_id": cam.group_id, "group_ids": [g.id for g in cam.groups], "status": cam.status,
         "is_flipped": cam.is_flipped, "note": cam.note, "snapshot_url": cam.snapshot_url,
         "safety_classification": cam.safety_classification,
     }
@@ -392,16 +392,12 @@ async def edit_camera_submit(
         if password:
             cam.password = password
 
-        if group_name:
-            group = db.query(CameraGroup).filter(CameraGroup.name == group_name).first()
-            if not group:
-                logger.info("Creating new camera group '%s' during edit.", group_name)
-                group = CameraGroup(name=group_name)
-                db.add(group)
-                db.flush()
-            cam.group_id = group.id
-        else:
-            cam.group_id = None
+        group_names = list(dict.fromkeys(value.strip() for value in group_name if value and value.strip()))
+        groups = db.query(CameraGroup).filter(CameraGroup.name.in_(group_names)).all() if group_names else []
+        if {group.name for group in groups} != set(group_names):
+            raise HTTPException(status_code=400, detail="One or more camera groups are invalid.")
+        cam.groups = groups
+        cam.group_id = groups[0].id if groups else None
 
         db.commit()
         db.refresh(cam)
@@ -411,7 +407,7 @@ async def edit_camera_submit(
         after = {
             "hostname": cam.hostname, "ip": cam.ip, "port": cam.port, "username": cam.username,
             "latitude": cam.latitude, "longitude": cam.longitude, "asset_no": cam.asset_no,
-            "location": cam.location, "group_id": cam.group_id, "status": cam.status,
+            "location": cam.location, "group_id": cam.group_id, "group_ids": [g.id for g in cam.groups], "status": cam.status,
             "is_flipped": cam.is_flipped, "note": cam.note, "snapshot_url": cam.snapshot_url,
             "safety_classification": cam.safety_classification,
         }
@@ -446,6 +442,9 @@ async def edit_camera_submit(
         
         return {"status": "success", "message": "Camera updated successfully"}
 
+    except HTTPException:
+        db.rollback()
+        raise
     except ValueError:
         logger.warning("Invalid format for latitude or longitude in edit request.")
         raise HTTPException(status_code=400, detail="Invalid format for latitude or longitude.")
@@ -464,7 +463,7 @@ async def get_camera_details(
 ):
     """Fetches a single camera's details by ID."""
     logger.debug("Fetching details for camera ID: %s", camera_id)
-    camera = db.query(DBCamera).options(joinedload(DBCamera.group)).filter(DBCamera.id == camera_id).first()
+    camera = db.query(DBCamera).options(joinedload(DBCamera.group), joinedload(DBCamera.groups)).filter(DBCamera.id == camera_id).first()
     if not camera:
         logger.warning("Details for camera ID '%s' not found.", camera_id)
         raise HTTPException(status_code=404, detail="Camera not found")
@@ -485,6 +484,8 @@ async def get_camera_details(
         "status": camera.status,
         "is_flipped": camera.is_flipped,
         "group": {"name": camera.group.name} if camera.group else None,
+        "camera_groups": [{"id": group.id, "name": group.name} for group in camera.groups],
+        "camera_group_ids": [group.id for group in camera.groups],
         "note": camera.note,
         "snapshot_url": camera.snapshot_url,
         "safety_classification": camera.safety_classification or 'standard',  # P2-002
@@ -809,14 +810,36 @@ async def upload_csv(request: Request, db: Session = Depends(get_db), file: Uplo
                     new_cam.is_flipped = False
                 # else: keep default (False)
                 
-                # Handle group_id if provided (via group_id or group_name)
+                # Read multi-group export columns first, then fall back to legacy fields.
+                multi_group_ids = row.get("camera_group_ids", "").strip()
+                multi_group_names = row.get("camera_group_names", "").strip()
                 group_id_str = row.get("group_id", "").strip()
-                if group_id_str:
+                if multi_group_ids:
+                    try:
+                        requested_ids = list(dict.fromkeys(int(value.strip()) for value in multi_group_ids.split(";") if value.strip()))
+                        assigned_groups = db.query(CameraGroup).filter(CameraGroup.id.in_(requested_ids)).all()
+                        if {group.id for group in assigned_groups} != set(requested_ids):
+                            failed_rows.append(f"Row {row_num}: Invalid camera_group_ids '{multi_group_ids}'")
+                            continue
+                        new_cam.groups = assigned_groups
+                        new_cam.group_id = requested_ids[0] if requested_ids else None
+                    except ValueError:
+                        failed_rows.append(f"Row {row_num}: Invalid camera_group_ids '{multi_group_ids}'")
+                        continue
+                elif multi_group_names:
+                    requested_names = list(dict.fromkeys(value.strip() for value in multi_group_names.split(";") if value.strip()))
+                    assigned_groups = db.query(CameraGroup).filter(CameraGroup.name.in_(requested_names)).all()
+                    if {group.name for group in assigned_groups} != set(requested_names):
+                        failed_rows.append(f"Row {row_num}: Invalid camera_group_names '{multi_group_names}'")
+                        continue
+                    new_cam.groups = assigned_groups
+                    new_cam.group_id = assigned_groups[0].id if assigned_groups else None
+                elif group_id_str:
                     try:
                         group_id = int(group_id_str)
-                        # Verify group exists
                         group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
                         if group:
+                            new_cam.groups = [group]
                             new_cam.group_id = group_id
                     except ValueError:
                         pass
@@ -826,6 +849,7 @@ async def upload_csv(request: Request, db: Session = Depends(get_db), file: Uplo
                     if group_name:
                         group = db.query(CameraGroup).filter(CameraGroup.name == group_name).first()
                         if group:
+                            new_cam.groups = [group]
                             new_cam.group_id = group.id
                 
                 # Handle coordinates (current and previous)
@@ -893,7 +917,7 @@ async def upload_csv(request: Request, db: Session = Depends(get_db), file: Uplo
 async def export_csv(request: Request, db: Session = Depends(get_db)):
     """Exports all camera data to a CSV file with all Camera and CameraGroup fields."""
     logger.info("Starting CSV export process.")
-    cameras = db.query(DBCamera).options(joinedload(DBCamera.group)).all()
+    cameras = db.query(DBCamera).options(joinedload(DBCamera.group), joinedload(DBCamera.groups)).all()
     logger.debug("Fetched %s cameras for export.", len(cameras))
 
     output = io.StringIO()
@@ -908,7 +932,7 @@ async def export_csv(request: Request, db: Session = Depends(get_db)):
         # P2-002: Safety classification
         "safety_classification",
         # CameraGroup fields
-        "group_id", "group_name"
+        "group_id", "group_name", "camera_group_ids", "camera_group_names"
     ])
 
     for cam in cameras:
@@ -923,7 +947,9 @@ async def export_csv(request: Request, db: Session = Depends(get_db)):
             cam.safety_classification or "standard",
             # CameraGroup fields
             cam.group_id if cam.group else "",
-            cam.group.name if cam.group else ""
+            cam.group.name if cam.group else "",
+            ";".join(str(group.id) for group in cam.groups),
+            ";".join(group.name for group in cam.groups)
         ])
 
     output.seek(0)
@@ -1010,7 +1036,21 @@ async def update_camera_n8n(
             cam.status = payload.status
             logger.debug("Updating status to: %s", cam.status)
 
-        if payload.group_name is not None:
+        if payload.camera_group_ids is not None:
+            ids = list(dict.fromkeys(payload.camera_group_ids))
+            groups = db.query(CameraGroup).filter(CameraGroup.id.in_(ids)).all() if ids else []
+            if {group.id for group in groups} != set(ids):
+                raise HTTPException(status_code=400, detail="One or more camera groups are invalid.")
+            cam.groups = groups
+            cam.group_id = groups[0].id if groups else None
+        elif payload.group_names is not None:
+            names = list(dict.fromkeys(name.strip() for name in payload.group_names if name and name.strip()))
+            groups = db.query(CameraGroup).filter(CameraGroup.name.in_(names)).all() if names else []
+            if {group.name for group in groups} != set(names):
+                raise HTTPException(status_code=400, detail="One or more camera groups are invalid.")
+            cam.groups = groups
+            cam.group_id = groups[0].id if groups else None
+        elif payload.group_name is not None:
             group_name = payload.group_name
             group = db.query(CameraGroup).filter(CameraGroup.name == group_name).first()
             if not group:
@@ -1019,10 +1059,12 @@ async def update_camera_n8n(
                 db.add(group)
                 db.flush()
             cam.group_id = group.id
+            cam.groups = [group]
             logger.debug("Updating group to: %s", group_name)
         else:
             # Opsional: Jika group_name adalah None, set group_id menjadi None
             cam.group_id = None
+            cam.groups = []
 
 
         db.commit()
@@ -1046,6 +1088,9 @@ async def update_camera_n8n(
 
         return {"status": "success", "message": f"Camera '{cam.hostname}' updated successfully"}
 
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         logger.error("Error updating camera '%s' from n8n. Error: %s", payload.hostname, e, exc_info=True)

@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-09-24
+
+### Added
+
+#### Multiple Camera Groups per Camera
+- Added a many-to-many relationship so a camera can be assigned to multiple Camera Groups.
+- Added an Alembic migration that copies existing `cameras.group_id` assignments into the new relationship table while retaining the legacy column for compatibility.
+- Updated camera create/edit UI, API responses, CSV import/export, and the n8n update payload to support multiple groups.
+- Updated camera group filtering and whitelist access checks across camera, snapshot, video, map, IP resolution, and health report flows.
+- Updated offline and recovery email recipient resolution to include recipients from every assigned group and deduplicate matching addresses.
+- Added tests for multi-group assignments, group membership across cameras, recipient deduplication, unrelated groups, and cameras without groups.
+
 ## [2.1.1] - 2026-09-17
 
 ### Fixed

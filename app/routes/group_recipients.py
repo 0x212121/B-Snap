@@ -98,7 +98,7 @@ def list_recipients_api(
         for g in groups:
             locs = (
                 db.query(Camera.location)
-                .filter(Camera.group_id == g.id)
+                .filter(Camera.groups.any(CameraGroup.id == g.id))
                 .distinct()
                 .all()
             )
@@ -547,7 +547,7 @@ def get_locations_without_recipients(
         if group_id:
             # Get all locations untuk group tertentu
             all_locations = db.query(Camera.location)\
-                .filter(Camera.group_id == group_id, Camera.location.isnot(None))\
+                .filter(Camera.groups.any(CameraGroup.id == group_id), Camera.location.isnot(None))\
                 .distinct()\
                 .all()
             
@@ -588,7 +588,7 @@ def get_locations_without_recipients(
         for loc in uncovered_locations:
             if group_id:
                 count = db.query(func.count(Camera.id))\
-                    .filter(Camera.group_id == group_id, Camera.location == loc)\
+                    .filter(Camera.groups.any(CameraGroup.id == group_id), Camera.location == loc)\
                     .scalar()
             else:
                 count = db.query(func.count(Camera.id))\
@@ -636,7 +636,7 @@ def export_locations_without_recipients_excel(
             
             # Get all locations untuk group tertentu
             all_locations = db.query(Camera.location)\
-                .filter(Camera.group_id == group_id, Camera.location.isnot(None))\
+                .filter(Camera.groups.any(CameraGroup.id == group_id), Camera.location.isnot(None))\
                 .distinct()\
                 .all()
             
@@ -677,7 +677,7 @@ def export_locations_without_recipients_excel(
         for loc in uncovered_locations:
             if group_id:
                 count = db.query(func.count(Camera.id))\
-                    .filter(Camera.group_id == group_id, Camera.location == loc)\
+                    .filter(Camera.groups.any(CameraGroup.id == group_id), Camera.location == loc)\
                     .scalar()
             else:
                 count = db.query(func.count(Camera.id))\

@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 import re
 from app.db.database import SessionLocal
 from app.models.camera import Camera as DBCamera
+from app.models.camera_group import CameraGroup
 from app.models.user import User
 from app.models.snapshot import Snapshot
 from app.models.whitelist import RoleEnum, WhatsappWhitelist
@@ -138,7 +139,7 @@ def search_snapshots(
         # Kalau ada role admin atau group_id is None (no group restriction), izinkan semua kamera
         is_global = any(w.role == RoleEnum.admin or w.group_id is None for w in whitelist_entries)
         if not is_global:
-            query = query.filter(DBCamera.group_id.in_(group_ids))
+            query = query.filter(DBCamera.groups.any(CameraGroup.id.in_(group_ids)))
 
     # --- AMBIL KAMERA ---
     cameras = query.all()
@@ -184,7 +185,7 @@ def search_snapshots(
                 long=cam_info.get("long"),
                 tamper_reason=snap.tamper_reason,
                 res=snap.resolution,
-                group_name=snap.camera.group.name if snap.camera and snap.camera.group else ""
+                group_name=(", ".join(group.name for group in snap.camera.groups) or (snap.camera.group.name if snap.camera.group else "")) if snap.camera else ""
             )
 
     return list(latest_snapshot_per_camera.values())
@@ -245,7 +246,7 @@ def get_latest_snapshot_info(camera_identifier: str, db: Session = Depends(get_d
         long=longitude,
         tamper_reason=snapshot.tamper_reason,
         res=snapshot.resolution,
-        group_name=snapshot.camera.group.name if snapshot.camera and snapshot.camera.group else ""
+        group_name=(", ".join(group.name for group in snapshot.camera.groups) or (snapshot.camera.group.name if snapshot.camera.group else "")) if snapshot.camera else ""
     )
 
 

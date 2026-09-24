@@ -28,6 +28,14 @@ set_debug_mode(False)
 logger = logging.getLogger("email_notifier")
 SNAPSHOT_BASE_DIR = os.path.join("static", "snapshots")  # absolute base dir
 
+
+def _camera_group_label(camera) -> str:
+    groups = getattr(camera, "groups", None) or []
+    if groups:
+        return ", ".join(group.name for group in groups)
+    legacy_group = getattr(camera, "group", None)
+    return legacy_group.name if legacy_group else "No Group"
+
 # Circuit Breaker Configuration
 MAX_NOTIFICATION_FAILURES = 3  # Max failures before suppression
 NOTIFICATION_SUPPRESS_MINUTES = 60  # Suppression duration after max failures
@@ -276,13 +284,13 @@ def send_offline_incident_email_once(
             "No recipients found for camera %s (%s) in group %s location %s",
             camera.hostname,
             camera.ip,
-            camera.group.name if camera.group else "No Group",
+            _camera_group_label(camera),
             camera.location,
         )
         return False
 
     # siapkan data email
-    camera_group = camera.group.name if camera.group else "No Group"
+    camera_group = _camera_group_label(camera)
     minutes = offline_duration_seconds // 60
     local_incident = format_datetime_with_tz(
         to_current_timezone(incident_started_at, db)
@@ -490,7 +498,7 @@ def send_tamper_alert(db: Session, camera, reason: str, snapshot_path: str, inci
             health.alert_cooldown_until.isoformat()
         )
     
-    camera_group = camera.group.name if camera.group else "No Group"
+    camera_group = _camera_group_label(camera)
     recipients = get_recipients_for_camera(db, camera)
     if not recipients:
         logger.warning("No recipients found for %s", camera.hostname)
@@ -603,7 +611,7 @@ def send_recovery_alert(db: Session, camera, last_reason: str = None):
         logger.warning("No recipients for recovery alert: %s", camera.hostname)
         return False
     
-    camera_group = camera.group.name if camera.group else "No Group"
+    camera_group = _camera_group_label(camera)
     
     # Get current time for recovery
     recovery_time = datetime.now(timezone.utc)

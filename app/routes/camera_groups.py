@@ -45,7 +45,7 @@ async def get_camera_groups(
     result = []
     for group in groups:
         # Count cameras and NVRs using this group
-        camera_count = db.query(func.count(Camera.id)).filter(Camera.group_id == group.id).scalar()
+        camera_count = db.query(func.count(Camera.id)).filter(Camera.groups.any(CameraGroup.id == group.id)).scalar()
         nvr_count = db.query(func.count(NVR.id)).filter(NVR.group_id == group.id).scalar()
         user_count = db.query(func.count(User.id)).filter(User.group_id == group.id).scalar()
         
@@ -132,7 +132,7 @@ async def get_camera_group(
         raise HTTPException(status_code=404, detail="Group not found")
     
     # Count usage
-    camera_count = db.query(func.count(Camera.id)).filter(Camera.group_id == group.id).scalar()
+    camera_count = db.query(func.count(Camera.id)).filter(Camera.groups.any(CameraGroup.id == group.id)).scalar()
     nvr_count = db.query(func.count(NVR.id)).filter(NVR.group_id == group.id).scalar()
     user_count = db.query(func.count(User.id)).filter(User.group_id == group.id).scalar()
     
@@ -223,7 +223,7 @@ async def delete_camera_group(
         raise HTTPException(status_code=404, detail="Group not found")
     
     # Check if group is in use
-    camera_count = db.query(func.count(Camera.id)).filter(Camera.group_id == group.id).scalar()
+    camera_count = db.query(func.count(Camera.id)).filter(Camera.groups.any(CameraGroup.id == group.id)).scalar()
     nvr_count = db.query(func.count(NVR.id)).filter(NVR.group_id == group.id).scalar()
     user_count = db.query(func.count(User.id)).filter(User.group_id == group.id).scalar()
     

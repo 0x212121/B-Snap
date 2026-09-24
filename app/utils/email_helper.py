@@ -258,17 +258,20 @@ def get_recipients_for_camera(db: Session, camera: DBCamera) -> List[str]:
     """
     Return list of unique recipient emails for given camera.
     Matching rules:
-      - Hanya recipients dengan group_id == camera.group_id
+      - Recipients berasal dari seluruh grup kamera (legacy group_id tetap didukung)
       - Jika recipient punya daftar locations, maka harus cocok dengan camera.location
       - Jika recipient tidak punya locations, tetap masuk (berdasarkan group)
     """
-    if not camera.group_id:
+    group_ids = {group.id for group in (getattr(camera, "groups", None) or [])}
+    if camera.group_id is not None:
+        group_ids.add(camera.group_id)
+    if not group_ids:
         return []
 
     cam_loc = _normalize(camera.location) if camera.location else None
     recipients = []
 
-    group_recs = db.query(GroupRecipient).filter(GroupRecipient.group_id == camera.group_id).all()
+    group_recs = db.query(GroupRecipient).filter(GroupRecipient.group_id.in_(group_ids)).all()
     for r in group_recs:
         if not r.email:
             continue
@@ -285,4 +288,10 @@ def get_recipients_for_camera(db: Session, camera: DBCamera) -> List[str]:
 
     # dedup
     seen = set()
-    return [e for e in recipients if not (e in seen or seen.add(e))]
+    unique = []
+    for email in recipients:
+        normalized = email.strip().casefold()
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            unique.append(email.strip())
+    return unique

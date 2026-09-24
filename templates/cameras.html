@@ -450,10 +450,10 @@
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="group_name">
               Camera Group <span class="text-red-500">*</span>
             </label>
-            <select id="group_name" name="group_name" required
+            <select id="group_name" name="group_name" multiple size="4"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-              <option value="">-- Select Group --</option>
             </select>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Select one or more groups. Use Ctrl/Cmd to select multiple.</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Required: Group for organizing and filtering cameras</p>
           </div>
           <div>
@@ -773,14 +773,15 @@
       }
     }
     
-    function populateGroupSelect(selectedValue = "") {
+    function populateGroupSelect(selectedValues = []) {
       const select = document.getElementById('group_name');
-      select.innerHTML = '<option value="">-- Select Group --</option>';
+      const selected = new Set(Array.isArray(selectedValues) ? selectedValues : (selectedValues ? [selectedValues] : []));
+      select.innerHTML = '';
       cameraGroups.forEach(group => {
         const option = document.createElement('option');
         option.value = group.name;
         option.textContent = group.name;
-        option.selected = (group.name === selectedValue);
+        option.selected = selected.has(group.name);
         select.appendChild(option);
       });
     }
@@ -824,6 +825,7 @@
       
       await loadCameraGroups();
       populateGroupSelect();
+      document.getElementById('group_name').required = true;
       
       // Activate first tab
       modalTabs.querySelector('.tab-button[data-tab="basic"]').click();
@@ -853,6 +855,7 @@
       
       try {
         await loadCameraGroups();
+        document.getElementById('group_name').required = false;
         
         // Fetch camera details (without password for security)
         const response = await fetch(`/api/camera/${cameraId}`);
@@ -888,7 +891,7 @@
         setFieldValue('snapshot_url', cam.snapshot_url || '');
         setFieldValue('safety_classification', cam.safety_classification || 'standard');
         
-        populateGroupSelect(cam.group ? cam.group.name : "");
+        populateGroupSelect((cam.camera_groups || []).map(group => group.name));
         
         modalTabs.querySelector('.tab-button[data-tab="basic"]').click();
         modalElement.classList.remove('hidden');

@@ -60,7 +60,7 @@ def _get_filtered_videos(
         video_query = db.query(Video).join(
             Camera, Video.camera_id == Camera.id, isouter=True
         ).filter(
-            Camera.group_id == group_id,
+            Camera.groups.any(CameraGroup.id == group_id),
             Video.deleted_at.is_(None)
         )
 
@@ -118,7 +118,7 @@ def show_videos(
         user_group = db.query(CameraGroup).filter(CameraGroup.id == group_id).first()
         if not user_group:
             raise HTTPException(status_code=403, detail="User group not found")
-        all_cameras_query = db.query(Camera.hostname).join(Camera.group).filter(CameraGroup.id == group_id)
+        all_cameras_query = db.query(Camera.hostname).join(Camera.groups).filter(CameraGroup.id == group_id)
 
     all_camera_names = sorted([row[0] for row in all_cameras_query.all()])
 

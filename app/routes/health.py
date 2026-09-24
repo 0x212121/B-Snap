@@ -450,7 +450,7 @@ async def sla_report(
     # Get all cameras with daily stats in the period
     cameras = db.query(DBCamera).options(
         joinedload(DBCamera.daily_stats),
-        joinedload(DBCamera.group)
+        joinedload(DBCamera.groups)
     ).all()
     
     sla_data = []
@@ -500,7 +500,7 @@ async def sla_report(
             "camera_id": camera.id,
             "camera_name": camera.hostname,
             "location": camera.location,
-            "group_name": camera.group.name if camera.group else "Ungrouped",
+            "group_name": ", ".join(group.name for group in camera.groups) or "Ungrouped",
             "period_start": start_date.isoformat(),
             "period_end": end_date.isoformat(),
             "uptime_percentage": round(uptime_percentage, 2),
@@ -579,7 +579,7 @@ async def export_health_history(
         # Query camera stats with group relationship loaded
         cameras = db.query(DBCamera).options(
             joinedload(DBCamera.daily_stats),
-            joinedload(DBCamera.group)
+            joinedload(DBCamera.groups)
         ).all()
         
         # Prepare data
@@ -601,7 +601,7 @@ async def export_health_history(
             rows.append({
                 "Camera Name": camera.hostname,
                 "Location": camera.location or "",
-                "Group": camera.group.name if camera.group else "Ungrouped",
+                "Group": ", ".join(group.name for group in camera.groups) or "Ungrouped",
                 "Period Start": start_date.isoformat(),
                 "Period End": end_date.isoformat(),
                 "Uptime %": round(uptime_percentage, 2),
@@ -710,16 +710,16 @@ async def generate_health_report(
     # Get cameras with optional group filter
     cameras_query = db.query(DBCamera).options(
         joinedload(DBCamera.daily_stats),
-        joinedload(DBCamera.group)
+        joinedload(DBCamera.groups)
     )
     
     # Filter by groups if specified
     if groups and len(groups) > 0:
-        cameras_query = cameras_query.join(DBCamera.group).filter(
+        cameras_query = cameras_query.join(DBCamera.groups).filter(
             CameraGroup.name.in_(groups)
         )
     
-    cameras = cameras_query.all()
+    cameras = cameras_query.distinct().all()
     
     # Calculate metrics for each camera
     report_data = []
@@ -758,7 +758,7 @@ async def generate_health_report(
         report_data.append({
             "camera_name": camera.hostname,
             "location": camera.location or "-",
-            "group": camera.group.name if camera.group else "Ungrouped",
+            "group": ", ".join(group.name for group in camera.groups) or "Ungrouped",
             "uptime_percentage": uptime_percentage,
             "total_uptime_hours": total_uptime / 3600,
             "total_downtime_hours": total_downtime / 3600,
