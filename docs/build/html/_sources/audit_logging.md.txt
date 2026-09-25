@@ -31,7 +31,7 @@ B-Snap implements a comprehensive audit logging system designed for CCTV environ
 | Table | Purpose | Modifiable |
 |-------|---------|------------|
 | `audit_logs` | Current audit records (last 6 months) | ❌ Append-only (triggers prevent UPDATE/DELETE) |
-| `audit_logs_legacy` | Historical records (>6 months) | ✅ Can be archived/cleaned |
+| `audit_logs_legacy` | Historical records copied during archive; remains queryable in Archive History | Retained for archive browsing |
 | `audit_archive_history` | Archive operation tracking | ✅ Records each archive job |
 | `audit_logs_unified` | Database view combining both tables | ❌ Read-only view |
 
@@ -93,11 +93,13 @@ Every audit log entry captures:
 2. **Export**: Convert to JSON format
 3. **Compress**: Gzip compression (~90% size reduction)
 4. **Encrypt**: AES-256-CBC encryption using Fernet
-5. **Store**: Save to `archives/audit_logs/`
+5. **Stage and Verify**: Write a temporary encrypted file and verify its checksum and contents
 6. **Copy**: Insert into `audit_logs_legacy` table
-7. **Verify**: Sample-based integrity check
+7. **Publish**: Move the verified file into `archives/audit_logs/`
 8. **Delete**: Remove from `audit_logs` (trigger temporarily disabled)
 9. **Record**: Log operation in `audit_archive_history`
+
+Failed archive attempts are excluded from Archive History and temporary or published files from the failed attempt are removed.
 
 ### Archive File Format
 

@@ -246,6 +246,9 @@ async def error_wrapper_middleware(request: Request, call_next):
         response = await call_next(request)
         if response.status_code >= 500:
             logger.error(f"HTTP {response.status_code} at {request.url}")
+            # Keep API error bodies machine-readable for AJAX clients.
+            if "application/json" in request.headers.get("accept", "").lower():
+                return response
             return templates.TemplateResponse("500.html", {"request": request}, status_code=500)
         return response
     except Exception as exc:

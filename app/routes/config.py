@@ -16,9 +16,46 @@ from app.utils.audit_logger import log_audit
 from app.utils.auth import verify_password
 from app.utils.notification_service import NotificationService
 from app.utils.timezone_helper import clear_timezone_cache
+from app.utils.email_helper import send_email
 from io import BytesIO
 
 router = APIRouter(tags=["Config"])
+
+
+@router.post("/config/test-smtp")
+def test_smtp_email(
+    recipient_email: str = Form(...),
+    current_admin: User = Depends(admin_access_required),
+):
+    """Send a test message using the saved SMTP configuration."""
+    import re
+
+    recipient_email = recipient_email.strip()
+    if not re.fullmatch(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", recipient_email):
+        return JSONResponse(status_code=400, content={"message": "Enter a valid recipient email address."})
+
+    subject = "B-Snap SMTP Test Email"
+    body = (
+        "This is a test email from B-Snap.\n\n"
+        "Your saved SMTP configuration successfully delivered this message."
+    )
+    html_body = (
+        "<p>This is a test email from <strong>B-Snap</strong>.</p>"
+        "<p>Your saved SMTP configuration successfully delivered this message.</p>"
+    )
+
+    try:
+        send_email([recipient_email], subject, body, html_body)
+    except Exception as exc:
+        return JSONResponse(
+            status_code=502,
+            content={"message": f"Failed to send test email: {exc}"},
+        )
+
+    return JSONResponse(
+        status_code=200,
+        content={"message": f"Test email sent successfully to {recipient_email}."},
+    )
 
 
 @router.get("/admin/config", response_class=HTMLResponse)
@@ -72,7 +109,6 @@ async def config_save(
     map_title: str = Form(...),
     timezone: str = Form(...),
     debug_mode: Optional[bool] = Form(False),
-    retention_audit_logs_days: int = Form(180),
     retention_api_logs_days: int = Form(90),
     retention_command_logs_days: int = Form(90),
     retention_camera_stats_days: int = Form(90),
@@ -113,7 +149,6 @@ async def config_save(
 
     # Validasi retention settings (7 hari - 10 tahun)
     retention_fields = {
-        "retention_audit_logs_days": retention_audit_logs_days,
         "retention_api_logs_days": retention_api_logs_days,
         "retention_command_logs_days": retention_command_logs_days,
         "retention_camera_stats_days": retention_camera_stats_days,
@@ -214,7 +249,6 @@ async def config_save(
         "map_title": map_title,
         "timezone": timezone,
         "debug_mode": str(int(debug_mode)),
-        "retention_audit_logs_days": retention_audit_logs_days,
         "retention_api_logs_days": retention_api_logs_days,
         "retention_command_logs_days": retention_command_logs_days,
         "retention_camera_stats_days": retention_camera_stats_days,
@@ -320,11 +354,9 @@ async def run_cleanup_now(
     Manually trigger log cleanup jobs with current retention settings.
     Requires password verification for security.
     
-    Note: Audit logs are append-only (P2-001) and cannot be deleted.
-          They are archived instead based on retention policy.
+    Audit logs are excluded so warm archive copies remain available in the archive viewer.
     """
     from app.jobs.scheduler import (
-        delete_old_audit_logs,
         delete_old_api_logs,
         delete_old_command_logs,
         delete_old_camera_stats,
@@ -352,16 +384,6 @@ async def run_cleanup_now(
     
     try:
         # Run each cleanup job and capture results
-        # P2-001: Audit logs main table is append-only (immutable)
-        # Only legacy table (>6 months old) can be cleaned
-        try:
-            result = delete_old_audit_logs()
-            deleted = result.get("records_processed", 0)
-            results["audit_logs"] = f"{deleted} legacy records archived"
-        except Exception as e:
-            errors.append(f"Audit logs: {str(e)}")
-            results["audit_logs"] = f"Error: {str(e)}"
-        
         try:
             delete_old_api_logs()
             results["api_logs"] = "Cleaned successfully"

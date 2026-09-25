@@ -231,9 +231,9 @@ async def get_archive_history(
     """Get archive operation history."""
     offset = (page - 1) * per_page
     
-    query = db.query(AuditArchiveHistory).order_by(
-        AuditArchiveHistory.archived_at.desc()
-    )
+    query = db.query(AuditArchiveHistory).filter(
+        AuditArchiveHistory.status == "completed"
+    ).order_by(AuditArchiveHistory.archived_at.desc())
     
     total = query.count()
     history = query.offset(offset).limit(per_page).all()
@@ -304,4 +304,75 @@ async def get_legacy_logs(
         "total": total,
         "page": page,
         "per_page": per_page,
+    })
+
+
+@router.get("/api/archive/history/{archive_id}/logs")
+async def get_archive_history_logs(
+    archive_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(admin_access_required),
+    page: int = 1,
+    per_page: int = 50,
+    search: Optional[str] = None,
+):
+    """Browse legacy records belonging to a completed archive operation."""
+    archive = db.query(AuditArchiveHistory).filter(
+        AuditArchiveHistory.id == archive_id,
+        AuditArchiveHistory.status == "completed",
+    ).first()
+    if archive is None:
+        return JSONResponse(status_code=404, content={"message": "Completed archive was not found."})
+
+    query = db.query(AuditLogLegacy).filter(
+        AuditLogLegacy.timestamp >= archive.archive_period_start,
+        AuditLogLegacy.timestamp <= archive.archive_period_end,
+    )
+    if search:
+        term = f"%{search.strip()}%"
+        query = query.filter(
+            AuditLogLegacy.user.ilike(term)
+            | AuditLogLegacy.action.ilike(term)
+            | AuditLogLegacy.target.ilike(term)
+            | AuditLogLegacy.ip.ilike(term)
+            | AuditLogLegacy.request_path.ilike(term)
+        )
+
+    page = max(page, 1)
+    per_page = min(max(per_page, 1), 100)
+    total = query.count()
+    logs = query.order_by(AuditLogLegacy.timestamp.desc()).offset(
+        (page - 1) * per_page
+    ).limit(per_page).all()
+
+    return JSONResponse({
+        "archive": {
+            "id": archive.id,
+            "archived_at": archive.archived_at.isoformat() if archive.archived_at else None,
+            "records_archived": archive.records_archived,
+            "period_start": format_datetime_standard(archive.archive_period_start, db=db),
+            "period_end": format_datetime_standard(archive.archive_period_end, db=db),
+        },
+        "logs": [
+            {
+                "id": log.id,
+                "timestamp": format_datetime_standard(log.timestamp, db=db) if log.timestamp else None,
+                "user": log.user,
+                "action": log.action,
+                "target": log.target,
+                "ip": log.ip,
+                "extra": log.extra,
+                "user_agent": log.user_agent,
+                "request_path": log.request_path,
+                "request_method": log.request_method,
+                "response_status": log.response_status,
+                "source": "legacy",
+            }
+            for log in logs
+        ],
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": (total + per_page - 1) // per_page,
     })

@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 from functools import wraps
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -498,7 +498,7 @@ def handle_cleanup_interval(scheduler, new_value):
     if cron_expr:
         logger.info("[Scheduler] Cleanup jobs have cron expression '%s', skipping interval update", cron_expr)
         return
-    jobs = ['cleanup_audit_logs', 'cleanup_camera_stats', 'cleanup_api_logs', 'cleanup_command_logs']
+    jobs = ['cleanup_camera_stats', 'cleanup_api_logs', 'cleanup_command_logs']
     for job_id in jobs:
         try:
             scheduler.reschedule_job(job_id, trigger=IntervalTrigger(days=new_value))
@@ -640,7 +640,6 @@ def start_scheduler():
         IntervalTrigger(days=config["cleanup_interval_days"])
     )
     cleanup_jobs = [
-        ('cleanup_audit_logs', delete_old_audit_logs),
         ('cleanup_camera_stats', delete_old_camera_stats),
         ('cleanup_api_logs', delete_old_api_logs),
         ('cleanup_command_logs', delete_old_command_logs),
@@ -648,7 +647,6 @@ def start_scheduler():
     ]
     
     cleanup_job_wrappers = {
-        'cleanup_audit_logs': cleanup_audit_logs_job,
         'cleanup_camera_stats': cleanup_camera_stats_job,
         'cleanup_api_logs': cleanup_api_logs_job,
         'cleanup_command_logs': cleanup_command_logs_job,
@@ -803,7 +801,7 @@ def update_scheduler_config():
             'healthcheck_cron': 'health_check',
             'storage_check_cron': 'storage_check',
             'record_check_cron': 'record_folder_check',
-            'cleanup_cron': 'cleanup_audit_logs',  # All cleanup jobs use same trigger
+            'cleanup_cron': 'cleanup_camera_stats',  # Cleanup jobs use the shared trigger
             'email_retry_cron': 'email_retry',
         }
         
@@ -905,12 +903,6 @@ def cleanup_email_retry_job():
     return cleanup_email_retry_queue()
 
 
-@logged_job("cleanup_audit_logs", "Cleanup Audit Logs")
-def cleanup_audit_logs_job():
-    """Wrapper for cleanup audit logs job with logging."""
-    return delete_old_audit_logs()
-
-
 @logged_job("cleanup_camera_stats", "Cleanup Camera Stats")
 def cleanup_camera_stats_job():
     """Wrapper for cleanup camera stats job with logging."""
@@ -968,35 +960,6 @@ def retention_policy_job():
 # ----------------------------
 # Cleanup Jobs
 # ----------------------------
-def delete_old_audit_logs():
-    """P2-001: Archive old audit logs from legacy table.
-    
-    Note: audit_logs (main table) is append-only and cannot be deleted.
-          Only audit_logs_legacy can be cleaned up.
-    """
-    db: Session = SessionLocal()
-    try:
-        from app.models.audit_log import AuditLogLegacy
-        retention_days = int(get_config("retention_audit_logs_days", 180))
-        cutoff_date = date.today() - timedelta(days=retention_days)
-        
-        # P2-001: Only delete from legacy table, main audit_logs is immutable
-        deleted_rows = (
-            db.query(AuditLogLegacy)
-            .filter(AuditLogLegacy.timestamp < cutoff_date)
-            .delete(synchronize_session=False)
-        )
-        db.commit()
-        logger.info("[delete_old_audit_logs] Deleted %d rows from legacy table older than %s", deleted_rows, cutoff_date)
-        return {"records_processed": deleted_rows}
-    except Exception as e:
-        db.rollback()
-        logger.error("[delete_old_audit_logs] Error: %s", e, exc_info=True)
-        raise
-    finally:
-        db.close()
-
-
 # ----------------------------
 # Orphaned Snapshots Job
 # ----------------------------

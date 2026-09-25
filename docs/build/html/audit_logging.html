@@ -146,8 +146,8 @@
 <td><p>❌ Append-only (triggers prevent UPDATE/DELETE)</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">audit_logs_legacy</span></code></p></td>
-<td><p>Historical records (&gt;6 months)</p></td>
-<td><p>✅ Can be archived/cleaned</p></td>
+<td><p>Historical records copied during archive; remains queryable in Archive History</p></td>
+<td><p>Retained for archive browsing</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">audit_archive_history</span></code></p></td>
 <td><p>Archive operation tracking</p></td>
@@ -261,12 +261,13 @@
 <li><p><strong>Export</strong>: Convert to JSON format</p></li>
 <li><p><strong>Compress</strong>: Gzip compression (~90% size reduction)</p></li>
 <li><p><strong>Encrypt</strong>: AES-256-CBC encryption using Fernet</p></li>
-<li><p><strong>Store</strong>: Save to <code class="docutils literal notranslate"><span class="pre">archives/audit_logs/</span></code></p></li>
+<li><p><strong>Stage and Verify</strong>: Write a temporary encrypted file and verify its checksum and contents</p></li>
 <li><p><strong>Copy</strong>: Insert into <code class="docutils literal notranslate"><span class="pre">audit_logs_legacy</span></code> table</p></li>
-<li><p><strong>Verify</strong>: Sample-based integrity check</p></li>
+<li><p><strong>Publish</strong>: Move the verified file into <code class="docutils literal notranslate"><span class="pre">archives/audit_logs/</span></code></p></li>
 <li><p><strong>Delete</strong>: Remove from <code class="docutils literal notranslate"><span class="pre">audit_logs</span></code> (trigger temporarily disabled)</p></li>
 <li><p><strong>Record</strong>: Log operation in <code class="docutils literal notranslate"><span class="pre">audit_archive_history</span></code></p></li>
 </ol>
+<p>Failed archive attempts are excluded from Archive History and temporary or published files from the failed attempt are removed.</p>
 </section>
 <section id="archive-file-format">
 <h3>Archive File Format<a class="headerlink" href="#archive-file-format" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#archive-file-format'"><span>#</span></a></h3>

@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added an admin SMTP test action on the configuration page that sends a test email to a specified recipient using saved SMTP settings.
+- Added Archive History browsing for completed audit archives, with search, pagination, and per-entry details backed by `audit_logs_legacy`.
+
+### Fixed
+
+- Preserved JSON error responses for AJAX requests so SMTP and archive failures display backend messages instead of HTML system pages.
+- Replaced the native audit archive confirmation prompt with the shared themed confirmation component and improved non-JSON error reporting.
+- Excluded failed archive attempts from Archive History and staged encrypted files so failed attempts do not leave published archive files.
+
+### Changed
+
+- Removed scheduled and manual audit-log cleanup, including its retention setting, so archived logs remain available in Archive History. Other cleanup jobs are unchanged.
+- Updated archived audit-log pagination to match the application's numbered-page pattern, including first/previous/next/last controls and result counts.
+
 ## [2.2.0] - 2026-09-24
 
 ### Added

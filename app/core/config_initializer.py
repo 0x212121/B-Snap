@@ -20,7 +20,6 @@ DEFAULT_CONFIG = {
     "watermark_text": "Property of ...",
     
     # Log retention settings
-    "retention_audit_logs_days": "180",
     "retention_api_logs_days": "90",
     "retention_command_logs_days": "90",
     "retention_camera_stats_days": "90",

@@ -9,7 +9,7 @@
 **B-Snap** adalah aplikasi self-hosted berbasis web untuk mengambil, mengelola, dan memonitor snapshot dari IP Camera yang mendukung ONVIF atau RTSP.
 
 ### Tech Stack
-- **Backend**: FastAPI (Python 3.11+)
+- **Backend**: FastAPI (Python 3.14+)
 - **Database**: PostgreSQL (production) / SQLite (development)
 - **ORM**: SQLAlchemy 2.0 + Alembic
 - **Scheduler**: APScheduler
@@ -93,7 +93,7 @@ docker-compose down -v
 ## 2. Run without Docker (Local Development)
 
 ### Prerequisites
-- Python 3.11+
+- Python 3.14+
 - Node.js 18+ (untuk Tailwind CSS build)
 - FFmpeg (executable di PATH atau di project root)
 - PostgreSQL 14+ (opsional, bisa pakai SQLite)
@@ -337,7 +337,7 @@ from app.models.user import User
 
 ### Type Hints
 - Selalu gunakan type hints untuk function arguments dan return values
-- Gunakan `from __future__ import annotations` untuk Python 3.11+
+- Gunakan `from __future__ import annotations` untuk Python 3.14+
 
 ### Docstrings (Google Style)
 ```python
@@ -747,6 +747,18 @@ stats = tracker.get_stats()
 
 **Version**: 1.17.0  
 **Last Updated**: 2026-04-07
+
+---
+
+## Frontend Consistency
+
+### Pagination
+- Keep paginated lists consistent with established pages such as `audit_logs.html` and `cameras.html`.
+- Use a result range (`Showing x-y of N results`), a `Page x of y` indicator, numbered page buttons with a two-page window, ellipses for distant pages, and first/previous/next/last controls when multiple pages exist.
+- Reuse an existing pagination renderer or copy its markup, Tailwind classes, dark-mode support, and behavior. Do not introduce a previous/next-only control for a page when the established pattern is available.
+
+### Changelog
+- Add a concise entry to `CHANGELOG.md` under `[Unreleased]` for every code or user-facing behavior change in the same change set.
 
 ---
 

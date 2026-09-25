@@ -356,7 +356,7 @@
 </div>
 
 <!-- Detail Modal -->
-<div id="detailModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+<div id="detailModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-[100] p-4">
   <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
       <h3 class="text-lg font-bold text-gray-900 dark:text-white">Audit Entry Detail</h3>
@@ -431,6 +431,41 @@
   </div>
 </div>
 
+<!-- Archive Logs Modal -->
+<div id="archiveLogsModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-[60] p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl mx-auto max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Archived Audit Logs</h3>
+        <p id="archive-logs-subtitle" class="text-xs text-gray-500 dark:text-gray-400"></p>
+      </div>
+      <button type="button" onclick="hideArchiveLogs()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition" aria-label="Close archived logs">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    <div class="p-4 flex gap-2 border-b border-gray-200 dark:border-gray-700">
+      <input id="archive-logs-search" type="search" placeholder="Search user, action, target, IP, or path..." class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+      <button type="button" onclick="searchArchiveLogs()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">Search</button>
+    </div>
+    <div class="flex-1 overflow-auto p-4">
+      <div id="archive-logs-empty" class="hidden text-center text-gray-500 py-12">No archived logs found.</div>
+      <table id="archive-logs-table" class="min-w-full text-sm">
+        <thead class="text-left text-xs uppercase text-gray-500 dark:text-gray-400">
+          <tr><th class="px-3 py-2">Timestamp</th><th class="px-3 py-2">User</th><th class="px-3 py-2">Action</th><th class="px-3 py-2">Target</th><th class="px-3 py-2">Method</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">IP</th></tr>
+        </thead>
+        <tbody id="archive-logs-tbody" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+      </table>
+    </div>
+    <div class="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+      <div id="archive-logs-result-info" class="text-sm text-gray-600 dark:text-gray-400"></div>
+      <div class="flex items-center gap-3">
+        <div id="archive-logs-page-info" class="text-sm text-gray-500 dark:text-gray-400"></div>
+        <div id="archive-logs-pagination-buttons" class="flex items-center gap-1"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Flatpickr -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css" media="(prefers-color-scheme: dark)">
@@ -441,7 +476,10 @@
   let currentPage = 1;
   let debounceTimer;
   let datePicker;
-  
+  let currentArchiveId = null;
+  let archiveLogsPage = 1;
+  let archiveLogsTotalPages = 1;
+  let currentArchiveLogItems = [];
   // ==========================================
   // Helper Functions (tetap sama)
   // ==========================================
@@ -1046,7 +1084,7 @@
     
     emptyState.classList.add('hidden');
     container.innerHTML = history.map(item => `
-      <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
+      <div ${item.status === 'completed' ? `role="button" tabindex="0" data-archive-id="${Number(item.id)}"` : ''} class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 ${item.status === 'completed' ? 'cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 transition' : ''}">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2">
             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}">
@@ -1065,49 +1103,227 @@
           <p><strong>File:</strong> <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">${item.file_path.split('/').pop()}</code></p>
           <p><strong>Size:</strong> ${item.file_size_mb} MB</p>
           ${item.checksum ? `<p><strong>Checksum:</strong> <code class="text-xs">${item.checksum.substring(0, 16)}...</code></p>` : ''}
+          ${item.status === 'completed' ? '<p class="pt-1 text-blue-600 dark:text-blue-400 font-medium">Click to browse archived logs</p>' : ''}
         </div>
       </div>
     `).join('');
   }
-  
-  async function triggerArchive() {
-    const confirmed = confirm(
-      'Archive audit logs older than 6 months?\n\n' +
-      'This will:\n' +
-      '1. Export logs to encrypted file\n' +
-      '2. Copy to legacy table\n' +
-      '3. Remove from current table\n\n' +
-      'This operation cannot be undone.'
-    );
-    
-    if (!confirmed) return;
-    
+
+  function escapeArchiveHtml(value) {
+    return String(value ?? '-').replace(/[&<>"']/g, char => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[char]);
+  }
+
+  function openArchiveLogs(archiveId) {
+    currentArchiveId = archiveId;
+    archiveLogsPage = 1;
+    document.getElementById('archive-logs-search').value = '';
+    document.getElementById('archiveLogsModal').classList.remove('hidden');
+    document.getElementById('archiveLogsModal').classList.add('flex');
+    fetchArchiveLogs();
+  }
+
+  function hideArchiveLogs() {
+    document.getElementById('archiveLogsModal').classList.add('hidden');
+    document.getElementById('archiveLogsModal').classList.remove('flex');
+  }
+
+  async function fetchArchiveLogs() {
+    const params = new URLSearchParams({
+      page: archiveLogsPage,
+      per_page: 50,
+      search: document.getElementById('archive-logs-search').value.trim()
+    });
+    const empty = document.getElementById('archive-logs-empty');
+    const table = document.getElementById('archive-logs-table');
+    const tbody = document.getElementById('archive-logs-tbody');
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-500">Loading archived logs...</td></tr>';
+    empty.classList.add('hidden');
+    table.classList.remove('hidden');
+
     try {
-      const response = await fetch('/audit-logs/api/archive', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+      const response = await fetch(`/audit-logs/api/archive/history/${currentArchiveId}/logs?${params}`, {
+        headers: { 'Accept': 'application/json' }
       });
-      
-      const result = await response.json();
-      
-      if (response.ok && result.status === 'success') {
-        if (typeof Toast !== 'undefined') {
-          Toast.success(result.message || 'Archive completed successfully', { duration: 5000 });
-        }
-        fetchArchiveStats();
-        fetchArchiveHistory();
-        fetchLogs(1);
-      } else {
-        throw new Error(result.message || 'Archive failed');
+      const text = await response.text();
+      let result;
+      try {
+        result = text ? JSON.parse(text) : {};
+      } catch {
+        const detail = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180);
+        throw new Error(`Server returned a non-JSON response (HTTP ${response.status}). ${detail || 'The archive-log endpoint may not be loaded by this app process.'}`);
       }
-    } catch (error) {
-      console.error('Archive failed:', error);
-      if (typeof Toast !== 'undefined') {
-        Toast.error('Archive failed: ' + error.message, { duration: 5000 });
+      if (!response.ok) throw new Error(result.message || 'Failed to load archived logs.');
+
+      currentArchiveLogItems = result.logs || [];
+      archiveLogsTotalPages = Math.max(result.total_pages || 1, 1);
+      const archive = result.archive;
+      document.getElementById('archive-logs-subtitle').textContent =
+        `${Number(archive.records_archived).toLocaleString()} records · ${archive.period_start} – ${archive.period_end}`;
+      if (!currentArchiveLogItems.length) {
+        tbody.innerHTML = '';
+        empty.textContent = 'No archived logs found for this archive and search.';
+        empty.classList.remove('hidden');
+        table.classList.add('hidden');
       } else {
-        alert('Archive failed: ' + error.message);
+        tbody.innerHTML = currentArchiveLogItems.map((log, index) => `
+          <tr data-log-index="${index}" class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <td class="px-3 py-2 whitespace-nowrap">${escapeArchiveHtml(log.timestamp)}</td>
+            <td class="px-3 py-2">${escapeArchiveHtml(log.user)}</td>
+            <td class="px-3 py-2">${escapeArchiveHtml(log.action)}</td>
+            <td class="px-3 py-2">${escapeArchiveHtml(log.target)}</td>
+            <td class="px-3 py-2">${escapeArchiveHtml(log.request_method)}</td>
+            <td class="px-3 py-2">${escapeArchiveHtml(log.response_status)}</td>
+            <td class="px-3 py-2">${escapeArchiveHtml(log.ip)}</td>
+          </tr>
+        `).join('');
+      }
+      renderArchiveLogsPagination(result);
+    } catch (error) {
+      tbody.innerHTML = '';
+      table.classList.add('hidden');
+      empty.textContent = `Failed to load archived logs: ${error.message}`;
+      empty.classList.remove('hidden');
+    }
+  }
+
+  function searchArchiveLogs() {
+    archiveLogsPage = 1;
+    fetchArchiveLogs();
+  }
+
+  function loadArchiveLogsPage(page) {
+    archiveLogsPage = Math.min(Math.max(page, 1), archiveLogsTotalPages);
+    fetchArchiveLogs();
+  }
+
+  function renderArchiveLogsPagination(data) {
+    const buttons = document.getElementById('archive-logs-pagination-buttons');
+    const pageInfo = document.getElementById('archive-logs-page-info');
+    const resultInfo = document.getElementById('archive-logs-result-info');
+    buttons.innerHTML = '';
+
+    const totalPages = data.total_pages || 1;
+    const currentPage = data.page || 1;
+    const totalResults = data.total || 0;
+    if (totalResults > 0) {
+      const start = (currentPage - 1) * data.per_page + 1;
+      const end = Math.min(currentPage * data.per_page, totalResults);
+      resultInfo.innerHTML = `Showing <span class="font-medium text-gray-900 dark:text-white">${start.toLocaleString()}-${end.toLocaleString()}</span> of <span class="font-medium text-gray-900 dark:text-white">${totalResults.toLocaleString()}</span> results`;
+    } else {
+      resultInfo.textContent = '';
+    }
+
+    if (totalPages <= 1) {
+      pageInfo.textContent = '';
+      return;
+    }
+
+    const windowSize = 2;
+    pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+
+    if (currentPage > 1) {
+      buttons.insertAdjacentHTML('beforeend', `
+        <button type="button" onclick="loadArchiveLogsPage(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page" aria-label="First page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+        </button>
+        <button type="button" onclick="loadArchiveLogsPage(${currentPage - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page" aria-label="Previous page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+      `);
+    }
+
+    if (currentPage > windowSize + 2) {
+      buttons.insertAdjacentHTML('beforeend', '<span class="px-2 text-gray-400">...</span>');
+    }
+
+    for (let page = Math.max(1, currentPage - windowSize); page <= Math.min(totalPages, currentPage + windowSize); page++) {
+      if (page === currentPage) {
+        buttons.insertAdjacentHTML('beforeend', `<button type="button" class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium shadow-sm" aria-current="page">${page}</button>`);
+      } else {
+        buttons.insertAdjacentHTML('beforeend', `<button type="button" onclick="loadArchiveLogsPage(${page})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${page}</button>`);
       }
     }
+
+    if (currentPage < totalPages - windowSize - 1) {
+      buttons.insertAdjacentHTML('beforeend', '<span class="px-2 text-gray-400">...</span>');
+    }
+
+    if (currentPage < totalPages) {
+      buttons.insertAdjacentHTML('beforeend', `
+        <button type="button" onclick="loadArchiveLogsPage(${currentPage + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page" aria-label="Next page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+        <button type="button" onclick="loadArchiveLogsPage(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page" aria-label="Last page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+        </button>
+      `);
+    }
+  }
+
+  document.getElementById('archive-history-list').addEventListener('click', event => {
+    const item = event.target.closest('[data-archive-id]');
+    if (item) openArchiveLogs(Number(item.dataset.archiveId));
+  });
+  document.getElementById('archive-history-list').addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const item = event.target.closest('[data-archive-id]');
+    if (item) {
+      event.preventDefault();
+      openArchiveLogs(Number(item.dataset.archiveId));
+    }
+  });
+  document.getElementById('archive-logs-tbody').addEventListener('click', event => {
+    const row = event.target.closest('[data-log-index]');
+    if (row) showDetailModal(currentArchiveLogItems[Number(row.dataset.logIndex)]);
+  });
+  document.getElementById('archive-logs-search').addEventListener('keydown', event => {
+    if (event.key === 'Enter') searchArchiveLogs();
+  });
+
+  async function triggerArchive() {
+    showGlobalConfirm(
+      'Archive audit logs older than 6 months? This exports them to an encrypted file, copies them to the legacy table, then removes them from the current table. This operation cannot be undone.',
+      async () => {
+        try {
+          const response = await fetch('/audit-logs/api/archive', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+          });
+          const responseText = await response.text();
+          let result;
+          try {
+            result = responseText ? JSON.parse(responseText) : {};
+          } catch {
+            const detail = responseText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180);
+            throw new Error(
+              `Server returned a non-JSON response (HTTP ${response.status}). ${detail || 'Check server logs.'}`
+            );
+          }
+
+          if (!response.ok || result.status !== 'success') {
+            throw new Error(result.message || 'Archive failed');
+          }
+
+          Toast.success(result.message || 'Archive completed successfully', { duration: 5000 });
+          fetchArchiveStats();
+          fetchArchiveHistory();
+          fetchLogs(1);
+        } catch (error) {
+          console.error('Archive failed:', error);
+          Toast.error('Archive failed: ' + error.message, { duration: 5000 });
+        }
+      },
+      {
+        title: 'Archive Audit Logs',
+        confirmText: 'Archive Now',
+        confirmClasses: 'bg-red-600 hover:bg-red-700'
+      }
+    );
   }
 
   // ==========================================
@@ -1177,6 +1393,7 @@
       if (e.key === 'Escape') {
         hideAuditInfo();
         hideDetailModal();
+        hideArchiveLogs();
         hideArchiveHistory();
       }
     });
@@ -1193,6 +1410,9 @@
         if (e.target === e.currentTarget) hideArchiveHistory();
       });
     }
+    document.getElementById('archiveLogsModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) hideArchiveLogs();
+    });
     
     // Initial load
     fetchLogs(1);

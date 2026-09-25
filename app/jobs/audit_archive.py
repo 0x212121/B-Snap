@@ -137,6 +137,7 @@ class AuditArchiveService:
         timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         filename = f"audit_archive_{timestamp_str}_{oldest.strftime('%Y%m')}_{newest.strftime('%Y%m')}.json.gz.enc"
         file_path = self.archive_dir / filename
+        temp_file_path = file_path.with_name(f".{filename}.tmp")
         
         try:
             # Step 1: Export to JSON
@@ -149,28 +150,32 @@ class AuditArchiveService:
             # Step 3: Encrypt
             encrypted, key_id = self._encrypt_data(compressed)
             
-            # Step 4: Write to file
-            with open(file_path, 'wb') as f:
+            # Stage the archive under a temporary name until validation succeeds.
+            with open(temp_file_path, 'wb') as f:
                 f.write(encrypted)
             
-            file_size = file_path.stat().st_size
-            logger.info(f"Archive file created: {file_path} ({file_size} bytes)")
+            file_size = temp_file_path.stat().st_size
+            logger.info(f"Archive staged for verification: {temp_file_path} ({file_size} bytes)")
             
             # Step 5: Calculate checksum
-            checksum = self._calculate_checksum(file_path)
+            checksum = self._calculate_checksum(temp_file_path)
             
-            # Step 6: Copy to legacy table
-            legacy_records = self._copy_to_legacy(logs_to_archive)
-            
-            # Step 7: Verify integrity before deletion
-            if not self._verify_archive_integrity(file_path, logs_to_archive):
+            # Verify the staged file before writing legacy copies or deleting source rows.
+            if not self._verify_archive_integrity(temp_file_path, logs_to_archive):
                 raise Exception("Archive integrity verification failed")
+
+            # Step 6: Copy to legacy table
+            self._copy_to_legacy(logs_to_archive)
+
+            # Publish the final archive only after the encrypted file has been verified.
+            temp_file_path.replace(file_path)
+            logger.info(f"Archive file published: {file_path} ({file_size} bytes)")
             
-            # Step 8: Delete from current table
+            # Step 7: Delete from current table
             # Note: This requires temporarily disabling the append-only trigger
             deleted_count = self._delete_archived_logs(logs_to_archive)
             
-            # Step 9: Record archive history
+            # Step 8: Record archive history
             archive_record = AuditArchiveHistory(
                 archived_at=datetime.now(timezone.utc),
                 archived_by=archived_by,
@@ -201,26 +206,36 @@ class AuditArchiveService:
             }
             
         except Exception as e:
-            self.db.rollback()
-            logger.error(f"Archive failed: {str(e)}")
+            # Failed attempts must not leave a published or partial archive file.
+            for candidate in (temp_file_path, file_path):
+                try:
+                    candidate.unlink(missing_ok=True)
+                except OSError as cleanup_error:
+                    logger.error("Failed to remove incomplete archive file %s: %s", candidate, cleanup_error)
+
+            try:
+                self.db.rollback()
+            except Exception:
+                logger.exception("Failed to roll back audit archive transaction")
+            logger.error("Archive failed: %s", e)
             
             # Record failed attempt
-            archive_record = AuditArchiveHistory(
-                archived_at=datetime.now(timezone.utc),
-                archived_by=archived_by,
-                archive_period_start=oldest,
-                archive_period_end=newest,
-                records_archived=0,
-                file_path=str(file_path),
-                status='failed',
-                notes=f"Failed: {str(e)}"
-            )
-            self.db.add(archive_record)
-            self.db.commit()
-            
-            # Clean up partial file if exists
-            if file_path.exists():
-                file_path.unlink()
+            try:
+                archive_record = AuditArchiveHistory(
+                    archived_at=datetime.now(timezone.utc),
+                    archived_by=archived_by,
+                    archive_period_start=oldest,
+                    archive_period_end=newest,
+                    records_archived=0,
+                    file_path=str(file_path),
+                    status='failed',
+                    notes=f"Failed: {str(e)}"
+                )
+                self.db.add(archive_record)
+                self.db.commit()
+            except Exception:
+                self.db.rollback()
+                logger.exception("Failed to record audit archive failure")
             
             raise
     
@@ -322,7 +337,9 @@ class AuditArchiveService:
         """Get statistics about current and archived logs."""
         current_count = self.db.query(AuditLog).count()
         legacy_count = self.db.query(AuditLogLegacy).count()
-        archive_history_count = self.db.query(AuditArchiveHistory).count()
+        archive_history_count = self.db.query(AuditArchiveHistory).filter(
+            AuditArchiveHistory.status == "completed"
+        ).count()
         
         # Get oldest and newest in current table
         oldest_current = self.db.query(AuditLog.timestamp).order_by(AuditLog.timestamp).first()
