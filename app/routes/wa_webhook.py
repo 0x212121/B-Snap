@@ -16,6 +16,7 @@ from app.models.user import User
 from app.models.camera import Camera
 from app.models.health import CameraHealth
 from app.models.camera_daily_stats import CameraDailyStats
+from app.models.whitelist import RoleEnum, WhatsappWhitelist
 from app.routes.auth import admin_access_required
 from app.utils.wa_gateway import WAGatewayService, format_phone_number
 from app.utils.response_helper import json_success_response, json_error_response
@@ -97,25 +98,30 @@ class WABotHandler:
         return handler(sender, args)
     
     def _cmd_help(self, sender: str, args: list) -> str:
-        """Help command."""
-        return """🤖 *B-SNAP WhatsApp Bot Commands*
+        """Return the commands currently available from the WhatsApp workflow."""
+        entry = (
+            self.db.query(WhatsappWhitelist)
+            .filter(WhatsappWhitelist.phone_number == sender)
+            .first()
+        )
+        message = (
+            "*Perintah B-Snap Bot*\n"
+            "/help - tampilkan menu bantuan\n"
+            "/ip {nama kamera} - tampilkan alamat IP kamera\n"
+            "/ping {alamat IP atau hostname} - periksa koneksi host\n"
+            "/cctv {nama kamera atau alamat IP} - kirim snapshot terakhir\n"
+            "/snap {nama kamera atau alamat IP} - ambil snapshot terbaru\n"
+        )
+        if entry and entry.role == RoleEnum.admin:
+            message += (
+                "\n*Perintah Admin*\n"
+                "/edit {nama kamera}, user: {username}, pass: {password}, "
+                "ip: {alamat IP}, port: {port}, status: {status}, group: {nama grup}\n"
+                "/whitelist add {nomor WA} {nama} - izinkan nomor mengakses bot\n"
+                "/whitelist remove {nomor WA} - hapus izin akses bot"
+            )
+        return message + "\n\nContoh: /cctv Gerbang Utama"
 
-📋 *Status Commands:*
-• `status` - System overview
-• `cameras` - List all cameras
-• `health` - Camera health check
-• `report` - Daily snapshot report
-
-📸 *Camera Commands:*
-• `snapshot <camera_name>` - Get latest snapshot
-
-📝 *Examples:*
-• `status`
-• `cameras`
-• `snapshot Camera-01`
-
-Type any command to get started!"""
-    
     def _cmd_status(self, sender: str, args: list) -> str:
         """System status command."""
         try:
@@ -287,36 +293,87 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
     """
     Receive webhook from GoWA when incoming message arrives.
     
-    GoWA Payload Example:
-    {
-        "from": "6281234567890",
-        "message": "status",
-        "timestamp": 1234567890,
-        "message_id": "ABC123"
-    }
+    GoWA payloads may be direct or nested under `payload`, for example
+    {"payload": {"from": "6281234567890", "body": "/help", "chat_id": "..."}}.
     """
     try:
         payload = await request.json()
-        logger.debug(f"GoWA Webhook received: {payload}")
+        if not isinstance(payload, dict):
+            logger.warning("GoWA webhook received a non-object JSON payload")
+            return json_success_response("Webhook payload ignored")
+
+        raw_event = payload.get("payload")
+        logger.info(
+            "GoWA webhook received: event=%s top_level_fields=%s payload_fields=%s",
+            payload.get("event", "legacy"),
+            ",".join(sorted(payload.keys())),
+            ",".join(sorted(raw_event.keys())) if isinstance(raw_event, dict) else "<not-object>",
+        )
+
+        if payload.get("event") not in (None, "message"):
+            logger.info("Ignoring non-message GoWA event: %s", payload.get("event"))
+            return json_success_response("Webhook event ignored")
         
-        # Extract data
-        sender = payload.get("from", "")
-        message = payload.get("message", "")
+        # GoWA payloads can arrive directly or nested under `payload`.
+        event = payload.get("payload") if isinstance(payload.get("payload"), dict) else payload
+        if event.get("is_from_me") is True:
+            logger.info("Ignoring outgoing GoWA message event")
+            return json_success_response("Outgoing message ignored")
+        sender = event.get("from", "")
+        message = event.get("body") or event.get("message") or ""
         
         if not sender or not message:
+            logger.warning(
+                "GoWA message missing sender or text: has_sender=%s has_body=%s",
+                bool(sender),
+                bool(message),
+            )
             return json_success_response("Webhook received (empty)")
         
-        # Format sender number
-        sender = format_phone_number(sender)
-        
-        # Handle command
+        # GoWA may provide a device-qualified JID such as
+        # `628123456789:12@s.whatsapp.net`. Keep only the phone portion
+        # before normalizing, matching the existing n8n workflow's ^\d+.
+        sender_phone = re.split(r"[@:]", str(sender), maxsplit=1)[0]
+        sender = format_phone_number(sender_phone)
+        command, _ = WABotHandler(db).parse_command(message)
+        logger.info(
+            "GoWA message received: event=%s command=%s sender_suffix=%s",
+            payload.get("event", "legacy"),
+            command or "<empty>",
+            sender[-4:] if sender else "<empty>",
+        )
+
+        # The webhook is public so GoWA can call it, so whitelist every bot
+        # command here rather than relying on browser-session authentication.
         bot = WABotHandler(db)
+        allowed = (
+            db.query(WhatsappWhitelist)
+            .filter(WhatsappWhitelist.phone_number == sender)
+            .first()
+        )
+        if not allowed:
+            logger.warning(
+                "Ignoring WhatsApp command from non-whitelisted sender ending in %s",
+                sender[-4:] if sender else "<empty>",
+            )
+            return json_success_response("Sender is not allowed")
+
+        # Handle command
         response = bot.handle(sender, message)
         
         # Send response back
         if response:
             wa_service = WAGatewayService(db)
-            wa_service.send_text(sender, response)
+            # GoWA documents chat_id as the target chat JID, including its
+            # @s.whatsapp.net or @g.us suffix.
+            recipient = str(event.get("chat_id") or sender).strip()
+            send_result = wa_service.send_text(recipient, response)
+            if not send_result.get("success"):
+                logger.error(
+                    "Failed to send WhatsApp /help response to %s: %s",
+                    recipient,
+                    send_result.get("error", "unknown GoWA error"),
+                )
         
         return json_success_response("Message processed")
         

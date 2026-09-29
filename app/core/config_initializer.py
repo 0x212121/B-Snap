@@ -64,8 +64,9 @@ DEFAULT_CONFIG = {
     
     # WhatsApp Gateway settings
     "gowa_enabled": "0",
-    "gowa_base_url": "http://localhost:3000",
-    "gowa_api_key": "",
+    "gowa_base_url": "http://172.16.1.200:3535",
+    "gowa_api_key": "admin:admin",
+    "gowa_device_id": "bsnap",
     "gowa_default_receiver": "",
     "wa_daily_report_hour": "8",  # New: WA daily report hour (0-23)
     "wa_daily_report_minute": "0",  # New: WA daily report minute (0-59)

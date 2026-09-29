@@ -60,6 +60,12 @@ class GoWAConfig:
         """
         key = self.get("gowa_api_key", "")
         return key if key else None
+
+    @property
+    def device_id(self) -> Optional[str]:
+        """Optional GoWA device ID for multi-device deployments."""
+        value = self.get("gowa_device_id", "")
+        return value.strip() or None
     
     @property
     def default_receiver(self) -> Optional[str]:
@@ -86,6 +92,8 @@ class WAGatewayService:
             logger.debug("GoWA initialized with authentication")
         else:
             logger.debug("GoWA initialized without authentication (no API key)")
+        if self.config.device_id:
+            self.session.headers["X-Device-Id"] = self.config.device_id
 
     @staticmethod
     def _auth_headers(secret: str) -> Dict[str, str]:
@@ -124,6 +132,10 @@ class WAGatewayService:
             return {"success": False, "error": "GoWA not configured"}
         
         try:
+            # GoWA expects individual recipients as WhatsApp JIDs; group JIDs
+            # and already-qualified personal JIDs are passed through unchanged.
+            if "@" not in phone:
+                phone = f"{phone}@s.whatsapp.net"
             payload = {
                 "phone": phone,
                 "message": message,

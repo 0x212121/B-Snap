@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added the native GoWA `/help` command with admin-only command details, documented webhook/JID handling, device-qualified sender normalization, optional multi-device selection through `X-Device-Id`, inbound webhook diagnostics, and public webhook routing protected by the WhatsApp whitelist.
+
+### Changed
+
+- Updated `start-local.ps1` to honor `BIND` and bind web/all modes to `0.0.0.0:8080` by default so external webhook clients can reach the server when network access allows it.
+
 ## [2.3.0] - 2026-09-29
 
 ### Added
@@ -33,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Added a clock icon to the Job Intervals section in Admin Config.
 - Kept common technical terms such as Dashboard, Job, Health Check, Uptime, Downtime, API, Soft Delete, and Retention Hold in English in Indonesian UI translations.
 - Matched Admin Config width, headings, tab controls, setting cards, fields, and save button to the shared styling used by Email Recipients while preserving the existing settings and actions.
 - Matched Email Templates page cards, controls, and buttons to the shared styling used by Email Recipients.

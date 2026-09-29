@@ -127,6 +127,7 @@ async def config_save(
     gowa_enabled: Optional[bool] = Form(False),
     gowa_base_url: str = Form("http://localhost:3000"),
     gowa_api_key: str = Form(""),
+    gowa_device_id: str = Form(""),
     gowa_default_receiver: str = Form(""),
     app_logo: UploadFile = File(None)
 ):
@@ -267,6 +268,7 @@ async def config_save(
         "gowa_enabled": str(int(gowa_enabled)),
         "gowa_base_url": gowa_base_url,
         "gowa_api_key": gowa_api_key.strip(),
+        "gowa_device_id": gowa_device_id.strip(),
         "gowa_default_receiver": gowa_default_receiver.strip(),
     }
 

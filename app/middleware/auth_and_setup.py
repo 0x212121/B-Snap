@@ -37,6 +37,9 @@ ALLOWED_PUBLIC_PATHS = [
     "/mfa/setup",
     "/mfa/force-verify",
     "/favicon.ico",
+    # Incoming GoWA events cannot carry a B-Snap browser session. The webhook
+    # handler enforces WhatsApp whitelist access before running bot commands.
+    "/webhook/gowa",
 ]
 
 class AuthAndSetupMiddleware(BaseHTTPMiddleware):

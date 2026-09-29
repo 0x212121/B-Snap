@@ -1,0 +1,3542 @@
+{
+  "name": "WA B-Snap Bot Workflow Final",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Reply \"pong\" on \"ping\" text",
+        "height": 243,
+        "width": 368,
+        "color": 4
+      },
+      "id": "2a0efd90-4ca0-40c5-b8db-1af165b8e4de",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -752,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Request CCTV Snapshot",
+        "height": 960,
+        "width": 3180,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1248,
+        768
+      ],
+      "typeVersion": 1,
+      "id": "6e973c75-312f-4ed7-80bb-10e6f68c2aa7",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('sender number and IP').item.json.GoWAIP }}/send/message",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $('sender number and IP').item.json.GroupName }}"
+            },
+            {
+              "name": "message",
+              "value": "CCTV or snapshot not found."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1856,
+        624
+      ],
+      "id": "f41e0c74-34be-4cd6-b64f-c0bf0ae8fd39",
+      "name": "Send Text No CCTV",
+      "executeOnce": true,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "TDpo5o87R7uCLaKf",
+          "name": "WA web admin"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputText = $('Webhook').first().json.body.payload.body\n\nif (inputText) {\n  const prefixToRemove = '/cctv';\n  const startIndex = inputText.toLowerCase().indexOf(prefixToRemove.toLowerCase());\n\n  if (startIndex === 0) {\n    const cctvValue = inputText.substring(prefixToRemove.length).trim();\n    const cleanedCctvValue = cctvValue.replace(/\\u00A0/g, ' ');\n    return [{\n      json: {\n        cctvName: cleanedCctvValue,\n      }\n    }];\n  } else {\n    // Ini seharusnya tidak terjadi karena node IF sudah memfilter\n    return [{\n      json: {\n        cctvName: null\n      }\n    }];\n  }\n} else {\n  return [{\n    json: {\n      cctvName: null\n    }\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        848
+      ],
+      "id": "f44b5cfb-092c-4f14-b725-78943b0e2dfc",
+      "name": "Get CCTV name",
+      "alwaysOutputData": false,
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('sender number and IP').first().json.GoWAIP }}/send/message",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $('sender number and IP').first().json.GroupName }}"
+            },
+            {
+              "name": "message",
+              "value": "Processing CCTV snapshot..."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1856,
+        848
+      ],
+      "id": "17a565b1-4dee-4615-b913-6e9416af661a",
+      "name": "Send Processing",
+      "executeOnce": true,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "TDpo5o87R7uCLaKf",
+          "name": "WA web admin"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputText = $('Webhook').first().json.body.payload.body\nif (inputText) {\n  const prefixToRemove = '/ping';\n  const startIndex = inputText.toLowerCase().indexOf(prefixToRemove.toLowerCase());\n\n  if (startIndex === 0) {\n    const hostValue = inputText.substring(prefixToRemove.length).trim();\n    return [{\n      json: {\n        hostname: hostValue,\n      }\n    }];\n  } else {\n    // Ini seharusnya tidak terjadi karena node IF sudah memfilter\n    return [{\n      json: {\n        hostname: null\n      }\n    }];\n  }\n} else {\n  return [{\n    json: {\n      hostname: null\n    }\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        1520
+      ],
+      "id": "da29eb33-0d69-4378-9204-7cc623953a34",
+      "name": "Get hostname",
+      "alwaysOutputData": false,
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "url": "={{ $('sender number and IP').item.json.serverIP }}/ping?ip={{ $('Get hostname').item.json.hostname }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        1568
+      ],
+      "id": "ddea3c65-a46a-4233-9a43-b23f48dfb30b",
+      "name": "Ping API Call",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "HIi4KnE1mBg622hJ",
+          "name": "B-Snap Bearer Authentication"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ac6dec6e-a704-4811-8af8-8938ed6ae56e",
+              "leftValue": "={{ $json[\"cctvNotExist\"] }}",
+              "rightValue": {},
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1632,
+        992
+      ],
+      "id": "b09a0425-2370-499a-8e1c-785c21b59206",
+      "name": "If CCTV is not exist",
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "url": "={{ $('sender number and IP').item.json.serverIP }}/snapshots/search?identifier={{ encodeURIComponent($json.identifier) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        736,
+        752
+      ],
+      "id": "4874fe78-6a23-426a-8b5b-c953922da4ea",
+      "name": "Get snapshot by CCTV name",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "HIi4KnE1mBg622hJ",
+          "name": "B-Snap Bearer Authentication"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputText = $('Webhook').first().json.body.payload.body\n\nif (inputText) {\n  const prefixToRemove = '/ip';\n  const startIndex = inputText.toLowerCase().indexOf(prefixToRemove.toLowerCase());\n\n  if (startIndex === 0) {\n    const cctvValue = inputText.substring(prefixToRemove.length).trim();\n\n    const cleanedCctvValue = cctvValue.replace(/\\u00A0/g, ' ');\n    return [{\n      json: {\n        cctvName: cleanedCctvValue,\n      }\n    }];\n  } else {\n    // Ini seharusnya tidak terjadi karena node IF sudah memfilter\n    return [{\n      json: {\n        cctvName: null\n      }\n    }];\n  }\n} else {\n  return [{\n    json: {\n      cctvName: null\n    }\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        288
+      ],
+      "id": "0b639573-fe55-4c50-a864-a5b66d376aab",
+      "name": "Get CCTV name1",
+      "alwaysOutputData": false,
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "url": "={{ $('sender number and IP').item.json.serverIP }}/cctv/resolve-ip?keyword={{ $json.cctvName }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        736,
+        288
+      ],
+      "id": "3622782b-3ca0-4e33-afa5-1c98e2cf068d",
+      "name": "Get CCTV IP",
+      "alwaysOutputData": false,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "HIi4KnE1mBg622hJ",
+          "name": "B-Snap Bearer Authentication"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('sender number and IP').item.json.GoWAIP }}/send/message",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $('sender number and IP').item.json.GroupName }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.results\n    .sort((a, b) => a.name.localeCompare(b.name))\n    .map(item => `${item.name}: ${item.ip}`)\n    .join('\\n') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1184,
+        144
+      ],
+      "id": "a4e67218-4ba6-45a9-8877-fccdebefffd1",
+      "name": "Send CCTV IP list",
+      "executeOnce": true,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "TDpo5o87R7uCLaKf",
+          "name": "WA web admin"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Get CCTV IP",
+        "height": 280,
+        "width": 1200,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        192,
+        176
+      ],
+      "typeVersion": 1,
+      "id": "998fb1b4-01f1-4e34-9e6f-0d77a329c1eb",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('sender number and IP').item.json.GoWAIP }}/send/message",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $('sender number and IP').item.json.GroupName }}"
+            },
+            {
+              "name": "message",
+              "value": "=*Here are the available commands*\n/help - display help menu\n/ip {camera name} - get camera's IP address\n/ping {ip address} - ping host\n/cctv {camera name} or {camera IP} - get last camera snapshot\n/snap {camera name} or {camera IP} - get real-time camera snapshot\n{{ $if($('If sender is allowed').item.json.role === 'admin',\n'\\n*Admin access commands*\\n/edit {camera name}, user: {username}, pass: {password}, ip: {camera IP}, port: {camera port}, status: {Active | Deactivated | Restricted | Standalone}, group: {group name}\\n/whitelist add {phone number} {name} - whitelist for access to B-Snap bot\\n/whitelist remove {phone number} - remove from whitelist', ''\n) }}\n{{'\\n_example_ :'}}\n/cctv 172.16.33.33\n{{ $if($('If sender is allowed').item.json.role === 'admin',\n'/edit Backyard, user: admin, pass: 123456, ip: 192.168.1.10, port: 8899, status: Active, group: IT',''\n) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -608,
+        144
+      ],
+      "id": "e6ca0959-4a48-4439-a044-5de198c733bf",
+      "name": "Send help message",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "TDpo5o87R7uCLaKf",
+          "name": "WA web admin"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "## Help Menu",
+        "height": 260,
+        "width": 536,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -832,
+        48
+      ],
+      "typeVersion": 1,
+      "id": "49e0a87b-8430-4130-8bb6-c3cd1137241e",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Request Real-time Snapshot",
+        "height": 416,
+        "width": 1240,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -736,
+        992
+      ],
+      "typeVersion": 1,
+      "id": "44f15072-56e4-40dc-a9de-58701b500eec",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('sender number and IP').item.json.serverIP }}/snap/{{ encodeURIComponent($node[\"Get CCTV name2\"].json.cctvName) }}?user_phone={{ $('sender number and IP').item.json.senderNo }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        1232
+      ],
+      "id": "5a6eed61-d586-4a15-885e-2719a80fe7b2",
+      "name": "Real-time snapshot",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "HIi4KnE1mBg622hJ",
+          "name": "B-Snap Bearer Authentication"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('sender number and IP').item.json.GoWAIP }}/send/message",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $('sender number and IP').item.json.GroupName }}"
+            },
+            {
+              "name": "message",
+              "value": "Snapshot success!"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        288,
+        1056
+      ],
+      "id": "bd2d45de-7a21-4cfb-9405-540607842acf",
+      "name": "Snapshot Success Msg",
+      "executeOnce": true,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "TDpo5o87R7uCLaKf",
+          "name": "WA web admin"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputText = $('Webhook').first().json.body.payload.body\nif (inputText) {\n  const prefixToRemove = '/snap';\n  const startIndex = inputText.toLowerCase().indexOf(prefixToRemove.toLowerCase());\n\n  if (startIndex === 0) {\n    const cctvValue = inputText.substring(prefixToRemove.length).trim();\n    const cleanedCctvValue = cctvValue.replace(/\\u00A0/g, ' ');\n    return [{\n      json: {\n        cctvName: cleanedCctvValue,\n      }\n    }];\n  } else {\n    // Ini seharusnya tidak terjadi karena node IF sudah memfilter\n    return [{\n      json: {\n        cctvName: null\n      }\n    }];\n  }\n} else {\n  return [{\n    json: {\n      cctvName: null\n    }\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        1184
+      ],
+      "id": "c7420482-3bd9-410f-a32e-8419f53b8773",
+      "name": "Get CCTV name2",
+      "alwaysOutputData": false,
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0ca6612a-6a88-495f-a460-345b1d1abf35",
+              "name": "filename",
+              "value": "={{ $json[\"filename\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "a8bd48e5-90db-47e5-b45f-5b9808497301",
+              "name": "camera",
+              "value": "={{ $json[\"camera\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "9a1bf371-253f-4b0f-97f4-77666eff31ef",
+              "name": "ip",
+              "value": "={{ $json[\"ip\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "0c4ad4a6-c837-4c79-9a8f-c599dbb40081",
+              "name": "timestamp",
+              "value": "={{ $json[\"timestamp\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "6497c2e5-723b-4b80-a5f9-fc16d1cbc539",
+              "name": "uptime",
+              "value": "={{ $json[\"uptime\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "c9b1d2f8-6ad3-4f62-bf8e-2908bbc17140",
+              "name": "snapshotUrl",
+              "value": "={{ $('sender number and IP').first().json.serverIP }}{{ $json[\"url\"] + \"?user_phone=\" + $('sender number and IP').first().json.senderNo +\"&group=\" + $('sender number and IP').first().json.GroupName}}",
+              "type": "string"
+            },
+            {
+              "id": "4702fc2c-a436-43a6-aeca-d9728a63da81",
+              "name": "location",
+              "value": "={{ $json[\"lat\"] }},{{ $json[\"long\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "24684498-0ec4-4e4a-be7d-8de2198fc851",
+              "name": "img_path",
+              "value": "={{ $json.img_path }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1856,
+        1392
+      ],
+      "id": "ec1370c4-a3e1-4779-bd5e-9600427c908e",
+      "name": "Snapshot details",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c6f4d745-8cb8-4987-8c5c-033994c2801d",
+              "name": "identifier",
+              "value": "={{ $json.cctvName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        800
+      ],
+      "id": "bf307d8b-d98e-4bbc-8bec-5af506318dd7",
+      "name": "Get CCTV Name",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d6d892ee-f72c-43b0-b659-a3f3b872295c",
+              "name": "identifier",
+              "value": "={{ $('Get CCTV name2').item.json.cctvName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        512,
+        1232
+      ],
+      "id": "b7120f94-5f47-4ec3-a2c8-e6f53bf9b537",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "content": "## Ping Command",
+        "height": 356,
+        "width": 1080
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -768,
+        1376
+      ],
+      "typeVersion": 1,
+      "id": "3af5d4cb-1435-4830-9868-c1a2608d7299",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('sender number and IP').item.json.GoWAIP }}/send/message",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $('sender number and IP').item.json.GroupName }}"
+            },
+            {
+              "name": "message",
+              "value": "Snapshot capture failed. Attempting to send the most recent available snapshot..."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        288,
+        1248
+      ],
+      "id": "7b5cc637-927f-4b42-b747-5fc6d3afb095",
+      "name": "Snapshot Failed Message",
+      "executeOnce": true,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "TDpo5o87R7uCLaKf",
+          "name": "WA web admin"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('sender number and IP').item.json.GoWAIP }}/send/message",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $('sender number and IP').item.json.GroupName }}"
+            },
+            {
+              "name": "message",
+              "value": "⚠️ Please input hostname or IP"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        992
+      ],
+      "id": "7c368d05-58f7-4e9a-9d58-eb2e95a56f1d",
+      "name": "No IP or Hostname",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "TDpo5o87R7uCLaKf",
+          "name": "WA web admin"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "699975b2-b087-4b5f-8176-50ddaf9f4a28",
+              "leftValue": "={{ $json.hostname }}",
+              "rightValue": "\"\"",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -384,
+        1520
+      ],
+      "id": "53f3725b-2b16-41d9-b50c-30f8467c7340",
+      "name": "If no hostname"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('sender number and IP').item.json.GoWAIP }}/send/message",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $('sender number and IP').item.json.GroupName }}"
+            },
+            {
+              "name": "=message",
+              "value": "=❌ Can't process your request. Reason: {{ $json.error.message.split(':').slice(1).join(':').replace(/^\"|\"$/g, '').trim() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1184,
+        384
+      ],
+      "id": "33f29766-79f3-4e69-a17c-0a0053a22fe8",
+      "name": "Send Text Can't Process Request",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "TDpo5o87R7uCLaKf",
+          "name": "WA web admin"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('sender number and IP').item.json.GoWAIP }}/send/message",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "=6282191799711"
+            },
+            {
+              "name": "message",
+              "value": "=*n8n flow error:*\n{{ $('Set error message').item.json.error.message }}\n\n{{ $('Set error message').item.json.error.stack }}\n\n*Message Processed:*\n{{ $('Webhook').item.json.body.message.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1408,
+        384
+      ],
+      "id": "a8b5b6cc-27d8-4002-8374-f2150ec5730b",
+      "name": "Send Error Message",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "TDpo5o87R7uCLaKf",
+          "name": "WA web admin"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a67cf493-ed55-4090-aaed-6a70ac7f57bd",
+              "name": "error.message",
+              "value": "={{ $json.error.message }}",
+              "type": "string"
+            },
+            {
+              "id": "cbd6d4e2-3ecb-419d-b8ec-0212ef406d83",
+              "name": "error.stack",
+              "value": "={{ $json.error.stack }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        432
+      ],
+      "id": "cf309fbc-5a4a-4949-a68a-815a5126fb50",
+      "name": "Set error message"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('sender number and IP').first().json.GoWAIP }}/send/image",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $('sender number and IP').first().json.GroupName }}"
+            },
+            {
+              "name": "caption",
+              "value": "=📷 Camera: {{ $('Snapshot details').item.json.camera.split(\".\")[0] }}\n📌 IP: {{ $('Snapshot details').item.json.ip }}\n🕒 Snapshot time: {{ $('Snapshot details').item.json.timestamp.split(\".\")[0] }}\n{{ $if(\n  $('Snapshot details').item.json.uptime !== 'None',\n  '⏱️ Uptime: ' + $('Snapshot details').item.json.uptime,\n  ''\n) }}\n{{ $if(\n  $('Snapshot details').item.json.location !== 'None,None',\n  '📍 Maps: https://www.google.com/maps?q=' + $('Snapshot details').item.json.location,\n  ''\n) }}"
+            },
+            {
+              "name": "view_once",
+              "value": "false"
+            },
+            {
+              "name": "compress",
+              "value": "false"
+            },
+            {
+              "name": "image_url",
+              "value": "={{ $('Snapshot details').item.json.snapshotUrl }}&token={{ $json.token }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2528,
+        1392
+      ],
+      "id": "56c15f12-5111-4d44-92e0-5ac0d13ab18f",
+      "name": "Send Snapshot",
+      "executeOnce": false,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "TDpo5o87R7uCLaKf",
+          "name": "WA web admin"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2080,
+        1392
+      ],
+      "id": "f31b2a7f-6597-4a30-9f32-2f4ee6cdd817",
+      "name": "Loop Over Items",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "5cf66054-64e7-4ca0-9441-a64ae08e8f38",
+                    "leftValue": "={{ $json.allowed }}",
+                    "rightValue": "true",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fa4be266-525b-4d1b-999a-a69323a7a993",
+      "name": "If sender is allowed",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.1,
+      "position": [
+        -1280,
+        384
+      ],
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('sender number and IP').first().json.serverIP }}/snapshot/token/{{ $('Check CCTV parameter').item.json.img_path }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2304,
+        1392
+      ],
+      "id": "77417846-e8e2-4f01-b847-3b39f75a1133",
+      "name": "Generate signed token",
+      "executeOnce": false,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "HIi4KnE1mBg622hJ",
+          "name": "B-Snap Bearer Authentication"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bdfd577b-d4cd-41e5-b9dd-8611a1a10be7",
+              "name": "senderNo",
+              "value": "={{ $json.body.payload.from.match(/^\\d+/)?.[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "6880e2f7-d647-4ade-a18b-c2ba2c93bd69",
+              "name": "GroupName",
+              "value": "={{ $json.body.payload.chat_id.split(\" \").at(-1) }}",
+              "type": "string"
+            },
+            {
+              "id": "429502e9-e572-48b7-b7ac-55694c89c069",
+              "name": "serverIP",
+              "value": "https://b-snap.kpc.co.id",
+              "type": "string"
+            },
+            {
+              "id": "5734c8dd-eadd-456f-9468-6864e3e31b0a",
+              "name": "GoWAIP",
+              "value": "http://172.16.1.200:3434",
+              "type": "string"
+            },
+            {
+              "id": "4a6599d7-368b-46ee-b325-b2fea046b0a9",
+              "name": "DeviceID",
+              "value": "b-snap2",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1728,
+        384
+      ],
+      "id": "ef4a9785-bb56-4714-b3a0-69050b93674d",
+      "name": "sender number and IP",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2176,
+        3328
+      ],
+      "id": "9a69c60f-dc3f-46a9-86fc-f05bf33ad2da",
+      "name": "Schedule no snapshot camera",
+      "notesInFlow": true,
+      "notes": "Kirim CCTV tanpa snapshot tiap hari"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.serverIP }}/stats/no-data-cameras?days=7",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1728,
+        3328
+      ],
+      "id": "2d56fdc8-9474-4a7b-92e4-f10e58bc8969",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "HIi4KnE1mBg622hJ",
+          "name": "B-Snap Bearer Authentication"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Scheduler",
+        "height": 340,
+        "width": 1360,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2368,
+        3152
+      ],
+      "typeVersion": 1,
+      "id": "c683ff82-e343-4fbe-bd90-aa1e651220bc",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('Webhook').first().json.body.payload.body\n\nconst patterns = {\n  hostname: /\\/edit\\s+([^\\n,]+)/i,\n  username: /user\\s*:\\s*([^\\n,]+)/i,\n  password: /pass\\s*:\\s*([^\\n,]+)/i,\n  ip: /ip\\s*:\\s*([^\\n,]+)/i,\n  port: /port\\s*:\\s*([^\\n,]+)/i,\n  status: /status\\s*:\\s*([^\\n,]+)/i,\n  group_name: /group\\s*:\\s*([^\\n,]+)/i\n};\n\nlet result = {};\nlet missing = [];\n\ntry {\n  for (const key in patterns) {\n    const match = input.match(patterns[key]);\n    if (match) {\n      result[key] = match[1].trim();\n    }\n  }\n\n  if (!result.hostname) missing.push(\"hostname\");\n  if (!result.username) missing.push(\"username\");\n  if (!result.password) missing.push(\"password\");\n\n  if (missing.length) {\n    return [\n      {\n        json: {\n          success: false,\n          error: `Missing required fields: ${missing.join(\", \")}`,\n          raw: input\n        }\n      }\n    ];\n  }\n\n  return [\n    {\n      json: {\n        success: true,\n        ...result\n      }\n    }\n  ];\n\n} catch (e) {\n  return [\n    {\n      json: {\n        success: false,\n        error: e.message,\n        raw: input\n      }\n    }\n  ];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        1856
+      ],
+      "id": "13df6015-cb5f-4662-9172-c82540708e01",
+      "name": "Input parser"
+    },
+    {
+      "parameters": {
+        "deviceIdOverride": "={{ $('sender number and IP').item.json.DeviceID }}",
+        "phoneNumber": "={{ $('sender number and IP').item.json.GroupName }}",
+        "message": "Edit camera successfully!",
+        "replyMessageId": "={{ $('Webhook').item.json.body.message.id }}"
+      },
+      "type": "@aldinokemal2104/n8n-nodes-gowa.gowa",
+      "typeVersion": 1,
+      "position": [
+        288,
+        1952
+      ],
+      "id": "da6ef7ed-6b5c-49de-b876-07b05df823bf",
+      "name": "Send Text Edit Camera Successfully",
+      "credentials": {
+        "goWhatsappApi": {
+          "id": "cAv2wiytVrPnCJyP",
+          "name": "GOWA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('sender number and IP').item.json.serverIP }}/api/n8n/update-camera",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        64,
+        1952
+      ],
+      "id": "98eeba41-3c12-4bfc-aa87-4bdabeda38b2",
+      "name": "Edit camera API",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "HIi4KnE1mBg622hJ",
+          "name": "B-Snap Bearer Authentication"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b2cb8254-74e0-4aa3-85cf-7ba8e60bcdc8",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -160,
+        1856
+      ],
+      "id": "f6389cfe-cfed-46c8-8169-d525aa250099",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "deviceIdOverride": "={{ $('sender number and IP').item.json.DeviceID }}",
+        "phoneNumber": "={{ $('sender number and IP').item.json.GroupName }}",
+        "message": "=Failed edit camera: {{ $json.error }}",
+        "replyMessageId": "={{ $('Webhook').item.json.body.message.id }}"
+      },
+      "type": "@aldinokemal2104/n8n-nodes-gowa.gowa",
+      "typeVersion": 1,
+      "position": [
+        64,
+        1760
+      ],
+      "id": "eba5386a-da88-4677-b073-947df3a629a9",
+      "name": "Send Text Failed Edit",
+      "credentials": {
+        "goWhatsappApi": {
+          "id": "cAv2wiytVrPnCJyP",
+          "name": "GOWA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Edit Camera",
+        "height": 400,
+        "width": 1200,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -832,
+        1712
+      ],
+      "typeVersion": 1,
+      "id": "c1aeafcd-e750-454d-b886-24dfc7647fe2",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "deviceIdOverride": "={{ $('sender number and IP').item.json.DeviceID }}",
+        "phoneNumber": "={{ $('sender number and IP').item.json.GroupName }}",
+        "message": "=❌ CCTV with name {{ $('Get CCTV name1').item.json.cctvName }} doesn't exist.",
+        "replyMessageId": "={{ $('Webhook').item.json.body.payload.id }}"
+      },
+      "type": "@aldinokemal2104/n8n-nodes-gowa.gowa",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        -64
+      ],
+      "id": "9040a2a1-d7f7-414a-8efc-d34bee833e1e",
+      "name": "Send Text Failed Edit1",
+      "executeOnce": true,
+      "credentials": {
+        "goWhatsappApi": {
+          "id": "cAv2wiytVrPnCJyP",
+          "name": "GOWA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $('sender number and IP').item.json.serverIP }}/api/admin/all-api-tokens",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -384,
+        2240
+      ],
+      "id": "5d18ddfc-b49c-4733-879b-76c67e31a372",
+      "name": "Get Token List",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "HIi4KnE1mBg622hJ",
+          "name": "B-Snap Bearer Authentication"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const tokens = items.map(item => item.json);  // ambil semua token dari items\nlet msg = '📋 *Daftar API Token User:*\\n\\n';\n\ntokens.forEach((t, i) => {\n  msg += `🆔 *User ID:* ${t.user_id}\\n👤 *Username:* ${t.username}\\n🔑 *Token:* ${t.token}\\n📅 *Created:* ${t.created_at}\\n⏳ *Expires:* ${t.expires_at}\\n`;\n  if (i < tokens.length - 1) msg += '\\n---\\n\\n';\n});\n\nreturn [{ json: { message: msg } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        2240
+      ],
+      "id": "b665a729-ada7-424e-9d71-031e175843f3",
+      "name": "format token list"
+    },
+    {
+      "parameters": {
+        "deviceIdOverride": "={{ $('sender number and IP').item.json.DeviceID }}",
+        "phoneNumber": "={{ $('sender number and IP').first().json.GroupName }}",
+        "message": "={{$json.message}}",
+        "replyMessageId": "={{ $('Webhook').first().json.body.message.id }}"
+      },
+      "type": "@aldinokemal2104/n8n-nodes-gowa.gowa",
+      "typeVersion": 1,
+      "position": [
+        64,
+        2240
+      ],
+      "id": "da8b816c-f7a8-4dd4-90b0-1bc66dd56e53",
+      "name": "Send token list",
+      "credentials": {
+        "goWhatsappApi": {
+          "id": "cAv2wiytVrPnCJyP",
+          "name": "GOWA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.serverIP }}/api/whatsapp/is-allowed?phone={{ $json.senderNo }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Caller",
+              "value": "n8n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1504,
+        384
+      ],
+      "id": "541963c8-a8c4-4f98-bea1-1bd758f5d46d",
+      "name": "Is sender allowed?",
+      "executeOnce": true,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "HIi4KnE1mBg622hJ",
+          "name": "B-Snap Bearer Authentication"
+        },
+        "httpHeaderAuth": {
+          "id": "DW95kl81G6VH6e9w",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $('Webhook').first().json.body.payload.body || \"\";\nconst lower = msg.toLowerCase();\nlet command = \"unknown\"; let arg = msg.split(\" \").slice(1).join(\" \").trim();\nif (lower.startsWith(\"/help\")) command = \"help\";\nelse if (lower.startsWith(\"ping\")) command = \"ping-test\";\nelse if (lower.startsWith(\"/ip\")) command = \"ip\";\nelse if (lower.startsWith(\"/ping\")) command = \"ping\";\nelse if (lower.startsWith(\"/cctv\")) command = \"cctv\";\nelse if (lower.startsWith(\"/snap\")) command = \"snap\";\nelse if (lower.startsWith(\"/edit\")) command = \"edit\";\nelse if (lower.startsWith(\"/token-check\")) command = \"token-check\";\nelse if (lower.startsWith(\"/whitelist add\")) command = \"whitelist-add\";\nelse if (lower.startsWith(\"/whitelist remove\")) command = \"whitelist-remove\";\nreturn [{json:{command,arg}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1056,
+        384
+      ],
+      "id": "ae578f92-c1b5-42f4-8f04-d2ac0e10fd70",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "content": "## Token Check",
+        "height": 360,
+        "width": 820
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -752,
+        2032
+      ],
+      "typeVersion": 1,
+      "id": "a77c866c-b953-4aab-9884-4732df96a74e",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "deviceIdOverride": "={{ $('sender number and IP').item.json.DeviceID }}",
+        "phoneNumber": "={{ $('sender number and IP').item.json.GroupName }}",
+        "message": "Hi! 👋 Unfortunately, your number isn't authorized to use this command. Please reach out to the admin if you need access. 😊",
+        "replyMessageId": "={{ $('Webhook').item.json.body.message.id }}"
+      },
+      "type": "@aldinokemal2104/n8n-nodes-gowa.gowa",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        2048
+      ],
+      "id": "dca1f45f-3264-4056-8ce7-73ac1a914165",
+      "name": "Don't have access",
+      "credentials": {
+        "goWhatsappApi": {
+          "id": "cAv2wiytVrPnCJyP",
+          "name": "GOWA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a392d79c-e427-4ea7-a005-25fdb7f85c8c",
+              "leftValue": "={{ $('If sender is allowed').item.json.role }}",
+              "rightValue": "admin",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -608,
+        1904
+      ],
+      "id": "783790e2-5084-463e-b32b-97aacb6be60c",
+      "name": "If admin"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a392d79c-e427-4ea7-a005-25fdb7f85c8c",
+              "leftValue": "={{ $('If sender is allowed').item.json.role }}",
+              "rightValue": "admin",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -608,
+        2192
+      ],
+      "id": "b539bcaf-ad16-4cac-9aac-8ba274f19a55",
+      "name": "If admin1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cameras = $input.first().json.cameras;\n\nconst all = cameras.map(cam => `${cam.hostname} (${cam.status})`).join('\\n');\n\nreturn [{\n  json: {\n    summary: all\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1504,
+        3328
+      ],
+      "id": "482858c7-7345-4d30-a0c5-d122ab5ea71e",
+      "name": "Summary"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('sender number and IP').item.json.serverIP }}/api/whitelist",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"phone_number\": \"{{$json.phone_number}}\",\n  \"name\": \"{{$json.name}}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        2528
+      ],
+      "id": "77f65086-1bd7-4023-a509-818d7384d698",
+      "name": "Add phone to whitelist",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "HIi4KnE1mBg622hJ",
+          "name": "B-Snap Bearer Authentication"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $('Webhook').first().json.body.payload.body.trim();\nconst parts = msg.split(\" \");\n\nif (parts.length >= 4) {\n  const phone_number = parts[2].replace(/\\D/g, \"\");\n  const name = parts.slice(3).join(\" \").trim();\n\n  return [{\n    json: {\n      phone_number,\n      name\n    }\n  }];\n} else {\n  throw new Error(\"Invalid format. Use: /whitelist add <phone> <name>\");\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        2528
+      ],
+      "id": "3ba0ca28-c597-4566-9408-fc3ef826c61f",
+      "name": "parsing whitelist command"
+    },
+    {
+      "parameters": {
+        "deviceIdOverride": "={{ $('sender number and IP').item.json.DeviceID }}",
+        "phoneNumber": "={{ $('sender number and IP').item.json.GroupName }}",
+        "message": "=✅ Successfully added {{ $('parsing whitelist command').item.json.name }} ({{ $('parsing whitelist command').item.json.phone_number }}) to the whitelist.\n",
+        "replyMessageId": "={{ $('Webhook').item.json.body.message.id }}"
+      },
+      "type": "@aldinokemal2104/n8n-nodes-gowa.gowa",
+      "typeVersion": 1,
+      "position": [
+        64,
+        2432
+      ],
+      "id": "212d2989-7d67-481b-8e4a-d6912556629a",
+      "name": "Success add to whitelist",
+      "credentials": {
+        "goWhatsappApi": {
+          "id": "cAv2wiytVrPnCJyP",
+          "name": "GOWA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ambil isi string JSON dari pesan error\nconst raw = $json.error.message;\nconst jsonString = raw.split(\" - \")[1].replace(/^\"|\"$/g, \"\").replace(/\\\\\"/g, '\"');\n\ntry {\n  const parsed = JSON.parse(jsonString);\n  const msg = parsed.detail?.[0]?.msg || \"Unknown error\";\n  return [{ json: { msg } }];\n} catch (e) {\n  return [{ json: { msg: \"Failed to parse error message.\" } }];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        2624
+      ],
+      "id": "65f071df-6cf9-48de-a3bb-9c2db02416d0",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "content": "## Whitelist phone number",
+        "height": 460,
+        "width": 1200,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -720,
+        2320
+      ],
+      "typeVersion": 1,
+      "id": "54973c3e-38c1-4df5-a128-c7684f0f3e84",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "deviceIdOverride": "={{ $('sender number and IP').item.json.DeviceID }}",
+        "phoneNumber": "={{ $('sender number and IP').item.json.GroupName }}",
+        "message": "=❌ Failed to whitelist {{ $('Add phone to whitelist').item.json.phone_number }}. Reason: {{ $json.msg }}\n",
+        "replyMessageId": "={{ $('Webhook').item.json.body.message.id }}"
+      },
+      "type": "@aldinokemal2104/n8n-nodes-gowa.gowa",
+      "typeVersion": 1,
+      "position": [
+        288,
+        2624
+      ],
+      "id": "d18b0241-8301-4142-827e-15eaa5fbf3d4",
+      "name": "Failed to whitelist",
+      "credentials": {
+        "goWhatsappApi": {
+          "id": "cAv2wiytVrPnCJyP",
+          "name": "GOWA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $('Webhook').first().json.body.payload.body.trim();\nconst parts = msg.split(\" \");\n\n// Expected format: /whitelist remove <phone_number>\nif (parts.length === 3 && parts[0] === \"/whitelist\" && parts[1] === \"remove\") {\n  const raw = parts[2].replace(/\\D/g, \"\");\n\n  // Optional: convert from 08xx to 628xx\n  const phone_number = raw.startsWith(\"08\") ? \"628\" + raw.slice(1) : raw;\n\n  return [{\n    json: {\n      command: \"remove_whitelist\",\n      phone_number\n    }\n  }];\n} else {\n  throw new Error(\"Invalid format. Use: /whitelist remove <phone_number>\");\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        3104
+      ],
+      "id": "b0371a95-1001-4d9a-9f3f-b03938bce12b",
+      "name": "parsing whitelist remove"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "={{ $('sender number and IP').item.json.serverIP }}/api/whitelist/{{ $json.phone_number }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        64,
+        2912
+      ],
+      "id": "44ddaf6b-d188-4d4d-87b1-43dbac17cd01",
+      "name": "remove number from whitelist",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "HIi4KnE1mBg622hJ",
+          "name": "B-Snap Bearer Authentication"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "deviceIdOverride": "={{ $('sender number and IP').item.json.DeviceID }}",
+        "phoneNumber": "={{ $('sender number and IP').item.json.GroupName }}",
+        "message": "=✅ Success! {{ $('parsing whitelist remove').item.json.phone_number }} is no longer whitelisted.",
+        "replyMessageId": "={{ $('Webhook').item.json.body.message.id }}"
+      },
+      "type": "@aldinokemal2104/n8n-nodes-gowa.gowa",
+      "typeVersion": 1,
+      "position": [
+        288,
+        2816
+      ],
+      "id": "5f1d10a8-28f0-4de6-94ed-c681da2498f4",
+      "name": "Success add to whitelist1",
+      "credentials": {
+        "goWhatsappApi": {
+          "id": "cAv2wiytVrPnCJyP",
+          "name": "GOWA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "deviceIdOverride": "={{ $('sender number and IP').item.json.DeviceID }}",
+        "phoneNumber": "={{ $('sender number and IP').item.json.GroupName }}",
+        "message": "=❌ Failed remove {{ $json.phone_number }} from the whitelist. Reason: {{ $json.error.message.split(':').slice(1).join(':').replace(/^\"|\"$/g, '').trim() }}",
+        "replyMessageId": "={{ $('Webhook').item.json.body.message.id }}"
+      },
+      "type": "@aldinokemal2104/n8n-nodes-gowa.gowa",
+      "typeVersion": 1,
+      "position": [
+        288,
+        3008
+      ],
+      "id": "868aaf70-4c7a-4885-9f5b-022096c907ff",
+      "name": "Failed to remove whitelist",
+      "credentials": {
+        "goWhatsappApi": {
+          "id": "cAv2wiytVrPnCJyP",
+          "name": "GOWA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Remove Whitelist",
+        "height": 540,
+        "width": 1200,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -720,
+        2720
+      ],
+      "typeVersion": 1,
+      "id": "43cb30d7-8e97-4b04-98dd-caa454302df3",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a392d79c-e427-4ea7-a005-25fdb7f85c8c",
+              "leftValue": "={{ $('If sender is allowed').item.json.role }}",
+              "rightValue": "admin",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -608,
+        2480
+      ],
+      "id": "3d1fdced-4ef6-4958-840d-783003abcfc6",
+      "name": "If admin2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a392d79c-e427-4ea7-a005-25fdb7f85c8c",
+              "leftValue": "={{ $('If sender is allowed').item.json.role }}",
+              "rightValue": "admin",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -608,
+        3072
+      ],
+      "id": "b86e7fcc-04c5-490b-a9ac-b914c83b0b69",
+      "name": "If admin3"
+    },
+    {
+      "parameters": {
+        "content": "## Filter Allowed Sender",
+        "height": 300,
+        "width": 1196,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2272,
+        256
+      ],
+      "typeVersion": 1,
+      "id": "da139036-d0e3-46d6-95c3-fb70c0ff5d73",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "429502e9-e572-48b7-b7ac-55694c89c069",
+              "name": "serverIP",
+              "value": "https://b-snap.kpc.co.id",
+              "type": "string"
+            },
+            {
+              "id": "a0a3a843-33fb-47ac-bd3e-1d2b528ea4d4",
+              "name": "GoWAIP",
+              "value": "http://172.16.1.200:3434",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1952,
+        3328
+      ],
+      "id": "1ddaf634-4472-490d-89f4-720b814182ec",
+      "name": "Server variable",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "555ca2f3-c672-407b-ac7e-c7defb874a50",
+              "leftValue": "={{ $json.phone_number }}",
+              "rightValue": "={{ $('sender number and IP').item.json.senderNo }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -160,
+        3104
+      ],
+      "id": "14352c2d-6f3c-4c35-b501-ffaf4c7fb910",
+      "name": "Check phone number"
+    },
+    {
+      "parameters": {
+        "deviceIdOverride": "={{ $('sender number and IP').item.json.DeviceID }}",
+        "phoneNumber": "={{ $('sender number and IP').item.json.GroupName }}",
+        "message": "=Can't remove yourself from whitelist",
+        "replyMessageId": "={{ $('Webhook').item.json.body.message.id }}"
+      },
+      "type": "@aldinokemal2104/n8n-nodes-gowa.gowa",
+      "typeVersion": 1,
+      "position": [
+        64,
+        3104
+      ],
+      "id": "550621e9-2500-4688-a854-b2e069af00a6",
+      "name": "Can't remove yourself from whitelist",
+      "credentials": {
+        "goWhatsappApi": {
+          "id": "cAv2wiytVrPnCJyP",
+          "name": "GOWA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "deviceIdOverride": "b-snap2",
+        "phoneNumber": "6282191799711",
+        "message": "=*{{ $('HTTP Request').item.json.total }} Cameras without snapshots in the last {{ $('HTTP Request').item.json.days_range }} days:* \n{{ $json.summary }}"
+      },
+      "type": "@aldinokemal2104/n8n-nodes-gowa.gowa",
+      "typeVersion": 1,
+      "position": [
+        -1280,
+        3328
+      ],
+      "id": "117be533-c89b-41fd-95a5-5b509316856a",
+      "name": "Update snapshots stats",
+      "credentials": {
+        "goWhatsappApi": {
+          "id": "cAv2wiytVrPnCJyP",
+          "name": "GOWA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $('sender number and IP').item.json.serverIP }}/snapshots/search?identifier={{ encodeURIComponent($json.identifier) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        736,
+        1136
+      ],
+      "id": "7d54ab39-bad9-4570-9297-126af2ffe183",
+      "name": "Get snapshot by CCTV IP",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "HIi4KnE1mBg622hJ",
+          "name": "B-Snap Bearer Authentication"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "let nameResult = [];\nlet ipResult = [];\n\ntry {\n  nameResult = $('Get snapshot by CCTV name').all()\n    .filter(item => item.json && Object.keys(item.json).length > 0);\n} catch (e) {\n  nameResult = [];\n}\n\ntry {\n  ipResult = $('Get snapshot by CCTV IP').all()\n    .filter(item => item.json && Object.keys(item.json).length > 0);\n} catch (e) {\n  ipResult = [];\n}\n\nlet selectedResults = [];\n\nif (nameResult.length > 0) {\n  selectedResults = nameResult;\n} else if (ipResult.length > 0) {\n  selectedResults = ipResult;\n}\n\nif (selectedResults.length === 0) {\n  return [{\n    json: { cctvNotExist: true }\n  }];\n} else {\n  return selectedResults.map(item => ({\n    json: {\n      ...item.json,\n      cctvNotExist: false\n    }\n  }));\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1408,
+        992
+      ],
+      "id": "005e75c8-3f1a-4016-babe-bfab5f469816",
+      "name": "Check CCTV parameter"
+    },
+    {
+      "parameters": {
+        "deviceIdOverride": "={{ $('sender number and IP').item.json.DeviceID }}",
+        "phoneNumber": "={{ $('sender number and IP').item.json.GroupName }}",
+        "message": "={{ $json.data }}",
+        "replyMessageId": "="
+      },
+      "type": "@aldinokemal2104/n8n-nodes-gowa.gowa",
+      "typeVersion": 1,
+      "position": [
+        64,
+        1568
+      ],
+      "id": "81a6ccaf-ddef-4140-9391-1085795bf483",
+      "name": "Send ping result",
+      "credentials": {
+        "goWhatsappApi": {
+          "id": "cAv2wiytVrPnCJyP",
+          "name": "GOWA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f1b32da0-264a-4801-ab59-dd0cc91af15d",
+                    "leftValue": "={{$json.command}}",
+                    "rightValue": "ping-test",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.command}}",
+                    "rightValue": "help",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "7516bada-5e46-40f6-be78-62f47b212117"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.command}}",
+                    "rightValue": "ip",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "191377c9-d996-45b8-bd49-84c77545fcaf"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.command}}",
+                    "rightValue": "cctv",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "4a0bf5b2-c17c-4208-9971-c6171353a621"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.command}}",
+                    "rightValue": "snap",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a2c3929e-2526-404a-9b3b-7a50e578ad47"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.command}}",
+                    "rightValue": "ping",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "5784b3cc-bea5-4eef-bba6-2cc1d58e6eee"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.command}}",
+                    "rightValue": "edit",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "d8cd118b-6d88-4132-b56d-880fb9f99520"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.command}}",
+                    "rightValue": "token-check",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0a7e6676-60e4-45f5-bd1e-78f98de0b5a1"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.command}}",
+                    "rightValue": "whitelist-add",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "37cc349c-b2ad-4d30-8b0e-258e812190db"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.command}}",
+                    "rightValue": "whitelist-remove",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "96106795-711f-43d5-b7b5-ea30b397c83e"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b0a4e95a-a925-48d0-b0ae-3bc2458cd706",
+      "name": "Switch Command",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -832,
+        960
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.identifier }}",
+                    "rightValue": "null",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "329536fc-7190-4057-a4fd-09bdaf6cca05"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "842cae61-ee95-45ab-a70e-036a4d07524f",
+                    "leftValue": "={{ $json.identifier }}",
+                    "rightValue": "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7f4bb530-e28e-4f14-894c-1f725c0078d0",
+                    "leftValue": "={{ $json.identifier }}",
+                    "rightValue": "null",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        512,
+        784
+      ],
+      "id": "fb4f3077-fa74-4ebe-9601-cbee6abc09e9",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "652f9e5e-7204-4a2d-b93b-c999867446f4",
+              "leftValue": "={{ $json.cctv_group }}",
+              "rightValue": "={{ $('Is sender allowed?').item.json.group }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "fbebc66c-cc95-4569-b963-3c9607fb0671",
+              "leftValue": "={{ $('Is sender allowed?').item.json.group }}",
+              "rightValue": "null",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        1088
+      ],
+      "id": "1b566790-3b27-4451-bef8-3d6ad158ac1c",
+      "name": "If group name is equal to cctv group"
+    },
+    {
+      "parameters": {
+        "deviceIdOverride": "={{ $('sender number and IP').item.json.DeviceID }}",
+        "phoneNumber": "={{ $('sender number and IP').item.json.GroupName }}",
+        "message": "=❌ You don't have permission to this camera",
+        "replyMessageId": "={{ $('Webhook').item.json.body.message.id }}"
+      },
+      "type": "@aldinokemal2104/n8n-nodes-gowa.gowa",
+      "typeVersion": 1,
+      "position": [
+        1408,
+        1184
+      ],
+      "id": "c6d5a270-70b8-4295-af15-2adb1ae4e601",
+      "name": "Send don't have permission",
+      "executeOnce": true,
+      "credentials": {
+        "goWhatsappApi": {
+          "id": "cAv2wiytVrPnCJyP",
+          "name": "GOWA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d6d892ee-f72c-43b0-b659-a3f3b872295c",
+              "name": "cctv_group",
+              "value": "={{ $json.group_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        1088
+      ],
+      "id": "32ee8a92-2b5b-4423-9af0-67cc73eb84b9",
+      "name": "Get Group Name"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "bfzdqyW22Bq1OEc3",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/bfzdqyW22Bq1OEc3",
+          "cachedResultName": "B-SNAP Sub Workflow - Log commands"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $('sender number and IP').item.json.senderNo }}",
+            "command": "=/{{ $json.command }} {{ $json.arg }}",
+            "source": "={{ $('sender number and IP').item.json.GroupName }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "command",
+              "displayName": "command",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -608,
+        -240
+      ],
+      "id": "cb9910cc-fac8-45fd-a886-fbdd78a27f30",
+      "name": "Execute Workflow"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d56b264b-48e7-414f-92bc-0d22bc0346f4",
+              "leftValue": "={{ $json.command }}",
+              "rightValue": "unknown",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -832,
+        -240
+      ],
+      "id": "839ad7dc-2f75-469c-9da1-193d173650d6",
+      "name": "Filter Unknown Command"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3dcf1035-af9a-489b-ae40-1d06e04472f0",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        64,
+        1152
+      ],
+      "id": "ae6392c0-395e-4a17-a3b5-b481b9ece7e7",
+      "name": "If snapshot success"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "699975b2-b087-4b5f-8176-50ddaf9f4a28",
+              "leftValue": "={{ $json.cctvName }}",
+              "rightValue": "\"\"",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -384,
+        1184
+      ],
+      "id": "df4694ae-be86-4138-8c48-cc0c9a70efcc",
+      "name": "if no hostname/IP"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "699975b2-b087-4b5f-8176-50ddaf9f4a28",
+              "leftValue": "={{ $json.cctvName }}",
+              "rightValue": "\"\"",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -384,
+        848
+      ],
+      "id": "08f27a85-31f9-48ab-960d-0b0439aaf3a7",
+      "name": "if no hostname/IP1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c4fd0fa6-7967-4390-869f-7b4e683673b9",
+              "leftValue": "headers[\"x-internal-caller\"]",
+              "rightValue": "n8n",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1952,
+        384
+      ],
+      "id": "effe55d0-75a2-43a2-ac20-53b9136d0e80",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.count }}",
+                    "rightValue": 0,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "id": "f2bf4da4-f11c-43e8-ae0b-f67e5cd5fd42"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "db852a43-8310-4108-8ed9-683bc4b429b4",
+                    "leftValue": "={{ $json.count }}",
+                    "rightValue": 0,
+                    "operator": {
+                      "type": "number",
+                      "operation": "empty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9a901fed-f998-46eb-b950-de1e01687c0e",
+                    "leftValue": "={{ $json.count }}",
+                    "rightValue": 0,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gt"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        960,
+        176
+      ],
+      "id": "c1084ddc-58fb-462b-8a6a-0bc6811cadf1",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "deviceIdOverride": "={{ $('sender number and IP').item.json.DeviceID }}",
+        "phoneNumber": "={{ $('sender number and IP').item.json.GroupName }}",
+        "message": "Pong",
+        "replyMessageId": "={{ $('Webhook').item.json.body.payload.id }}"
+      },
+      "type": "@aldinokemal2104/n8n-nodes-gowa.gowa",
+      "typeVersion": 1,
+      "position": [
+        -608,
+        -48
+      ],
+      "id": "860ff633-8c44-4044-b4ce-788b0aa2838e",
+      "name": "Send a text message",
+      "credentials": {
+        "goWhatsappApi": {
+          "id": "cAv2wiytVrPnCJyP",
+          "name": "GOWA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2176,
+        384
+      ],
+      "id": "e744b518-e288-43e7-8f3b-552db1b6b436",
+      "name": "Webhook",
+      "webhookId": "57519659-3ffb-415f-83ff-04099f67b5c6",
+      "executeOnce": false
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get CCTV name": {
+      "main": [
+        [
+          {
+            "node": "if no hostname/IP1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get hostname": {
+      "main": [
+        [
+          {
+            "node": "If no hostname",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ping API Call": {
+      "main": [
+        [
+          {
+            "node": "Send ping result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If CCTV is not exist": {
+      "main": [
+        [
+          {
+            "node": "Send Text No CCTV",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Snapshot details",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get snapshot by CCTV name": {
+      "main": [
+        [
+          {
+            "node": "Get Group Name",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set error message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get CCTV name1": {
+      "main": [
+        [
+          {
+            "node": "Get CCTV IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get CCTV IP": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set error message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Real-time snapshot": {
+      "main": [
+        [
+          {
+            "node": "If snapshot success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snapshot Success Msg": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get CCTV name2": {
+      "main": [
+        [
+          {
+            "node": "if no hostname/IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snapshot details": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get CCTV Name": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Get snapshot by CCTV IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snapshot Failed Message": {
+      "main": [
+        []
+      ]
+    },
+    "If no hostname": {
+      "main": [
+        [
+          {
+            "node": "No IP or Hostname",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ping API Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Text Can't Process Request": {
+      "main": [
+        [
+          {
+            "node": "Send Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Error Message": {
+      "main": [
+        []
+      ]
+    },
+    "Set error message": {
+      "main": [
+        [
+          {
+            "node": "Send Text Can't Process Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Generate signed token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If sender is allowed": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate signed token": {
+      "main": [
+        [
+          {
+            "node": "Send Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sender number and IP": {
+      "main": [
+        [
+          {
+            "node": "Is sender allowed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule no snapshot camera": {
+      "main": [
+        [
+          {
+            "node": "Server variable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input parser": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit camera API": {
+      "main": [
+        [
+          {
+            "node": "Send Text Edit Camera Successfully",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Send Text Failed Edit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit camera API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Token List": {
+      "main": [
+        [
+          {
+            "node": "format token list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "format token list": {
+      "main": [
+        [
+          {
+            "node": "Send token list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send token list": {
+      "main": [
+        []
+      ]
+    },
+    "Is sender allowed?": {
+      "main": [
+        [
+          {
+            "node": "If sender is allowed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Switch Command",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter Unknown Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If admin": {
+      "main": [
+        [
+          {
+            "node": "Input parser",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Don't have access",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If admin1": {
+      "main": [
+        [
+          {
+            "node": "Get Token List",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Don't have access",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary": {
+      "main": [
+        [
+          {
+            "node": "Update snapshots stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add phone to whitelist": {
+      "main": [
+        [
+          {
+            "node": "Success add to whitelist",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parsing whitelist command": {
+      "main": [
+        [
+          {
+            "node": "Add phone to whitelist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Failed to whitelist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Failed to whitelist": {
+      "main": [
+        []
+      ]
+    },
+    "parsing whitelist remove": {
+      "main": [
+        [
+          {
+            "node": "Check phone number",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "remove number from whitelist": {
+      "main": [
+        [
+          {
+            "node": "Success add to whitelist1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Failed to remove whitelist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If admin2": {
+      "main": [
+        [
+          {
+            "node": "parsing whitelist command",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Don't have access",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If admin3": {
+      "main": [
+        [
+          {
+            "node": "parsing whitelist remove",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Don't have access",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Server variable": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check phone number": {
+      "main": [
+        [
+          {
+            "node": "remove number from whitelist",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Can't remove yourself from whitelist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get snapshot by CCTV IP": {
+      "main": [
+        [
+          {
+            "node": "Get Group Name",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set error message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check CCTV parameter": {
+      "main": [
+        [
+          {
+            "node": "If CCTV is not exist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Text Edit Camera Successfully": {
+      "main": [
+        []
+      ]
+    },
+    "Switch Command": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send help message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get CCTV name1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get CCTV name",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get CCTV name2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get hostname",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If admin",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If admin1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If admin2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If admin3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send Text No CCTV",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get snapshot by CCTV IP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get snapshot by CCTV name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If group name is equal to cctv group": {
+      "main": [
+        [
+          {
+            "node": "Check CCTV parameter",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send don't have permission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Group Name": {
+      "main": [
+        [
+          {
+            "node": "If group name is equal to cctv group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow": {
+      "main": [
+        []
+      ]
+    },
+    "Filter Unknown Command": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If snapshot success": {
+      "main": [
+        [
+          {
+            "node": "Snapshot Success Msg",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Snapshot Failed Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if no hostname/IP": {
+      "main": [
+        [
+          {
+            "node": "No IP or Hostname",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Real-time snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if no hostname/IP1": {
+      "main": [
+        [
+          {
+            "node": "No IP or Hostname",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get CCTV Name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [],
+        [
+          {
+            "node": "sender number and IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Send Text Failed Edit1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Text Can't Process Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send CCTV IP list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timezone": "Asia/Singapore",
+    "callerPolicy": "workflowsFromSameOwner",
+    "timeSavedPerExecution": 5,
+    "availableInMCP": false,
+    "errorWorkflow": "oAYcnM8BYavlHK8W"
+  },
+  "versionId": "d6e2506a-95fe-4eff-b2dc-b8ad401f12ad",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9ee214d6b88b99c70d02fa4561b40e3bd894ea6e2ad769853c2ed801efce57ff"
+  },
+  "id": "NkD1eFfy4B05ldwz",
+  "tags": []
+}

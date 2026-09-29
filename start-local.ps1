@@ -183,14 +183,44 @@ function Check-Environment {
     Write-Success "Environment check passed"
 }
 
+# Resolve the Uvicorn bind address. BIND uses HOST:PORT format, e.g.
+# 0.0.0.0:8080. PORT, when set, overrides the port portion.
+function Get-WebServerSettings {
+    param(
+        [string]$DefaultHost = "0.0.0.0",
+        [int]$DefaultPort = 8080,
+        [switch]$UseBindPort
+    )
+
+    $bindValue = [Environment]::GetEnvironmentVariable("BIND", "Process")
+    $hostAddr = $DefaultHost
+    $port = $DefaultPort
+
+    if ($bindValue) {
+        if ($bindValue -match '^\[(?<host>[^\]]+)\]:(?<port>\d+)$') {
+            $hostAddr = $matches.host
+            if ($UseBindPort) { $port = [int]$matches.port }
+        } elseif ($bindValue -match '^(?<host>[^:]+):(?<port>\d+)$') {
+            $hostAddr = $matches.host
+            if ($UseBindPort) { $port = [int]$matches.port }
+        } else {
+            throw "Invalid BIND '$bindValue'. Expected HOST:PORT, for example 0.0.0.0:8080."
+        }
+    }
+
+    $portOverride = [Environment]::GetEnvironmentVariable("PORT", "Process")
+    if ($portOverride) { $port = [int]$portOverride }
+
+    return @{ Host = $hostAddr; Port = $port }
+}
+
 # Start web server
 function Start-WebServer {
     Write-Info "Starting $AppName web server..."
 
-    $port = [Environment]::GetEnvironmentVariable("PORT", "Process")
-    if (-not $port) { $port = "8080" }
-
-    $hostAddr = "127.0.0.1"
+    $settings = Get-WebServerSettings -DefaultHost "0.0.0.0" -DefaultPort 8080 -UseBindPort
+    $hostAddr = $settings.Host
+    $port = $settings.Port
 
     Write-Info "Configuration:"
     Write-Info "  Host: $hostAddr"
@@ -205,12 +235,13 @@ function Start-WebServer {
 # Start development server (uvicorn with reload)
 function Start-DevServer {
     Write-Info "Starting $AppName development server..."
+    $settings = Get-WebServerSettings -DefaultHost "127.0.0.1" -DefaultPort 8000
     Write-Info "Configuration:"
-    Write-Info "  Host: 127.0.0.1"
-    Write-Info "  Port: 8000"
+    Write-Info "  Host: $($settings.Host)"
+    Write-Info "  Port: $($settings.Port)"
     Write-Info "  Reload: enabled"
 
-    & uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+    & uvicorn app.main:app --reload --host $settings.Host --port $settings.Port
 }
 
 # Start scheduler
@@ -285,9 +316,9 @@ function Start-AllServices {
     
     # Start web server in foreground
     try {
-        $port = [Environment]::GetEnvironmentVariable("PORT", "Process")
-        if (-not $port) { $port = "8080" }
-        $hostAddr = "127.0.0.1"
+        $settings = Get-WebServerSettings -DefaultHost "0.0.0.0" -DefaultPort 8080 -UseBindPort
+        $hostAddr = $settings.Host
+        $port = $settings.Port
         
         # Use Start-Process with -NoNewWindow so output appears in current console
         $webProcess = Start-Process -FilePath "uvicorn" -ArgumentList "app.main:app", "--host", $hostAddr, "--port", $port -NoNewWindow -PassThru
@@ -365,7 +396,7 @@ Environment Variables:
   SECRET_KEY        Secret key for encryption (required)
   WORKERS           Number of gunicorn workers (default: 2)
   PORT              Server port (default: 8080)
-  BIND              Bind address (default: 127.0.0.1:8080)
+  BIND              Bind address as HOST:PORT (default: 0.0.0.0:8080 for web/all)
   TIMEOUT           Worker timeout (default: 60)
   LOG_LEVEL         Logging level (default: INFO)
 
