@@ -13,6 +13,6 @@ class CameraStatusChangeLog(Base):
     camera_id = Column(String(36), ForeignKey("cameras.id", ondelete="CASCADE"), nullable=True)
     previous_status = Column(String, nullable=False)
     new_status = Column(String, nullable=False)
-    changed_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    changed_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
     duration_since_last_change = Column(Integer, nullable=True)
     camera = relationship("Camera", backref="status_change_logs")

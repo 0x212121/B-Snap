@@ -1,15 +1,17 @@
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Query, Request, Depends
+from datetime import date, datetime, timedelta, timezone
+from fastapi import APIRouter, Query, Request, Depends, HTTPException
 import pytz
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import not_, and_
+from sqlalchemy import not_, and_, func, or_, select
 from app.db.database import get_db
 from app.models.camera_daily_stats import CameraDailyStats
 from app.models.camera import Camera as DBCamera
+from app.models.camera_group import CameraGroup
 from app.models.health import CameraHealth
 from app.models.snapshot_log import SnapshotLog
+from app.models.camera_status_change_log import CameraStatusChangeLog
 from app.models.user import User
 from app.models.task_timing import TaskTiming
 from app.routes.auth import admin_access_required
@@ -22,11 +24,22 @@ logger = logging.getLogger("main")
 storage_logger = logging.getLogger("storage")
 
 
+def _camera_group_camera_ids(group_id: int):
+    """Return cameras assigned through the many-to-many or legacy group column."""
+    return select(DBCamera.id).where(
+        or_(
+            DBCamera.group_id == group_id,
+            DBCamera.groups.any(CameraGroup.id == group_id),
+        )
+    )
+
+
 @router.get("/analytics", response_class=HTMLResponse)
 async def get_analytics(
     request: Request,
     camera: str = Query(None),
-    days: int = Query(7),
+    group_id: int | None = Query(None, ge=1),
+    days: int = Query(7, ge=1, le=365),
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required) 
 ):
@@ -36,7 +49,7 @@ async def get_analytics(
     tz = pytz.timezone(tz_name)
     now = datetime.now(tz)
     end_date = now.date()
-    start_date = end_date - timedelta(days=days)
+    start_date = end_date - timedelta(days=days - 1)
     
     # Query with date range and snapshot count filter
     query = db.query(CameraDailyStats).filter(
@@ -45,34 +58,37 @@ async def get_analytics(
         CameraDailyStats.date <= end_date
     )
 
+    if group_id is not None:
+        group = db.get(CameraGroup, group_id)
+        if group is None:
+            raise HTTPException(status_code=404, detail="Camera group not found")
+        group_camera_ids = _camera_group_camera_ids(group_id)
+        group_camera_names = select(DBCamera.hostname).where(
+            DBCamera.id.in_(group_camera_ids)
+        )
+        query = query.filter(or_(
+            CameraDailyStats.camera_id.in_(group_camera_ids),
+            CameraDailyStats.camera_name.in_(group_camera_names),
+        ))
+
     if camera:
         query = query.filter(CameraDailyStats.camera_name == camera)
 
-    stats = query.order_by(CameraDailyStats.date).all()
-    stats_grouped = defaultdict(list)
-    chart_data = []
-    snapshot_count_by_date = defaultdict(int)
+    chart_rows = (
+        query.with_entities(
+            CameraDailyStats.date,
+            func.coalesce(func.sum(CameraDailyStats.snapshot_count), 0).label("snapshot_count"),
+        )
+        .group_by(CameraDailyStats.date)
+        .order_by(CameraDailyStats.date)
+        .all()
+    )
+    chart_data = [
+        {"date": row.date.isoformat(), "snapshot_count": int(row.snapshot_count or 0)}
+        for row in chart_rows
+    ]
 
-    for stat in stats:
-        date_str = stat.date.strftime('%Y-%m-%d')
-        stat.date_str = date_str
-        stats_grouped[stat.camera_name].append(stat)
-
-        if camera:
-            chart_data.append({
-                "date": date_str,
-                "snapshot_count": stat.snapshot_count
-            })
-        else:
-            snapshot_count_by_date[date_str] += stat.snapshot_count
-
-    if not camera:
-        chart_data = [
-            {"date": d, "snapshot_count": snapshot_count_by_date[d]}
-            for d in sorted(snapshot_count_by_date)
-        ]
-
-    all_cameras = (
+    all_cameras_query = (
         db.query(DBCamera.hostname)
         .join(CameraHealth, DBCamera.id == CameraHealth.camera_id)
         .filter(and_(
@@ -80,10 +96,18 @@ async def get_analytics(
             DBCamera.ip.isnot(None),
             DBCamera.ip != ""
         ))
-        .all()
     )
+    if group_id is not None:
+        all_cameras_query = all_cameras_query.filter(
+            DBCamera.id.in_(_camera_group_camera_ids(group_id))
+        )
+    all_cameras = all_cameras_query.all()
     all_cameras = [c[0].strip() for c in all_cameras]
-    cameras_with_data = {s.camera_name.strip() for s in stats if s.camera_name}
+    cameras_with_data = {
+        name.strip()
+        for (name,) in query.with_entities(CameraDailyStats.camera_name).distinct().all()
+        if name
+    }
     cameras_without_data = [c for c in all_cameras if c not in cameras_with_data]
 
     timing_logs = (
@@ -107,9 +131,18 @@ async def get_analytics(
 
     context = {
         "request": request,
-        "stats_grouped": dict(stats_grouped),
-        "camera_names": sorted(cameras_with_data),
+        "camera_names": sorted({
+            name.strip()
+            for (name,) in query.with_entities(CameraDailyStats.camera_name)
+            .filter(CameraDailyStats.snapshot_count > 0)
+            .distinct()
+            .all()
+            if name
+        }),
         "selected_camera": camera,
+        "selected_days": days,
+        "camera_groups": db.query(CameraGroup).order_by(CameraGroup.name).all(),
+        "selected_group_id": group_id,
         "chart_labels": [d["date"] for d in chart_data],
         "chart_data": [d["snapshot_count"] for d in chart_data],
         "no_data_cameras": cameras_without_data,
@@ -125,7 +158,7 @@ async def get_analytics(
 async def get_camera_stats_redirect(
     request: Request,
     camera: str = Query(None),
-    days: int = Query(7),
+    days: int = Query(7, ge=1, le=365),
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required) 
 ):
@@ -144,7 +177,7 @@ async def get_camera_stats_redirect(
     # Calculate date range
     now = datetime.now(timezone.utc).astimezone()
     end_date = now.date()
-    start_date = end_date - timedelta(days=days)
+    start_date = end_date - timedelta(days=days - 1)
     
     # Query with date range and snapshot count filter
     query = db.query(CameraDailyStats).filter(
@@ -232,7 +265,8 @@ async def get_camera_stats_redirect(
 async def get_camera_stats_data(
     request: Request,
     camera: str = Query(None),
-    days: int = Query(7),
+    group_id: int | None = Query(None, ge=1),
+    days: int = Query(7, ge=1, le=365),
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
@@ -241,7 +275,7 @@ async def get_camera_stats_data(
     tz = pytz.timezone(tz_name)
     now = datetime.now(tz)
     end_date = now.date()
-    start_date = end_date - timedelta(days=days)
+    start_date = end_date - timedelta(days=days - 1)
 
     # Build base query with date range
     query = db.query(CameraDailyStats).filter(
@@ -253,29 +287,43 @@ async def get_camera_stats_data(
         # ilike = case-insensitive (kompatibel PostgreSQL)
         query = query.filter(CameraDailyStats.camera_name.ilike(camera))
 
-    stats = query.order_by(CameraDailyStats.date).all()
+    if group_id is not None:
+        if db.get(CameraGroup, group_id) is None:
+            raise HTTPException(status_code=404, detail="Camera group not found")
+        group_camera_ids = _camera_group_camera_ids(group_id)
+        group_camera_names = select(DBCamera.hostname).where(
+            DBCamera.id.in_(group_camera_ids)
+        )
+        query = query.filter(or_(
+            CameraDailyStats.camera_id.in_(group_camera_ids),
+            CameraDailyStats.camera_name.in_(group_camera_names),
+        ))
 
-    stats_grouped = defaultdict(list)
-    # Initialize all dates with 0 count
+    # Sum counts in the database and return only one row per day.
+    grouped_counts = dict(
+        query.with_entities(
+            CameraDailyStats.date,
+            func.coalesce(func.sum(CameraDailyStats.snapshot_count), 0),
+        )
+        .group_by(CameraDailyStats.date)
+        .all()
+    )
     snapshot_count_by_date = {
-        (start_date + timedelta(days=i)).strftime('%Y-%m-%d'): 0
-        for i in range((end_date - start_date).days + 1)
+        start_date + timedelta(days=offset): int(
+            grouped_counts.get(start_date + timedelta(days=offset), 0) or 0
+        )
+        for offset in range(days)
     }
-
-    for stat in stats:
-        date_str = stat.date.strftime('%Y-%m-%d')
-        stats_grouped[stat.camera_name].append(stat)
-        snapshot_count_by_date[date_str] += stat.snapshot_count
-
-    # Build chart data preserving date order
-    sorted_dates = sorted(snapshot_count_by_date.keys())
     chart_data = [
-        {"date": d, "snapshot_count": snapshot_count_by_date[d]}
-        for d in sorted_dates
+        {"date": day.isoformat(), "snapshot_count": count}
+        for day, count in snapshot_count_by_date.items()
     ]
 
-    # Kamera yang punya data
-    cameras_with_data = {s.camera_name for s in stats}
+    cameras_with_data = {
+        name.strip()
+        for (name,) in query.with_entities(CameraDailyStats.camera_name).distinct().all()
+        if name
+    }
 
     cameras_without_data = []
     if not camera:
@@ -304,10 +352,150 @@ async def get_camera_stats_data(
     })
 
 
+@router.get("/stats/operations", response_class=JSONResponse)
+async def get_camera_operations_data(
+    request: Request,
+    start_date: date = Query(...),
+    end_date: date = Query(...),
+    group_id: int | None = Query(None, ge=1),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required),
+):
+    """Return daily monitored availability, downtime, and offline transitions."""
+    if end_date < start_date:
+        raise HTTPException(status_code=422, detail="end_date must be on or after start_date")
+    if (end_date - start_date).days >= 365:
+        raise HTTPException(status_code=422, detail="Analytics date ranges are limited to 365 days")
+
+    tz_name = get_current_timezone(db)
+    tz = pytz.timezone(tz_name)
+    start_dt = tz.localize(datetime.combine(start_date, datetime.min.time())).astimezone(pytz.UTC)
+    end_dt = tz.localize(datetime.combine(end_date, datetime.max.time())).astimezone(pytz.UTC)
+
+    daily_query = (
+        db.query(
+            CameraDailyStats.date,
+            func.coalesce(func.sum(CameraDailyStats.total_uptime_seconds), 0).label("uptime"),
+            func.coalesce(func.sum(CameraDailyStats.total_downtime_seconds), 0).label("downtime"),
+        )
+        .filter(CameraDailyStats.date >= start_date, CameraDailyStats.date <= end_date)
+    )
+    if group_id is not None:
+        if db.get(CameraGroup, group_id) is None:
+            raise HTTPException(status_code=404, detail="Camera group not found")
+        group_camera_ids = _camera_group_camera_ids(group_id)
+        group_camera_names = select(DBCamera.hostname).where(
+            DBCamera.id.in_(group_camera_ids)
+        )
+        daily_query = daily_query.filter(or_(
+            CameraDailyStats.camera_id.in_(group_camera_ids),
+            CameraDailyStats.camera_name.in_(group_camera_names),
+        ))
+    daily_rows = daily_query.group_by(CameraDailyStats.date).all()
+    totals_by_day = {
+        row.date: (int(row.uptime or 0), int(row.downtime or 0))
+        for row in daily_rows
+    }
+
+    camera_query = db.query(
+        CameraDailyStats.camera_name.label("camera_name"),
+        func.coalesce(func.sum(CameraDailyStats.total_uptime_seconds), 0).label("uptime"),
+        func.coalesce(func.sum(CameraDailyStats.total_downtime_seconds), 0).label("downtime"),
+    ).filter(CameraDailyStats.date >= start_date, CameraDailyStats.date <= end_date)
+    if group_id is not None:
+        group_camera_ids = _camera_group_camera_ids(group_id)
+        group_camera_names = select(DBCamera.hostname).where(
+            DBCamera.id.in_(group_camera_ids)
+        )
+        camera_query = camera_query.filter(or_(
+            CameraDailyStats.camera_id.in_(group_camera_ids),
+            CameraDailyStats.camera_name.in_(group_camera_names),
+        ))
+    camera_rows = (
+        camera_query.group_by(CameraDailyStats.camera_name)
+        .order_by(func.coalesce(func.sum(CameraDailyStats.total_downtime_seconds), 0).desc())
+        .limit(10)
+        .all()
+    )
+    top_downtime_cameras = [
+        {
+            "camera_name": row.camera_name or "(unknown)",
+            "downtime_hours": round(int(row.downtime or 0) / 3600, 2),
+            "availability": round(
+                int(row.uptime or 0) / (int(row.uptime or 0) + int(row.downtime or 0)) * 100, 2
+            ) if (int(row.uptime or 0) + int(row.downtime or 0)) else None,
+        }
+        for row in camera_rows
+    ]
+
+    incidents_by_day: dict[date, int] = {}
+    if db.get_bind().dialect.name == "postgresql":
+        local_day = func.date(func.timezone(tz_name, CameraStatusChangeLog.changed_at))
+        incident_query = (
+            db.query(local_day.label("date"), func.count(CameraStatusChangeLog.id).label("count"))
+            .filter(
+                CameraStatusChangeLog.new_status == "Offline",
+                CameraStatusChangeLog.changed_at >= start_dt,
+                CameraStatusChangeLog.changed_at <= end_dt,
+            )
+        )
+        if group_id is not None:
+            incident_query = incident_query.filter(
+                CameraStatusChangeLog.camera_id.in_(_camera_group_camera_ids(group_id))
+            )
+        incident_rows = incident_query.group_by(local_day).all()
+        incidents_by_day = {row.date: int(row.count) for row in incident_rows}
+    else:
+        incident_query = (
+            db.query(CameraStatusChangeLog.changed_at)
+            .filter(
+                CameraStatusChangeLog.new_status == "Offline",
+                CameraStatusChangeLog.changed_at >= start_dt,
+                CameraStatusChangeLog.changed_at <= end_dt,
+            )
+        )
+        if group_id is not None:
+            incident_query = incident_query.filter(
+                CameraStatusChangeLog.camera_id.in_(_camera_group_camera_ids(group_id))
+            )
+        incident_rows = incident_query.all()
+        for (changed_at,) in incident_rows:
+            if changed_at.tzinfo is None:
+                changed_at = pytz.UTC.localize(changed_at)
+            local_day = changed_at.astimezone(tz).date()
+            incidents_by_day[local_day] = incidents_by_day.get(local_day, 0) + 1
+
+    result = {
+        "dates": [],
+        "availability": [],
+        "downtime_hours": [],
+        "offline_incidents": [],
+        "coverage_hours": [],
+        "top_downtime_cameras": top_downtime_cameras,
+        "total_uptime_seconds": sum(uptime for uptime, _ in totals_by_day.values()),
+        "total_downtime_seconds": sum(downtime for _, downtime in totals_by_day.values()),
+        "total_offline_incidents": sum(incidents_by_day.values()),
+    }
+    for offset in range((end_date - start_date).days + 1):
+        day = start_date + timedelta(days=offset)
+        uptime, downtime = totals_by_day.get(day, (0, 0))
+        monitored_seconds = uptime + downtime
+        result["dates"].append(day.isoformat())
+        result["availability"].append(
+            round(uptime / monitored_seconds * 100, 2) if monitored_seconds else None
+        )
+        result["downtime_hours"].append(round(downtime / 3600, 2) if monitored_seconds else None)
+        result["offline_incidents"].append(int(incidents_by_day.get(day, 0)))
+        result["coverage_hours"].append(round(monitored_seconds / 3600, 2))
+
+    return result
+
+
 @router.get("/stats/no-data-cameras", response_class=JSONResponse)
 async def get_no_data_cameras(
     request: Request,
-    days: int = Query(7, ge=1),
+    days: int = Query(7, ge=1, le=365),
+    group_id: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
@@ -316,10 +504,10 @@ async def get_no_data_cameras(
     tz = pytz.timezone(tz_name)
     now = datetime.now(tz)
     end_date = now.date()
-    start_date = end_date - timedelta(days=days)
+    start_date = end_date - timedelta(days=days - 1)
 
     # Ambil semua hostname kamera (exclude standalone & cameras without IP)
-    all_cameras = (
+    all_cameras_query = (
         db.query(DBCamera.hostname, CameraHealth.status)
         .join(CameraHealth, DBCamera.id == CameraHealth.camera_id)
         .filter(and_(
@@ -327,20 +515,35 @@ async def get_no_data_cameras(
             DBCamera.ip.isnot(None),
             DBCamera.ip != ""
         ))
-        .all()
     )
+    if group_id is not None:
+        if db.get(CameraGroup, group_id) is None:
+            raise HTTPException(status_code=404, detail="Camera group not found")
+        all_cameras_query = all_cameras_query.filter(
+            DBCamera.id.in_(_camera_group_camera_ids(group_id))
+        )
+    all_cameras = all_cameras_query.all()
 
     # print(f"📅 Checking cameras with no data from {start_date} to {end_date}")
     # print(f"🎥 Total cameras: {len(all_cameras)}")
 
     # Ambil camera_name dari snapshot
-    snapshot_camera_names = (
+    snapshot_query = (
         db.query(CameraDailyStats.camera_name)
         .filter(CameraDailyStats.date >= start_date,
+                CameraDailyStats.date <= end_date,
                 CameraDailyStats.snapshot_count > 0)
-        .distinct()
-        .all()
     )
+    if group_id is not None:
+        group_camera_ids = _camera_group_camera_ids(group_id)
+        group_camera_names = select(DBCamera.hostname).where(
+            DBCamera.id.in_(group_camera_ids)
+        )
+        snapshot_query = snapshot_query.filter(or_(
+            CameraDailyStats.camera_id.in_(group_camera_ids),
+            CameraDailyStats.camera_name.in_(group_camera_names),
+        ))
+    snapshot_camera_names = snapshot_query.distinct().all()
     snapshot_camera_names = {c[0].strip() for c in snapshot_camera_names if c[0]}
 
     # print(f"🎞️ Snapshot camera names: {len(snapshot_camera_names)}")

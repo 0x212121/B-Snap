@@ -21,16 +21,27 @@
     </div>
   </div>
 
+  <div class="bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 flex flex-wrap items-center gap-3">
+    <label for="analyticsGroupFilter" class="text-sm font-medium text-gray-700 dark:text-gray-300">Camera Group</label>
+    <select id="analyticsGroupFilter" class="h-10 min-w-[14rem] border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 text-sm text-gray-800 dark:text-gray-100">
+      <option value="">All Groups</option>
+      {% for group in camera_groups %}
+      <option value="{{ group.id }}" {% if selected_group_id == group.id %}selected{% endif %}>{{ group.name }}</option>
+      {% endfor %}
+    </select>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Filters camera availability, downtime, offline incidents, and snapshot statistics. System activity remains global.</p>
+  </div>
+
   <!-- TABS -->
   <div class="border-b border-gray-200 dark:border-gray-700">
     <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-      <button @click="activeTab = 'overview'; window.history.replaceState(null, null, '?tab=overview');" 
+      <button @click="activeTab = 'overview'; window.setAnalyticsTab('overview');"
               :class="activeTab === 'overview' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'"
               class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
         System Overview
       </button>
-      <button @click="activeTab = 'snapshots'; window.history.replaceState(null, null, '?tab=snapshots');" 
+      <button @click="activeTab = 'snapshots'; window.setAnalyticsTab('snapshots');"
               :class="activeTab === 'snapshots' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'"
               class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -84,14 +95,15 @@
         <div class="text-sm mt-1" id="kpiEmailDelta">–</div>
       </div>
       <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-5">
-        <div class="text-xs text-gray-500 dark:text-gray-400">Health Index</div>
+        <div class="text-xs text-gray-500 dark:text-gray-400">Activity Trend Index</div>
         <div class="text-3xl font-bold flex items-center gap-2 mt-1">
-          <span id="healthValue">–</span>
-          <span id="healthBadge" class="text-xs font-semibold px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700">–</span>
+          <span id="activityValue">–</span>
+          <span id="activityBadge" class="text-xs font-semibold px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700">–</span>
         </div>
-        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1" id="healthHint">Composite of trends</div>
+        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Activity direction: 50 is stable; higher or lower values show change</div>
       </div>
     </div>
+    <p id="overviewStatus" class="hidden w-full text-sm" role="status" aria-live="polite"></p>
 
     <!-- CHARTS -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -108,6 +120,32 @@
           <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Email Notifications</h2>
         </div>
         <canvas id="chartEmail" height="140"></canvas>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
+      <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1">Cameras with Most Downtime</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Ranked by monitored downtime in the selected date range. Select a camera to open its status history.</p>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-100">
+            <tr><th class="p-3 text-left">Camera</th><th class="p-3 text-right">Downtime (hours)</th><th class="p-3 text-right">Availability</th></tr>
+          </thead>
+          <tbody id="topDowntimeCamerasBody" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
+        <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1">Camera Availability and Downtime</h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Availability = monitored uptime ÷ (uptime + downtime). Downtime is shown in hours.</p>
+        <canvas id="chartCameraAvailability" height="140"></canvas>
+      </div>
+      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
+        <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1">Offline Incidents</h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Counts each transition into Offline status in the selected date range.</p>
+        <canvas id="chartOfflineIncidents" height="140"></canvas>
       </div>
     </div>
 
@@ -151,25 +189,26 @@
   <div x-show="activeTab === 'snapshots'" x-cloak class="space-y-6" id="snapshotsTabContent">
     
     <!-- FILTERS -->
-    <div class="bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 flex flex-wrap items-end gap-4">
+    <div class="bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 flex flex-wrap items-start gap-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Camera</label>
-        <select id="cameraDropdown" class="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100 min-w-[200px]">
+        <select id="cameraDropdown" class="h-10 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100 min-w-[200px]">
           <option value="">All Cameras</option>
           {% for name in camera_names %}
-          <option value="{{ name | urlencode }}" {% if selected_camera == name %}selected{% endif %}>{{ name }}</option>
+          <option value="{{ name }}" {% if selected_camera == name %}selected{% endif %}>{{ name }}</option>
           {% endfor %}
         </select>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Period</label>
-        <select id="periodDropdown" class="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100">
-          <option value="7" selected>Last 7 Days</option>
-          <option value="14">Last 14 Days</option>
-          <option value="30">Last 30 Days</option>
-          <option value="90">Last 90 Days</option>
-          <option value="365">Last Year</option>
+        <select id="periodDropdown" class="h-10 min-w-[12rem] border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100">
+          <option value="7" {% if selected_days == 7 %}selected{% endif %}>Last 7 Days</option>
+          <option value="14" {% if selected_days == 14 %}selected{% endif %}>Last 14 Days</option>
+          <option value="30" {% if selected_days == 30 %}selected{% endif %}>Last 30 Days</option>
+          <option value="90" {% if selected_days == 90 %}selected{% endif %}>Last 90 Days</option>
+          <option value="365" {% if selected_days == 365 %}selected{% endif %}>Last Year</option>
         </select>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Includes today and the preceding days.</p>
       </div>
     </div>
 
@@ -179,6 +218,7 @@
         {{ icon_ppt_chart_bar(class="w-6 h-6 text-blue-600") }}
         Snapshot Count by Date
       </h2>
+      <p id="snapshotStatsStatus" class="hidden mb-3 text-sm text-blue-700 dark:text-blue-300" role="status" aria-live="polite"></p>
       <canvas id="snapshotChart" height="100"></canvas>
     </div>
 
@@ -323,19 +363,19 @@
 // Server timezone from backend
 const SERVER_TIMEZONE = "{{ server_timezone }}";
 
+window.setAnalyticsTab = (tab) => {
+  const url = new URL(window.location.href);
+  url.searchParams.set('tab', tab);
+  window.history.replaceState(null, '', url);
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   // ==================== INSIGHTS/OVERVIEW TAB ====================
-  let chart1, chart2;
+  let chart1, chart2, chartAvailability, chartIncidents;
   
   // Initial date range using server timezone
   const now = new Date();
-  // Format date to YYYY-MM-DD using server's timezone offset
-  const fmt = (d) => {
-    const tzOffset = d.getTimezoneOffset() * 60000; // offset in milliseconds
-    const localISOTime = (new Date(d - tzOffset)).toISOString().slice(0, 10);
-    return localISOTime;
-  };
-  // Use Intl.DateTimeFormat to format date in server timezone
+  // Use Intl.DateTimeFormat to format date in server timezone.
   const fmtServerTZ = (d) => {
     return new Intl.DateTimeFormat('en-CA', {
       timeZone: SERVER_TIMEZONE,
@@ -347,11 +387,12 @@ document.addEventListener("DOMContentLoaded", () => {
   
   const today = new Date();
   const prior = new Date();
-  prior.setDate(today.getDate() - 30);
+  prior.setDate(today.getDate() - 29);
   
   if (document.getElementById('startDate')) {
-    document.getElementById('startDate').value = fmtServerTZ(prior);
-    document.getElementById('endDate').value = fmtServerTZ(today);
+    const pageParams = new URLSearchParams(window.location.search);
+    document.getElementById('startDate').value = pageParams.get('start_date') || fmtServerTZ(prior);
+    document.getElementById('endDate').value = pageParams.get('end_date') || fmtServerTZ(today);
   }
   
   async function getJSON(url) {
@@ -362,18 +403,36 @@ document.addEventListener("DOMContentLoaded", () => {
   
   async function renderInsights() {
     if (!document.getElementById('kpiApi')) return;
+
+    const overviewStatus = document.getElementById('overviewStatus');
+    const setOverviewStatus = (message, isError = false) => {
+      overviewStatus.textContent = message;
+      overviewStatus.classList.toggle('hidden', !message);
+      overviewStatus.classList.toggle('text-red-700', isError);
+      overviewStatus.classList.toggle('dark:text-red-300', isError);
+      overviewStatus.classList.toggle('text-blue-700', !isError);
+      overviewStatus.classList.toggle('dark:text-blue-300', !isError);
+    };
     
     const s = document.getElementById('startDate').value;
     const e = document.getElementById('endDate').value;
-    const q = `?start_date=${s}&end_date=${e}`;
+    const inclusiveDays = s && e ? (Date.parse(`${e}T00:00:00Z`) - Date.parse(`${s}T00:00:00Z`)) / 86400000 + 1 : 0;
+    if (!s || !e || s > e || inclusiveDays > 365) {
+      setOverviewStatus('Choose a valid date range of up to 365 days.', true);
+      return;
+    }
+    const params = new URLSearchParams({ start_date: s, end_date: e });
+    const selectedGroup = document.getElementById('analyticsGroupFilter')?.value;
+    if (selectedGroup) params.set('group_id', selectedGroup);
+    const q = `?${params}`;
+    setOverviewStatus('Loading analytics…');
     
     try {
-      const [summary, daily, topCmd, topCam] = await Promise.all([
-        getJSON(`/log/stats/summary${q}`),
-        getJSON(`/log/stats/daily${q}`),
-        getJSON(`/log/stats/top-commands${q}`),
-        getJSON(`/log/stats/top-cameras${q}`),
+      const [dashboard, operations] = await Promise.all([
+        getJSON(`/log/stats/dashboard${q}`),
+        getJSON(`/stats/operations${q}`),
       ]);
+      const { summary, daily, top_commands: topCmd, top_cameras: topCam } = dashboard;
       
       // KPI
       document.getElementById('kpiApi').textContent = summary.totals.api.toLocaleString();
@@ -390,14 +449,13 @@ document.addEventListener("DOMContentLoaded", () => {
       setDelta(document.getElementById('kpiCmdDelta'), summary.delta_pct.command);
       setDelta(document.getElementById('kpiEmailDelta'), summary.delta_pct.email);
       
-      const hi = summary.health_index;
-      document.getElementById('healthValue').textContent = hi.value;
-      document.getElementById('healthBadge').textContent = hi.label;
-      document.getElementById('healthBadge').className = `text-xs font-semibold px-2 py-0.5 rounded ${
-        hi.color === "green" ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"
-        : hi.color === "emerald" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
-        : hi.color === "amber" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
-        : "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300"
+      const activity = summary.activity_index;
+      document.getElementById('activityValue').textContent = activity.value;
+      document.getElementById('activityBadge').textContent = activity.label;
+      document.getElementById('activityBadge').className = `text-xs font-semibold px-2 py-0.5 rounded ${
+        activity.color === "blue" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
+        : activity.color === "amber" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+        : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
       }`;
       
       // API & CMD CHART
@@ -430,31 +488,161 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         options: { scales: { y: { beginAtZero: true } } }
       });
+
+      if (chartAvailability) chartAvailability.destroy();
+      chartAvailability = new Chart(document.getElementById('chartCameraAvailability'), {
+        type: 'bar',
+        data: {
+          labels: operations.dates,
+          datasets: [
+            {
+              type: 'line',
+              label: 'Availability (%)',
+              data: operations.availability,
+              borderColor: 'rgba(34,197,94,1)',
+              backgroundColor: 'rgba(34,197,94,0.15)',
+              yAxisID: 'yAvailability',
+              spanGaps: false,
+              tension: 0.25
+            },
+            {
+              type: 'bar',
+              label: 'Downtime (hours)',
+              data: operations.downtime_hours,
+              backgroundColor: 'rgba(239,68,68,0.55)',
+              yAxisID: 'yDowntime',
+              spanGaps: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                afterBody: (items) => {
+                  const index = items[0]?.dataIndex;
+                  const hours = operations.coverage_hours[index];
+                  return hours > 0 ? `Monitored coverage: ${hours} hours` : 'No monitoring data for this day';
+                }
+              }
+            }
+          },
+          scales: {
+            yAvailability: {
+              type: 'linear', position: 'left', min: 0, max: 100,
+              title: { display: true, text: 'Availability (%)' }
+            },
+            yDowntime: {
+              type: 'linear', position: 'right', beginAtZero: true,
+              grid: { drawOnChartArea: false },
+              title: { display: true, text: 'Downtime (hours)' }
+            }
+          }
+        }
+      });
+
+      if (chartIncidents) chartIncidents.destroy();
+      chartIncidents = new Chart(document.getElementById('chartOfflineIncidents'), {
+        type: 'bar',
+        data: {
+          labels: operations.dates,
+          datasets: [{
+            label: 'Offline transitions',
+            data: operations.offline_incidents,
+            backgroundColor: 'rgba(245,158,11,0.65)',
+            borderColor: 'rgba(245,158,11,1)',
+            borderWidth: 1
+          }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+      });
       
       // TOP COMMANDS
       const rows = (Array.isArray(topCmd) ? topCmd : []).slice(0, 10);
       const tbody = document.getElementById("topCommandsBodyTable");
-      tbody.innerHTML = rows.length
-        ? rows.map((r, i) =>
-            `<tr class="hover:bg-gray-800/60">
-              <td class="p-3 text-center text-gray-400">${i + 1}</td>
-              <td class="p-3 text-gray-100 truncate">${r.command}</td>
-              <td class="p-3 text-right">${r.count}</td>
-            </tr>`
-          ).join("")
-        : `<tr><td colspan="3" class="p-4 text-center text-gray-500">No data</td></tr>`;
+      tbody.replaceChildren();
+      if (rows.length) {
+        rows.forEach((row, index) => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-gray-800/60';
+          [index + 1, row.command, row.count].forEach((value, cellIndex) => {
+            const td = document.createElement('td');
+            td.className = cellIndex === 0 ? 'p-3 text-center text-gray-400'
+              : cellIndex === 1 ? 'p-3 text-gray-100 truncate' : 'p-3 text-right';
+            td.textContent = String(value ?? '');
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+      } else {
+        tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-500">No data</td></tr>`;
+      }
       
       // TOP CAMERAS
-      document.getElementById('topCamerasBody').innerHTML = topCam.length
-        ? topCam.map(c => `<tr><td class="p-3 font-medium">${c.camera_name}</td><td class="p-3 text-right">${c.count}</td></tr>`).join("")
-        : `<tr><td colspan="2" class="p-4 text-center text-gray-500">No data</td></tr>`;
+      const topCamerasBody = document.getElementById('topCamerasBody');
+      topCamerasBody.replaceChildren();
+      if (topCam.length) {
+        topCam.forEach(camera => {
+          const tr = document.createElement('tr');
+          const nameCell = document.createElement('td');
+          nameCell.className = 'p-3 font-medium';
+          nameCell.textContent = String(camera.camera_name ?? '');
+          const countCell = document.createElement('td');
+          countCell.className = 'p-3 text-right';
+          countCell.textContent = String(camera.count ?? '');
+          tr.append(nameCell, countCell);
+          topCamerasBody.appendChild(tr);
+        });
+      } else {
+        topCamerasBody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-gray-500">No data</td></tr>`;
+      }
+
+      const downtimeBody = document.getElementById('topDowntimeCamerasBody');
+      downtimeBody.replaceChildren();
+      if (operations.top_downtime_cameras.length) {
+        operations.top_downtime_cameras.forEach(camera => {
+          const tr = document.createElement('tr');
+          const nameCell = document.createElement('td');
+          nameCell.className = 'p-3 font-medium';
+          if (camera.camera_name && camera.camera_name !== '(unknown)') {
+            const historyLink = document.createElement('a');
+            const historyParams = new URLSearchParams({ q: camera.camera_name });
+            historyLink.href = `/health/history?${historyParams}`;
+            historyLink.textContent = camera.camera_name;
+            historyLink.className = 'text-blue-600 hover:underline dark:text-blue-400';
+            nameCell.appendChild(historyLink);
+          } else {
+            nameCell.textContent = camera.camera_name;
+          }
+          const downtimeCell = document.createElement('td');
+          downtimeCell.className = 'p-3 text-right';
+          downtimeCell.textContent = camera.downtime_hours.toLocaleString();
+          const availabilityCell = document.createElement('td');
+          availabilityCell.className = 'p-3 text-right';
+          availabilityCell.textContent = camera.availability === null ? 'No data' : `${camera.availability}%`;
+          tr.append(nameCell, downtimeCell, availabilityCell);
+          downtimeBody.appendChild(tr);
+        });
+      } else {
+        downtimeBody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-500">No monitored downtime data</td></tr>';
+      }
+      setOverviewStatus('');
     } catch (err) {
       console.error('Error loading insights:', err);
+      setOverviewStatus('Unable to refresh analytics. Displayed values may be from the previous successful date range.', true);
     }
   }
   
   if (document.getElementById('applyFilter')) {
-    document.getElementById('applyFilter').addEventListener('click', renderInsights);
+    document.getElementById('applyFilter').addEventListener('click', () => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('start_date', document.getElementById('startDate').value);
+      url.searchParams.set('end_date', document.getElementById('endDate').value);
+      url.searchParams.set('tab', 'overview');
+      window.history.replaceState(null, '', url);
+      renderInsights();
+    });
   }
   
   if (document.getElementById('downloadReport')) {
@@ -464,19 +652,27 @@ document.addEventListener("DOMContentLoaded", () => {
         const e = document.getElementById('endDate').value;
         const apiChartEl = document.getElementById('chartApiCommand');
         const emailChartEl = document.getElementById('chartEmail');
+        const availabilityChartEl = document.getElementById('chartCameraAvailability');
+        const incidentsChartEl = document.getElementById('chartOfflineIncidents');
         
-        if (!apiChartEl || !emailChartEl) {
+        if (!apiChartEl || !emailChartEl || !availabilityChartEl || !incidentsChartEl) {
           themedSwal({icon: 'error', title: 'Error', text: 'Charts not ready. Please wait for charts to load.'});
           return;
         }
         
         const apiImg = apiChartEl.toDataURL("image/png");
         const emailImg = emailChartEl.toDataURL("image/png");
+        const availabilityImg = availabilityChartEl.toDataURL("image/png");
+        const incidentsImg = incidentsChartEl.toDataURL("image/png");
         const fd = new FormData();
         fd.append("start_date", s);
         fd.append("end_date", e);
         fd.append("api_chart", apiImg);
         fd.append("email_chart", emailImg);
+        fd.append("availability_chart", availabilityImg);
+        fd.append("incidents_chart", incidentsImg);
+        const groupId = document.getElementById('analyticsGroupFilter')?.value;
+        if (groupId) fd.append("group_id", groupId);
         
         console.log('Sending POST request to /log/stats/report-pro');
         const r = await fetch("/log/stats/report-pro", { method: "POST", body: fd, credentials: 'same-origin' });
@@ -508,9 +704,16 @@ document.addEventListener("DOMContentLoaded", () => {
   
   async function fetchStats(camera = "", days = 7) {
     if (!document.getElementById('snapshotChart')) return;
+    const status = document.getElementById('snapshotStatsStatus');
+    status.textContent = 'Loading snapshot statistics…';
+    status.classList.remove('hidden', 'text-red-700', 'dark:text-red-300');
+    status.classList.add('text-blue-700', 'dark:text-blue-300');
     
     try {
-      const res = await fetch(`/stats/data?camera=${camera}&days=${days}`);
+      const params = new URLSearchParams({ camera, days: String(days) });
+      const selectedGroup = document.getElementById('analyticsGroupFilter')?.value;
+      if (selectedGroup) params.set('group_id', selectedGroup);
+      const res = await fetch(`/stats/data?${params}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       
@@ -519,19 +722,22 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         showNoDataMessage();
       }
+      status.textContent = '';
+      status.classList.add('hidden');
     } catch (error) {
       console.error('Error fetching stats:', error);
-      if (initialChartLabels && initialChartLabels.length > 0) {
-        updateSnapshotChart(initialChartLabels, initialChartData);
-      } else {
-        showNoDataMessage();
-      }
+      status.textContent = 'Unable to load snapshot statistics. The chart may show the previous successful result.';
+      status.classList.remove('hidden', 'text-blue-700', 'dark:text-blue-300');
+      status.classList.add('text-red-700', 'dark:text-red-300');
     }
   }
   
   async function fetchNoDataCameras(days = 7, selectedCamera = "") {
     try {
-      const res = await fetch(`/stats/no-data-cameras?days=${days}`);
+      const params = new URLSearchParams({ days: String(days) });
+      const selectedGroup = document.getElementById('analyticsGroupFilter')?.value;
+      if (selectedGroup) params.set('group_id', selectedGroup);
+      const res = await fetch(`/stats/no-data-cameras?${params}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       updateNoDataCameras(data.cameras, selectedCamera);
@@ -616,7 +822,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const statusColor = cam.status === "Online" ? "text-green-600 dark:text-green-400"
           : cam.status === "Offline" ? "text-red-600 dark:text-red-400"
           : "text-yellow-600 dark:text-yellow-300";
-        li.innerHTML = `<span class="${statusColor} font-semibold">${cam.hostname}</span> - <span class="italic">${cam.status}</span>`;
+        const name = document.createElement('span');
+        name.className = `${statusColor} font-semibold`;
+        name.textContent = cam.hostname;
+        const state = document.createElement('span');
+        state.className = 'italic';
+        state.textContent = cam.status;
+        li.append(name, document.createTextNode(' - '), state);
         ul.appendChild(li);
       });
     } else {
@@ -629,14 +841,37 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('cameraDropdown').addEventListener('change', (e) => {
       const selectedCamera = e.target.value;
       const selectedPeriod = document.getElementById('periodDropdown').value;
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', 'snapshots');
+      if (selectedCamera) url.searchParams.set('camera', selectedCamera);
+      else url.searchParams.delete('camera');
+      url.searchParams.set('days', selectedPeriod);
+      window.history.replaceState(null, '', url);
       fetchStats(selectedCamera, selectedPeriod);
       fetchNoDataCameras(selectedPeriod, selectedCamera);
+    });
+  }
+
+  if (document.getElementById('analyticsGroupFilter')) {
+    document.getElementById('analyticsGroupFilter').addEventListener('change', () => {
+      const groupId = document.getElementById('analyticsGroupFilter').value;
+      const url = new URL(window.location.href);
+      if (groupId) url.searchParams.set('group_id', groupId);
+      else url.searchParams.delete('group_id');
+      url.searchParams.delete('camera');
+      window.location.assign(url);
     });
   }
   
   if (document.getElementById('periodDropdown')) {
     document.getElementById('periodDropdown').addEventListener('change', (e) => {
       const selectedCamera = document.getElementById('cameraDropdown').value;
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', 'snapshots');
+      url.searchParams.set('days', e.target.value);
+      if (selectedCamera) url.searchParams.set('camera', selectedCamera);
+      else url.searchParams.delete('camera');
+      window.history.replaceState(null, '', url);
       fetchStats(selectedCamera, e.target.value);
       fetchNoDataCameras(e.target.value, selectedCamera);
     });

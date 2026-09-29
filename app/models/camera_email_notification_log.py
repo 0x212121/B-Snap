@@ -13,7 +13,7 @@ class CameraEmailNotificationLog(Base):
     camera_name = Column(String, nullable=True)
     incident_started_at = Column(DateTime(timezone=True), nullable=False)
     type = Column(String, nullable=True, default="alert")
-    sent_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    sent_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
     success = Column(Boolean, default=False, nullable=False)
     error_message = Column(String, nullable=True)
     reason = Column(String(64), nullable=True)

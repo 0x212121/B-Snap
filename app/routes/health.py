@@ -13,7 +13,12 @@ from app.core.config import get_config
 from app.core.logging_config import setup_logging
 from app.db.database import get_db
 from app.routes.auth import operator_access_required
-from app.utils.healthcheck import run_healthcheck_for_all, run_healthcheck_for_camera, run_healthcheck_for_nvr
+from app.utils.healthcheck import (
+    get_camera_uptime,
+    run_healthcheck_for_all,
+    run_healthcheck_for_camera,
+    run_healthcheck_for_nvr,
+)
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, Form, HTTPException
 from app.models.nvr import NVR
 from app.models.camera_daily_stats import CameraDailyStats
@@ -148,6 +153,24 @@ async def get_health_status_api(db: Session = Depends(get_db), current_operator:
     except Exception as e:
         print("Error in get_health_status_api: %s" % e)
         return JSONResponse(status_code=500, content={"message": "An internal error occurred."})
+
+
+@router.get("/health/uptime", response_class=JSONResponse)
+async def get_camera_uptime_api(
+    camera_id: str | None = Query(None, description="Optional camera ID filter"),
+    db: Session = Depends(get_db),
+    current_operator: User = Depends(operator_access_required),
+):
+    """Return current continuous uptime for each online camera."""
+    uptime_rows = get_camera_uptime(db, camera_id)
+    if camera_id and not uptime_rows:
+        raise HTTPException(status_code=404, detail="Camera not found")
+
+    return {
+        "as_of": datetime.now(timezone.utc).isoformat(),
+        "calculation": "current time - last_online_at for cameras with Online or High Latency status",
+        "cameras": uptime_rows,
+    }
 
 
 @router.post("/health/trigger/{entity_id}")

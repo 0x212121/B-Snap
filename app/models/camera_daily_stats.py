@@ -9,7 +9,7 @@ class CameraDailyStats(Base):
     id = Column(Integer, primary_key=True)
     camera_id = Column(String(36), ForeignKey("cameras.id", ondelete="CASCADE"), nullable=True)
     camera_name = Column(String(60), nullable=False)
-    date = Column(Date, nullable=False, default=date.today)
+    date = Column(Date, nullable=False, default=date.today, index=True)
     uptime_percentage = Column(Float, default=0.0)
     snapshot_count = Column(Integer, default=0)
     total_uptime_seconds = Column(Integer, default=0)

@@ -8,17 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `GET /health/uptime` to return each online camera's continuous uptime duration since its last recovery, using existing camera health status data.
+- Added current camera status and uptime fields to `/snapshots/search`; uptime is `null` while a camera is offline.
+- Added camera operations summary, availability/downtime and offline-transition charts, and top-downtime ranking to Analytics PDF reports with the active group scope.
+- Added a top-downtime camera table with links to camera status history.
+- Added a shareable camera-group filter for camera availability, downtime, offline incidents, and snapshot analytics; assignments from both the many-to-many relation and legacy group field are recognized.
+- Added camera availability, monitored downtime, and offline-transition trend charts to Analytics.
 - Added an admin SMTP test action on the configuration page that sends a test email to a specified recipient using saved SMTP settings.
 - Added Archive History browsing for completed audit archives, with search, pagination, and per-entry details backed by `audit_logs_legacy`.
 
 ### Fixed
 
+- Removed SQLAlchemy subquery coercion warnings from camera-group analytics filters by passing explicit `select()` expressions.
+- Clarified the analytics activity trend score, secured its table rendering and admin-only data endpoints, and added visible refresh errors.
+- Made snapshot periods represent the selected number of inclusive calendar days and kept camera choices available across periods.
 - Preserved JSON error responses for AJAX requests so SMTP and archive failures display backend messages instead of HTML system pages.
 - Replaced the native audit archive confirmation prompt with the shared themed confirmation component and improved non-JSON error reporting.
 - Excluded failed archive attempts from Archive History and staged encrypted files so failed attempts do not leave published archive files.
 
 ### Changed
 
+- Preserved date-range, camera-group, camera, period, and tab filters in the Analytics URL, and moved initial snapshot chart aggregation into the database.
+- Aggregated snapshot counts by date in the database, bundled overview data into one request, and added date-range indexes for analytics queries.
+- Grouped SQLite observability timestamps in the configured timezone so the overview trend endpoint works with the development database.
 - Removed scheduled and manual audit-log cleanup, including its retention setting, so archived logs remain available in Archive History. Other cleanup jobs are unchanged.
 - Updated archived audit-log pagination to match the application's numbered-page pattern, including first/previous/next/last controls and result counts.
 

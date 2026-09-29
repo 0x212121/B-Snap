@@ -48,6 +48,69 @@ def ping_device(ip: str) -> tuple[bool, int | None]:
     return True, int(avg_latency * 1000)
 
 
+def format_uptime_duration(seconds: int) -> str:
+    """Format a non-negative duration as days, hours, minutes, and seconds."""
+    days, remainder = divmod(max(seconds, 0), 86400)
+    hours, remainder = divmod(remainder, 3600)
+    minutes, secs = divmod(remainder, 60)
+    parts = []
+    if days:
+        parts.append(f"{days}d")
+    if hours or days:
+        parts.append(f"{hours}h")
+    if minutes or hours or days:
+        parts.append(f"{minutes}m")
+    parts.append(f"{secs}s")
+    return " ".join(parts)
+
+
+def get_camera_uptime(
+    db: Session,
+    camera_id: str | None = None,
+) -> list[dict[str, str | int | bool | None]]:
+    """Return each camera's current continuous uptime, when it is online.
+
+    ``CameraHealth.last_online`` is updated when a camera recovers from Offline,
+    so changes between Online and High Latency do not reset the uptime timer.
+    """
+    now = datetime.now(timezone.utc)
+    query = db.query(
+        DBCamera.id.label("camera_id"),
+        DBCamera.hostname.label("camera_name"),
+        CameraHealth.status.label("status"),
+        CameraHealth.last_online.label("last_online"),
+        CameraHealth.checked.label("checked_at"),
+    ).outerjoin(CameraHealth, CameraHealth.camera_id == DBCamera.id)
+
+    if camera_id:
+        query = query.filter(DBCamera.id == camera_id)
+
+    results = []
+    for row in query.order_by(DBCamera.hostname).all():
+        status = row.status or "Unknown"
+        online = status in {"Online", "High Latency"}
+        last_online = row.last_online
+        if last_online and last_online.tzinfo is None:
+            last_online = last_online.replace(tzinfo=timezone.utc)
+
+        uptime_seconds = None
+        if online and last_online:
+            uptime_seconds = max(0, int((now - last_online).total_seconds()))
+
+        results.append({
+            "camera_id": row.camera_id,
+            "camera_name": row.camera_name,
+            "status": status,
+            "is_online": online,
+            "last_online_at": last_online.isoformat() if last_online else None,
+            "checked_at": row.checked_at.isoformat() if row.checked_at else None,
+            "current_uptime_seconds": uptime_seconds,
+            "current_uptime": format_uptime_duration(uptime_seconds) if uptime_seconds is not None else None,
+        })
+
+    return results
+
+
 def log_status_change(db: Session, camera_id: str, prev_status: str, new_status: str, changed_at: datetime):
     if prev_status == new_status:
         return

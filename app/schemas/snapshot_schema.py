@@ -27,6 +27,10 @@ class SnapshotResponse(BaseModel):
     group_name: str
     tamper_reason: Optional[str] = None  # ⬅️ Accepts None/null
     res: str
+    camera_status: Optional[str] = None
+    uptime: Optional[str] = None
+    uptime_seconds: Optional[int] = None
+    last_online_at: Optional[str] = None
 
 
 class LatestSnapshotDetailResponse(BaseModel):

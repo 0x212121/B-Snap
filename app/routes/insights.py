@@ -1,16 +1,21 @@
 # app/routes/insights.py
 import logging
-from fastapi import APIRouter, Depends, Request, Query
+from xml.sax.saxutils import escape
+from fastapi import APIRouter, Depends, Request, Query, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.log import ApiLog, CommandLog
 from app.models.camera_email_notification_log import CameraEmailNotificationLog
+from app.models.camera_group import CameraGroup
 from app.utils.template_helper import templates
 from datetime import datetime, timedelta, timezone
 import pytz
 from app.utils.timezone_helper import get_current_timezone
+from app.routes.auth import admin_access_required
+from app.models.user import User
+from app.routes.stats import get_camera_operations_data
 from io import BytesIO
 
 # --- ReportLab for PDF ---
@@ -59,7 +64,7 @@ def _parse_range(start_date: str | None, end_date: str | None, db: Session = Non
             end_dt = tz.localize(end_dt)
 
         if end_dt < start_dt:
-            start_dt, end_dt = end_dt, start_dt
+            raise HTTPException(status_code=422, detail="end_date must be on or after start_date")
 
         end_dt = end_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
 
@@ -76,6 +81,26 @@ def _parse_range(start_date: str | None, end_date: str | None, db: Session = Non
 
 def _daily_counts(db: Session, model, ts_field, start_dt, end_dt, success_only=False):
     tz_name = get_current_timezone(db)
+
+    if db.get_bind().dialect.name == "sqlite":
+        tz = pytz.timezone(tz_name)
+        timestamp_column = getattr(model, ts_field)
+        query = db.query(timestamp_column).filter(
+            timestamp_column >= start_dt,
+            timestamp_column <= end_dt,
+        )
+        if success_only and hasattr(model, "success"):
+            query = query.filter(model.success.is_(True))
+
+        counts = {}
+        for (timestamp,) in query.all():
+            if timestamp is None:
+                continue
+            if timestamp.tzinfo is None:
+                timestamp = pytz.UTC.localize(timestamp)
+            local_day = timestamp.astimezone(tz).date().isoformat()
+            counts[local_day] = counts.get(local_day, 0) + 1
+        return [{"date": day, "count": counts[day]} for day in sorted(counts)]
 
     # convert ke local timezone sebelum DATE()
     date_expr = func.date(
@@ -131,13 +156,11 @@ def _pct_change(current: int, previous: int, days_now: int, days_prev: int) -> f
     return (avg_now - avg_prev) * 100.0 / avg_prev
 
 
-def _health_index(api_now, api_prev, cmd_now, cmd_prev, email_now, email_prev,
-                  days_now: int = 1, days_prev: int = 1) -> tuple[int, str, str]:
+def _activity_trend_index(api_now, api_prev, cmd_now, cmd_prev, email_now, email_prev,
+                          days_now: int = 1, days_prev: int = 1) -> tuple[int, str, str]:
     """
-    Health Index sederhana (0–100).
-    - Menggunakan perubahan per-day-average untuk tiap komponen.
-    - Kompres tren dengan tanh supaya lonjakan ekstrem tidak memecah skala.
-    - Kembalikan (index, label, color_key).
+    Summarize activity changes on a 0–100 scale; this is not a system health score.
+    Returns (index, trend label, color key).
     """
     import math
 
@@ -154,14 +177,12 @@ def _health_index(api_now, api_prev, cmd_now, cmd_prev, email_now, email_prev,
     # map -1..1 -> 0..100
     idx = int(round((avg + 1.0) * 50.0))
 
-    if idx >= 85:
-        label, color = "Excellent", "green"
-    elif idx >= 70:
-        label, color = "Good", "emerald"
-    elif idx >= 50:
-        label, color = "Fair", "amber"
+    if idx >= 55:
+        label, color = "Increasing", "blue"
+    elif idx <= 45:
+        label, color = "Decreasing", "amber"
     else:
-        label, color = "Needs Attention", "red"
+        label, color = "Stable", "gray"
 
     return idx, label, color
 
@@ -180,6 +201,7 @@ def get_daily_stats(
     db: Session = Depends(get_db),
     start_date: str | None = Query(None),
     end_date: str | None = Query(None),
+    current_admin: User = Depends(admin_access_required),
 ):
     """Daily aggregated counts for API, Command, and Email (date-range aware)."""
     start_dt, end_dt, _, _ = _parse_range(start_date, end_date, db)
@@ -200,6 +222,7 @@ def get_top_commands(
     start_date: str | None = Query(None),
     end_date: str | None = Query(None),
     limit: int = Query(10, ge=1, le=50),
+    current_admin: User = Depends(admin_access_required),
 ):
     """Top-N most executed commands (date-range aware)."""
     start_dt, end_dt, _, _ = _parse_range(start_date, end_date, db)
@@ -226,6 +249,7 @@ def get_top_cameras_by_email(
     start_date: str | None = Query(None),
     end_date: str | None = Query(None),
     limit: int = Query(5, ge=1, le=50),
+    current_admin: User = Depends(admin_access_required),
 ):
     """Top-N cameras by email notifications sent (date-range aware)."""
     start_dt, end_dt, _, _ = _parse_range(start_date, end_date, db)
@@ -255,8 +279,9 @@ def get_summary(
     db: Session = Depends(get_db),
     start_date: str | None = Query(None),
     end_date: str | None = Query(None),
+    current_admin: User = Depends(admin_access_required),
 ):
-    """KPI summary + delta vs previous period + health index."""
+    """KPI summary, change vs previous period, and activity trend index."""
     try:
         logger.info("get_summary called: start_date=%s end_date=%s", start_date, end_date)
         start_dt, end_dt, prev_start, prev_end = _parse_range(start_date, end_date, db)
@@ -287,12 +312,12 @@ def get_summary(
         email_delta = _pct_change(email_now, email_prev, days_now, days_prev)
         logger.info("Deltas (%%) - api=%.2f cmd=%.2f email=%.2f", api_delta, cmd_delta, email_delta)
 
-        # Health Index (pakai awareness jumlah hari)
-        idx, label, color = _health_index(
+        # Activity trend index (normalized by period length).
+        idx, label, color = _activity_trend_index(
             api_now, api_prev, cmd_now, cmd_prev, email_now, email_prev,
             days_now=days_now, days_prev=days_prev
         )
-        logger.info("HealthIndex - value=%d label=%s color=%s", idx, label, color)
+        logger.info("ActivityTrendIndex - value=%d label=%s color=%s", idx, label, color)
 
         # Insight naratif sederhana (tetap disediakan untuk PDF; FE bisa abaikan)
         insights = []
@@ -311,6 +336,8 @@ def get_summary(
             "totals": {"api": api_now, "command": cmd_now, "email": email_now},
             "previous": {"api": api_prev, "command": cmd_prev, "email": email_prev},
             "delta_pct": {"api": api_delta, "command": cmd_delta, "email": email_delta},
+            "activity_index": {"value": idx, "label": label, "color": color},
+            # Keep the old key for clients that consumed the original summary shape.
             "health_index": {"value": idx, "label": label, "color": color},
             "insights": insights,
         }
@@ -319,12 +346,29 @@ def get_summary(
         raise
 
 
+@router.get("/log/stats/dashboard")
+def get_dashboard_stats(
+    db: Session = Depends(get_db),
+    start_date: str | None = Query(None),
+    end_date: str | None = Query(None),
+    current_admin: User = Depends(admin_access_required),
+):
+    """Bundle the overview's summary, trends, and top lists into one response."""
+    return {
+        "summary": get_summary(db, start_date, end_date, current_admin),
+        "daily": get_daily_stats(db, start_date, end_date, current_admin),
+        "top_commands": get_top_commands(db, start_date, end_date, 10, current_admin),
+        "top_cameras": get_top_cameras_by_email(db, start_date, end_date, 5, current_admin),
+    }
+
+
 @router.post("/log/stats/report-pro")
 async def get_executive_report_pro(
     request: Request,
     db: Session = Depends(get_db),
     start_date: str | None = Query(None),
     end_date: str | None = Query(None),
+    current_admin: User = Depends(admin_access_required),
 ):
     """
     Generate professional PDF report with embedded charts and formal executive narration.
@@ -333,6 +377,13 @@ async def get_executive_report_pro(
     api_chart = form.get("api_chart")
     email_chart = form.get("email_chart")
     topcmd_chart = form.get("topcmd_chart")
+    availability_chart = form.get("availability_chart")
+    incidents_chart = form.get("incidents_chart")
+    group_id_value = form.get("group_id")
+    try:
+        group_id = int(group_id_value) if group_id_value else None
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail="Invalid camera group") from exc
 
     if not start_date:
         start_date = form.get("start_date")
@@ -343,6 +394,20 @@ async def get_executive_report_pro(
 
     # --- Data Retrieval ---
     start_dt, end_dt, prev_start, prev_end = _parse_range(start_date, end_date, db)
+    report_timezone = _local_tz(db)
+    operations_start_date = start_dt.astimezone(report_timezone).date()
+    operations_end_date = end_dt.astimezone(report_timezone).date()
+    operations = await get_camera_operations_data(
+        request,
+        operations_start_date,
+        operations_end_date,
+        group_id,
+        db,
+        current_admin,
+    )
+    camera_group = db.get(CameraGroup, group_id) if group_id is not None else None
+    if group_id is not None and camera_group is None:
+        raise HTTPException(status_code=404, detail="Camera group not found")
     
     # Get totals
     api_now = _total_count(db, ApiLog, "timestamp", start_dt, end_dt)
@@ -352,13 +417,22 @@ async def get_executive_report_pro(
     cmd_prev = _total_count(db, CommandLog, "timestamp", prev_start, prev_end)
     email_prev = _total_count(db, CameraEmailNotificationLog, "sent_at", prev_start, prev_end, success_only=True)
     
-    # Calculate deltas and health index
+    # Calculate deltas and activity trend index.
     days_now = (end_dt - start_dt).days + 1
     days_prev = (prev_end - prev_start).days + 1
     api_delta = _pct_change(api_now, api_prev, days_now, days_prev)
     cmd_delta = _pct_change(cmd_now, cmd_prev, days_now, days_prev)
     email_delta = _pct_change(email_now, email_prev, days_now, days_prev)
-    idx, label, color = _health_index(api_now, api_prev, cmd_now, cmd_prev, email_now, email_prev, days_now=days_now, days_prev=days_prev)
+    idx, label, color = _activity_trend_index(
+        api_now,
+        api_prev,
+        cmd_now,
+        cmd_prev,
+        email_now,
+        email_prev,
+        days_now=days_now,
+        days_prev=days_prev,
+    )
     
     totals = {"api": api_now, "command": cmd_now, "email": email_now}
     deltas = {"api": api_delta, "command": cmd_delta, "email": email_delta}
@@ -385,7 +459,7 @@ async def get_executive_report_pro(
         f"Dibandingkan periode sebelumnya, aktivitas API {pct_phrase(deltas['api'])}, "
         f"eksekusi perintah {pct_phrase(deltas['command'])}, dan "
         f"notifikasi email {pct_phrase(deltas['email'])}. "
-        f"Indeks kesehatan sistem berada pada nilai {hi['value']}/100 dengan kategori {hi['label']}."
+        f"Indeks tren aktivitas berada pada nilai {hi['value']}/100 dengan tren {hi['label'].lower()}."
     )
 
     highlights = [
@@ -432,6 +506,11 @@ async def get_executive_report_pro(
     report_title = f"B-SNAP Executive Report"
     elems.append(Paragraph(report_title, styles["Title"]))
     elems.append(Paragraph(f"Periode: {start_dt.date()} – {end_dt.date()}", styles["Normal"]))
+    group_label = escape(camera_group.name) if camera_group else "Semua grup"
+    elems.append(Paragraph(
+        f"Cakupan metrik kamera: {group_label}. Metrik aktivitas sistem dihitung secara global.",
+        styles["Normal"],
+    ))
     elems.append(Spacer(1, 0.5 * cm))
 
     # --- Executive Summary Section ---
@@ -472,11 +551,11 @@ async def get_executive_report_pro(
     elems.append(Paragraph("<i>Note: Δ% calculated per-day average basis</i>", styles["Normal"]))
     elems.append(Spacer(1, 0.5 * cm))
 
-    # --- Health Index ---
-    color_map = {"green": colors.green, "emerald": colors.darkgreen, "amber": colors.orange, "red": colors.red}
+    # --- Activity Trend Index ---
+    color_map = {"blue": colors.blue, "amber": colors.orange, "gray": colors.grey}
     color = color_map.get(hi["color"], colors.grey)
     hi_tbl = Table(
-        [["Health Index", f"{hi['value']}/100 – {hi['label']}"]],
+        [["Activity Trend Index", f"{hi['value']}/100 – {hi['label']}"]],
         colWidths=[6 * cm, 8 * cm],
         style=[
             ("BACKGROUND", (0, 0), (0, 0), color),
@@ -489,6 +568,30 @@ async def get_executive_report_pro(
     )
     elems.append(hi_tbl)
     elems.append(Spacer(1, 0.6 * cm))
+
+    total_uptime_seconds = operations["total_uptime_seconds"]
+    total_downtime_seconds = operations["total_downtime_seconds"]
+    monitored_seconds = total_uptime_seconds + total_downtime_seconds
+    availability_value = (
+        total_uptime_seconds / monitored_seconds * 100 if monitored_seconds else None
+    )
+    operations_data = [
+        ["Camera Operations", "Selected period"],
+        ["Availability", f"{availability_value:.2f}%" if availability_value is not None else "No monitoring data"],
+        ["Monitored downtime", f"{total_downtime_seconds / 3600:.2f} hours" if monitored_seconds else "No monitoring data"],
+        ["Offline transitions", f"{operations['total_offline_incidents']:,}"],
+    ]
+    operations_table = Table(operations_data, colWidths=[7 * cm, 7 * cm])
+    operations_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("ALIGN", (1, 1), (1, -1), "RIGHT"),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.grey),
+    ]))
+    elems.append(Paragraph("<b>Camera Operations Summary</b>", styles["Heading2"]))
+    elems.append(operations_table)
+    elems.append(Spacer(1, 0.5 * cm))
 
     # --- Charts ---
     def add_chart(b64_str, caption):
@@ -507,9 +610,32 @@ async def get_executive_report_pro(
     add_chart(api_chart, "API vs Command Logs (Daily Trend)")
     add_chart(email_chart, "Email Notifications (Daily Count)")
     add_chart(topcmd_chart, "Top 10 Most Executed Commands")
+    add_chart(availability_chart, f"Camera Availability and Downtime ({group_label})")
+    add_chart(incidents_chart, f"Offline Transitions ({group_label})")
+
+    elems.append(Paragraph("<b>Top Cameras by Downtime</b>", styles["Heading3"]))
+    downtime_data = [["Camera", "Downtime (hours)", "Availability"]]
+    downtime_data.extend([
+        [
+            row["camera_name"],
+            f'{row["downtime_hours"]:.2f}',
+            f'{row["availability"]:.2f}%' if row["availability"] is not None else "No data",
+        ]
+        for row in operations["top_downtime_cameras"]
+    ])
+    downtime_table = Table(downtime_data, colWidths=[7 * cm, 4 * cm, 4 * cm], repeatRows=1)
+    downtime_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("ALIGN", (1, 1), (-1, -1), "RIGHT"),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.grey),
+    ]))
+    elems.append(downtime_table)
+    elems.append(Spacer(1, 0.5 * cm))
 
     # --- Top Tables ---
-    elems.append(Paragraph("<b>Top 5 Cameras by Email</b>", styles["Heading3"]))
+    elems.append(Paragraph("<b>Top 5 Cameras by Email (Global)</b>", styles["Heading3"]))
     cam_data = [["Camera", "Emails"]] + [[r["camera_name"], f'{r["count"]:,}'] for r in top_cam]
     cam_tbl = Table(cam_data, colWidths=[9 * cm, 5 * cm])
     cam_tbl.setStyle(TableStyle([

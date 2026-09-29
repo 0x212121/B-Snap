@@ -1,7 +1,7 @@
 import hashlib
 import hmac
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 import time
 from typing import Optional, List
 from urllib.parse import quote, unquote # Import quote for URL encoding
@@ -14,11 +14,13 @@ from app.models.camera import Camera as DBCamera
 from app.models.camera_group import CameraGroup
 from app.models.user import User
 from app.models.snapshot import Snapshot
+from app.models.health import CameraHealth
 from app.models.whitelist import RoleEnum, WhatsappWhitelist
 from app.routes.auth import admin_access_required, user_access_required_optional
 from app.utils.audit_logger import log_audit
 from app.utils.snapshot_utils import SNAPSHOT_BASE_DIR  # points to app/static/snapshots
 from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
+from app.utils.healthcheck import format_uptime_duration
 from app.schemas.snapshot_schema import SnapshotResponse
 
 router = APIRouter(tags=["Snapshots API"])
@@ -156,6 +158,11 @@ def search_snapshots(
         for cam in cameras
     }
     camera_ids = list(camera_id_to_info.keys())
+    health_by_camera_id = {
+        str(health.camera_id): health
+        for health in db.query(CameraHealth).filter(CameraHealth.camera_id.in_(camera_ids)).all()
+    }
+    now = datetime.now(timezone.utc)
 
     # --- SNAPSHOT QUERY ---
     snapshots = (
@@ -174,6 +181,17 @@ def search_snapshots(
             timestamp_local = to_current_timezone(snap.timestamp, db)
             formatted_timestamp = format_datetime_with_tz(timestamp_local)
 
+            health = health_by_camera_id.get(str(snap.camera_id))
+            camera_status = health.status if health else "Unknown"
+            online = camera_status in {"Online", "High Latency"}
+            last_online = health.last_online if health else None
+            if last_online and last_online.tzinfo is None:
+                last_online = last_online.replace(tzinfo=timezone.utc)
+            uptime_seconds = (
+                max(0, int((now - last_online).total_seconds()))
+                if online and last_online else None
+            )
+
             latest_snapshot_per_camera[snap.camera_id] = SnapshotResponse(
                 filename=os.path.basename(snap.file_path),
                 camera=snap.camera_name,
@@ -185,7 +203,11 @@ def search_snapshots(
                 long=cam_info.get("long"),
                 tamper_reason=snap.tamper_reason,
                 res=snap.resolution,
-                group_name=(", ".join(group.name for group in snap.camera.groups) or (snap.camera.group.name if snap.camera.group else "")) if snap.camera else ""
+                group_name=(", ".join(group.name for group in snap.camera.groups) or (snap.camera.group.name if snap.camera.group else "")) if snap.camera else "",
+                camera_status=camera_status,
+                uptime=format_uptime_duration(uptime_seconds) if uptime_seconds is not None else None,
+                uptime_seconds=uptime_seconds,
+                last_online_at=last_online.isoformat() if last_online else None,
             )
 
     return list(latest_snapshot_per_camera.values())
