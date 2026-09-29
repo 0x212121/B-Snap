@@ -1,16 +1,66 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – Config{% endblock %}
-{% from "_icons.html" import icon_config, icon_globe, icon_camera, icon_bug, icon_paint, icon_folder, icon_download, icon_trash, icon_play, icon_database, icon_email, icon_whatsapp, icon_airplane %}
+{% from "_icons.html" import icon_config, icon_globe, icon_camera, icon_bug, icon_paint, icon_folder, icon_download, icon_trash, icon_play, icon_email, icon_airplane %}
 
 {% block content %}
-<div class="container mx-auto p-4 text-gray-900 dark:text-gray-100 rounded-lg shadow">
-  <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-8">{{ icon_config("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} App Config</h1>
+<style>
+  body:has(#configPage) { overflow: hidden; }
+  #main-content:has(#configPage) { height: calc(100dvh - 4rem); padding: 1rem; overflow: hidden; }
+  #configPage { height: 100%; }
+  #configForm { min-height: 0; }
+  #configPanels { flex: 1 1 0%; min-height: 0; overflow: hidden; margin-top: .5rem; }
+  .config-tab-panel { display: none; height: 100%; min-height: 0; }
+  .config-tab-panel.is-active { display: block; }
+  .config-tab-panel[hidden] { display: none !important; }
+  .config-panel-card { height: 100%; overflow-y: auto; padding: 1rem; }
+  .config-panel-card { border: 1px solid rgb(229 231 235); border-radius: .75rem; box-shadow: 0 1px 2px rgb(0 0 0 / .05); padding: 1.25rem; }
+  .dark .config-panel-card { border-color: rgb(55 65 81); }
+  .config-panel-card > h2 { margin-bottom: .75rem; padding-bottom: .5rem; }
+  #configForm label:not(.relative) { margin-bottom: .375rem; }
+  #configForm input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
+  #configForm select,
+  #configForm textarea {
+    border-radius: .5rem;
+    box-shadow: 0 1px 2px rgb(0 0 0 / .05);
+    font-size: .875rem;
+    padding: .625rem 1rem;
+    transition: all .2s;
+  }
+  #configForm input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
+  #configForm select,
+  #configForm textarea { background-color: #fff; }
+  .dark #configForm input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
+  .dark #configForm select,
+  .dark #configForm textarea { background-color: rgb(55 65 81); color: rgb(243 244 246); }
+  .config-tab-button[aria-selected="true"] { border-bottom-color: #2563eb; }
+  .dark .config-tab-button[aria-selected="true"] { border-bottom-color: #3b82f6; }
+  @media (min-width: 768px) {
+    #main-content:has(#configPage) { padding: 2rem; }
+  }
+</style>
+<div id="configPage" class="w-full text-gray-900 dark:text-gray-100 rounded-xl shadow-sm flex flex-col overflow-hidden">
+  <div class="flex items-center gap-3 mb-2 shrink-0">
+    <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">{{ icon_config("w-7 h-7 text-blue-600 dark:text-blue-400") }}</div>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">App Config</h1>
+  </div>
   
-  <div id="error-message-container"></div>
+  <div id="error-message-container" class="shrink-0"></div>
+
+  <div id="configTabBar" role="tablist" aria-label="Configuration sections" class="shrink-0 flex gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-700 whitespace-nowrap">
+    {% for tab_id, tab_label in [
+      ('general', 'General'), ('snapshots', 'Snapshots'), ('retention', 'Retention'),
+      ('cron', 'Cron'), ('intervals', 'Intervals'),
+      ('email', 'Email'), ('gowa', 'GoWA'), ('appearance', 'Appearance')
+    ] %}
+    <button type="button" role="tab" id="config-tab-{{ tab_id }}" aria-controls="config-panel-{{ tab_id }}" aria-selected="false" data-config-tab-button="{{ tab_id }}" class="config-tab-button border-b-2 border-transparent whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+      {{ tab_label }}
+    </button>
+    {% endfor %}
+  </div>
   
-  <form id="configForm" enctype="multipart/form-data" class="space-y-8">
+  <form id="configForm" enctype="multipart/form-data" class="flex flex-1 flex-col overflow-hidden">
     
-    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+    <div data-config-tab="general" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
       <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_globe("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} General</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
@@ -57,7 +107,7 @@
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+  <div data-config-tab="snapshots" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
     <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_config("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Snapshot Behavior</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
@@ -137,7 +187,7 @@
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+  <div data-config-tab="retention" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
     <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_trash("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Log Retention</h2>
     <p class="mb-5 text-sm text-blue-700 dark:text-blue-300">Archived audit logs are retained and remain available in Archive History. Scheduled and manual cleanup do not delete audit logs.</p>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -183,45 +233,7 @@
     <div id="cleanupResult" class="mt-4 hidden"></div>
   </div>
 
-  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_database("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Storage Monitoring</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div>
-        <label for="storage_critical_percent" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Critical Threshold (%)</label>
-        <input type="number" id="storage_critical_percent" name="storage_critical_percent" 
-          value="{{ configs.get('storage_critical_percent', 95) }}" 
-          min="50" max="99" required
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Alert level CRITICAL when disk usage exceeds this percentage. Default: 95%</p>
-      </div>
-      <div>
-        <label for="storage_warning_percent" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Warning Threshold (%)</label>
-        <input type="number" id="storage_warning_percent" name="storage_warning_percent" 
-          value="{{ configs.get('storage_warning_percent', 85) }}" 
-          min="50" max="99" required
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Alert level WARNING when disk usage exceeds this percentage. Default: 85%</p>
-      </div>
-      <div>
-        <label for="storage_info_percent" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Info Threshold (%)</label>
-        <input type="number" id="storage_info_percent" name="storage_info_percent" 
-          value="{{ configs.get('storage_info_percent', 75) }}" 
-          min="50" max="99" required
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Threshold for the informational storage status. Default: 75%</p>
-      </div>
-      <div>
-        <label for="storage_critical_free_gb" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Critical Free Space (GB)</label>
-        <input type="number" id="storage_critical_free_gb" name="storage_critical_free_gb" 
-          value="{{ configs.get('storage_critical_free_gb', 5) }}" 
-          min="1" max="100" required
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Also trigger CRITICAL alert when free space below this value. Default: 5 GB</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+  <div data-config-tab="cron" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
     <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">
       <svg class="w-8 h-8 text-gray-900 dark:text-gray-100 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -268,19 +280,6 @@
           </p>
         </div>
         
-        <!-- Storage Check Cron -->
-        <div>
-          <label for="storage_check_cron" class="block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Storage Check Schedule (Cron)</label>
-          <input type="text" id="storage_check_cron" name="storage_check_cron" 
-            value="{{ configs.get('storage_check_cron', '') }}" 
-            placeholder="e.g., 0 * * * *"
-            class="w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
-          <p class="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
-            <code>0 * * * *</code> = Every hour<br>
-            <code>0 */6 * * *</code> = Every 6 hours
-          </p>
-        </div>
-        
         <!-- Cleanup Cron -->
         <div>
           <label for="cleanup_cron" class="block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Cleanup Schedule (Cron)</label>
@@ -307,17 +306,14 @@
       </div>
     </div>
     
+  </div>
+
+  <div data-config-tab="intervals" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-4">Job Intervals</h2>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Fallback intervals are used when the corresponding Cron expression is empty.</p>
     <!-- Interval Fallback Section -->
-    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Fallback Intervals (used when cron is empty)</h3>
+    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Intervals</h3>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div>
-        <label for="storage_check_interval_hours" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Storage Check Interval (hours)</label>
-        <input type="number" id="storage_check_interval_hours" name="storage_check_interval_hours" 
-          value="{{ configs.get('storage_check_interval_hours', '1') }}" 
-          min="1" max="24" required
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How often to check storage usage. Default: 1 hour</p>
-      </div>
       <div>
         <label for="cleanup_interval_days" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Cleanup Interval (days)</label>
         <input type="number" id="cleanup_interval_days" name="cleanup_interval_days" 
@@ -353,7 +349,7 @@
     </div>
   </div>
 
-  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+  <div data-config-tab="email" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
     <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_email("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Email (SMTP) Configuration</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
@@ -432,8 +428,8 @@
   </div>
 
   <!-- WhatsApp Gateway Configuration -->
-  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_whatsapp("w-8 h-8 text-green-600 inline") }} WhatsApp Gateway (GoWA)</h2>
+  <div data-config-tab="gowa" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6"><img src="/static/icons/gowa.svg" alt="GoWA logo" class="w-8 h-8 inline-block align-middle mr-1 object-contain"> WhatsApp Gateway (GoWA)</h2>
     
     <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 mb-6">
       <div>
@@ -549,7 +545,7 @@
     </div>
   </div>
 
-  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+  <div data-config-tab="appearance" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
     <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_paint("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Appearance</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
@@ -591,8 +587,8 @@
   </div>
   
   
-  <div class="flex justify-end">
-    <button type="button" id="saveButton" class="bg-blue-600 text-white font-bold px-6 py-3 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 ease-in-out">
+  <div class="flex shrink-0 justify-end pt-2">
+    <button type="button" id="saveButton" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
       <span id="buttonText">{{ icon_download("w-5 h-5 text-gray-100 inline") }} Save Changes</span>
       <span id="buttonSpinner" class="hidden">
         <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -617,6 +613,61 @@
     const buttonSpinner = document.getElementById('buttonSpinner');
     const smtpTestButton = document.getElementById('smtpTestButton');
     const smtpTestRecipient = document.getElementById('smtp_test_recipient');
+
+    const configTabs = Array.from(document.querySelectorAll('[data-config-tab-button]'));
+    const configSections = Array.from(form.querySelectorAll(':scope > [data-config-tab]'));
+    const panelsContainer = document.createElement('div');
+    panelsContainer.id = 'configPanels';
+    panelsContainer.className = 'flex-1 min-h-0 overflow-hidden';
+    form.insertBefore(panelsContainer, configSections[0]);
+
+    configTabs.forEach((tab) => {
+      const tabId = tab.dataset.configTabButton;
+      const panel = document.createElement('section');
+      panel.id = `config-panel-${tabId}`;
+      panel.className = 'config-tab-panel';
+      panel.setAttribute('role', 'tabpanel');
+      panel.setAttribute('aria-labelledby', tab.id);
+      panel.hidden = true;
+      panelsContainer.appendChild(panel);
+      tab.addEventListener('click', () => activateConfigTab(tabId));
+    });
+
+    configSections.forEach((section) => {
+      const panel = document.getElementById(`config-panel-${section.dataset.configTab}`);
+      if (!panel) return;
+      section.classList.add('config-panel-card');
+      section.classList.remove('p-6');
+      panel.appendChild(section);
+    });
+
+    function activateConfigTab(tabId) {
+      configTabs.forEach((tab) => {
+        const selected = tab.dataset.configTabButton === tabId;
+        tab.setAttribute('aria-selected', String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+      });
+      configTabs.forEach((tab) => {
+        const panel = document.getElementById(`config-panel-${tab.dataset.configTabButton}`);
+        if (!panel) return;
+        const selected = tab.dataset.configTabButton === tabId;
+        panel.hidden = !selected;
+        panel.classList.toggle('is-active', selected);
+      });
+    }
+
+    configTabs.forEach((tab, index) => {
+      tab.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const nextIndex = event.key === 'Home' ? 0
+          : event.key === 'End' ? configTabs.length - 1
+          : (index + (event.key === 'ArrowRight' ? 1 : -1) + configTabs.length) % configTabs.length;
+        configTabs[nextIndex].focus();
+        activateConfigTab(configTabs[nextIndex].dataset.configTabButton);
+      });
+    });
+    activateConfigTab(configTabs[0]?.dataset.configTabButton || 'general');
     
     // Mapping error codes to human-readable messages
     const errorMessages = {

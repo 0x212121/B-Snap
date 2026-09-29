@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added the upstream GoWA logo to the WhatsApp Gateway settings section.
 - Added `GET /health/uptime` to return each online camera's continuous uptime duration since its last recovery, using existing camera health status data.
 - Added current camera status and uptime fields to `/snapshots/search`; uptime is `null` while a camera is offline.
 - Added camera operations summary, availability/downtime and offline-transition charts, and top-downtime ranking to Analytics PDF reports with the active group scope.
@@ -28,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Matched Admin Config width, headings, tab controls, setting cards, fields, and save button to the shared styling used by Email Recipients while preserving the existing settings and actions.
+- Matched Email Templates page cards, controls, and buttons to the shared styling used by Email Recipients.
+- Removed Storage Monitoring settings and their schedule controls from Admin Config; active tabs use an underline without a filled background.
+- Reorganized Admin Config into full-width tabs with a viewport-sized layout and a persistent Save Changes control.
 - Persisted encrypted audit archive files on the host through a Docker Compose bind mount.
 - Removed disk-usage WhatsApp, toast, and dashboard alert notifications; storage metrics and status summaries remain available.
 - Preserved date-range, camera-group, camera, period, and tab filters in the Analytics URL, and moved initial snapshot chart aggregation into the database.

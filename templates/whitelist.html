@@ -694,7 +694,6 @@
                 <option value="">All Groups</option>
                   ${cameraGroups.map(g => `<option value="${g.id}">${g.name}</option>`).join('')}
               </select>
-              <p class="mt-1 text-xs text-green-600 dark:text-green-400">* Biarkan kosong untuk akses semua group</p>
             </div>
           </div>
           
@@ -802,7 +801,6 @@
                 <option value="">All Groups</option>
                 ${cameraGroups.map(g => `<option value="${g.id}" ${String(g.id) === String(groupId) ? 'selected' : ''}>${g.name}</option>`).join('')}
               </select>
-              <p class="mt-1 text-xs text-green-600 dark:text-green-400">* Biarkan kosong untuk akses semua group</p>
             </div>
           </div>
           

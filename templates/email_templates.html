@@ -3,33 +3,33 @@
 {% block title %}Email Templates - B-Snap{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
+<div class="mb-6">
     <!-- Header -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            <i class="fas fa-envelope-open-text mr-2"></i>Email Templates
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+            <span class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl"><i class="fas fa-envelope-open-text text-blue-600 dark:text-blue-400"></i></span>Email Templates
         </h1>
-        <p class="text-gray-600 dark:text-gray-400">
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Customize notification email messages with drag-and-drop variables
         </p>
     </div>
 
     <!-- Template Type Selector -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4 overflow-hidden">
         <div class="border-b border-gray-200 dark:border-gray-700">
-            <nav class="flex -mb-px" id="templateTabs">
+            <nav class="flex overflow-x-auto" id="templateTabs">
                 <button onclick="switchTab('tamper_alert')" 
-                        class="tab-btn active px-6 py-4 text-sm font-medium border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                        class="tab-btn active whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
                         data-tab="tamper_alert">
                     <i class="fas fa-exclamation-triangle mr-2"></i>Tamper Alert
                 </button>
                 <button onclick="switchTab('recovery_alert')" 
-                        class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                        class="tab-btn whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                         data-tab="recovery_alert">
                     <i class="fas fa-check-circle mr-2"></i>Recovery Alert
                 </button>
                 <button onclick="switchTab('offline_alert')" 
-                        class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                        class="tab-btn whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                         data-tab="offline_alert">
                     <i class="fas fa-power-off mr-2"></i>Offline Alert
                 </button>
@@ -38,57 +38,51 @@
     </div>
 
     <!-- Main Editor Area -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <!-- Left Panel: Editor -->
-        <div class="lg:col-span-2 space-y-6">
+        <div class="lg:col-span-2 space-y-4">
             <!-- Subject Editor -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+                <label for="subjectInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                     <i class="fas fa-heading mr-1"></i>Email Subject
                 </label>
                 <input type="text" id="subjectInput" 
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
-                              bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                              focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-4 py-2.5 transition-all"
                        placeholder="Enter email subject...">
             </div>
 
             <!-- Plain Body Editor -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+                <label for="plainBodyInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                     <i class="fas fa-align-left mr-1"></i>Plain Text Body
                 </label>
                 <textarea id="plainBodyInput" rows="12"
-                          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
-                                 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm
-                                 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm px-4 py-2.5 transition-all"
                           placeholder="Enter plain text body..."></textarea>
             </div>
 
             <!-- HTML Body Editor -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+                <label for="htmlBodyInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                     <i class="fas fa-code mr-1"></i>HTML Body
                 </label>
                 <textarea id="htmlBodyInput" rows="12"
-                          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
-                                 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm
-                                 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm px-4 py-2.5 transition-all"
                           placeholder="Enter HTML body..."></textarea>
             </div>
 
             <!-- Action Buttons -->
             <div class="flex flex-wrap gap-3">
                 <button onclick="saveTemplate()" 
-                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
                     <i class="fas fa-save mr-2"></i>Save Template
                 </button>
                 <button onclick="previewTemplate()" 
-                        class="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                        class="inline-flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
                     <i class="fas fa-eye mr-2"></i>Preview
                 </button>
                 <button onclick="resetTemplate()" 
-                        class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                        class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
                     <i class="fas fa-undo mr-2"></i>Reset to Default
                 </button>
             </div>
@@ -96,7 +90,7 @@
 
         <!-- Right Panel: Variables -->
         <div class="lg:col-span-1">
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sticky top-4">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 sticky top-4">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                     <i class="fas fa-tags mr-2"></i>Available Variables
                 </h3>
@@ -104,7 +98,7 @@
                     Drag and drop variables into the editor, or click to insert at cursor position.
                 </p>
                 
-                <div id="variablesList" class="space-y-2 max-h-[600px] overflow-y-auto">
+                <div id="variablesList" class="space-y-2 max-h-[600px] overflow-y-auto pr-1">
                     <!-- Variables will be populated by JavaScript -->
                 </div>
 
@@ -126,7 +120,7 @@
 
 <!-- Preview Modal -->
 <div id="previewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 max-w-4xl w-full max-h-[90vh] overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                 <i class="fas fa-eye mr-2"></i>Template Preview
@@ -151,7 +145,7 @@
                 </div>
             </div>
         </div>
-        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
             <p class="text-sm text-gray-600 dark:text-gray-400">
                 <i class="fas fa-info-circle mr-1"></i>
                 Preview uses sample data. Actual emails will contain real camera information.
@@ -220,7 +214,7 @@ function updateVariablesList(templateType) {
     container.innerHTML = vars.map(v => {
         const varPlaceholder = '{{ ' + v.key + ' }}';
         return `
-        <div class="variable-item flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-move hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+        <div class="variable-item flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 cursor-move hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
              draggable="true"
              data-variable="${varPlaceholder}"
              title="${v.description}">
