@@ -4,10 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.3.0] - 2026-09-29
 
 ### Added
 
+- Added an English/Indonesian language toggle with flag icons beside the theme control and persistent browser-side translation for shared and dynamic UI text.
 - Added the upstream GoWA logo to the WhatsApp Gateway settings section.
 - Added `GET /health/uptime` to return each online camera's continuous uptime duration since its last recovery, using existing camera health status data.
 - Added current camera status and uptime fields to `/snapshots/search`; uptime is `null` while a camera is offline.
@@ -20,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Replaced emoji language flags with local SVG assets so they render consistently across browsers and operating systems.
+- Changed the English language flag to the United States flag to match the application's en-US date and time formatting.
 - Removed SQLAlchemy subquery coercion warnings from camera-group analytics filters by passing explicit `select()` expressions.
 - Clarified the analytics activity trend score, secured its table rendering and admin-only data endpoints, and added visible refresh errors.
 - Made snapshot periods represent the selected number of inclusive calendar days and kept camera choices available across periods.
@@ -29,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Kept common technical terms such as Dashboard, Job, Health Check, Uptime, Downtime, API, Soft Delete, and Retention Hold in English in Indonesian UI translations.
 - Matched Admin Config width, headings, tab controls, setting cards, fields, and save button to the shared styling used by Email Recipients while preserving the existing settings and actions.
 - Matched Email Templates page cards, controls, and buttons to the shared styling used by Email Recipients.
 - Removed Storage Monitoring settings and their schedule controls from Admin Config; active tabs use an underline without a filled background.

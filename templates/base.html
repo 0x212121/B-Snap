@@ -8,6 +8,11 @@
   <title>{% block title %}B-SNAP{% endblock %}</title>
   <link href="/static/css/output.css" rel="stylesheet">
   <script>
+    try {
+      document.documentElement.lang = localStorage.getItem('language') === 'id' ? 'id' : 'en';
+    } catch (_) {
+      document.documentElement.lang = 'en';
+    }
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
       if (document.querySelector('link[rel="icon"]')) {
@@ -140,6 +145,15 @@ class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50"
         <svg x-show="!isDarkMode" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
         <svg x-show="isDarkMode" x-cloak class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
       </button>
+
+      <!-- Language Toggle -->
+      <button type="button" id="languageToggle" onclick="toggleLanguage()" class="inline-flex items-center gap-1.5 p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Change language" title="Change language">
+        <span id="languageFlag" aria-hidden="true" class="inline-flex items-center">
+          <img data-language-flag="en" src="/static/icons/flag-us.svg" alt="" class="h-3.5 w-5 rounded-sm">
+          <img data-language-flag="id" src="/static/icons/flag-id.svg" alt="" class="hidden h-3.5 w-5 rounded-sm">
+        </span>
+        <span id="languageCode" class="text-xs font-semibold">EN</span>
+      </button>
       
       <!-- User Menu -->
       <div class="relative" @click.away="userMenuOpen = false">
@@ -174,9 +188,18 @@ class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50"
     
     <!-- Mobile Menu Button -->
     <div class="md:hidden">
+      <div class="flex items-center gap-1">
+      <button type="button" id="languageToggleMobile" onclick="toggleLanguage()" class="inline-flex items-center gap-1 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Change language" title="Change language">
+        <span id="languageFlagMobile" aria-hidden="true" class="inline-flex items-center">
+          <img data-language-flag="en" src="/static/icons/flag-us.svg" alt="" class="h-3.5 w-5 rounded-sm">
+          <img data-language-flag="id" src="/static/icons/flag-id.svg" alt="" class="hidden h-3.5 w-5 rounded-sm">
+        </span>
+        <span id="languageCodeMobile" class="text-xs font-semibold">EN</span>
+      </button>
       <button @click="mobileMenuOpen = !mobileMenuOpen" class="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m4 6h-16" /></svg>
       </button>
+      </div>
     </div>
   </div>
 </div>
@@ -940,5 +963,6 @@ function showGlobalAlert(message, title = 'Information', options = {}) {
   });
 }
 </script>
+<script src="/static/js/i18n.js"></script>
 </body>
 </html>
