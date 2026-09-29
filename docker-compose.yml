@@ -1,7 +1,7 @@
 services:
   b-snap:
     build: .
-    image: kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.0.0
+    image: kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.3.0
     container_name: bsnap-app
     ports:
       - "8080:8080"
@@ -17,6 +17,7 @@ services:
       - ./static/snapshots:/app/static/snapshots
       - ./static/videos:/app/static/videos
       - ./logs:/app/logs
+      - ./archives/audit_logs:/app/archives/audit_logs
       - shared_tmp:/tmp/shared
     restart: unless-stopped
     healthcheck:
@@ -29,7 +30,7 @@ services:
 
   scheduler:
     build: .
-    image: kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.0.0
+    image: kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.3.0
     container_name: bsnap-scheduler
     env_file:
       - .env
@@ -47,7 +48,7 @@ services:
   
   notifier:
     build: .
-    image: kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.0.0
+    image: kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.3.0
     container_name: bsnap-notifier
     env_file:
       - .env
