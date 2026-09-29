@@ -144,8 +144,6 @@
         </p>
       </div>
       
-      <!-- Alert Messages -->
-      <div id="storageAlert" class="hidden mt-4 p-3 rounded"></div>
     </div>
   </div>
 
@@ -430,15 +428,6 @@
       document.getElementById('storagePrediction').classList.add('hidden');
     }
     
-    // Show alert if any
-    const alertDiv = document.getElementById('storageAlert');
-    if (data.alert_message) {
-      alertDiv.classList.remove('hidden');
-      alertDiv.className = `mt-4 p-3 rounded ${data.alert_level === 'critical' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}`;
-      alertDiv.textContent = data.alert_message;
-    } else {
-      alertDiv.classList.add('hidden');
-    }
   }
   
   // Refresh button handler

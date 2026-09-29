@@ -105,15 +105,6 @@ async def test_camera_online():
     return {"status": "success", "message": "Camera online notification sent"}
 
 
-@router.post("/test-storage-warning")
-async def test_storage_warning():
-    """Simulate storage warning notification."""
-    await NotificationService.storage_warning(
-        used_percent=87.5,
-    )
-    return {"status": "success", "message": "Storage warning notification sent"}
-
-
 @router.post("/test-persistent")
 async def test_persistent_notification():
     """Send a persistent notification (no auto-dismiss)."""

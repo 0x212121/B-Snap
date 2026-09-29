@@ -283,29 +283,6 @@ class NotificationService:
             **kwargs
         )
     
-    @staticmethod
-    async def storage_warning(used_percent: float, **kwargs) -> ToastNotification:
-        """Warn when storage is running low."""
-        return await NotificationService.warning(
-            message=f"Storage is {used_percent:.1f}% full. Consider cleaning old snapshots.",
-            title="Storage Warning",
-            duration=10000,
-            actions=[{"label": "Settings", "url": "/config"}],
-            **kwargs
-        )
-    
-    @staticmethod
-    async def storage_critical(used_percent: float, **kwargs) -> ToastNotification:
-        """Alert when storage is critical."""
-        return await NotificationService.error(
-            message=f"Storage is {used_percent:.1f}% full! Immediate action required.",
-            title="Storage Critical",
-            duration=0,  # Persistent
-            dismissible=False,
-            **kwargs
-        )
-
-
 # ==================== HTTP Context Helper ====================
 
 def get_notification_service() -> NotificationService:

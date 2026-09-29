@@ -109,7 +109,6 @@ last_config = {
     "cleanup_retry_queue_interval_days": None,
     "wa_daily_report_hour": None,
     "wa_daily_report_minute": None,
-    "wa_storage_alert_interval_hours": None,
     # Cron expressions
     "snapshot_cron": None,
     "healthcheck_cron": None,
@@ -515,14 +514,6 @@ def handle_wa_daily_report_time(scheduler, hour, minute):
         logger.warning("[Scheduler] Job 'wa_daily_report' not found.")
 
 
-def handle_wa_storage_alert_interval(scheduler, new_value):
-    try:
-        scheduler.reschedule_job("wa_storage_alert", trigger=IntervalTrigger(hours=new_value))
-        logger.info("[Scheduler] WA storage alert interval updated to %d hours", new_value)
-    except JobLookupError:
-        logger.warning("[Scheduler] Job 'wa_storage_alert' not found.")
-
-
 CONFIG_HANDLERS = {
     "snapshot_interval_minutes": handle_snapshot_interval,
     "healthcheck_interval_minutes": handle_healthcheck_interval,
@@ -593,7 +584,6 @@ def start_scheduler():
         "cleanup_retry_queue_interval_days": int(get_config("cleanup_retry_queue_interval_days", 1)),
         "wa_daily_report_hour": int(get_config("wa_daily_report_hour", 8)),
         "wa_daily_report_minute": int(get_config("wa_daily_report_minute", 0)),
-        "wa_storage_alert_interval_hours": int(get_config("wa_storage_alert_interval_hours", 2)),
         # Cron expressions
         "snapshot_cron": get_config("snapshot_cron", ""),
         "healthcheck_cron": get_config("healthcheck_cron", ""),
@@ -735,17 +725,6 @@ def start_scheduler():
         replace_existing=True
     )
     
-    # WhatsApp storage alert with configurable interval
-    scheduler.add_job(
-        wa_storage_alert_job,
-        trigger=IntervalTrigger(hours=config["wa_storage_alert_interval_hours"]),
-        id='wa_storage_alert',
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=300,
-        replace_existing=True
-    )
-    
     # Orphaned snapshots check - runs every hour
     scheduler.add_job(
         orphaned_snapshots_check_job,
@@ -785,7 +764,6 @@ def update_scheduler_config():
             "record_check_interval_minutes": int(get_config("record_check_interval_minutes", 10)),
             "email_retry_interval_minutes": int(get_config("email_retry_interval_minutes", 1)),
             "cleanup_interval_days": int(get_config("cleanup_interval_days", 1)),
-            "wa_storage_alert_interval_hours": int(get_config("wa_storage_alert_interval_hours", 2)),
             # Cron expressions
             "snapshot_cron": get_config("snapshot_cron", ""),
             "healthcheck_cron": get_config("healthcheck_cron", ""),
@@ -836,8 +814,7 @@ def update_scheduler_config():
         # Handle regular interval changes
         for key in ["snapshot_interval_minutes", "healthcheck_interval_minutes", 
                     "storage_check_interval_hours", "email_retry_interval_minutes",
-                    "record_check_interval_minutes", "cleanup_interval_days",
-                    "wa_storage_alert_interval_hours"]:
+                    "record_check_interval_minutes", "cleanup_interval_days"]:
             new_value = new_config[key]
             old_value = last_config.get(key)
             if new_value != old_value:
@@ -937,12 +914,6 @@ def record_check_daily_report_job():
 def wa_daily_report_job():
     """Wrapper for WhatsApp daily report job with logging."""
     return send_wa_camera_no_snapshot_report()
-
-
-@logged_job("wa_storage_alert", "WhatsApp Storage Alert")
-def wa_storage_alert_job():
-    """Wrapper for WhatsApp storage alert job with logging."""
-    return send_wa_storage_alert()
 
 
 @logged_job("orphaned_snapshots_check", "Orphaned Snapshots Check")
@@ -1419,65 +1390,6 @@ def send_wa_camera_no_snapshot_report():
         return {"records_processed": sent_count}
     except Exception as e:
         logger.error("[WA Report] Error: %s", e, exc_info=True)
-        raise
-    finally:
-        db.close()
-
-
-def send_wa_storage_alert():
-    """Send WhatsApp alert when storage is critical."""
-    from app.utils.storage_monitor import get_disk_usage, check_storage_thresholds
-    from app.models.storage_metric import StorageAlert
-    
-    db: Session = SessionLocal()
-    try:
-        wa_service = WAGatewayService(db)
-        
-        if not wa_service.config.is_configured():
-            return {"records_processed": 0}
-        
-        receiver = wa_service.config.default_receiver
-        if not receiver:
-            return {"records_processed": 0}
-        
-        total, used, free, percent = get_disk_usage("/")
-        free_gb = free / (1024**3)
-        
-        alert_level, alert_msg = check_storage_thresholds(percent, free_gb, db)
-        
-        if alert_level not in ["warning", "critical"]:
-            return {"records_processed": 0}
-        
-        recent_alert = (
-            db.query(StorageAlert)
-            .filter(StorageAlert.level == alert_level)
-            .filter(StorageAlert.resolved_at.is_(None))
-            .first()
-        )
-        
-        if not recent_alert:
-            return {"records_processed": 0}
-        
-        emoji = "🔴" if alert_level == "critical" else "🟡"
-        message = f"""{emoji} *B-SNAP Storage Alert*
-
-{alert_msg}
-
-💾 Disk Usage: {percent:.1f}%
-🆓 Free Space: {free_gb:.1f} GB
-"""
-        
-        receivers = [r.strip() for r in receiver.split(",") if r.strip()]
-        sent_count = 0
-        for phone in receivers:
-            phone = format_phone_number(phone)
-            result = wa_service.send_text(phone, message)
-            if result["success"]:
-                sent_count += 1
-        
-        return {"records_processed": sent_count}
-    except Exception as e:
-        logger.error("[WA Storage Alert] Error: %s", e, exc_info=True)
         raise
     finally:
         db.close()

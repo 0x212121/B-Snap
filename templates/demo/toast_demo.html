@@ -46,10 +46,6 @@
                     class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg font-medium transition">
                 Camera Online
             </button>
-            <button onclick="testStorageWarning()" 
-                    class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition">
-                Storage Warning
-            </button>
             <button onclick="testWithActions()" 
                     class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition">
                 With Actions
@@ -179,7 +175,6 @@ function testWarning() { post('/demo/toast/test-warning'); }
 function testInfo() { post('/demo/toast/test-info'); }
 function testCameraOffline() { post('/demo/toast/test-camera-offline'); }
 function testCameraOnline() { post('/demo/toast/test-camera-online'); }
-function testStorageWarning() { post('/demo/toast/test-storage-warning'); }
 function testWithActions() { post('/demo/toast/test-with-actions'); }
 function testPersistent() { post('/demo/toast/test-persistent'); }
 function testPosition(position) { post(`/demo/toast/test-position/${position}`); }

@@ -9,7 +9,7 @@ The notification system sends alerts for:
 - **Tamper alerts** - Camera tampering detected (blur, etc.)
 - **Recovery alerts** - Camera comes back online
 - **Record-check alerts** - Mounted SMB/NVR record folders become stale or missing
-- **WhatsApp reports** - Daily camera reports and storage alerts through GoWA
+- **WhatsApp reports** - Daily camera reports through GoWA
 
 ## WhatsApp Gateway (GoWA)
 

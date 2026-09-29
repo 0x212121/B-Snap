@@ -50,7 +50,7 @@
 │                                             │
 │  System Notifications:                      │
 │  [Camera Offline] [Camera Online]          │
-│  [Storage Warning] [With Actions]          │
+│  [With Actions]                            │
 │                                             │
 │  Positions:                                 │
 │  [Top Left] [Top Center] [Top Right]       │
@@ -151,9 +151,6 @@ await NotificationService.snapshot_saved(
     snapshot_id=123
 )
 
-# Storage alerts
-await NotificationService.storage_warning(used_percent=87.5)
-await NotificationService.storage_critical(used_percent=95.0)
 ```
 
 ---
@@ -210,8 +207,6 @@ result = await SnapshotService.capture_snapshot(camera.id, db)
 **Events:**
 - Camera goes offline → Auto-trigger `camera_offline()`
 - Camera comes back online → Auto-trigger `camera_online()`
-- Storage > 85% → Auto-trigger `storage_warning()`
-- Storage > 95% → Auto-trigger `storage_critical()`
 
 ---
 

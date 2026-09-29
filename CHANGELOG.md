@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Removed disk-usage WhatsApp, toast, and dashboard alert notifications; storage metrics and status summaries remain available.
 - Preserved date-range, camera-group, camera, period, and tab filters in the Analytics URL, and moved initial snapshot chart aggregation into the database.
 - Aggregated snapshot counts by date in the database, bundled overview data into one request, and added date-range indexes for analytics queries.
 - Grouped SQLite observability timestamps in the configured timezone so the overview trend endpoint works with the development database.

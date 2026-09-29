@@ -39,7 +39,6 @@ CONFIGURED_JOBS = {
     'cleanup_email_retry': 'Cleanup Email Retry',
     'wa_daily_report': 'Whatsapp Daily Report',
     'record_check_daily_report': 'Record Check Daily Report',
-    'wa_storage_alert': 'Whatsapp Storage Alert',
     'orphaned_snapshots_check': 'Orphaned Snapshots Check',
     'retention_policy': 'Retention Policy',
 }
@@ -57,7 +56,6 @@ JOB_DESCRIPTIONS = {
     'cleanup_email_retry': 'Deletes old completed or exhausted email retry queue rows.',
     'wa_daily_report': 'Sends a WhatsApp daily summary for cameras without recent snapshots and unhealthy cameras.',
     'record_check_daily_report': 'Sends a WhatsApp daily NVR record-check downtime report and optional 14-day trend PDF.',
-    'wa_storage_alert': 'Sends WhatsApp storage alerts when storage is warning or critical.',
     'orphaned_snapshots_check': 'Checks snapshot files and database metadata for orphaned or missing snapshot records.',
     'retention_policy': 'Soft-deletes old snapshots and videos according to retention settings. Items on retention hold are skipped.',
 }
@@ -383,7 +381,6 @@ async def get_job_config(
         "cleanup_interval_days": int(get_config("cleanup_interval_days", 1)),
         "wa_daily_report_hour": int(get_config("wa_daily_report_hour", 8)),
         "wa_daily_report_minute": int(get_config("wa_daily_report_minute", 0)),
-        "wa_storage_alert_interval_hours": int(get_config("wa_storage_alert_interval_hours", 2)),
         "retention_job_logs_days": int(get_config("retention_job_logs_days", 30)),
     })
 

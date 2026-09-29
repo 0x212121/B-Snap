@@ -69,7 +69,6 @@ DEFAULT_CONFIG = {
     "gowa_default_receiver": "",
     "wa_daily_report_hour": "8",  # New: WA daily report hour (0-23)
     "wa_daily_report_minute": "0",  # New: WA daily report minute (0-59)
-    "wa_storage_alert_interval_hours": "2",  # New: WA storage alert interval
 }
 
 

@@ -98,9 +98,6 @@ await NotificationService.snapshot_saved(
     snapshot_id=123
 )
 
-# Storage alerts
-await NotificationService.storage_warning(used_percent=87.5)
-await NotificationService.storage_critical(used_percent=95.0)
 ```
 
 ## API Endpoints

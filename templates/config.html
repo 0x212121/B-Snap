@@ -208,7 +208,7 @@
           value="{{ configs.get('storage_info_percent', 75) }}" 
           min="50" max="99" required
           class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Info notification when disk usage exceeds this percentage. Default: 75%</p>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Threshold for the informational storage status. Default: 75%</p>
       </div>
       <div>
         <label for="storage_critical_free_gb" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Critical Free Space (GB)</label>
@@ -544,7 +544,6 @@
     <div class="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
       <p class="text-sm text-green-800 dark:text-green-200">
         <span class="font-medium">💡 Info:</span> Daily camera reports are sent at 08:00 AM. 
-        Storage alerts are sent every 2 hours when critical.
         <a href="https://github.com/aldinokemal/go-whatsapp-web-multidevice" target="_blank" class="underline hover:text-green-600">GoWA Documentation →</a>
       </p>
     </div>
