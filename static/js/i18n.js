@@ -725,10 +725,14 @@
     setLanguage(language === 'id' ? 'en' : 'id');
   };
 
+  // Initialize before the browser paints the page so Indonesian users do not
+  // briefly see the original English text after each navigation.
+  try { language = localStorage.getItem('language') === 'id' ? 'id' : 'en'; } catch (_) { language = 'en'; }
+  updateLanguageControls();
+  processNode(document.body);
+  document.documentElement.classList.remove('i18n-pending');
+
   document.addEventListener('DOMContentLoaded', function () {
-    try { language = localStorage.getItem('language') === 'id' ? 'id' : 'en'; } catch (_) { language = 'en'; }
-    updateLanguageControls();
-    processNode(document.body);
     const observer = new MutationObserver((records) => {
       for (const record of records) {
         if (record.type === 'characterData') processTextNode(record.target);

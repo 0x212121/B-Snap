@@ -9,7 +9,9 @@
   <link href="/static/css/output.css" rel="stylesheet">
   <script>
     try {
-      document.documentElement.lang = localStorage.getItem('language') === 'id' ? 'id' : 'en';
+      const savedLanguage = localStorage.getItem('language') === 'id' ? 'id' : 'en';
+      document.documentElement.lang = savedLanguage;
+      if (savedLanguage === 'id') document.documentElement.classList.add('i18n-pending');
     } catch (_) {
       document.documentElement.lang = 'en';
     }
@@ -23,6 +25,7 @@
     }
   </script>
   <style>
+    html.i18n-pending body { visibility: hidden; }
     [x-cloak] { display: none !important; }
     .ts-wrapper, .ts-control, .ts-dropdown { transition: none !important; animation: none !important; }
     .dark .ts-control { background-color: #1f2937 !important; color: white !important; border-color: #4b5563 !important; }
@@ -112,6 +115,7 @@
   </style>
   <!-- SweetAlert2 CSS -->
   <link rel="stylesheet" href="/static/css/sweetalert2.min.css">
+  <script src="/static/js/i18n.js" defer></script>
 </head>
 <body 
 class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white"
@@ -963,6 +967,5 @@ function showGlobalAlert(message, title = 'Information', options = {}) {
   });
 }
 </script>
-<script src="/static/js/i18n.js"></script>
 </body>
 </html>

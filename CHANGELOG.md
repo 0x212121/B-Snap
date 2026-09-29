@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Prevented a flash of English text during navigation when Indonesian is selected by applying translations before revealing the page.
 - Replaced emoji language flags with local SVG assets so they render consistently across browsers and operating systems.
 - Changed the English language flag to the United States flag to match the application's en-US date and time formatting.
 - Removed SQLAlchemy subquery coercion warnings from camera-group analytics filters by passing explicit `select()` expressions.
