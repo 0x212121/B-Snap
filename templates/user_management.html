@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}User Management Dashboard{% endblock %}
-{% from "_icons.html" import icon_users, icon_plus %}
+{% from "_icons.html" import icon_users, icon_plus, icon_save %}
 
 {% block content %}
 
@@ -659,7 +659,7 @@
           
           <div class="flex justify-end gap-3 pt-4">
             <button type="button" onclick="closeModal('edit-user-modal')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 rounded-lg font-medium transition">Cancel</button>
-            <button type="submit" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium shadow-sm transition">Save Changes</button>
+            <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium shadow-sm transition">{{ icon_save("h-4 w-4 text-white") }}Save Changes</button>
           </div>
         </form>
       </div>

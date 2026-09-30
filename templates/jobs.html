@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon_save %}
 {% block title %}B-SNAP – Job Management{% endblock %}
 
 {% block content %}
@@ -204,8 +205,8 @@
       <button onclick="closeScheduleModal()" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition">
         Cancel
       </button>
-      <button onclick="saveSchedule()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition">
-        Save Schedule
+      <button onclick="saveSchedule()" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition">
+        {{ icon_save("h-4 w-4 text-white") }}Save Schedule
       </button>
     </div>
   </div>

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – Camera Management{% endblock %}
-{% from "_icons.html" import icon_clip_check, icon_search, icon_pencil, icon_trash, icon_camera, icon_video_camera, icon_upload, icon_download, icon_plus, icon_filter, icon_x_mark, icon_map_pin, icon_funnel, icon_eye, icon_eye_slash %}
+{% from "_icons.html" import icon_clip_check, icon_search, icon_pencil, icon_trash, icon_camera, icon_video_camera, icon_upload, icon_download, icon_plus, icon_filter, icon_x_mark, icon_map_pin, icon_funnel, icon_eye, icon_eye_slash, icon_save %}
 
 {% block content %}
 <!-- Header Section -->
@@ -502,7 +502,7 @@
       </button>
       <button type="submit" form="cameraForm" id="modalSubmitButton" 
         class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition flex items-center gap-2">
-        {{ icon_clip_check("w-5 h-5") }}
+        {{ icon_save("w-5 h-5") }}
         <span>Submit</span>
       </button>
     </div>

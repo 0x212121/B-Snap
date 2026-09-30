@@ -61,6 +61,7 @@ nav_items = [
             {"label": "Users", "href": "/admin/users", "icon": "users", "roles": ["admin"]},
             {"label": "Camera Groups", "href": "/admin/camera-groups", "icon": "grid", "roles": ["admin"]},
             {"label": "WA Whitelist", "href": "/admin/whitelist", "icon": "shield-check", "roles": ["admin"]},
+            {"label": "WhatsApp Bot", "href": "/admin/wa-bot", "icon": "book-open", "roles": ["admin"]},
             {"label": "Email Recipients", "href": "/admin/recipients", "icon": "mail", "roles": ["admin"]},
             {"label": "Email Templates", "href": "/admin/email-templates", "icon": "mail-open", "roles": ["admin"]},
             {"label": "Configuration", "href": "/admin/config", "icon": "settings", "roles": ["admin"]},

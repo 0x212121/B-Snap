@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – Email Recipients{% endblock %}
-{% from "_icons.html" import icon_envelope_open, icon_envelope, icon_plus, icon_pencil, icon_trash, icon_airplane, icon_download, icon_upload %}
+{% from "_icons.html" import icon_envelope_open, icon_envelope, icon_plus, icon_pencil, icon_trash, icon_airplane, icon_download, icon_upload, icon_save %}
 
 {% block head %}
 <!-- SweetAlert2 already loaded in base.html -->
@@ -420,7 +420,7 @@
         </button>
         <button type="submit"
           class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm">
-          {{ icon_download("w-4 h-4") }} Save Changes
+          {{ icon_save("w-4 h-4") }} Save Changes
         </button>
       </div>
     </form>

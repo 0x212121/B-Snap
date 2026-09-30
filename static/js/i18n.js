@@ -12,7 +12,7 @@
     "Email Notification Logs": "Log Notifikasi Email", "Email Logs": "Log Email",
     "User Management": "Manajemen Pengguna", "Users": "Pengguna", "Online Users": "Pengguna Online",
     "WhatsApp Whitelist": "Daftar Izin WhatsApp", "Whitelist": "Daftar Izin",
-    "Record Checks": "Pemeriksaan Rekaman", "Power BI Record Checks": "Pemeriksaan Rekaman Power BI",
+    "Record Checks": "Pemeriksaan Rekaman", "Power BI Record Checks": "Cek Rekaman Power BI",
     "Jobs": "Tugas", "Job Management": "Manajemen Tugas", "Logs Viewer": "Penampil Log",
     "Administration": "Administrasi", "Trash Management": "Manajemen Sampah",
     "Configuration": "Konfigurasi", "App Config": "Konfigurasi Aplikasi",
@@ -619,10 +619,68 @@
     "Gateway": "Gateway", "GoWA Base URL": "GoWA Base URL", "URL Dasar GoWA": "GoWA Base URL"
   });
 
+  Object.assign(translations, {
+    "Choose a command to edit its flow and response.": "Pilih command untuk mengubah alur dan responsnya.",
+    "Add command": "Tambah command", "Save changes": "Simpan perubahan",
+    "Token for B-Snap internal APIs": "Token untuk API internal B-Snap",
+    "No token (public APIs only)": "Tanpa token (API publik saja)",
+    "Select a token owned by an admin account. The token value is never shown or stored again.": "Pilih token milik akun admin. Nilai token tidak ditampilkan atau disimpan ulang.",
+    "No commands yet": "Belum ada command", "Add a command to start building your bot flow.": "Tambahkan command untuk mulai membuat alur bot.",
+    "Create your first command": "Buat command pertama", "Edit command": "Edit command", "New command": "Command baru",
+    "Close": "Tutup", "Command name": "Nama command", "Primary trigger": "Trigger utama", "System action": "Aksi sistem",
+    "Enabled": "Command aktif", "Quote reply to triggering message": "Balas dengan mengutip pesan pemicu", "Aliases, comma-separated": "Alias, pisahkan dengan koma", "Description shown in /help": "Deskripsi di /help",
+    "GET API flow": "Alur API GET", "Internal B-Snap nodes run in order, up to 8 nodes.": "Node internal B-Snap berjalan berurutan, maksimal 8 node.",
+    "Add node": "Tambah node", "Example path": "Contoh path", "params": "params", "Output:": "Output:",
+    "WhatsApp response template": "Template respons WhatsApp", "Cancel": "Batal", "Save command": "Simpan command", "Delete": "Hapus",
+    "Reply with text": "Balas teks", "Show help": "Tampilkan bantuan", "Test bot": "Tes bot",
+    "Ping host": "Ping host", "Send latest snapshot": "Kirim snapshot terakhir", "Capture new snapshot": "Ambil snapshot baru",
+    "Internal B-Snap API flow (admin)": "Alur API internal B-Snap (admin)", "Edit camera data (admin)": "Edit data kamera (admin)",
+    "View token (admin)": "Lihat token (admin)", "Add to whitelist (admin)": "Tambah whitelist (admin)", "Remove from whitelist (admin)": "Hapus whitelist (admin)",
+    "Text reply": "Balas teks", "Help": "Bantuan", "Latest snapshot": "Snapshot terakhir", "New snapshot": "Ambil snapshot",
+    "B-Snap API flow": "Alur API B-Snap", "Edit camera": "Edit kamera", "API token": "Token API",
+    "Access required: WhatsApp admin": "Akses minimum: Admin WhatsApp", "Access required: whitelisted user": "Akses minimum: User whitelist",
+    "No nodes yet. Add an API node to start building the flow.": "Belum ada node. Tambahkan node API untuk mulai menyusun alur.",
+    "Output name": "Nama output", "API path": "Path API", "Query params JSON": "Query params JSON",
+    "(Unnamed)": "(Tanpa nama)", "(no trigger)": "(tanpa trigger)", "Active": "Aktif", "Inactive": "Nonaktif",
+    "Failed to load commands": "Gagal memuat command", "Failed to save changes": "Gagal menyimpan perubahan",
+    "No token (public APIs only)": "Tanpa token (API publik saja)", "WhatsApp Bot changes saved.": "Perubahan WhatsApp Bot tersimpan.",
+    "Maximum 8 API nodes per command.": "Maksimal 8 node API per command.", "Add at least one API node.": "Tambahkan minimal satu node API.",
+    "Query params for node {{name}} must be valid JSON.": "Query params node {{name}} bukan JSON valid.",
+    "Enter a trigger, action, and response.": "Isi trigger, aksi, dan respons.",
+    "GET API flow": "Alur API GET", "Internal B-Snap nodes run in order, up to 8 nodes.": "Node internal B-Snap berjalan berurutan, maksimal 8 node.",
+    "Example path": "Contoh path", "Camera IP:": "IP kamera:", "Text reply": "Balas teks",
+    "Test bot": "Tes bot", "Latest snapshot": "Snapshot terakhir", "New snapshot": "Ambil snapshot",
+    "B-Snap API flow": "Alur API B-Snap", "Add to whitelist": "Tambah whitelist", "Remove from whitelist": "Hapus whitelist",
+    "No nodes yet. Add an API node to start building the flow.": "Belum ada node. Tambahkan node API untuk mulai menyusun alur.",
+    "Output name": "Nama output", "API path": "Path API", "Query params JSON": "Query params JSON",
+    "Access required: WhatsApp admin": "Akses minimum: Admin WhatsApp", "Access required: whitelisted user": "Akses minimum: User whitelist",
+    "Test API response": "Uji respons API", "Use sample values for {{argument}} and {{sender}}. This test runs the current unsaved flow.": "Gunakan nilai contoh untuk {{argument}} dan {{sender}}. Pengujian menjalankan alur saat ini yang belum disimpan.",
+    "Sample argument (e.g. camera name)": "Argumen contoh (mis. nama kamera)", "Sample sender (phone number)": "Pengirim contoh (nomor telepon)",
+    "Run test": "Jalankan uji", "Running API flow…": "Menjalankan alur API…",
+    "Test succeeded. Click a variable below to add it to the response template.": "Pengujian berhasil. Klik variabel di bawah untuk menambahkannya ke template respons.",
+    "API flow test failed": "Pengujian alur API gagal", "Select a variable to insert it at the cursor in the response template.": "Pilih variabel untuk menyisipkannya pada posisi kursor di template respons.",
+    "Map array items": "Petakan item array", "Response array": "Array respons",
+    "Choose the fields to show for every item in this array.": "Pilih field yang ditampilkan untuk setiap item dalam array ini.",
+    "Include row number": "Sertakan nomor baris", "Insert mapping": "Sisipkan mapping",
+    "Use the array mapper after testing an API to format repeating items as clean rows.": "Gunakan mapper array setelah menguji API untuk memformat item berulang menjadi baris yang rapi.",
+    "Required parameters, comma-separated": "Parameter wajib, pisahkan dengan koma",
+    "Users must provide these values after the trigger. Separate multiple values with spaces; one parameter can contain spaces.": "Pengguna harus mengisi nilai ini setelah trigger. Pisahkan beberapa nilai dengan spasi; satu parameter boleh berisi spasi.",
+    "Delete command?": "Hapus command?", "Type the function name": "Ketik nama fungsi",
+    "to confirm deletion.": "untuk mengonfirmasi penghapusan.", "The function name does not match.": "Nama fungsi tidak cocok."
+  });
+
   const originalText = new WeakMap();
   const originalAttributes = new WeakMap();
   const relevantAttributes = ['placeholder', 'title', 'aria-label', 'alt'];
   let language = 'en';
+
+  function recoverSource(value) {
+    const normalized = normalize(value);
+    for (const [source, translated] of Object.entries(translations)) {
+      if (normalize(translated) === normalized) return source;
+    }
+    return value;
+  }
 
   function normalize(value) {
     return value.trim().replace(/\s+/g, ' ');
@@ -657,7 +715,7 @@
   function processTextNode(node) {
     if (shouldSkipText(node)) return;
     if (!originalText.has(node)) originalText.set(node, node.nodeValue);
-    else if (node.nodeValue !== renderText(originalText.get(node))) originalText.set(node, node.nodeValue);
+    else if (node.nodeValue !== renderText(originalText.get(node))) originalText.set(node, recoverSource(node.nodeValue));
     const value = renderText(originalText.get(node));
     if (node.nodeValue !== value) node.nodeValue = value;
   }
@@ -674,7 +732,7 @@
       if (!(name in saved)) saved[name] = element.getAttribute(name);
       else {
         const expected = language === 'id' ? translate(saved[name]) : saved[name];
-        if (element.getAttribute(name) !== expected) saved[name] = element.getAttribute(name);
+        if (element.getAttribute(name) !== expected) saved[name] = recoverSource(element.getAttribute(name));
       }
       const source = saved[name];
       const value = language === 'id' ? translate(source) : source;
@@ -719,6 +777,7 @@
     try { localStorage.setItem('language', language); } catch (_) { /* storage may be unavailable */ }
     updateLanguageControls();
     processNode(document.body);
+    window.dispatchEvent(new CustomEvent('bsnap:languagechange', { detail: { language } }));
   }
 
   window.toggleLanguage = function () {

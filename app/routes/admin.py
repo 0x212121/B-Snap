@@ -16,6 +16,18 @@ from app.utils.template_helper import templates
 router = APIRouter(tags=["Admin"])
 
 
+@router.get("/admin/wa-bot", response_class=HTMLResponse)
+async def wa_bot_builder_page(
+    request: Request,
+    current_admin: User = Depends(admin_access_required),
+):
+    return templates.TemplateResponse("wa_bot_builder.html", {
+        "request": request,
+        "title": "WhatsApp Bot Builder",
+        "admin": current_admin,
+    })
+
+
 @router.get("/admin/whitelist", response_class=HTMLResponse)
 async def whitelist_admin_page(
     request: Request,

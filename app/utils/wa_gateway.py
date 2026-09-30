@@ -11,6 +11,7 @@ Setup:
 import logging
 import requests
 import base64
+import mimetypes
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
@@ -141,7 +142,7 @@ class WAGatewayService:
                 "message": message,
             }
             if reply_to:
-                payload["reply_to"] = reply_to
+                payload["reply_message_id"] = reply_to
             
             response = self.session.post(self._make_url("/send/message"), json=payload, timeout=30)
             if response.status_code == 404:
@@ -196,7 +197,13 @@ class WAGatewayService:
             logger.error(f"Failed to send WA image to {phone}: {e}")
             return {"success": False, "error": str(e)}
 
-    def send_image_file(self, phone: str, image_path: str, caption: Optional[str] = None) -> Dict[str, Any]:
+    def send_image_file(
+        self,
+        phone: str,
+        image_path: str,
+        caption: Optional[str] = None,
+        reply_to: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """Send local image file via GoWA multipart upload."""
         if not self.config.is_configured():
             return {"success": False, "error": "GoWA not configured"}
@@ -206,14 +213,21 @@ class WAGatewayService:
             return {"success": False, "error": f"Image not found: {image_path}"}
 
         try:
+            if "@" not in phone:
+                phone = f"{phone}@s.whatsapp.net"
             data = {"phone": phone}
             if caption:
                 data["caption"] = caption
+            if reply_to:
+                data["reply_message_id"] = reply_to
+            content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
             with path.open("rb") as file_obj:
-                files = {"image": (path.name, file_obj, "image/png")}
+                files = {"image": (path.name, file_obj, content_type)}
                 response = self.session.post(self._make_url("/send/image"), data=data, files=files, timeout=60)
             response.raise_for_status()
-            return {"success": True, "data": response.json()}
+            result = response.json()
+            logger.info("WA image sent to %s: %s", phone, result.get("message", result.get("status", "success")))
+            return {"success": True, "data": result, "message_id": result.get("results", {}).get("message_id")}
         except Exception as e:
             logger.error(f"Failed to send WA image file to {phone}: {e}")
             return {"success": False, "error": str(e)}

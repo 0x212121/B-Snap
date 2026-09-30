@@ -8,11 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added the native GoWA `/help` command with admin-only command details, documented webhook/JID handling, device-qualified sender normalization, optional multi-device selection through `X-Device-Id`, inbound webhook diagnostics, and public webhook routing protected by the WhatsApp whitelist.
+- Added the admin WhatsApp Bot Builder with editable triggers, aliases, help descriptions, response templates, and custom commands that can invoke native B-Snap actions.
+- Added sequential internal B-Snap API GET nodes to custom WhatsApp command flows, with named JSON results available to response templates and admin-owned API token selection.
+- Added an API flow preview in the WhatsApp Bot Builder, showing JSON responses and clickable template variables before saving a command.
+- Added an array mapper that builds repeating WhatsApp response rows from selected API result fields, with optional row numbers starting at 1; `{{@index}}` remains zero-based and `{{@index1}}` is one-based.
+- Added configurable required WhatsApp command parameters, usage hints in `/help`, and bot replies when required arguments are missing.
+- Added GoWA webhook handling with documented JID routing, device-qualified sender normalization, optional multi-device selection through `X-Device-Id`, inbound webhook diagnostics, and whitelist enforcement.
 
 ### Changed
 
+- Localized the WhatsApp Bot Builder labels, actions, command states, validation messages, and notifications according to the selected English or Indonesian UI language; language changes now refresh dynamic builder content immediately.
+- Kept the WhatsApp command editor open when clicking outside it; it now closes only through the close button or after a successful save.
+- Required command deletion confirmation by typing the exact command name in the themed confirmation dialog.
+- Added the project's existing SVG icons to WhatsApp Bot Builder controls, including command, API flow, test, mapping, save, and delete actions.
+- Standardized application save buttons on a shared floppy disk SVG icon.
+- Matched the WhatsApp Bot Builder content width and spacing to the shared admin page layout, and displayed commands in a responsive card grid.
+- Set the WhatsApp command list to the selected compact card style and removed the style comparison previews.
+- Updated the GoWA connection check to use unsaved form values, including the device ID, through a POST request.
+- Changed WhatsApp Bot Builder's Ping host action to return four raw reply/timeout lines with millisecond timings; it no longer requires or applies a response template.
+- Added a per-command option to send WhatsApp bot replies as quoted replies to the triggering message.
+- Added API response previews for camera IP and snapshot actions in WhatsApp Bot Builder, with JSON fields and array mappings that can be inserted into response templates; the snapshot preview reads existing data without capturing a new image.
+- Included camera status, uptime, uptime seconds, and last online time in native snapshot action template data, matching `/snapshots/search`.
+- Removed the broken native Find camera IP command action from WhatsApp Bot Builder and command execution.
+- Changed WhatsApp Bot Builder's Ping host action to return four raw reply/timeout lines with millisecond timings, without applying its response template.
+- Removed prefilled WhatsApp command templates and hidden legacy command dispatch so only configured commands run; the list now starts empty and opens command details on selection.
+- Fixed WhatsApp snapshot commands capturing repeatedly after webhook retries and failing to return the image because the GoWA sender and recipient were not initialized on the media branch; snapshot replies are now deduplicated by inbound GoWA message ID and threaded to the requesting chat.
 - Updated `start-local.ps1` to honor `BIND` and bind web/all modes to `0.0.0.0:8080` by default so external webhook clients can reach the server when network access allows it.
+
 
 ## [2.3.0] - 2026-09-29
 

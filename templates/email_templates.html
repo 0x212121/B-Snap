@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon_save %}
 
 {% block title %}Email Templates - B-Snap{% endblock %}
 
@@ -75,7 +76,7 @@
             <div class="flex flex-wrap gap-3">
                 <button onclick="saveTemplate()" 
                         class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
-                    <i class="fas fa-save mr-2"></i>Save Template
+                    {{ icon_save("h-4 w-4 mr-2") }}Save Template
                 </button>
                 <button onclick="previewTemplate()" 
                         class="inline-flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – Config{% endblock %}
-{% from "_icons.html" import icon_config, icon_globe, icon_camera, icon_bug, icon_paint, icon_folder, icon_download, icon_trash, icon_play, icon_email, icon_airplane %}
+{% from "_icons.html" import icon_config, icon_globe, icon_camera, icon_bug, icon_paint, icon_folder, icon_download, icon_trash, icon_play, icon_email, icon_airplane, icon_save %}
 
 {% block content %}
 <style>
@@ -602,7 +602,7 @@
   
   <div class="flex shrink-0 justify-end pt-2">
     <button type="button" id="saveButton" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-      <span id="buttonText">{{ icon_download("w-5 h-5 text-gray-100 inline") }} Save Changes</span>
+      <span id="buttonText">{{ icon_save("w-5 h-5 text-gray-100 inline") }} Save Changes</span>
       <span id="buttonSpinner" class="hidden">
         <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -841,12 +841,16 @@
         testWaBtn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Testing...`;
         
         try {
-          const params = new URLSearchParams({
-            enabled: document.getElementById('gowa_enabled')?.checked ? 'true' : 'false',
-            base_url: baseUrl,
-            api_key: document.getElementById('gowa_api_key')?.value || '',
+          const response = await fetch('/api/wa/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+              enabled: document.getElementById('gowa_enabled')?.checked || false,
+              base_url: baseUrl,
+              api_key: document.getElementById('gowa_api_key')?.value || '',
+              device_id: document.getElementById('gowa_device_id')?.value || '',
+            }),
           });
-          const response = await fetch(`/api/wa/status?${params.toString()}`);
           const contentType = response.headers.get('content-type') || '';
           
           // Check if response is JSON

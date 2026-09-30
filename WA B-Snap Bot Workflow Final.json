@@ -1181,7 +1181,7 @@
       "parameters": {
         "deviceIdOverride": "={{ $('sender number and IP').item.json.DeviceID }}",
         "phoneNumber": "={{ $('sender number and IP').item.json.GroupName }}",
-        "message": "=❌ CCTV with name {{ $('Get CCTV name1').item.json.cctvName }} doesn't exist.",
+        "message": "=CCTV with name {{ $('Get CCTV name1').item.json.cctvName }} doesn't exist.",
         "replyMessageId": "={{ $('Webhook').item.json.body.payload.id }}"
       },
       "type": "@aldinokemal2104/n8n-nodes-gowa.gowa",

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – NVR Management{% endblock %}
-{% from "_icons.html" import icon_server, icon_plus, icon_search, icon_check_circle, icon_x_circle, icon_warning, icon_map_pin, icon_pencil, icon_trash, icon_upload, icon_download, icon_arrow_path, icon_eye, icon_eye_slash %}
+{% from "_icons.html" import icon_server, icon_plus, icon_search, icon_check_circle, icon_x_circle, icon_warning, icon_map_pin, icon_pencil, icon_trash, icon_upload, icon_download, icon_arrow_path, icon_eye, icon_eye_slash, icon_save %}
 
 {% block content %}
 <!-- Header Section -->
@@ -332,7 +332,7 @@
     <!-- Footer -->
     <div class="flex justify-end space-x-3 pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
       <button type="button" id="btnCancelModal" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded-lg font-semibold text-sm transition">Cancel</button>
-      <button type="submit" form="cameraForm" id="modalSubmitButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm shadow-sm transition">Submit</button>
+      <button type="submit" form="cameraForm" id="modalSubmitButton" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm shadow-sm transition">{{ icon_save("h-4 w-4 text-white") }}<span id="modalSubmitText">Submit</span></button>
     </div>
   </div>
 </div>
@@ -646,7 +646,7 @@
     if (form) form.reset();
     if (modalTitle) modalTitle.textContent = 'Add New NVR';
     if (modalSubtitle) modalSubtitle.textContent = 'Configure new Network Video Recorder';
-    if (submitBtn) submitBtn.textContent = 'Add NVR';
+    if (submitBtn) submitBtn.querySelector('#modalSubmitText').textContent = 'Add NVR';
     if (passwordInput) passwordInput.required = true;
     if (passwordMarker) passwordMarker.classList.remove('hidden');
     if (passwordHelp) passwordHelp.textContent = 'Required for new NVRs';
@@ -670,7 +670,7 @@
     if (form) form.reset();
     if (modalTitle) modalTitle.textContent = 'Edit NVR';
     if (modalSubtitle) modalSubtitle.textContent = 'Update NVR configuration';
-    if (submitBtn) submitBtn.textContent = 'Save Changes';
+    if (submitBtn) submitBtn.querySelector('#modalSubmitText').textContent = 'Save Changes';
     if (passwordInput) {
       passwordInput.value = '';
       passwordInput.required = false;
