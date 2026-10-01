@@ -3,16 +3,23 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
 import os
+import pytz
 
 MAX_FLOW_STEPS = 8
 MAX_RESPONSE_BYTES = 1_000_000
 STEP_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,39}$")
 FLOW_VARIABLE_PATTERN = re.compile(
     r"\{\{(argument|sender|steps\.[a-zA-Z][a-zA-Z0-9_]{0,39}\.(?:status_code|body(?:\.[a-zA-Z0-9_-]+)*)|this(?:\.[a-zA-Z0-9_-]+)*|@index1|@index)\}\}"
+)
+FLOW_DATETIME_VARIABLE_PATTERN = re.compile(
+    r"\{\{(?P<expression>(?:argument|sender|steps\.[a-zA-Z][a-zA-Z0-9_]{0,39}\."
+    r"(?:status_code|body(?:\.[a-zA-Z0-9_-]+)*)|this(?:\.[a-zA-Z0-9_-]+)*|@index1|@index))"
+    r"\|datetime\}\}"
 )
 FLOW_EACH_PATTERN = re.compile(
     r"\{\{#each\s+(steps\.[a-zA-Z][a-zA-Z0-9_]{0,39}\.(?:status_code|body(?:\.[a-zA-Z0-9_-]+)*))\s*\}\}"
@@ -89,6 +96,46 @@ def _resolve_expression(expression: str, context: dict[str, Any]) -> str:
     return str(value if value is not None else "")
 
 
+def _format_datetime_value(value: Any, timezone_name: str) -> str:
+    """Normalize an ISO/database timestamp into the application's configured timezone."""
+    if isinstance(value, datetime):
+        parsed = value
+    elif isinstance(value, str):
+        raw_value = value.strip()
+        try:
+            parsed = datetime.fromisoformat(raw_value.replace("Z", "+00:00"))
+        except ValueError:
+            return value
+    else:
+        return _resolve_expression_value_to_string(value)
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    try:
+        local_time = parsed.astimezone(pytz.timezone(timezone_name))
+    except (pytz.UnknownTimeZoneError, ValueError):
+        local_time = parsed.astimezone(pytz.UTC)
+    return local_time.strftime("%d/%m/%Y - %H:%M:%S %Z")
+
+
+def _resolve_expression_value_to_string(value: Any) -> str:
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False)
+    return str(value if value is not None else "")
+
+
+def _render_template_variables(template: str, context: dict[str, Any], timezone_name: str) -> str:
+    rendered = FLOW_DATETIME_VARIABLE_PATTERN.sub(
+        lambda match: _format_datetime_value(
+            _resolve_expression_value(match.group("expression"), context), timezone_name
+        ),
+        template,
+    )
+    return FLOW_VARIABLE_PATTERN.sub(
+        lambda match: _resolve_expression(match.group(1), context), rendered
+    )
+
+
 def render_flow_value(value: Any, context: dict[str, Any]) -> Any:
     if isinstance(value, str):
         return FLOW_VARIABLE_PATTERN.sub(lambda match: _resolve_expression(match.group(1), context), value)
@@ -150,7 +197,11 @@ async def run_api_flow(
     return context
 
 
-def render_flow_template(template: str, context: dict[str, Any]) -> str:
+def render_flow_template(
+    template: str,
+    context: dict[str, Any],
+    timezone_name: str = "UTC",
+) -> str:
     def render_each(match: re.Match[str]) -> str:
         collection = _resolve_expression_value(match.group(1), context)
         if not isinstance(collection, list):
@@ -159,15 +210,10 @@ def render_flow_template(template: str, context: dict[str, Any]) -> str:
         for index, item in enumerate(collection[:MAX_FLOW_TEMPLATE_ITEMS]):
             item_context = {**context, "this": item, "@index": index, "@index1": index + 1}
             rendered_items.append(
-                FLOW_VARIABLE_PATTERN.sub(
-                    lambda variable: _resolve_expression(variable.group(1), item_context),
-                    match.group(2),
-                )
+                _render_template_variables(match.group(2), item_context, timezone_name)
             )
         return "".join(rendered_items)
 
     rendered = FLOW_EACH_PATTERN.sub(render_each, template)
-    rendered = FLOW_VARIABLE_PATTERN.sub(
-        lambda match: _resolve_expression(match.group(1), context), rendered
-    )
+    rendered = _render_template_variables(rendered, context, timezone_name)
     return rendered[:MAX_RENDERED_RESPONSE_CHARS]

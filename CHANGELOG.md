@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added admin visibility into recent inbound/outbound WhatsApp gateway statuses and a tabbed Bot Builder layout with contained command and message lists.
+- Unmatched WhatsApp messages are ignored; the bot no longer sends a fallback response.
+- Corrected Top 10 command analytics to count recognized WhatsApp command invocations with arguments; credential values are redacted, and GoWA retry IDs use a dedicated message-log field instead of command-log marker rows.
+- Added a follow-up WhatsApp migration for the dedicated GoWA message ID column and clearer Bot Builder API response errors.
+- Added per-command private-chat restrictions, enforced them before action execution, and filtered private-only commands from group /help.
+- Added a `|datetime` response-template formatter for database/API timestamps using the configured B-Snap timezone, with editor suggestions for ISO timestamp fields.
+- Updated WhatsApp CCTV snapshot commands to match hostname prefixes and send the latest available snapshot for up to five matching cameras.
+
+- Fix WhatsApp Bot Builder command list error when displaying action labels.
+- Translate WhatsApp webhook bot replies and validation messages into English.
+
+### Added
+
 - Added the admin WhatsApp Bot Builder with editable triggers, aliases, help descriptions, response templates, and custom commands that can invoke native B-Snap actions.
 - Added sequential internal B-Snap API GET nodes to custom WhatsApp command flows, with named JSON results available to response templates and admin-owned API token selection.
 - Added an API flow preview in the WhatsApp Bot Builder, showing JSON responses and clickable template variables before saving a command.

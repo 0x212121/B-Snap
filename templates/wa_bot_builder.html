@@ -14,13 +14,19 @@
         Choose a command to edit its flow and response.
       </p>
     </div>
-    <div class="flex flex-wrap gap-2">
+    <div id="commandActions" class="flex flex-wrap gap-2">
       <button id="addCommand" type="button" class="inline-flex items-center gap-2 rounded-lg bg-gray-200 px-4 py-2 text-gray-900 dark:bg-gray-700 dark:text-white">{{ icon_plus("h-4 w-4") }}Add command</button>
       <button id="saveCommands" type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white">{{ icon_save("h-4 w-4 text-white") }}Save changes</button>
     </div>
   </div>
 
-  <div class="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+  <div class="mb-4 flex gap-2 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="WhatsApp bot sections">
+    <button type="button" id="commandsTab" role="tab" aria-selected="true" aria-controls="commandsPanel" class="border-b-2 border-blue-600 px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-300">Commands</button>
+    <button type="button" id="messagesTab" role="tab" aria-selected="false" aria-controls="messagesPanel" class="border-b-2 border-transparent px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">Message monitor</button>
+  </div>
+
+  <section id="commandsPanel" role="tabpanel" aria-labelledby="commandsTab">
+  <div class="mb-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800">
     <label class="block text-sm font-medium text-gray-800 dark:text-gray-100"><span class="inline-flex items-center gap-2">{{ icon_server("h-4 w-4 text-blue-500") }}Token for B-Snap internal APIs</span>
       <select id="apiTokenId" class="mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 md:max-w-xl">
         <option value="">No token (public APIs only)</option>
@@ -29,12 +35,19 @@
     <p class="mt-2 text-xs text-gray-500">Select a token owned by an admin account. The token value is never shown or stored again.</p>
   </div>
 
-  <div id="commandList" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-live="polite"></div>
+  <div id="commandList" class="grid max-h-[62vh] grid-cols-1 content-start gap-3 overflow-y-auto rounded-xl p-1 sm:grid-cols-2 xl:grid-cols-3" aria-live="polite"></div>
   <div id="emptyState" class="hidden rounded-xl border border-gray-300 p-10 text-center dark:border-gray-700">
     <h2 class="flex items-center justify-center gap-2 font-semibold text-gray-800 dark:text-white">{{ icon_whatsapp("h-5 w-5 text-gray-400") }}No commands yet</h2>
     <p class="mt-1 text-sm text-gray-500">Add a command to start building your bot flow.</p>
     <button id="emptyAddCommand" type="button" class="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white">{{ icon_plus("h-4 w-4") }}Create your first command</button>
   </div>
+
+
+  </section>
+  <section id="messagesPanel" role="tabpanel" aria-labelledby="messagesTab" hidden class="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <div class="mb-3 flex items-center justify-between"><div><h3 class="text-lg font-semibold text-gray-900 dark:text-white">Message delivery monitor</h3><p class="text-xs text-gray-500">Latest 100 messages, refreshes every 30 seconds</p></div><button id="refreshWaMessages" type="button" class="rounded bg-gray-100 px-3 py-1.5 text-sm dark:bg-gray-700">Refresh</button></div>
+    <div class="max-h-[68vh] overflow-auto rounded-lg border border-gray-200 dark:border-gray-700"><table class="min-w-full text-left text-sm"><thead class="sticky top-0 bg-gray-50 dark:bg-gray-900"><tr class="border-b dark:border-gray-700"><th class="p-2">Time</th><th class="p-2">Phone</th><th class="p-2">Direction</th><th class="p-2">Gateway status</th><th class="p-2">Command</th><th class="p-2">Message / error</th></tr></thead><tbody id="waMessageRows"><tr><td colspan="6" class="p-3">Loading…</td></tr></tbody></table></div>
+  </section>
 </div>
 
 <div id="commandEditor" class="fixed inset-0 z-50 hidden bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
@@ -55,8 +68,15 @@
           <select name="action" class="mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900">
             <option value="text">Reply with text</option><option value="help">Show help</option><option value="ping_test">Test bot</option>
             <option value="ping">Ping host</option><option value="cctv">Send latest snapshot</option><option value="snap">Capture new snapshot</option>
-            <option value="api_flow">Internal B-Snap API flow (admin)</option><option value="edit">Edit camera data (admin)</option><option value="token_check">View token (admin)</option><option value="whitelist_add">Add to whitelist (admin)</option><option value="whitelist_remove">Remove from whitelist (admin)</option>
+            <option value="api_flow">Internal B-Snap API flow</option><option value="edit">Edit camera data (admin)</option><option value="token_check">View token (admin)</option><option value="whitelist_add">Add to whitelist (admin)</option><option value="whitelist_remove">Remove from whitelist (admin)</option>
           </select>
+        </label>
+        <label class="text-sm text-gray-700 dark:text-gray-200">Chat access
+          <select name="chat_scope" class="mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900">
+            <option value="all">Group and private chat</option>
+            <option value="private">Private chat only</option>
+          </select>
+          <span data-chat-scope-note class="mt-1 block text-xs text-gray-500">Choose where this command can run.</span>
         </label>
         <label class="flex items-center gap-2 self-end pb-2 text-sm text-gray-700 dark:text-gray-200"><input name="enabled" type="checkbox" class="rounded border-gray-300 text-blue-600"> Enabled</label>
         <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 md:col-span-2"><input name="quote_reply" type="checkbox" checked class="rounded border-gray-300 text-blue-600"> Quote reply to triggering message</label>
@@ -114,7 +134,7 @@
         <label class="block text-sm text-gray-700 dark:text-gray-200"><span class="mb-1 inline-flex items-center gap-2"><img src="/static/icons/gowa.svg" alt="GoWA logo" class="w-8 h-8 inline-block align-middle mr-1 object-contain">WhatsApp response template</span>
           <textarea name="response" rows="4" required maxlength="2000" placeholder="Camera IP: {% raw %}{{steps.kamera.body.results.0.ip}}{% endraw %}" class="mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900"></textarea>
         </label>
-        <p class="mt-1 text-xs text-gray-500">Use the array mapper after testing an API to format repeating items as clean rows.</p>
+        <p class="mt-1 text-xs text-gray-500"><span>Use the array mapper after testing an API to format repeating items as clean rows.</span> <span>Normalize a database timestamp with</span> <code>{% raw %}{{steps.data.body.updated_at|datetime}}{% endraw %}</code><span>; it uses the B-Snap timezone.</span></p>
       </div>
       <p class="inline-flex items-center gap-1.5 text-xs text-gray-500">{{ icon_lock("h-3.5 w-3.5") }}<span data-role></span></p>
       <div class="flex justify-end gap-2 border-t border-gray-200 pt-4 dark:border-gray-700">
@@ -135,6 +155,20 @@
   const form = document.getElementById('commandForm');
   const tokenSelect = document.getElementById('apiTokenId');
   const adminActions = ['api_flow','edit','token_check','whitelist_add','whitelist_remove'];
+  const privateOnlyActions = ['edit','token_check','whitelist_add','whitelist_remove'];
+  const actionLabels = {
+    text: 'Reply with text',
+    help: 'Show help',
+    ping_test: 'Test bot',
+    ping: 'Ping host',
+    cctv: 'Send latest snapshot',
+    snap: 'Capture new snapshot',
+    api_flow: 'Internal B-Snap API flow',
+    edit: 'Edit camera data',
+    token_check: 'View token',
+    whitelist_add: 'Add to whitelist',
+    whitelist_remove: 'Remove from whitelist'
+  };
   const actionPreviewFlows = {
     cctv: [{name:'result', path:'/snapshots/search', params:{identifier:'{{argument}}',phone_number:'{{sender}}'}}],
     snap: [{name:'result', path:'/snapshots/search', params:{identifier:'{{argument}}',phone_number:'{{sender}}'}}]
@@ -143,14 +177,60 @@
   let draft = null;
   let originalId = null;
 
+  function selectTab(tab) {
+    const commandsSelected = tab === 'commands';
+    document.getElementById('commandsPanel').hidden = !commandsSelected;
+    document.getElementById('messagesPanel').hidden = commandsSelected;
+    document.getElementById('commandActions').classList.toggle('hidden', !commandsSelected);
+    const commandTab = document.getElementById('commandsTab');
+    const messagesTab = document.getElementById('messagesTab');
+    commandTab.setAttribute('aria-selected', String(commandsSelected));
+    messagesTab.setAttribute('aria-selected', String(!commandsSelected));
+    commandTab.classList.toggle('border-blue-600', commandsSelected);
+    commandTab.classList.toggle('border-transparent', !commandsSelected);
+    commandTab.classList.toggle('text-blue-700', commandsSelected);
+    commandTab.classList.toggle('text-gray-500', !commandsSelected);
+    commandTab.classList.toggle('dark:text-blue-300', commandsSelected);
+    commandTab.classList.toggle('dark:text-gray-400', !commandsSelected);
+    messagesTab.classList.toggle('border-blue-600', !commandsSelected);
+    messagesTab.classList.toggle('border-transparent', commandsSelected);
+    messagesTab.classList.toggle('text-blue-700', !commandsSelected);
+    messagesTab.classList.toggle('text-gray-500', commandsSelected);
+    messagesTab.classList.toggle('dark:text-blue-300', !commandsSelected);
+    messagesTab.classList.toggle('dark:text-gray-400', commandsSelected);
+  }
+  document.getElementById('commandsTab').addEventListener('click', () => selectTab('commands'));
+  document.getElementById('messagesTab').addEventListener('click', () => selectTab('messages'));
+
   function appendIcon(button, name) {
     const template = document.getElementById(`waIcon${name}`);
     if (template) button.appendChild(template.content.cloneNode(true));
   }
 
   function showToast(type, message) { if (window.Toast && Toast[type]) Toast[type](message); }
+  async function readApiJson(response, action) {
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.toLowerCase().includes('application/json')) {
+      const detail = response.redirected
+        ? 'The session may have expired; sign in again and reload this page.'
+        : `The server returned HTTP ${response.status} instead of JSON.`;
+      throw new Error(`${action}: ${detail}`);
+    }
+    return response.json();
+  }
   function setRole(action) {
     form.querySelector('[data-role]').textContent = `Access required: ${adminActions.includes(action) ? 'WhatsApp admin' : 'whitelisted user'}`;
+  }
+  function setChatScope(action) {
+    const select = form.elements.chat_scope;
+    const note = form.querySelector('[data-chat-scope-note]');
+    const forcedPrivate = privateOnlyActions.includes(action);
+    const isIndonesian = document.documentElement.lang === 'id';
+    if (forcedPrivate) select.value = 'private';
+    select.disabled = forcedPrivate;
+    note.textContent = forcedPrivate
+      ? (isIndonesian ? 'Aksi admin sensitif ini hanya dapat dijalankan lewat japri.' : 'This sensitive admin action is restricted to private chats.')
+      : (isIndonesian ? 'Command japri saja juga disembunyikan dari daftar /help di grup.' : 'Private-only commands are also hidden from group /help lists.');
   }
   function setResponseTemplateVisibility(action) {
     const usesTemplate = action !== 'ping';
@@ -203,16 +283,17 @@
   }
   function openEditor(command = null) {
     originalId = command?.id || null;
-    draft = command ? structuredClone(command) : {id:`custom_${crypto.randomUUID()}`,name:'',trigger:'',aliases:[],required_params:[],action:'text',role:'user',enabled:true,quote_reply:true,description:'',response:'',flow:[]};
+    draft = command ? structuredClone(command) : {id:`custom_${crypto.randomUUID()}`,name:'',trigger:'',aliases:[],required_params:[],action:'text',role:'user',chat_scope:'all',enabled:true,quote_reply:true,description:'',response:'',flow:[]};
     document.getElementById('editorTitleText').textContent = command ? 'Edit command' : 'New command';
     document.getElementById('editorSubtitle').textContent = command?.trigger || 'Enter a trigger, action, and response.';
     for (const key of ['name','trigger','description','response']) form.elements[key].value = draft[key] || '';
     form.elements.aliases.value = (draft.aliases || []).join(', ');
     form.elements.required_params.value = (draft.required_params || []).join(', ');
     form.elements.action.value = draft.action || 'text';
+    form.elements.chat_scope.value = draft.chat_scope || (privateOnlyActions.includes(draft.action) ? 'private' : 'all');
     form.elements.enabled.checked = Boolean(draft.enabled);
     form.elements.quote_reply.checked = draft.quote_reply !== false;
-    setRole(draft.action); setResponseTemplateVisibility(draft.action); drawFlow(); editor.classList.remove('hidden');
+    setRole(draft.action); setChatScope(draft.action); setResponseTemplateVisibility(draft.action); drawFlow(); editor.classList.remove('hidden');
   }
   function closeEditor() { editor.classList.add('hidden'); draft = null; originalId = null; }
   async function deleteCommand(command) {
@@ -266,16 +347,34 @@
   }
   async function load() {
     const response = await fetch('/api/admin/wa-bot/commands', {headers:{'Accept':'application/json'}});
-    const data = await response.json(); if (!response.ok) throw new Error(data.detail || 'Failed to load commands');
+    const data = await readApiJson(response, 'Load commands'); if (!response.ok) throw new Error(data.detail || 'Failed to load commands');
     commands = data.commands || [];
     tokenSelect.replaceChildren(new Option('No token (public APIs only)', ''));
     (data.api_tokens || []).forEach(token => tokenSelect.add(new Option(`${token.name} (${token.prefix || 'token'})`, token.id)));
     tokenSelect.value = data.api_token_id || '';
     renderList();
+    await loadOperations();
   }
+  async function loadOperations() {
+    const headers = {'Accept':'application/json'};
+    const messagesResponse = await fetch('/api/admin/wa-bot/messages?limit=100', {headers});
+    if (!messagesResponse.ok) throw new Error('Failed to load message monitor');
+    const messageData = await readApiJson(messagesResponse, 'Load message monitor');
+    const body = document.getElementById('waMessageRows'); body.replaceChildren();
+    for (const item of messageData.messages || []) {
+      const row = document.createElement('tr'); row.className = 'border-b align-top dark:border-gray-700';
+      for (const value of [item.timestamp || '', item.phone_number, item.direction, item.status, item.command || '', [item.message, item.error].filter(Boolean).join(' — ')]) {
+        const cell = document.createElement('td'); cell.className = 'max-w-sm break-words p-2'; cell.textContent = value || ''; row.appendChild(cell);
+      }
+      body.appendChild(row);
+    }
+    if (!body.children.length) body.innerHTML = '<tr><td colspan="6" class="p-3">No messages recorded.</td></tr>';
+  }
+  window.setInterval(() => loadOperations().catch(error => console.warn('WhatsApp operations refresh failed:', error)), 30000);
+  document.getElementById('refreshWaMessages').addEventListener('click', () => loadOperations().catch(error => showToast('error',error.message)));
   async function saveAll() {
     const response = await fetch('/api/admin/wa-bot/commands', {method:'PUT',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({commands,api_token_id:tokenSelect.value})});
-    const data = await response.json(); if (!response.ok) throw new Error(data.detail || 'Failed to save changes');
+    const data = await readApiJson(response, 'Save changes'); if (!response.ok) throw new Error(data.detail || 'Failed to save changes');
     commands = data.commands || commands; renderList(); showToast('success','WhatsApp Bot changes saved.');
   }
   document.getElementById('addCommand').addEventListener('click', () => openEditor());
@@ -289,24 +388,27 @@
   form.elements.action.addEventListener('change', () => {
     draft.action = form.elements.action.value;
     draft.role = adminActions.includes(draft.action) ? 'admin' : 'user';
-    setRole(draft.action); setResponseTemplateVisibility(draft.action); drawFlow();
+    setRole(draft.action); setChatScope(draft.action); setResponseTemplateVisibility(draft.action); drawFlow();
   });
   form.querySelector('[data-add-step]').addEventListener('click', () => {
     draft.flow ||= [];
     if (draft.flow.length >= 8) { showToast('warning','Maximum 8 API nodes per command.'); return; }
     draft.flow.push({name:`data${draft.flow.length + 1}`,path:'',params:{}}); drawFlow();
   });
-  function addVariableSuggestion(container, expression, value) {
+  function addVariableSuggestion(container, expression, value, formatTimestamp = false) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'rounded bg-blue-100 px-2 py-1 font-mono text-xs text-blue-800 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-100';
-    button.textContent = expression;
-    button.title = typeof value === 'string' ? value : JSON.stringify(value);
+    button.className = formatTimestamp
+      ? 'rounded bg-amber-100 px-2 py-1 font-mono text-xs text-amber-900 hover:bg-amber-200 dark:bg-amber-900 dark:text-amber-100'
+      : 'rounded bg-blue-100 px-2 py-1 font-mono text-xs text-blue-800 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-100';
+    button.textContent = formatTimestamp ? expression + '|datetime' : expression;
+    button.title = formatTimestamp ? 'Insert timestamp formatted in the B-Snap timezone' : (typeof value === 'string' ? value : JSON.stringify(value));
     button.addEventListener('click', () => {
       const textarea = form.elements.response;
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
-      textarea.setRangeText('{' + '{' + expression + '}' + '}', start, end, 'end');
+      const variable = formatTimestamp ? expression + '|datetime' : expression;
+      textarea.setRangeText('{' + '{' + variable + '}' + '}', start, end, 'end');
       textarea.focus();
     });
     container.appendChild(button);
@@ -324,6 +426,9 @@
         if (suggestionCount >= 100) return;
         const expression = `steps.${stepName}.body${path}`;
         addVariableSuggestion(container, expression, value);
+        if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}[T ]/.test(value) && !Number.isNaN(Date.parse(value))) {
+          addVariableSuggestion(container, expression, value, true);
+        }
         suggestionCount += 1;
         if (Array.isArray(value)) {
           arrays.push({expression, value});
@@ -417,7 +522,7 @@
           sender: form.querySelector('[data-test-sender]').value
         })
       });
-      const data = await response.json();
+      const data = await readApiJson(response, 'Run API flow test');
       if (!response.ok) throw new Error(data.detail || 'API flow test failed');
       status.textContent = 'Test succeeded. Click a variable below to add it to the response template.';
       status.className = 'mb-2 text-sm text-green-700 dark:text-green-300';
@@ -436,7 +541,7 @@
     draft.description = form.elements.description.value.trim(); draft.response = form.elements.action.value === 'ping' ? '' : form.elements.response.value;
     draft.aliases = form.elements.aliases.value.split(',').map(value => value.trim().toLowerCase()).filter(Boolean);
     draft.required_params = form.elements.required_params.value.split(',').map(value => value.trim()).filter(Boolean);
-    draft.action = form.elements.action.value; draft.role = adminActions.includes(draft.action) ? 'admin' : 'user'; draft.enabled = form.elements.enabled.checked; draft.quote_reply = form.elements.quote_reply.checked;
+    draft.action = form.elements.action.value; draft.role = adminActions.includes(draft.action) ? 'admin' : 'user'; draft.chat_scope = privateOnlyActions.includes(draft.action) ? 'private' : form.elements.chat_scope.value; draft.enabled = form.elements.enabled.checked; draft.quote_reply = form.elements.quote_reply.checked;
     if (draft.action === 'api_flow') {
       if (!draft.flow?.length) { showToast('warning','Add at least one API node.'); return; }
       for (const step of draft.flow) {
@@ -461,6 +566,7 @@
       document.getElementById('editorTitleText').textContent = originalId ? 'Edit command' : 'New command';
       document.getElementById('editorSubtitle').textContent = draft.trigger || 'Enter a trigger, action, and response.';
       setRole(draft.action);
+      setChatScope(draft.action);
       drawFlow();
     }
   });

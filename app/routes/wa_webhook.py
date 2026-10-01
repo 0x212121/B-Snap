@@ -3,10 +3,13 @@ GoWA Webhook Handler - WhatsApp Bot Integration
 Handles incoming messages from GoWA webhook and responds to commands.
 """
 import logging
+import json
 import re
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Request, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -21,12 +24,13 @@ from app.utils.response_helper import json_success_response, json_error_response
 from app.utils.wa_bot_commands import get_command_settings, match_command, render_response, save_command_settings
 from app.models.camera_group import CameraGroup
 from app.models.snapshot import Snapshot
-from app.models.log import CommandLog
+from app.models.log import CommandLog, WhatsAppMessageLog
 from app.models.config import Configuration
 from app.utils.snapshot_service import SnapshotService
 from app.utils.wa_bot_workflow import render_flow_template, run_api_flow
 from app.utils.wa_bot_workflow import normalize_flow
 from app.utils.healthcheck import format_uptime_duration
+from app.utils.timezone_helper import get_current_timezone
 import os
 
 logger = logging.getLogger("main")
@@ -34,6 +38,23 @@ logger = logging.getLogger("main")
 router = APIRouter(tags=["WhatsApp"])
 WA_API_TOKEN_OWNER_KEY = "wa_bot_api_token_owner_id"
 WA_API_TOKEN_ID_KEY = "wa_bot_api_token_id"
+
+
+def _record_wa_message(db: Session, phone: str, direction: str, status: str, message: str = "", command: str = "", error: str = "", provider_message_id: str | None = None) -> None:
+    db.add(WhatsAppMessageLog(phone_number=phone[:32], provider_message_id=provider_message_id,
+                              direction=direction, status=status,
+                              message=message[:4000] or None, command=command[:120] or None,
+                              error=error[:1000] or None))
+
+
+def _analytics_command_text(message: str) -> str:
+    """Retain arguments for analytics while redacting credential values."""
+    safe_message = message.strip()
+    return re.sub(
+        r"(?i)(\b(?:pass(?:word)?|token|secret|credential)\s*:\s*)[^,]+",
+        r"\1[redacted]",
+        safe_message,
+    )[:500]
 
 
 class GoWATestConfig(BaseModel):
@@ -84,7 +105,7 @@ async def put_wa_bot_commands(request: Request, db: Session = Depends(get_db), c
             isinstance(item, dict) and str(item.get("id")) == token_id
             for item in (current_admin.api_tokens or [])
         ):
-            raise ValueError("Token API harus dipilih dari token milik admin yang sedang login")
+            raise ValueError("The API token must belong to the currently signed-in admin")
         _set_config_value(db, WA_API_TOKEN_OWNER_KEY, str(current_admin.id) if token_id else "")
         _set_config_value(db, WA_API_TOKEN_ID_KEY, token_id)
         db.commit()
@@ -92,6 +113,15 @@ async def put_wa_bot_commands(request: Request, db: Session = Depends(get_db), c
     except ValueError as exc:
         db.rollback()
         raise HTTPException(status_code=422, detail=str(exc))
+
+
+@router.get("/api/admin/wa-bot/messages")
+def get_wa_bot_messages(limit: int = 100, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
+    limit = max(1, min(limit, 250))
+    rows = db.query(WhatsAppMessageLog).order_by(WhatsAppMessageLog.timestamp.desc(), WhatsAppMessageLog.id.desc()).limit(limit).all()
+    return {"messages": [{"id": row.id, "timestamp": row.timestamp.isoformat() if row.timestamp else None,
+        "phone_number": row.phone_number, "direction": row.direction, "status": row.status,
+        "command": row.command, "message": row.message, "error": row.error} for row in rows]}
 
 
 @router.post("/api/admin/wa-bot/test-flow")
@@ -112,7 +142,7 @@ async def test_wa_bot_flow(request: Request, current_admin: User = Depends(admin
                 None,
             )
             if not token:
-                raise ValueError("API token tidak ditemukan pada akun admin yang sedang login")
+                raise ValueError("The API token was not found in the currently signed-in admin account")
         context = await run_api_flow(
             flow=flow,
             bearer_token=token,
@@ -124,7 +154,7 @@ async def test_wa_bot_flow(request: Request, current_admin: User = Depends(admin
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:
         logger.warning("WhatsApp Bot API flow test failed for admin %s: %s", current_admin.id, exc)
-        detail = str(exc) or "API flow gagal dijalankan"
+        detail = str(exc) or "The API flow could not be run"
         raise HTTPException(status_code=502, detail=detail[:500]) from exc
 
 
@@ -135,6 +165,7 @@ class WABotHandler:
         self.db = db
         self.media_path: Optional[str] = None
         self.media_caption: Optional[str] = None
+        self.media_items: list[dict[str, str]] = []
         self.private_response = False
         self.quote_reply = True
     
@@ -156,7 +187,7 @@ class WABotHandler:
         
         return cmd, args
     
-    async def handle(self, sender: str, message: str) -> str:
+    async def handle(self, sender: str, message: str, is_group: bool = False) -> str:
         """
         Handle incoming message and return response.
         
@@ -171,11 +202,14 @@ class WABotHandler:
         commands = get_command_settings(self.db)
         command, argument = match_command(message, commands)
         if command:
+            if is_group and command.get("chat_scope") == "private":
+                logger.info("Ignoring private-only WhatsApp command in group: %s", command.get("trigger"))
+                return ""
             self.quote_reply = bool(command.get("quote_reply", True))
             entry = self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == sender).first()
             is_admin = bool(entry and entry.role == RoleEnum.admin)
             if command.get("role") == "admin" and not is_admin:
-                return "Perintah ini hanya tersedia untuk admin."
+                return "This command is available to admins only."
             required_params = command.get("required_params") or []
             argument_count = len(argument.split())
             missing_required_params = bool(required_params) and (
@@ -184,11 +218,16 @@ class WABotHandler:
             )
             if missing_required_params:
                 usage = " ".join(f"<{parameter}>" for parameter in required_params)
-                return f"Parameter belum lengkap. Format: {command['trigger']} {usage}"
+                return f"Required parameters are missing. Usage: {command['trigger']} {usage}"
             action = command.get("action")
             if action == "help":
-                enabled = [c for c in commands if c.get("enabled") and (c.get("role") != "admin" or is_admin)]
-                heading = render_response(command.get("response", "*Perintah B-Snap Bot*"), argument=argument, sender=sender)
+                enabled = [
+                    c for c in commands
+                    if c.get("enabled")
+                    and (c.get("role") != "admin" or is_admin)
+                    and (not is_group or c.get("chat_scope") != "private")
+                ]
+                heading = render_response(command.get("response", "*B-Snap Bot Commands*"), argument=argument, sender=sender)
                 return heading + "\n" + "\n".join(
                     f"{c['trigger']}"
                     + (" " + " ".join(f"<{parameter}>" for parameter in c.get("required_params", [])) if c.get("required_params") else "")
@@ -209,10 +248,14 @@ class WABotHandler:
                         sender=sender,
                         argument=argument,
                     )
-                    return render_flow_template(command.get("response", ""), context)
+                    return render_flow_template(
+                        command.get("response", ""),
+                        context,
+                        timezone_name=get_current_timezone(self.db),
+                    )
                 except Exception as exc:
                     logger.warning("WhatsApp B-Snap API flow failed for command %s: %s", command.get("trigger"), exc)
-                    return f"Flow API gagal: {exc}"
+                    return f"API flow failed: {exc}"
             return await self._handle_n8n_action(action, sender, argument, command)
 
         for configured in commands:
@@ -221,11 +264,11 @@ class WABotHandler:
             for phrase in [configured.get("trigger", ""), *configured.get("aliases", [])]:
                 phrase = str(phrase).strip().lower()
                 if phrase and (message.strip().lower() == phrase or message.strip().lower().startswith(phrase + " ")):
-                    return "Perintah ini sedang dinonaktifkan."
+                    return "This command is currently disabled."
 
         if message.lstrip().startswith(("/", "!")):
             logger.info("WA Bot: %s sent an unconfigured command", sender[-4:])
-            return "Command belum dikonfigurasi di WhatsApp Bot Builder."
+            return ""
         return ""
 
     def _selected_api_token(self) -> Optional[str]:
@@ -247,10 +290,34 @@ class WABotHandler:
         template = command.get("response", "")
         if action in ("cctv", "snap"):
             if not argument:
-                return f"Format: {command['trigger']} nama kamera atau IP"
+                return f"Usage: {command['trigger']} hostname prefix, camera name, or IP address"
+            if action == "cctv":
+                hostname_prefix = argument.split(maxsplit=1)[0]
+                snapshot_rows = self._find_latest_camera_snapshots_by_hostname_prefix(hostname_prefix)
+                sent_items = []
+                for matching_camera, snapshot in snapshot_rows:
+                    local_path = os.path.join("static", "snapshots", snapshot.file_path)
+                    if not os.path.isfile(local_path):
+                        continue
+                    caption = self._build_snapshot_caption(
+                        matching_camera, snapshot, argument, sender, template
+                    )
+                    sent_items.append({"path": local_path, "caption": caption})
+                    if len(sent_items) == 5:
+                        break
+                if not sent_items:
+                    return "No snapshot is available for the matching cameras."
+                self.media_items = sent_items
+                self.media_path = sent_items[0]["path"]
+                self.media_caption = sent_items[0]["caption"]
+                logger.info(
+                    "WhatsApp CCTV prefix '%s' matched %s snapshots for sender_suffix=%s",
+                    hostname_prefix, len(sent_items), self._sender[-4:],
+                )
+                return ""
             camera = self._find_camera(argument)
             if not camera:
-                return f"Kamera '{argument}' tidak ditemukan atau tidak dapat diakses."
+                return f"Camera '{argument}' was not found or is inaccessible."
             if action == "cctv":
                 snapshot = (self.db.query(Snapshot).filter(Snapshot.camera_id == camera.id, Snapshot.deleted_at.is_(None)).order_by(Snapshot.timestamp.desc()).first())
             else:
@@ -258,7 +325,7 @@ class WABotHandler:
             if action == "snap":
                 snapshot = await SnapshotService.capture_snapshot(camera.id, self.db, triggered_by="whatsapp")
             if not snapshot:
-                return "Snapshot tidak tersedia untuk kamera tersebut."
+                return "No snapshot is available for this camera."
             health = self.db.query(CameraHealth).filter(CameraHealth.camera_id == camera.id).first()
             camera_status = health.status if health else "Unknown"
             last_online = health.last_online if health else None
@@ -289,13 +356,21 @@ class WABotHandler:
             context = {"argument": argument, "sender": sender, "steps": {"result": {"status_code": 200, "body": [snapshot_data]}}}
             local_path = os.path.join("static", "snapshots", snapshot.file_path)
             if not os.path.isfile(local_path):
-                return "File snapshot tidak ditemukan di server."
+                return "The snapshot file was not found on the server."
             self.media_path = local_path
-            self.media_caption = self._render_action_response(template, context, camera=camera.hostname, ip=camera.ip or "", argument=argument, sender=sender)
+            self.media_caption = self._render_action_response(
+                template,
+                context,
+                timezone_name=get_current_timezone(self.db),
+                camera=camera.hostname,
+                ip=camera.ip or "",
+                argument=argument,
+                sender=sender,
+            )
             return ""
         if action == "ping":
             if not argument:
-                return "Format: /ping alamat IP atau hostname"
+                return "Usage: /ping IP address or hostname"
             target = argument.split()[0]
             try:
                 import ping3
@@ -315,11 +390,11 @@ class WABotHandler:
             hostname = match.group(1).strip() if match else ""
             camera = self.db.query(Camera).filter(Camera.hostname.ilike(hostname)).first()
             if not camera:
-                return f"Kamera '{hostname}' tidak ditemukan."
+                return f"Camera '{hostname}' was not found."
             fields = {key: re.search(rf"{key}\s*:\s*([^,]+)", argument, re.I) for key in ("user", "pass", "ip", "port", "status", "group")}
             for key in ("user", "pass"):
                 if not fields[key]:
-                    return f"Parameter {key} wajib. Format: /edit {hostname}, user: ..., pass: ..., ip: ..., port: ..., status: ..., group: ..."
+                    return f"The {key} parameter is required. Usage: /edit {hostname}, user: ..., pass: ..., ip: ..., port: ..., status: ..., group: ..."
             camera.username = fields["user"].group(1).strip()
             camera.password = fields["pass"].group(1).strip()
             if fields["ip"]:
@@ -328,17 +403,17 @@ class WABotHandler:
                 try:
                     camera.port = int(fields["port"].group(1).strip())
                 except ValueError:
-                    return "Port harus berupa angka."
+                    return "Port must be a number."
             if fields["status"]:
                 status = fields["status"].group(1).strip()
                 if status not in {"Active", "Deactivated", "Maintenance", "Restricted", "Standalone"}:
-                    return "Status tidak valid. Gunakan Active, Deactivated, Maintenance, Restricted, atau Standalone."
+                    return "Invalid status. Use Active, Deactivated, Maintenance, Restricted, or Standalone."
                 camera.status = status
             if fields["group"]:
                 group_name = fields["group"].group(1).strip()
                 group = self.db.query(CameraGroup).filter(CameraGroup.name.ilike(group_name)).first()
                 if not group:
-                    return f"Grup '{group_name}' tidak ditemukan."
+                    return f"Group '{group_name}' was not found."
                 camera.group_id = group.id
             self.db.flush()
             return render_response(template, camera=camera.hostname, argument=argument, sender=sender)
@@ -348,40 +423,40 @@ class WABotHandler:
                 for token in user.api_tokens or []:
                     if isinstance(token, dict):
                         secret = str(token.get("token", ""))
-                        masked = f"{secret[:5]}…{secret[-4:]}" if len(secret) > 10 else "(tersimpan)"
+                        masked = f"{secret[:5]}…{secret[-4:]}" if len(secret) > 10 else "(stored)"
                         rows.append(f"• {user.username}: {masked} · expires {token.get('expires_at') or '-'}")
             rendered_template = render_response(template, argument=argument, sender=sender)
-            return (rendered_template + "\n" + "\n".join(rows)) if rows else "Tidak ada token API."
+            return (rendered_template + "\n" + "\n".join(rows)) if rows else "No API tokens found."
         if action in ("whitelist_add", "whitelist_remove"):
             parts = argument.split(maxsplit=1)
             if not parts:
-                return "Format whitelist tidak valid. Gunakan nomor 628xxxxxxxxxx."
+                return "Invalid whitelist format. Use a number in the format 628xxxxxxxxxx."
             phone = re.sub(r"\D", "", parts[0])
             if phone.startswith("08"):
                 phone = "628" + phone[1:]
             if not re.fullmatch(r"628[1-9]\d{7,12}", phone):
-                return "Nomor tidak valid. Gunakan format 628xxxxxxxxxx."
+                return "Invalid phone number. Use the format 628xxxxxxxxxx."
             entry = self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == phone).first()
             if action == "whitelist_add":
                 if entry:
-                    return f"Nomor {phone} sudah ada di whitelist."
+                    return f"Number {phone} is already on the whitelist."
                 name = parts[1].strip() if len(parts) > 1 else phone
                 self.db.add(WhatsappWhitelist(phone_number=phone, name=name[:100], role=RoleEnum.user))
                 self.db.flush()
             else:
                 if phone == sender:
-                    return "Anda tidak dapat menghapus nomor sendiri dari whitelist."
+                    return "You cannot remove your own number from the whitelist."
                 if not entry:
-                    return f"Nomor {phone} tidak ditemukan."
+                    return f"Number {phone} was not found."
                 self.db.delete(entry)
                 self.db.flush()
             return render_response(template, phone=phone, argument=argument, sender=sender)
-        return "Perintah belum didukung."
+        return "This command is not supported."
 
     @staticmethod
-    def _render_action_response(template: str, context: dict, **legacy_values) -> str:
+    def _render_action_response(template: str, context: dict, timezone_name: str = "UTC", **legacy_values) -> str:
         """Render API JSON paths and preserve the legacy flat action placeholders."""
-        rendered = render_flow_template(template, context)
+        rendered = render_flow_template(template, context, timezone_name=timezone_name)
         return render_response(rendered, **legacy_values)
 
     def _find_camera(self, query: str):
@@ -390,6 +465,75 @@ class WABotHandler:
         if entry and entry.group_id:
             camera_query = camera_query.filter((Camera.group_id == entry.group_id) | Camera.groups.any(id=entry.group_id))
         return camera_query.filter((Camera.hostname.ilike(f"%{query}%")) | (Camera.ip == query)).order_by(Camera.hostname).first()
+
+    def _find_latest_camera_snapshots_by_hostname_prefix(self, prefix: str) -> list[tuple[Camera, Snapshot]]:
+        """Find each accessible matching camera's latest snapshot, newest cameras first."""
+        entry = self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == self._sender).first()
+        escaped_prefix = prefix.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        latest_snapshots = (
+            self.db.query(
+                Snapshot.id.label("snapshot_id"),
+                func.row_number().over(
+                    partition_by=Snapshot.camera_id,
+                    order_by=(Snapshot.timestamp.desc(), Snapshot.id.desc()),
+                ).label("snapshot_rank"),
+            )
+            .filter(Snapshot.deleted_at.is_(None))
+            .subquery()
+        )
+        query = (
+            self.db.query(Camera, Snapshot)
+            .join(Snapshot, Camera.id == Snapshot.camera_id)
+            .join(latest_snapshots, latest_snapshots.c.snapshot_id == Snapshot.id)
+            .filter(
+                latest_snapshots.c.snapshot_rank == 1,
+                Camera.hostname.ilike(f"{escaped_prefix}%", escape="\\"),
+            )
+        )
+        if entry and entry.group_id:
+            query = query.filter(
+                (Camera.group_id == entry.group_id) | Camera.groups.any(id=entry.group_id)
+            )
+        return query.order_by(Camera.hostname).all()
+
+    def _build_snapshot_caption(self, camera, snapshot, argument: str, sender: str, template: str) -> str:
+        health = self.db.query(CameraHealth).filter(CameraHealth.camera_id == camera.id).first()
+        camera_status = health.status if health else "Unknown"
+        last_online = health.last_online if health else None
+        if last_online and last_online.tzinfo is None:
+            last_online = last_online.replace(tzinfo=timezone.utc)
+        online = camera_status in {"Online", "High Latency"}
+        uptime_seconds = (
+            max(0, int((datetime.now(timezone.utc) - last_online).total_seconds()))
+            if online and last_online else None
+        )
+        snapshot_data = {
+            "filename": os.path.basename(snapshot.file_path),
+            "camera": snapshot.camera_name,
+            "ip": snapshot.camera_ip,
+            "timestamp": snapshot.timestamp.isoformat() if snapshot.timestamp else "",
+            "url": f"/snapshot/file/{snapshot.file_path}",
+            "img_path": snapshot.file_path,
+            "lat": str(camera.latitude or None),
+            "long": str(camera.longitude or None),
+            "camera_status": camera_status,
+            "uptime": format_uptime_duration(uptime_seconds) if uptime_seconds is not None else None,
+            "uptime_seconds": uptime_seconds,
+            "last_online_at": last_online.isoformat() if last_online else None,
+            "tamper_reason": snapshot.tamper_reason,
+            "res": snapshot.resolution,
+            "group_name": (", ".join(group.name for group in camera.groups) or (camera.group.name if camera.group else "")),
+        }
+        context = {"argument": argument, "sender": sender, "steps": {"result": {"status_code": 200, "body": [snapshot_data]}}}
+        caption = self._render_action_response(
+            template, context, timezone_name=get_current_timezone(self.db),
+            camera=camera.hostname, ip=camera.ip or "", argument=argument, sender=sender,
+        )
+        if not caption:
+            return camera.hostname
+        if camera.hostname.lower() not in caption.lower():
+            return f"{camera.hostname}\n{caption}"
+        return caption
 
 
 
@@ -465,46 +609,80 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
             )
             return json_success_response("Sender is not allowed")
 
-        # GoWA may redeliver an inbound event if webhook processing takes too long
-        # or the response is lost. Persist the event marker before a snapshot so a
-        # retry cannot create the same snapshot multiple times.
-        event_marker = f"gowa_event:{message_id[:180]}" if message_id else None
-        if event_marker:
-            duplicate = db.query(CommandLog.id).filter(
-                CommandLog.user_id == sender,
-                CommandLog.command == event_marker,
-                CommandLog.source == "whatsapp_webhook",
+        # Store the provider ID in its own unique field so GoWA retries remain
+        # idempotent without polluting command analytics with synthetic markers.
+        inbound_record = WhatsAppMessageLog(
+            phone_number=sender[:32],
+            provider_message_id=message_id[:200] or None,
+            direction="inbound",
+            status="received",
+            message=message[:4000],
+            command=command[:120] or None,
+        )
+        if message_id:
+            duplicate = db.query(WhatsAppMessageLog.id).filter(
+                WhatsAppMessageLog.provider_message_id == message_id[:200]
             ).first()
             if duplicate:
                 logger.info("Ignoring duplicate GoWA event id=%s sender_suffix=%s", message_id, sender[-4:])
                 return json_success_response("Duplicate webhook event ignored")
-            db.add(CommandLog(user_id=sender, command=event_marker, source="whatsapp_webhook"))
+        db.add(inbound_record)
+        try:
             db.commit()
+        except IntegrityError:
+            db.rollback()
+            logger.info("Ignoring concurrent duplicate GoWA event sender_suffix=%s", sender[-4:])
+            return json_success_response("Duplicate webhook event ignored")
 
+        matched_command, _ = match_command(message, get_command_settings(db))
+        chat_id = str(event.get("chat_id") or sender).strip()
+        is_group = bool(event.get("is_group")) or chat_id.lower().endswith("@g.us")
+        command_allowed_in_chat = not is_group or not matched_command or matched_command.get("chat_scope") != "private"
+        if matched_command and command_allowed_in_chat:
+            db.add(CommandLog(
+                user_id=sender,
+                command=_analytics_command_text(message),
+                source="whatsapp",
+            ))
+            db.commit()
         # Handle command
         wa_service = WAGatewayService(db)
         # GoWA documents chat_id as the target chat JID. This also preserves a
         # group JID when the command was sent in a group chat.
-        response = await bot.handle(sender, message)
+        response = await bot.handle(sender, message, is_group=is_group)
         # API workflows can return protected system data; keep those replies in
         # the invoking admin's direct chat even when the trigger came from group chat.
-        recipient = sender if bot.private_response else str(event.get("chat_id") or sender).strip()
+        recipient = sender if bot.private_response else chat_id
         reply_to = (message_id or None) if bot.quote_reply and not bot.private_response else None
         
         # Send response back
         if bot.media_path:
-            send_result = wa_service.send_image_file(
-                recipient,
-                bot.media_path,
-                bot.media_caption,
-                reply_to=reply_to,
-            )
-            if not send_result.get("success"):
-                logger.error("Failed sending WhatsApp image to %s: %s", recipient, send_result.get("error"))
-                wa_service.send_text(
+            media_items = bot.media_items or [{"path": bot.media_path, "caption": bot.media_caption or ""}]
+            failed_sends = []
+            for index, media_item in enumerate(media_items):
+                send_result = wa_service.send_image_file(
                     recipient,
-                    "Snapshot berhasil diambil, tetapi gambar gagal dikirim. Silakan coba lagi.",
-                    reply_to=reply_to,
+                    media_item["path"],
+                    media_item.get("caption"),
+                    reply_to=reply_to if index == 0 else None,
+                )
+                if not send_result.get("success"):
+                    failed_sends.append(send_result.get("error", "unknown error"))
+                    logger.error("Failed sending WhatsApp image to %s: %s", recipient, send_result.get("error"))
+                _record_wa_message(
+                    db, sender, "outbound", "accepted" if send_result.get("success") else "failed",
+                    media_item.get("caption") or "[image]", command, send_result.get("error", ""),
+                )
+            if failed_sends:
+                failure_text = (
+                    "Some snapshots could not be sent. Please try again."
+                    if len(media_items) > 1 else
+                    "The snapshot was captured, but the image could not be sent. Please try again."
+                )
+                fallback_send = wa_service.send_text(recipient, failure_text, reply_to=reply_to)
+                _record_wa_message(
+                    db, sender, "outbound", "accepted" if fallback_send.get("success") else "failed",
+                    failure_text, command, fallback_send.get("error", ""),
                 )
         elif response:
             send_result = wa_service.send_text(recipient, response, reply_to=reply_to)
@@ -514,6 +692,8 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
                     recipient,
                     send_result.get("error", "unknown GoWA error"),
                 )
+            _record_wa_message(db, sender, "outbound", "accepted" if send_result.get("success") else "failed", response, command, send_result.get("error", ""))
+        db.commit()
         
         return json_success_response("Message processed")
         

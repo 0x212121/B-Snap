@@ -25,8 +25,17 @@ CUSTOM_ACTION_ROLES = {
     "token_check": "admin",
     "whitelist_add": "admin",
     "whitelist_remove": "admin",
-    "api_flow": "admin",
+    "api_flow": "user",
 }
+
+PRIVATE_ONLY_ACTIONS = {"edit", "token_check", "whitelist_add", "whitelist_remove"}
+
+
+def normalize_chat_scope(action: str, value: Any = None) -> str:
+    """Return a safe chat scope; sensitive built-in actions always require a DM."""
+    if action in PRIVATE_ONLY_ACTIONS:
+        return "private"
+    return value if isinstance(value, str) and value in {"all", "private"} else "all"
 
 
 def get_command_settings(db: Session) -> list[dict[str, Any]]:
@@ -42,6 +51,7 @@ def get_command_settings(db: Session) -> list[dict[str, Any]]:
                     # Built-in action and privilege requirements are server-owned.
                     item["action"] = default["action"]
                     item["role"] = default["role"]
+                    item["chat_scope"] = normalize_chat_scope(item["action"], item.get("chat_scope"))
                     result.append(item)
                 for item in configured:
                     if not isinstance(item, dict) or not str(item.get("id", "")).startswith("custom_"):
@@ -53,11 +63,15 @@ def get_command_settings(db: Session) -> list[dict[str, Any]]:
                         flow = normalize_flow(item.get("flow")) if action == "api_flow" else []
                     except ValueError:
                         continue
-                    result.append({**item, "action": action, "role": CUSTOM_ACTION_ROLES[action], "flow": flow})
+                    result.append({**item, "action": action, "role": CUSTOM_ACTION_ROLES[action],
+                                   "chat_scope": normalize_chat_scope(action, item.get("chat_scope")), "flow": flow})
                 return result
         except (TypeError, ValueError):
             pass
-    return [dict(item) for item in BUILTIN_COMMANDS]
+    return [
+        {**dict(item), "chat_scope": normalize_chat_scope(item["action"], item.get("chat_scope"))}
+        for item in BUILTIN_COMMANDS
+    ]
 
 
 def save_command_settings(db: Session, commands: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -87,6 +101,7 @@ def save_command_settings(db: Session, commands: list[dict[str, Any]]) -> list[d
         entry["response"] = str(entry.get("response", ""))[:2000]
         entry["enabled"] = bool(entry.get("enabled", True))
         entry["quote_reply"] = bool(entry.get("quote_reply", True))
+        entry["chat_scope"] = normalize_chat_scope(entry["action"], entry.get("chat_scope", item.get("chat_scope")))
         required_params = entry.get("required_params", item.get("required_params", []))
         if isinstance(required_params, str):
             required_params = re.split(r"[,\n]", required_params)

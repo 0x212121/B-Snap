@@ -232,7 +232,12 @@ def get_top_commands(
             CommandLog.command,
             func.count(CommandLog.id).label("count")
         )
-        .filter(CommandLog.timestamp >= start_dt, CommandLog.timestamp <= end_dt)
+        .filter(
+            CommandLog.timestamp >= start_dt,
+            CommandLog.timestamp <= end_dt,
+            CommandLog.source != "whatsapp_webhook",
+            ~CommandLog.command.startswith("gowa_event:"),
+        )
         .group_by(CommandLog.command)
         .order_by(func.count(CommandLog.id).desc())
         .limit(limit)
