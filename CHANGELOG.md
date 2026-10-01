@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added per-command private-chat restrictions, enforced them before action execution, and filtered private-only commands from group /help.
 - Added a `|datetime` response-template formatter for database/API timestamps using the configured B-Snap timezone, with editor suggestions for ISO timestamp fields.
 - Updated WhatsApp CCTV snapshot commands to match hostname prefixes and send the latest available snapshot for up to five matching cameras.
+- Changed real-time WhatsApp snapshot lookup to require an exact hostname match while ignoring letter case.
+- Added `sort_by` and `sort_order` query parameters to `/cctv/resolve-ip` and documented them in the WhatsApp Bot Builder API flow editor.
 
 - Fix WhatsApp Bot Builder command list error when displaying action labels.
 - Translate WhatsApp webhook bot replies and validation messages into English.

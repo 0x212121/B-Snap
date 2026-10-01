@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from app.db.database import SessionLocal
 from app.models.camera import Camera
@@ -16,11 +17,26 @@ from fastapi import HTTPException
 def resolve_ip_by_name(
     keyword: str = Query(..., description="Part of group name or camera name to search"),
     phone_number: str | None = Query(None, description="Whitelist phone number to filter group access"),
+    sort_by: str = Query("hostname", description="Result field to sort by: hostname, ip, or id"),
+    sort_order: str = Query("asc", description="Sort direction: asc or desc"),
     current_admin: User = Depends(admin_access_required),
 ):
     keyword_clean = keyword.strip()
     if not keyword_clean:
         raise HTTPException(status_code=400, detail="Keyword cannot be empty or only whitespace")
+
+    sort_columns = {
+        "hostname": func.lower(Camera.hostname),
+        "name": func.lower(Camera.hostname),
+        "ip": Camera.ip,
+        "id": Camera.id,
+    }
+    sort_key = sort_by.strip().lower()
+    direction = sort_order.strip().lower()
+    if sort_key not in sort_columns:
+        raise HTTPException(status_code=400, detail="sort_by must be one of: hostname, name, ip, id")
+    if direction not in {"asc", "desc"}:
+        raise HTTPException(status_code=400, detail="sort_order must be asc or desc")
 
     db: Session = SessionLocal()
     try:
@@ -64,14 +80,16 @@ def resolve_ip_by_name(
         if not has_all:
             group_match = group_match.filter(Camera.groups.any(CameraGroup.id.in_(whitelisted_group_ids)))
 
-        cameras = group_match.all()
+        sort_column = sort_columns[sort_key]
+        order_column = sort_column.asc() if direction == "asc" else sort_column.desc()
+        cameras = group_match.order_by(order_column, Camera.id.asc()).all()
 
         # Step 2: fallback hostname
         if not cameras:
             host_match = base_query.filter(Camera.hostname.ilike(f"%{keyword_clean}%"))
             if not has_all:
                 host_match = host_match.filter(Camera.groups.any(CameraGroup.id.in_(whitelisted_group_ids)))
-            cameras = host_match.all()
+            cameras = host_match.order_by(order_column, Camera.id.asc()).all()
 
         results = [
             {

@@ -98,7 +98,7 @@
           <div><h3 data-flow-title class="inline-flex items-center gap-2 font-medium text-gray-900 dark:text-white">{{ icon_server("h-4 w-4 text-blue-500") }}GET API flow</h3><p data-flow-subtitle class="text-xs text-gray-500">Internal B-Snap nodes run in order, up to 8 nodes.</p></div>
           <button data-add-step type="button" class="inline-flex items-center gap-1.5 rounded bg-blue-100 px-3 py-1 text-blue-800 dark:bg-blue-900 dark:text-blue-100">{{ icon_plus("h-4 w-4") }}Add node</button>
         </div>
-        <p class="mb-3 text-xs text-gray-500">Example path <code>/cctv/resolve-ip</code>, params <code>{% raw %}{"keyword":"{{argument}}","phone_number":"{{sender}}"}{% endraw %}</code>. Output: <code>{% raw %}{{steps.kamera.body.results.0.ip}}{% endraw %}</code>.</p>
+        <p class="mb-3 text-xs text-gray-500">Example path <code>/cctv/resolve-ip</code>, params <code>{% raw %}{"keyword":"{{argument}}","phone_number":"{{sender}}","sort_by":"hostname","sort_order":"asc"}{% endraw %}</code>. Sorting: <code>sort_by</code> = hostname/name, ip, or id; <code>sort_order</code> = asc or desc. Output: <code>{% raw %}{{steps.kamera.body.results.0.ip}}{% endraw %}</code>.</p>
         <div data-flow-list class="space-y-3"></div>
         </div>
         <div class="mt-4 rounded-lg border border-gray-200 p-3 dark:border-gray-700">

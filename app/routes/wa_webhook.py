@@ -315,8 +315,14 @@ class WABotHandler:
                     hostname_prefix, len(sent_items), self._sender[-4:],
                 )
                 return ""
-            camera = self._find_camera(argument)
+            camera = (
+                self._find_camera_by_exact_hostname(argument)
+                if action == "snap"
+                else self._find_camera(argument)
+            )
             if not camera:
+                if action == "snap":
+                    return f"Camera hostname '{argument}' was not found or is inaccessible."
                 return f"Camera '{argument}' was not found or is inaccessible."
             if action == "cctv":
                 snapshot = (self.db.query(Snapshot).filter(Snapshot.camera_id == camera.id, Snapshot.deleted_at.is_(None)).order_by(Snapshot.timestamp.desc()).first())
@@ -465,6 +471,20 @@ class WABotHandler:
         if entry and entry.group_id:
             camera_query = camera_query.filter((Camera.group_id == entry.group_id) | Camera.groups.any(id=entry.group_id))
         return camera_query.filter((Camera.hostname.ilike(f"%{query}%")) | (Camera.ip == query)).order_by(Camera.hostname).first()
+
+    def _find_camera_by_exact_hostname(self, hostname: str) -> Optional[Camera]:
+        """Find one accessible camera by exact hostname, ignoring letter case."""
+        entry = self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == self._sender).first()
+        escaped_hostname = hostname.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        camera_query = self.db.query(Camera).filter(
+            Camera.status.in_(["Active", "Restricted", "Maintenance"]),
+            Camera.hostname.ilike(escaped_hostname, escape="\\"),
+        )
+        if entry and entry.group_id:
+            camera_query = camera_query.filter(
+                (Camera.group_id == entry.group_id) | Camera.groups.any(id=entry.group_id)
+            )
+        return camera_query.order_by(Camera.hostname).first()
 
     def _find_latest_camera_snapshots_by_hostname_prefix(self, prefix: str) -> list[tuple[Camera, Snapshot]]:
         """Find each accessible matching camera's latest snapshot, newest cameras first."""
