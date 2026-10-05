@@ -205,7 +205,13 @@ class WAGatewayService:
             logger.error(f"Unexpected error sending WA: {e}")
             return {"success": False, "error": str(e)}
     
-    def send_image(self, phone: str, image_url: str, caption: Optional[str] = None) -> Dict[str, Any]:
+    def send_image(
+        self,
+        phone: str,
+        image_url: str,
+        caption: Optional[str] = None,
+        reply_to: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
         Send image message via GoWA.
         
@@ -224,6 +230,8 @@ class WAGatewayService:
             }
             if caption:
                 payload["caption"] = caption
+            if reply_to:
+                payload["reply_message_id"] = reply_to
             
             response = self._post_with_retry(self._make_url("/send/image"), json=payload)
             if response.status_code == 404:

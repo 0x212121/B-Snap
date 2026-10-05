@@ -6,12 +6,13 @@ import logging
 import json
 import re
 from datetime import datetime, timezone
+from urllib.parse import unquote, urljoin, urlsplit
 from fastapi import APIRouter, Depends, Request, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Callable, Optional
 
 from app.db.database import get_db
 from app.models.user import User
@@ -21,7 +22,13 @@ from app.models.whitelist import RoleEnum, WhatsappWhitelist
 from app.routes.auth import admin_access_required
 from app.utils.wa_gateway import WAGatewayService, format_phone_number
 from app.utils.response_helper import json_success_response, json_error_response
-from app.utils.wa_bot_commands import get_command_settings, match_command, render_response, save_command_settings
+from app.utils.wa_bot_commands import (
+    get_command_settings,
+    match_command,
+    normalize_snap_stage_messages,
+    render_response,
+    save_command_settings,
+)
 from app.models.camera_group import CameraGroup
 from app.models.snapshot import Snapshot
 from app.models.log import CommandLog, WhatsAppMessageLog
@@ -45,6 +52,17 @@ def _record_wa_message(db: Session, phone: str, direction: str, status: str, mes
                               direction=direction, status=status,
                               message=message[:4000] or None, command=command[:120] or None,
                               error=error[:1000] or None))
+
+
+def _send_wa_message_item(service: WAGatewayService, recipient: str, item: dict, reply_to: str | None = None) -> dict:
+    caption = str(item.get("text") or "")
+    if item.get("image_path"):
+        return service.send_image_file(recipient, item["image_path"], caption or None, reply_to=reply_to)
+    if item.get("image_url"):
+        return service.send_image(recipient, item["image_url"], caption or None, reply_to=reply_to)
+    if caption:
+        return service.send_text(recipient, caption, reply_to=reply_to)
+    return {"success": False, "error": "Message item has no text or image"}
 
 
 def _analytics_command_text(message: str) -> str:
@@ -166,8 +184,10 @@ class WABotHandler:
         self.media_path: Optional[str] = None
         self.media_caption: Optional[str] = None
         self.media_items: list[dict[str, str]] = []
+        self.outbound_items: list[dict[str, str]] = []
         self.private_response = False
         self.quote_reply = True
+        self.progress_sender: Optional[Callable[[dict[str, str]], dict]] = None
     
     def parse_command(self, message: str) -> tuple[str, list]:
         """
@@ -285,6 +305,82 @@ class WABotHandler:
         token = next((item for item in (owner.api_tokens or []) if isinstance(item, dict) and str(item.get("id")) == token_id), None)
         return token.get("token") if token else None
 
+    def _latest_snapshot_with_file(self, camera_id: str) -> Optional[Snapshot]:
+        snapshots = (
+            self.db.query(Snapshot)
+            .filter(Snapshot.camera_id == camera_id, Snapshot.deleted_at.is_(None))
+            .order_by(Snapshot.timestamp.desc(), Snapshot.id.desc())
+            .limit(100)
+            .all()
+        )
+        return next(
+            (
+                item for item in snapshots
+                if os.path.isfile(os.path.join("static", "snapshots", item.file_path))
+            ),
+            None,
+        )
+
+    def _render_snap_stage_messages(
+        self,
+        messages: list[dict],
+        api_context: dict,
+        camera: Camera,
+        argument: str,
+        sender: str,
+        last_snapshot: Optional[Snapshot] = None,
+    ) -> list[dict[str, str]]:
+        timezone_name = get_current_timezone(self.db)
+        rendered = []
+        values = {
+            "camera": camera.hostname,
+            "ip": camera.ip or "",
+            "argument": argument,
+            "sender": sender,
+            "error": "Snapshot capture failed",
+        }
+        for item in messages:
+            text = render_flow_template(str(item.get("text") or ""), api_context, timezone_name)
+            text = render_response(text, **values)
+            image_type = item.get("image_source_type", "none")
+            outbound_item: dict[str, str] = {"text": text}
+            if image_type in {"url", "api"}:
+                image_url = render_flow_template(str(item.get("image_source") or ""), api_context, timezone_name)
+                image_url = render_response(image_url, **values).strip()
+                if image_type == "api":
+                    api_path = unquote(image_url)
+                    if api_path.startswith("/snapshot/file/"):
+                        api_path = api_path.removeprefix("/snapshot/file/")
+                    api_path = api_path.lstrip("/")
+                    api_snapshot = (
+                        self.db.query(Snapshot)
+                        .filter(Snapshot.file_path == api_path, Snapshot.deleted_at.is_(None))
+                        .first()
+                    ) if api_path else None
+                    if api_snapshot:
+                        local_image_path = os.path.join("static", "snapshots", api_snapshot.file_path)
+                        if os.path.isfile(local_image_path):
+                            outbound_item["image_path"] = local_image_path
+                parsed_url = urlsplit(image_url)
+                if not outbound_item.get("image_path") and not parsed_url.scheme and not parsed_url.netloc:
+                    public_base = (_config_value(self.db, "app_public_url") or "").strip()
+                    if public_base:
+                        image_url = urljoin(public_base.rstrip("/") + "/", image_url.lstrip("/"))
+                        parsed_url = urlsplit(image_url)
+                if outbound_item.get("image_path"):
+                    pass
+                elif parsed_url.scheme.lower() in {"http", "https"} and parsed_url.netloc:
+                    outbound_item["image_url"] = image_url
+                else:
+                    logger.warning("Skipping invalid WhatsApp snapshot message image URL for camera %s", camera.hostname)
+                    if not text:
+                        outbound_item["text"] = "The configured image could not be loaded."
+            elif image_type == "last_snapshot" and last_snapshot:
+                outbound_item["image_path"] = os.path.join("static", "snapshots", last_snapshot.file_path)
+            if outbound_item.get("text") or outbound_item.get("image_url") or outbound_item.get("image_path"):
+                rendered.append(outbound_item)
+        return rendered
+
     async def _handle_n8n_action(self, action: str, sender: str, argument: str, command: dict) -> str:
         """Execute the fixed native actions represented by n8n workflow commands."""
         template = command.get("response", "")
@@ -329,7 +425,54 @@ class WABotHandler:
             else:
                 snapshot = None
             if action == "snap":
+                api_context = {"sender": sender, "argument": argument, "steps": {}}
+                if command.get("image_flow"):
+                    try:
+                        api_context = await run_api_flow(
+                            flow=command["image_flow"],
+                            bearer_token=self._selected_api_token(),
+                            sender=sender,
+                            argument=argument,
+                        )
+                    except Exception as exc:
+                        logger.warning("WhatsApp snapshot image API flow failed for %s: %s", camera.hostname, exc)
+                processing_messages = normalize_snap_stage_messages(
+                    command.get("processing_messages"),
+                    command.get("processing_response"),
+                    "Snapshot capture for {{camera}} is in progress. Please wait.",
+                )
+                processing_snapshot = self._latest_snapshot_with_file(camera.id)
+                processing_items = self._render_snap_stage_messages(
+                    processing_messages, api_context, camera, argument, sender, processing_snapshot
+                )
+                for processing_item in processing_items:
+                    if self.progress_sender:
+                        try:
+                            progress_result = self.progress_sender(processing_item)
+                            if not progress_result.get("success"):
+                                logger.warning(
+                                    "Failed to send WhatsApp snapshot processing message for %s: %s",
+                                    camera.hostname, progress_result.get("error", "unknown error"),
+                                )
+                        except Exception:
+                            logger.exception("Failed to send WhatsApp snapshot processing message for %s", camera.hostname)
+                    else:
+                        self.outbound_items.append(processing_item)
                 snapshot = await SnapshotService.capture_snapshot(camera.id, self.db, triggered_by="whatsapp")
+                if snapshot and not os.path.isfile(os.path.join("static", "snapshots", snapshot.file_path)):
+                    snapshot = None
+                if not snapshot:
+                    failure_messages = normalize_snap_stage_messages(
+                        command.get("failure_messages"),
+                        command.get("failure_response"),
+                        "Could not capture a new snapshot for {{camera}}. Sending the latest available snapshot if one exists.",
+                        "last_snapshot",
+                    )
+                    previous_snapshot = self._latest_snapshot_with_file(camera.id)
+                    self.outbound_items.extend(self._render_snap_stage_messages(
+                        failure_messages, api_context, camera, argument, sender, previous_snapshot
+                    ))
+                    return ""
             if not snapshot:
                 return "No snapshot is available for this camera."
             health = self.db.query(CameraHealth).filter(CameraHealth.camera_id == camera.id).first()
@@ -373,6 +516,8 @@ class WABotHandler:
                 argument=argument,
                 sender=sender,
             )
+            if action == "snap":
+                self.outbound_items.append({"text": self.media_caption or "", "image_path": local_path})
             return ""
         if action == "ping":
             if not argument:
@@ -668,6 +813,23 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
             db.commit()
         # Handle command
         wa_service = WAGatewayService(db)
+
+        def send_snapshot_progress(message_item: dict[str, str]) -> dict:
+            progress_reply_to = (message_id or None) if bot.quote_reply else None
+            result = _send_wa_message_item(wa_service, chat_id, message_item, reply_to=progress_reply_to)
+            _record_wa_message(
+                db,
+                sender,
+                "outbound",
+                "accepted" if result.get("success") else "failed",
+                message_item.get("text") or "[image]",
+                command,
+                result.get("error", ""),
+            )
+            db.commit()
+            return result
+
+        bot.progress_sender = send_snapshot_progress
         # GoWA documents chat_id as the target chat JID. This also preserves a
         # group JID when the command was sent in a group chat.
         response = await bot.handle(sender, message, is_group=is_group)
@@ -677,7 +839,30 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
         reply_to = (message_id or None) if bot.quote_reply and not bot.private_response else None
         
         # Send response back
-        if bot.media_path:
+        if bot.outbound_items:
+            failed_sends = []
+            for item in bot.outbound_items:
+                send_result = _send_wa_message_item(wa_service, recipient, item, reply_to=reply_to)
+                if not send_result.get("success"):
+                    failed_sends.append(send_result.get("error", "unknown error"))
+                    logger.error("Failed sending WhatsApp snapshot message to %s: %s", recipient, send_result.get("error"))
+                _record_wa_message(
+                    db,
+                    sender,
+                    "outbound",
+                    "accepted" if send_result.get("success") else "failed",
+                    item.get("text") or "[image]",
+                    command,
+                    send_result.get("error", ""),
+                )
+            if failed_sends:
+                failure_text = "Some snapshot messages could not be sent. Please try again."
+                fallback_send = wa_service.send_text(recipient, failure_text, reply_to=reply_to)
+                _record_wa_message(
+                    db, sender, "outbound", "accepted" if fallback_send.get("success") else "failed",
+                    failure_text, command, fallback_send.get("error", ""),
+                )
+        elif bot.media_path:
             media_items = bot.media_items or [{"path": bot.media_path, "caption": bot.media_caption or ""}]
             failed_sends = []
             for index, media_item in enumerate(media_items):

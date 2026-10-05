@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed WhatsApp Bot Builder rendering by preventing Jinja from evaluating JavaScript response-template placeholders, which could redirect the user to login and clear session cookies.
+
 ### Added
 
 - Added admin visibility into recent inbound/outbound WhatsApp gateway statuses and a tabbed Bot Builder layout with contained command and message lists.
@@ -18,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed real-time WhatsApp snapshot lookup to accept an exact hostname match (case-insensitive) or an exact IP address.
 - Added `sort_by` and `sort_order` query parameters to `/cctv/resolve-ip` and documented them in the WhatsApp Bot Builder API flow editor.
 - Added bounded timeout and retry handling for outbound WhatsApp text and image delivery through GoWA.
+- Added ordered processing and failure/fallback message lists for WhatsApp snapshot commands, with optional URL images, API-result image URLs, or the latest saved snapshot; success captions remain configurable.
 
 - Fix WhatsApp Bot Builder command list error when displaying action labels.
 - Translate WhatsApp webhook bot replies and validation messages into English.

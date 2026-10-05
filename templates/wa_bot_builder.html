@@ -131,10 +131,21 @@
       </div>
 
       <div data-response-panel>
-        <label class="block text-sm text-gray-700 dark:text-gray-200"><span class="mb-1 inline-flex items-center gap-2"><img src="/static/icons/gowa.svg" alt="GoWA logo" class="w-8 h-8 inline-block align-middle mr-1 object-contain">WhatsApp response template</span>
+        <label class="block text-sm text-gray-700 dark:text-gray-200"><span class="mb-1 inline-flex items-center gap-2"><img src="/static/icons/gowa.svg" alt="GoWA logo" class="w-8 h-8 inline-block align-middle mr-1 object-contain"><span data-response-label>WhatsApp response template</span></span>
           <textarea name="response" rows="4" required maxlength="2000" placeholder="Camera IP: {% raw %}{{steps.kamera.body.results.0.ip}}{% endraw %}" class="mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900"></textarea>
         </label>
         <p class="mt-1 text-xs text-gray-500"><span>Use the array mapper after testing an API to format repeating items as clean rows.</span> <span>Normalize a database timestamp with</span> <code>{% raw %}{{steps.data.body.updated_at|datetime}}{% endraw %}</code><span>; it uses the B-Snap timezone.</span></p>
+      </div>
+      <div data-snap-stage-panel class="hidden space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+        <div>
+          <div class="mb-2 flex items-center justify-between"><span data-processing-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Processing messages</span><button type="button" data-add-snap-message="processing_messages" class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
+          <div data-snap-message-list="processing_messages" class="space-y-2"></div>
+        </div>
+        <div>
+          <div class="mb-2 flex items-center justify-between"><span data-failure-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Failure / fallback messages</span><button type="button" data-add-snap-message="failure_messages" class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
+          <div data-snap-message-list="failure_messages" class="space-y-2"></div>
+        </div>
+        <p class="text-xs text-gray-500">Image sources: direct URL, API result URL, or latest saved snapshot. API result URLs use the image API flow below. Text placeholders: <code>{% raw %}{{camera}}{% endraw %}</code>, <code>{% raw %}{{ip}}{% endraw %}</code>, <code>{% raw %}{{argument}}{% endraw %}</code>, <code>{% raw %}{{sender}}{% endraw %}</code>.</p>
       </div>
       <p class="inline-flex items-center gap-1.5 text-xs text-gray-500">{{ icon_lock("h-3.5 w-3.5") }}<span data-role></span></p>
       <div class="flex justify-end gap-2 border-t border-gray-200 pt-4 dark:border-gray-700">
@@ -148,6 +159,7 @@
 <template id="waIconDelete">{{ icon_trash("h-4 w-4") }}</template>
 
 <script>
+{% raw %}
 (() => {
   const list = document.getElementById('commandList');
   const emptyState = document.getElementById('emptyState');
@@ -234,40 +246,114 @@
   }
   function setResponseTemplateVisibility(action) {
     const usesTemplate = action !== 'ping';
+    const isSnap = action === 'snap';
     form.querySelector('[data-response-panel]').classList.toggle('hidden', !usesTemplate);
+    form.querySelector('[data-snap-stage-panel]').classList.toggle('hidden', !isSnap);
     form.elements.response.required = usesTemplate;
+    const isIndonesian = document.documentElement.lang === 'id';
+    if (isSnap) {
+      if (!Array.isArray(draft.processing_messages) || !draft.processing_messages.length) {
+        draft.processing_messages = [{text:isIndonesian ? 'Snapshot untuk {{camera}} sedang diproses. Mohon tunggu.' : 'Snapshot capture for {{camera}} is in progress. Please wait.',image_source_type:'none',image_source:''}];
+      }
+      if (!Array.isArray(draft.failure_messages) || !draft.failure_messages.length) {
+        draft.failure_messages = [{text:isIndonesian ? 'Gagal mengambil snapshot baru untuk {{camera}}. Mengirim snapshot terakhir jika tersedia.' : 'Could not capture a new snapshot for {{camera}}. Sending the latest available snapshot if one exists.',image_source_type:'last_snapshot',image_source:''}];
+      }
+      drawSnapMessages('processing_messages');
+      drawSnapMessages('failure_messages');
+    }
+    form.querySelector('[data-response-label]').textContent = isSnap
+      ? (isIndonesian ? 'Pesan berhasil (caption snapshot)' : 'Success message (snapshot caption)')
+      : 'WhatsApp response template';
+    form.querySelector('[data-processing-label]').textContent = isIndonesian ? 'Pesan saat processing' : 'Processing messages';
+    form.querySelector('[data-failure-label]').textContent = isIndonesian ? 'Pesan gagal / fallback' : 'Failure / fallback messages';
+  }
+  function drawSnapMessages(key) {
+    if (!draft) return;
+    const list = draft[key] || [];
+    const container = form.querySelector(`[data-snap-message-list="${key}"]`);
+    if (!container) return;
+    container.replaceChildren();
+    const isIndonesian = document.documentElement.lang === 'id';
+    list.forEach((item, index) => {
+      const card = document.createElement('div'); card.className = 'rounded-lg bg-gray-50 p-3 dark:bg-gray-900';
+      const top = document.createElement('div'); top.className = 'mb-2 flex items-center justify-between text-xs font-medium';
+      const title = document.createElement('span'); title.textContent = `${isIndonesian ? 'Pesan' : 'Message'} ${index + 1}`;
+      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'text-red-600'; remove.textContent = isIndonesian ? 'Hapus' : 'Remove';
+      remove.addEventListener('click', () => {
+        if (list.length > 1) list.splice(index, 1);
+        else list[0] = {text:'',image_source_type:'none',image_source:''};
+        drawSnapMessages(key);
+      });
+      top.append(title, remove); card.appendChild(top);
+      const text = document.createElement('textarea'); text.rows = 2; text.maxLength = 1000;
+      text.placeholder = isIndonesian ? 'Isi pesan WhatsApp (opsional jika ada gambar)' : 'WhatsApp message (optional when an image is selected)';
+      text.className = 'mb-2 w-full rounded border-gray-300 font-mono text-sm dark:border-gray-600 dark:bg-gray-800'; text.value = item.text || '';
+      text.addEventListener('input', () => { item.text = text.value; }); card.appendChild(text);
+      const sourceRow = document.createElement('div'); sourceRow.className = 'grid gap-2 sm:grid-cols-2';
+      const select = document.createElement('select'); select.className = 'rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-800';
+      const choices = [
+        ['none', isIndonesian ? 'Tanpa gambar' : 'No image'],
+        ['url', isIndonesian ? 'Gambar dari URL' : 'Image URL'],
+        ['api', isIndonesian ? 'URL gambar dari hasil API' : 'Image URL from API result'],
+        ['last_snapshot', isIndonesian ? 'Snapshot terakhir tersimpan' : 'Latest saved snapshot'],
+      ];
+      choices.forEach(([value,label]) => select.add(new Option(label, value)));
+      select.value = item.image_source_type || 'none';
+      const source = document.createElement('input'); source.type = 'text'; source.maxLength = 1500;
+      source.placeholder = select.value === 'api' ? '{{steps.camera.body.image_url}}' : 'https://example.com/image.jpg';
+      source.className = 'rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-800'; source.value = item.image_source || '';
+      const updateSource = () => {
+        item.image_source_type = select.value;
+        source.hidden = !['url','api'].includes(select.value);
+        source.placeholder = select.value === 'api' ? '{{steps.camera.body.image_url}}' : 'https://example.com/image.jpg';
+      };
+      select.addEventListener('change', updateSource);
+      source.addEventListener('input', () => { item.image_source = source.value; });
+      updateSource(); sourceRow.append(select, source); card.appendChild(sourceRow); container.appendChild(card);
+    });
   }
   function drawFlow() {
     const panel = form.querySelector('[data-flow-panel]');
     const customFlow = draft.action === 'api_flow';
-    const hasPreview = customFlow || Boolean(actionPreviewFlows[draft.action]);
+    const snapImageFlow = draft.action === 'snap';
+    const flowEditorVisible = customFlow || snapImageFlow;
+    const hasPreview = flowEditorVisible || Boolean(actionPreviewFlows[draft.action]);
     panel.classList.toggle('hidden', !hasPreview);
-    panel.querySelector('[data-flow-editor]').classList.toggle('hidden', !customFlow);
+    panel.querySelector('[data-flow-editor]').classList.toggle('hidden', !flowEditorVisible);
     const isIndonesian = document.documentElement.lang === 'id';
-    panel.querySelector('[data-flow-title]').lastChild.textContent = customFlow ? 'GET API flow' : (isIndonesian ? 'Respons API action' : 'Action API response');
-    panel.querySelector('[data-flow-subtitle]').textContent = customFlow
+    panel.querySelector('[data-flow-title]').lastChild.textContent = snapImageFlow
+      ? (isIndonesian ? 'API flow untuk sumber gambar' : 'Image source API flow')
+      : (customFlow ? 'GET API flow' : (isIndonesian ? 'Respons API action' : 'Action API response'));
+    panel.querySelector('[data-flow-subtitle]').textContent = snapImageFlow
+      ? (isIndonesian ? 'Gunakan hasil node untuk mengisi URL gambar API pada pesan processing atau fallback.' : 'Use node results to provide API image URLs in processing or fallback messages.')
+      : (customFlow
       ? (isIndonesian ? 'Node internal B-Snap dijalankan berurutan, maksimal 8 node.' : 'Internal B-Snap nodes run in order, up to 8 nodes.')
-      : (isIndonesian ? 'Jalankan API baca untuk melihat JSON yang bisa dipetakan ke template.' : 'Call the read-only action API to inspect JSON fields for the response template.');
+      : (isIndonesian ? 'Jalankan API baca untuk melihat JSON yang bisa dipetakan ke template.' : 'Call the read-only action API to inspect JSON fields for the response template.'));
     panel.querySelector('[data-test-flow]').textContent = customFlow
       ? (isIndonesian ? 'Jalankan uji' : 'Run test')
-      : (draft.action === 'snap' ? (isIndonesian ? 'Pratinjau data snapshot terakhir' : 'Preview latest snapshot data') : (isIndonesian ? 'Uji API' : 'Run API test'));
+      : (draft.action === 'snap'
+        ? (draft.image_flow?.length ? (isIndonesian ? 'Uji API gambar' : 'Test image API flow') : (isIndonesian ? 'Pratinjau data snapshot terakhir' : 'Preview latest snapshot data'))
+        : (isIndonesian ? 'Uji API' : 'Run API test'));
     panel.querySelector('[data-test-description]').textContent = customFlow
       ? (isIndonesian ? 'Gunakan nilai contoh untuk {{argument}} dan {{sender}}. Uji ini menjalankan alur yang belum disimpan.' : 'Use sample values for {{argument}} and {{sender}}. This test runs the current unsaved flow.')
       : (draft.action === 'snap'
-        ? (isIndonesian ? 'Pratinjau ini membaca data snapshot yang sudah ada. Tidak mengambil snapshot baru.' : 'This previews existing snapshot data. It does not capture a new snapshot.')
+        ? (draft.image_flow?.length
+          ? (isIndonesian ? 'Uji node API gambar untuk melihat field URL yang dapat dipakai pada sumber gambar API.' : 'Test the image API nodes to inspect URL fields for API image sources.')
+          : (isIndonesian ? 'Pratinjau ini membaca data snapshot yang sudah ada. Tidak mengambil snapshot baru.' : 'This previews existing snapshot data. It does not capture a new snapshot.'))
         : (isIndonesian ? 'Uji API baca yang dipakai action ini menggunakan contoh kamera dan pengirim.' : 'This tests the read-only API used by this action with the sample camera and sender.'));
     const container = form.querySelector('[data-flow-list]');
     container.replaceChildren();
-    if (!draft.flow?.length) {
+    const activeFlow = snapImageFlow ? (draft.image_flow || []) : (draft.flow || []);
+    if (!activeFlow.length) {
       const empty = document.createElement('p'); empty.className = 'text-xs text-gray-500'; empty.textContent = 'No nodes yet. Add an API node to start building the flow.'; container.appendChild(empty);
     }
-    (draft.flow || []).forEach((step, index) => {
+    activeFlow.forEach((step, index) => {
       const card = document.createElement('div');
       card.className = 'rounded-lg bg-gray-50 p-3 dark:bg-gray-900';
       const heading = document.createElement('div'); heading.className = 'mb-2 flex justify-between text-xs font-semibold';
       const title = document.createElement('span'); title.textContent = `Node ${index + 1}`;
       const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'inline-flex items-center gap-1.5 text-red-600'; appendIcon(remove, 'Delete'); remove.appendChild(document.createTextNode('Delete'));
-      remove.addEventListener('click', () => { draft.flow.splice(index, 1); drawFlow(); });
+      remove.addEventListener('click', () => { activeFlow.splice(index, 1); drawFlow(); });
       heading.append(title, remove); card.appendChild(heading);
       for (const [key, label, placeholder] of [['name','Output name','camera'],['path','API path','/cctv/resolve-ip'],['params','Query params JSON','{"keyword":"{{argument}}"}']]) {
         const wrapper = document.createElement('label'); wrapper.className = 'mb-2 block text-xs'; wrapper.textContent = label;
@@ -283,7 +369,7 @@
   }
   function openEditor(command = null) {
     originalId = command?.id || null;
-    draft = command ? structuredClone(command) : {id:`custom_${crypto.randomUUID()}`,name:'',trigger:'',aliases:[],required_params:[],action:'text',role:'user',chat_scope:'all',enabled:true,quote_reply:true,description:'',response:'',flow:[]};
+    draft = command ? structuredClone(command) : {id:`custom_${crypto.randomUUID()}`,name:'',trigger:'',aliases:[],required_params:[],action:'text',role:'user',chat_scope:'all',enabled:true,quote_reply:true,description:'',response:'',flow:[],image_flow:[]};
     document.getElementById('editorTitleText').textContent = command ? 'Edit command' : 'New command';
     document.getElementById('editorSubtitle').textContent = command?.trigger || 'Enter a trigger, action, and response.';
     for (const key of ['name','trigger','description','response']) form.elements[key].value = draft[key] || '';
@@ -391,10 +477,18 @@
     setRole(draft.action); setChatScope(draft.action); setResponseTemplateVisibility(draft.action); drawFlow();
   });
   form.querySelector('[data-add-step]').addEventListener('click', () => {
-    draft.flow ||= [];
-    if (draft.flow.length >= 8) { showToast('warning','Maximum 8 API nodes per command.'); return; }
-    draft.flow.push({name:`data${draft.flow.length + 1}`,path:'',params:{}}); drawFlow();
+    const activeFlow = draft.action === 'snap' ? (draft.image_flow ||= []) : (draft.flow ||= []);
+    if (activeFlow.length >= 8) { showToast('warning','Maximum 8 API nodes per command.'); return; }
+    activeFlow.push({name:`data${activeFlow.length + 1}`,path:'',params:{}}); drawFlow();
   });
+  form.querySelectorAll('[data-add-snap-message]').forEach(button => button.addEventListener('click', () => {
+    if (!draft) return;
+    const key = button.dataset.addSnapMessage;
+    draft[key] ||= [];
+    if (draft[key].length >= 10) { showToast('warning','Maximum 10 messages per stage.'); return; }
+    draft[key].push({text:'',image_source_type:'none',image_source:''});
+    drawSnapMessages(key);
+  }));
   function addVariableSuggestion(container, expression, value, formatTimestamp = false) {
     const button = document.createElement('button');
     button.type = 'button';
@@ -516,7 +610,11 @@
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
         body: JSON.stringify({
-          flow: draft.action === 'api_flow' ? (draft.flow || []) : (actionPreviewFlows[draft.action] || []).map(step => ({...step, params:{...step.params}})),
+          flow: draft.action === 'api_flow'
+            ? (draft.flow || [])
+            : (draft.action === 'snap' && draft.image_flow?.length
+              ? draft.image_flow
+              : (actionPreviewFlows[draft.action] || []).map(step => ({...step, params:{...step.params}}))),
           api_token_id: tokenSelect.value,
           argument: form.querySelector('[data-test-argument]').value,
           sender: form.querySelector('[data-test-sender]').value
@@ -548,6 +646,20 @@
         if (typeof step.params === 'string') { try { step.params = JSON.parse(step.params || '{}'); } catch { showToast('error',`Query params for node ${step.name} must be valid JSON.`); return; } }
       }
     }
+    if (draft.action === 'snap') {
+      const stageLists = [draft.processing_messages || [], draft.failure_messages || []];
+      if (stageLists.some(messages => messages.length < 1 || messages.length > 10)) { showToast('warning','Each snapshot stage needs 1 to 10 messages.'); return; }
+      if (stageLists.some(messages => messages.some(item =>
+        (!item.text?.trim() && item.image_source_type === 'none')
+        || (['url','api'].includes(item.image_source_type) && !item.image_source?.trim())
+      ))) { showToast('warning','Each message needs text or an image source.'); return; }
+      if (stageLists.some(messages => messages.some(item => item.image_source_type === 'api')) && !draft.image_flow?.length) {
+        showToast('warning','Add an image API flow before using API result image URLs.'); return;
+      }
+      for (const step of draft.image_flow || []) {
+        if (typeof step.params === 'string') { try { step.params = JSON.parse(step.params || '{}'); } catch { showToast('error',`Query params for node ${step.name} must be valid JSON.`); return; } }
+      }
+    }
     const previousCommands = structuredClone(commands);
     const index = commands.findIndex(item => item.id === originalId);
     if (index >= 0) commands[index] = draft; else commands.push(draft);
@@ -567,10 +679,12 @@
       document.getElementById('editorSubtitle').textContent = draft.trigger || 'Enter a trigger, action, and response.';
       setRole(draft.action);
       setChatScope(draft.action);
+      setResponseTemplateVisibility(draft.action);
       drawFlow();
     }
   });
   load().catch(error => { list.textContent = error.message; });
 })();
+{% endraw %}
 </script>
 {% endblock %}
