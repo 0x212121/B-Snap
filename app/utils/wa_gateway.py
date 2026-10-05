@@ -12,6 +12,8 @@ import logging
 import requests
 import base64
 import mimetypes
+import os
+import time
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
@@ -88,6 +90,8 @@ class WAGatewayService:
     def __init__(self, db: Session = None):
         self.config = GoWAConfig(db)
         self.session = requests.Session()
+        self.send_timeout_seconds = self._bounded_env_int("GOWA_SEND_TIMEOUT_SECONDS", 10, 1, 120)
+        self.send_retries = self._bounded_env_int("GOWA_SEND_RETRIES", 2, 0, 5)
         if self.config.api_key:
             self.session.headers.update(self._auth_headers(self.config.api_key))
             logger.debug("GoWA initialized with authentication")
@@ -95,6 +99,43 @@ class WAGatewayService:
             logger.debug("GoWA initialized without authentication (no API key)")
         if self.config.device_id:
             self.session.headers["X-Device-Id"] = self.config.device_id
+
+    @staticmethod
+    def _bounded_env_int(name: str, default: int, minimum: int, maximum: int) -> int:
+        try:
+            value = int(os.getenv(name, str(default)))
+        except (TypeError, ValueError):
+            logger.warning("Invalid %s; using default %s", name, default)
+            return default
+        if not minimum <= value <= maximum:
+            logger.warning("%s must be between %s and %s; using default %s", name, minimum, maximum, default)
+            return default
+        return value
+
+    def _post_with_retry(self, url: str, **kwargs) -> requests.Response:
+        """Post to GoWA with a bounded timeout and retries for transient failures."""
+        kwargs["timeout"] = self.send_timeout_seconds
+        attempts = self.send_retries + 1
+        for attempt in range(attempts):
+            try:
+                response = self.session.post(url, **kwargs)
+                if response.status_code >= 500 and attempt + 1 < attempts:
+                    logger.warning(
+                        "GoWA returned HTTP %s; retrying send (%s/%s)",
+                        response.status_code, attempt + 1, self.send_retries,
+                    )
+                    time.sleep(min(attempt + 1, 3))
+                    continue
+                return response
+            except (requests.ConnectionError, requests.Timeout):
+                if attempt + 1 >= attempts:
+                    raise
+                logger.warning(
+                    "GoWA send attempt timed out or lost connection; retrying (%s/%s)",
+                    attempt + 1, self.send_retries,
+                )
+                time.sleep(min(attempt + 1, 3))
+        raise RuntimeError("GoWA send failed without a response")
 
     @staticmethod
     def _auth_headers(secret: str) -> Dict[str, str]:
@@ -144,9 +185,9 @@ class WAGatewayService:
             if reply_to:
                 payload["reply_message_id"] = reply_to
             
-            response = self.session.post(self._make_url("/send/message"), json=payload, timeout=30)
+            response = self._post_with_retry(self._make_url("/send/message"), json=payload)
             if response.status_code == 404:
-                response = self.session.post(self._make_url("/api/send-message"), json=payload, timeout=30)
+                response = self._post_with_retry(self._make_url("/api/send-message"), json=payload)
             response.raise_for_status()
             result = response.json()
             
@@ -184,9 +225,9 @@ class WAGatewayService:
             if caption:
                 payload["caption"] = caption
             
-            response = self.session.post(self._make_url("/send/image"), json=payload, timeout=60)
+            response = self._post_with_retry(self._make_url("/send/image"), json=payload)
             if response.status_code == 404:
-                response = self.session.post(self._make_url("/api/send-image"), json=payload, timeout=60)
+                response = self._post_with_retry(self._make_url("/api/send-image"), json=payload)
             response.raise_for_status()
             result = response.json()
             
@@ -223,7 +264,7 @@ class WAGatewayService:
             content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
             with path.open("rb") as file_obj:
                 files = {"image": (path.name, file_obj, content_type)}
-                response = self.session.post(self._make_url("/send/image"), data=data, files=files, timeout=60)
+                response = self._post_with_retry(self._make_url("/send/image"), data=data, files=files)
             response.raise_for_status()
             result = response.json()
             logger.info("WA image sent to %s: %s", phone, result.get("message", result.get("status", "success")))

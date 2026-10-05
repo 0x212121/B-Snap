@@ -199,6 +199,26 @@ ENV_DOCS: Dict[str, Dict[str, Any]] = {
             }
         ]
     },
+    "whatsapp": {
+        "title": "WhatsApp Gateway",
+        "description": "Timeout and retry limits for messages sent through GoWA",
+        "vars": [
+            {
+                "name": "GOWA_SEND_TIMEOUT_SECONDS",
+                "required": False,
+                "default": "10",
+                "description": "Timeout for each outgoing GoWA message request (1 to 120 seconds)",
+                "used_in": ["app/utils/wa_gateway.py"]
+            },
+            {
+                "name": "GOWA_SEND_RETRIES",
+                "required": False,
+                "default": "2",
+                "description": "Retry count for outgoing GoWA messages after a timeout, connection failure, or server error (0 to 5)",
+                "used_in": ["app/utils/wa_gateway.py"]
+            }
+        ]
+    },
     "logging": {
         "title": "Logging Configuration",
         "description": "Logging and monitoring settings",

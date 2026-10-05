@@ -240,6 +240,20 @@ These values are normally saved through the Config UI and stored in the database
 - **Security**: Keep secure
 - **Used In**: `app/utils/wa_gateway.py`
 
+### GOWA_SEND_TIMEOUT_SECONDS
+- **Type**: Integer (seconds)
+- **Default**: `10`
+- **Range**: `1` to `120`
+- **Description**: Per-request timeout for outgoing GoWA text and image messages
+- **Used In**: `app/utils/wa_gateway.py`
+
+### GOWA_SEND_RETRIES
+- **Type**: Integer
+- **Default**: `2`
+- **Range**: `0` to `5`
+- **Description**: Number of retries after a timeout, connection failure, or GoWA server error when sending text and images
+- **Used In**: `app/utils/wa_gateway.py`
+
 ### gowa_default_receiver
 - **Type**: String (comma-separated)
 - **Default**: empty
