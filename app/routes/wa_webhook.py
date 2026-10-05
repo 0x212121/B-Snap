@@ -189,6 +189,47 @@ class WABotHandler:
         self.private_response = False
         self.quote_reply = True
         self.progress_sender: Optional[Callable[[dict[str, str]], Awaitable[dict]]] = None
+        self.action_failed = False
+
+    def _render_action_stage_messages(self, messages: list[dict], argument: str, sender: str,
+                                      error: str = "") -> list[dict[str, str]]:
+        context = {"sender": sender, "argument": argument, "steps": {}}
+        timezone_name = get_current_timezone(self.db)
+        result = []
+        for item in messages:
+            values = {"argument": argument, "sender": sender, "camera": argument, "ip": "", "error": error}
+            text = render_response(render_flow_template(str(item.get("text") or ""), context, timezone_name), **values)
+            image_type = item.get("image_source_type", "none")
+            rendered: dict[str, str] = {"text": text}
+            if image_type in {"url", "api"}:
+                image_url = render_response(render_flow_template(str(item.get("image_source") or ""), context, timezone_name), **values).strip()
+                parsed = urlsplit(image_url)
+                if not parsed.scheme and not parsed.netloc:
+                    public_base = (_config_value(self.db, "app_public_url") or "").strip()
+                    if public_base:
+                        image_url = urljoin(public_base.rstrip("/") + "/", image_url.lstrip("/"))
+                        parsed = urlsplit(image_url)
+                if parsed.scheme.lower() in {"http", "https"} and parsed.netloc:
+                    rendered["image_url"] = image_url
+            elif image_type == "last_snapshot":
+                camera = self._find_camera_for_capture(argument) if argument else None
+                snapshot = self._latest_snapshot_with_file(camera.id) if camera else None
+                if snapshot:
+                    rendered["image_path"] = os.path.join("static", "snapshots", snapshot.file_path)
+            if rendered.get("text") or rendered.get("image_url") or rendered.get("image_path"):
+                result.append(rendered)
+        return result
+
+    async def _send_action_stage(self, messages: list[dict], argument: str, sender: str,
+                                 error: str = "") -> None:
+        for item in self._render_action_stage_messages(messages, argument, sender, error):
+            if self.progress_sender:
+                try:
+                    await self.progress_sender(item)
+                except Exception:
+                    logger.exception("Failed to send WhatsApp action-stage message")
+            else:
+                self.outbound_items.append(item)
     
     def parse_command(self, message: str) -> tuple[str, list]:
         """
@@ -241,6 +282,9 @@ class WABotHandler:
                 usage = " ".join(f"<{parameter}>" for parameter in required_params)
                 return f"Required parameters are missing. Usage: {command['trigger']} {usage}"
             action = command.get("action")
+            self.action_failed = False
+            if action != "snap":
+                await self._send_action_stage(command.get("processing_messages") or [], argument, sender)
             if action == "help":
                 enabled = [
                     c for c in commands
@@ -276,8 +320,21 @@ class WABotHandler:
                     )
                 except Exception as exc:
                     logger.warning("WhatsApp B-Snap API flow failed for command %s: %s", command.get("trigger"), exc)
+                    self.action_failed = True
+                    await self._send_action_stage(command.get("failure_messages") or [], argument, sender, str(exc))
+                    if command.get("failure_messages"):
+                        return ""
                     return f"API flow failed: {exc}"
-            return await self._handle_n8n_action(action, sender, argument, command)
+            try:
+                response = await self._handle_n8n_action(action, sender, argument, command)
+            except Exception as exc:
+                logger.exception("WhatsApp system action failed for %s", command.get("trigger"))
+                self.action_failed = True
+                response = f"Action failed: {exc}"
+            if self.action_failed and command.get("failure_messages"):
+                await self._send_action_stage(command["failure_messages"], argument, sender, response)
+                return ""
+            return response
 
         for configured in commands:
             if configured.get("enabled"):
@@ -322,6 +379,36 @@ class WABotHandler:
             None,
         )
 
+    def _snapshot_template_data(self, camera: Camera, snapshot: Snapshot) -> dict:
+        """Build the snapshot object exposed to WhatsApp response templates."""
+        health = self.db.query(CameraHealth).filter(CameraHealth.camera_id == camera.id).first()
+        camera_status = health.status if health else "Unknown"
+        last_online = health.last_online if health else None
+        if last_online and last_online.tzinfo is None:
+            last_online = last_online.replace(tzinfo=timezone.utc)
+        online = camera_status in {"Online", "High Latency"}
+        uptime_seconds = (
+            max(0, int((datetime.now(timezone.utc) - last_online).total_seconds()))
+            if online and last_online else None
+        )
+        return {
+            "filename": os.path.basename(snapshot.file_path),
+            "camera": snapshot.camera_name or camera.hostname,
+            "ip": snapshot.camera_ip or camera.ip or "",
+            "timestamp": snapshot.timestamp.isoformat() if snapshot.timestamp else "",
+            "url": f"/snapshot/file/{snapshot.file_path}",
+            "img_path": snapshot.file_path,
+            "lat": camera.latitude if camera.latitude is not None else "",
+            "long": camera.longitude if camera.longitude is not None else "",
+            "camera_status": camera_status,
+            "uptime": format_uptime_duration(uptime_seconds) if uptime_seconds is not None else "",
+            "uptime_seconds": uptime_seconds,
+            "last_online_at": last_online.isoformat() if last_online else "",
+            "tamper_reason": snapshot.tamper_reason or "",
+            "res": snapshot.resolution or "",
+            "group_name": (", ".join(group.name for group in camera.groups) or (camera.group.name if camera.group else "")),
+        }
+
     def _render_snap_stage_messages(
         self,
         messages: list[dict],
@@ -330,6 +417,7 @@ class WABotHandler:
         argument: str,
         sender: str,
         last_snapshot: Optional[Snapshot] = None,
+        error: str = "Snapshot capture failed",
     ) -> list[dict[str, str]]:
         timezone_name = get_current_timezone(self.db)
         rendered = []
@@ -338,15 +426,24 @@ class WABotHandler:
             "ip": camera.ip or "",
             "argument": argument,
             "sender": sender,
-            "error": "Snapshot capture failed",
+            "error": error,
         }
+        message_context = {**api_context}
+        steps = dict(message_context.get("steps") or {})
+        steps["result"] = {
+            "status_code": 200 if last_snapshot else 404,
+            "body": [self._snapshot_template_data(camera, last_snapshot)] if last_snapshot else [],
+        }
+        message_context["steps"] = steps
+        if last_snapshot and steps["result"]["body"]:
+            values.update(steps["result"]["body"][0])
         for item in messages:
-            text = render_flow_template(str(item.get("text") or ""), api_context, timezone_name)
+            text = render_flow_template(str(item.get("text") or ""), message_context, timezone_name)
             text = render_response(text, **values)
             image_type = item.get("image_source_type", "none")
             outbound_item: dict[str, str] = {"text": text}
             if image_type in {"url", "api"}:
-                image_url = render_flow_template(str(item.get("image_source") or ""), api_context, timezone_name)
+                image_url = render_flow_template(str(item.get("image_source") or ""), message_context, timezone_name)
                 image_url = render_response(image_url, **values).strip()
                 if image_type == "api":
                     api_path = unquote(image_url)
@@ -387,6 +484,7 @@ class WABotHandler:
         template = command.get("response", "")
         if action in ("cctv", "snap"):
             if not argument:
+                self.action_failed = True
                 return f"Usage: {command['trigger']} hostname prefix, camera name, or IP address"
             if action == "cctv":
                 hostname_prefix = argument.split(maxsplit=1)[0]
@@ -403,6 +501,7 @@ class WABotHandler:
                     if len(sent_items) == 5:
                         break
                 if not sent_items:
+                    self.action_failed = True
                     return "No snapshot is available for the matching cameras."
                 self.media_items = sent_items
                 self.media_path = sent_items[0]["path"]
@@ -419,13 +518,35 @@ class WABotHandler:
             )
             if not camera:
                 if action == "snap":
+                    self.action_failed = True
                     return f"Camera hostname or IP '{argument}' was not found or is inaccessible."
+                self.action_failed = True
                 return f"Camera '{argument}' was not found or is inaccessible."
             if action == "cctv":
                 snapshot = (self.db.query(Snapshot).filter(Snapshot.camera_id == camera.id, Snapshot.deleted_at.is_(None)).order_by(Snapshot.timestamp.desc()).first())
             else:
                 snapshot = None
             if action == "snap":
+                health = self.db.query(CameraHealth).filter(CameraHealth.camera_id == camera.id).first()
+                camera_status = health.status if health else "Unknown"
+                if camera_status not in {"Online", "High Latency"}:
+                    failure_messages = normalize_snap_stage_messages(
+                        command.get("failure_messages"),
+                        command.get("failure_response"),
+                        "Camera is offline. Sending the latest saved snapshot if available.",
+                        "last_snapshot",
+                    )
+                    previous_snapshot = self._latest_snapshot_with_file(camera.id)
+                    self.outbound_items.extend(self._render_snap_stage_messages(
+                        failure_messages,
+                        {"sender": sender, "argument": argument, "steps": {}},
+                        camera,
+                        argument,
+                        sender,
+                        previous_snapshot,
+                        error=f"{camera_status} (offline)",
+                    ))
+                    return ""
                 api_context = {"sender": sender, "argument": argument, "steps": {}}
                 if command.get("image_flow"):
                     try:
@@ -475,37 +596,13 @@ class WABotHandler:
                     ))
                     return ""
             if not snapshot:
+                self.action_failed = True
                 return "No snapshot is available for this camera."
-            health = self.db.query(CameraHealth).filter(CameraHealth.camera_id == camera.id).first()
-            camera_status = health.status if health else "Unknown"
-            last_online = health.last_online if health else None
-            if last_online and last_online.tzinfo is None:
-                last_online = last_online.replace(tzinfo=timezone.utc)
-            online = camera_status in {"Online", "High Latency"}
-            uptime_seconds = (
-                max(0, int((datetime.now(timezone.utc) - last_online).total_seconds()))
-                if online and last_online else None
-            )
-            snapshot_data = {
-                "filename": os.path.basename(snapshot.file_path),
-                "camera": snapshot.camera_name,
-                "ip": snapshot.camera_ip,
-                "timestamp": snapshot.timestamp.isoformat() if snapshot.timestamp else "",
-                "url": f"/snapshot/file/{snapshot.file_path}",
-                "img_path": snapshot.file_path,
-                "lat": str(camera.latitude or None),
-                "long": str(camera.longitude or None),
-                "camera_status": camera_status,
-                "uptime": format_uptime_duration(uptime_seconds) if uptime_seconds is not None else None,
-                "uptime_seconds": uptime_seconds,
-                "last_online_at": last_online.isoformat() if last_online else None,
-                "tamper_reason": snapshot.tamper_reason,
-                "res": snapshot.resolution,
-                "group_name": (", ".join(group.name for group in camera.groups) or (camera.group.name if camera.group else "")),
-            }
+            snapshot_data = self._snapshot_template_data(camera, snapshot)
             context = {"argument": argument, "sender": sender, "steps": {"result": {"status_code": 200, "body": [snapshot_data]}}}
             local_path = os.path.join("static", "snapshots", snapshot.file_path)
             if not os.path.isfile(local_path):
+                self.action_failed = True
                 return "The snapshot file was not found on the server."
             self.media_path = local_path
             self.media_caption = self._render_action_response(
@@ -522,6 +619,7 @@ class WABotHandler:
             return ""
         if action == "ping":
             if not argument:
+                self.action_failed = True
                 return "Usage: /ping IP address or hostname"
             target = argument.split()[0]
             try:
@@ -536,16 +634,19 @@ class WABotHandler:
                 return "\n".join(replies)
             except Exception as exc:
                 logger.warning("WhatsApp ping failed for %s: %s", target, exc)
+                self.action_failed = True
                 return f"Ping failed for {target}: {exc}"
         if action == "edit":
             match = re.match(r"([^,]+)", argument)
             hostname = match.group(1).strip() if match else ""
             camera = self.db.query(Camera).filter(Camera.hostname.ilike(hostname)).first()
             if not camera:
+                self.action_failed = True
                 return f"Camera '{hostname}' was not found."
             fields = {key: re.search(rf"{key}\s*:\s*([^,]+)", argument, re.I) for key in ("user", "pass", "ip", "port", "status", "group")}
             for key in ("user", "pass"):
                 if not fields[key]:
+                    self.action_failed = True
                     return f"The {key} parameter is required. Usage: /edit {hostname}, user: ..., pass: ..., ip: ..., port: ..., status: ..., group: ..."
             camera.username = fields["user"].group(1).strip()
             camera.password = fields["pass"].group(1).strip()
@@ -555,16 +656,19 @@ class WABotHandler:
                 try:
                     camera.port = int(fields["port"].group(1).strip())
                 except ValueError:
+                    self.action_failed = True
                     return "Port must be a number."
             if fields["status"]:
                 status = fields["status"].group(1).strip()
                 if status not in {"Active", "Deactivated", "Maintenance", "Restricted", "Standalone"}:
+                    self.action_failed = True
                     return "Invalid status. Use Active, Deactivated, Maintenance, Restricted, or Standalone."
                 camera.status = status
             if fields["group"]:
                 group_name = fields["group"].group(1).strip()
                 group = self.db.query(CameraGroup).filter(CameraGroup.name.ilike(group_name)).first()
                 if not group:
+                    self.action_failed = True
                     return f"Group '{group_name}' was not found."
                 camera.group_id = group.id
             self.db.flush()
@@ -582,27 +686,33 @@ class WABotHandler:
         if action in ("whitelist_add", "whitelist_remove"):
             parts = argument.split(maxsplit=1)
             if not parts:
+                self.action_failed = True
                 return "Invalid whitelist format. Use a number in the format 628xxxxxxxxxx."
             phone = re.sub(r"\D", "", parts[0])
             if phone.startswith("08"):
                 phone = "628" + phone[1:]
             if not re.fullmatch(r"628[1-9]\d{7,12}", phone):
+                self.action_failed = True
                 return "Invalid phone number. Use the format 628xxxxxxxxxx."
             entry = self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == phone).first()
             if action == "whitelist_add":
                 if entry:
+                    self.action_failed = True
                     return f"Number {phone} is already on the whitelist."
                 name = parts[1].strip() if len(parts) > 1 else phone
                 self.db.add(WhatsappWhitelist(phone_number=phone, name=name[:100], role=RoleEnum.user))
                 self.db.flush()
             else:
                 if phone == sender:
+                    self.action_failed = True
                     return "You cannot remove your own number from the whitelist."
                 if not entry:
+                    self.action_failed = True
                     return f"Number {phone} was not found."
                 self.db.delete(entry)
                 self.db.flush()
             return render_response(template, phone=phone, argument=argument, sender=sender)
+        self.action_failed = True
         return "This command is not supported."
 
     @staticmethod
@@ -874,10 +984,10 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
             failed_sends = []
             for index, media_item in enumerate(media_items):
                 send_result = await run_gateway_blocking(
-                    wa_service.send_image_file,
+                    _send_wa_message_item,
+                    wa_service,
                     recipient,
-                    media_item["path"],
-                    media_item.get("caption"),
+                    {"image_path": media_item["path"], "text": media_item.get("caption") or ""},
                     reply_to if index == 0 else None,
                 )
                 if not send_result.get("success"):

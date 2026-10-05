@@ -136,7 +136,7 @@
         </label>
         <p class="mt-1 text-xs text-gray-500"><span>Use the array mapper after testing an API to format repeating items as clean rows.</span> <span>Normalize a database timestamp with</span> <code>{% raw %}{{steps.data.body.updated_at|datetime}}{% endraw %}</code><span>; it uses the B-Snap timezone.</span></p>
       </div>
-      <div data-snap-stage-panel class="hidden space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+      <div data-snap-stage-panel class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
         <div>
           <div class="mb-2 flex items-center justify-between"><span data-processing-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Processing messages</span><button type="button" data-add-snap-message="processing_messages" class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
           <div data-snap-message-list="processing_messages" class="space-y-2"></div>
@@ -145,7 +145,7 @@
           <div class="mb-2 flex items-center justify-between"><span data-failure-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Failure / fallback messages</span><button type="button" data-add-snap-message="failure_messages" class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
           <div data-snap-message-list="failure_messages" class="space-y-2"></div>
         </div>
-        <p class="text-xs text-gray-500">Image sources: direct URL, API result URL, or latest saved snapshot. API result URLs use the image API flow below. Text placeholders: <code>{% raw %}{{camera}}{% endraw %}</code>, <code>{% raw %}{{ip}}{% endraw %}</code>, <code>{% raw %}{{argument}}{% endraw %}</code>, <code>{% raw %}{{sender}}{% endraw %}</code>.</p>
+        <p class="text-xs text-gray-500">These messages are optional for all actions; `/snap` keeps its processing and fallback behavior. Image sources: direct URL, API result URL (for `/snap`), or latest saved snapshot. Text placeholders: <code>{% raw %}{{camera}}{% endraw %}</code>, <code>{% raw %}{{ip}}{% endraw %}</code>, <code>{% raw %}{{argument}}{% endraw %}</code>, <code>{% raw %}{{sender}}{% endraw %}</code>, <code>{% raw %}{{error}}{% endraw %}</code>.</p>
       </div>
       <p class="inline-flex items-center gap-1.5 text-xs text-gray-500">{{ icon_lock("h-3.5 w-3.5") }}<span data-role></span></p>
       <div class="flex justify-end gap-2 border-t border-gray-200 pt-4 dark:border-gray-700">
@@ -248,7 +248,7 @@
     const usesTemplate = action !== 'ping';
     const isSnap = action === 'snap';
     form.querySelector('[data-response-panel]').classList.toggle('hidden', !usesTemplate);
-    form.querySelector('[data-snap-stage-panel]').classList.toggle('hidden', !isSnap);
+    form.querySelector('[data-snap-stage-panel]').classList.remove('hidden');
     form.elements.response.required = usesTemplate;
     const isIndonesian = document.documentElement.lang === 'id';
     if (isSnap) {
@@ -258,6 +258,11 @@
       if (!Array.isArray(draft.failure_messages) || !draft.failure_messages.length) {
         draft.failure_messages = [{text:isIndonesian ? 'Gagal mengambil snapshot baru untuk {{camera}}. Mengirim snapshot terakhir jika tersedia.' : 'Could not capture a new snapshot for {{camera}}. Sending the latest available snapshot if one exists.',image_source_type:'last_snapshot',image_source:''}];
       }
+      drawSnapMessages('processing_messages');
+      drawSnapMessages('failure_messages');
+    } else {
+      if (!Array.isArray(draft.processing_messages)) draft.processing_messages = [];
+      if (!Array.isArray(draft.failure_messages)) draft.failure_messages = [];
       drawSnapMessages('processing_messages');
       drawSnapMessages('failure_messages');
     }
@@ -646,17 +651,18 @@
         if (typeof step.params === 'string') { try { step.params = JSON.parse(step.params || '{}'); } catch { showToast('error',`Query params for node ${step.name} must be valid JSON.`); return; } }
       }
     }
-    if (draft.action === 'snap') {
+    {
       const stageLists = [draft.processing_messages || [], draft.failure_messages || []];
-      if (stageLists.some(messages => messages.length < 1 || messages.length > 10)) { showToast('warning','Each snapshot stage needs 1 to 10 messages.'); return; }
+      if (draft.action === 'snap' && stageLists.some(messages => messages.length < 1 || messages.length > 10)) { showToast('warning','Each snapshot stage needs 1 to 10 messages.'); return; }
+      if (stageLists.some(messages => messages.length > 10)) { showToast('warning','Each stage supports up to 10 messages.'); return; }
       if (stageLists.some(messages => messages.some(item =>
         (!item.text?.trim() && item.image_source_type === 'none')
         || (['url','api'].includes(item.image_source_type) && !item.image_source?.trim())
       ))) { showToast('warning','Each message needs text or an image source.'); return; }
-      if (stageLists.some(messages => messages.some(item => item.image_source_type === 'api')) && !draft.image_flow?.length) {
+      if (draft.action === 'snap' && stageLists.some(messages => messages.some(item => item.image_source_type === 'api')) && !draft.image_flow?.length) {
         showToast('warning','Add an image API flow before using API result image URLs.'); return;
       }
-      for (const step of draft.image_flow || []) {
+      for (const step of draft.action === 'snap' ? (draft.image_flow || []) : []) {
         if (typeof step.params === 'string') { try { step.params = JSON.parse(step.params || '{}'); } catch { showToast('error',`Query params for node ${step.name} must be valid JSON.`); return; } }
       }
     }

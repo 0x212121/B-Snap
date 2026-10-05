@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed WhatsApp Bot Builder rendering by preventing Jinja from evaluating JavaScript response-template placeholders, which could redirect the user to login and clear session cookies.
+- Check camera online status before starting a WhatsApp `/snap` capture; offline or unknown cameras use the configured failure/fallback messages. Keep text attached as the image caption and send GoWA URL images using its documented multipart format.
+- Populate snapshot-stage template context from the latest saved snapshot and resolve bare snapshot fields and `|datetime` values inside `#each` blocks.
 
 ### Changed
 
@@ -16,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Extended configurable WhatsApp processing and failure/fallback message lists to every system action; these stages are optional outside `/snap`.
 - Added admin visibility into recent inbound/outbound WhatsApp gateway statuses and a tabbed Bot Builder layout with contained command and message lists.
 - Unmatched WhatsApp messages are ignored; the bot no longer sends a fallback response.
 - Corrected Top 10 command analytics to count recognized WhatsApp command invocations with arguments; credential values are redacted, and GoWA retry IDs use a dedicated message-log field instead of command-log marker rows.

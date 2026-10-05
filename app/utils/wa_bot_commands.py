@@ -37,8 +37,11 @@ def normalize_snap_stage_messages(
     legacy_text: Any = "",
     default_text: str = "",
     default_image_type: str = "none",
+    allow_empty: bool = False,
 ) -> list[dict[str, str]]:
-    """Validate ordered text/image messages used by snapshot command stages."""
+    """Validate ordered text/image messages used by command stages."""
+    if allow_empty and (value is None or value == []):
+        return []
     if value is None:
         text = str(legacy_text or default_text).strip()
         value = [{
@@ -47,7 +50,7 @@ def normalize_snap_stage_messages(
             "image_source": "",
         }]
     if not isinstance(value, list) or not 1 <= len(value) <= 10:
-        raise ValueError("Setiap tahap snap harus memiliki 1 sampai 10 pesan")
+        raise ValueError("Setiap tahap pesan harus memiliki 1 sampai 10 pesan")
     normalized = []
     for index, item in enumerate(value, start=1):
         if not isinstance(item, dict):
@@ -102,6 +105,9 @@ def get_command_settings(db: Session) -> list[dict[str, Any]]:
                         )
                         image_flow = item.get("image_flow") or []
                         item["image_flow"] = normalize_flow(image_flow) if image_flow else []
+                    else:
+                        item["processing_messages"] = normalize_snap_stage_messages(item.get("processing_messages"), allow_empty=True)
+                        item["failure_messages"] = normalize_snap_stage_messages(item.get("failure_messages"), allow_empty=True)
                     result.append(item)
                 for item in configured:
                     if not isinstance(item, dict) or not str(item.get("id", "")).startswith("custom_"):
@@ -116,12 +122,12 @@ def get_command_settings(db: Session) -> list[dict[str, Any]]:
                         processing_messages = normalize_snap_stage_messages(
                             item.get("processing_messages"), item.get("processing_response"),
                             "Snapshot capture for {{camera}} is in progress. Please wait.",
-                        ) if action == "snap" else []
+                        ) if action == "snap" else normalize_snap_stage_messages(item.get("processing_messages"), allow_empty=True)
                         failure_messages = normalize_snap_stage_messages(
                             item.get("failure_messages"), item.get("failure_response"),
                             "Could not capture a new snapshot for {{camera}}. Sending the latest available snapshot if one exists.",
                             "last_snapshot",
-                        ) if action == "snap" else []
+                        ) if action == "snap" else normalize_snap_stage_messages(item.get("failure_messages"), allow_empty=True)
                     except ValueError:
                         continue
                     result.append({**item, "action": action, "role": CUSTOM_ACTION_ROLES[action],
@@ -179,6 +185,13 @@ def save_command_settings(db: Session, commands: list[dict[str, Any]]) -> list[d
                 for message in entry["processing_messages"] + entry["failure_messages"]
             ) and not entry.get("image_flow"):
                 raise ValueError("Pesan dengan gambar API harus memiliki minimal satu node image API flow")
+        else:
+            entry["processing_messages"] = normalize_snap_stage_messages(
+                item.get("processing_messages"), allow_empty=True
+            )
+            entry["failure_messages"] = normalize_snap_stage_messages(
+                item.get("failure_messages"), allow_empty=True
+            )
         entry["enabled"] = bool(entry.get("enabled", True))
         entry["quote_reply"] = bool(entry.get("quote_reply", True))
         entry["chat_scope"] = normalize_chat_scope(entry["action"], entry.get("chat_scope", item.get("chat_scope")))

@@ -224,18 +224,28 @@ class WAGatewayService:
             return {"success": False, "error": "GoWA not configured"}
         
         try:
-            payload = {
-                "phone": phone,
-                "image": image_url,
-            }
+            if "@" not in phone:
+                phone = f"{phone}@s.whatsapp.net"
+            payload = {"phone": phone, "image_url": image_url}
             if caption:
                 payload["caption"] = caption
             if reply_to:
                 payload["reply_message_id"] = reply_to
-            
-            response = self._post_with_retry(self._make_url("/send/image"), json=payload)
+
+            # GoWA documents /send/image as multipart/form-data, including when
+            # the image is supplied by URL. Encode each scalar form field as a
+            # multipart part so caption is parsed the same as file uploads.
+            multipart_fields = {
+                key: (None, str(value)) for key, value in payload.items()
+            }
+            response = self._post_with_retry(self._make_url("/send/image"), files=multipart_fields)
             if response.status_code == 404:
-                response = self._post_with_retry(self._make_url("/api/send-image"), json=payload)
+                legacy_payload = {"phone": phone, "image": image_url}
+                if caption:
+                    legacy_payload["caption"] = caption
+                if reply_to:
+                    legacy_payload["reply_message_id"] = reply_to
+                response = self._post_with_retry(self._make_url("/api/send-image"), json=legacy_payload)
             response.raise_for_status()
             result = response.json()
             

@@ -16,7 +16,7 @@ import pytest_asyncio
 from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from httpx import AsyncClient
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -75,7 +75,7 @@ def db_session() -> Generator[Session, None, None]:
     
     # Enable foreign key constraints for SQLite
     if "sqlite" in str(connection.engine.url):
-        session.execute("PRAGMA foreign_keys=ON")
+        session.execute(text("PRAGMA foreign_keys=ON"))
     
     yield session
     

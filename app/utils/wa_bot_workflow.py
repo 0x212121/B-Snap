@@ -26,6 +26,9 @@ FLOW_EACH_PATTERN = re.compile(
     r"(.*?)\{\{/each\}\}",
     re.DOTALL,
 )
+FLOW_LOCAL_VARIABLE_PATTERN = re.compile(
+    r"\{\{(?P<name>[a-zA-Z][a-zA-Z0-9_-]*)(?P<datetime>\|datetime)?\}\}"
+)
 MAX_FLOW_TEMPLATE_ITEMS = 50
 MAX_RENDERED_RESPONSE_CHARS = 10_000
 
@@ -209,11 +212,22 @@ def render_flow_template(
         rendered_items = []
         for index, item in enumerate(collection[:MAX_FLOW_TEMPLATE_ITEMS]):
             item_context = {**context, "this": item, "@index": index, "@index1": index + 1}
-            rendered_items.append(
-                _render_template_variables(match.group(2), item_context, timezone_name)
+            item_template = FLOW_LOCAL_VARIABLE_PATTERN.sub(
+                lambda variable: (
+                    _format_datetime_value(item[variable.group("name")], timezone_name)
+                    if variable.group("datetime")
+                    else _resolve_expression_value_to_string(item[variable.group("name")])
+                )
+                if isinstance(item, dict) and variable.group("name") in item
+                else variable.group(0),
+                match.group(2),
             )
+            rendered_items.append(_render_template_variables(item_template, item_context, timezone_name))
         return "".join(rendered_items)
 
     rendered = FLOW_EACH_PATTERN.sub(render_each, template)
+    # Treat a common malformed trailing close as syntax rather than displaying
+    # the template marker to the recipient (for example, `{{/each)` at EOF).
+    rendered = re.sub(r"\{\{/each\)(?=\s*$)", "", rendered)
     rendered = _render_template_variables(rendered, context, timezone_name)
     return rendered[:MAX_RENDERED_RESPONSE_CHARS]
