@@ -1,5 +1,9 @@
 (function () {
   const translations = {
+    "More": "Lainnya", "Devices": "Perangkat", "Notifications": "Notifikasi",
+    "Help & developer": "Bantuan & pengembang", "Toggle theme": "Ubah tema",
+    "Toggle navigation": "Buka/tutup navigasi", "Skip to content": "Lewati ke konten",
+    "Opens in a new tab": "Terbuka di tab baru",
     "Monitoring": "Pemantauan", "Administration": "Administrasi", "Dashboard": "Dasbor",
     "Cameras": "Kamera", "Camera": "Kamera", "Camera Groups": "Grup Kamera",
     "Groups": "Grup", "NVRs": "NVR", "NVR Management": "Manajemen NVR",

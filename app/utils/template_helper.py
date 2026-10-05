@@ -30,72 +30,193 @@ ICONS = {
     "mail-open": '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.2 8.4c.5.38.8.97.8 1.6v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 .8-1.6l8-6a2 2 0 0 1 2.4 0l8 6Z"/><path d="m22 10-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 10"/></svg>',
 }
 
-# Struktur nav_items dengan nama icon
+# Group existing destinations by user task; preserve URLs and per-item role restrictions.
 nav_items = [
     {
         "label": "Monitoring",
-        "icon": "activity",
+        "primary": True,
         "roles": ["admin", "operator", "viewer"],
         "items": [
-            {"label": "Maps", "href": "/maps", "icon": "map", "roles": ["admin", "operator", "viewer"]},
-            {"label": "Snapshots", "href": "/snap_gallery", "icon": "image", "roles": ["admin", "operator"]},
-            {"label": "Videos", "href": "/videos", "icon": "video", "roles": ["admin", "operator"]},
+            {
+                "label": "Maps",
+                "href": "/maps",
+                "icon": "map",
+                "roles": ["admin", "operator", "viewer"],
+            },
+            {
+                "label": "Snapshots",
+                "href": "/snap_gallery",
+                "icon": "image",
+                "roles": ["admin", "operator"],
+            },
+            {
+                "label": "Videos",
+                "href": "/videos",
+                "icon": "video",
+                "roles": ["admin", "operator"],
+            },
+            {
+                "label": "Analytics",
+                "href": "/analytics",
+                "icon": "bar-chart",
+                "roles": ["admin"],
+            },
         ],
     },
     {
         "label": "Devices",
-        "icon": "hard-drive",
+        "primary": False,
         "roles": ["admin"],
         "items": [
-            {"label": "Cameras", "href": "/cameras", "icon": "camera", "roles": ["admin"]},
-            {"label": "NVRs", "href": "/nvrs", "icon": "hard-drive", "roles": ["admin"]},
-            {"label": "Record Checks", "href": "/admin/record-checks", "icon": "folder-check", "roles": ["admin"]},
-            {"label": "Status", "href": "/health", "icon": "activity", "roles": ["admin"]},
+            {
+                "label": "Cameras",
+                "href": "/cameras",
+                "icon": "camera",
+                "roles": ["admin"],
+            },
+            {
+                "label": "NVRs",
+                "href": "/nvrs",
+                "icon": "hard-drive",
+                "roles": ["admin"],
+            },
+            {
+                "label": "Camera Groups",
+                "href": "/admin/camera-groups",
+                "icon": "grid",
+                "roles": ["admin"],
+            },
+            {
+                "label": "Record Checks",
+                "href": "/admin/record-checks",
+                "icon": "folder-check",
+                "roles": ["admin"],
+            },
+            {
+                "label": "Status",
+                "href": "/health",
+                "icon": "activity",
+                "roles": ["admin"],
+            },
+        ],
+    },
+    {
+        "label": "Notifications",
+        "primary": False,
+        "roles": ["admin"],
+        "items": [
+            {
+                "label": "WhatsApp Bot",
+                "href": "/admin/wa-bot",
+                "icon": "book-open",
+                "roles": ["admin"],
+            },
+            {
+                "label": "WA Whitelist",
+                "href": "/admin/whitelist",
+                "icon": "shield-check",
+                "roles": ["admin"],
+            },
+            {
+                "label": "Email Recipients",
+                "href": "/admin/recipients",
+                "icon": "mail",
+                "roles": ["admin"],
+            },
+            {
+                "label": "Email Templates",
+                "href": "/admin/email-templates",
+                "icon": "mail-open",
+                "roles": ["admin"],
+            },
         ],
     },
     {
         "label": "Administration",
-        "icon": "settings",
+        "primary": False,
         "roles": ["admin"],
         "items": [
-            {"label": "Users", "href": "/admin/users", "icon": "users", "roles": ["admin"]},
-            {"label": "Camera Groups", "href": "/admin/camera-groups", "icon": "grid", "roles": ["admin"]},
-            {"label": "WA Whitelist", "href": "/admin/whitelist", "icon": "shield-check", "roles": ["admin"]},
-            {"label": "WhatsApp Bot", "href": "/admin/wa-bot", "icon": "book-open", "roles": ["admin"]},
-            {"label": "Email Recipients", "href": "/admin/recipients", "icon": "mail", "roles": ["admin"]},
-            {"label": "Email Templates", "href": "/admin/email-templates", "icon": "mail-open", "roles": ["admin"]},
-            {"label": "Configuration", "href": "/admin/config", "icon": "settings", "roles": ["admin"]},
-            {"label": "Job Management", "href": "/admin/jobs", "icon": "clock", "roles": ["admin"]},
-            {"label": "Power BI Record Checks", "href": "/admin/powerbi-record-checks", "icon": "bar-chart", "roles": ["admin"]},
-            {"label": "Trash Management", "href": "/admin/trash", "icon": "trash", "roles": ["admin"]},
+            {
+                "label": "Users",
+                "href": "/admin/users",
+                "icon": "users",
+                "roles": ["admin"],
+            },
+            {
+                "label": "Configuration",
+                "href": "/admin/config",
+                "icon": "settings",
+                "roles": ["admin"],
+            },
+            {
+                "label": "Job Management",
+                "href": "/admin/jobs",
+                "icon": "clock",
+                "roles": ["admin"],
+            },
+            {
+                "label": "Power BI Record Checks",
+                "href": "/admin/powerbi-record-checks",
+                "icon": "bar-chart",
+                "roles": ["admin"],
+            },
+            {
+                "label": "Trash Management",
+                "href": "/admin/trash",
+                "icon": "trash",
+                "roles": ["admin"],
+            },
         ],
     },
     {
         "label": "Logs",
-        "icon": "file-text",
+        "primary": False,
         "roles": ["admin"],
         "items": [
-            {"label": "Logs Viewer", "href": "/logs", "icon": "file-text", "roles": ["admin"]},
-            {"label": "Audit Logs", "href": "/audit-logs", "icon": "search", "roles": ["admin"]},
-            {"label": "Email Logs", "href": "/email-logs", "icon": "mail", "roles": ["admin"]},
+            {
+                "label": "Logs Viewer",
+                "href": "/logs",
+                "icon": "file-text",
+                "roles": ["admin"],
+            },
+            {
+                "label": "Audit Logs",
+                "href": "/audit-logs",
+                "icon": "search",
+                "roles": ["admin"],
+            },
+            {
+                "label": "Email Logs",
+                "href": "/email-logs",
+                "icon": "mail",
+                "roles": ["admin"],
+            },
         ],
     },
     {
-        "label": "Developer",
-        "icon": "book-open",
+        "label": "Help & developer",
+        "primary": False,
         "roles": ["admin"],
         "items": [
-            {"label": "API Docs", "href": "/developer/docs", "icon": "book-open", "roles": ["admin"]},
-            {"label": "Environment", "href": "/docs/environment", "icon": "settings", "roles": ["admin"]},
-            {"label": "Documentation", "href": "/documentation/index.html", "icon": "git-branch", "roles": ["admin"], "external": True},
-        ],
-    },
-    {
-        "label": "Analytics",
-        "icon": "bar-chart",
-        "roles": ["admin"],
-        "items": [
-            {"label": "Dashboard", "href": "/analytics", "icon": "bar-chart", "roles": ["admin"]},
+            {
+                "label": "API Docs",
+                "href": "/developer/docs",
+                "icon": "book-open",
+                "roles": ["admin"],
+            },
+            {
+                "label": "Environment",
+                "href": "/docs/environment",
+                "icon": "settings",
+                "roles": ["admin"],
+            },
+            {
+                "label": "Documentation",
+                "href": "/documentation/index.html",
+                "icon": "git-branch",
+                "roles": ["admin"],
+                "external": True,
+            },
         ],
     },
 ]
@@ -144,7 +265,7 @@ class TemplatesWithExtras(Jinja2Templates):
                     item_path = item.get("href", "")
                     is_active = False
                     if current_path and item_path and item_path != "/":
-                        is_active = current_path.startswith(item_path)
+                        is_active = current_path == item_path or current_path.startswith(item_path + "/")
                     elif current_path == "/" and item_path == "/":
                         is_active = True
                     
@@ -170,6 +291,7 @@ class TemplatesWithExtras(Jinja2Templates):
                     
                     filtered_nav.append({
                         "label": section.get("label", ""),
+                        "primary": section.get("primary", False),
                         "icon": section_icon_svg,  # SVG HTML string
                         "is_active": section_active,
                         "items": filtered_items,

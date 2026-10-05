@@ -1,3 +1,34 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .nav-link {
+    @apply flex min-h-[44px] items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-600 dark:text-gray-300;
+    @apply hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-white;
+    @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600;
+  }
+  .nav-link-active {
+    @apply bg-gray-100 font-semibold text-gray-900 dark:bg-gray-700 dark:text-white;
+    box-shadow: inset 0 -2px 0 #64748b;
+  }
+  .nav-secondary-trigger {
+    @apply text-gray-500 dark:text-gray-400;
+  }
+  .nav-secondary-trigger[data-active="true"] {
+    @apply font-medium text-gray-900 dark:text-white;
+  }
+  .nav-group-label {
+    @apply px-3 pb-2 text-xs font-semibold text-gray-500 dark:text-gray-400;
+  }
+  .nav-more-panel {
+    @apply absolute right-0 z-50 mt-2 grid w-[640px] grid-cols-3 gap-x-4 gap-y-6 rounded-lg border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-800;
+    max-height: calc(100dvh - 96px);
+    overflow-y: auto;
+  }
+  #site-header a:focus-visible,
+  #site-header button:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+  }
+}

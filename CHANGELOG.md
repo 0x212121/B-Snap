@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Simplify global navigation with direct monitoring links, grouped secondary destinations under More, compact active states, and accessible mobile accordions. Move desktop theme/language preferences into the account menu and preserve all destination URLs and role restrictions.
+
 - Run WhatsApp camera captures and GoWA sends in separate bounded thread pools so blocking I/O does not stall the webhook event loop; the shared camera lock prevents overlapping captures for the same camera across workers.
 
 ### Added

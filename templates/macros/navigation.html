@@ -1,117 +1,75 @@
+{% macro nav_link(item) %}
+  <a href="{{ item['href'] }}" class="nav-link {{ 'nav-link-active' if item['is_active'] else '' }}"
+     {% if item['is_active'] %}aria-current="page"{% endif %}
+     {% if item.get('external') %}target="_blank" rel="noopener noreferrer"{% endif %}>
+    <span>{{ item['label'] }}</span>
+    {% if item.get('external') %}<span class="text-xs" aria-label="Opens in a new tab">↗</span>{% endif %}
+  </a>
+{% endmacro %}
+
 {% macro render_nav(nav_items, request) %}
   {% if nav_items %}
-    <nav class="hidden md:flex items-center space-x-1">
-      {% for section in nav_items %}
-        <div x-data="{ open: false }" @click.away="open = false" class="relative">
-          <button 
-            @click="open = !open" 
-            class="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer
-                   {% if section['is_active'] %}text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400{% else %}text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}"
-          >
-            {% if section['icon'] %}
-              <span class="flex-shrink-0 w-4 h-4">{{ section['icon']|safe }}</span>
-            {% endif %}
-            <span class="whitespace-nowrap">{{ section['label'] }}</span>
-            <svg class="h-4 w-4 transition-transform flex-shrink-0" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
+    {% set secondary = nav_items | rejectattr('primary') | list %}
+    <nav class="hidden lg:flex items-center gap-1" aria-label="Main navigation"
+         @click.outside="navMoreOpen = false"
+         @keydown.escape.stop="if (navMoreOpen) { navMoreOpen = false; $refs.moreButton.focus() }"
+         @focusout="if (!$el.contains($event.relatedTarget)) navMoreOpen = false">
+      {% for section in nav_items if section.get('primary') %}
+        {% for item in section['items'] %}{{ nav_link(item) }}{% endfor %}
+      {% endfor %}
+      {% if secondary %}
+        <div class="relative">
+          <button type="button" class="nav-link nav-secondary-trigger" x-ref="moreButton"
+                  @click="navMoreOpen = !navMoreOpen; userMenuOpen = false"
+                  :aria-expanded="navMoreOpen" aria-controls="desktop-more-navigation"
+                  {% if secondary | selectattr('is_active') | list %}data-active="true"{% endif %}>
+            <span>More</span>
+            <svg class="h-4 w-4" :class="{ 'rotate-180': navMoreOpen }" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
           </button>
-          
-          <div 
-            x-show="open" 
-            x-transition
-            class="absolute left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 border dark:border-gray-700 z-50" 
-            x-cloak
-          >
-            {% for item in section['items'] %}
-              {% if item['is_active'] %}
-                <!-- Active item: tidak bisa di-click -->
-                <span 
-                  class="flex items-center gap-3 px-4 py-2.5 text-sm cursor-default select-none whitespace-nowrap text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 border-r-2 border-blue-500"
-                  aria-current="page"
-                >
-                  {% if item['icon'] %}
-                    <span class="flex-shrink-0 w-4 h-4 text-blue-600">{{ item['icon']|safe }}</span>
-                  {% endif %}
-                  <span class="flex-1 whitespace-nowrap">{{ item['label'] }}</span>
-                </span>
-              {% else %}
-                <!-- Normal item: bisa di-click -->
-                <a 
-                  href="{{ item['href'] }}" 
-                  {% if item.get('external') %}target="_blank" rel="noopener noreferrer"{% endif %}
-                  class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors whitespace-nowrap text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  {% if item['icon'] %}
-                    <span class="flex-shrink-0 w-4 h-4 text-gray-400">{{ item['icon']|safe }}</span>
-                  {% endif %}
-                  <span class="flex-1 whitespace-nowrap">{{ item['label'] }}</span>
-                  {% if item.get('external') %}
-                    <svg class="h-3 w-3 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  {% endif %}
-                </a>
-              {% endif %}
+          <div id="desktop-more-navigation" x-show="navMoreOpen" x-cloak class="nav-more-panel">
+            {% for section in secondary %}
+              <section aria-labelledby="desktop-nav-group-{{ loop.index }}">
+                <h2 id="desktop-nav-group-{{ loop.index }}" class="nav-group-label">{{ section['label'] }}</h2>
+                {% for item in section['items'] %}{{ nav_link(item) }}{% endfor %}
+              </section>
             {% endfor %}
           </div>
         </div>
-      {% endfor %}
+      {% endif %}
     </nav>
   {% endif %}
 {% endmacro %}
 
 {% macro render_mobile_nav(nav_items, request) %}
   {% if nav_items %}
-    <div class="space-y-1">
-      {% for section in nav_items %}
-        <div x-data="{ open: {{ 'true' if section['is_active'] else 'false' }} }" class="space-y-1">
-          <button 
-            @click="open = !open"
-            class="w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer
-                   {% if section['is_active'] %}text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}"
-          >
-            <div class="flex items-center gap-2">
-              {% if section['icon'] %}
-                <span class="flex-shrink-0 w-4 h-4">{{ section['icon']|safe }}</span>
-              {% endif %}
-              <span class="whitespace-nowrap">{{ section['label'] }}</span>
-            </div>
-            <svg class="h-4 w-4 transition-transform flex-shrink-0" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
+    {% set secondary = nav_items | rejectattr('primary') | list %}
+    {% set active = namespace(group=0) %}
+    {% for section in secondary %}{% if section['is_active'] %}{% set active.group = loop.index %}{% endif %}{% endfor %}
+    <nav aria-label="Mobile navigation" x-data="{ openGroup: {{ active.group }} }">
+      <div class="grid grid-cols-2 gap-1 pb-4">
+        {% for section in nav_items if section.get('primary') %}
+          {% for item in section['items'] %}{{ nav_link(item) }}{% endfor %}
+        {% endfor %}
+      </div>
+      {% for section in secondary %}
+        {% set group = loop.index %}
+        <section>
+          <button type="button" class="nav-link w-full justify-between" @click="openGroup = openGroup === {{ group }} ? 0 : {{ group }}"
+                  :aria-expanded="openGroup === {{ group }}" aria-controls="mobile-nav-group-{{ group }}">
+            <span class="font-medium">{{ section['label'] }}</span>
+            <svg class="h-4 w-4" :class="{ 'rotate-180': openGroup === {{ group }} }" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
           </button>
-          
-          <div x-show="open" class="ml-4 space-y-1 border-l-2 border-gray-200 dark:border-gray-700 pl-2">
-            {% for item in section['items'] %}
-              {% if item['is_active'] %}
-                <!-- Active item: tidak bisa di-click -->
-                <span 
-                  class="flex items-center gap-3 px-3 py-2 text-sm rounded-md cursor-default select-none whitespace-nowrap text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 font-medium border-l-2 border-blue-500 -ml-2.5 pl-2.5"
-                  aria-current="page"
-                >
-                  {% if item['icon'] %}
-                    <span class="flex-shrink-0 w-4 h-4 text-blue-600">{{ item['icon']|safe }}</span>
-                  {% endif %}
-                  <span class="whitespace-nowrap">{{ item['label'] }}</span>
-                </span>
-              {% else %}
-                <!-- Normal item: bisa di-click -->
-                <a 
-                  href="{{ item['href'] }}"
-                  {% if item.get('external') %}target="_blank" rel="noopener noreferrer"{% endif %}
-                  class="flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors whitespace-nowrap text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  {% if item['icon'] %}
-                    <span class="flex-shrink-0 w-4 h-4 text-gray-400">{{ item['icon']|safe }}</span>
-                  {% endif %}
-                  <span class="whitespace-nowrap">{{ item['label'] }}</span>
-                </a>
-              {% endif %}
-            {% endfor %}
+          <div id="mobile-nav-group-{{ group }}" x-show="openGroup === {{ group }}" x-cloak class="pl-4 pb-2">
+            {% for item in section['items'] %}{{ nav_link(item) }}{% endfor %}
           </div>
-        </div>
+        </section>
       {% endfor %}
-    </div>
+    </nav>
   {% endif %}
+  <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+    <a class="nav-link" href="/profile">Profile Settings</a>
+    <a class="nav-link" href="/profile?tab=api_keys">API Keys</a>
+    <button type="button" class="nav-link w-full" @click="toggleDark()">Toggle theme</button>
+    <a class="nav-link text-red-600 dark:text-red-400" href="/logout">Logout</a>
+  </div>
 {% endmacro %}
