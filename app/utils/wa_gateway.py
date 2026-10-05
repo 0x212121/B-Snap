@@ -339,8 +339,13 @@ class WAGatewayService:
     def check_connection(self) -> Dict[str, Any]:
         """Check GoWA connection status."""
         if not self.config.is_configured():
-            return {"connected": False, "error": "Not configured"}
+            return {"connected": False, "response_time_ms": None, "error": "Not configured"}
         
+        started_at = time.perf_counter()
+
+        def elapsed_ms() -> int:
+            return max(0, round((time.perf_counter() - started_at) * 1000))
+
         try:
             response = self.session.get(self._make_url("/app/status"), timeout=10)
             if response.status_code == 404:
@@ -352,6 +357,7 @@ class WAGatewayService:
                 logger.error(f"GoWA returned HTML instead of JSON. Status: {response.status_code}")
                 return {
                     "connected": False, 
+                    "response_time_ms": elapsed_ms(),
                     "error": f"GoWA returned HTML (not running or wrong URL). Check if GoWA is running at {self.config.base_url}"
                 }
             
@@ -363,6 +369,7 @@ class WAGatewayService:
                 logger.error(f"GoWA returned invalid JSON: {e}")
                 return {
                     "connected": False,
+                    "response_time_ms": elapsed_ms(),
                     "error": "Invalid response from GoWA (not valid JSON)"
                 }
             
@@ -374,6 +381,7 @@ class WAGatewayService:
                     status_payload.get("is_logged_in", status_payload.get("connected", False)),
                 ),
                 "user": status_payload.get("user", status_payload),
+                "response_time_ms": elapsed_ms(),
                 "error": None
             }
             
@@ -381,14 +389,15 @@ class WAGatewayService:
             logger.error(f"GoWA connection refused: {e}")
             return {
                 "connected": False, 
+                "response_time_ms": elapsed_ms(),
                 "error": f"Cannot connect to GoWA at {self.config.base_url}. Is GoWA running?"
             }
         except requests.exceptions.Timeout as e:
             logger.error(f"GoWA connection timeout: {e}")
-            return {"connected": False, "error": "Connection to GoWA timed out"}
+            return {"connected": False, "response_time_ms": elapsed_ms(), "error": "Connection to GoWA timed out"}
         except Exception as e:
             logger.error(f"GoWA connection check failed: {e}")
-            return {"connected": False, "error": str(e)}
+            return {"connected": False, "response_time_ms": elapsed_ms(), "error": str(e)}
 
     def list_groups(self) -> Dict[str, Any]:
         """List WhatsApp groups available to the connected GoWA account."""

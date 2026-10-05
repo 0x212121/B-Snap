@@ -190,10 +190,16 @@ class WABotHandler:
         self.quote_reply = True
         self.progress_sender: Optional[Callable[[dict[str, str]], Awaitable[dict]]] = None
         self.action_failed = False
+        self.action_api_context: dict = {"steps": {}}
+
+    def _merge_action_context(self, context: dict) -> dict:
+        base = self.action_api_context or {}
+        merged_steps = {**(base.get("steps") or {}), **(context.get("steps") or {})}
+        return {**base, **context, "steps": merged_steps}
 
     def _render_action_stage_messages(self, messages: list[dict], argument: str, sender: str,
                                       error: str = "") -> list[dict[str, str]]:
-        context = {"sender": sender, "argument": argument, "steps": {}}
+        context = self._merge_action_context({"sender": sender, "argument": argument, "steps": {}})
         timezone_name = get_current_timezone(self.db)
         result = []
         for item in messages:
@@ -283,6 +289,25 @@ class WABotHandler:
                 return f"Required parameters are missing. Usage: {command['trigger']} {usage}"
             action = command.get("action")
             self.action_failed = False
+            self.action_api_context = {"sender": sender, "argument": argument, "steps": {}}
+            action_flow = command.get("flow") if action == "api_flow" else None
+            if action_flow:
+                self.private_response = True
+            if action_flow:
+                try:
+                    self.action_api_context = await run_api_flow(
+                        flow=action_flow,
+                        bearer_token=self._selected_api_token(),
+                        sender=sender,
+                        argument=argument,
+                    )
+                except Exception as exc:
+                    logger.warning("WhatsApp action data flow failed for %s: %s", command.get("trigger"), exc)
+                    self.action_failed = True
+                    if command.get("failure_messages"):
+                        await self._send_action_stage(command["failure_messages"], argument, sender, str(exc))
+                        return ""
+                    return f"API flow failed: {exc}"
             if action != "snap":
                 await self._send_action_stage(command.get("processing_messages") or [], argument, sender)
             if action == "help":
@@ -292,7 +317,20 @@ class WABotHandler:
                     and (c.get("role") != "admin" or is_admin)
                     and (not is_group or c.get("chat_scope") != "private")
                 ]
-                heading = render_response(command.get("response", "*B-Snap Bot Commands*"), argument=argument, sender=sender)
+                help_rows = [{
+                    "trigger": c["trigger"],
+                    "description": c.get("description") or c["name"],
+                    "parameters": " ".join(f"<{parameter}>" for parameter in c.get("required_params", [])),
+                } for c in enabled]
+                help_context = self._merge_action_context({"steps": {"result": {
+                    "status_code": 200, "body": {"commands": help_rows},
+                }}})
+                heading = self._render_action_response(
+                    command.get("response", "*B-Snap Bot Commands*"), help_context,
+                    timezone_name=get_current_timezone(self.db), argument=argument, sender=sender,
+                )
+                if "{{#each steps.result.body.commands}}" in command.get("response", ""):
+                    return heading
                 return heading + "\n" + "\n".join(
                     f"{c['trigger']}"
                     + (" " + " ".join(f"<{parameter}>" for parameter in c.get("required_params", [])) if c.get("required_params") else "")
@@ -300,31 +338,20 @@ class WABotHandler:
                     for c in enabled
                 )
             if action == "ping_test":
-                return render_response(command.get("response", "Pong"), argument=argument, sender=sender)
+                return self._render_action_response(
+                    command.get("response", "Pong"), self.action_api_context,
+                    timezone_name=get_current_timezone(self.db), argument=argument, sender=sender,
+                )
             if action == "text":
-                return render_response(command.get("response", ""), argument=argument, sender=sender)
+                return self._render_action_response(
+                    command.get("response", ""), self.action_api_context,
+                    timezone_name=get_current_timezone(self.db), argument=argument, sender=sender,
+                )
             if action == "api_flow":
-                self.private_response = True
-                try:
-                    token = self._selected_api_token()
-                    context = await run_api_flow(
-                        flow=command["flow"],
-                        bearer_token=token,
-                        sender=sender,
-                        argument=argument,
-                    )
-                    return render_flow_template(
-                        command.get("response", ""),
-                        context,
-                        timezone_name=get_current_timezone(self.db),
-                    )
-                except Exception as exc:
-                    logger.warning("WhatsApp B-Snap API flow failed for command %s: %s", command.get("trigger"), exc)
-                    self.action_failed = True
-                    await self._send_action_stage(command.get("failure_messages") or [], argument, sender, str(exc))
-                    if command.get("failure_messages"):
-                        return ""
-                    return f"API flow failed: {exc}"
+                return render_flow_template(
+                    command.get("response", ""), self.action_api_context,
+                    timezone_name=get_current_timezone(self.db),
+                )
             try:
                 response = await self._handle_n8n_action(action, sender, argument, command)
             except Exception as exc:
@@ -558,6 +585,11 @@ class WABotHandler:
                         )
                     except Exception as exc:
                         logger.warning("WhatsApp snapshot image API flow failed for %s: %s", camera.hostname, exc)
+                self.action_api_context = api_context
+                template = render_flow_template(
+                    command.get("response", ""), api_context,
+                    timezone_name=get_current_timezone(self.db),
+                )
                 processing_messages = normalize_snap_stage_messages(
                     command.get("processing_messages"),
                     command.get("processing_response"),
@@ -599,7 +631,7 @@ class WABotHandler:
                 self.action_failed = True
                 return "No snapshot is available for this camera."
             snapshot_data = self._snapshot_template_data(camera, snapshot)
-            context = {"argument": argument, "sender": sender, "steps": {"result": {"status_code": 200, "body": [snapshot_data]}}}
+            context = self._merge_action_context({"argument": argument, "sender": sender, "steps": {"result": {"status_code": 200, "body": [snapshot_data]}}})
             local_path = os.path.join("static", "snapshots", snapshot.file_path)
             if not os.path.isfile(local_path):
                 self.action_failed = True
@@ -631,11 +663,49 @@ class WABotHandler:
                         replies.append(f"Request timeout for attempt {attempt + 1}")
                     else:
                         replies.append(f"Reply from {target}: time={latency * 1000:.2f}ms")
-                return "\n".join(replies)
+                ping_context = self._merge_action_context({"steps": {"ping": {
+                    "status_code": 200,
+                    "body": {"target": target, "replies": replies, "online": any("Reply from" in reply for reply in replies)},
+                }}})
+                return self._render_action_response(
+                    template, ping_context, timezone_name=get_current_timezone(self.db),
+                    target=target, result="\n".join(replies), argument=argument, sender=sender,
+                ) if template else "\n".join(replies)
             except Exception as exc:
                 logger.warning("WhatsApp ping failed for %s: %s", target, exc)
                 self.action_failed = True
                 return f"Ping failed for {target}: {exc}"
+        if action == "bot_status":
+            connection = await run_gateway_blocking(WAGatewayService(self.db).check_connection)
+            connected = bool(connection.get("connected"))
+            logged_in = bool(connection.get("logged_in", connected))
+            online = connected and logged_in
+            response_time_ms = connection.get("response_time_ms")
+            if not isinstance(response_time_ms, (int, float)) or isinstance(response_time_ms, bool):
+                response_time_ms = None
+            status = "Online" if online else "Offline"
+            response_time = f"{int(response_time_ms)} ms" if response_time_ms is not None else "N/A"
+            context = self._merge_action_context({"steps": {"result": {
+                "status_code": 200 if online else 503,
+                "body": {
+                    "status": status,
+                    "connected": connected,
+                    "logged_in": logged_in,
+                    "response_time_ms": response_time_ms,
+                    "error": connection.get("error") or "",
+                },
+            }}})
+            return self._render_action_response(
+                template or "{{status_icon}} Bot Status: {{status}}\n🕒 Response Time: {{response_time}}",
+                context,
+                timezone_name=get_current_timezone(self.db),
+                status=status,
+                status_icon="✅" if online else "❌",
+                response_time=response_time,
+                response_time_ms=str(response_time_ms) if response_time_ms is not None else "N/A",
+                argument=argument,
+                sender=sender,
+            )
         if action == "edit":
             match = re.match(r"([^,]+)", argument)
             hostname = match.group(1).strip() if match else ""
@@ -672,16 +742,35 @@ class WABotHandler:
                     return f"Group '{group_name}' was not found."
                 camera.group_id = group.id
             self.db.flush()
-            return render_response(template, camera=camera.hostname, argument=argument, sender=sender)
+            edit_context = self._merge_action_context({"steps": {"result": {
+                "status_code": 200,
+                "body": {"camera": camera.hostname, "hostname": camera.hostname, "ip": camera.ip or "",
+                         "port": camera.port, "status": camera.status,
+                         "group": camera.group.name if camera.group else ""},
+            }}})
+            return self._render_action_response(
+                template, edit_context, timezone_name=get_current_timezone(self.db),
+                camera=camera.hostname, ip=camera.ip or "", argument=argument, sender=sender,
+            )
         if action == "token_check":
             rows = []
+            token_rows = []
             for user in self.db.query(User).filter(User.api_tokens.isnot(None)).all():
                 for token in user.api_tokens or []:
                     if isinstance(token, dict):
                         secret = str(token.get("token", ""))
                         masked = f"{secret[:5]}…{secret[-4:]}" if len(secret) > 10 else "(stored)"
                         rows.append(f"• {user.username}: {masked} · expires {token.get('expires_at') or '-'}")
-            rendered_template = render_response(template, argument=argument, sender=sender)
+                        token_rows.append({"username": user.username, "token": masked, "expires_at": token.get("expires_at") or "-"})
+            token_context = self._merge_action_context({"steps": {"result": {
+                "status_code": 200, "body": token_rows,
+            }}})
+            rendered_template = self._render_action_response(
+                template, token_context, timezone_name=get_current_timezone(self.db),
+                argument=argument, sender=sender,
+            )
+            if "{{#each steps.result.body}}" in command.get("response", ""):
+                return rendered_template
             return (rendered_template + "\n" + "\n".join(rows)) if rows else "No API tokens found."
         if action in ("whitelist_add", "whitelist_remove"):
             parts = argument.split(maxsplit=1)
@@ -711,7 +800,14 @@ class WABotHandler:
                     return f"Number {phone} was not found."
                 self.db.delete(entry)
                 self.db.flush()
-            return render_response(template, phone=phone, argument=argument, sender=sender)
+            whitelist_context = self._merge_action_context({"steps": {"result": {
+                "status_code": 200,
+                "body": {"phone": phone, "action": "added" if action == "whitelist_add" else "removed", "success": True},
+            }}})
+            return self._render_action_response(
+                template, whitelist_context, timezone_name=get_current_timezone(self.db),
+                phone=phone, argument=argument, sender=sender,
+            )
         self.action_failed = True
         return "This command is not supported."
 
@@ -801,7 +897,7 @@ class WABotHandler:
             "res": snapshot.resolution,
             "group_name": (", ".join(group.name for group in camera.groups) or (camera.group.name if camera.group else "")),
         }
-        context = {"argument": argument, "sender": sender, "steps": {"result": {"status_code": 200, "body": [snapshot_data]}}}
+        context = self._merge_action_context({"argument": argument, "sender": sender, "steps": {"result": {"status_code": 200, "body": [snapshot_data]}}})
         caption = self._render_action_response(
             template, context, timezone_name=get_current_timezone(self.db),
             camera=camera.hostname, ip=camera.ip or "", argument=argument, sender=sender,
@@ -926,9 +1022,10 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
         wa_service = WAGatewayService(db)
 
         async def send_snapshot_progress(message_item: dict[str, str]) -> dict:
+            progress_recipient = sender if bot.private_response else chat_id
             progress_reply_to = (message_id or None) if bot.quote_reply else None
             result = await run_gateway_blocking(
-                _send_wa_message_item, wa_service, chat_id, message_item, progress_reply_to
+                _send_wa_message_item, wa_service, progress_recipient, message_item, progress_reply_to
             )
             _record_wa_message(
                 db,

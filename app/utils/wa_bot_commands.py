@@ -18,6 +18,7 @@ CUSTOM_ACTION_ROLES = {
     "text": "user",
     "help": "user",
     "ping_test": "user",
+    "bot_status": "user",
     "ping": "user",
     "cctv": "user",
     "snap": "user",
@@ -192,6 +193,13 @@ def save_command_settings(db: Session, commands: list[dict[str, Any]]) -> list[d
             entry["failure_messages"] = normalize_snap_stage_messages(
                 item.get("failure_messages"), allow_empty=True
             )
+            if any(
+                message["image_source_type"] == "api"
+                for message in entry["processing_messages"] + entry["failure_messages"]
+            ) and entry["action"] != "snap" and not (
+                entry["action"] == "api_flow" and entry.get("flow")
+            ):
+                raise ValueError("Pesan gambar API harus memiliki minimal satu node API flow")
         entry["enabled"] = bool(entry.get("enabled", True))
         entry["quote_reply"] = bool(entry.get("quote_reply", True))
         entry["chat_scope"] = normalize_chat_scope(entry["action"], entry.get("chat_scope", item.get("chat_scope")))

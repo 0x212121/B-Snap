@@ -66,7 +66,7 @@
         </label>
         <label class="text-sm text-gray-700 dark:text-gray-200">System action
           <select name="action" class="mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900">
-            <option value="text">Reply with text</option><option value="help">Show help</option><option value="ping_test">Test bot</option>
+            <option value="text">Reply with text</option><option value="help">Show help</option><option value="ping_test">Test bot</option><option value="bot_status">Check bot connectivity</option>
             <option value="ping">Ping host</option><option value="cctv">Send latest snapshot</option><option value="snap">Capture new snapshot</option>
             <option value="api_flow">Internal B-Snap API flow</option><option value="edit">Edit camera data (admin)</option><option value="token_check">View token (admin)</option><option value="whitelist_add">Add to whitelist (admin)</option><option value="whitelist_remove">Remove from whitelist (admin)</option>
           </select>
@@ -104,7 +104,7 @@
         <div class="mt-4 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
           <h4 class="inline-flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-100">{{ icon_play("h-4 w-4 text-indigo-500") }}Test API response</h4>
           <p data-test-description class="mt-1 text-xs text-gray-500">Use sample values for {% raw %}{{argument}}{% endraw %} and {% raw %}{{sender}}{% endraw %}. This test runs the current unsaved flow.</p>
-          <div class="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+          <div data-test-controls class="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_auto]">
             <input data-test-argument class="rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900" placeholder="Sample argument (e.g. camera name)">
             <input data-test-sender class="rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900" placeholder="Sample sender (phone number)">
             <button data-test-flow type="button" class="inline-flex items-center justify-center gap-1.5 rounded bg-indigo-600 px-3 py-2 text-sm text-white">{{ icon_play("h-4 w-4 text-white") }}Run test</button>
@@ -113,7 +113,7 @@
             <p data-test-status class="mb-2 text-sm"></p>
             <pre data-test-json class="max-h-64 overflow-auto rounded bg-gray-950 p-3 text-xs text-gray-100"></pre>
             <div data-test-variables class="mt-3 flex flex-wrap gap-2"></div>
-            <p class="mt-2 text-xs text-gray-500">Select a variable to insert it at the cursor in the response template.</p>
+            <div class="mt-3 flex flex-wrap items-center gap-2"><label class="text-xs text-gray-500">Insert into <select data-variable-target class="rounded border-gray-400 bg-transparent text-xs dark:bg-gray-900"><option value="response">Success response</option><option value="processing_messages">Processing message</option><option value="failure_messages">Fallback message</option></select></label><span class="text-xs text-gray-500">Select a variable or use the array mapper.</span></div>
             <div data-array-mapper class="mt-4 hidden rounded-lg border border-gray-600 p-3">
               <h5 class="text-sm font-medium text-gray-100">Map array items</h5>
               <label class="mt-2 block text-xs text-gray-300">Response array
@@ -134,7 +134,7 @@
         <label class="block text-sm text-gray-700 dark:text-gray-200"><span class="mb-1 inline-flex items-center gap-2"><img src="/static/icons/gowa.svg" alt="GoWA logo" class="w-8 h-8 inline-block align-middle mr-1 object-contain"><span data-response-label>WhatsApp response template</span></span>
           <textarea name="response" rows="4" required maxlength="2000" placeholder="Camera IP: {% raw %}{{steps.kamera.body.results.0.ip}}{% endraw %}" class="mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900"></textarea>
         </label>
-        <p class="mt-1 text-xs text-gray-500"><span>Use the array mapper after testing an API to format repeating items as clean rows.</span> <span>Normalize a database timestamp with</span> <code>{% raw %}{{steps.data.body.updated_at|datetime}}{% endraw %}</code><span>; it uses the B-Snap timezone.</span></p>
+        <p class="mt-1 text-xs text-gray-500"><span>System action variables are ready immediately; use the mapper to format array results. Only API Flow fields require a test. Variables work in response and processing/fallback messages.</span> <span>Normalize a timestamp with</span> <code>{% raw %}{{steps.data.body.updated_at|datetime}}{% endraw %}</code><span>; it uses the B-Snap timezone.</span></p>
       </div>
       <div data-snap-stage-panel class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
         <div>
@@ -172,6 +172,7 @@
     text: 'Reply with text',
     help: 'Show help',
     ping_test: 'Test bot',
+    bot_status: 'Check bot connectivity',
     ping: 'Ping host',
     cctv: 'Send latest snapshot',
     snap: 'Capture new snapshot',
@@ -181,13 +182,22 @@
     whitelist_add: 'Add to whitelist',
     whitelist_remove: 'Remove from whitelist'
   };
-  const actionPreviewFlows = {
-    cctv: [{name:'result', path:'/snapshots/search', params:{identifier:'{{argument}}',phone_number:'{{sender}}'}}],
-    snap: [{name:'result', path:'/snapshots/search', params:{identifier:'{{argument}}',phone_number:'{{sender}}'}}]
+  const systemActionSamples = {
+    cctv: {result:{status_code:200,body:[{camera:'CAM-M5-01',ip:'192.168.1.10',timestamp:'2026-10-05T10:30:00Z',filename:'snapshot.jpg',url:'/snapshot/file/snapshot.jpg',lat:'-3.12',long:'115.22'}]}},
+    snap: {result:{status_code:200,body:[{camera:'CAM-M5-01',ip:'192.168.1.10',timestamp:'2026-10-05T10:30:00Z',filename:'snapshot.jpg',url:'/snapshot/file/snapshot.jpg',uptime:'2d 4h',lat:'-3.12',long:'115.22'}]}},
+    ping: {ping:{status_code:200,body:{target:'camera.example',online:true,replies:['Reply from camera.example: time=12.4ms','Reply from camera.example: time=11.8ms']}}},
+    edit: {result:{status_code:200,body:{camera:'CAM-M5-01',hostname:'CAM-M5-01',ip:'192.168.1.10',port:80,status:'Active',group:'North'}}},
+    token_check: {result:{status_code:200,body:[{username:'admin',token:'abcde…wxyz',expires_at:'2026-12-31T23:59:59Z'}]}},
+    whitelist_add: {result:{status_code:200,body:{phone:'628123456789',action:'added',success:true}}},
+    whitelist_remove: {result:{status_code:200,body:{phone:'628123456789',action:'removed',success:true}}},
+    help: {result:{status_code:200,body:{commands:[{trigger:'/help',description:'Show available commands'},{trigger:'/snap',description:'Capture a new snapshot'}]}}},
+    bot_status: {result:{status_code:200,body:{status:'Online',connected:true,logged_in:true,response_time_ms:120,error:''}}},
+    ping_test: {}
   };
   let commands = [];
   let draft = null;
   let originalId = null;
+  let lastStageTemplateTarget = null;
 
   function selectTab(tab) {
     const commandsSelected = tab === 'commands';
@@ -245,12 +255,16 @@
       : (isIndonesian ? 'Command japri saja juga disembunyikan dari daftar /help di grup.' : 'Private-only commands are also hidden from group /help lists.');
   }
   function setResponseTemplateVisibility(action) {
-    const usesTemplate = action !== 'ping';
+    const usesTemplate = true;
     const isSnap = action === 'snap';
     form.querySelector('[data-response-panel]').classList.toggle('hidden', !usesTemplate);
     form.querySelector('[data-snap-stage-panel]').classList.remove('hidden');
-    form.elements.response.required = usesTemplate;
+    form.elements.response.required = usesTemplate && action !== 'ping';
     const isIndonesian = document.documentElement.lang === 'id';
+    if (action === 'bot_status' && !draft.response?.trim()) {
+      draft.response = '{' + '{status_icon}' + '} Bot Status: {' + '{status}' + '}\n🕒 Response Time: {' + '{response_time}' + '}';
+      form.elements.response.value = draft.response;
+    }
     if (isSnap) {
       if (!Array.isArray(draft.processing_messages) || !draft.processing_messages.length) {
         draft.processing_messages = [{text:isIndonesian ? 'Snapshot untuk {{camera}} sedang diproses. Mohon tunggu.' : 'Snapshot capture for {{camera}} is in progress. Please wait.',image_source_type:'none',image_source:''}];
@@ -299,7 +313,7 @@
       const choices = [
         ['none', isIndonesian ? 'Tanpa gambar' : 'No image'],
         ['url', isIndonesian ? 'Gambar dari URL' : 'Image URL'],
-        ['api', isIndonesian ? 'URL gambar dari hasil API' : 'Image URL from API result'],
+        ...(draft.action === 'snap' || draft.action === 'api_flow' ? [['api', isIndonesian ? 'URL gambar dari hasil API' : 'Image URL from API result']] : []),
         ['last_snapshot', isIndonesian ? 'Snapshot terakhir tersimpan' : 'Latest saved snapshot'],
       ];
       choices.forEach(([value,label]) => select.add(new Option(label, value)));
@@ -322,18 +336,20 @@
     const customFlow = draft.action === 'api_flow';
     const snapImageFlow = draft.action === 'snap';
     const flowEditorVisible = customFlow || snapImageFlow;
-    const hasPreview = flowEditorVisible || Boolean(actionPreviewFlows[draft.action]);
+    const hasPreview = true;
+    const testControlsVisible = customFlow || (snapImageFlow && Boolean(draft.image_flow?.length));
     panel.classList.toggle('hidden', !hasPreview);
     panel.querySelector('[data-flow-editor]').classList.toggle('hidden', !flowEditorVisible);
+    panel.querySelector('[data-test-controls]').classList.toggle('hidden', !testControlsVisible);
     const isIndonesian = document.documentElement.lang === 'id';
     panel.querySelector('[data-flow-title]').lastChild.textContent = snapImageFlow
       ? (isIndonesian ? 'API flow untuk sumber gambar' : 'Image source API flow')
-      : (customFlow ? 'GET API flow' : (isIndonesian ? 'Respons API action' : 'Action API response'));
+      : (customFlow ? 'GET API flow' : (isIndonesian ? 'Variabel system action' : 'System action variables'));
     panel.querySelector('[data-flow-subtitle]').textContent = snapImageFlow
       ? (isIndonesian ? 'Gunakan hasil node untuk mengisi URL gambar API pada pesan processing atau fallback.' : 'Use node results to provide API image URLs in processing or fallback messages.')
       : (customFlow
       ? (isIndonesian ? 'Node internal B-Snap dijalankan berurutan, maksimal 8 node.' : 'Internal B-Snap nodes run in order, up to 8 nodes.')
-      : (isIndonesian ? 'Jalankan API baca untuk melihat JSON yang bisa dipetakan ke template.' : 'Call the read-only action API to inspect JSON fields for the response template.'));
+      : (isIndonesian ? 'Variabel hasil system action tersedia langsung di template. Tidak perlu menjalankan test API.' : 'System action result variables are available in templates immediately. No API test is needed.'));
     panel.querySelector('[data-test-flow]').textContent = customFlow
       ? (isIndonesian ? 'Jalankan uji' : 'Run test')
       : (draft.action === 'snap'
@@ -345,13 +361,14 @@
         ? (draft.image_flow?.length
           ? (isIndonesian ? 'Uji node API gambar untuk melihat field URL yang dapat dipakai pada sumber gambar API.' : 'Test the image API nodes to inspect URL fields for API image sources.')
           : (isIndonesian ? 'Pratinjau ini membaca data snapshot yang sudah ada. Tidak mengambil snapshot baru.' : 'This previews existing snapshot data. It does not capture a new snapshot.'))
-        : (isIndonesian ? 'Uji API baca yang dipakai action ini menggunakan contoh kamera dan pengirim.' : 'This tests the read-only API used by this action with the sample camera and sender.'));
+        : (isIndonesian ? 'Hasil uji API gambar untuk melihat field URL yang dapat dipakai pada pesan.' : 'Test the image API flow to inspect URL fields available to messages.'));
     const container = form.querySelector('[data-flow-list]');
     container.replaceChildren();
     const activeFlow = snapImageFlow ? (draft.image_flow || []) : (draft.flow || []);
-    if (!activeFlow.length) {
+    if (flowEditorVisible && !activeFlow.length) {
       const empty = document.createElement('p'); empty.className = 'text-xs text-gray-500'; empty.textContent = 'No nodes yet. Add an API node to start building the flow.'; container.appendChild(empty);
     }
+    if (!flowEditorVisible) container.replaceChildren();
     activeFlow.forEach((step, index) => {
       const card = document.createElement('div');
       card.className = 'rounded-lg bg-gray-50 p-3 dark:bg-gray-900';
@@ -371,6 +388,23 @@
       }
       container.appendChild(card);
     });
+    if (!customFlow) showSystemActionVariables(draft.action);
+  }
+  function showSystemActionVariables(action) {
+    const resultPanel = form.querySelector('[data-test-result]');
+    const status = form.querySelector('[data-test-status]');
+    const output = form.querySelector('[data-test-json]');
+    const steps = systemActionSamples[action] || {};
+    resultPanel.classList.remove('hidden');
+    status.textContent = document.documentElement.lang === 'id'
+      ? 'Variabel hasil system action siap dipakai tanpa test API.'
+      : 'System action result variables are ready to use without an API test.';
+    status.className = 'mb-2 text-sm text-green-700 dark:text-green-300';
+    output.textContent = JSON.stringify(steps, null, 2);
+    const variables = form.querySelector('[data-test-variables]');
+    showFlowVariables(steps);
+    addVariableSuggestion(variables, 'argument', 'sample argument');
+    addVariableSuggestion(variables, 'sender', '628123456789');
   }
   function openEditor(command = null) {
     originalId = command?.id || null;
@@ -479,6 +513,11 @@
   form.elements.action.addEventListener('change', () => {
     draft.action = form.elements.action.value;
     draft.role = adminActions.includes(draft.action) ? 'admin' : 'user';
+    if (draft.action === 'bot_status' && !originalId) {
+      if (!form.elements.name.value.trim()) form.elements.name.value = draft.name = 'Bot Status';
+      if (!form.elements.trigger.value.trim()) form.elements.trigger.value = draft.trigger = '/botstatus';
+      if (!form.elements.description.value.trim()) form.elements.description.value = draft.description = 'Check WhatsApp bot and gateway connectivity';
+    }
     setRole(draft.action); setChatScope(draft.action); setResponseTemplateVisibility(draft.action); drawFlow();
   });
   form.querySelector('[data-add-step]').addEventListener('click', () => {
@@ -503,15 +542,33 @@
     button.textContent = formatTimestamp ? expression + '|datetime' : expression;
     button.title = formatTimestamp ? 'Insert timestamp formatted in the B-Snap timezone' : (typeof value === 'string' ? value : JSON.stringify(value));
     button.addEventListener('click', () => {
-      const textarea = form.elements.response;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
       const variable = formatTimestamp ? expression + '|datetime' : expression;
-      textarea.setRangeText('{' + '{' + variable + '}' + '}', start, end, 'end');
-      textarea.focus();
+      insertTemplateAtTarget('{' + '{' + variable + '}' + '}');
     });
     container.appendChild(button);
   }
+  function insertTemplateAtTarget(snippet) {
+    const destination = form.querySelector('[data-variable-target]').value;
+    let textarea = form.elements.response;
+    if (destination !== 'response') {
+      const container = form.querySelector(`[data-snap-message-list="${destination}"]`);
+      textarea = lastStageTemplateTarget instanceof HTMLTextAreaElement && container.contains(lastStageTemplateTarget)
+        ? lastStageTemplateTarget
+        : container.querySelector('textarea');
+    }
+    if (!textarea) {
+      showToast('info', 'Add a message in that stage first.');
+      return;
+    }
+    textarea.setRangeText(snippet, textarea.selectionStart, textarea.selectionEnd, 'end');
+    textarea.dispatchEvent(new Event('input', {bubbles:true}));
+    textarea.focus();
+  }
+  form.addEventListener('focusin', event => {
+    if (event.target instanceof HTMLTextAreaElement && event.target.closest('[data-snap-message-list]')) {
+      lastStageTemplateTarget = event.target;
+    }
+  });
   function showFlowVariables(steps) {
     const container = form.querySelector('[data-test-variables]');
     container.replaceChildren();
@@ -595,9 +652,7 @@
     const values = properties.map(property => token(`this${property ? `.${property}` : ''}`));
     const row = `${includeIndex ? token('@index1') + '. ' : ''}${values.join(' | ')}`;
     const snippet = `${token(`#each ${array.expression}`)}\n${row}\n${token('/each')}`;
-    const textarea = form.elements.response;
-    textarea.setRangeText(snippet, textarea.selectionStart, textarea.selectionEnd, 'end');
-    textarea.focus();
+    insertTemplateAtTarget(snippet);
   });
   form.querySelector('[data-test-flow]').addEventListener('click', async event => {
     const button = event.currentTarget;
@@ -615,11 +670,7 @@
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
         body: JSON.stringify({
-          flow: draft.action === 'api_flow'
-            ? (draft.flow || [])
-            : (draft.action === 'snap' && draft.image_flow?.length
-              ? draft.image_flow
-              : (actionPreviewFlows[draft.action] || []).map(step => ({...step, params:{...step.params}}))),
+          flow: draft.action === 'api_flow' ? (draft.flow || []) : (draft.image_flow || []),
           api_token_id: tokenSelect.value,
           argument: form.querySelector('[data-test-argument]').value,
           sender: form.querySelector('[data-test-sender]').value
@@ -641,7 +692,7 @@
   form.addEventListener('submit', async event => {
     event.preventDefault();
     draft.name = form.elements.name.value.trim(); draft.trigger = form.elements.trigger.value.trim().toLowerCase();
-    draft.description = form.elements.description.value.trim(); draft.response = form.elements.action.value === 'ping' ? '' : form.elements.response.value;
+    draft.description = form.elements.description.value.trim(); draft.response = form.elements.response.value;
     draft.aliases = form.elements.aliases.value.split(',').map(value => value.trim().toLowerCase()).filter(Boolean);
     draft.required_params = form.elements.required_params.value.split(',').map(value => value.trim()).filter(Boolean);
     draft.action = form.elements.action.value; draft.role = adminActions.includes(draft.action) ? 'admin' : 'user'; draft.chat_scope = privateOnlyActions.includes(draft.action) ? 'private' : form.elements.chat_scope.value; draft.enabled = form.elements.enabled.checked; draft.quote_reply = form.elements.quote_reply.checked;
@@ -659,8 +710,9 @@
         (!item.text?.trim() && item.image_source_type === 'none')
         || (['url','api'].includes(item.image_source_type) && !item.image_source?.trim())
       ))) { showToast('warning','Each message needs text or an image source.'); return; }
-      if (draft.action === 'snap' && stageLists.some(messages => messages.some(item => item.image_source_type === 'api')) && !draft.image_flow?.length) {
-        showToast('warning','Add an image API flow before using API result image URLs.'); return;
+      if (stageLists.some(messages => messages.some(item => item.image_source_type === 'api'))
+        && !(draft.action === 'snap' ? draft.image_flow?.length : (draft.action === 'api_flow' ? draft.flow?.length : false))) {
+        showToast('warning','Add an API flow before using API result image URLs.'); return;
       }
       for (const step of draft.action === 'snap' ? (draft.image_flow || []) : []) {
         if (typeof step.params === 'string') { try { step.params = JSON.parse(step.params || '{}'); } catch { showToast('error',`Query params for node ${step.name} must be valid JSON.`); return; } }

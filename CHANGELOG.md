@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added automatic system-action result previews and array mapping for response, processing, and fallback templates; only API Flow actions require a manual API test to inspect dynamic fields.
 - Extended configurable WhatsApp processing and failure/fallback message lists to every system action; these stages are optional outside `/snap`.
 - Added admin visibility into recent inbound/outbound WhatsApp gateway statuses and a tabbed Bot Builder layout with contained command and message lists.
 - Unmatched WhatsApp messages are ignored; the bot no longer sends a fallback response.
