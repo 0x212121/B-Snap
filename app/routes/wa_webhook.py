@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from typing import Callable, Optional
+from typing import Awaitable, Callable, Optional
 
 from app.db.database import get_db
 from app.models.user import User
@@ -34,6 +34,7 @@ from app.models.snapshot import Snapshot
 from app.models.log import CommandLog, WhatsAppMessageLog
 from app.models.config import Configuration
 from app.utils.snapshot_service import SnapshotService
+from app.utils.wa_executor import run_gateway_blocking
 from app.utils.wa_bot_workflow import render_flow_template, run_api_flow
 from app.utils.wa_bot_workflow import normalize_flow
 from app.utils.healthcheck import format_uptime_duration
@@ -187,7 +188,7 @@ class WABotHandler:
         self.outbound_items: list[dict[str, str]] = []
         self.private_response = False
         self.quote_reply = True
-        self.progress_sender: Optional[Callable[[dict[str, str]], dict]] = None
+        self.progress_sender: Optional[Callable[[dict[str, str]], Awaitable[dict]]] = None
     
     def parse_command(self, message: str) -> tuple[str, list]:
         """
@@ -448,7 +449,7 @@ class WABotHandler:
                 for processing_item in processing_items:
                     if self.progress_sender:
                         try:
-                            progress_result = self.progress_sender(processing_item)
+                            progress_result = await self.progress_sender(processing_item)
                             if not progress_result.get("success"):
                                 logger.warning(
                                     "Failed to send WhatsApp snapshot processing message for %s: %s",
@@ -814,9 +815,11 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
         # Handle command
         wa_service = WAGatewayService(db)
 
-        def send_snapshot_progress(message_item: dict[str, str]) -> dict:
+        async def send_snapshot_progress(message_item: dict[str, str]) -> dict:
             progress_reply_to = (message_id or None) if bot.quote_reply else None
-            result = _send_wa_message_item(wa_service, chat_id, message_item, reply_to=progress_reply_to)
+            result = await run_gateway_blocking(
+                _send_wa_message_item, wa_service, chat_id, message_item, progress_reply_to
+            )
             _record_wa_message(
                 db,
                 sender,
@@ -842,7 +845,9 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
         if bot.outbound_items:
             failed_sends = []
             for item in bot.outbound_items:
-                send_result = _send_wa_message_item(wa_service, recipient, item, reply_to=reply_to)
+                send_result = await run_gateway_blocking(
+                    _send_wa_message_item, wa_service, recipient, item, reply_to
+                )
                 if not send_result.get("success"):
                     failed_sends.append(send_result.get("error", "unknown error"))
                     logger.error("Failed sending WhatsApp snapshot message to %s: %s", recipient, send_result.get("error"))
@@ -857,7 +862,9 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
                 )
             if failed_sends:
                 failure_text = "Some snapshot messages could not be sent. Please try again."
-                fallback_send = wa_service.send_text(recipient, failure_text, reply_to=reply_to)
+                fallback_send = await run_gateway_blocking(
+                    wa_service.send_text, recipient, failure_text, reply_to
+                )
                 _record_wa_message(
                     db, sender, "outbound", "accepted" if fallback_send.get("success") else "failed",
                     failure_text, command, fallback_send.get("error", ""),
@@ -866,11 +873,12 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
             media_items = bot.media_items or [{"path": bot.media_path, "caption": bot.media_caption or ""}]
             failed_sends = []
             for index, media_item in enumerate(media_items):
-                send_result = wa_service.send_image_file(
+                send_result = await run_gateway_blocking(
+                    wa_service.send_image_file,
                     recipient,
                     media_item["path"],
                     media_item.get("caption"),
-                    reply_to=reply_to if index == 0 else None,
+                    reply_to if index == 0 else None,
                 )
                 if not send_result.get("success"):
                     failed_sends.append(send_result.get("error", "unknown error"))
@@ -885,13 +893,17 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
                     if len(media_items) > 1 else
                     "The snapshot was captured, but the image could not be sent. Please try again."
                 )
-                fallback_send = wa_service.send_text(recipient, failure_text, reply_to=reply_to)
+                fallback_send = await run_gateway_blocking(
+                    wa_service.send_text, recipient, failure_text, reply_to
+                )
                 _record_wa_message(
                     db, sender, "outbound", "accepted" if fallback_send.get("success") else "failed",
                     failure_text, command, fallback_send.get("error", ""),
                 )
         elif response:
-            send_result = wa_service.send_text(recipient, response, reply_to=reply_to)
+            send_result = await run_gateway_blocking(
+                wa_service.send_text, recipient, response, reply_to
+            )
             if not send_result.get("success"):
                 logger.error(
                     "Failed to send WhatsApp /help response to %s: %s",

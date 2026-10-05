@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed WhatsApp Bot Builder rendering by preventing Jinja from evaluating JavaScript response-template placeholders, which could redirect the user to login and clear session cookies.
 
+### Changed
+
+- Run WhatsApp camera captures and GoWA sends in separate bounded thread pools so blocking I/O does not stall the webhook event loop; the shared camera lock prevents overlapping captures for the same camera across workers.
+
 ### Added
 
 - Added admin visibility into recent inbound/outbound WhatsApp gateway statuses and a tabbed Bot Builder layout with contained command and message lists.

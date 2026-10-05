@@ -254,6 +254,22 @@ These values are normally saved through the Config UI and stored in the database
 - **Description**: Number of retries after a timeout, connection failure, or GoWA server error when sending text and images
 - **Used In**: `app/utils/wa_gateway.py`
 
+### WA_CAMERA_THREAD_WORKERS
+- **Type**: Integer
+- **Default**: `4`
+- **Range**: `1` to `16`
+- **Description**: Maximum concurrent WhatsApp-triggered camera captures in each web worker process. The existing shared snapshot lock prevents overlapping captures for the same camera across workers.
+- **Used In**: `app/utils/wa_executor.py`
+
+### WA_GATEWAY_THREAD_WORKERS
+- **Type**: Integer
+- **Default**: `8`
+- **Range**: `1` to `32`
+- **Description**: Maximum concurrent blocking GoWA sends in each web worker process.
+- **Used In**: `app/utils/wa_executor.py`
+
+The effective total capacity is the configured pool size multiplied by the number of web worker processes. For example, two web workers and `WA_CAMERA_THREAD_WORKERS=4` allow up to eight captures at once across the instance.
+
 ### gowa_default_receiver
 - **Type**: String (comma-separated)
 - **Default**: empty

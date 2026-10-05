@@ -7,6 +7,7 @@ for real-time user feedback.
 import logging
 import os
 from datetime import datetime, timezone
+from types import SimpleNamespace
 from typing import Optional, Dict, Any
 from urllib.parse import urlparse, urlunparse, quote
 
@@ -17,8 +18,19 @@ from app.models.snapshot import Snapshot
 from app.utils.notification_service import NotificationService
 from app.utils.check_stats import check_stats
 from app.utils.camera_capture import read_frame
+from app.utils.wa_executor import run_camera_blocking
+from app.utils.snapshot_locker import get_camera_lock
 
 logger = logging.getLogger("snapshot_service")
+
+def _capture_camera_sync(camera: SimpleNamespace) -> Dict[str, Any]:
+    """Capture a camera without sharing a SQLAlchemy session with the thread."""
+    try:
+        with get_camera_lock(camera.id):
+            return take_snapshot(camera, None)
+    except RuntimeError:
+        logger.info("Skipping concurrent snapshot capture for camera %s", camera.id)
+        return {"status": "error", "message": "A snapshot capture is already running for this camera."}
 
 
 def _mask_password_in_url(url: str) -> str:
@@ -337,8 +349,18 @@ class SnapshotService:
             return None
         
         try:
-            # Use the legacy take_snapshot function
-            result = take_snapshot(camera, db)
+            # The capture path performs blocking OpenCV, RTSP/ONVIF, HTTP and
+            # image operations. Pass only loaded scalar settings to the thread.
+            camera_config = SimpleNamespace(
+                id=str(camera.id),
+                hostname=camera.hostname,
+                snapshot_url=camera.snapshot_url,
+                username=camera.username,
+                password=camera.password,
+                ip=camera.ip,
+                port=camera.port,
+            )
+            result = await run_camera_blocking(_capture_camera_sync, camera_config)
             
             if result["status"] != "success":
                 # Note: Error notification is handled by frontend

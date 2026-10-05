@@ -216,6 +216,20 @@ ENV_DOCS: Dict[str, Dict[str, Any]] = {
                 "default": "2",
                 "description": "Retry count for outgoing GoWA messages after a timeout, connection failure, or server error (0 to 5)",
                 "used_in": ["app/utils/wa_gateway.py"]
+            },
+            {
+                "name": "WA_CAMERA_THREAD_WORKERS",
+                "required": False,
+                "default": "4",
+                "description": "Maximum concurrent WhatsApp camera captures per web worker process (1 to 16)",
+                "used_in": ["app/utils/wa_executor.py"]
+            },
+            {
+                "name": "WA_GATEWAY_THREAD_WORKERS",
+                "required": False,
+                "default": "8",
+                "description": "Maximum concurrent blocking GoWA sends per web worker process (1 to 32)",
+                "used_in": ["app/utils/wa_executor.py"]
             }
         ]
     },
