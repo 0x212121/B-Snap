@@ -42,7 +42,9 @@ their interaction-specific layout.
   `page_heading` also supports metadata. Primary actions belong in that slot.
 - `section_header`, `card`, and `kpi_card` provide reusable content grouping.
 - Buttons: `ui-button` plus `ui-button-primary`, `ui-button-secondary`,
-  `ui-button-ghost`, or `ui-button-danger`. One primary per action group;
+  `ui-button-ghost`, `ui-button-danger`, or `ui-button-danger-quiet`. Use solid red
+  for destructive command deletion and red outlines for removing draft nodes/messages.
+  One primary per action group;
   export/import/refresh are supporting actions unless they are the main task.
 - Status: `status_badge(label, tone)` and `ui-badge-*` for neutral, info, success,
   warning, and critical. Healthy/success = green, warning = amber, error/critical
@@ -116,3 +118,13 @@ do not replace end-to-end validation against live cameras and production data.
 Connect existing page handlers to controls explicitly; the shared macros never
 perform application actions. Use the existing numbered pagination renderer for
 paginated results instead of creating a separate previous/next-only control.
+
+## WhatsApp Bot Builder
+
+The command editor uses four keyboard-accessible tabs: command settings, action/API, responses, and preview/execution. The footer stays visible while the form scrolls. Saving a command persists it immediately; the separate API settings button saves the selected token. Unsaved command edits require confirmation when closing, and pending command/token changes trigger the browser navigation warning.
+
+Sample previews use the production template renderer with editable JSON data. The preview endpoint never executes a bot action, calls an API node, looks up snapshot files, or delivers media. Chat bubbles show configured processing messages followed by success or fallback, with media source metadata. Processing messages can be skipped at runtime when an action finishes before its delay. Live execution requires a whitelisted sender and an explicit confirmation with the action, arguments, and API paths.
+
+Command filters cover names, triggers, aliases, status, and action. Access summaries show roles and chat scope. Message monitor filters operate on the latest 100 messages, using phone, command, status, and local time bounds. Details show full messages/errors as escaped text. Refresh failures preserve the previous rows and display the last successful update time.
+
+Conversation previews appear automatically alongside the response editor (below it on mobile), and update after edits. The same chat preview is also available in the execution tab. Editable sample JSON is collapsed by default.

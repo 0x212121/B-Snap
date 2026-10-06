@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Apply shared destructive red buttons to snapshot/video deletion and snapshot bulk deletion, and use the supported red confirmation-button option in gallery delete dialogs.
+- Align Bot Builder command card actions, labeled filter controls, API token settings, and execution controls using responsive grids and consistent spacing; separate card metadata from Edit/Delete actions.
+- Use explicit destructive red styling for Bot Builder command deletion and draft removal, keep supporting actions neutral, and apply semantic active/inactive badge colors consistently in light and dark themes.
+- Show WhatsApp conversation previews automatically beside response editing, refresh chat bubbles as templates change, and collapse editable sample JSON so processing, success/fallback, captions, and media sources are easy to find.
 - Move the camera-IP resolver to `/api/cctv/resolve-ip`; update Bot Builder examples, n8n workflow, OpenAPI docs, and tests. Existing saved Bot Builder nodes using the old path are normalized to the new path with sender phone filtering.
 
 - Require a whitelisted phone_number for `/cctv/resolve-ip`, enforce sender and API-user camera groups even for whitelist admins, and return JSON 403 for denied access or 404 for no matching camera.
@@ -40,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Organize WhatsApp Bot Builder into accessible editor sections with persistent save controls, unsaved-change protection, separate API settings, command search/access summaries, sample conversation previews, explicit live-action confirmation, and filtered message monitoring with refresh status and message details.
 - Introduce shared UI tokens and reusable page headers, buttons, cards, tables, filters, form controls, tabs, badges, and feedback states across operational pages. Align responsive page spacing, separate gallery filters from page titles, and move the changelog/version utility into account navigation so it does not cover page actions.
 
 - Simplify global navigation with direct monitoring links, grouped secondary destinations under More, compact active states, and accessible mobile accordions. Move desktop theme/language preferences into the account menu and preserve all destination URLs and role restrictions.

@@ -3,12 +3,12 @@
 {% from "macros/ui.html" import page_header, empty_state %}
 
 {% block content %}
-<div>
+<div class="wa-builder">
   {% set page_description %}Choose a command to edit its flow and response.{% endset %}
 {% call page_header("WhatsApp Bot Builder", page_description) %}
 <div id="commandActions" class="flex flex-wrap gap-2">
-      <button id="addCommand" type="button" class="ui-button ui-button-secondary inline-flex items-center gap-2 rounded-lg bg-gray-200 px-4 py-2 text-gray-900 dark:bg-gray-700 dark:text-white">{{ icon_plus("h-4 w-4") }}Add command</button>
-      <button id="saveCommands" type="button" class="ui-button ui-button-primary inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white">{{ icon_save("h-4 w-4 text-white") }}Save changes</button>
+      <button id="addCommand" type="button" class="ui-button ui-button-primary inline-flex items-center gap-2 rounded-lg bg-gray-200 px-4 py-2 text-gray-900 dark:bg-gray-700 dark:text-white">{{ icon_plus("h-4 w-4") }}Add command</button>
+
     </div>
 {% endcall %}
 
@@ -18,16 +18,28 @@
   </div>
 
   <section id="commandsPanel" role="tabpanel" aria-labelledby="commandsTab">
-  <div class="ui-card mb-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-    <label class="ui-label block text-sm font-medium text-gray-800 dark:text-gray-100"><span class="inline-flex items-center gap-2">{{ icon_server("h-4 w-4 text-blue-500") }}Token for B-Snap internal APIs</span>
-      <select id="apiTokenId" class="ui-control mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 md:max-w-xl">
+  <div class="ui-card wa-api-settings mb-4">
+    <div class="wa-api-field"><label class="ui-label block text-sm font-medium text-gray-800 dark:text-gray-100"><span class="inline-flex items-center gap-2">{{ icon_server("h-4 w-4 text-blue-500") }}Token for B-Snap internal APIs</span>
+      <select id="apiTokenId" class="ui-control mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 ">
         <option value="">No token (public APIs only)</option>
       </select>
     </label>
     <p class="mt-2 text-xs text-gray-500">Select a token owned by an admin account. The token value is never shown or stored again.</p>
+    </div>
+    <div class="wa-api-actions">
+      <button id="saveCommands" type="button" class="ui-button ui-button-secondary inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white">{{ icon_save("h-4 w-4 text-white") }}Save API settings</button>
+    <p id="apiSettingsState" class="mt-2 text-sm text-gray-500" role="status">API settings saved</p>
+    </div>
   </div>
 
-  <div id="commandList" class="grid max-h-[62vh] grid-cols-1 content-start gap-3 overflow-y-auto rounded-xl p-1 sm:grid-cols-2 xl:grid-cols-3" aria-live="polite"></div>
+  <div class="ui-filter-bar wa-command-filters">
+    <label class="ui-label">Search commands<input id="commandSearch" type="search" aria-label="Search commands" placeholder="Search name, trigger, or alias" class="ui-control"></label>
+    <label class="ui-label">Status<select id="commandStatusFilter" aria-label="Command status" class="ui-control"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+    <label class="ui-label">Action<select id="commandActionFilter" aria-label="Command action" class="ui-control"><option value="">All actions</option></select></label>
+    <span id="commandCount" class="text-sm text-gray-500" aria-live="polite"></span>
+  </div>
+  <p id="commandNoResults" class="hidden p-4 text-sm text-gray-500">No commands match these filters.</p>
+  <div id="commandList" class="wa-command-grid" aria-live="polite"></div>
   <div id="emptyState" class="hidden">
 {% call empty_state("No commands yet", "Add a command to start building your bot flow.") %}
 <button id="emptyAddCommand" type="button" class="ui-button ui-button-primary mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white">{{ icon_plus("h-4 w-4") }}Create your first command</button>
@@ -37,19 +49,34 @@
 
   </section>
   <section id="messagesPanel" role="tabpanel" aria-labelledby="messagesTab" hidden class="ui-card ui-card-body mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-    <div class="mb-3 flex items-center justify-between"><div><h3 class="text-lg font-semibold text-gray-900 dark:text-white">Message delivery monitor</h3><p class="text-xs text-gray-500">Latest 100 messages, refreshes every 30 seconds</p></div><button id="refreshWaMessages" type="button" class="ui-button ui-button-secondary rounded bg-gray-100 px-3 py-1.5 text-sm dark:bg-gray-700">Refresh</button></div>
-    <div class="max-h-[68vh] overflow-auto rounded-lg border border-gray-200 dark:border-gray-700"><table class="ui-table min-w-full text-left text-sm"><thead class="sticky top-0 bg-gray-50 dark:bg-gray-900"><tr class="border-b dark:border-gray-700"><th class="p-2">Time</th><th class="p-2">Phone</th><th class="p-2">Direction</th><th class="p-2">Gateway status</th><th class="p-2">Command</th><th class="p-2">Message / error</th></tr></thead><tbody id="waMessageRows"><tr><td colspan="6" class="p-3">Loading…</td></tr></tbody></table></div>
+    <div class="wa-section-toolbar mb-3"><div><h3 class="text-lg font-semibold text-gray-900 dark:text-white">Message delivery monitor</h3><p class="text-xs text-gray-500">Latest 100 messages, refreshes every 30 seconds</p></div><button id="refreshWaMessages" type="button" class="ui-button ui-button-secondary rounded bg-gray-100 px-3 py-1.5 text-sm dark:bg-gray-700">Refresh</button></div>
+    <div class="wa-monitor-filters mb-3">
+      <label class="ui-label">Phone number<input id="messagePhone" type="search" aria-label="Filter sender phone" placeholder="Phone number" class="ui-control"></label>
+      <label class="ui-label">Command<input id="messageCommand" type="search" aria-label="Filter message command" placeholder="Command" class="ui-control"></label>
+      <label class="ui-label">Status<select id="messageStatus" aria-label="Message status" class="ui-control"><option value="">All statuses</option><option value="failed">Failures</option><option value="sent">Sent</option><option value="received">Received</option></select></label>
+      <label class="ui-label">From <input id="messageFrom" type="datetime-local" class="ui-control block"></label>
+      <label class="ui-label">To <input id="messageTo" type="datetime-local" class="ui-control block"></label>
+      <button id="clearMessageFilters" type="button" class="ui-button ui-button-secondary">Clear filters</button>
+    </div>
+    <p id="messageRefreshState" class="mb-3 text-sm text-gray-500" role="status">Loading latest 100 messages…</p>
+    <div class="max-h-[68vh] overflow-auto rounded-lg border border-gray-200 dark:border-gray-700"><table class="ui-table min-w-full text-left text-sm"><thead class="sticky top-0 bg-gray-50 dark:bg-gray-900"><tr class="border-b dark:border-gray-700"><th class="p-2">Time</th><th class="p-2">Phone</th><th class="p-2">Direction</th><th class="p-2">Gateway status</th><th class="p-2">Command</th><th class="p-2">Message / error</th><th class="p-2">Details</th></tr></thead><tbody id="waMessageRows"><tr><td colspan="7" class="p-3">Loading…</td></tr></tbody></table></div>
   </section>
 </div>
 
 <div id="commandEditor" class="fixed inset-0 z-50 hidden bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
-  <div class="ui-card mx-auto flex max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-xl dark:bg-gray-800" style="max-height: 94vh;">
+  <div class="ui-card wa-editor-card mx-auto flex max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-xl dark:bg-gray-800" style="max-height: 94vh;">
     <div class="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
       <div><h2 id="editorTitle" class="ui-section-title inline-flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">{{ icon_pencil("h-4 w-4 text-blue-500") }}<span id="editorTitleText">Edit command</span></h2><p id="editorSubtitle" class="text-xs text-gray-500"></p></div>
-      <button id="closeEditor" type="button" class="ui-button ui-button-secondary rounded px-3 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close">✕</button>
+      <button id="closeEditor" type="button" class="ui-button ui-button-ghost ui-button-icon" aria-label="Close">✕</button>
     </div>
-    <form id="commandForm" class="space-y-4 overflow-y-auto p-5">
-      <div class="grid gap-4 md:grid-cols-2">
+    <div id="editorTabs" class="ui-tabs wa-editor-tabs px-4" role="tablist" aria-label="Command editor sections">
+      <button id="editorTab-settings" type="button" class="ui-tab" role="tab" aria-controls="editorPanel-settings" aria-selected="true" data-editor-tab="settings">Command settings</button>
+      <button id="editorTab-action" type="button" class="ui-tab" role="tab" aria-controls="editorPanel-action" aria-selected="false" data-editor-tab="action">Action / API</button>
+      <button id="editorTab-response" type="button" class="ui-tab" role="tab" aria-controls="editorPanel-response" aria-selected="false" data-editor-tab="response">Responses</button>
+      <button id="editorTab-test" type="button" class="ui-tab" role="tab" aria-controls="editorPanel-test" aria-selected="false" data-editor-tab="test">Preview & execution</button>
+    </div>
+    <form id="commandForm" class="wa-editor-body space-y-4 overflow-y-auto p-5">
+      <div id="editorPanel-settings" role="tabpanel" aria-labelledby="editorTab-settings" data-editor-section="settings" class="grid gap-4 md:grid-cols-2">
         <label class="text-sm text-gray-700 dark:text-gray-200">Command name
           <input name="name" required maxlength="80" class="ui-control mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900">
         </label>
@@ -84,9 +111,9 @@
         </label>
       </div>
 
-      <div data-flow-panel class="hidden rounded-lg border border-blue-200 p-4 dark:border-blue-900">
+      <div id="editorPanel-action" role="tabpanel" aria-labelledby="editorTab-action" data-editor-section="action" data-flow-panel class="hidden rounded-lg border border-blue-200 p-4 dark:border-blue-900">
         <div data-flow-editor class="mb-3">
-        <div class="mb-3 flex items-center justify-between gap-3">
+        <div class="wa-section-toolbar mb-3">
           <div><h3 data-flow-title class="inline-flex items-center gap-2 font-medium text-gray-900 dark:text-white">{{ icon_server("h-4 w-4 text-blue-500") }}API flow (GET / POST)</h3><p data-flow-subtitle class="text-xs text-gray-500">Internal B-Snap nodes run in order, up to 8 nodes.</p></div>
           <button data-add-step type="button" class="ui-button ui-button-secondary inline-flex items-center gap-1.5 rounded bg-blue-100 px-3 py-1 text-blue-800 dark:bg-blue-900 dark:text-blue-100">{{ icon_plus("h-4 w-4") }}Add node</button>
         </div>
@@ -94,17 +121,33 @@
         <div data-flow-list class="space-y-3"></div>
         <p class="mt-2 text-xs text-gray-500">POST <code>/api/videos/record-and-wait</code> returns a completed recording. To send it, select Video as the response type and choose its video ID or secure URL from the API result. Run test records and previews JSON; it does not send WhatsApp media.</p>
         </div>
-        <div class="mt-4 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-          <h4 class="inline-flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-100">{{ icon_play("h-4 w-4 text-indigo-500") }}Test API response</h4>
+        <div id="editorPanel-test" role="tabpanel" aria-labelledby="editorTab-test" data-editor-section="test" data-test-panel class="mt-4 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+          <h4 class="inline-flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-100">{{ icon_play("h-4 w-4 text-indigo-500") }}Preview and execute</h4>
           <p data-test-description class="mt-1 text-xs text-gray-500">Use sample values for {% raw %}{{argument}}{% endraw %} and {% raw %}{{sender}}{% endraw %}. This test runs the current unsaved flow.</p>
-          <div data-test-controls class="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_auto]">
-            <input data-test-argument class="ui-control rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900" placeholder="Sample argument (e.g. camera name)">
-            <input data-test-sender class="ui-control rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900" placeholder="Whitelisted sender phone number (required)">
-            <button data-test-flow type="button" class="ui-button ui-button-primary inline-flex items-center justify-center gap-1.5 rounded bg-indigo-600 px-3 py-2 text-sm text-white">{{ icon_play("h-4 w-4 text-white") }}Run test</button>
+          <div data-test-controls class="wa-test-controls mt-3">
+            <label class="ui-label">Sample argument<input data-test-argument class="ui-control rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900" placeholder="Sample argument (e.g. camera name)" aria-label="Sample argument"></label>
+            <label class="ui-label">Sample sender<input data-test-sender class="ui-control rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900" placeholder="Whitelisted sender phone number (required)" aria-label="Sample sender"></label>
+            <button data-test-flow type="button" class="ui-button ui-button-secondary inline-flex items-center justify-center gap-1.5">{{ icon_play("h-4 w-4") }}Run test</button>
           </div>
+          <section data-conversation-panel class="wa-conversation-panel ui-card p-4" aria-label="WhatsApp conversation preview">
+            <h3 class="ui-section-title flex items-center gap-2">{{ icon_whatsapp("h-5 w-5 text-green-600") }}<span>WhatsApp conversation preview</span></h3>
+            <p class="mt-1 text-xs text-gray-500">Updates as you edit. Uses sample data; messages are not sent.</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <select data-preview-outcome aria-label="Preview outcome" class="ui-control"><option value="success">Success conversation</option><option value="failure">Fallback conversation</option></select>
+              <button data-preview type="button" class="ui-button ui-button-secondary">Refresh preview</button>
+            </div>
+            <div data-chat-preview class="wa-chat-preview mt-3" aria-live="polite"></div>
+            <p data-preview-state class="mt-2 text-xs text-gray-500" role="status">Loading sample conversation…</p>
+            <details class="mt-3">
+              <summary class="cursor-pointer text-sm">Preview data (JSON, editable)</summary>
+              <label class="ui-label mt-3 block">Sample API results
+                <textarea data-preview-context rows="4" class="ui-control mt-1 w-full font-mono text-xs" spellcheck="false"></textarea>
+              </label>
+            </details>
+          </section>
           <div data-test-result class="mt-3 hidden" aria-live="polite">
             <p data-test-status class="mb-2 text-sm"></p>
-            <pre data-test-json class="max-h-64 overflow-auto rounded bg-gray-950 p-3 text-xs text-gray-100"></pre>
+            <details class="mt-2"><summary class="cursor-pointer text-sm">Inspect result JSON</summary><pre data-test-json class="max-h-64 overflow-auto rounded bg-gray-950 p-3 text-xs text-gray-100"></pre></details>
             <pre data-test-response-preview class="mt-2 hidden max-h-40 overflow-auto whitespace-pre-wrap rounded bg-gray-100 p-3 text-xs text-gray-800 dark:bg-gray-900 dark:text-gray-100"></pre>
             <div data-test-variables class="mt-3 flex flex-wrap gap-2"></div>
             <div class="mt-3 flex flex-wrap items-center gap-2"><label class="text-xs text-gray-500">Insert into <select data-variable-target class="ui-control rounded border-gray-400 bg-transparent text-xs dark:bg-gray-900"><option value="response">Success response</option><option value="processing_messages">Processing message</option><option value="failure_messages">Fallback message</option></select></label><span class="text-xs text-gray-500">Select a variable or use the array mapper.</span></div>
@@ -117,14 +160,14 @@
               <div data-array-fields class="mt-3 flex flex-wrap gap-3 text-sm text-gray-200"></div>
               <div class="mt-3 flex items-center justify-between gap-3">
                 <label class="flex items-center gap-2 text-xs text-gray-300"><input data-array-index type="checkbox" checked> Include row number</label>
-                <button data-insert-array type="button" class="ui-button ui-button-primary inline-flex items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-sm text-white">{{ icon_clip_check("h-4 w-4 text-white") }}Insert mapping</button>
+                <button data-insert-array type="button" class="ui-button ui-button-secondary inline-flex items-center gap-1.5">{{ icon_clip_check("h-4 w-4") }}Insert mapping</button>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div data-response-panel>
+      <div id="editorPanel-response" class="wa-response-workspace" role="tabpanel" aria-labelledby="editorTab-response" data-editor-section="response" data-response-panel>
         <div data-response-media class="mb-3 hidden space-y-2">
           <label class="ui-label block text-sm"><span data-response-type-label>Response type</span>
             <select name="response_type" class="ui-control mt-1 w-full rounded-lg dark:bg-gray-900"><option value="text">Text</option><option value="image">Image</option><option value="video">Video</option></select>
@@ -142,9 +185,9 @@
         </label>
         <p class="mt-1 text-xs text-gray-500"><span>System action variables are ready immediately; use the mapper to format array results. Only API Flow fields require a test. Variables work in response and processing/fallback messages.</span> <span>Normalize a timestamp with</span> <code>{% raw %}{{steps.data.body.updated_at|datetime}}{% endraw %}</code><span>; it uses the B-Snap timezone.</span></p>
       </div>
-      <div data-snap-stage-panel class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+      <div data-editor-section="response" data-snap-stage-panel class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
         <div>
-          <div class="mb-2 flex items-center justify-between"><span data-processing-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Processing messages</span><button type="button" data-add-snap-message="processing_messages" class="ui-button ui-button-secondary rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
+          <div class="wa-section-toolbar mb-2"><span data-processing-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Processing messages</span><button type="button" data-add-snap-message="processing_messages" class="ui-button ui-button-secondary rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
           <div data-snap-message-list="processing_messages" class="space-y-2"></div>
           <label class="ui-label mt-3 block text-sm"><span data-processing-delay-label>Processing delay (seconds)</span>
             <input name="processing_delay_seconds" type="number" min="0" max="60" step="1" value="3" class="ui-control mt-1 w-full rounded-lg dark:bg-gray-900">
@@ -152,658 +195,26 @@
           </label>
         </div>
         <div>
-          <div class="mb-2 flex items-center justify-between"><span data-failure-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Failure / fallback messages</span><button type="button" data-add-snap-message="failure_messages" class="ui-button ui-button-secondary rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
+          <div class="wa-section-toolbar mb-2"><span data-failure-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Failure / fallback messages</span><button type="button" data-add-snap-message="failure_messages" class="ui-button ui-button-secondary rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
           <div data-snap-message-list="failure_messages" class="space-y-2"></div>
         </div>
         <p class="text-xs text-gray-500">These messages are optional for all actions; `/snap` keeps its processing and fallback behavior. Image sources: direct URL, API result URL (for `/snap`), or latest saved snapshot. Text placeholders: <code>{% raw %}{{camera}}{% endraw %}</code>, <code>{% raw %}{{ip}}{% endraw %}</code>, <code>{% raw %}{{argument}}{% endraw %}</code>, <code>{% raw %}{{sender}}{% endraw %}</code>, <code>{% raw %}{{error}}{% endraw %}</code>.</p>
       </div>
       <p class="inline-flex items-center gap-1.5 text-xs text-gray-500">{{ icon_lock("h-3.5 w-3.5") }}<span data-role></span></p>
-      <div class="flex justify-end gap-2 border-t border-gray-200 pt-4 dark:border-gray-700">
-        <button type="submit" class="ui-button ui-button-primary inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white">{{ icon_save("h-4 w-4 text-white") }}Save command</button>
-      </div>
     </form>
+    <div class="wa-editor-footer flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 p-4 dark:border-gray-700">
+      <p id="editorSaveState" class="text-sm text-gray-500" role="status">No unsaved changes</p>
+      <div class="flex gap-2">
+        <button id="cancelEditor" type="button" class="ui-button ui-button-secondary">Cancel</button>
+        <button id="saveCommandButton" type="submit" form="commandForm" class="ui-button ui-button-primary">Save command</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <template id="waIconEdit">{{ icon_pencil("h-4 w-4 text-blue-500") }}</template>
+<template id="waIconPlay">{{ icon_play("h-4 w-4") }}</template>
 <template id="waIconDelete">{{ icon_trash("h-4 w-4") }}</template>
 
-<script>
-{% raw %}
-(() => {
-  const list = document.getElementById('commandList');
-  const emptyState = document.getElementById('emptyState');
-  const editor = document.getElementById('commandEditor');
-  const form = document.getElementById('commandForm');
-  const tokenSelect = document.getElementById('apiTokenId');
-  const adminActions = ['edit','token_check','whitelist_add','whitelist_remove'];
-  const privateOnlyActions = ['edit','token_check','whitelist_add','whitelist_remove'];
-  const actionLabels = {
-    text: 'Reply with text',
-    help: 'Show help',
-    ping_test: 'Test bot',
-    bot_status: 'Check bot connectivity',
-    ping: 'Ping host',
-    cctv: 'Send latest snapshot',
-    snap: 'Capture new snapshot',
-    api_flow: 'Internal B-Snap API flow',
-    edit: 'Edit camera data',
-    token_check: 'View token',
-    whitelist_add: 'Add to whitelist',
-    whitelist_remove: 'Remove from whitelist'
-  };
-  const systemActionSamples = {
-    cctv: {result:{status_code:200,body:[{camera:'CAM-M5-01',ip:'192.168.1.10',timestamp:'2026-10-05T10:30:00Z',filename:'snapshot.jpg',url:'/snapshot/file/snapshot.jpg',lat:'-3.12',long:'115.22'}]}},
-    snap: {result:{status_code:200,body:[{camera:'CAM-M5-01',ip:'192.168.1.10',timestamp:'2026-10-05T10:30:00Z',filename:'snapshot.jpg',url:'/snapshot/file/snapshot.jpg',uptime:'2d 4h',lat:'-3.12',long:'115.22'}]}},
-    ping: {ping:{status_code:200,body:{target:'camera.example',online:true,replies:['Reply from camera.example: time=12.4ms','Reply from camera.example: time=11.8ms']}}},
-    edit: {result:{status_code:200,body:{camera:'CAM-M5-01',hostname:'CAM-M5-01',ip:'192.168.1.10',port:80,status:'Active',group:'North'}}},
-    token_check: {result:{status_code:200,body:[{username:'admin',token:'abcde…wxyz',expires_at:'2026-12-31T23:59:59Z'}]}},
-    whitelist_add: {result:{status_code:200,body:{phone:'628123456789',action:'added',success:true}}},
-    whitelist_remove: {result:{status_code:200,body:{phone:'628123456789',action:'removed',success:true}}},
-    help: {result:{status_code:200,body:{commands:[{trigger:'/help',description:'Show available commands'},{trigger:'/snap',description:'Capture a new snapshot'}]}}},
-    bot_status: {result:{status_code:200,body:{status:'Online',connected:true,logged_in:true,response_time_ms:120,error:''}}},
-    ping_test: {}
-  };
-  let commands = [];
-  let draft = null;
-  let originalId = null;
-  let lastStageTemplateTarget = null;
-
-  function selectTab(tab) {
-    const commandsSelected = tab === 'commands';
-    document.getElementById('commandsPanel').hidden = !commandsSelected;
-    document.getElementById('messagesPanel').hidden = commandsSelected;
-    document.getElementById('commandActions').classList.toggle('hidden', !commandsSelected);
-    const commandTab = document.getElementById('commandsTab');
-    const messagesTab = document.getElementById('messagesTab');
-    commandTab.setAttribute('aria-selected', String(commandsSelected));
-    messagesTab.setAttribute('aria-selected', String(!commandsSelected));
-    commandTab.classList.toggle('border-blue-600', commandsSelected);
-    commandTab.classList.toggle('border-transparent', !commandsSelected);
-    commandTab.classList.toggle('text-blue-700', commandsSelected);
-    commandTab.classList.toggle('text-gray-500', !commandsSelected);
-    commandTab.classList.toggle('dark:text-blue-300', commandsSelected);
-    commandTab.classList.toggle('dark:text-gray-400', !commandsSelected);
-    messagesTab.classList.toggle('border-blue-600', !commandsSelected);
-    messagesTab.classList.toggle('border-transparent', commandsSelected);
-    messagesTab.classList.toggle('text-blue-700', !commandsSelected);
-    messagesTab.classList.toggle('text-gray-500', commandsSelected);
-    messagesTab.classList.toggle('dark:text-blue-300', !commandsSelected);
-    messagesTab.classList.toggle('dark:text-gray-400', commandsSelected);
-  }
-  document.getElementById('commandsTab').addEventListener('click', () => selectTab('commands'));
-  document.getElementById('messagesTab').addEventListener('click', () => selectTab('messages'));
-
-  function appendIcon(button, name) {
-    const template = document.getElementById(`waIcon${name}`);
-    if (template) button.appendChild(template.content.cloneNode(true));
-  }
-
-  function showToast(type, message) { if (window.Toast && Toast[type]) Toast[type](message); }
-  async function readApiJson(response, action) {
-    const contentType = response.headers.get('content-type') || '';
-    if (!contentType.toLowerCase().includes('application/json')) {
-      const detail = response.redirected
-        ? 'The session may have expired; sign in again and reload this page.'
-        : `The server returned HTTP ${response.status} instead of JSON.`;
-      throw new Error(`${action}: ${detail}`);
-    }
-    return response.json();
-  }
-  function setRole(action) {
-    form.querySelector('[data-role]').textContent = `Access required: ${adminActions.includes(action) ? 'WhatsApp admin' : 'whitelisted user'}`;
-  }
-  function setChatScope(action) {
-    const select = form.elements.chat_scope;
-    const note = form.querySelector('[data-chat-scope-note]');
-    const forcedPrivate = privateOnlyActions.includes(action);
-    const isIndonesian = document.documentElement.lang === 'id';
-    if (forcedPrivate) select.value = 'private';
-    select.disabled = forcedPrivate;
-    note.textContent = forcedPrivate
-      ? (isIndonesian ? 'Aksi admin sensitif ini hanya dapat dijalankan lewat japri.' : 'This sensitive admin action is restricted to private chats.')
-      : (isIndonesian ? 'Command japri saja juga disembunyikan dari daftar /help di grup.' : 'Private-only commands are also hidden from group /help lists.');
-  }
-  function setResponseTemplateVisibility(action) {
-    const usesTemplate = true;
-    const isSnap = action === 'snap';
-    const isIndonesian = document.documentElement.lang === 'id';
-    const isVideo = form.elements.response_type.value === 'video';
-    const isImage = form.elements.response_type.value === 'image';
-    form.querySelector('[data-response-media]').classList.remove('hidden');
-    form.querySelector('[data-response-image]').classList.toggle('hidden', !isImage);
-    form.elements.response_image_source.required = isImage;
-    form.querySelector('[data-response-video]').classList.toggle('hidden', !isVideo);
-    form.elements.response_video_source.required = isVideo;
-    form.querySelector('[data-response-type-label]').textContent = isIndonesian ? 'Jenis respons' : 'Response type';
-    form.querySelector('[data-response-video-label]').textContent = isIndonesian ? 'ID atau URL video aman dari API' : 'Video ID or secure URL from API';
-    form.querySelector('[data-response-image-label]').textContent = isIndonesian ? 'URL gambar atau URL snapshot aman' : 'Image URL or protected snapshot URL';
-    form.querySelector('[data-response-image-hint]').textContent = isIndonesian ? 'Gunakan URL gambar HTTP(S) atau URL snapshot dari hasil aksi/API.' : 'Use an HTTP(S) image URL or a snapshot URL from the action/API result.';
-    form.querySelector('[data-response-panel]').classList.toggle('hidden', !usesTemplate);
-    form.querySelector('[data-snap-stage-panel]').classList.remove('hidden');
-    form.elements.response.required = usesTemplate && action !== 'ping' && !isVideo && !isImage;
-    if (action === 'bot_status' && !draft.response?.trim()) {
-      draft.response = '{' + '{status_icon}' + '} Bot Status: {' + '{status}' + '}\n🕒 Response Time: {' + '{response_time}' + '}';
-      form.elements.response.value = draft.response;
-    }
-    if (isSnap) {
-      if (!Array.isArray(draft.processing_messages) || !draft.processing_messages.length) {
-        draft.processing_messages = [{text:isIndonesian ? 'Snapshot untuk {{camera}} sedang diproses. Mohon tunggu.' : 'Snapshot capture for {{camera}} is in progress. Please wait.',image_source_type:'none',image_source:''}];
-      }
-      if (!Array.isArray(draft.failure_messages) || !draft.failure_messages.length) {
-        draft.failure_messages = [{text:isIndonesian ? 'Gagal mengambil snapshot baru untuk {{camera}}. Mengirim snapshot terakhir jika tersedia.' : 'Could not capture a new snapshot for {{camera}}. Sending the latest available snapshot if one exists.',image_source_type:'last_snapshot',image_source:''}];
-      }
-      drawSnapMessages('processing_messages');
-      drawSnapMessages('failure_messages');
-    } else {
-      if (!Array.isArray(draft.processing_messages)) draft.processing_messages = [];
-      if (!Array.isArray(draft.failure_messages)) draft.failure_messages = [];
-      drawSnapMessages('processing_messages');
-      drawSnapMessages('failure_messages');
-    }
-    form.querySelector('[data-response-label]').textContent = isSnap && !isImage && !isVideo
-      ? (isIndonesian ? 'Pesan berhasil (caption snapshot)' : 'Success message (snapshot caption)')
-      : (isVideo ? (isIndonesian ? 'Caption video' : 'Video caption') : (isImage ? (isIndonesian ? 'Caption gambar' : 'Image caption') : 'WhatsApp response template'));
-    form.querySelector('[data-processing-label]').textContent = isIndonesian ? 'Pesan saat processing' : 'Processing messages';
-    form.querySelector('[data-processing-delay-label]').textContent = isIndonesian ? 'Delay processing (detik)' : 'Processing delay (seconds)';
-    form.querySelector('[data-processing-delay-hint]').textContent = isIndonesian ? 'Kirim hanya jika proses masih berjalan. Pesan tertunda dibatalkan saat hasil akhir atau fallback siap. 0 mengirim langsung.' : 'Send only if the operation is still running. Pending messages are skipped when a final or failure response is ready. 0 sends immediately.';
-    form.querySelector('[data-failure-label]').textContent = isIndonesian ? 'Pesan gagal / fallback' : 'Failure / fallback messages';
-  }
-  function drawSnapMessages(key) {
-    if (!draft) return;
-    const list = draft[key] || [];
-    const container = form.querySelector(`[data-snap-message-list="${key}"]`);
-    if (!container) return;
-    container.replaceChildren();
-    const isIndonesian = document.documentElement.lang === 'id';
-    list.forEach((item, index) => {
-      const card = document.createElement('div'); card.className = 'ui-card rounded-lg bg-gray-50 p-3 dark:bg-gray-900';
-      const top = document.createElement('div'); top.className = 'mb-2 flex items-center justify-between text-xs font-medium';
-      const title = document.createElement('span'); title.textContent = `${isIndonesian ? 'Pesan' : 'Message'} ${index + 1}`;
-      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'text-red-600'; remove.textContent = isIndonesian ? 'Hapus' : 'Remove';
-      remove.addEventListener('click', () => {
-        if (list.length > 1) list.splice(index, 1);
-        else list[0] = {text:'',image_source_type:'none',image_source:''};
-        drawSnapMessages(key);
-      });
-      top.append(title, remove); card.appendChild(top);
-      const text = document.createElement('textarea'); text.rows = 2; text.maxLength = 1000;
-      text.placeholder = isIndonesian ? 'Isi pesan WhatsApp (opsional jika ada gambar)' : 'WhatsApp message (optional when an image is selected)';
-      text.className = 'ui-control mb-2 w-full rounded border-gray-300 font-mono text-sm dark:border-gray-600 dark:bg-gray-800'; text.value = item.text || '';
-      text.addEventListener('input', () => { item.text = text.value; }); card.appendChild(text);
-      const sourceRow = document.createElement('div'); sourceRow.className = 'grid gap-2 sm:grid-cols-2';
-      const select = document.createElement('select'); select.className = 'ui-control rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-800';
-      const choices = [
-        ['none', isIndonesian ? 'Tanpa gambar' : 'No image'],
-        ['url', isIndonesian ? 'Gambar dari URL' : 'Image URL'],
-        ...(draft.action === 'snap' || draft.action === 'api_flow' ? [['api', isIndonesian ? 'URL gambar dari hasil API' : 'Image URL from API result']] : []),
-        ['last_snapshot', isIndonesian ? 'Snapshot terakhir tersimpan' : 'Latest saved snapshot'],
-      ];
-      choices.forEach(([value,label]) => select.add(new Option(label, value)));
-      select.value = item.image_source_type || 'none';
-      const source = document.createElement('input'); source.type = 'text'; source.maxLength = 1500;
-      source.placeholder = select.value === 'api' ? '{{steps.camera.body.image_url}}' : 'https://example.com/image.jpg';
-      source.className = 'ui-control rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-800'; source.value = item.image_source || '';
-      const updateSource = () => {
-        item.image_source_type = select.value;
-        source.hidden = !['url','api'].includes(select.value);
-        source.placeholder = select.value === 'api' ? '{{steps.camera.body.image_url}}' : 'https://example.com/image.jpg';
-      };
-      select.addEventListener('change', updateSource);
-      source.addEventListener('input', () => { item.image_source = source.value; });
-      updateSource(); sourceRow.append(select, source); card.appendChild(sourceRow); container.appendChild(card);
-    });
-  }
-  function drawFlow() {
-    const panel = form.querySelector('[data-flow-panel]');
-    const customFlow = draft.action === 'api_flow';
-    const snapImageFlow = draft.action === 'snap';
-    const flowEditorVisible = customFlow || snapImageFlow;
-    const hasPreview = true;
-    const testControlsVisible = true;
-    panel.classList.toggle('hidden', !hasPreview);
-    panel.querySelector('[data-flow-editor]').classList.toggle('hidden', !flowEditorVisible);
-    panel.querySelector('[data-test-controls]').classList.toggle('hidden', !testControlsVisible);
-    const isIndonesian = document.documentElement.lang === 'id';
-    panel.querySelector('[data-flow-title]').lastChild.textContent = snapImageFlow
-      ? (isIndonesian ? 'API flow untuk sumber gambar' : 'Image source API flow')
-      : (customFlow ? 'API flow (GET / POST)' : (isIndonesian ? 'Variabel system action' : 'System action variables'));
-    panel.querySelector('[data-flow-subtitle]').textContent = snapImageFlow
-      ? (isIndonesian ? 'Gunakan hasil node untuk mengisi URL gambar API pada pesan processing atau fallback.' : 'Use node results to provide API image URLs in processing or fallback messages.')
-      : (customFlow
-      ? (isIndonesian ? 'Node internal B-Snap dijalankan berurutan, maksimal 8 node.' : 'Internal B-Snap nodes run in order, up to 8 nodes.')
-      : (isIndonesian ? 'Contoh variabel tersedia langsung. Jalankan uji untuk melihat hasil success/error sebenarnya.' : 'Sample variables are available immediately. Execute a test to inspect actual success/error results.'));
-    panel.querySelector('[data-test-flow]').textContent = customFlow
-      ? (isIndonesian ? 'Jalankan uji' : 'Run test')
-      : (isIndonesian ? 'Uji aksi langsung' : 'Execute action test');
-    panel.querySelector('[data-test-description]').textContent = customFlow
-      ? (isIndonesian ? 'Gunakan nilai contoh untuk {{argument}} dan {{sender}}. Uji ini menjalankan alur yang belum disimpan.' : 'Enter arguments and a whitelisted sender phone number. This test runs the current unsaved flow.')
-      : (isIndonesian ? 'Uji menjalankan aksi sebenarnya, termasuk capture snapshot baru, edit kamera, atau perubahan whitelist. Nomor pengirim wajib terdaftar di whitelist; role dan grup mengikuti nomor tersebut. Pesan WhatsApp tidak dikirim. Hasil success/error tersedia sebagai variabel.' : 'This test executes the actual action, including new snapshot capture, camera edits, or whitelist changes. The sender must be whitelisted; its role and camera group apply. No WhatsApp messages are sent. Success/error fields become template variables.');
-    const container = form.querySelector('[data-flow-list]');
-    container.replaceChildren();
-    const activeFlow = snapImageFlow ? (draft.image_flow || []) : (draft.flow || []);
-    if (flowEditorVisible && !activeFlow.length) {
-      const empty = document.createElement('p'); empty.className = 'text-xs text-gray-500'; empty.textContent = 'No nodes yet. Add an API node to start building the flow.'; container.appendChild(empty);
-    }
-    if (!flowEditorVisible) container.replaceChildren();
-    activeFlow.forEach((step, index) => {
-      const card = document.createElement('div');
-      card.className = 'ui-card rounded-lg bg-gray-50 p-3 dark:bg-gray-900';
-      const heading = document.createElement('div'); heading.className = 'mb-2 flex justify-between text-xs font-semibold';
-      const title = document.createElement('span'); title.textContent = `Node ${index + 1}`;
-      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'inline-flex items-center gap-1.5 text-red-600'; appendIcon(remove, 'Delete'); remove.appendChild(document.createTextNode('Delete'));
-      remove.addEventListener('click', () => { activeFlow.splice(index, 1); drawFlow(); });
-      heading.append(title, remove); card.appendChild(heading);
-      const methodLabel = document.createElement('label'); methodLabel.className = 'ui-label mb-2 block text-xs'; methodLabel.textContent = isIndonesian ? 'Metode HTTP' : 'HTTP method';
-      const methodSelect = document.createElement('select'); methodSelect.className = 'mt-1 w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800';
-      for (const method of ['GET', 'POST']) { const option = document.createElement('option'); option.value = method; option.textContent = method; methodSelect.appendChild(option); }
-      methodSelect.value = step.method || 'GET';
-      methodSelect.addEventListener('change', () => { step.method = methodSelect.value; drawFlow(); });
-      methodLabel.appendChild(methodSelect); card.appendChild(methodLabel);
-      const fields = [['name','Output name','camera'],['path','API path','/api/cctv/resolve-ip'],['params','Query params JSON','{"keyword":"{{argument}}","phone_number":"{{sender}}"}']];
-      if ((step.method || 'GET') === 'POST') fields.push(['body',isIndonesian ? 'Body JSON' : 'JSON body','{"hostname":"{{argument}}","duration":30}']);
-      for (const [key, label, placeholder] of fields) {
-        const wrapper = document.createElement('label'); wrapper.className = 'ui-label mb-2 block text-xs'; wrapper.textContent = label;
-        const isJson = key === 'params' || key === 'body';
-        const input = document.createElement(isJson ? 'textarea' : 'input');
-        input.className = 'mt-1 w-full rounded border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-800'; input.placeholder = placeholder;
-        if (isJson) { input.rows = 2; input.value = typeof step[key] === 'string' ? step[key] : JSON.stringify(step[key] || {}, null, 2); }
-        else input.value = step[key] || '';
-        input.addEventListener('input', () => { step[key] = input.value; });
-        wrapper.appendChild(input); card.appendChild(wrapper);
-      }
-      container.appendChild(card);
-    });
-    if (!customFlow) showSystemActionVariables(draft.action);
-  }
-  function showSystemActionVariables(action) {
-    const resultPanel = form.querySelector('[data-test-result]');
-    const status = form.querySelector('[data-test-status]');
-    const output = form.querySelector('[data-test-json]');
-    const steps = systemActionSamples[action] || {};
-    resultPanel.classList.remove('hidden');
-    status.textContent = document.documentElement.lang === 'id'
-      ? 'Contoh struktur success. Jalankan uji aksi untuk hasil success/error sebenarnya.'
-      : 'Sample success structure. Execute the action test for actual success/error results.';
-    status.className = 'mb-2 text-sm text-green-700 dark:text-green-300';
-    output.textContent = JSON.stringify(steps, null, 2);
-    const variables = form.querySelector('[data-test-variables]');
-    showFlowVariables(steps);
-    addVariableSuggestion(variables, 'argument', 'sample argument');
-    addVariableSuggestion(variables, 'sender', '628123456789');
-  }
-  function openEditor(command = null) {
-    originalId = command?.id || null;
-    draft = command ? structuredClone(command) : {id:`custom_${crypto.randomUUID()}`,name:'',trigger:'',aliases:[],required_params:[],action:'text',role:'user',chat_scope:'all',enabled:true,quote_reply:true,description:'',response:'',flow:[],image_flow:[]};
-    document.getElementById('editorTitleText').textContent = command ? 'Edit command' : 'New command';
-    document.getElementById('editorSubtitle').textContent = command?.trigger || 'Enter a trigger, action, and response.';
-    for (const key of ['name','trigger','description','response']) form.elements[key].value = draft[key] || '';
-    form.elements.response_type.value = draft.response_type || 'text';
-    form.elements.response_video_source.value = draft.response_video_source || '';
-    form.elements.response_image_source.value = draft.response_image_source || '';
-    form.elements.processing_delay_seconds.value = draft.processing_delay_seconds ?? (command ? 0 : 3);
-    form.elements.aliases.value = (draft.aliases || []).join(', ');
-    form.elements.required_params.value = (draft.required_params || []).join(', ');
-    form.elements.action.value = draft.action || 'text';
-    form.elements.chat_scope.value = draft.chat_scope || (privateOnlyActions.includes(draft.action) ? 'private' : 'all');
-    form.elements.enabled.checked = Boolean(draft.enabled);
-    form.elements.quote_reply.checked = draft.quote_reply !== false;
-    setRole(draft.action); setChatScope(draft.action); setResponseTemplateVisibility(draft.action); drawFlow(); editor.classList.remove('hidden');
-  }
-  function closeEditor() { editor.classList.add('hidden'); draft = null; originalId = null; }
-  async function deleteCommand(command) {
-    const isIndonesian = document.documentElement.lang === 'id';
-    const result = await themedSwal({
-      icon: 'warning',
-      title: isIndonesian ? 'Hapus command?' : 'Delete command?',
-      text: isIndonesian
-        ? `Ketik nama fungsi "${command.name}" untuk mengonfirmasi penghapusan.`
-        : `Type the function name "${command.name}" to confirm deletion.`,
-      input: 'text',
-      inputPlaceholder: command.name,
-      inputAttributes: {autocapitalize: 'off', autocorrect: 'off'},
-      inputValidator: value => value?.trim() === command.name
-        ? undefined
-        : (isIndonesian ? 'Nama fungsi tidak cocok.' : 'The function name does not match.'),
-      showCancelButton: true,
-      confirmButtonText: isIndonesian ? 'Hapus' : 'Delete',
-      cancelButtonText: isIndonesian ? 'Batal' : 'Cancel',
-      confirmButtonColor: '#dc2626'
-    });
-    if (!result.isConfirmed) return;
-    const previousCommands = structuredClone(commands);
-    commands = commands.filter(item => item.id !== command.id);
-    try {
-      await saveAll();
-    } catch (error) {
-      commands = previousCommands;
-      renderList();
-      showToast('error', error.message);
-    }
-  }
-  function renderList() {
-    list.replaceChildren();
-    emptyState.classList.toggle('hidden', commands.length !== 0);
-    for (const command of commands) {
-      const row = document.createElement('div');
-      row.className = 'ui-card flex min-w-0 flex-row items-center gap-2 rounded-lg border border-gray-200 bg-white p-2 shadow-sm dark:border-gray-700 dark:bg-gray-800';
-      const open = document.createElement('button'); open.type = 'button'; open.className = 'ui-button ui-button-secondary ui-button-icon flex min-w-0 flex-1 items-center justify-between gap-2 rounded-md p-1 text-left hover:bg-gray-50 dark:hover:bg-gray-700';
-      const info = document.createElement('span'); info.className = 'min-w-0';
-      appendIcon(open, 'Edit');
-      const title = document.createElement('span'); title.className = 'block truncate font-medium text-gray-900 dark:text-white'; title.textContent = command.name || '(Unnamed)';
-      const detail = document.createElement('span'); detail.className = 'block truncate font-mono text-xs text-gray-500'; detail.textContent = `${command.trigger || '(no trigger)'} · ${actionLabels[command.action] || command.action}`;
-      info.append(title, detail);
-      const state = document.createElement('span'); state.className = `ui-badge shrink-0 rounded-full px-2 py-1 text-xs ${command.enabled ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`; state.textContent = command.enabled ? 'Active' : 'Inactive';
-      open.append(info, state); open.addEventListener('click', () => openEditor(command));
-      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'ui-button ui-button-secondary inline-flex shrink-0 items-center gap-1 rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950'; appendIcon(remove, 'Delete'); remove.appendChild(document.createTextNode('Delete'));
-      remove.addEventListener('click', () => deleteCommand(command));
-      row.append(open, remove); list.appendChild(row);
-    }
-  }
-  async function load() {
-    const response = await fetch('/api/admin/wa-bot/commands', {headers:{'Accept':'application/json'}});
-    const data = await readApiJson(response, 'Load commands'); if (!response.ok) throw new Error(data.detail || 'Failed to load commands');
-    commands = data.commands || [];
-    tokenSelect.replaceChildren(new Option('No token (public APIs only)', ''));
-    (data.api_tokens || []).forEach(token => tokenSelect.add(new Option(`${token.name} (${token.prefix || 'token'})`, token.id)));
-    tokenSelect.value = data.api_token_id || '';
-    renderList();
-    await loadOperations();
-  }
-  async function loadOperations() {
-    const headers = {'Accept':'application/json'};
-    const messagesResponse = await fetch('/api/admin/wa-bot/messages?limit=100', {headers});
-    if (!messagesResponse.ok) throw new Error('Failed to load message monitor');
-    const messageData = await readApiJson(messagesResponse, 'Load message monitor');
-    const body = document.getElementById('waMessageRows'); body.replaceChildren();
-    for (const item of messageData.messages || []) {
-      const row = document.createElement('tr'); row.className = 'border-b align-top dark:border-gray-700';
-      for (const value of [item.timestamp || '', item.phone_number, item.direction, item.status, item.command || '', [item.message, item.error].filter(Boolean).join(' — ')]) {
-        const cell = document.createElement('td'); cell.className = 'max-w-sm break-words p-2'; cell.textContent = value || ''; row.appendChild(cell);
-      }
-      body.appendChild(row);
-    }
-    if (!body.children.length) body.innerHTML = '<tr><td colspan="6" class="p-3">No messages recorded.</td></tr>';
-  }
-  window.setInterval(() => loadOperations().catch(error => console.warn('WhatsApp operations refresh failed:', error)), 30000);
-  document.getElementById('refreshWaMessages').addEventListener('click', () => loadOperations().catch(error => showToast('error',error.message)));
-  async function saveAll() {
-    const response = await fetch('/api/admin/wa-bot/commands', {method:'PUT',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({commands,api_token_id:tokenSelect.value})});
-    const data = await readApiJson(response, 'Save changes'); if (!response.ok) throw new Error(data.detail || 'Failed to save changes');
-    commands = data.commands || commands; renderList(); showToast('success','WhatsApp Bot changes saved.');
-  }
-  document.getElementById('addCommand').addEventListener('click', () => openEditor());
-  document.getElementById('emptyAddCommand').addEventListener('click', () => openEditor());
-  document.getElementById('saveCommands').addEventListener('click', async event => {
-    event.currentTarget.disabled = true;
-    try { await saveAll(); } catch (error) { showToast('error',error.message); }
-    finally { event.currentTarget.disabled = false; }
-  });
-  document.getElementById('closeEditor').addEventListener('click', closeEditor);
-  form.elements.action.addEventListener('change', () => {
-    draft.action = form.elements.action.value;
-    draft.role = adminActions.includes(draft.action) ? 'admin' : 'user';
-    if (draft.action === 'bot_status' && !originalId) {
-      if (!form.elements.name.value.trim()) form.elements.name.value = draft.name = 'Bot Status';
-      if (!form.elements.trigger.value.trim()) form.elements.trigger.value = draft.trigger = '/botstatus';
-      if (!form.elements.description.value.trim()) form.elements.description.value = draft.description = 'Check WhatsApp bot and gateway connectivity';
-    }
-    setRole(draft.action); setChatScope(draft.action); setResponseTemplateVisibility(draft.action); drawFlow();
-  });
-  form.querySelector('[data-add-step]').addEventListener('click', () => {
-    const activeFlow = draft.action === 'snap' ? (draft.image_flow ||= []) : (draft.flow ||= []);
-    if (activeFlow.length >= 8) { showToast('warning','Maximum 8 API nodes per command.'); return; }
-    activeFlow.push({name:`data${activeFlow.length + 1}`,path:'',method:'GET',params:{},body:{}}); drawFlow();
-  });
-  form.querySelectorAll('[data-add-snap-message]').forEach(button => button.addEventListener('click', () => {
-    if (!draft) return;
-    const key = button.dataset.addSnapMessage;
-    draft[key] ||= [];
-    if (draft[key].length >= 10) { showToast('warning','Maximum 10 messages per stage.'); return; }
-    draft[key].push({text:'',image_source_type:'none',image_source:''});
-    drawSnapMessages(key);
-  }));
-  function addVariableSuggestion(container, expression, value, formatTimestamp = false) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = formatTimestamp
-      ? 'rounded bg-amber-100 px-2 py-1 font-mono text-xs text-amber-900 hover:bg-amber-200 dark:bg-amber-900 dark:text-amber-100'
-      : 'rounded bg-blue-100 px-2 py-1 font-mono text-xs text-blue-800 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-100';
-    button.textContent = formatTimestamp ? expression + '|datetime' : expression;
-    button.title = formatTimestamp ? 'Insert timestamp formatted in the B-Snap timezone' : (typeof value === 'string' ? value : JSON.stringify(value));
-    button.addEventListener('click', () => {
-      const variable = formatTimestamp ? expression + '|datetime' : expression;
-      insertTemplateAtTarget('{' + '{' + variable + '}' + '}');
-    });
-    container.appendChild(button);
-  }
-  function insertTemplateAtTarget(snippet) {
-    const destination = form.querySelector('[data-variable-target]').value;
-    let textarea = form.elements.response;
-    if (destination === 'response_video_source' || destination === 'response_image_source') {
-      textarea = form.elements[destination];
-    } else if (destination !== 'response') {
-      const container = form.querySelector(`[data-snap-message-list="${destination}"]`);
-      textarea = lastStageTemplateTarget instanceof HTMLTextAreaElement && container.contains(lastStageTemplateTarget)
-        ? lastStageTemplateTarget
-        : container.querySelector('textarea');
-    }
-    if (!textarea) {
-      showToast('info', 'Add a message in that stage first.');
-      return;
-    }
-    textarea.setRangeText(snippet, textarea.selectionStart, textarea.selectionEnd, 'end');
-    textarea.dispatchEvent(new Event('input', {bubbles:true}));
-    textarea.focus();
-  }
-  form.addEventListener('focusin', event => {
-    if (event.target instanceof HTMLTextAreaElement && event.target.closest('[data-snap-message-list]')) {
-      lastStageTemplateTarget = event.target;
-    }
-  });
-  form.elements.response_type.addEventListener('change', () => setResponseTemplateVisibility(form.elements.action.value));
-  const videoVariableTarget = document.createElement('option');
-  videoVariableTarget.value = 'response_video_source'; videoVariableTarget.textContent = 'Video source';
-  form.querySelector('[data-variable-target]').appendChild(videoVariableTarget);
-  const imageVariableTarget = document.createElement('option');
-  imageVariableTarget.value = 'response_image_source'; imageVariableTarget.textContent = 'Image source';
-  form.querySelector('[data-variable-target]').appendChild(imageVariableTarget);
-  function showFlowVariables(steps, parameters = {}) {
-    const container = form.querySelector('[data-test-variables]');
-    container.replaceChildren();
-    let suggestionCount = 0;
-    const arrays = [];
-    for (const [name, value] of Object.entries(parameters)) {
-      addVariableSuggestion(container, `params.${name}`, value);
-      suggestionCount += 1;
-    }
-    for (const [stepName, result] of Object.entries(steps || {})) {
-      if (suggestionCount >= 100) break;
-      addVariableSuggestion(container, `steps.${stepName}.status_code`, result.status_code);
-      suggestionCount += 1;
-      const visit = (value, path) => {
-        if (suggestionCount >= 100) return;
-        const expression = `steps.${stepName}.body${path}`;
-        addVariableSuggestion(container, expression, value);
-        if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}[T ]/.test(value) && !Number.isNaN(Date.parse(value))) {
-          addVariableSuggestion(container, expression, value, true);
-        }
-        suggestionCount += 1;
-        if (Array.isArray(value)) {
-          arrays.push({expression, value});
-          value.forEach((item, index) => visit(item, `${path}.${index}`));
-        }
-        else if (value && typeof value === 'object') {
-          Object.entries(value).filter(([key]) => /^[a-zA-Z0-9_-]+$/.test(key)).forEach(([key, item]) => visit(item, `${path}.${key}`));
-        }
-      };
-      visit(result.body, '');
-    }
-    const mapper = form.querySelector('[data-array-mapper]');
-    const select = form.querySelector('[data-array-select]');
-    select.replaceChildren(...arrays.map(({expression}, index) => new Option(expression, String(index))));
-    mapper.classList.toggle('hidden', arrays.length === 0);
-    mapper._arrayData = arrays;
-    drawArrayFields();
-  }
-  function drawArrayFields() {
-    const mapper = form.querySelector('[data-array-mapper]');
-    const select = form.querySelector('[data-array-select]');
-    const fields = form.querySelector('[data-array-fields]');
-    fields.replaceChildren();
-    const selected = mapper._arrayData?.[Number(select.value)];
-    if (!selected) return;
-    const first = selected.value[0];
-    const properties = [];
-    const collect = (value, prefix = '') => {
-      if (value && typeof value === 'object' && !Array.isArray(value)) {
-        Object.entries(value).forEach(([key, nested]) => {
-          if (!/^[a-zA-Z0-9_-]+$/.test(key)) return;
-          collect(nested, prefix ? `${prefix}.${key}` : key);
-        });
-      } else if (!Array.isArray(value)) {
-        properties.push(prefix);
-      }
-    };
-    if (first && typeof first === 'object' && !Array.isArray(first)) collect(first);
-    else if (selected.value.length && !Array.isArray(first)) properties.push('');
-    properties.slice(0, 30).forEach(property => {
-      const label = document.createElement('label');
-      label.className = 'inline-flex items-center gap-1.5';
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.dataset.arrayProperty = property;
-      checkbox.addEventListener('change', updateInsertMappingState);
-      label.append(checkbox, document.createTextNode(property || 'value'));
-      fields.appendChild(label);
-    });
-    updateInsertMappingState();
-  }
-  function updateInsertMappingState() {
-    const hasSelectedProperty = [...form.querySelectorAll('[data-array-property]')].some(input => input.checked);
-    form.querySelector('[data-insert-array]').disabled = !hasSelectedProperty;
-  }
-  form.querySelector('[data-array-select]').addEventListener('change', drawArrayFields);
-  form.querySelector('[data-insert-array]').addEventListener('click', () => {
-    const mapper = form.querySelector('[data-array-mapper]');
-    const array = mapper._arrayData?.[Number(form.querySelector('[data-array-select]').value)];
-    if (!array) return;
-    const properties = [...form.querySelectorAll('[data-array-property]:checked')].map(input => input.dataset.arrayProperty);
-    if (!properties.length) return;
-    const token = (content) => '{' + '{' + content + '}' + '}';
-    const includeIndex = form.querySelector('[data-array-index]').checked;
-    const values = properties.map(property => token(`this${property ? `.${property}` : ''}`));
-    const row = `${includeIndex ? token('@index1') + '. ' : ''}${values.join(' | ')}`;
-    const snippet = `${token(`#each ${array.expression}`)}\n${row}\n${token('/each')}`;
-    insertTemplateAtTarget(snippet);
-  });
-  form.querySelector('[data-test-flow]').addEventListener('click', async event => {
-    const button = event.currentTarget;
-    const resultPanel = form.querySelector('[data-test-result]');
-    const status = form.querySelector('[data-test-status]');
-    const output = form.querySelector('[data-test-json]');
-    resultPanel.classList.remove('hidden');
-    status.textContent = 'Running API flow…';
-    status.className = 'mb-2 text-sm text-gray-500';
-    output.textContent = '';
-    const responsePreview = form.querySelector('[data-test-response-preview]');
-    responsePreview.textContent = ''; responsePreview.classList.add('hidden');
-    form.querySelector('[data-test-variables]').replaceChildren();
-    button.disabled = true;
-    try {
-      const isAPIFlow = draft.action === 'api_flow';
-      const testCommand = {...draft, response: form.elements.response.value,
-        required_params: form.elements.required_params.value.split(',').map(value => value.trim()).filter(Boolean)};
-      const response = await fetch(isAPIFlow ? '/api/admin/wa-bot/test-flow' : '/api/admin/wa-bot/test-action', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-        body: JSON.stringify({
-          command: testCommand,
-          execute: true,
-          flow: draft.action === 'api_flow' ? (draft.flow || []) : (draft.image_flow || []),
-          api_token_id: tokenSelect.value,
-          argument: form.querySelector('[data-test-argument]').value,
-          sender: form.querySelector('[data-test-sender]').value,
-          required_params: form.elements.required_params.value.split(',').map(value => value.trim()).filter(Boolean)
-        })
-      });
-      const data = await readApiJson(response, 'Run API flow test');
-      const previewText = response.ok ? data.response_preview : (data.failure_previews || []).map(item => item.text || '').filter(Boolean).join('\n');
-      if (previewText) { responsePreview.textContent = previewText; responsePreview.classList.remove('hidden'); }
-      if (data.steps) {
-        output.textContent = JSON.stringify(data.steps, null, 2);
-        showFlowVariables(data.steps, data.params);
-      }
-      if (!response.ok) throw new Error(data.detail || 'API flow test failed');
-      status.textContent = 'Test succeeded. Click a variable below to add it to the response template.';
-      status.className = 'mb-2 text-sm text-green-700 dark:text-green-300';
-      output.textContent = JSON.stringify(data.steps, null, 2);
-      showFlowVariables(data.steps, data.params);
-    } catch (error) {
-      status.textContent = error.message;
-      status.className = 'mb-2 text-sm text-red-600 dark:text-red-300';
-    } finally {
-      button.disabled = false;
-    }
-  });
-  form.addEventListener('submit', async event => {
-    event.preventDefault();
-    draft.name = form.elements.name.value.trim(); draft.trigger = form.elements.trigger.value.trim().toLowerCase();
-    draft.description = form.elements.description.value.trim(); draft.response = form.elements.response.value;
-    draft.aliases = form.elements.aliases.value.split(',').map(value => value.trim().toLowerCase()).filter(Boolean);
-    draft.required_params = form.elements.required_params.value.split(',').map(value => value.trim()).filter(Boolean);
-    draft.action = form.elements.action.value; draft.role = adminActions.includes(draft.action) ? 'admin' : 'user'; draft.chat_scope = privateOnlyActions.includes(draft.action) ? 'private' : form.elements.chat_scope.value; draft.enabled = form.elements.enabled.checked; draft.quote_reply = form.elements.quote_reply.checked;
-    draft.response_type = form.elements.response_type.value;
-    draft.response_video_source = form.elements.response_video_source.value.trim();
-    draft.response_image_source = form.elements.response_image_source.value.trim();
-    draft.processing_delay_seconds = Number(form.elements.processing_delay_seconds.value);
-    if (draft.action === 'api_flow') {
-      if (!draft.flow?.length) { showToast('warning','Add at least one API node.'); return; }
-      for (const step of draft.flow) {
-        if (typeof step.params === 'string') { try { step.params = JSON.parse(step.params || '{}'); } catch { showToast('error',`Query params for node ${step.name} must be valid JSON.`); return; } }
-      }
-    }
-    {
-      const stageLists = [draft.processing_messages || [], draft.failure_messages || []];
-      if (draft.action === 'snap' && stageLists.some(messages => messages.length < 1 || messages.length > 10)) { showToast('warning','Each snapshot stage needs 1 to 10 messages.'); return; }
-      if (stageLists.some(messages => messages.length > 10)) { showToast('warning','Each stage supports up to 10 messages.'); return; }
-      if (stageLists.some(messages => messages.some(item =>
-        (!item.text?.trim() && item.image_source_type === 'none')
-        || (['url','api'].includes(item.image_source_type) && !item.image_source?.trim())
-      ))) { showToast('warning','Each message needs text or an image source.'); return; }
-      if (stageLists.some(messages => messages.some(item => item.image_source_type === 'api'))
-        && !(draft.action === 'snap' ? draft.image_flow?.length : (draft.action === 'api_flow' ? draft.flow?.length : false))) {
-        showToast('warning','Add an API flow before using API result image URLs.'); return;
-      }
-      for (const step of draft.action === 'snap' ? (draft.image_flow || []) : []) {
-        if (typeof step.params === 'string') { try { step.params = JSON.parse(step.params || '{}'); } catch { showToast('error',`Query params for node ${step.name} must be valid JSON.`); return; } }
-      }
-    }
-    const previousCommands = structuredClone(commands);
-    const index = commands.findIndex(item => item.id === originalId);
-    if (index >= 0) commands[index] = draft; else commands.push(draft);
-    try {
-      await saveAll();
-      closeEditor();
-    } catch (error) {
-      commands = previousCommands;
-      renderList();
-      showToast('error',error.message);
-    }
-  });
-  window.addEventListener('bsnap:languagechange', () => {
-    renderList();
-    if (draft) {
-      document.getElementById('editorTitleText').textContent = originalId ? 'Edit command' : 'New command';
-      document.getElementById('editorSubtitle').textContent = draft.trigger || 'Enter a trigger, action, and response.';
-      setRole(draft.action);
-      setChatScope(draft.action);
-      setResponseTemplateVisibility(draft.action);
-      drawFlow();
-    }
-  });
-  load().catch(error => { list.textContent = error.message; });
-})();
-{% endraw %}
-</script>
+<script src="/static/js/wa-bot-builder.js" defer></script>
 {% endblock %}

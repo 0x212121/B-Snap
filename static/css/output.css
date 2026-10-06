@@ -1374,6 +1374,10 @@ select {
   height: 100%;
 }
 
+.max-h-40 {
+  max-height: 10rem;
+}
+
 .max-h-48 {
   max-height: 12rem;
 }
@@ -1392,10 +1396,6 @@ select {
 
 .max-h-\[600px\] {
   max-height: 600px;
-}
-
-.max-h-\[62vh\] {
-  max-height: 62vh;
 }
 
 .max-h-\[68vh\] {
@@ -1861,10 +1861,6 @@ select {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.flex-row {
-  flex-direction: row;
-}
-
 .flex-col {
   flex-direction: column;
 }
@@ -1875,10 +1871,6 @@ select {
 
 .flex-wrap {
   flex-wrap: wrap;
-}
-
-.content-start {
-  align-content: flex-start;
 }
 
 .items-start {
@@ -3655,11 +3647,6 @@ select {
   --tw-shadow: var(--tw-shadow-colored);
 }
 
-.shadow-red-600\/20 {
-  --tw-shadow-color: rgb(220 38 38 / 0.2);
-  --tw-shadow: var(--tw-shadow-colored);
-}
-
 .outline {
   outline-style: solid;
 }
@@ -3998,16 +3985,6 @@ select {
 .hover\:border-gray-300:hover {
   --tw-border-opacity: 1;
   border-color: rgb(209 213 219 / var(--tw-border-opacity));
-}
-
-.hover\:border-red-100:hover {
-  --tw-border-opacity: 1;
-  border-color: rgb(254 226 226 / var(--tw-border-opacity));
-}
-
-.hover\:bg-amber-200:hover {
-  --tw-bg-opacity: 1;
-  background-color: rgb(253 230 138 / var(--tw-bg-opacity));
 }
 
 .hover\:bg-amber-50:hover {
@@ -5267,11 +5244,6 @@ select {
   border-color: rgb(75 85 99 / var(--tw-border-opacity));
 }
 
-:is(.dark .dark\:hover\:border-red-800:hover) {
-  --tw-border-opacity: 1;
-  border-color: rgb(153 27 27 / var(--tw-border-opacity));
-}
-
 :is(.dark .dark\:hover\:border-slate-600:hover) {
   --tw-border-opacity: 1;
   border-color: rgb(71 85 105 / var(--tw-border-opacity));
@@ -5343,11 +5315,6 @@ select {
 
 :is(.dark .dark\:hover\:bg-red-900\/20:hover) {
   background-color: rgb(127 29 29 / 0.2);
-}
-
-:is(.dark .dark\:hover\:bg-red-950:hover) {
-  --tw-bg-opacity: 1;
-  background-color: rgb(69 10 10 / var(--tw-bg-opacity));
 }
 
 :is(.dark .dark\:hover\:bg-slate-600:hover) {
@@ -5584,10 +5551,6 @@ select {
     width: auto;
   }
 
-  .md\:max-w-xl {
-    max-width: 36rem;
-  }
-
   .md\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -5598,10 +5561,6 @@ select {
 
   .md\:grid-cols-4 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .md\:grid-cols-\[1fr_1fr_auto\] {
-    grid-template-columns: 1fr 1fr auto;
   }
 
   .md\:flex-row {

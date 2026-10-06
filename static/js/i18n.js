@@ -690,6 +690,51 @@
     "to confirm deletion.": "untuk mengonfirmasi penghapusan.", "The function name does not match.": "Nama fungsi tidak cocok."
   });
 
+  Object.assign(translations, {
+    "Save API settings": "Simpan pengaturan API",
+    "API settings saved": "Pengaturan API tersimpan",
+    "Command settings": "Pengaturan command",
+    "Action / API": "Aksi / API",
+    "Responses": "Respons",
+    "Preview & execution": "Pratinjau & eksekusi",
+    "Preview and execute": "Pratinjau dan jalankan",
+    "Preview with sample data": "Pratinjau dengan data contoh",
+    "Preview outcome": "Hasil pratinjau",
+    "Success conversation": "Percakapan berhasil",
+    "Fallback conversation": "Percakapan fallback",
+    "Preview data (JSON, editable)": "Data pratinjau (JSON, dapat diedit)",
+    "Sample data only. No action or delivery is performed.": "Data contoh saja. Tidak ada aksi atau pengiriman yang dijalankan.",
+    "Inspect result JSON": "Periksa hasil JSON",
+    "Search name, trigger, or alias": "Cari nama, trigger, atau alias",
+    "All statuses": "Semua status",
+    "All actions": "Semua aksi",
+    "No commands match these filters.": "Tidak ada command sesuai filter.",
+    "No unsaved changes": "Tidak ada perubahan",
+    "Filter sender phone": "Filter nomor pengirim",
+    "Filter message command": "Filter command pesan",
+    "Message status": "Status pesan",
+    "Failures": "Gagal",
+    "Sent": "Terkirim",
+    "Received": "Diterima",
+    "Phone number": "Nomor telepon",
+    "Clear filters": "Hapus filter",
+    "From": "Dari",
+    "To": "Sampai",
+    "Details": "Detail",
+    "Loading latest 100 messages?": "Memuat 100 pesan terbaru?",
+    "Sample sender": "Pengirim contoh",
+    "Sample argument": "Argumen contoh"
+});
+
+  Object.assign(translations, {
+    "WhatsApp conversation preview": "Pratinjau percakapan WhatsApp",
+    "Search commands": "Cari command",
+    "Updates as you edit. Uses sample data; messages are not sent.": "Diperbarui saat diedit. Menggunakan data contoh; pesan tidak dikirim.",
+    "Refresh preview": "Perbarui pratinjau",
+    "Loading sample conversation?": "Memuat percakapan contoh?",
+    "Sample API results": "Contoh hasil API"
+  });
+
   const originalText = new WeakMap();
   const originalAttributes = new WeakMap();
   const relevantAttributes = ['placeholder', 'title', 'aria-label', 'alt'];

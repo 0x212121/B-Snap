@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from urllib.parse import unquote, urljoin, urlsplit
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -191,6 +191,79 @@ def get_wa_bot_messages(limit: int = 100, db: Session = Depends(get_db), current
     return {"messages": [{"id": row.id, "timestamp": row.timestamp.isoformat() if row.timestamp else None,
         "phone_number": row.phone_number, "direction": row.direction, "status": row.status,
         "command": row.command, "message": row.message, "error": row.error} for row in rows]}
+
+
+class WABotPreviewRequest(BaseModel):
+    command: dict
+    steps: dict = Field(default_factory=dict)
+    argument: str = ""
+    sender: str = ""
+    outcome: str = "success"
+    response_text: Optional[str] = None
+
+
+@router.post("/api/admin/wa-bot/preview")
+def preview_wa_bot_command(
+    payload: WABotPreviewRequest,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required),
+) -> dict:
+    """Render supplied sample data without executing actions or delivering media."""
+    command = payload.command
+    if payload.outcome not in {"success", "failure"}:
+        raise HTTPException(status_code=422, detail="Choose a success or failure preview")
+    try:
+        params = bind_command_arguments(command.get("required_params") or [], payload.argument[:500])
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    result = payload.steps.get("result", {})
+    result_body = result.get("body", {}) if isinstance(result, dict) else {}
+    if isinstance(result_body, list):
+        result_body = result_body[0] if result_body else {}
+    if not isinstance(result_body, dict):
+        result_body = {}
+    error_step = payload.steps.get("error", {})
+    error_body = error_step.get("body", {}) if isinstance(error_step, dict) else {}
+    error = ""
+    if payload.outcome == "failure":
+        error = str(error_body.get("message") or "Sample operation failed") if isinstance(error_body, dict) else "Sample operation failed"
+    steps = dict(payload.steps)
+    if error and "error" not in steps:
+        steps["error"] = {"status_code": 502, "body": {"status": "error", "message": error, "detail": error}}
+    context = {"steps": steps, "params": params,
+               "argument": payload.argument[:500], "sender": payload.sender[:100]}
+    values = {"argument": context["argument"], "sender": context["sender"],
+              "camera": str(result_body.get("camera") or context["argument"]),
+              "ip": str(result_body.get("ip") or ""), "error": error,
+              "status": str(result_body.get("status") or "Online"), "status_icon": "✓", "response_time": "120 ms"}
+    if command.get("action") in {"snap", "cctv"}:
+        values.update({key: value for key, value in result_body.items()
+                       if key in {"camera", "ip", "timestamp", "filename", "url", "lat", "long", "uptime"}})
+    timezone_name = get_current_timezone(db)
+
+    def render(value: object) -> str:
+        return render_response(render_flow_template(str(value or "")[:4000], context, timezone_name), **values)
+
+    messages = []
+    for stage in ("processing_messages", "failure_messages" if error else "response"):
+        if stage == "response":
+            response_type = command.get("response_type", "text")
+            source = command.get("response_video_source" if response_type == "video" else "response_image_source")
+            if response_type == "text" and command.get("action") in {"snap", "cctv"}:
+                response_type, source = "image", "Snapshot from action result"
+            messages.append({"stage": "success", "text": payload.response_text if payload.response_text is not None else render(command.get("response")),
+                             "media_type": response_type, "source": render(source)})
+            continue
+        items = command.get(stage) or []
+        if not isinstance(items, list) or any(not isinstance(item, dict) for item in items):
+            raise HTTPException(status_code=422, detail="Stage messages must be a list of objects")
+        for item in items[:10]:
+            image_type = item.get("image_source_type", "none")
+            messages.append({"stage": "processing" if stage == "processing_messages" else "fallback",
+                             "text": render(item.get("text")),
+                             "media_type": "text" if image_type == "none" else "image",
+                             "source": "Latest saved snapshot" if image_type == "last_snapshot" else render(item.get("image_source"))})
+    return {"messages": messages, "processing_delay_seconds": command.get("processing_delay_seconds", 0)}
 
 
 @router.post("/api/admin/wa-bot/test-flow")
