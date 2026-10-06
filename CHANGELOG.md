@@ -8,523 +8,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added live native-action tests to Bot Builder without WhatsApp delivery, with success/error JSON and selectable failure fields for capture, latest snapshot, ping, status, and other actions. Snapshot capture APIs now return consistent success/message/detail fields and enforce camera group access; `/api/snapshots/capture/{identifier}` aliases the existing capture endpoint.
-- Added per-command processing-message delay (0–60 seconds) to Bot Builder; pending processing is canceled on completion/failure, queued processing is omitted from final/fallback responses, and snapshot failures suppress success media. New commands start with a three-second delay; existing commands retain zero unless edited.
-- Added named command-input variables for processing/success/fallback messages and API fields: required parameters such as `hostname, duration` expose `{{params.hostname}}`, `{{params.duration}}`, and short aliases before API execution; Bot Builder tests preview the bound inputs.
-- Added Text/Image/Video response selection for every WhatsApp command action, including configurable image URLs or protected snapshot URLs, optional captions, and media-source template targets. Protected images retain authentication/group checks and failures use the configured fallback.
-- Made API Flow video delivery configurable in Bot Builder with Text/Video response types and a selected API-result video ID or secure URL. Commands default to text and no longer automatically send recording results; selected videos require valid token and camera group access.
-- Added `POST /api/videos/record-and-wait` and configurable WhatsApp API Flow video delivery: wait for a successful recording, upload the selected protected MP4 through GoWA, and use the response template as its caption. Recording failures use the configured fallback; duplicate IPs remain rejected. Keep recording work off the event loop, return saved video metadata, support SQLite saves, and rewind media uploads before retries.
-- Added GET/POST selection and templated JSON bodies to WhatsApp Bot Builder API nodes so video recording commands can call `POST /api/videos/record` without HTTP 405 errors; existing nodes default to GET.
-- Added `POST /api/videos/record` with hostname or IP selection; duplicate IPs return 409 without recording. Enforce camera group access for both recording endpoints and audit the authenticated user.
+- WhatsApp Bot Builder with custom commands, API flows, and configurable text, image, and video replies.
+- Live conversation previews, action testing, template variables, and message delivery monitoring.
+- Video recording through APIs and WhatsApp commands.
+
+### Changed
+
+- Unified page styling, simpler navigation, and clearer destructive actions.
+- Improved Bot Builder editing, search, draft protection, and English/Indonesian support.
+- Simplified release notes to highlight important changes.
 
 ### Fixed
 
-- Apply shared destructive red buttons to snapshot/video deletion and snapshot bulk deletion, and use the supported red confirmation-button option in gallery delete dialogs.
-- Align Bot Builder command card actions, labeled filter controls, API token settings, and execution controls using responsive grids and consistent spacing; separate card metadata from Edit/Delete actions.
-- Use explicit destructive red styling for Bot Builder command deletion and draft removal, keep supporting actions neutral, and apply semantic active/inactive badge colors consistently in light and dark themes.
-- Show WhatsApp conversation previews automatically beside response editing, refresh chat bubbles as templates change, and collapse editable sample JSON so processing, success/fallback, captions, and media sources are easy to find.
-- Move the camera-IP resolver to `/api/cctv/resolve-ip`; update Bot Builder examples, n8n workflow, OpenAPI docs, and tests. Existing saved Bot Builder nodes using the old path are normalized to the new path with sender phone filtering.
-
-- Require a whitelisted phone_number for `/cctv/resolve-ip`, enforce sender and API-user camera groups even for whitelist admins, and return JSON 403 for denied access or 404 for no matching camera.
-- Report camera/group permission failures as HTTP 403 in WhatsApp commands and Bot Builder instead of camera/snapshot-not-found errors. Enforce sender group access for camera edits and target group assignment, and distinguish missing cameras from missing saved snapshots.
-
-- Use the trigger configured in Bot Builder in the Ping host usage message.
-- Reuse the existing `/ping?ip=...` API handler for system Ping host commands so replies, timings, and errors match the API. Keep execution off the event loop and expose the raw result alongside ping template variables; treat failed ICMP responses as timeouts.
-
-- Apply sender-phone whitelist and role checks to native and API-flow Bot Builder tests, matching live commands. Native previews use the sender's camera group rather than the logged-in admin; normalize phone/JID inputs consistently and enforce whitelist inside the command handler.
-
-- Validate missing named command inputs and test arguments before sending API requests, with actionable messages instead of posting an empty camera hostname.
-- Preserve failed API node HTTP status and response body in Bot Builder test previews and WhatsApp fallback template variables, while stopping subsequent flow nodes.
-- Return JSON from global 404/403 handlers for API and JSON requests, preserving the endpoint's error detail (including unknown recording camera hostnames); browser page errors still render HTML.
-- Vertically center the selected camera name and search input in the Snapshot Gallery camera filter.
-- Vertically center the selected camera name and search input in the Video Gallery camera filter.
-- Fixed WhatsApp Bot Builder rendering by preventing Jinja from evaluating JavaScript response-template placeholders, which could redirect the user to login and clear session cookies.
-- Check camera online status before starting a WhatsApp `/snap` capture; offline or unknown cameras use the configured failure/fallback messages. Keep text attached as the image caption and send GoWA URL images using its documented multipart format.
-- Populate snapshot-stage template context from the latest saved snapshot and resolve bare snapshot fields and `|datetime` values inside `#each` blocks.
-
-### Changed
-
-- Organize WhatsApp Bot Builder into accessible editor sections with persistent save controls, unsaved-change protection, separate API settings, command search/access summaries, sample conversation previews, explicit live-action confirmation, and filtered message monitoring with refresh status and message details.
-- Introduce shared UI tokens and reusable page headers, buttons, cards, tables, filters, form controls, tabs, badges, and feedback states across operational pages. Align responsive page spacing, separate gallery filters from page titles, and move the changelog/version utility into account navigation so it does not cover page actions.
-
-- Simplify global navigation with direct monitoring links, grouped secondary destinations under More, compact active states, and accessible mobile accordions. Move desktop theme/language preferences into the account menu and preserve all destination URLs and role restrictions.
-
-- Run WhatsApp camera captures and GoWA sends in separate bounded thread pools so blocking I/O does not stall the webhook event loop; the shared camera lock prevents overlapping captures for the same camera across workers.
-
-### Added
-
-- Added automatic system-action result previews and array mapping for response, processing, and fallback templates; only API Flow actions require a manual API test to inspect dynamic fields.
-- Extended configurable WhatsApp processing and failure/fallback message lists to every system action; these stages are optional outside `/snap`.
-- Added admin visibility into recent inbound/outbound WhatsApp gateway statuses and a tabbed Bot Builder layout with contained command and message lists.
-- Unmatched WhatsApp messages are ignored; the bot no longer sends a fallback response.
-- Corrected Top 10 command analytics to count recognized WhatsApp command invocations with arguments; credential values are redacted, and GoWA retry IDs use a dedicated message-log field instead of command-log marker rows.
-- Added a follow-up WhatsApp migration for the dedicated GoWA message ID column and clearer Bot Builder API response errors.
-- Added per-command private-chat restrictions, enforced them before action execution, and filtered private-only commands from group /help.
-- Added a `|datetime` response-template formatter for database/API timestamps using the configured B-Snap timezone, with editor suggestions for ISO timestamp fields.
-- Updated WhatsApp CCTV snapshot commands to match hostname prefixes and send the latest available snapshot for up to five matching cameras.
-- Changed real-time WhatsApp snapshot lookup to accept an exact hostname match (case-insensitive) or an exact IP address.
-- Added `sort_by` and `sort_order` query parameters to `/cctv/resolve-ip` and documented them in the WhatsApp Bot Builder API flow editor.
-- Added bounded timeout and retry handling for outbound WhatsApp text and image delivery through GoWA.
-- Added ordered processing and failure/fallback message lists for WhatsApp snapshot commands, with optional URL images, API-result image URLs, or the latest saved snapshot; success captions remain configurable.
-
-- Fix WhatsApp Bot Builder command list error when displaying action labels.
-- Translate WhatsApp webhook bot replies and validation messages into English.
-
-### Added
-
-- Added the admin WhatsApp Bot Builder with editable triggers, aliases, help descriptions, response templates, and custom commands that can invoke native B-Snap actions.
-- Added sequential internal B-Snap API GET nodes to custom WhatsApp command flows, with named JSON results available to response templates and admin-owned API token selection.
-- Added an API flow preview in the WhatsApp Bot Builder, showing JSON responses and clickable template variables before saving a command.
-- Added an array mapper that builds repeating WhatsApp response rows from selected API result fields, with optional row numbers starting at 1; `{{@index}}` remains zero-based and `{{@index1}}` is one-based.
-- Added configurable required WhatsApp command parameters, usage hints in `/help`, and bot replies when required arguments are missing.
-- Added GoWA webhook handling with documented JID routing, device-qualified sender normalization, optional multi-device selection through `X-Device-Id`, inbound webhook diagnostics, and whitelist enforcement.
-
-### Changed
-
-- Localized the WhatsApp Bot Builder labels, actions, command states, validation messages, and notifications according to the selected English or Indonesian UI language; language changes now refresh dynamic builder content immediately.
-- Kept the WhatsApp command editor open when clicking outside it; it now closes only through the close button or after a successful save.
-- Required command deletion confirmation by typing the exact command name in the themed confirmation dialog.
-- Added the project's existing SVG icons to WhatsApp Bot Builder controls, including command, API flow, test, mapping, save, and delete actions.
-- Standardized application save buttons on a shared floppy disk SVG icon.
-- Matched the WhatsApp Bot Builder content width and spacing to the shared admin page layout, and displayed commands in a responsive card grid.
-- Set the WhatsApp command list to the selected compact card style and removed the style comparison previews.
-- Updated the GoWA connection check to use unsaved form values, including the device ID, through a POST request.
-- Changed WhatsApp Bot Builder's Ping host action to return four raw reply/timeout lines with millisecond timings; it no longer requires or applies a response template.
-- Added a per-command option to send WhatsApp bot replies as quoted replies to the triggering message.
-- Added API response previews for camera IP and snapshot actions in WhatsApp Bot Builder, with JSON fields and array mappings that can be inserted into response templates; the snapshot preview reads existing data without capturing a new image.
-- Included camera status, uptime, uptime seconds, and last online time in native snapshot action template data, matching `/snapshots/search`.
-- Removed the broken native Find camera IP command action from WhatsApp Bot Builder and command execution.
-- Changed WhatsApp Bot Builder's Ping host action to return four raw reply/timeout lines with millisecond timings, without applying its response template.
-- Removed prefilled WhatsApp command templates and hidden legacy command dispatch so only configured commands run; the list now starts empty and opens command details on selection.
-- Fixed WhatsApp snapshot commands capturing repeatedly after webhook retries and failing to return the image because the GoWA sender and recipient were not initialized on the media branch; snapshot replies are now deduplicated by inbound GoWA message ID and threaded to the requesting chat.
-- Updated `start-local.ps1` to honor `BIND` and bind web/all modes to `0.0.0.0:8080` by default so external webhook clients can reach the server when network access allows it.
-
+- Improved WhatsApp capture, media delivery, retries, and duplicate-message handling.
+- Enforced sender whitelist, role, and camera-group access across commands and tests.
+- Improved API error reporting and moved camera-IP lookup to `/api/cctv/resolve-ip`.
 
 ## [2.3.0] - 2026-09-29
 
 ### Added
 
-- Added an English/Indonesian language toggle with flag icons beside the theme control and persistent browser-side translation for shared and dynamic UI text.
-- Added the upstream GoWA logo to the WhatsApp Gateway settings section.
-- Added `GET /health/uptime` to return each online camera's continuous uptime duration since its last recovery, using existing camera health status data.
-- Added current camera status and uptime fields to `/snapshots/search`; uptime is `null` while a camera is offline.
-- Added camera operations summary, availability/downtime and offline-transition charts, and top-downtime ranking to Analytics PDF reports with the active group scope.
-- Added a top-downtime camera table with links to camera status history.
-- Added a shareable camera-group filter for camera availability, downtime, offline incidents, and snapshot analytics; assignments from both the many-to-many relation and legacy group field are recognized.
-- Added camera availability, monitored downtime, and offline-transition trend charts to Analytics.
-- Added an admin SMTP test action on the configuration page that sends a test email to a specified recipient using saved SMTP settings.
-- Added Archive History browsing for completed audit archives, with search, pagination, and per-entry details backed by `audit_logs_legacy`.
-
-### Fixed
-
-- Prevented a flash of English text during navigation when Indonesian is selected by applying translations before revealing the page.
-- Replaced emoji language flags with local SVG assets so they render consistently across browsers and operating systems.
-- Changed the English language flag to the United States flag to match the application's en-US date and time formatting.
-- Removed SQLAlchemy subquery coercion warnings from camera-group analytics filters by passing explicit `select()` expressions.
-- Clarified the analytics activity trend score, secured its table rendering and admin-only data endpoints, and added visible refresh errors.
-- Made snapshot periods represent the selected number of inclusive calendar days and kept camera choices available across periods.
-- Preserved JSON error responses for AJAX requests so SMTP and archive failures display backend messages instead of HTML system pages.
-- Replaced the native audit archive confirmation prompt with the shared themed confirmation component and improved non-JSON error reporting.
-- Excluded failed archive attempts from Archive History and staged encrypted files so failed attempts do not leave published archive files.
+- English/Indonesian interface switching.
+- Camera availability, downtime, uptime, and group-filtered analytics with PDF reports.
+- Archive History browsing and SMTP connection testing.
 
 ### Changed
 
-- Added a clock icon to the Job Intervals section in Admin Config.
-- Kept common technical terms such as Dashboard, Job, Health Check, Uptime, Downtime, API, Soft Delete, and Retention Hold in English in Indonesian UI translations.
-- Matched Admin Config width, headings, tab controls, setting cards, fields, and save button to the shared styling used by Email Recipients while preserving the existing settings and actions.
-- Matched Email Templates page cards, controls, and buttons to the shared styling used by Email Recipients.
-- Removed Storage Monitoring settings and their schedule controls from Admin Config; active tabs use an underline without a filled background.
-- Reorganized Admin Config into full-width tabs with a viewport-sized layout and a persistent Save Changes control.
-- Persisted encrypted audit archive files on the host through a Docker Compose bind mount.
-- Removed disk-usage WhatsApp, toast, and dashboard alert notifications; storage metrics and status summaries remain available.
-- Preserved date-range, camera-group, camera, period, and tab filters in the Analytics URL, and moved initial snapshot chart aggregation into the database.
-- Aggregated snapshot counts by date in the database, bundled overview data into one request, and added date-range indexes for analytics queries.
-- Grouped SQLite observability timestamps in the configured timezone so the overview trend endpoint works with the development database.
-- Removed scheduled and manual audit-log cleanup, including its retention setting, so archived logs remain available in Archive History. Other cleanup jobs are unchanged.
-- Updated archived audit-log pagination to match the application's numbered-page pattern, including first/previous/next/last controls and result counts.
+- Improved configuration pages and analytics performance.
+- Preserved archived audit logs and removed storage alert notifications.
+
+### Fixed
+
+- Corrected timezone handling, snapshot periods, and API error feedback.
 
 ## [2.2.0] - 2026-09-24
 
 ### Added
 
-#### Multiple Camera Groups per Camera
-- Added a many-to-many relationship so a camera can be assigned to multiple Camera Groups.
-- Added an Alembic migration that copies existing `cameras.group_id` assignments into the new relationship table while retaining the legacy column for compatibility.
-- Updated camera create/edit UI, API responses, CSV import/export, and the n8n update payload to support multiple groups.
-- Updated camera group filtering and whitelist access checks across camera, snapshot, video, map, IP resolution, and health report flows.
-- Updated offline and recovery email recipient resolution to include recipients from every assigned group and deduplicate matching addresses.
-- Added tests for multi-group assignments, group membership across cameras, recipient deduplication, unrelated groups, and cameras without groups.
+- Multiple camera groups per camera, including editing and CSV import/export.
+- Group-aware access and notifications across cameras, snapshots, videos, and reports.
 
 ## [2.1.1] - 2026-09-17
 
 ### Fixed
 
-#### Scheduled Snapshot Resilience
-- Isolated each scheduled camera capture in a disposable worker process so stalled native camera operations can be terminated safely.
-- Added bounded per-camera timeout via `SNAPSHOT_JOB_CAMERA_TIMEOUT` (default: 90 seconds, configurable from 10 to 600 seconds).
-- Fixed scheduler handling so a timed-out camera cannot block later cameras or leave overlapping scheduled jobs running.
-- Limited scheduled snapshot jobs to one running job at a time and record partial results with timeout metadata.
-- Added OpenCV FFmpeg open/read timeouts and guaranteed capture release on every exit path.
-- Replaced expiring file locks with OS-owned locks that are released automatically when a worker exits.
-- Added timeout cooldown after repeated camera failures and improved job status badges for partial results.
-- Added resilience tests covering hung workers, lock release, capture cleanup, and partial batch reporting.
+- Prevented stalled camera captures from blocking scheduled snapshots.
+- Improved capture timeouts, cleanup, and partial-job reporting.
 
 ## [2.1.0] - 2026-07-16
 
 ### Added
 
-#### Record Folder Check for Mounted SMB/NVR Shares
-- Added monitoring for mounted recording folders, intended for SMB shares mounted read-only on the host/container.
-  - Scans first-level channel folders under a configured base path.
-  - Classifies folders as `healthy`, `stale`, `long_dead`, or `unknown` based on last modified time.
-  - Default thresholds:
-    - Stale: 70 minutes.
-    - Long dead: 7 days.
-  - Skips symlinks and validates configured paths as absolute paths.
-
-- Added persistent database records for record-check monitoring:
-  - `record_sources` - configured mounted record sources.
-  - `record_check_runs` - one row per scan run.
-  - `record_folder_checks` - per-folder result for each run.
-  - `record_folder_statuses` - current state per source/folder.
-  - `record_folder_mappings` - manual folder-to-camera mappings.
-  - `record_status_events` - status-change, alert, and recovery events.
-  - Migration: `20260716_add_record_check_tables.py`.
-
-- Added admin UI for record-check operations:
-  - New page: `/admin/record-checks`.
-  - Create, edit, delete, and manually run record sources.
-  - View current folder status summaries and recent run history.
-  - Manually map folder names to cameras from the `cameras` database table.
-  - Searchable camera mapping input for faster manual folder-to-camera assignment.
-  - Added navigation entry: Devices -> Record Checks.
-
-- Added scheduler support:
-  - New job: `record_folder_check`.
-  - Default interval config: `record_check_interval_minutes=10`.
-  - Cron override config: `record_check_cron`.
-  - Retention config: `retention_record_check_days=90`.
-  - Record-check job logs through `JobExecutionLog`.
-
-- Added GoWA WhatsApp notification integration for record checks:
-  - Sends alert when a folder newly enters `stale`.
-  - Sends alert when a previously known folder becomes `missing` because it was renamed or deleted.
-  - Sends recovery when an alerted folder returns to `healthy`.
-  - Recovery notifications include remaining stale/missing folders that still need attention.
-  - Alert item labels now include mapped camera hostname after the channel/folder name.
-  - Uses existing GoWA config and `gowa_default_receiver`.
-  - Stores notification result on `record_status_events`.
-  - Failed stale/missing alerts are retried after the retry window if no successful alert exists for the active incident.
-
-- Added secure delete confirmation for record sources:
-  - Delete requires the current admin password.
-  - Delete also requires typing the linked NVR hostname, or source name when no NVR is linked.
-  - Delete attempts are audited.
-
-- Added GoWA group receiver discovery:
-  - New admin endpoint: `GET /api/wa/groups`.
-  - Config UI can load WhatsApp groups from GoWA and append a selected group JID to default receivers.
-  - Default receivers now support both personal numbers and group JIDs.
-
-- Added tests and smoke coverage:
-  - Unit test file for record-check classifier and path validation.
-  - Manual smoke tests verified classification, database persistence, and manual mapping behavior.
-
-#### Email Recipients - Locations Without Recipients
-- Added feature to identify and monitor locations that lack email recipients.
-  - New API endpoint: `GET /api/recipients/locations-without-recipients`
-    - Lists all locations without assigned email recipients.
-    - Shows camera count per uncovered location.
-    - Supports filtering by group_id.
-  - New API endpoint: `GET /api/recipients/export-locations-without-recipients`
-    - Exports uncovered locations to Excel (.xlsx) format.
-    - Includes professional formatting with styling and metadata.
-    - Contains summary statistics (total uncovered locations, total cameras).
-    - Audit logged for compliance tracking.
-- Added admin UI button: "Missing Recipients" in Email Recipients page.
-  - Opens modal showing all locations without email recipients.
-  - Displays location name and camera count in tabular format.
-  - One-click export to Excel with timestamped filename.
-  - Responsive design with dark mode support.
-- Added dependency: `openpyxl==3.11.1` for Excel export functionality.
-
-### Changed
-
-#### Job Management
-- Job Management now lists configured jobs even if APScheduler has not registered them yet.
-  - `record_folder_check` appears before scheduler reload/start.
-  - Jobs not yet present in `apscheduler_jobs` show `Configured, waiting for scheduler reload`.
-  - Cron schedule editing now supports `record_folder_check`.
-  - Empty cron expressions are accepted and use interval fallback.
-
-#### Record Check UI
-- Improved Record Checks page layout:
-  - Replaced text/symbol action buttons with SVG icon buttons.
-  - Added icons to summary cards.
-  - Improved empty source state.
-  - Improved add/edit source modal layout, close button, footer actions, and responsive spacing.
-  - Improved destructive delete confirmation modal with password and hostname confirmation fields.
-  - Centered delete confirmation actions and improved dark-mode spacing/contrast.
-
-#### GoWA Configuration
-- Configuration save now persists WhatsApp Gateway settings:
-  - `gowa_enabled`
-  - `gowa_base_url`
-  - `gowa_api_key`
-  - `gowa_default_receiver`
-- GoWA Test Connection now tests the values currently typed in the form before saving.
-- `/api/wa/status` and `/api/wa/send-test` are now admin-only.
-- GoWA auth help now documents current `APP_BASIC_AUTH=user:password` usage while keeping older bearer token support.
-- Default receiver help now documents group JID format such as `120363xxxxxxxx@g.us`.
-
-#### WhatsApp Daily Reports
-- Daily camera report receiver handling now preserves group JIDs instead of formatting them as phone numbers.
-
-#### Video Recording and Playback
-- Record-complete WebSocket notifications now include `video_id`, secure playback URL, and thumbnail URL.
-- "View Video" after recording now uses authenticated `/api/videos/secure/{video_id}` instead of blocked direct `/static/videos/*` access.
-- Deleted-video preview now uses authenticated `/api/videos/file/{file_path}`.
-- Video metadata extraction now resolves `ffprobe` when available and falls back to parsing `ffmpeg` output when `ffprobe` is unavailable.
-- Video thumbnail generation now writes the thumbnail output path correctly and falls back to the project-local `ffmpeg.exe` when `ffmpeg` is not on PATH.
+- Recording-folder monitoring with camera mapping and WhatsApp alerts/recovery notifications.
+- Missing email-recipient coverage reports with Excel export.
+- WhatsApp group receiver discovery and stronger record-source deletion confirmation.
 
 ### Fixed
 
-#### API Call Metrics
-- Fixed API call counting in observability logging so normal HTML page views no longer increment API metrics.
-  - API logs now count `/api/*`, `/log/*`, JSON requests, and JSON responses.
-  - Static assets, health checks, websockets, and regular page loads remain excluded from API metrics.
-
-#### Job Execution Logging
-- Fixed `logged_job()` so dictionary job results correctly populate `records_processed`.
-  - Previously dict results always logged `0` due to using `getattr()` on dicts.
-
-#### Record Folder Mapping
-- Manual folder-to-camera mapping now takes precedence over automatic hostname matching.
-- Scanner no longer overwrites admin-selected mappings during later scans.
-
-#### Record Folder State Handling
-- Previously known folders that disappear from a source are now marked `missing` instead of silently disappearing.
-- Missing folders are retained in current status so operators can see renamed/deleted recording folders.
-- Missing folder counts are included in current status summaries.
-- Record-check retention now also removes old `record_status_events`, not only run/check history.
-- Record-check history cleanup now runs as its own scheduler job, `cleanup_record_checks`, and appears in Job Management.
-
-#### GoWA Integration
-- Added support for current GoWA endpoint paths such as `/app/status`, `/send/message`, `/send/image`, and `/send/file`, with fallback to older `/api/*` endpoints.
-- Added Basic Auth header generation when the configured GoWA auth secret contains `user:password`.
-- GoWA status parsing now supports the current `results` response wrapper.
-
-#### WhatsApp Daily Reports
-- Fixed daily report crash caused by querying non-existent `SnapshotLog.created_at`; it now uses `SnapshotLog.timestamp`.
-- Fixed daily report crash caused by reading non-existent `Camera.name`; it now uses `Camera.hostname` with IP context when available.
+- Improved GoWA compatibility, configuration saving, and daily reports.
+- Corrected recording-folder status tracking and preserved manual camera mappings.
+- Improved secure video playback, thumbnail generation, and job/API metrics.
 
 ## [2.0.2] - 2026-06-09
 
 ### Fixed
 
-#### Snapshot URL Capture
-- Fixed direct HTTP snapshot capture for camera endpoints such as `/oneshotimage`.
-  - Snapshot URL capture now fetches direct image endpoints via HTTP first instead of relying on OpenCV stream capture first.
-  - Added clearer failure identification for HTTP status, content type, response size, and authentication failures.
-  - Added Basic and Digest authentication handling for protected snapshot URLs.
-  - Preserved OpenCV fallback for MJPEG/stream-like snapshot URLs.
-  - Fixed watermark configuration lookup in the direct snapshot URL path.
-
-#### Remember Me Session Refresh
-- Fixed `Keep me signed in` sessions expiring after 24 hours on long-running pages such as `/maps`.
-  - Active sessions with a valid Remember Me token now refresh their web token before expiry.
-  - The `session_token` cookie is refreshed together with the server-side token expiry.
-  - Refresh is threshold-based to avoid database writes on every periodic map refresh.
-  - Remember Me token ownership is validated before extending the active session.
+- Improved direct snapshot URL capture and camera authentication support.
+- Fixed Remember Me sessions expiring on long-running monitoring pages.
 
 ## [2.0.1] - 2026-04-10
 
 ### Fixed
 
-#### Whitelist Update: group_id Not Updating to NULL
-- Bug Fix: Cannot Reset Group to "All Groups"
-  - Previously: Setting group_id = null from frontend did not update database value
-  - Root cause: Conditional check if data.group_id is not None prevented NULL assignment
-  - Impact: Users could not remove group assignment once set
-  - Now: group_id correctly updates to NULL when null is provided in request
-  - Behavior aligns with UI option "All Groups"
-
-#### Video Gallery (Thumbnail & UI)
-- Fix: Thumbnail Not Displayed in Frontend
-  - Previously: Frontend always used static placeholder image instead of actual video thumbnail
-  - Root cause: `<img>` source was hardcoded to `/static/video-placeholder.jpg`
-  - Fixed: Frontend now uses `video.thumb_url` from secure API endpoint
-
-- Fix: Thumbnail Not Generated for Some Videos
-  - Previously: Thumbnail generation depended on `duration > 0` from metadata
-  - Root cause: `ffprobe` sometimes returned duration = 0, preventing thumbnail generation
-  - Fixed: Thumbnail generation is now always attempted regardless of duration
-
-- Improvement: Robust Thumbnail Generation
-  - Added retry mechanism using multiple seek timestamps (`0.3s` and fallback `0s`)
-  - Prevents failures on short or edge-case video files
-  - Added slight delay after recording to ensure file is fully written before processing
-
-- Fix: Broken Image When Thumbnail Missing
-  - Previously: Missing thumbnails caused broken image display in UI
-  - Fixed: Added frontend fallback to placeholder image using `onerror` handler
-
-- Fix: Video Playback Not Triggered from Thumbnail
-  - Previously: Refactoring removed `onclick` handler, preventing modal from opening
-  - Fixed: Restored `showModal()` trigger on thumbnail click
-
-- Fix: Inconsistent File Size Display
-  - Previously: Backend returned size in MB while frontend labeled it as kB
-  - Fixed: Standardized file size formatting to MB in frontend
-
-- Improvement: UI Consistency Preserved
-  - Restored original SVG icons and layout styling in video cards
-  - Ensured no visual regression while applying thumbnail and interaction fixes
-
-#### Maps
-- Fix: "Updated" Timestamp Not Refreshing
-  - Previously, the "Updated" time remained static after initial page load.
-  - Root cause: Timestamp was sourced from a static server-rendered value and not updated during auto-refresh.
-  - Fixed: Timestamp now updates correctly on each data refresh.
-
-- Performance Improvement: Eliminated N+1 Query
-  - Optimized camera status log retrieval by prefetching data in a single query.
-  - Removed per-camera database queries inside processing loop.
-  - Result: Significantly faster initial load and refresh times, especially with large datasets (e.g., 400+ cameras).
-
-#### Cameras
-- Fix: where certain audit log variables were not properly recorded during camera updates.
-
-#### Analytics Dashboard
-- Fix: incorrect daily chart aggregation caused by timezone misalignment with user-configured settings.
-- Ensured log counts are now accurately grouped based on the configured timezone (e.g., WIB/WITA/WIT).
-
-#### Snapshot (Performance & Stability Improvements)
-- Improvement: Faster Snapshot Capture Handling
-  - Added RTSP connection timeout using OpenCV `CAP_PROP_OPEN_TIMEOUT_MSEC`
-  - Prevents long blocking when camera is unreachable or slow to respond
-  - Improves responsiveness of snapshot operations
-
-- Improvement: Frame Warm-up Before Capture
-  - Added initial frame skipping (3–5 frames) before capturing snapshot
-  - Prevents blank/black images caused by early unstable frames
-  - Improves snapshot reliability across RTSP streams
-
-- Fix: Empty/Invalid Frame Handling
-  - Added validation to detect empty or corrupt frames (`frame is None`, `frame.size == 0`)
-  - Prevents saving invalid snapshot files
-  - Improves frontend image rendering stability
-
-- Improvement: Snapshot Robustness for Network Cameras
-  - Better handling of unstable RTSP streams and delayed frame availability
-  - Reduces occurrence of blank or partially rendered snapshots
+- Restored All Groups assignment for WhatsApp whitelist entries.
+- Improved video thumbnails, playback, and file-size display.
+- Improved map refresh performance and timezone-aware analytics.
+- Reduced blank snapshots and capture failures on unstable cameras.
 
 ## [2.0.0] - 2026-04-07
 
 ### Added
 
-#### CRITICAL: Secure Video Serving (CRIT-001)
-- Blocked direct video access - `/static/videos/*` now returns 403 Forbidden
-  - Videos must be accessed via authenticated API endpoints
-  - Prevents unauthorized access to safety-critical footage
-  - All video access now logged to audit_logs
+- Automated snapshot/video retention with retention-hold protection.
+- Environment and security documentation.
 
-- New API Endpoints
-  - `GET /api/videos/secure/{video_id}` - Serve video file by ID with authentication
-  - `GET /api/videos/file/{file_path}` - Serve video file by path with authentication  
-  - `POST /api/videos/gallery-view` - Batch audit logging for gallery views
-  - Download support: `GET /api/videos/secure/{id}?download=true`
+### Security
 
-- Anti-Flooding Audit Log
-  - Gallery view logged once per page load (not per video)
-  - Individual video access logged with full context
-  - Download actions separately tracked
-  - Prevents audit log flooding when browsing gallery
-
-- Files Modified: `app/main.py`, `app/routes/videos.py`, `templates/video_gallery.html`, `templates/_video_grid.html`
-
-
-#### CRITICAL: CSV Import Validation (CRIT-003)
-- Strict safety_classification validation
-  - Invalid values now cause row skip (not silently defaulted to "standard")
-  - Valid values: `critical`, `standard`, `low`
-  - Warning logged when "critical" classification imported (requires verification)
-
-- Password strength warning
-  - Logs warning for passwords shorter than 4 characters
-
-- Files Modified: `app/routes/cameras.py`
-
-
-#### MEDIUM: Automated Retention Policy (MED-003)
-- New scheduled job: `retention_policy` (daily at 3 AM)
-  - Auto-delete snapshots older than configured days
-  - Auto-delete videos older than configured days
-  - Respects `retention_hold=True`
-- Files Modified: `app/jobs/scheduler.py`
-
-
-#### MEDIUM: GPS Coordinate Validation (MED-004)
-- Added validation:
-  - Latitude: -90 to 90
-  - Longitude: -180 to 180
-- Uses SQLAlchemy `@validates`
-- Files Modified: `app/models/camera.py`
-
-
-#### Documentation: Environment Variables
-- New endpoint `/docs/environment`
-- 40+ environment variables documented
-- New templates:
-  - `environment.html`
-  - `api.html`
-  - `security.html`
-
-- Files Modified: `.env.example`, `app/routes/docs.py`, `templates/docs/*`
-
-
-#### Documentation: Sphinx
-- Added:
-  - `configuration.md`
-  - `api.md`
-  - `README.md`
-- Updated `index.rst`
-
-- Files Modified: `docs/source/*`
-
-
-### Changed
-
-#### CRITICAL: Group-Based Access Control Fix (CRIT-002)
-- Changed filtering from name-based to foreign key joins
-  - Prevents access issues when group names change
-
-- Applied to: `app/routes/snap_gallery.py`, `app/routes/videos.py`
-
-
-#### MEDIUM: Session Cookie Consistency (MED-001)
-- Aligned cookie `max_age` with `expires_at` (24 hours)
-- Configurable via `SESSION_MAX_AGE_SECONDS`
-
-- Files Modified: `app/routes/auth.py`
-
-
-#### LOW: Remove Default Group "ALL" References (LOW-002)
-- Removed hardcoded "ALL" group references
-- `NULL group_id` now means access to all cameras
-
-- Files Modified: `app/models/camera.py`
-
-
-### Fixed
-
-#### MEDIUM: API Token Expiration Enforcement (MED-002)
-- Tokens without expiration are now rejected
-- Clear error messages for expired tokens
-- Enforced `expires_in_days > 0`
-
-- Files Modified: `app/routes/auth.py`, `app/routes/user_management.py`
-
+- Required authenticated video access with audit logging.
+- Fixed camera-group access checks and enforced API token expiration.
+- Strengthened CSV/GPS validation and aligned session expiration.
 
 ## [1.15.0] - 2026-04-01
 
