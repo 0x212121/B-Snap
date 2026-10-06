@@ -114,10 +114,19 @@ class WAGatewayService:
 
     def _post_with_retry(self, url: str, **kwargs) -> requests.Response:
         """Post to GoWA with a bounded timeout and retries for transient failures."""
-        kwargs["timeout"] = self.send_timeout_seconds
+        kwargs.setdefault("timeout", self.send_timeout_seconds)
+        upload_positions = []
+        uploads = kwargs.get("files") or {}
+        upload_parts = uploads.values() if isinstance(uploads, dict) else (part for _, part in uploads)
+        for part in upload_parts:
+            file_obj = part[1] if isinstance(part, tuple) else part
+            if hasattr(file_obj, "tell") and hasattr(file_obj, "seek"):
+                upload_positions.append((file_obj, file_obj.tell()))
         attempts = self.send_retries + 1
         for attempt in range(attempts):
             try:
+                for file_obj, position in upload_positions:
+                    file_obj.seek(position)
                 response = self.session.post(url, **kwargs)
                 if response.status_code >= 500 and attempt + 1 < attempts:
                     logger.warning(
@@ -336,6 +345,42 @@ class WAGatewayService:
             logger.error(f"Failed to send WA file to {phone}: {e}")
             return {"success": False, "error": str(e)}
     
+    def send_video_file(
+        self,
+        phone: str,
+        video_path: str,
+        caption: Optional[str] = None,
+        reply_to: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Upload a local recording as a WhatsApp video through GoWA."""
+        if not self.config.is_configured():
+            return {"success": False, "error": "GoWA not configured"}
+        path = Path(video_path)
+        if not path.is_file():
+            return {"success": False, "error": "Video file not found"}
+        try:
+            if "@" not in phone:
+                phone = f"{phone}@s.whatsapp.net"
+            data = {"phone": phone}
+            if caption:
+                data["caption"] = caption
+            if reply_to:
+                data["reply_message_id"] = reply_to
+            with path.open("rb") as file_obj:
+                response = self._post_with_retry(
+                    self._make_url("/send/video"), data=data,
+                    files={"video": (path.name, file_obj, "video/mp4")}, timeout=60,
+                )
+            response.raise_for_status()
+            result = response.json()
+            return {
+                "success": True, "data": result,
+                "message_id": result.get("results", {}).get("message_id"),
+            }
+        except Exception as exc:
+            logger.error("Failed to send WhatsApp video to %s: %s", phone, exc)
+            return {"success": False, "error": str(exc)}
+
     def check_connection(self) -> Dict[str, Any]:
         """Check GoWA connection status."""
         if not self.config.is_configured():

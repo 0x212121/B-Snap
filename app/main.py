@@ -349,11 +349,19 @@ app.include_router(toast_demo.router)
 def root_redirect():
     return RedirectResponse(url="/maps")
 
+def _wants_json_error(request: Request) -> bool:
+    """Keep API and JSON-request errors in JSON, including status-code handlers."""
+    return (
+        "application/json" in request.headers.get("accept", "").lower()
+        or request.url.path.startswith("/api/")
+        or request.url.path.startswith("/snap/")
+    )
+
+
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
     # Check if request expects JSON (API call)
-    accept_header = request.headers.get("accept", "")
-    is_json_request = "application/json" in accept_header or request.url.path.startswith("/api/") or request.url.path.startswith("/snap/")
+    is_json_request = _wants_json_error(request)
     
     if exc.detail == "SESSION_INVALIDATED":
         # For API calls, return JSON error
@@ -432,10 +440,14 @@ async def html_docs_redirect():
 
 @app.exception_handler(404)
 async def not_found_404(request: Request, exc):
+    if _wants_json_error(request):
+        return await custom_http_exception_handler(request, exc)
     return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
 
 @app.exception_handler(403)
 async def forbidden_403(request: Request, exc):
+    if _wants_json_error(request):
+        return await custom_http_exception_handler(request, exc)
     return templates.TemplateResponse("403.html", {"request": request}, status_code=403)
 
 

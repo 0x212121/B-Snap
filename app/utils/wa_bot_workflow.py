@@ -1,4 +1,4 @@
-"""Safe, sequential HTTP GET workflows used by WhatsApp bot commands."""
+"""Sequential internal HTTP workflows used by WhatsApp bot commands."""
 from __future__ import annotations
 
 import json
@@ -14,7 +14,7 @@ MAX_FLOW_STEPS = 8
 MAX_RESPONSE_BYTES = 1_000_000
 STEP_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,39}$")
 FLOW_VARIABLE_PATTERN = re.compile(
-    r"\{\{(argument|sender|steps\.[a-zA-Z][a-zA-Z0-9_]{0,39}\.(?:status_code|body(?:\.[a-zA-Z0-9_-]+)*)|this(?:\.[a-zA-Z0-9_-]+)*|@index1|@index)\}\}"
+    r"\{\{(argument|sender|params\.[a-zA-Z_][a-zA-Z0-9_-]*|steps\.[a-zA-Z][a-zA-Z0-9_]{0,39}\.(?:status_code|body(?:\.[a-zA-Z0-9_-]+)*)|this(?:\.[a-zA-Z0-9_-]+)*|@index1|@index)\}\}"
 )
 FLOW_DATETIME_VARIABLE_PATTERN = re.compile(
     r"\{\{(?P<expression>(?:argument|sender|steps\.[a-zA-Z][a-zA-Z0-9_]{0,39}\."
@@ -31,6 +31,33 @@ FLOW_LOCAL_VARIABLE_PATTERN = re.compile(
 )
 MAX_FLOW_TEMPLATE_ITEMS = 50
 MAX_RENDERED_RESPONSE_CHARS = 10_000
+
+
+class APIFlowError(ValueError):
+    """A failed API node with completed and failed response data for templates."""
+
+    def __init__(self, message: str, context: dict[str, Any]) -> None:
+        super().__init__(message)
+        self.context = context
+
+
+def bind_command_arguments(names: list[str], argument: str) -> dict[str, str]:
+    """Map required parameter names to positional arguments, keeping a final remainder."""
+    if not isinstance(names, list) or len(names) > 10 or any(
+        not isinstance(name, str) or not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_-]{0,39}", name)
+        for name in names
+    ) or len(set(names)) != len(names):
+        raise ValueError("Required parameters must be unique valid names (maximum 10)")
+    if not names:
+        return {}
+    values = argument.strip().split(maxsplit=len(names) - 1) if len(names) > 1 else [argument.strip()]
+    missing = [name for index, name in enumerate(names) if index >= len(values) or not values[index].strip()]
+    if missing:
+        raise ValueError(
+            f"Missing input parameter(s): {', '.join(missing)}. "
+            f"Fill Test argument or command arguments in this order: {', '.join(names)}."
+        )
+    return dict(zip(names, values))
 
 
 def normalize_flow(value: Any) -> list[dict[str, Any]]:
@@ -51,6 +78,17 @@ def normalize_flow(value: Any) -> list[dict[str, Any]]:
         if not path.startswith("/") or path.startswith("//") or "\\" in path or "://" in path:
             raise ValueError(f"Path node {name} harus berupa path relatif yang diawali /")
         params = item.get("params", {})
+        method = str(item.get("method", "GET")).strip().upper()
+        if method not in {"GET", "POST"}:
+            raise ValueError(f"Method node {name} must be GET or POST")
+        body = item.get("body", {})
+        if isinstance(body, str):
+            try:
+                body = json.loads(body or "{}")
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"JSON body node {name} must be a valid JSON object") from exc
+        if not isinstance(body, dict) or len(body) > 50:
+            raise ValueError(f"JSON body node {name} must be an object (maximum 50 items)")
         if isinstance(params, str):
             try:
                 params = json.loads(params or "{}")
@@ -58,11 +96,16 @@ def normalize_flow(value: Any) -> list[dict[str, Any]]:
                 raise ValueError(f"Query params node {name} harus JSON object yang valid") from exc
         if not isinstance(params, dict) or len(params) > 50:
             raise ValueError(f"Query params node {name} harus berupa JSON object (maksimal 50 item)")
-        normalized.append({"name": name, "path": path[:500], "params": params})
+        normalized.append({
+            "name": name, "path": path[:500], "params": params,
+            "method": method, "body": body,
+        })
     return normalized
 
 
 def _resolve_expression_value(expression: str, context: dict[str, Any]) -> Any:
+    if expression.startswith("params."):
+        return context.get("params", {}).get(expression.removeprefix("params."), "")
     if expression in {"argument", "sender"}:
         return context.get(expression, "")
     if expression == "@index":
@@ -134,14 +177,26 @@ def _render_template_variables(template: str, context: dict[str, Any], timezone_
         ),
         template,
     )
-    return FLOW_VARIABLE_PATTERN.sub(
+    rendered = FLOW_VARIABLE_PATTERN.sub(
         lambda match: _resolve_expression(match.group(1), context), rendered
+    )
+    return FLOW_LOCAL_VARIABLE_PATTERN.sub(
+        lambda match: str(context.get("params", {})[match.group("name")])
+        if match.group("name") in context.get("params", {}) and not match.group("datetime")
+        else match.group(0), rendered,
     )
 
 
 def render_flow_value(value: Any, context: dict[str, Any]) -> Any:
     if isinstance(value, str):
-        return FLOW_VARIABLE_PATTERN.sub(lambda match: _resolve_expression(match.group(1), context), value)
+        for match in re.finditer(r"\{\{params\.([a-zA-Z_][a-zA-Z0-9_-]*)\}\}", value):
+            name = match[1]
+            if not str(context.get("params", {}).get(name, "")).strip():
+                raise ValueError(
+                    f"Input parameter '{name}' is missing. Add '{name}' to Required parameters "
+                    "and provide its value in Test argument or after the command trigger."
+                )
+        return _render_template_variables(value, context, "UTC")
     if isinstance(value, list):
         return [render_flow_value(item, context) for item in value]
     if isinstance(value, dict):
@@ -155,12 +210,13 @@ async def run_api_flow(
     bearer_token: str | None,
     sender: str,
     argument: str,
+    parameters: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    """Call this B-Snap instance's GET API nodes sequentially."""
+    """Call this B-Snap instance's API nodes sequentially."""
     headers = {"Accept": "application/json"}
     if bearer_token:
         headers["Authorization"] = f"Bearer {bearer_token}"
-    context: dict[str, Any] = {"sender": sender, "argument": argument, "steps": {}}
+    context: dict[str, Any] = {"sender": sender, "argument": argument, "params": parameters or {}, "steps": {}}
     timeout = httpx.Timeout(15.0, connect=5.0)
     raw_hosts = os.getenv("TRUSTED_HOSTS", "*")
     trusted_host = next((host.strip() for host in raw_hosts.split(",") if host.strip() and host.strip() != "*"), "localhost")
@@ -179,24 +235,36 @@ async def run_api_flow(
             if re.search(r"token|password|secret|credential", path, re.IGNORECASE):
                 raise ValueError(f"Path node {step['name']} tidak boleh meminta kredensial atau token")
             params = render_flow_value(step.get("params", {}), context)
-            response = await client.get(path, params=params)
-            if response.is_redirect:
-                raise ValueError(f"API node {step['name']} memerlukan token API internal B-Snap yang valid")
+            method = step.get("method", "GET").upper()
+            if method not in {"GET", "POST"}:
+                raise ValueError(f"Method node {step['name']} must be GET or POST")
+            if method == "POST":
+                body = render_flow_value(step.get("body", {}), context)
+                request_options = {}
+                if path == "/api/videos/record-and-wait":
+                    request_options["timeout"] = httpx.Timeout(360.0, connect=5.0)
+                response = await client.post(path, params=params, json=body, **request_options)
+            else:
+                response = await client.get(path, params=params)
             if len(response.content) > MAX_RESPONSE_BYTES:
                 raise ValueError(f"Respons API node {step['name']} melebihi batas 1 MB")
-            try:
-                response.raise_for_status()
-            except httpx.HTTPStatusError as exc:
-                body_preview = response.text[:300].strip()
-                suffix = f": {body_preview}" if body_preview else ""
-                raise ValueError(
-                    f"API node {step['name']} mengembalikan HTTP {response.status_code}{suffix}"
-                ) from exc
             try:
                 body: Any = response.json()
             except (ValueError, json.JSONDecodeError):
                 body = response.text[:20_000]
             context["steps"][step["name"]] = {"status_code": response.status_code, "body": body}
+            if response.is_redirect:
+                raise APIFlowError(
+                    f"API node {step['name']} memerlukan token API internal B-Snap yang valid", context
+                )
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                body_preview = response.text[:300].strip()
+                suffix = f": {body_preview}" if body_preview else ""
+                raise APIFlowError(
+                    f"API node {step['name']} returns HTTP {response.status_code}{suffix}", context
+                ) from exc
     return context
 
 

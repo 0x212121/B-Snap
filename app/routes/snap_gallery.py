@@ -7,6 +7,7 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.utils.template_helper import templates
 from app.db.database import get_db
 from app.models.camera_group import CameraGroup
@@ -112,6 +113,7 @@ def get_user_by_phone(db: Session, phone: str):
     return db.query(User).filter(User.phone == phone).first()
 
 
+@router.post("/api/snapshots/capture/{camera_identifier}")
 @router.post("/snap/{camera_identifier}")
 async def snapshot_handler(
     request: Request,
@@ -139,19 +141,26 @@ async def snapshot_handler(
                 final_user_name = user_phone
             extra = "via Whatsapp Bot"
         else:
-            final_user_name = request.session.get("user_name", "Unknown")
+            final_user_name = current_operator.username
             extra = "via dashboard"
 
         # --- Cari kamera ---
         if is_ip_address(normalized_input):
-            camera = db.query(Camera).filter(Camera.ip == normalized_input).first()
+            matches = db.query(Camera).filter(Camera.ip == normalized_input).limit(2).all()
+            if len(matches) > 1:
+                return JSONResponse(status_code=409, content={
+                    "status": "error", "success": False,
+                    "message": "Multiple cameras match this IP. Use a unique hostname or camera ID.",
+                    "detail": "Multiple cameras match this IP. Use a unique hostname or camera ID.",
+                })
+            camera = matches[0] if matches else None
         else:
             camera = (
                 db.query(Camera)
                 .filter(Camera.id == normalized_input)
                 .first()
                 or db.query(Camera)
-                .filter(Camera.hostname.ilike(normalized_input))
+                .filter(func.lower(Camera.hostname) == normalized_input.lower())
                 .first()
             )
 
@@ -166,7 +175,17 @@ async def snapshot_handler(
             )
             return JSONResponse(status_code=404, content={
                 "status": "error",
-                "detail": "Camera not found with provided identifier"
+                "detail": "Camera not found with provided identifier",
+                "message": "Camera not found with provided identifier",
+                "success": False,
+            })
+
+        if current_operator.group_id is not None and not any(
+            group.id == current_operator.group_id for group in camera.groups
+        ):
+            return JSONResponse(status_code=403, content={
+                "status": "error", "success": False,
+                "message": "Access denied to this camera", "detail": "Access denied to this camera",
             })
 
         # --- Status check ---
@@ -181,7 +200,9 @@ async def snapshot_handler(
             )
             return JSONResponse(
                 status_code=403,
-                content={"status": "error", "detail": f"Camera status '{camera.status}' is not allowed"}
+                content={"status": "error", "success": False,
+                         "message": f"Camera status '{camera.status}' is not allowed",
+                         "detail": f"Camera status '{camera.status}' is not allowed"}
             )
 
         # --- Snapshot process dengan Toast Notification ---
@@ -210,6 +231,10 @@ async def snapshot_handler(
             
             result = {
                 "status": "success",
+                "success": True,
+                "message": f"New snapshot captured for {camera.hostname}",
+                "hostname": camera.hostname,
+                "snapshot_url": f"/api/snapshots/secure/{snapshot.id}",
                 "file_path": snapshot.file_path,
                 "snapshot_id": snapshot.id,
                 "resolution": snapshot.resolution,
@@ -227,7 +252,8 @@ async def snapshot_handler(
             )
             return JSONResponse(
                 status_code=500, 
-                content={"status": "error", "message": "Failed to capture snapshot"}
+                content={"status": "error", "success": False,
+                         "message": "Failed to capture snapshot", "detail": "Failed to capture snapshot"}
             )
 
     except Exception as e:
@@ -243,7 +269,9 @@ async def snapshot_handler(
             status_code=500,
             content={
                 "status": "error",
-                "detail": f"Unexpected error occurred: {str(e)}"
+                "success": False,
+                "message": "Snapshot capture failed. Check application logs.",
+                "detail": "Snapshot capture failed. Check application logs."
             }
         )
 

@@ -78,7 +78,7 @@
         <label class="text-sm text-gray-700 dark:text-gray-200 md:col-span-2">Required parameters, comma-separated
           <input name="required_params" placeholder="camera_name, date" class="ui-control mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900">
         </label>
-        <p class="-mt-3 text-xs text-gray-500 md:col-span-2">Users must provide these values after the trigger. Separate multiple values with spaces; one parameter can contain spaces.</p>
+        <p class="-mt-3 text-xs text-gray-500 md:col-span-2">Users must provide these values after the trigger. Separate values with spaces; the final parameter can contain spaces. Named inputs are available before the API runs: for <code>hostname, duration</code>, use <code>{% raw %}{{params.hostname}}{% endraw %}</code> and <code>{% raw %}{{duration}}{% endraw %}</code> in messages and API fields.</p>
         <label class="text-sm text-gray-700 dark:text-gray-200 md:col-span-2">Description shown in /help
           <textarea name="description" rows="2" maxlength="300" class="ui-control mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900"></textarea>
         </label>
@@ -87,11 +87,12 @@
       <div data-flow-panel class="hidden rounded-lg border border-blue-200 p-4 dark:border-blue-900">
         <div data-flow-editor class="mb-3">
         <div class="mb-3 flex items-center justify-between gap-3">
-          <div><h3 data-flow-title class="inline-flex items-center gap-2 font-medium text-gray-900 dark:text-white">{{ icon_server("h-4 w-4 text-blue-500") }}GET API flow</h3><p data-flow-subtitle class="text-xs text-gray-500">Internal B-Snap nodes run in order, up to 8 nodes.</p></div>
+          <div><h3 data-flow-title class="inline-flex items-center gap-2 font-medium text-gray-900 dark:text-white">{{ icon_server("h-4 w-4 text-blue-500") }}API flow (GET / POST)</h3><p data-flow-subtitle class="text-xs text-gray-500">Internal B-Snap nodes run in order, up to 8 nodes.</p></div>
           <button data-add-step type="button" class="ui-button ui-button-secondary inline-flex items-center gap-1.5 rounded bg-blue-100 px-3 py-1 text-blue-800 dark:bg-blue-900 dark:text-blue-100">{{ icon_plus("h-4 w-4") }}Add node</button>
         </div>
         <p class="mb-3 text-xs text-gray-500">Example path <code>/cctv/resolve-ip</code>, params <code>{% raw %}{"keyword":"{{argument}}","phone_number":"{{sender}}","sort_by":"hostname","sort_order":"asc"}{% endraw %}</code>. Sorting: <code>sort_by</code> = hostname/name, ip, or id; <code>sort_order</code> = asc or desc. Output: <code>{% raw %}{{steps.kamera.body.results.0.ip}}{% endraw %}</code>.</p>
         <div data-flow-list class="space-y-3"></div>
+        <p class="mt-2 text-xs text-gray-500">POST <code>/api/videos/record-and-wait</code> returns a completed recording. To send it, select Video as the response type and choose its video ID or secure URL from the API result. Run test records and previews JSON; it does not send WhatsApp media.</p>
         </div>
         <div class="mt-4 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
           <h4 class="inline-flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-100">{{ icon_play("h-4 w-4 text-indigo-500") }}Test API response</h4>
@@ -104,6 +105,7 @@
           <div data-test-result class="mt-3 hidden" aria-live="polite">
             <p data-test-status class="mb-2 text-sm"></p>
             <pre data-test-json class="max-h-64 overflow-auto rounded bg-gray-950 p-3 text-xs text-gray-100"></pre>
+            <pre data-test-response-preview class="mt-2 hidden max-h-40 overflow-auto whitespace-pre-wrap rounded bg-gray-100 p-3 text-xs text-gray-800 dark:bg-gray-900 dark:text-gray-100"></pre>
             <div data-test-variables class="mt-3 flex flex-wrap gap-2"></div>
             <div class="mt-3 flex flex-wrap items-center gap-2"><label class="text-xs text-gray-500">Insert into <select data-variable-target class="ui-control rounded border-gray-400 bg-transparent text-xs dark:bg-gray-900"><option value="response">Success response</option><option value="processing_messages">Processing message</option><option value="failure_messages">Fallback message</option></select></label><span class="text-xs text-gray-500">Select a variable or use the array mapper.</span></div>
             <div data-array-mapper class="mt-4 hidden rounded-lg border border-gray-600 p-3">
@@ -123,6 +125,18 @@
       </div>
 
       <div data-response-panel>
+        <div data-response-media class="mb-3 hidden space-y-2">
+          <label class="ui-label block text-sm"><span data-response-type-label>Response type</span>
+            <select name="response_type" class="ui-control mt-1 w-full rounded-lg dark:bg-gray-900"><option value="text">Text</option><option value="image">Image</option><option value="video">Video</option></select>
+          </label>
+          <label data-response-image class="ui-label hidden text-sm"><span data-response-image-label>Image URL or protected snapshot URL</span>
+            <input name="response_image_source" placeholder="{% raw %}{{steps.result.body.0.url}}{% endraw %}" class="ui-control mt-1 w-full rounded-lg font-mono dark:bg-gray-900">
+            <span data-response-image-hint class="mt-1 block text-xs text-gray-500">Use an HTTP(S) image URL or a snapshot URL from the action/API result.</span>
+          </label>
+          <label data-response-video class="ui-label hidden text-sm"><span data-response-video-label>Video ID or secure URL from API</span>
+            <input name="response_video_source" placeholder="{% raw %}{{steps.data.body.video_id}}{% endraw %}" class="ui-control mt-1 w-full rounded-lg font-mono dark:bg-gray-900">
+          </label>
+        </div>
         <label class="ui-label block text-sm text-gray-700 dark:text-gray-200"><span class="mb-1 inline-flex items-center gap-2"><img src="/static/icons/gowa.svg" alt="GoWA logo" class="w-8 h-8 inline-block align-middle mr-1 object-contain"><span data-response-label>WhatsApp response template</span></span>
           <textarea name="response" rows="4" required maxlength="2000" placeholder="Camera IP: {% raw %}{{steps.kamera.body.results.0.ip}}{% endraw %}" class="ui-control mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900"></textarea>
         </label>
@@ -132,6 +146,10 @@
         <div>
           <div class="mb-2 flex items-center justify-between"><span data-processing-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Processing messages</span><button type="button" data-add-snap-message="processing_messages" class="ui-button ui-button-secondary rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
           <div data-snap-message-list="processing_messages" class="space-y-2"></div>
+          <label class="ui-label mt-3 block text-sm"><span data-processing-delay-label>Processing delay (seconds)</span>
+            <input name="processing_delay_seconds" type="number" min="0" max="60" step="1" value="3" class="ui-control mt-1 w-full rounded-lg dark:bg-gray-900">
+            <span data-processing-delay-hint class="mt-1 block text-xs text-gray-500">Send only if the operation is still running. Pending messages are skipped when a final or failure response is ready. 0 sends immediately.</span>
+          </label>
         </div>
         <div>
           <div class="mb-2 flex items-center justify-between"><span data-failure-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Failure / fallback messages</span><button type="button" data-add-snap-message="failure_messages" class="ui-button ui-button-secondary rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
@@ -249,10 +267,21 @@
   function setResponseTemplateVisibility(action) {
     const usesTemplate = true;
     const isSnap = action === 'snap';
+    const isIndonesian = document.documentElement.lang === 'id';
+    const isVideo = form.elements.response_type.value === 'video';
+    const isImage = form.elements.response_type.value === 'image';
+    form.querySelector('[data-response-media]').classList.remove('hidden');
+    form.querySelector('[data-response-image]').classList.toggle('hidden', !isImage);
+    form.elements.response_image_source.required = isImage;
+    form.querySelector('[data-response-video]').classList.toggle('hidden', !isVideo);
+    form.elements.response_video_source.required = isVideo;
+    form.querySelector('[data-response-type-label]').textContent = isIndonesian ? 'Jenis respons' : 'Response type';
+    form.querySelector('[data-response-video-label]').textContent = isIndonesian ? 'ID atau URL video aman dari API' : 'Video ID or secure URL from API';
+    form.querySelector('[data-response-image-label]').textContent = isIndonesian ? 'URL gambar atau URL snapshot aman' : 'Image URL or protected snapshot URL';
+    form.querySelector('[data-response-image-hint]').textContent = isIndonesian ? 'Gunakan URL gambar HTTP(S) atau URL snapshot dari hasil aksi/API.' : 'Use an HTTP(S) image URL or a snapshot URL from the action/API result.';
     form.querySelector('[data-response-panel]').classList.toggle('hidden', !usesTemplate);
     form.querySelector('[data-snap-stage-panel]').classList.remove('hidden');
-    form.elements.response.required = usesTemplate && action !== 'ping';
-    const isIndonesian = document.documentElement.lang === 'id';
+    form.elements.response.required = usesTemplate && action !== 'ping' && !isVideo && !isImage;
     if (action === 'bot_status' && !draft.response?.trim()) {
       draft.response = '{' + '{status_icon}' + '} Bot Status: {' + '{status}' + '}\n🕒 Response Time: {' + '{response_time}' + '}';
       form.elements.response.value = draft.response;
@@ -272,10 +301,12 @@
       drawSnapMessages('processing_messages');
       drawSnapMessages('failure_messages');
     }
-    form.querySelector('[data-response-label]').textContent = isSnap
+    form.querySelector('[data-response-label]').textContent = isSnap && !isImage && !isVideo
       ? (isIndonesian ? 'Pesan berhasil (caption snapshot)' : 'Success message (snapshot caption)')
-      : 'WhatsApp response template';
+      : (isVideo ? (isIndonesian ? 'Caption video' : 'Video caption') : (isImage ? (isIndonesian ? 'Caption gambar' : 'Image caption') : 'WhatsApp response template'));
     form.querySelector('[data-processing-label]').textContent = isIndonesian ? 'Pesan saat processing' : 'Processing messages';
+    form.querySelector('[data-processing-delay-label]').textContent = isIndonesian ? 'Delay processing (detik)' : 'Processing delay (seconds)';
+    form.querySelector('[data-processing-delay-hint]').textContent = isIndonesian ? 'Kirim hanya jika proses masih berjalan. Pesan tertunda dibatalkan saat hasil akhir atau fallback siap. 0 mengirim langsung.' : 'Send only if the operation is still running. Pending messages are skipped when a final or failure response is ready. 0 sends immediately.';
     form.querySelector('[data-failure-label]').textContent = isIndonesian ? 'Pesan gagal / fallback' : 'Failure / fallback messages';
   }
   function drawSnapMessages(key) {
@@ -329,31 +360,25 @@
     const snapImageFlow = draft.action === 'snap';
     const flowEditorVisible = customFlow || snapImageFlow;
     const hasPreview = true;
-    const testControlsVisible = customFlow || (snapImageFlow && Boolean(draft.image_flow?.length));
+    const testControlsVisible = true;
     panel.classList.toggle('hidden', !hasPreview);
     panel.querySelector('[data-flow-editor]').classList.toggle('hidden', !flowEditorVisible);
     panel.querySelector('[data-test-controls]').classList.toggle('hidden', !testControlsVisible);
     const isIndonesian = document.documentElement.lang === 'id';
     panel.querySelector('[data-flow-title]').lastChild.textContent = snapImageFlow
       ? (isIndonesian ? 'API flow untuk sumber gambar' : 'Image source API flow')
-      : (customFlow ? 'GET API flow' : (isIndonesian ? 'Variabel system action' : 'System action variables'));
+      : (customFlow ? 'API flow (GET / POST)' : (isIndonesian ? 'Variabel system action' : 'System action variables'));
     panel.querySelector('[data-flow-subtitle]').textContent = snapImageFlow
       ? (isIndonesian ? 'Gunakan hasil node untuk mengisi URL gambar API pada pesan processing atau fallback.' : 'Use node results to provide API image URLs in processing or fallback messages.')
       : (customFlow
       ? (isIndonesian ? 'Node internal B-Snap dijalankan berurutan, maksimal 8 node.' : 'Internal B-Snap nodes run in order, up to 8 nodes.')
-      : (isIndonesian ? 'Variabel hasil system action tersedia langsung di template. Tidak perlu menjalankan test API.' : 'System action result variables are available in templates immediately. No API test is needed.'));
+      : (isIndonesian ? 'Contoh variabel tersedia langsung. Jalankan uji untuk melihat hasil success/error sebenarnya.' : 'Sample variables are available immediately. Execute a test to inspect actual success/error results.'));
     panel.querySelector('[data-test-flow]').textContent = customFlow
       ? (isIndonesian ? 'Jalankan uji' : 'Run test')
-      : (draft.action === 'snap'
-        ? (draft.image_flow?.length ? (isIndonesian ? 'Uji API gambar' : 'Test image API flow') : (isIndonesian ? 'Pratinjau data snapshot terakhir' : 'Preview latest snapshot data'))
-        : (isIndonesian ? 'Uji API' : 'Run API test'));
+      : (isIndonesian ? 'Uji aksi langsung' : 'Execute action test');
     panel.querySelector('[data-test-description]').textContent = customFlow
       ? (isIndonesian ? 'Gunakan nilai contoh untuk {{argument}} dan {{sender}}. Uji ini menjalankan alur yang belum disimpan.' : 'Use sample values for {{argument}} and {{sender}}. This test runs the current unsaved flow.')
-      : (draft.action === 'snap'
-        ? (draft.image_flow?.length
-          ? (isIndonesian ? 'Uji node API gambar untuk melihat field URL yang dapat dipakai pada sumber gambar API.' : 'Test the image API nodes to inspect URL fields for API image sources.')
-          : (isIndonesian ? 'Pratinjau ini membaca data snapshot yang sudah ada. Tidak mengambil snapshot baru.' : 'This previews existing snapshot data. It does not capture a new snapshot.'))
-        : (isIndonesian ? 'Hasil uji API gambar untuk melihat field URL yang dapat dipakai pada pesan.' : 'Test the image API flow to inspect URL fields available to messages.'));
+      : (isIndonesian ? 'Uji menjalankan aksi sebenarnya, termasuk capture snapshot baru, edit kamera, atau perubahan whitelist. Pesan WhatsApp tidak dikirim. Hasil success/error tersedia sebagai variabel.' : 'This test executes the actual action, including new snapshot capture, camera edits, or whitelist changes. No WhatsApp messages are sent. Success/error fields become template variables.');
     const container = form.querySelector('[data-flow-list]');
     container.replaceChildren();
     const activeFlow = snapImageFlow ? (draft.image_flow || []) : (draft.flow || []);
@@ -369,11 +394,20 @@
       const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'inline-flex items-center gap-1.5 text-red-600'; appendIcon(remove, 'Delete'); remove.appendChild(document.createTextNode('Delete'));
       remove.addEventListener('click', () => { activeFlow.splice(index, 1); drawFlow(); });
       heading.append(title, remove); card.appendChild(heading);
-      for (const [key, label, placeholder] of [['name','Output name','camera'],['path','API path','/cctv/resolve-ip'],['params','Query params JSON','{"keyword":"{{argument}}"}']]) {
+      const methodLabel = document.createElement('label'); methodLabel.className = 'ui-label mb-2 block text-xs'; methodLabel.textContent = isIndonesian ? 'Metode HTTP' : 'HTTP method';
+      const methodSelect = document.createElement('select'); methodSelect.className = 'mt-1 w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800';
+      for (const method of ['GET', 'POST']) { const option = document.createElement('option'); option.value = method; option.textContent = method; methodSelect.appendChild(option); }
+      methodSelect.value = step.method || 'GET';
+      methodSelect.addEventListener('change', () => { step.method = methodSelect.value; drawFlow(); });
+      methodLabel.appendChild(methodSelect); card.appendChild(methodLabel);
+      const fields = [['name','Output name','camera'],['path','API path','/cctv/resolve-ip'],['params','Query params JSON','{"keyword":"{{argument}}"}']];
+      if ((step.method || 'GET') === 'POST') fields.push(['body',isIndonesian ? 'Body JSON' : 'JSON body','{"hostname":"{{argument}}","duration":30}']);
+      for (const [key, label, placeholder] of fields) {
         const wrapper = document.createElement('label'); wrapper.className = 'ui-label mb-2 block text-xs'; wrapper.textContent = label;
-        const input = document.createElement(key === 'params' ? 'textarea' : 'input');
+        const isJson = key === 'params' || key === 'body';
+        const input = document.createElement(isJson ? 'textarea' : 'input');
         input.className = 'mt-1 w-full rounded border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-800'; input.placeholder = placeholder;
-        if (key === 'params') { input.rows = 2; input.value = typeof step.params === 'string' ? step.params : JSON.stringify(step.params || {}, null, 2); }
+        if (isJson) { input.rows = 2; input.value = typeof step[key] === 'string' ? step[key] : JSON.stringify(step[key] || {}, null, 2); }
         else input.value = step[key] || '';
         input.addEventListener('input', () => { step[key] = input.value; });
         wrapper.appendChild(input); card.appendChild(wrapper);
@@ -389,8 +423,8 @@
     const steps = systemActionSamples[action] || {};
     resultPanel.classList.remove('hidden');
     status.textContent = document.documentElement.lang === 'id'
-      ? 'Variabel hasil system action siap dipakai tanpa test API.'
-      : 'System action result variables are ready to use without an API test.';
+      ? 'Contoh struktur success. Jalankan uji aksi untuk hasil success/error sebenarnya.'
+      : 'Sample success structure. Execute the action test for actual success/error results.';
     status.className = 'mb-2 text-sm text-green-700 dark:text-green-300';
     output.textContent = JSON.stringify(steps, null, 2);
     const variables = form.querySelector('[data-test-variables]');
@@ -404,6 +438,10 @@
     document.getElementById('editorTitleText').textContent = command ? 'Edit command' : 'New command';
     document.getElementById('editorSubtitle').textContent = command?.trigger || 'Enter a trigger, action, and response.';
     for (const key of ['name','trigger','description','response']) form.elements[key].value = draft[key] || '';
+    form.elements.response_type.value = draft.response_type || 'text';
+    form.elements.response_video_source.value = draft.response_video_source || '';
+    form.elements.response_image_source.value = draft.response_image_source || '';
+    form.elements.processing_delay_seconds.value = draft.processing_delay_seconds ?? (command ? 0 : 3);
     form.elements.aliases.value = (draft.aliases || []).join(', ');
     form.elements.required_params.value = (draft.required_params || []).join(', ');
     form.elements.action.value = draft.action || 'text';
@@ -515,7 +553,7 @@
   form.querySelector('[data-add-step]').addEventListener('click', () => {
     const activeFlow = draft.action === 'snap' ? (draft.image_flow ||= []) : (draft.flow ||= []);
     if (activeFlow.length >= 8) { showToast('warning','Maximum 8 API nodes per command.'); return; }
-    activeFlow.push({name:`data${activeFlow.length + 1}`,path:'',params:{}}); drawFlow();
+    activeFlow.push({name:`data${activeFlow.length + 1}`,path:'',method:'GET',params:{},body:{}}); drawFlow();
   });
   form.querySelectorAll('[data-add-snap-message]').forEach(button => button.addEventListener('click', () => {
     if (!draft) return;
@@ -542,7 +580,9 @@
   function insertTemplateAtTarget(snippet) {
     const destination = form.querySelector('[data-variable-target]').value;
     let textarea = form.elements.response;
-    if (destination !== 'response') {
+    if (destination === 'response_video_source' || destination === 'response_image_source') {
+      textarea = form.elements[destination];
+    } else if (destination !== 'response') {
       const container = form.querySelector(`[data-snap-message-list="${destination}"]`);
       textarea = lastStageTemplateTarget instanceof HTMLTextAreaElement && container.contains(lastStageTemplateTarget)
         ? lastStageTemplateTarget
@@ -561,11 +601,22 @@
       lastStageTemplateTarget = event.target;
     }
   });
-  function showFlowVariables(steps) {
+  form.elements.response_type.addEventListener('change', () => setResponseTemplateVisibility(form.elements.action.value));
+  const videoVariableTarget = document.createElement('option');
+  videoVariableTarget.value = 'response_video_source'; videoVariableTarget.textContent = 'Video source';
+  form.querySelector('[data-variable-target]').appendChild(videoVariableTarget);
+  const imageVariableTarget = document.createElement('option');
+  imageVariableTarget.value = 'response_image_source'; imageVariableTarget.textContent = 'Image source';
+  form.querySelector('[data-variable-target]').appendChild(imageVariableTarget);
+  function showFlowVariables(steps, parameters = {}) {
     const container = form.querySelector('[data-test-variables]');
     container.replaceChildren();
     let suggestionCount = 0;
     const arrays = [];
+    for (const [name, value] of Object.entries(parameters)) {
+      addVariableSuggestion(container, `params.${name}`, value);
+      suggestionCount += 1;
+    }
     for (const [stepName, result] of Object.entries(steps || {})) {
       if (suggestionCount >= 100) break;
       addVariableSuggestion(container, `steps.${stepName}.status_code`, result.status_code);
@@ -655,25 +706,39 @@
     status.textContent = 'Running API flow…';
     status.className = 'mb-2 text-sm text-gray-500';
     output.textContent = '';
+    const responsePreview = form.querySelector('[data-test-response-preview]');
+    responsePreview.textContent = ''; responsePreview.classList.add('hidden');
     form.querySelector('[data-test-variables]').replaceChildren();
     button.disabled = true;
     try {
-      const response = await fetch('/api/admin/wa-bot/test-flow', {
+      const isAPIFlow = draft.action === 'api_flow';
+      const testCommand = {...draft, response: form.elements.response.value,
+        required_params: form.elements.required_params.value.split(',').map(value => value.trim()).filter(Boolean)};
+      const response = await fetch(isAPIFlow ? '/api/admin/wa-bot/test-flow' : '/api/admin/wa-bot/test-action', {
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
         body: JSON.stringify({
+          command: testCommand,
+          execute: true,
           flow: draft.action === 'api_flow' ? (draft.flow || []) : (draft.image_flow || []),
           api_token_id: tokenSelect.value,
           argument: form.querySelector('[data-test-argument]').value,
-          sender: form.querySelector('[data-test-sender]').value
+          sender: form.querySelector('[data-test-sender]').value,
+          required_params: form.elements.required_params.value.split(',').map(value => value.trim()).filter(Boolean)
         })
       });
       const data = await readApiJson(response, 'Run API flow test');
+      const previewText = response.ok ? data.response_preview : (data.failure_previews || []).map(item => item.text || '').filter(Boolean).join('\n');
+      if (previewText) { responsePreview.textContent = previewText; responsePreview.classList.remove('hidden'); }
+      if (data.steps) {
+        output.textContent = JSON.stringify(data.steps, null, 2);
+        showFlowVariables(data.steps, data.params);
+      }
       if (!response.ok) throw new Error(data.detail || 'API flow test failed');
       status.textContent = 'Test succeeded. Click a variable below to add it to the response template.';
       status.className = 'mb-2 text-sm text-green-700 dark:text-green-300';
       output.textContent = JSON.stringify(data.steps, null, 2);
-      showFlowVariables(data.steps);
+      showFlowVariables(data.steps, data.params);
     } catch (error) {
       status.textContent = error.message;
       status.className = 'mb-2 text-sm text-red-600 dark:text-red-300';
@@ -688,6 +753,10 @@
     draft.aliases = form.elements.aliases.value.split(',').map(value => value.trim().toLowerCase()).filter(Boolean);
     draft.required_params = form.elements.required_params.value.split(',').map(value => value.trim()).filter(Boolean);
     draft.action = form.elements.action.value; draft.role = adminActions.includes(draft.action) ? 'admin' : 'user'; draft.chat_scope = privateOnlyActions.includes(draft.action) ? 'private' : form.elements.chat_scope.value; draft.enabled = form.elements.enabled.checked; draft.quote_reply = form.elements.quote_reply.checked;
+    draft.response_type = form.elements.response_type.value;
+    draft.response_video_source = form.elements.response_video_source.value.trim();
+    draft.response_image_source = form.elements.response_image_source.value.trim();
+    draft.processing_delay_seconds = Number(form.elements.processing_delay_seconds.value);
     if (draft.action === 'api_flow') {
       if (!draft.flow?.length) { showToast('warning','Add at least one API node.'); return; }
       for (const step of draft.flow) {

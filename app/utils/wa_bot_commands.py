@@ -12,6 +12,33 @@ from app.utils.wa_bot_workflow import normalize_flow
 
 CONFIG_KEY = "wa_bot_command_settings"
 
+
+def normalize_response_media(item: dict[str, Any]) -> dict[str, str]:
+    """Validate explicitly configured response media for any command action."""
+    response_type = item.get("response_type", "text")
+    if response_type not in {"text", "image", "video"}:
+        raise ValueError("Response type must be text, image, or video")
+    source = str(item.get("response_video_source") or "").strip()
+    image_source = str(item.get("response_image_source") or "").strip()
+    if response_type == "image" and (not image_source or len(image_source) > 2000):
+        raise ValueError("Image responses require an image URL or snapshot source (maximum 2000 characters)")
+    if response_type == "video":
+        match = re.fullmatch(r"\{\{steps\.([a-zA-Z][a-zA-Z0-9_]*)\.body(?:\.[a-zA-Z0-9_-]+)+\}\}", source)
+        literal = re.fullmatch(r"(?:/api/videos/secure/)?[a-zA-Z0-9_-]{1,100}", source)
+        if not match and not literal:
+            raise ValueError("Select a video ID or secure video URL")
+        if match and item.get("action") == "api_flow" and not any(step.get("name") == match[1] for step in item.get("flow", [])):
+            raise ValueError("Select a video ID or secure video URL from an API Flow node")
+    return {"response_type": response_type, "response_video_source": source[:500],
+            "response_image_source": image_source}
+
+
+def normalize_processing_delay(value: Any = 0) -> int:
+    """Validate the configurable processing-message delay in seconds."""
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 60:
+        raise ValueError("Processing delay must be an integer between 0 and 60 seconds")
+    return value
+
 BUILTIN_COMMANDS: list[dict[str, Any]] = []
 
 CUSTOM_ACTION_ROLES = {
@@ -94,6 +121,7 @@ def get_command_settings(db: Session) -> list[dict[str, Any]]:
                     item["action"] = default["action"]
                     item["role"] = default["role"]
                     item["chat_scope"] = normalize_chat_scope(item["action"], item.get("chat_scope"))
+                    item["processing_delay_seconds"] = normalize_processing_delay(item.get("processing_delay_seconds", 0))
                     if item["action"] == "snap":
                         item["processing_messages"] = normalize_snap_stage_messages(
                             item.get("processing_messages"), item.get("processing_response"),
@@ -118,6 +146,8 @@ def get_command_settings(db: Session) -> list[dict[str, Any]]:
                         continue
                     try:
                         flow = normalize_flow(item.get("flow")) if action == "api_flow" else []
+                        response_media = normalize_response_media({**item, "flow": flow})
+                        processing_delay = normalize_processing_delay(item.get("processing_delay_seconds", 0))
                         image_flow = item.get("image_flow") or []
                         image_flow = normalize_flow(image_flow) if action == "snap" and image_flow else []
                         processing_messages = normalize_snap_stage_messages(
@@ -131,7 +161,8 @@ def get_command_settings(db: Session) -> list[dict[str, Any]]:
                         ) if action == "snap" else normalize_snap_stage_messages(item.get("failure_messages"), allow_empty=True)
                     except ValueError:
                         continue
-                    result.append({**item, "action": action, "role": CUSTOM_ACTION_ROLES[action],
+                    result.append({**item, **response_media, "processing_delay_seconds": processing_delay,
+                                   "action": action, "role": CUSTOM_ACTION_ROLES[action],
                                    "chat_scope": normalize_chat_scope(action, item.get("chat_scope")), "flow": flow,
                                    "image_flow": image_flow, "processing_messages": processing_messages,
                                    "failure_messages": failure_messages})
@@ -171,6 +202,12 @@ def save_command_settings(db: Session, commands: list[dict[str, Any]]) -> list[d
         entry["trigger"] = str(entry.get("trigger", "")).strip().lower()[:80]
         entry["description"] = str(entry.get("description", ""))[:300].strip()
         entry["response"] = str(entry.get("response", ""))[:2000]
+        entry["processing_delay_seconds"] = normalize_processing_delay(item.get("processing_delay_seconds", 0))
+        entry.update(normalize_response_media({**entry,
+            "response_type": item.get("response_type", "text"),
+            "response_video_source": item.get("response_video_source", ""),
+            "response_image_source": item.get("response_image_source", ""),
+        }))
         if entry["action"] == "snap":
             entry["processing_messages"] = normalize_snap_stage_messages(
                 item.get("processing_messages"), item.get("processing_response"),
@@ -223,7 +260,7 @@ def save_command_settings(db: Session, commands: list[dict[str, Any]]) -> list[d
         entry["aliases"] = [str(alias).strip().lower()[:80] for alias in aliases if str(alias).strip()][:20]
         if not entry["name"] or not entry["trigger"]:
             raise ValueError("Nama dan trigger perintah wajib diisi")
-        if entry["action"] != "ping" and not entry["response"].strip():
+        if entry["action"] != "ping" and entry["response_type"] == "text" and not entry["response"].strip():
             raise ValueError("Template respons wajib diisi")
         if entry["enabled"]:
             for phrase in [entry["trigger"], *entry["aliases"]]:

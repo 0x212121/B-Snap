@@ -3,26 +3,30 @@ GoWA Webhook Handler - WhatsApp Bot Integration
 Handles incoming messages from GoWA webhook and responds to commands.
 """
 import logging
+import asyncio
 import json
 import re
+from pathlib import Path
 from datetime import datetime, timezone
 from urllib.parse import unquote, urljoin, urlsplit
 from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import Awaitable, Callable, Optional
 
-from app.db.database import get_db
+from app.db.database import get_db, SessionLocal
 from app.models.user import User
 from app.models.camera import Camera
 from app.models.health import CameraHealth
 from app.models.whitelist import RoleEnum, WhatsappWhitelist
-from app.routes.auth import admin_access_required
+from app.routes.auth import admin_access_required, get_current_user
 from app.utils.wa_gateway import WAGatewayService, format_phone_number
 from app.utils.response_helper import json_success_response, json_error_response
 from app.utils.wa_bot_commands import (
+    CUSTOM_ACTION_ROLES,
     get_command_settings,
     match_command,
     normalize_snap_stage_messages,
@@ -31,12 +35,15 @@ from app.utils.wa_bot_commands import (
 )
 from app.models.camera_group import CameraGroup
 from app.models.snapshot import Snapshot
+from app.models.video import Video
 from app.models.log import CommandLog, WhatsAppMessageLog
 from app.models.config import Configuration
 from app.utils.snapshot_service import SnapshotService
+from app.utils.audit_logger import log_audit
+from app.utils.video import STATIC_VIDEO_DIR
 from app.utils.wa_executor import run_gateway_blocking
 from app.utils.wa_bot_workflow import render_flow_template, run_api_flow
-from app.utils.wa_bot_workflow import normalize_flow
+from app.utils.wa_bot_workflow import APIFlowError, bind_command_arguments, normalize_flow
 from app.utils.healthcheck import format_uptime_duration
 from app.utils.timezone_helper import get_current_timezone
 import os
@@ -57,13 +64,27 @@ def _record_wa_message(db: Session, phone: str, direction: str, status: str, mes
 
 def _send_wa_message_item(service: WAGatewayService, recipient: str, item: dict, reply_to: str | None = None) -> dict:
     caption = str(item.get("text") or "")
+    if item.get("video_path"):
+        return service.send_video_file(recipient, item["video_path"], caption or None, reply_to=reply_to)
     if item.get("image_path"):
         return service.send_image_file(recipient, item["image_path"], caption or None, reply_to=reply_to)
     if item.get("image_url"):
         return service.send_image(recipient, item["image_url"], caption or None, reply_to=reply_to)
     if caption:
         return service.send_text(recipient, caption, reply_to=reply_to)
-    return {"success": False, "error": "Message item has no text or image"}
+    return {"success": False, "error": "Message item has no text or media"}
+
+
+def _send_wa_progress_item(recipient: str, item: dict, sender: str, command: str, reply_to: str | None) -> dict:
+    """Send and log progress with a session owned by the gateway worker."""
+    with SessionLocal() as progress_db:
+        result = _send_wa_message_item(WAGatewayService(progress_db), recipient, item, reply_to)
+        _record_wa_message(
+            progress_db, sender, "outbound", "accepted" if result.get("success") else "failed",
+            item.get("text") or "[image]", command, result.get("error", ""),
+        )
+        progress_db.commit()
+        return result
 
 
 def _analytics_command_text(message: str) -> str:
@@ -167,14 +188,93 @@ async def test_wa_bot_flow(request: Request, current_admin: User = Depends(admin
             bearer_token=token,
             sender=str(payload.get("sender") or "").strip()[:100],
             argument=str(payload.get("argument") or "").strip()[:500],
+            parameters=bind_command_arguments(
+                payload.get("required_params") or [], str(payload.get("argument") or "").strip()[:500]
+            ),
         )
-        return {"status": "success", "steps": context["steps"]}
+        return {"status": "success", "steps": context["steps"], "params": context.get("params", {})}
+    except APIFlowError as exc:
+        return JSONResponse(status_code=422, content={
+            "status": "error", "detail": str(exc), "steps": exc.context["steps"],
+            "params": exc.context.get("params", {}),
+        })
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:
         logger.warning("WhatsApp Bot API flow test failed for admin %s: %s", current_admin.id, exc)
         detail = str(exc) or "The API flow could not be run"
         raise HTTPException(status_code=502, detail=detail[:500]) from exc
+
+
+@router.post("/api/admin/wa-bot/test-action")
+async def test_wa_bot_action(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required),
+):
+    """Execute an unsaved native action and preview success/failure without WhatsApp sends."""
+    payload = await request.json()
+    command = payload.get("command")
+    if not isinstance(command, dict) or not isinstance(command.get("action"), str) or command.get("action") not in CUSTOM_ACTION_ROLES or command.get("action") == "api_flow":
+        raise HTTPException(status_code=422, detail="Select a supported native command action")
+    action = command["action"]
+    if action in {"snap", "edit", "whitelist_add", "whitelist_remove"} and payload.get("execute") is not True:
+        raise HTTPException(status_code=422, detail="This test executes the action; set execute=true")
+    argument = str(payload.get("argument") or "").strip()[:500]
+    try:
+        parameters = bind_command_arguments(command.get("required_params") or [], argument)
+        if not isinstance(command.get("response", ""), str):
+            raise ValueError("Response template must be text")
+        command = {**command,
+                   "failure_messages": normalize_snap_stage_messages(
+                       command.get("failure_messages"), default_text="Snapshot capture failed.", allow_empty=action != "snap"
+                   ),
+                   "image_flow": normalize_flow(command["image_flow"]) if command.get("image_flow") else []}
+    except ValueError as exc:
+        error = {"status_code": 422, "body": {"status": "error", "message": str(exc), "detail": str(exc)}}
+        return JSONResponse(status_code=422, content={"status": "error", "detail": str(exc), "steps": {"error": error, "result": error}})
+    bot = WABotHandler(db)
+    bot._test_user = current_admin
+    bot._test_command = {**command, "trigger": command.get("trigger") or "/test",
+                         "response_type": "text", "processing_messages": None if action == "snap" else [],
+                         "processing_delay_seconds": 0}
+    bot._test_argument = argument
+    token_id = str(payload.get("api_token_id") or "").strip()
+    if token_id:
+        token = next((item.get("token") for item in (current_admin.api_tokens or [])
+                      if isinstance(item, dict) and str(item.get("id")) == token_id), None)
+        if not token:
+            raise HTTPException(status_code=422, detail="The selected API token was not found")
+        bot._selected_api_token = lambda: token
+    # Test runs use the signed-in admin's access, never a sender-supplied privilege.
+    sender = str(payload.get("sender") or "").strip()[:32]
+    async def suppress_delivery(item: dict) -> dict:
+        return {"success": True}
+    bot.progress_sender = suppress_delivery
+    try:
+        response = await bot.handle(sender, f"/test {argument}")
+        if not bot.action_failed:
+            db.commit()
+        else:
+            db.rollback()
+    except Exception as exc:
+        db.rollback()
+        logger.exception("Native action test failed: %s", action)
+        bot._set_action_error("The action failed. Check application logs.", 502)
+        response = ""
+    steps = bot.action_api_context.get("steps", {})
+    if not steps:
+        steps = {"result": {"status_code": 200, "body": {"status": "success", "message": response}}}
+    failed = bot.action_failed
+    error = steps.get("error", {})
+    code = error.get("status_code", 400) if failed else 200
+    return JSONResponse(status_code=code, content={
+        "status": "error" if failed else "success", "steps": steps,
+        "params": parameters, "detail": error.get("body", {}).get("message", "") if failed else "",
+        "response_preview": response or bot.media_caption or "",
+        "failure_previews": bot._render_action_stage_messages(command.get("failure_messages") or [], argument, sender,
+            error.get("body", {}).get("message", "")) if failed else [],
+    })
 
 
 class WABotHandler:
@@ -191,11 +291,29 @@ class WABotHandler:
         self.progress_sender: Optional[Callable[[dict[str, str]], Awaitable[dict]]] = None
         self.action_failed = False
         self.action_api_context: dict = {"steps": {}}
+        self._processing_task: asyncio.Task | None = None
+        self._processing_suppressed = False
+        self._queued_processing: list[dict] = []
+        self._test_user: User | None = None
+        self._test_command: dict | None = None
+        self._test_argument = ""
 
     def _merge_action_context(self, context: dict) -> dict:
         base = self.action_api_context or {}
         merged_steps = {**(base.get("steps") or {}), **(context.get("steps") or {})}
-        return {**base, **context, "steps": merged_steps}
+        self.action_api_context = {**base, **context, "steps": merged_steps}
+        return self.action_api_context
+
+    def _set_action_error(self, message: str, status_code: int = 400) -> None:
+        """Expose a stable error result to tests and failure-message templates."""
+        self.action_failed = True
+        error = {"status_code": status_code, "body": {
+            "status": "error", "success": False, "message": message, "detail": message,
+        }}
+        steps = {"error": error}
+        if "result" not in self.action_api_context.get("steps", {}):
+            steps["result"] = error
+        self._merge_action_context({"steps": steps})
 
     def _render_action_stage_messages(self, messages: list[dict], argument: str, sender: str,
                                       error: str = "") -> list[dict[str, str]]:
@@ -228,6 +346,7 @@ class WABotHandler:
 
     async def _send_action_stage(self, messages: list[dict], argument: str, sender: str,
                                  error: str = "") -> None:
+        await self._cancel_processing()
         for item in self._render_action_stage_messages(messages, argument, sender, error):
             if self.progress_sender:
                 try:
@@ -236,6 +355,51 @@ class WABotHandler:
                     logger.exception("Failed to send WhatsApp action-stage message")
             else:
                 self.outbound_items.append(item)
+
+    async def _cancel_processing(self) -> None:
+        """Suppress pending processing messages before final or fallback replies."""
+        self._processing_suppressed = True
+        task = self._processing_task
+        if task and not task.done():
+            task.cancel()
+        if task:
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+        self._processing_task = None
+        queued_ids = {id(item) for item in self._queued_processing}
+        self.outbound_items = [item for item in self.outbound_items if id(item) not in queued_ids]
+        self._queued_processing.clear()
+
+    async def _schedule_processing_items(self, items: list[dict], delay: int) -> None:
+        """Send processing only if the operation is still running after the delay."""
+        if not items:
+            return
+
+        async def send() -> None:
+            if delay:
+                await asyncio.sleep(delay)
+            for item in items:
+                if self._processing_suppressed or self.action_failed:
+                    return
+                if self.progress_sender:
+                    try:
+                        await self.progress_sender(item)
+                    except Exception:
+                        logger.exception("Failed to send WhatsApp processing message")
+                else:
+                    self.outbound_items.append(item)
+                    self._queued_processing.append(item)
+
+        if delay:
+            self._processing_task = asyncio.create_task(send())
+        else:
+            await send()
+
+    async def _schedule_action_processing(self, command: dict, argument: str, sender: str) -> None:
+        items = self._render_action_stage_messages(command.get("processing_messages") or [], argument, sender)
+        await self._schedule_processing_items(items, command.get("processing_delay_seconds", 0))
     
     def parse_command(self, message: str) -> tuple[str, list]:
         """
@@ -256,6 +420,41 @@ class WABotHandler:
         return cmd, args
     
     async def handle(self, sender: str, message: str, is_group: bool = False) -> str:
+        self._processing_suppressed = False
+        try:
+            return await self._handle_response(sender, message, is_group)
+        finally:
+            await self._cancel_processing()
+
+    async def _handle_response(self, sender: str, message: str, is_group: bool = False) -> str:
+        """Execute the command and apply its configured success response media."""
+        self._response_command = None
+        response = await self._handle_command(sender, message, is_group)
+        command = self._response_command
+        if not command or self.action_failed or command.get("response_type", "text") == "text":
+            return response
+        caption = response or self.media_caption or ""
+        success_paths = {item["path"] for item in self.media_items}
+        if self.media_path:
+            success_paths.add(self.media_path)
+        self.outbound_items = [item for item in self.outbound_items if item.get("image_path") not in success_paths]
+        self.media_path = None
+        self.media_items = []
+        try:
+            if command["response_type"] == "image":
+                await self._attach_response_image(command, caption)
+            elif command["response_type"] == "video":
+                await self._attach_response_video(command, caption)
+            return ""
+        except Exception as exc:
+            self._set_action_error(str(exc), exc.status_code if isinstance(exc, HTTPException) else 502)
+            logger.warning("WhatsApp configured media response failed: %s", exc)
+            if command.get("failure_messages"):
+                await self._send_action_stage(command["failure_messages"], self._command_argument, sender, str(exc))
+                return ""
+            return f"Response media failed: {exc}"
+
+    async def _handle_command(self, sender: str, message: str, is_group: bool = False) -> str:
         """
         Handle incoming message and return response.
         
@@ -267,14 +466,14 @@ class WABotHandler:
             Response message
         """
         self._sender = sender
-        commands = get_command_settings(self.db)
-        command, argument = match_command(message, commands)
+        commands = [self._test_command] if self._test_command else get_command_settings(self.db)
+        command, argument = (self._test_command, self._test_argument) if self._test_command else match_command(message, commands)
         if command:
             if is_group and command.get("chat_scope") == "private":
                 logger.info("Ignoring private-only WhatsApp command in group: %s", command.get("trigger"))
                 return ""
             self.quote_reply = bool(command.get("quote_reply", True))
-            entry = self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == sender).first()
+            entry = self._test_user or self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == sender).first()
             is_admin = bool(entry and entry.role == RoleEnum.admin)
             if command.get("role") == "admin" and not is_admin:
                 return "This command is available to admins only."
@@ -288,28 +487,38 @@ class WABotHandler:
                 usage = " ".join(f"<{parameter}>" for parameter in required_params)
                 return f"Required parameters are missing. Usage: {command['trigger']} {usage}"
             action = command.get("action")
+            self._response_command = command
+            self._command_argument = argument
             self.action_failed = False
-            self.action_api_context = {"sender": sender, "argument": argument, "steps": {}}
+            self.action_api_context = {
+                "sender": sender, "argument": argument, "steps": {},
+                "params": bind_command_arguments(required_params, argument),
+            }
             action_flow = command.get("flow") if action == "api_flow" else None
             if action_flow:
                 self.private_response = True
             if action_flow:
                 try:
+                    await self._schedule_action_processing(command, argument, sender)
                     self.action_api_context = await run_api_flow(
                         flow=action_flow,
                         bearer_token=self._selected_api_token(),
                         sender=sender,
                         argument=argument,
+                        parameters=self.action_api_context.get("params", {}),
                     )
                 except Exception as exc:
+                    if isinstance(exc, APIFlowError):
+                        self.action_api_context = self._merge_action_context(exc.context)
                     logger.warning("WhatsApp action data flow failed for %s: %s", command.get("trigger"), exc)
                     self.action_failed = True
+                    self._set_action_error(str(exc), 502)
                     if command.get("failure_messages"):
                         await self._send_action_stage(command["failure_messages"], argument, sender, str(exc))
                         return ""
                     return f"API flow failed: {exc}"
-            if action != "snap":
-                await self._send_action_stage(command.get("processing_messages") or [], argument, sender)
+            if action != "snap" and not action_flow:
+                await self._schedule_action_processing(command, argument, sender)
             if action == "help":
                 enabled = [
                     c for c in commands
@@ -358,6 +567,11 @@ class WABotHandler:
                 logger.exception("WhatsApp system action failed for %s", command.get("trigger"))
                 self.action_failed = True
                 response = f"Action failed: {exc}"
+                self._set_action_error(response, exc.status_code if isinstance(exc, HTTPException) else 502)
+            if self.action_failed and "error" not in self.action_api_context.get("steps", {}):
+                self._set_action_error(response or "The action failed")
+            if action == "snap" and self.action_failed and not response:
+                return ""
             if self.action_failed and command.get("failure_messages"):
                 await self._send_action_stage(command["failure_messages"], argument, sender, response)
                 return ""
@@ -375,6 +589,99 @@ class WABotHandler:
             logger.info("WA Bot: %s sent an unconfigured command", sender[-4:])
             return ""
         return ""
+
+    async def _attach_response_image(self, command: dict, caption: str) -> None:
+        """Resolve a configured image URL or protected snapshot for any action."""
+        source = self._render_action_response(
+            command.get("response_image_source", ""), self.action_api_context,
+            timezone_name=get_current_timezone(self.db),
+            argument=self._command_argument, sender=self._sender,
+        ).strip()
+        parsed = urlsplit(source)
+        if parsed.scheme.lower() in {"http", "https"} and parsed.netloc:
+            self.outbound_items.append({"image_url": source, "text": caption})
+            return
+        if parsed.scheme or parsed.netloc or not source:
+            raise ValueError("The image source must be an HTTP(S) URL or protected snapshot")
+        path = unquote(parsed.path)
+        if path.startswith("/api/snapshots/secure/"):
+            snapshot = self.db.query(Snapshot).filter(
+                Snapshot.id == path.removeprefix("/api/snapshots/secure/"),
+                Snapshot.deleted_at.is_(None),
+            ).first()
+        elif path.startswith("/snapshot/file/") or path.startswith("/api/snapshots/file/"):
+            file_path = path.removeprefix("/snapshot/file/").removeprefix("/api/snapshots/file/")
+            snapshot = self.db.query(Snapshot).filter(
+                Snapshot.file_path == file_path, Snapshot.deleted_at.is_(None),
+            ).first()
+        else:
+            raise ValueError("Select a protected snapshot URL or an HTTP(S) image URL")
+        if not snapshot:
+            raise ValueError("The selected snapshot is no longer available")
+        token = self._selected_api_token()
+        if command.get("action") == "api_flow":
+            if not token:
+                raise ValueError("Protected API images require a valid B-Snap API token")
+            owner = await get_current_user(
+                Request({"type": "http", "session": {}, "headers": []}),
+                db=self.db, authorization=f"Bearer {token}",
+            )
+        else:
+            owner = self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == self._sender).first()
+        if not owner:
+            raise ValueError("Image access is not authorized")
+        camera = self.db.query(Camera).filter(Camera.id == snapshot.camera_id).first()
+        if owner.group_id is not None and (
+            not camera or not any(group.id == owner.group_id for group in camera.groups)
+        ):
+            raise ValueError("Access denied to the selected snapshot")
+        root = Path("static/snapshots").resolve()
+        local_path = (root / snapshot.file_path).resolve()
+        if not local_path.is_relative_to(root) or not local_path.is_file():
+            raise ValueError("The selected snapshot file is unavailable")
+        log_audit(db=self.db, user=self._sender, action="prepare_snapshot_whatsapp",
+                  target=f"{snapshot.camera_name}/{snapshot.id}")
+        self.outbound_items.append({"image_path": str(local_path), "text": caption})
+
+    async def _attach_response_video(self, command: dict, caption: str | None = None) -> None:
+        """Attach the explicitly selected response video after checking token access."""
+        caption = caption if caption is not None else render_flow_template(
+            command.get("response", ""), self.action_api_context,
+            timezone_name=get_current_timezone(self.db),
+        )
+        source = render_flow_template(
+            command.get("response_video_source", ""), self.action_api_context
+        ).strip()
+        if source.startswith("/api/videos/secure/"):
+            source = source.removeprefix("/api/videos/secure/").split("?", 1)[0]
+        if not source or not re.fullmatch(r"[a-zA-Z0-9_-]{1,100}", source):
+            raise ValueError("The selected API field did not return a video ID or secure video URL")
+        token = self._selected_api_token()
+        if not token:
+            raise ValueError("Video responses require a valid B-Snap API token")
+        auth_request = Request({"type": "http", "session": {}, "headers": []})
+        owner = await get_current_user(auth_request, db=self.db, authorization=f"Bearer {token}")
+        if owner.role not in {"operator", "admin"}:
+            raise ValueError("Video responses require an operator or admin API token")
+        video = self.db.query(Video).filter(
+            Video.id == source, Video.deleted_at.is_(None),
+        ).first()
+        if not video:
+            raise ValueError("The selected video is no longer available")
+        if owner.group_id is not None and (
+            not video.camera or not any(group.id == owner.group_id for group in video.camera.groups)
+        ):
+            raise ValueError("Access denied to the selected video")
+        root = STATIC_VIDEO_DIR.resolve()
+        path = (root / video.file_path).resolve()
+        if not path.is_relative_to(root) or not path.is_file():
+            raise ValueError("The selected video file is unavailable")
+        log_audit(
+            db=self.db, user=owner.username, action="prepare_video_whatsapp",
+            target=f"{video.camera_name}/{video.id}",
+            extra="Configured video response prepared for the invoking user's private WhatsApp chat",
+        )
+        self.outbound_items.append({"video_path": str(path), "text": caption})
 
     def _selected_api_token(self) -> Optional[str]:
         owner_id = _config_value(self.db, WA_API_TOKEN_OWNER_KEY)
@@ -545,7 +852,7 @@ class WABotHandler:
             )
             if not camera:
                 if action == "snap":
-                    self.action_failed = True
+                    self._set_action_error(f"Camera hostname or IP '{argument}' was not found or is inaccessible.", 404)
                     return f"Camera hostname or IP '{argument}' was not found or is inaccessible."
                 self.action_failed = True
                 return f"Camera '{argument}' was not found or is inaccessible."
@@ -557,6 +864,7 @@ class WABotHandler:
                 health = self.db.query(CameraHealth).filter(CameraHealth.camera_id == camera.id).first()
                 camera_status = health.status if health else "Unknown"
                 if camera_status not in {"Online", "High Latency"}:
+                    self._set_action_error(f"Camera '{camera.hostname}' is {camera_status} (offline).", 503)
                     failure_messages = normalize_snap_stage_messages(
                         command.get("failure_messages"),
                         command.get("failure_response"),
@@ -574,7 +882,8 @@ class WABotHandler:
                         error=f"{camera_status} (offline)",
                     ))
                     return ""
-                api_context = {"sender": sender, "argument": argument, "steps": {}}
+                api_context = {"sender": sender, "argument": argument, "steps": {},
+                               "params": self.action_api_context.get("params", {})}
                 if command.get("image_flow"):
                     try:
                         api_context = await run_api_flow(
@@ -582,14 +891,15 @@ class WABotHandler:
                             bearer_token=self._selected_api_token(),
                             sender=sender,
                             argument=argument,
+                            parameters=api_context.get("params", {}),
                         )
                     except Exception as exc:
+                        if isinstance(exc, APIFlowError):
+                            api_context = exc.context
                         logger.warning("WhatsApp snapshot image API flow failed for %s: %s", camera.hostname, exc)
                 self.action_api_context = api_context
-                template = render_flow_template(
-                    command.get("response", ""), api_context,
-                    timezone_name=get_current_timezone(self.db),
-                )
+                # Keep result placeholders intact until the new capture is available.
+                template = command.get("response", "")
                 processing_messages = normalize_snap_stage_messages(
                     command.get("processing_messages"),
                     command.get("processing_response"),
@@ -599,23 +909,17 @@ class WABotHandler:
                 processing_items = self._render_snap_stage_messages(
                     processing_messages, api_context, camera, argument, sender, processing_snapshot
                 )
-                for processing_item in processing_items:
-                    if self.progress_sender:
-                        try:
-                            progress_result = await self.progress_sender(processing_item)
-                            if not progress_result.get("success"):
-                                logger.warning(
-                                    "Failed to send WhatsApp snapshot processing message for %s: %s",
-                                    camera.hostname, progress_result.get("error", "unknown error"),
-                                )
-                        except Exception:
-                            logger.exception("Failed to send WhatsApp snapshot processing message for %s", camera.hostname)
-                    else:
-                        self.outbound_items.append(processing_item)
-                snapshot = await SnapshotService.capture_snapshot(camera.id, self.db, triggered_by="whatsapp")
+                await self._schedule_processing_items(
+                    processing_items, command.get("processing_delay_seconds", 0)
+                )
+                snapshot = await SnapshotService.capture_snapshot(
+                    camera.id, self.db, triggered_by="bot_builder_test" if self._test_user else "whatsapp"
+                )
                 if snapshot and not os.path.isfile(os.path.join("static", "snapshots", snapshot.file_path)):
                     snapshot = None
                 if not snapshot:
+                    self._set_action_error(f"Failed to capture a new snapshot for '{camera.hostname}'.", 502)
+                    await self._cancel_processing()
                     failure_messages = normalize_snap_stage_messages(
                         command.get("failure_messages"),
                         command.get("failure_response"),
@@ -646,6 +950,7 @@ class WABotHandler:
                 argument=argument,
                 sender=sender,
             )
+            self.action_api_context = context
             if action == "snap":
                 self.outbound_items.append({"text": self.media_caption or "", "image_path": local_path})
             return ""
@@ -658,7 +963,7 @@ class WABotHandler:
                 import ping3
                 replies = []
                 for attempt in range(4):
-                    latency = ping3.ping(target, timeout=2)
+                    latency = await asyncio.to_thread(ping3.ping, target, timeout=2)
                     if latency is None:
                         replies.append(f"Request timeout for attempt {attempt + 1}")
                     else:
@@ -667,6 +972,9 @@ class WABotHandler:
                     "status_code": 200,
                     "body": {"target": target, "replies": replies, "online": any("Reply from" in reply for reply in replies)},
                 }}})
+                if not ping_context["steps"]["ping"]["body"]["online"]:
+                    self._set_action_error(f"Host '{target}' did not respond to ping.", 504)
+                    ping_context["steps"]["ping"]["status_code"] = 504
                 return self._render_action_response(
                     template, ping_context, timezone_name=get_current_timezone(self.db),
                     target=target, result="\n".join(replies), argument=argument, sender=sender,
@@ -695,6 +1003,8 @@ class WABotHandler:
                     "error": connection.get("error") or "",
                 },
             }}})
+            if not online:
+                self._set_action_error(connection.get("error") or "WhatsApp gateway is offline.", 503)
             return self._render_action_response(
                 template or "{{status_icon}} Bot Status: {{status}}\n🕒 Response Time: {{response_time}}",
                 context,
@@ -818,7 +1128,7 @@ class WABotHandler:
         return render_response(rendered, **legacy_values)
 
     def _find_camera(self, query: str):
-        entry = self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == self._sender).first()
+        entry = self._test_user or self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == self._sender).first()
         camera_query = self.db.query(Camera).filter(Camera.status.in_(["Active", "Restricted", "Maintenance"]))
         if entry and entry.group_id:
             camera_query = camera_query.filter((Camera.group_id == entry.group_id) | Camera.groups.any(id=entry.group_id))
@@ -826,7 +1136,7 @@ class WABotHandler:
 
     def _find_camera_for_capture(self, hostname_or_ip: str) -> Optional[Camera]:
         """Find one accessible camera by exact hostname (case-insensitive) or exact IP."""
-        entry = self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == self._sender).first()
+        entry = self._test_user or self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == self._sender).first()
         lookup = hostname_or_ip.strip()
         escaped_hostname = lookup.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         camera_query = self.db.query(Camera).filter(
@@ -841,7 +1151,7 @@ class WABotHandler:
 
     def _find_latest_camera_snapshots_by_hostname_prefix(self, prefix: str) -> list[tuple[Camera, Snapshot]]:
         """Find each accessible matching camera's latest snapshot, newest cameras first."""
-        entry = self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == self._sender).first()
+        entry = self._test_user or self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == self._sender).first()
         escaped_prefix = prefix.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         latest_snapshots = (
             self.db.query(
@@ -1025,18 +1335,8 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
             progress_recipient = sender if bot.private_response else chat_id
             progress_reply_to = (message_id or None) if bot.quote_reply else None
             result = await run_gateway_blocking(
-                _send_wa_message_item, wa_service, progress_recipient, message_item, progress_reply_to
+                _send_wa_progress_item, progress_recipient, message_item, sender, command, progress_reply_to
             )
-            _record_wa_message(
-                db,
-                sender,
-                "outbound",
-                "accepted" if result.get("success") else "failed",
-                message_item.get("text") or "[image]",
-                command,
-                result.get("error", ""),
-            )
-            db.commit()
             return result
 
         bot.progress_sender = send_snapshot_progress
@@ -1057,18 +1357,18 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
                 )
                 if not send_result.get("success"):
                     failed_sends.append(send_result.get("error", "unknown error"))
-                    logger.error("Failed sending WhatsApp snapshot message to %s: %s", recipient, send_result.get("error"))
+                    logger.error("Failed sending WhatsApp message to %s: %s", recipient, send_result.get("error"))
                 _record_wa_message(
                     db,
                     sender,
                     "outbound",
                     "accepted" if send_result.get("success") else "failed",
-                    item.get("text") or "[image]",
+                    item.get("text") or ("[video]" if item.get("video_path") else "[image]"),
                     command,
                     send_result.get("error", ""),
                 )
             if failed_sends:
-                failure_text = "Some snapshot messages could not be sent. Please try again."
+                failure_text = "Some media messages could not be sent. Please try again."
                 fallback_send = await run_gateway_blocking(
                     wa_service.send_text, recipient, failure_text, reply_to
                 )

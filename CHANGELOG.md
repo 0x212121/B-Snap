@@ -6,8 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added live native-action tests to Bot Builder without WhatsApp delivery, with success/error JSON and selectable failure fields for capture, latest snapshot, ping, status, and other actions. Snapshot capture APIs now return consistent success/message/detail fields and enforce camera group access; `/api/snapshots/capture/{identifier}` aliases the existing capture endpoint.
+- Added per-command processing-message delay (0–60 seconds) to Bot Builder; pending processing is canceled on completion/failure, queued processing is omitted from final/fallback responses, and snapshot failures suppress success media. New commands start with a three-second delay; existing commands retain zero unless edited.
+- Added named command-input variables for processing/success/fallback messages and API fields: required parameters such as `hostname, duration` expose `{{params.hostname}}`, `{{params.duration}}`, and short aliases before API execution; Bot Builder tests preview the bound inputs.
+- Added Text/Image/Video response selection for every WhatsApp command action, including configurable image URLs or protected snapshot URLs, optional captions, and media-source template targets. Protected images retain authentication/group checks and failures use the configured fallback.
+- Made API Flow video delivery configurable in Bot Builder with Text/Video response types and a selected API-result video ID or secure URL. Commands default to text and no longer automatically send recording results; selected videos require valid token and camera group access.
+- Added `POST /api/videos/record-and-wait` and configurable WhatsApp API Flow video delivery: wait for a successful recording, upload the selected protected MP4 through GoWA, and use the response template as its caption. Recording failures use the configured fallback; duplicate IPs remain rejected. Keep recording work off the event loop, return saved video metadata, support SQLite saves, and rewind media uploads before retries.
+- Added GET/POST selection and templated JSON bodies to WhatsApp Bot Builder API nodes so video recording commands can call `POST /api/videos/record` without HTTP 405 errors; existing nodes default to GET.
+- Added `POST /api/videos/record` with hostname or IP selection; duplicate IPs return 409 without recording. Enforce camera group access for both recording endpoints and audit the authenticated user.
+
 ### Fixed
 
+- Validate missing named command inputs and test arguments before sending API requests, with actionable messages instead of posting an empty camera hostname.
+- Preserve failed API node HTTP status and response body in Bot Builder test previews and WhatsApp fallback template variables, while stopping subsequent flow nodes.
+- Return JSON from global 404/403 handlers for API and JSON requests, preserving the endpoint's error detail (including unknown recording camera hostnames); browser page errors still render HTML.
 - Vertically center the selected camera name and search input in the Snapshot Gallery camera filter.
 - Vertically center the selected camera name and search input in the Video Gallery camera filter.
 - Fixed WhatsApp Bot Builder rendering by preventing Jinja from evaluating JavaScript response-template placeholders, which could redirect the user to login and clear session cookies.

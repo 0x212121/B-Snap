@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime, timezone, timedelta
 import logging
 import os
@@ -6,6 +8,7 @@ from typing import Optional, List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks
 from fastapi.responses import JSONResponse, RedirectResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.logging_config import setup_logging
@@ -15,6 +18,7 @@ from app.models.camera_group import CameraGroup
 from app.models.user import User
 from app.models.video import Video
 from app.routes.auth import admin_access_required, operator_access_required
+from app.schemas.video import VideoRecordRequest
 from app.utils.audit_logger import log_audit
 from app.utils.timezone_helper import to_current_timezone, format_datetime_standard
 from app.utils.video import record_video_and_save_db
@@ -352,6 +356,113 @@ def purge_deleted_videos(
     })
 
 
+def _authorize_video_recording(
+    request: Request,
+    camera: Camera,
+    duration: int,
+    db: Session,
+    current_operator: User,
+) -> None:
+    """Check camera access and audit the authenticated recording command."""
+    if current_operator.group_id is not None and not any(
+        group.id == current_operator.group_id for group in camera.groups
+    ):
+        raise HTTPException(status_code=403, detail="Access denied to this camera")
+
+    log_audit(
+        db=db,
+        user=current_operator.username,
+        action="start_record_video",
+        target=str(camera.hostname),
+        ip=request.client.host if request.client else "unknown",
+        extra=f"Duration: {duration}s",
+    )
+
+
+def _queue_video_recording(
+    request: Request,
+    camera: Camera,
+    duration: int,
+    background_tasks: BackgroundTasks,
+    db: Session,
+    current_operator: User,
+) -> JSONResponse:
+    """Authorize and schedule a background recording."""
+    _authorize_video_recording(request, camera, duration, db, current_operator)
+    background_tasks.add_task(
+        record_video_and_save_db, request, camera_id=camera.id, duration=duration
+    )
+    return JSONResponse(
+        status_code=202,
+        content={
+            "message": f"Recording for {duration} seconds for camera {camera.hostname} has started.",
+            "camera_id": camera.id,
+            "hostname": camera.hostname,
+            "duration": duration,
+        },
+    )
+
+
+def _resolve_record_camera(payload: VideoRecordRequest, db: Session) -> Camera:
+    """Resolve an unambiguous registered hostname or IP."""
+    query = db.query(Camera)
+    if payload.hostname is not None:
+        query = query.filter(func.lower(Camera.hostname) == payload.hostname.lower())
+    else:
+        query = query.filter(Camera.ip == payload.ip)
+
+    # Check all cameras before group filtering: a duplicate IP is always ambiguous.
+    cameras = query.limit(2).all()
+    if not cameras:
+        raise HTTPException(status_code=404, detail="Camera not found")
+    if len(cameras) > 1:
+        selector = "IP address" if payload.ip is not None else "hostname"
+        raise HTTPException(
+            status_code=409,
+            detail=f"Multiple cameras match this {selector}. Recording was not started. "
+            "Use a unique hostname or camera ID.",
+        )
+    return cameras[0]
+
+
+@router.post("/api/videos/record", response_class=JSONResponse, status_code=202)
+async def record_video_by_camera(
+    request: Request,
+    payload: VideoRecordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_operator: User = Depends(operator_access_required),
+) -> JSONResponse:
+    """Record by exact hostname or IP in the background."""
+    camera = _resolve_record_camera(payload, db)
+    return _queue_video_recording(
+        request, camera, payload.duration, background_tasks, db, current_operator
+    )
+
+
+@router.post("/api/videos/record-and-wait", response_class=JSONResponse)
+async def record_video_and_wait(
+    request: Request,
+    payload: VideoRecordRequest,
+    db: Session = Depends(get_db),
+    current_operator: User = Depends(operator_access_required),
+) -> JSONResponse:
+    """Return the completed recording for API flows that deliver video to WhatsApp."""
+    camera = _resolve_record_camera(payload, db)
+    _authorize_video_recording(request, camera, payload.duration, db, current_operator)
+    try:
+        result = await record_video_and_save_db(
+            request, camera_id=camera.id, duration=payload.duration,
+            actor_username=current_operator.username,
+        )
+    except Exception as exc:
+        logger.exception("Recording failed for camera %s", camera.id)
+        raise HTTPException(status_code=502, detail="Video recording failed") from exc
+    if result.get("status") != "success":
+        raise HTTPException(status_code=502, detail=result.get("message") or "Recording failed")
+    return JSONResponse(content=result)
+
+
 @router.post("/videos/record/{camera_id}", response_class=JSONResponse)
 async def start_recording_video(
     request: Request,
@@ -360,25 +471,13 @@ async def start_recording_video(
     duration: int = Query(10, ge=5, le=60),
     db: Session = Depends(get_db),
     current_operator: User = Depends(operator_access_required)
-):
+) -> JSONResponse:
     camera = db.query(Camera).filter(Camera.id == camera_id).first()
     if not camera:
         raise HTTPException(status_code=404, detail="Camera not found")
 
-    background_tasks.add_task(record_video_and_save_db, request, camera_id=camera_id, duration=duration)
-
-    log_audit(
-        db=db,
-        user=request.session.get("user_name", "Unknown"),
-        action="start_record_video",
-        target=str(camera.hostname),
-        ip=request.client.host,
-        extra=f"Duration: {duration}s"
-    )
-
-    return JSONResponse(
-        status_code=202,
-        content={"message": f"Recording for {duration} seconds for camera {camera.hostname} has started."}
+    return _queue_video_recording(
+        request, camera, duration, background_tasks, db, current_operator
     )
 
 

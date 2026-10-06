@@ -41,16 +41,15 @@ def _ffprobe_executable() -> str | None:
     local = Path("ffprobe.exe").resolve()
     return shutil.which("ffprobe") or (str(local) if local.exists() else None)
 
-def _run_ffmpeg_sync(cmd: str) -> Tuple[int, str, str]:
+def _run_ffmpeg_sync(cmd: str, timeout: int = 150) -> Tuple[int, str, str]:
     logger.info("Running FFMPEG command: %s", cmd)
-    proc = subprocess.run(
-        cmd,
-        shell=True,
-        capture_output=True,
-        text=True,
-        encoding='utf-8',
-        errors='ignore'
-    )
+    try:
+        proc = subprocess.run(
+            cmd, shell=True, capture_output=True, text=True,
+            encoding="utf-8", errors="ignore", timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        return 1, "", "Video recording timed out"
     if proc.returncode != 0:
         logger.error("FFMPEG Error (return code %d):\nSTDERR: %s", proc.returncode, proc.stderr)
     return proc.returncode, proc.stdout, proc.stderr
@@ -177,6 +176,7 @@ def get_video_metadata(file_path: str) -> Dict[str, Any]:
             capture_output=True,
             text=True,
             check=True,
+            timeout=10,
         )
         data = json.loads(result.stdout)
 
@@ -196,7 +196,7 @@ def get_video_metadata(file_path: str) -> Dict[str, Any]:
             "height": height
         }
 
-    except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError, KeyError, ValueError) as e:
+    except (subprocess.SubprocessError, FileNotFoundError, json.JSONDecodeError, KeyError, ValueError) as e:
         logger.warning("ffprobe metadata failed for %s: %s; falling back to ffmpeg", file_path, e)
         fallback = _get_video_metadata_from_ffmpeg(file_path, size)
         if fallback:
@@ -309,7 +309,8 @@ def detect_codec(rtsp_url: str) -> str:
 async def record_video_and_save_db(
         request: Request,
         camera_id: str,
-        duration: int = 10
+        duration: int = 10,
+        actor_username: str | None = None,
 ) -> Dict[str, Any]:
     def get_camera_sync() -> Camera:
         db = SessionLocal()
@@ -327,7 +328,7 @@ async def record_video_and_save_db(
         logger.error("Camera with ID %s not found.", camera_id)
         return {"status": "error", "message": "Camera not found"}
 
-    user_name = request.session.get("user_name", "unknown")
+    user_name = actor_username or request.session.get("user_name", "unknown")
     client_ip = request.client.host if request.client else "unknown"
 
     if not camera.group or not camera.group.name:
@@ -347,7 +348,7 @@ async def record_video_and_save_db(
     os.makedirs(video_directory, exist_ok=True)
 
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    filename = f"{camera_name}_{timestamp}.mp4"
+    filename = f"{camera_name}_{timestamp}_{uuid.uuid4().hex[:8]}.mp4"
     output_path = video_directory / filename
     db_file_path = (Path(group_name) / camera_name / filename).as_posix()
 
@@ -355,7 +356,7 @@ async def record_video_and_save_db(
         logger.warning("Deleting leftover file before recording: %s", output_path)
         output_path.unlink()
 
-    rtsp_url = get_rtsp_url(camera)
+    rtsp_url = await asyncio.to_thread(get_rtsp_url, camera)
     if not rtsp_url:
         logger.error("Failed to get RTSP URL for camera %s", camera.hostname)
         return {"status": "error", "message": "Failed to get RTSP URL"}
@@ -369,7 +370,9 @@ async def record_video_and_save_db(
     apply_watermark = True  # nanti bisa dibuat per kamera kalau mau
 
     if apply_watermark:
-        cmd = build_ffmpeg_watermark_cmd(rtsp_url, output_path, duration, camera_name)
+        cmd = await asyncio.to_thread(
+            build_ffmpeg_watermark_cmd, rtsp_url, output_path, duration, camera_name
+        )
         logger.info(f"Running watermark ffmpeg: {cmd}")
     else:
         if codec == "h264":
@@ -398,13 +401,17 @@ async def record_video_and_save_db(
 
     if code != 0:
         logger.error("%s - FFMPEG Failed: %s", camera.hostname, err)
+        output_path.unlink(missing_ok=True)
+        temp_output.unlink(missing_ok=True)
         return {"status": "error", "message": "FFMPEG process failed"}
 
     logger.info("Video recorded successfully: %s", output_path)
 
-    metadata = get_video_metadata(str(output_path))
+    metadata = await asyncio.to_thread(get_video_metadata, str(output_path))
     if metadata.get("duration", 0) == 0:
-        logger.warning("⚠️ Video from %s may be corrupted or too short (duration=0)", camera.hostname)
+        logger.warning("Video from %s is corrupted or too short (duration=0)", camera.hostname)
+        output_path.unlink(missing_ok=True)
+        return {"status": "error", "message": "The recorded video is empty or invalid"}
 
     thumb_path = output_path.with_suffix(".jpg")
 
@@ -465,7 +472,8 @@ async def record_video_and_save_db(
                 "thumb_url": f"/api/videos/secure/{data['id']}?thumb=true",
                 "source": "db_trigger"
             })
-            db.execute(text("NOTIFY camera_notifications, :payload"), {"payload": payload})
+            if db.get_bind().dialect.name == "postgresql":
+                db.execute(text("NOTIFY camera_notifications, :payload"), {"payload": payload})
             db.commit()
 
             log_audit(
@@ -477,7 +485,7 @@ async def record_video_and_save_db(
                 extra="via cameras menu"
             )
 
-            logger.info("📢 PostgreSQL NOTIFY sent: %s", payload)
+            logger.info("Video metadata saved: %s", data["id"])
             return True
         except Exception as e:
             db.rollback()
@@ -509,6 +517,13 @@ async def record_video_and_save_db(
         return {
             "status": "success",
             "message": "Video from %s was recorded and saved successfully." % camera.hostname,
+            "media_type": "video",
+            "video_id": video_data["id"],
+            "camera_id": camera.id,
+            "hostname": camera.hostname,
+            "duration": metadata.get("duration"),
+            "file_size": metadata.get("size"),
+            "video_url": f"/api/videos/secure/{video_data['id']}",
         }
     else:
         if os.path.exists(output_path):

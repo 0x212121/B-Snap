@@ -98,6 +98,150 @@ POST /api/snapshots/gallery-view
 
 ## Videos API
 
+### Configurable WhatsApp Command Responses
+
+Bot Builder's Execute action test calls `POST /api/admin/wa-bot/test-action`
+using the signed-in admin's access. It executes the unsaved native action and
+returns JSON `status`, `steps`, input `params`, `response_preview`, and failure
+previews without sending WhatsApp messages. Capture, camera-edit, and whitelist
+tests really perform their actions; API callers must explicitly set `execute: true`.
+Success fields use the existing action-specific result nodes. Every native failure
+also exposes `{{steps.error.status_code}}`, `{{steps.error.body.status}}`, and
+`{{steps.error.body.message}}` in fallback messages. Tests show selectable fields
+even on failure. Missing camera, offline camera, and failed capture return
+404, 503, and 502 respectively for Capture new snapshot.
+
+`POST /api/snapshots/capture/{identifier}` (or `/snap/{identifier}`) captures a
+new snapshot using operator/admin authentication and camera group restrictions.
+Success returns `status`, `success`, `message`, `hostname`, `snapshot_id`, and
+the protected `snapshot_url`; failures return JSON `status: error`, `success: false`,
+`message`, and `detail`, with a non-success HTTP status.
+
+`processing_delay_seconds` controls when processing messages appear (0–60 seconds).
+New Bot Builder commands default to three seconds; existing settings default to
+zero. Processing does not block command execution and is canceled if success or
+failure is ready before the delay expires. Remaining processing messages are
+suppressed before fallback delivery. Messages already delivered to WhatsApp
+cannot be withdrawn by this setting.
+
+Command inputs are available before any API completes. Set required parameters
+to `hostname, duration` and invoke `/record CCTV-GATE-01 30`. Processing messages
+can use `Recording {{params.hostname}} for {{duration}}s`. The explicit forms
+`{{params.hostname}}` and `{{params.duration}}` and short named aliases work in
+API paths/query/JSON bodies and message templates. For example, use JSON body
+`{"hostname":"{{params.hostname}}","duration":"{{params.duration}}"}` with the
+recording endpoint. A single parameter receives the entire argument; with
+multiple parameters, the last receives the remaining text. Run test uses the
+unsaved required-parameter names and previews bound inputs. API result variables
+such as `{{steps.data.body.hostname}}` only exist after that node responds.
+
+Failed API Flow nodes retain their `status_code` and JSON `body`. Run test shows
+these fields as selectable variables even when the API returns an error.
+For a node named `data`, a fallback message can use
+`HTTP {{steps.data.status_code}}: {{steps.data.body.detail}}` and
+`{{steps.data.body.status}}` when supplied by the endpoint. Completed earlier
+node results also remain available. The flow stops at the failed node and uses
+failure/fallback messages instead of the success response.
+
+Every Bot Builder command action offers Text, Image, and Video response types.
+For Image, set `response_image_source` to an HTTP(S) image URL or a protected
+snapshot URL, including action/API templates such as
+`{{steps.result.body.0.url}}` or `{{steps.data.body.image_url}}`.
+The command's rendered response becomes the optional image caption.
+For Video, set `response_video_source` to a protected video ID/URL or a result
+template. Protected videos require an operator/admin API token; protected images
+check the API token for API Flow commands and whitelist group access for native
+commands. Missing/deleted files, invalid sources, and denied access produce a
+failure response. Selecting Image replaces the action's success media while
+preserving processing/fallback messages. Existing command defaults are preserved.
+
+### Record and Send Video from a WhatsApp API Flow
+
+`POST /api/videos/record-and-wait` accepts the same hostname/IP JSON body and
+operator/admin Bearer authentication as `/api/videos/record`, but returns
+`200 OK` only after the video has been recorded and saved. Allow a long HTTP
+request timeout for capture and processing. Recording failures return `502`;
+unknown cameras return `404`, ambiguous IPs return `409`, and validation/access
+errors return `422`/`403`. Failed recordings are not sent to WhatsApp.
+
+Configure an API Flow node named `data`:
+
+- Method: `POST`
+- API path: `/api/videos/record-and-wait`
+- Query params: `{}`
+- JSON body: `{"hostname":"{{argument}}","duration":30}`
+  (use `ip` instead of `hostname` to select by IP).
+- Response template: `Video {{steps.data.body.hostname}} — {{steps.data.body.duration}} seconds`
+- Response type: `Video`
+- Video source: `{{steps.data.body.video_id}}` or `{{steps.data.body.video_url}}`
+
+The completed response contains `status`, `message`, `media_type: "video"`,
+`video_id`, `camera_id`, `hostname`, `duration`, `file_size`, and the authenticated
+`video_url`. Only commands configured with a Video response upload the selected file to GoWA's
+`POST /send/video` as multipart `video`, with the response text as `caption`.
+It sends the result to the invoking user's private chat, matching other API Flow
+replies. It does not expose an unauthenticated static URL or send an API token to GoWA.
+Text is the default response type, including for existing recording commands;
+calling the recording API alone does not send video. The configured source can
+select an ID or secure URL from any API node, subject to the selected token's
+role, expiration, and camera group access. Deleted or missing videos are rejected.
+
+Optional processing messages are sent before the recording starts; failure
+messages handle capture/API failures. Gateway send failures are logged and
+reported to the user. Webhook event deduplication also applies to these commands.
+The Bot Builder Run test button records a video and previews the completed JSON;
+it does not deliver a WhatsApp video. Invoke the saved command to test delivery.
+
+### Start Video Recording by Hostname or IP
+
+```text
+POST /api/videos/record
+Authorization: Bearer your-api-token
+Content-Type: application/json
+```
+
+Requires an operator or admin account with access to the camera's group. The camera
+must already be registered with its connection credentials and a storage group.
+Provide exactly one of `hostname` or `ip`. Hostname matching is exact and
+case-insensitive; IP matching is exact. Surrounding input whitespace is removed.
+`duration` defaults to 10 seconds and must be between 5 and 60 seconds.
+
+```json
+{"hostname": "CCTV-GATE-01", "duration": 30}
+```
+
+Alternatively:
+
+```json
+{"ip": "192.168.1.100", "duration": 30}
+```
+
+**Responses**:
+- `202 Accepted` - Recording queued in the background; includes `message`,
+  `camera_id`, `hostname`, and `duration`. This does not guarantee capture success.
+- `401 Unauthorized` - Missing, invalid, or expired authentication.
+- `403 Forbidden` - Insufficient role or camera group access.
+- `404 Not Found` - No matching registered camera.
+- `409 Conflict` - Multiple matching cameras; recording is not started. Duplicate
+  IPs are rejected even when only one matching camera belongs to the user's group.
+- `422 Unprocessable Entity` - Missing/both selectors, blank selector, or invalid duration.
+
+Example duplicate IP error:
+
+```json
+{"detail": "Multiple cameras match this IP address. Recording was not started. Use a unique hostname or camera ID."}
+```
+
+The existing `POST /videos/record/{camera_id}?duration=30` endpoint remains available
+and applies the same role and camera group checks.
+
+In WhatsApp Bot Builder, use an API Flow node with method `POST`, path
+`/api/videos/record`, query params `{}`, and JSON body
+`{"hostname":"{{argument}}","duration":30}` (or use `ip` instead of `hostname`).
+Select a valid operator/admin API token. Use `{{steps.data.body.message}}` in the
+response template when the node output name is `data`. The Run test button
+executes the request, including starting a recording for POST nodes.
+
 ### Get Video File
 
 Retrieve a video file by ID with authentication.
