@@ -81,6 +81,7 @@ class APIErrorHandlerTests(unittest.TestCase):
         runner = AsyncMock(side_effect=APIFlowError("API node data returned HTTP 404", context))
         with patch.object(wa_webhook, "run_api_flow", runner):
             response = self.client.post("/api/admin/wa-bot/test-flow", json={
+                "sender": "628123456789",
                 "flow": [{"name": "data", "path": "/api/videos/record-and-wait", "method": "POST"}],
             })
         self.assertEqual(response.status_code, 422)

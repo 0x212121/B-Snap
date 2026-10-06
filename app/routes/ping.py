@@ -8,12 +8,12 @@ router = APIRouter(tags=["Ping"])
 logger = logging.getLogger("ping")
 
 @router.get("/ping", response_class=PlainTextResponse)
-def ping_ip(ip: str = Query(..., description="Target IP address to ping")):
+def ping_ip(ip: str = Query(..., description="Target IP address to ping")) -> str:
     try:
         responses = []
         for i in range(4):
             delay = ping(ip, timeout=2)
-            if delay is None:
+            if delay is None or delay is False:
                 responses.append(f"Request timeout for attempt {i+1}")
             else:
                 ms = round(delay * 1000, 2)

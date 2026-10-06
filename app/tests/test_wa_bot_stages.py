@@ -1,7 +1,6 @@
 """Tests for configurable WhatsApp action processing and fallback messages."""
 from __future__ import annotations
 
-import sys
 from types import SimpleNamespace
 
 import pytest
@@ -26,6 +25,15 @@ def _compile_jsonb_for_sqlite(type_, compiler, **kwargs):
 
 # The project-wide SQLite fixture cannot create PostgreSQL-only audit triggers.
 event.remove(AuditLog.__table__, "after_create", create_audit_log_triggers)
+
+
+@pytest.fixture(autouse=True)
+def whitelisted_test_senders(db_session, request):
+    from app.models.whitelist import WhatsappWhitelist, RoleEnum
+    db_session.add(WhatsappWhitelist(phone_number="628111111111", role=RoleEnum.admin))
+    if request.node.name != "test_protected_image_response_respects_whitelist_group":
+        db_session.add(WhatsappWhitelist(phone_number="628123456789", role=RoleEnum.user))
+    db_session.flush()
 
 
 def _stage(text: str) -> list[dict[str, str]]:
@@ -71,7 +79,7 @@ async def test_live_snapshot_action_returns_success_and_error_fields(db_session,
     request = SimpleNamespace(json=AsyncMock(return_value={
         "command": {"action": "snap", "response": "Snapshot {{steps.result.body.0.camera}}",
                     "required_params": ["hostname"], "failure_messages": _stage("Failed: {{steps.error.body.message}}")},
-        "argument": "capture-test", "execute": True,
+        "argument": "capture-test", "sender": "628111111111", "execute": True,
     }))
     admin = SimpleNamespace(id=1, username="admin", role="admin", group_id=None, api_tokens=[])
     result = await wa_webhook.test_wa_bot_action(request, db_session, admin)
@@ -118,16 +126,16 @@ async def test_live_whitelist_tests_return_success_and_validation_errors(db_sess
     for action in ("whitelist_add", "whitelist_remove"):
         request = SimpleNamespace(json=AsyncMock(return_value={
             "command": {"action": action, "response": "{{steps.result.body.action}}"},
-            "argument": "628123456789", "sender": "628111111111", "execute": True,
+            "argument": "628222222222", "sender": "628111111111", "execute": True,
         }))
         result = await wa_webhook.test_wa_bot_action(request, db_session, admin)
         payload = json.loads(result.body)
         assert result.status_code == 200
         assert payload["steps"]["result"]["body"]["success"]
         assert payload["response_preview"] == ("added" if action == "whitelist_add" else "removed")
-    assert db_session.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == "628123456789").first() is None
+    assert db_session.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == "628222222222").first() is None
     request = SimpleNamespace(json=AsyncMock(return_value={
-        "command": {"action": "whitelist_add", "response": "Added"}, "argument": "invalid", "execute": True,
+        "command": {"action": "whitelist_add", "response": "Added"}, "argument": "invalid", "sender": "628111111111", "execute": True,
     }))
     result = await wa_webhook.test_wa_bot_action(request, db_session, admin)
     assert result.status_code == 400
@@ -141,14 +149,18 @@ async def test_live_ping_and_gateway_errors_have_failure_variables(db_session, m
     from unittest.mock import AsyncMock
     from app.routes import wa_webhook
 
-    monkeypatch.setitem(sys.modules, "ping3", SimpleNamespace(ping=lambda *args, **kwargs: None))
+    monkeypatch.setattr("app.routes.ping.ping", lambda *args, **kwargs: None)
     monkeypatch.setattr(wa_webhook, "WAGatewayService", lambda db: SimpleNamespace(check_connection=lambda: {
         "connected": False, "error": "Gateway unavailable",
     }))
     admin = SimpleNamespace(id=1, role="admin", username="admin", group_id=None, api_tokens=[])
     for action, expected in (("ping", 504), ("bot_status", 503)):
+        from app.models.whitelist import WhatsappWhitelist, RoleEnum
+        if not db_session.query(WhatsappWhitelist).filter_by(phone_number="628111111111").first():
+            db_session.add(WhatsappWhitelist(phone_number="628111111111", role=RoleEnum.admin))
+            db_session.flush()
         request = SimpleNamespace(json=AsyncMock(return_value={
-            "command": {"action": action, "response": "Result"}, "argument": "host",
+            "command": {"action": action, "response": "Result"}, "argument": "host", "sender": "628111111111",
         }))
         result = await wa_webhook.test_wa_bot_action(request, db_session, admin)
         payload = json.loads(result.body)
@@ -504,7 +516,7 @@ async def test_handler_system_action_variables_are_available_without_api_flow(db
     }])
     handler = WABotHandler(db_session)
     sent: list[dict[str, str]] = []
-    monkeypatch.setitem(sys.modules, "ping3", SimpleNamespace(ping=lambda target, timeout: 0.012))
+    monkeypatch.setattr("app.routes.ping.ping", lambda target, timeout: 0.012)
 
     async def sender(item: dict[str, str]) -> dict[str, bool]:
         sent.append(item)
@@ -514,8 +526,8 @@ async def test_handler_system_action_variables_are_available_without_api_flow(db
 
     response = await handler.handle("628123456789", "/probe host-a")
 
-    assert response.startswith("Target: host-a\n1. Reply from host-a: time=12.00ms")
-    assert "4. Reply from host-a: time=12.00ms" in response
+    assert response.startswith("Target: host-a\n1. Reply from host-a: time=12.0ms")
+    assert "4. Reply from host-a: time=12.0ms" in response
     assert handler.private_response is False
     assert [item["text"] for item in sent] == ["Checking host-a"]
 
@@ -564,3 +576,92 @@ def test_gateway_status_check_includes_request_round_trip_time(db_session, monke
     assert result["connected"] is True
     assert isinstance(result["response_time_ms"], int)
     assert result["response_time_ms"] >= 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("sender,action", [("", "snap"), ("628999999999", "text"), ("628123456789", "edit")])
+async def test_builder_and_handler_deny_unlisted_or_non_admin_sender(db_session, monkeypatch, sender, action):
+    import json
+    from unittest.mock import AsyncMock
+    from app.routes import wa_webhook
+    command = {"action": action, "response": "Done", "trigger": "/test"}
+    native = AsyncMock(return_value="Done")
+    monkeypatch.setattr(wa_webhook.WABotHandler, "_handle_n8n_action", native)
+    request = SimpleNamespace(json=AsyncMock(return_value={"command": command, "sender": sender, "execute": True}))
+    result = await wa_webhook.test_wa_bot_action(request, db_session, SimpleNamespace(id=1, api_tokens=[]))
+    assert result.status_code == 403
+    assert json.loads(result.body)["steps"]["error"]["status_code"] == 403
+    bot = WABotHandler(db_session)
+    bot._test_command = command
+    await bot.handle(sender, "/test")
+    assert bot.action_failed
+    native.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_flow_preview_checks_whitelist_before_any_api_call(db_session, monkeypatch):
+    from unittest.mock import AsyncMock
+    from app.routes import wa_webhook
+    runner = AsyncMock(return_value={"steps": {}, "params": {}})
+    monkeypatch.setattr(wa_webhook, "run_api_flow", runner)
+    admin = SimpleNamespace(id=1, api_tokens=[])
+    for sender in ("", "628999999999"):
+        result = await wa_webhook.test_wa_bot_flow(SimpleNamespace(json=AsyncMock(return_value={"sender": sender})), admin, db_session)
+        assert result.status_code == 403
+    runner.assert_not_awaited()
+    result = await wa_webhook.test_wa_bot_flow(SimpleNamespace(json=AsyncMock(return_value={
+        "sender": "08123456789:12@s.whatsapp.net", "flow": [{"name": "data", "path": "/api/test"}],
+    })), admin, db_session)
+    assert result["status"] == "success"
+    assert runner.call_args.kwargs["sender"] == "628123456789"
+
+
+@pytest.mark.asyncio
+async def test_builder_camera_access_uses_sender_group_not_logged_in_admin(db_session, monkeypatch):
+    import json
+    from unittest.mock import AsyncMock
+    from app.models.camera import Camera
+    from app.models.camera_group import CameraGroup
+    from app.models.whitelist import WhatsappWhitelist
+    from app.routes import wa_webhook
+    group = CameraGroup(name="Sender group")
+    camera = Camera(hostname="outside-group", ip="192.168.1.80", status="Active")
+    db_session.add_all([group, camera]); db_session.flush()
+    entry = db_session.query(WhatsappWhitelist).filter_by(phone_number="628123456789").first()
+    entry.group_id = group.id; db_session.flush()
+    capture = AsyncMock()
+    monkeypatch.setattr(wa_webhook.SnapshotService, "capture_snapshot", capture)
+    result = await wa_webhook.test_wa_bot_action(SimpleNamespace(json=AsyncMock(return_value={
+        "command": {"action": "snap", "response": "Done"}, "sender": "628123456789",
+        "argument": "outside-group", "execute": True,
+    })), db_session, SimpleNamespace(id=1, role="admin", group_id=None, api_tokens=[]))
+    assert result.status_code == 404
+    assert json.loads(result.body)["status"] == "error"
+    capture.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("latency", [0.012, 0.0, None, False, "exception"])
+async def test_system_ping_matches_existing_api_output(db_session, monkeypatch, latency):
+    from app.routes.ping import ping_ip
+    calls = []
+    def ping_stub(target, timeout):
+        calls.append((target, timeout))
+        if latency == "exception":
+            raise OSError("ICMP unavailable")
+        return latency
+    monkeypatch.setattr("app.routes.ping.ping", ping_stub)
+    expected = ping_ip(ip="host-a")
+    calls.clear()
+    save_command_settings(db_session, [{"id": "custom_ping", "name": "Ping host",
+        "trigger": "/ping", "action": "ping", "response": ""}])
+    handler = WABotHandler(db_session)
+    result = await handler.handle("628123456789", "/ping host-a")
+    assert result == expected
+    assert calls == [("host-a", 2)] * (1 if latency == "exception" else 4)
+    body = handler.action_api_context["steps"]["ping"]["body"]
+    assert body["result"] == expected
+    assert body["replies"] == expected.splitlines()
+    assert handler.action_failed == (latency is None or latency is False or latency == "exception")
+    if handler.action_failed:
+        assert handler.action_api_context["steps"]["error"]["status_code"] == (502 if latency == "exception" else 504)

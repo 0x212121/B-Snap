@@ -23,6 +23,7 @@ from app.models.camera import Camera
 from app.models.health import CameraHealth
 from app.models.whitelist import RoleEnum, WhatsappWhitelist
 from app.routes.auth import admin_access_required, get_current_user
+from app.routes.ping import ping_ip
 from app.utils.wa_gateway import WAGatewayService, format_phone_number
 from app.utils.response_helper import json_success_response, json_error_response
 from app.utils.wa_bot_commands import (
@@ -53,6 +54,34 @@ logger = logging.getLogger("main")
 router = APIRouter(tags=["WhatsApp"])
 WA_API_TOKEN_OWNER_KEY = "wa_bot_api_token_owner_id"
 WA_API_TOKEN_ID_KEY = "wa_bot_api_token_id"
+
+
+def _normalize_wa_sender(sender: str) -> str:
+    """Normalize phone numbers and device-qualified GoWA JIDs identically."""
+    return format_phone_number(re.split(r"[@:]", str(sender).strip(), maxsplit=1)[0])
+
+
+def _whitelisted_sender(db: Session, sender: str) -> WhatsappWhitelist | None:
+    phone = _normalize_wa_sender(sender)
+    if not phone:
+        return None
+    return db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == phone).first()
+
+
+def _command_access_error(entry: WhatsappWhitelist | None, command: dict) -> str:
+    if not entry:
+        return "Sender phone number is required and must be on the WhatsApp whitelist."
+    role = CUSTOM_ACTION_ROLES.get(command.get("action"), "user")
+    if (role == "admin" or command.get("role") == "admin") and entry.role != RoleEnum.admin:
+        return "This command is available to WhatsApp whitelist admins only."
+    return ""
+
+
+def _access_error_response(message: str) -> JSONResponse:
+    error = {"status_code": 403, "body": {"status": "error", "success": False,
+             "message": message, "detail": message}}
+    return JSONResponse(status_code=403, content={"status": "error", "detail": message,
+                        "steps": {"error": error, "result": error}})
 
 
 def _record_wa_message(db: Session, phone: str, direction: str, status: str, message: str = "", command: str = "", error: str = "", provider_message_id: str | None = None) -> None:
@@ -165,10 +194,15 @@ def get_wa_bot_messages(limit: int = 100, db: Session = Depends(get_db), current
 
 
 @router.post("/api/admin/wa-bot/test-flow")
-async def test_wa_bot_flow(request: Request, current_admin: User = Depends(admin_access_required)):
+async def test_wa_bot_flow(request: Request, current_admin: User = Depends(admin_access_required),
+                           db: Session = Depends(get_db)):
     """Run an unsaved WhatsApp API flow once for the builder preview."""
     try:
         payload = await request.json()
+        sender = _normalize_wa_sender(str(payload.get("sender") or ""))
+        access_error = _command_access_error(_whitelisted_sender(db, sender), payload.get("command") or {"action": "api_flow"})
+        if access_error:
+            return _access_error_response(access_error)
         flow = normalize_flow(payload.get("flow"))
         token_id = str(payload.get("api_token_id") or "").strip()
         token = None
@@ -186,7 +220,7 @@ async def test_wa_bot_flow(request: Request, current_admin: User = Depends(admin
         context = await run_api_flow(
             flow=flow,
             bearer_token=token,
-            sender=str(payload.get("sender") or "").strip()[:100],
+            sender=sender,
             argument=str(payload.get("argument") or "").strip()[:500],
             parameters=bind_command_arguments(
                 payload.get("required_params") or [], str(payload.get("argument") or "").strip()[:500]
@@ -234,7 +268,7 @@ async def test_wa_bot_action(
         error = {"status_code": 422, "body": {"status": "error", "message": str(exc), "detail": str(exc)}}
         return JSONResponse(status_code=422, content={"status": "error", "detail": str(exc), "steps": {"error": error, "result": error}})
     bot = WABotHandler(db)
-    bot._test_user = current_admin
+    bot._is_builder_test = True
     bot._test_command = {**command, "trigger": command.get("trigger") or "/test",
                          "response_type": "text", "processing_messages": None if action == "snap" else [],
                          "processing_delay_seconds": 0}
@@ -246,8 +280,8 @@ async def test_wa_bot_action(
         if not token:
             raise HTTPException(status_code=422, detail="The selected API token was not found")
         bot._selected_api_token = lambda: token
-    # Test runs use the signed-in admin's access, never a sender-supplied privilege.
-    sender = str(payload.get("sender") or "").strip()[:32]
+    # Command access comes from the sender whitelist, as it does on GoWA.
+    sender = _normalize_wa_sender(str(payload.get("sender") or ""))
     async def suppress_delivery(item: dict) -> dict:
         return {"success": True}
     bot.progress_sender = suppress_delivery
@@ -294,7 +328,7 @@ class WABotHandler:
         self._processing_task: asyncio.Task | None = None
         self._processing_suppressed = False
         self._queued_processing: list[dict] = []
-        self._test_user: User | None = None
+        self._is_builder_test = False
         self._test_command: dict | None = None
         self._test_argument = ""
 
@@ -465,7 +499,13 @@ class WABotHandler:
         Returns:
             Response message
         """
+        sender = _normalize_wa_sender(sender)
         self._sender = sender
+        entry = _whitelisted_sender(self.db, sender)
+        if not entry:
+            message = _command_access_error(entry, {})
+            self._set_action_error(message, 403)
+            return message
         commands = [self._test_command] if self._test_command else get_command_settings(self.db)
         command, argument = (self._test_command, self._test_argument) if self._test_command else match_command(message, commands)
         if command:
@@ -473,10 +513,12 @@ class WABotHandler:
                 logger.info("Ignoring private-only WhatsApp command in group: %s", command.get("trigger"))
                 return ""
             self.quote_reply = bool(command.get("quote_reply", True))
-            entry = self._test_user or self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == sender).first()
+            entry = _whitelisted_sender(self.db, sender)
             is_admin = bool(entry and entry.role == RoleEnum.admin)
-            if command.get("role") == "admin" and not is_admin:
-                return "This command is available to admins only."
+            access_error = _command_access_error(entry, command)
+            if access_error:
+                self._set_action_error(access_error, 403)
+                return access_error
             required_params = command.get("required_params") or []
             argument_count = len(argument.split())
             missing_required_params = bool(required_params) and (
@@ -913,7 +955,7 @@ class WABotHandler:
                     processing_items, command.get("processing_delay_seconds", 0)
                 )
                 snapshot = await SnapshotService.capture_snapshot(
-                    camera.id, self.db, triggered_by="bot_builder_test" if self._test_user else "whatsapp"
+                    camera.id, self.db, triggered_by="bot_builder_test" if self._is_builder_test else "whatsapp"
                 )
                 if snapshot and not os.path.isfile(os.path.join("static", "snapshots", snapshot.file_path)):
                     snapshot = None
@@ -957,28 +999,25 @@ class WABotHandler:
         if action == "ping":
             if not argument:
                 self.action_failed = True
-                return "Usage: /ping IP address or hostname"
+                return f"Usage: {command['trigger']} IP address or hostname"
             target = argument.split()[0]
             try:
-                import ping3
-                replies = []
-                for attempt in range(4):
-                    latency = await asyncio.to_thread(ping3.ping, target, timeout=2)
-                    if latency is None:
-                        replies.append(f"Request timeout for attempt {attempt + 1}")
-                    else:
-                        replies.append(f"Reply from {target}: time={latency * 1000:.2f}ms")
+                # Reuse the /ping endpoint implementation, off the event loop.
+                result = await asyncio.to_thread(ping_ip, ip=target)
+                replies = result.splitlines()
+                online = any(reply.startswith("Reply from ") for reply in replies)
+                failed = result.startswith("Ping failed for ")
+                status_code = 502 if failed else (200 if online else 504)
                 ping_context = self._merge_action_context({"steps": {"ping": {
-                    "status_code": 200,
-                    "body": {"target": target, "replies": replies, "online": any("Reply from" in reply for reply in replies)},
+                    "status_code": status_code,
+                    "body": {"target": target, "replies": replies, "online": online, "result": result},
                 }}})
-                if not ping_context["steps"]["ping"]["body"]["online"]:
-                    self._set_action_error(f"Host '{target}' did not respond to ping.", 504)
-                    ping_context["steps"]["ping"]["status_code"] = 504
+                if status_code != 200:
+                    self._set_action_error(result if failed else f"Host '{target}' did not respond to ping.", status_code)
                 return self._render_action_response(
                     template, ping_context, timezone_name=get_current_timezone(self.db),
-                    target=target, result="\n".join(replies), argument=argument, sender=sender,
-                ) if template else "\n".join(replies)
+                    target=target, result=result, argument=argument, sender=sender,
+                ) if template else result
             except Exception as exc:
                 logger.warning("WhatsApp ping failed for %s: %s", target, exc)
                 self.action_failed = True
@@ -1128,7 +1167,7 @@ class WABotHandler:
         return render_response(rendered, **legacy_values)
 
     def _find_camera(self, query: str):
-        entry = self._test_user or self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == self._sender).first()
+        entry = _whitelisted_sender(self.db, self._sender)
         camera_query = self.db.query(Camera).filter(Camera.status.in_(["Active", "Restricted", "Maintenance"]))
         if entry and entry.group_id:
             camera_query = camera_query.filter((Camera.group_id == entry.group_id) | Camera.groups.any(id=entry.group_id))
@@ -1136,7 +1175,7 @@ class WABotHandler:
 
     def _find_camera_for_capture(self, hostname_or_ip: str) -> Optional[Camera]:
         """Find one accessible camera by exact hostname (case-insensitive) or exact IP."""
-        entry = self._test_user or self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == self._sender).first()
+        entry = _whitelisted_sender(self.db, self._sender)
         lookup = hostname_or_ip.strip()
         escaped_hostname = lookup.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         camera_query = self.db.query(Camera).filter(
@@ -1151,7 +1190,7 @@ class WABotHandler:
 
     def _find_latest_camera_snapshots_by_hostname_prefix(self, prefix: str) -> list[tuple[Camera, Snapshot]]:
         """Find each accessible matching camera's latest snapshot, newest cameras first."""
-        entry = self._test_user or self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == self._sender).first()
+        entry = _whitelisted_sender(self.db, self._sender)
         escaped_prefix = prefix.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         latest_snapshots = (
             self.db.query(
@@ -1266,8 +1305,7 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
         # GoWA may provide a device-qualified JID such as
         # `628123456789:12@s.whatsapp.net`. Keep only the phone portion
         # before normalizing, matching the existing n8n workflow's ^\d+.
-        sender_phone = re.split(r"[@:]", str(sender), maxsplit=1)[0]
-        sender = format_phone_number(sender_phone)
+        sender = _normalize_wa_sender(sender)
         command, _ = WABotHandler(db).parse_command(message)
         logger.info(
             "GoWA message received: event=%s command=%s sender_suffix=%s",
@@ -1280,11 +1318,7 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
         # command here rather than relying on browser-session authentication.
         bot = WABotHandler(db)
         bot._sender = sender
-        allowed = (
-            db.query(WhatsappWhitelist)
-            .filter(WhatsappWhitelist.phone_number == sender)
-            .first()
-        )
+        allowed = _whitelisted_sender(db, sender)
         if not allowed:
             logger.warning(
                 "Ignoring WhatsApp command from non-whitelisted sender ending in %s",

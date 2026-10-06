@@ -100,8 +100,20 @@ POST /api/snapshots/gallery-view
 
 ### Configurable WhatsApp Command Responses
 
+The system Ping host action reuses the existing `GET /ping?ip={host}` handler
+in a worker thread. Its reply text matches the API, including latency formatting.
+Templates retain `{{target}}`, `{{result}}`, and `steps.ping.body.target`,
+`replies`, and `online`; `{{steps.ping.body.result}}` contains the raw API text.
+All timeouts expose `steps.error.status_code = 504`; ping execution errors use 502.
+
 Bot Builder's Execute action test calls `POST /api/admin/wa-bot/test-action`
-using the signed-in admin's access. It executes the unsaved native action and
+requiring a whitelisted `sender` phone number. Native actions use that sender's
+whitelist role and camera group, matching live WhatsApp execution. Admin login
+is required to access the test endpoint but does not bypass sender restrictions.
+API-flow tests also require a whitelisted sender; API calls retain the selected
+API token's permissions. Missing/unlisted senders or insufficient command roles
+return HTTP 403 with `steps.error` before executing any action.
+It executes the unsaved native action and
 returns JSON `status`, `steps`, input `params`, `response_preview`, and failure
 previews without sending WhatsApp messages. Capture, camera-edit, and whitelist
 tests really perform their actions; API callers must explicitly set `execute: true`.

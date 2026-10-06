@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Use the trigger configured in Bot Builder in the Ping host usage message.
+- Reuse the existing `/ping?ip=...` API handler for system Ping host commands so replies, timings, and errors match the API. Keep execution off the event loop and expose the raw result alongside ping template variables; treat failed ICMP responses as timeouts.
+
+- Apply sender-phone whitelist and role checks to native and API-flow Bot Builder tests, matching live commands. Native previews use the sender's camera group rather than the logged-in admin; normalize phone/JID inputs consistently and enforce whitelist inside the command handler.
+
 - Validate missing named command inputs and test arguments before sending API requests, with actionable messages instead of posting an empty camera hostname.
 - Preserve failed API node HTTP status and response body in Bot Builder test previews and WhatsApp fallback template variables, while stopping subsequent flow nodes.
 - Return JSON from global 404/403 handlers for API and JSON requests, preserving the endpoint's error detail (including unknown recording camera hostnames); browser page errors still render HTML.

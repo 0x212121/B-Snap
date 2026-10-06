@@ -99,7 +99,7 @@
           <p data-test-description class="mt-1 text-xs text-gray-500">Use sample values for {% raw %}{{argument}}{% endraw %} and {% raw %}{{sender}}{% endraw %}. This test runs the current unsaved flow.</p>
           <div data-test-controls class="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_auto]">
             <input data-test-argument class="ui-control rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900" placeholder="Sample argument (e.g. camera name)">
-            <input data-test-sender class="ui-control rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900" placeholder="Sample sender (phone number)">
+            <input data-test-sender class="ui-control rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900" placeholder="Whitelisted sender phone number (required)">
             <button data-test-flow type="button" class="ui-button ui-button-primary inline-flex items-center justify-center gap-1.5 rounded bg-indigo-600 px-3 py-2 text-sm text-white">{{ icon_play("h-4 w-4 text-white") }}Run test</button>
           </div>
           <div data-test-result class="mt-3 hidden" aria-live="polite">
@@ -176,7 +176,7 @@
   const editor = document.getElementById('commandEditor');
   const form = document.getElementById('commandForm');
   const tokenSelect = document.getElementById('apiTokenId');
-  const adminActions = ['api_flow','edit','token_check','whitelist_add','whitelist_remove'];
+  const adminActions = ['edit','token_check','whitelist_add','whitelist_remove'];
   const privateOnlyActions = ['edit','token_check','whitelist_add','whitelist_remove'];
   const actionLabels = {
     text: 'Reply with text',
@@ -377,8 +377,8 @@
       ? (isIndonesian ? 'Jalankan uji' : 'Run test')
       : (isIndonesian ? 'Uji aksi langsung' : 'Execute action test');
     panel.querySelector('[data-test-description]').textContent = customFlow
-      ? (isIndonesian ? 'Gunakan nilai contoh untuk {{argument}} dan {{sender}}. Uji ini menjalankan alur yang belum disimpan.' : 'Use sample values for {{argument}} and {{sender}}. This test runs the current unsaved flow.')
-      : (isIndonesian ? 'Uji menjalankan aksi sebenarnya, termasuk capture snapshot baru, edit kamera, atau perubahan whitelist. Pesan WhatsApp tidak dikirim. Hasil success/error tersedia sebagai variabel.' : 'This test executes the actual action, including new snapshot capture, camera edits, or whitelist changes. No WhatsApp messages are sent. Success/error fields become template variables.');
+      ? (isIndonesian ? 'Gunakan nilai contoh untuk {{argument}} dan {{sender}}. Uji ini menjalankan alur yang belum disimpan.' : 'Enter arguments and a whitelisted sender phone number. This test runs the current unsaved flow.')
+      : (isIndonesian ? 'Uji menjalankan aksi sebenarnya, termasuk capture snapshot baru, edit kamera, atau perubahan whitelist. Nomor pengirim wajib terdaftar di whitelist; role dan grup mengikuti nomor tersebut. Pesan WhatsApp tidak dikirim. Hasil success/error tersedia sebagai variabel.' : 'This test executes the actual action, including new snapshot capture, camera edits, or whitelist changes. The sender must be whitelisted; its role and camera group apply. No WhatsApp messages are sent. Success/error fields become template variables.');
     const container = form.querySelector('[data-flow-list]');
     container.replaceChildren();
     const activeFlow = snapImageFlow ? (draft.image_flow || []) : (draft.flow || []);
