@@ -199,6 +199,32 @@ ENV_DOCS: Dict[str, Dict[str, Any]] = {
             }
         ]
     },
+    "record_mounts": {
+        "title": "Native Recording Mounts",
+        "description": "Opt-in Linux SMB/NFS mounts; see docs/source/record-mounts.md for deployment prerequisites",
+        "vars": [
+            {
+                "name": "BSNAP_RECORD_MOUNTS_ENABLED",
+                "required": False,
+                "default": "false",
+                "description": "Enable native read-only SMB/NFS recording mounts (Linux with mount privileges only)",
+                "used_in": ["app/utils/record_mount.py"],
+            },
+            {
+                "name": "BSNAP_RECORD_MOUNT_ALLOWED_NETWORKS",
+                "required": False,
+                "default": "",
+                "description": "Required comma-separated IP/CIDR allowlist for native mounts; empty denies all servers",
+                "recommendation": "Use individual trusted storage IPs, for example 192.168.10.20/32",
+            },
+            {
+                "name": "BSNAP_RECORD_NFS_ALLOW_SYS",
+                "required": False,
+                "default": "false",
+                "description": "Allow unencrypted NFS AUTH_SYS instead of Kerberos encryption; isolated trusted networks only",
+            },
+        ],
+    },
     "whatsapp": {
         "title": "WhatsApp Gateway",
         "description": "Timeout and retry limits for messages sent through GoWA",

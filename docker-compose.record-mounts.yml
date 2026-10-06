@@ -1,0 +1,25 @@
+# Opt-in Linux overlay. Load deploy/apparmor/bsnap-record-mounts first.
+# docker compose -f docker-compose.yml -f docker-compose.record-mounts.yml up -d --build
+# Web and scheduler mount independently; do not share mount roots or use host propagation.
+services:
+  b-snap:
+    privileged: false
+    cap_add:
+      - NET_RAW
+      - SYS_ADMIN
+    security_opt:
+      - apparmor=bsnap-record-mounts
+    environment:
+      BSNAP_RECORD_MOUNTS_ENABLED: "true"
+    tmpfs:
+      - /run/bsnap-record-mounts:mode=0700
+  scheduler:
+    privileged: false
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor=bsnap-record-mounts
+    environment:
+      BSNAP_RECORD_MOUNTS_ENABLED: "true"
+    tmpfs:
+      - /run/bsnap-record-mounts:mode=0700

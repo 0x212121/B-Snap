@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Native read-only SMB/NFS recording mounts with admin controls, encrypted SMB passwords, deployment IP allowlists, and restricted Linux deployment support.
 - WhatsApp Bot Builder with custom commands, API flows, and configurable text, image, and video replies.
 - Live conversation previews, action testing, template variables, and message delivery monitoring.
 - Video recording through APIs and WhatsApp commands.

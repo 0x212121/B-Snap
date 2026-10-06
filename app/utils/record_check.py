@@ -19,6 +19,10 @@ from app.models.record_check import (
     RecordStatusEvent,
 )
 from app.utils.wa_gateway import WAGatewayService, format_phone_number
+from app.utils.record_mount import (
+    RecordMountError, ensure_mounted_locked, record_source_path, reconcile_mounts,
+    source_lock, validate_remote_config,
+)
 
 logger = logging.getLogger("record_check")
 
@@ -82,6 +86,11 @@ def _manual_camera_map(db: Session, source_id: str) -> dict[str, str | None]:
 
 
 def scan_record_source(db: Session, source: RecordSource, checked_at: datetime | None = None) -> list[FolderScanResult]:
+    with record_source_path(source):
+        return _scan_record_source(db, source, checked_at)
+
+
+def _scan_record_source(db: Session, source: RecordSource, checked_at: datetime | None = None) -> list[FolderScanResult]:
     checked_at = checked_at or datetime.now(timezone.utc)
     base_path = validate_record_source_path(source.base_path)
 
@@ -246,14 +255,38 @@ def _record_event(
     return event
 
 
-def run_record_source_check(db: Session, source: RecordSource, send_notifications: bool = True) -> dict:
+def run_record_source_check(
+    db: Session, source: RecordSource, send_notifications: bool = True
+) -> dict:
+    """Serialize a managed source's complete check with mount/edit/delete actions."""
+    db.refresh(source)
+    if source.connection_type in {"smb", "nfs"}:
+        with source_lock(source.id) as state:
+            try:
+                db.refresh(source)
+            except Exception as exc:
+                raise RecordMountError("Record source changed or no longer exists") from exc
+            return _run_record_source_check(db, source, send_notifications, mount_state=state)
+    return _run_record_source_check(db, source, send_notifications)
+
+
+def _run_record_source_check(
+    db: Session,
+    source: RecordSource,
+    send_notifications: bool,
+    mount_state: Path | None = None,
+) -> dict:
     started_at = datetime.now(timezone.utc)
     run = RecordCheckRun(source_id=source.id, started_at=started_at, status="running")
     db.add(run)
     db.flush()
 
     try:
-        results = scan_record_source(db, source, checked_at=started_at)
+        if source.connection_type in {"smb", "nfs"}:
+            if mount_state is None:
+                raise RecordMountError("Managed source configuration changed; retry the check")
+            ensure_mounted_locked(source, mount_state)
+        results = _scan_record_source(db, source, checked_at=started_at)
         alert_events: list[RecordStatusEvent] = []
         recovery_events: list[RecordStatusEvent] = []
         alert_folders: list[RecordNotificationItem] = []
@@ -471,7 +504,28 @@ def run_record_source_check(db: Session, source: RecordSource, send_notification
 
 
 def run_all_record_checks(db: Session, send_notifications: bool = True) -> dict:
-    sources = db.query(RecordSource).filter(RecordSource.enabled.is_(True)).order_by(RecordSource.name).all()
+    sources = (
+        db.query(RecordSource)
+        .filter(RecordSource.enabled.is_(True))
+        .order_by(RecordSource.name)
+        .all()
+    )
+    active_mounts = set()
+    for source in sources:
+        if source.connection_type in {"smb", "nfs"}:
+            try:
+                validate_remote_config(
+                    source.connection_type,
+                    source.server or "",
+                    source.remote_path or "",
+                    username=source.smb_username or "",
+                    domain=source.smb_domain or "",
+                    nfs_security=source.nfs_security,
+                )
+                active_mounts.add(source.id)
+            except RecordMountError:
+                pass  # Detach revoked destinations; their checks record a safe policy error below.
+    reconcile_mounts(active_mounts)
     summary = {
         "records_processed": 0,
         "sources_checked": 0,

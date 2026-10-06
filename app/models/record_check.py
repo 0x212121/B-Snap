@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime, timezone
 
@@ -27,6 +29,13 @@ class RecordSource(Base):
     id = Column(String(36), primary_key=True, default=generate_uuid)
     name = Column(String(120), nullable=False, unique=True, index=True)
     base_path = Column(Text, nullable=False)
+    connection_type = Column(String(10), nullable=False, default="local", server_default="local")
+    server = Column(String(45), nullable=True)
+    remote_path = Column(Text, nullable=True)
+    smb_username = Column(String(255), nullable=True)
+    smb_domain = Column(String(255), nullable=True)
+    smb_password_encrypted = Column(Text, nullable=True)
+    nfs_security = Column(String(10), nullable=False, default="krb5p", server_default="krb5p")
     enabled = Column(Boolean, default=True, nullable=False)
     nvr_id = Column(String(36), ForeignKey("nvr.id", ondelete="SET NULL"), nullable=True)
     stale_threshold_seconds = Column(Integer, default=4200, nullable=False)

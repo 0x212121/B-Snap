@@ -196,7 +196,16 @@ nano .env
 
 ## Job Scheduling
 
+### Native storage mounts
+
+Native SMB/NFS mounts also use the deployment-only variables
+`BSNAP_RECORD_MOUNTS_ENABLED` (default `false`),
+`BSNAP_RECORD_MOUNT_ALLOWED_NETWORKS` (default empty; IP/CIDR allowlist), and
+`BSNAP_RECORD_NFS_ALLOW_SYS` (default `false`). See [Native recording mounts](record-mounts.md)
+for secure Linux deployment prerequisites and protocol requirements.
+
 ### record_check_interval_minutes
+
 - **Type**: Integer
 - **Default**: `10`
 - **Description**: Interval for scanning mounted SMB/NVR recording folders

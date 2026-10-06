@@ -12,6 +12,8 @@ RUN apt-get update && \
         fonts-liberation \
         fontconfig \
         curl \
+        cifs-utils \
+        nfs-common \
         dos2unix \
         build-essential \
         cargo \

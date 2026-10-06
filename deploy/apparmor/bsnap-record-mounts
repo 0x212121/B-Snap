@@ -1,0 +1,37 @@
+# Load on the Linux host: sudo apparmor_parser -r deploy/apparmor/bsnap-record-mounts
+# Restrict the extra SYS_ADMIN capability to the generated recording mount subtree.
+#include <tunables/global>
+
+profile bsnap-record-mounts flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+  file,
+  network inet,
+  network inet6,
+  network unix,
+  capability chown,
+  capability dac_override,
+  capability fowner,
+  capability fsetid,
+  capability kill,
+  capability setgid,
+  capability setuid,
+  capability setpcap,
+  capability net_bind_service,
+  capability net_raw,
+  capability sys_chroot,
+  capability setfcap,
+  capability sys_admin,
+  signal (send, receive) peer=bsnap-record-mounts,
+  signal (receive) peer=unconfined,
+  signal (receive) peer=docker-default,
+
+  mount fstype=cifs options=(ro,nosuid,nodev,noexec) -> /var/lib/bsnap/record-mounts/*/,
+  mount fstype=nfs options=(ro,nosuid,nodev,noexec) -> /var/lib/bsnap/record-mounts/*/,
+  mount fstype=nfs4 options=(ro,nosuid,nodev,noexec) -> /var/lib/bsnap/record-mounts/*/,
+  umount /var/lib/bsnap/record-mounts/*/,
+
+  deny /proc/sys/** wklx,
+  deny /sys/** wklx,
+  deny /proc/kcore rwklx,
+  deny /proc/sysrq-trigger rwklx,
+}

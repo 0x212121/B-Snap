@@ -5,7 +5,7 @@
 {% from "macros/ui.html" import page_header %}
 
 {% block content %}
-{% set page_description %}Monitor mounted SMB recording folders and save channel status history.{% endset %}
+{% set page_description %}Monitor local, SMB and NFS recording folders and save channel status history.{% endset %}
 {% call page_header("Record Checks", page_description) %}
 <div class="flex flex-wrap gap-2">
       <button onclick="openSourceModal()" class="ui-button ui-button-primary inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
@@ -164,7 +164,7 @@
     <div class="flex items-start justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
       <div>
         <h3 id="source-modal-title" class="text-lg font-bold text-gray-900 dark:text-white">Add Source</h3>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Configure a read-only mounted recording folder source.</p>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Native SMB/NFS mounts are read-only and restricted to deployment-approved storage servers.</p>
       </div>
       <button type="button" onclick="closeSourceModal()" class="ui-button ui-button-secondary ui-button-icon rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200" title="Close">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -191,8 +191,54 @@
           </div>
         </div>
         <div>
+          <label for="source-type" class="ui-label mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Connection</label>
+          <select id="source-type" onchange="updateConnectionFields()" class="ui-control w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+            <option value="local">Existing local / mounted path</option>
+            <option value="smb">SMB 3.1.1 (encrypted)</option>
+            <option value="nfs">NFS 4.2</option>
+          </select>
+          <p id="mount-deployment-note" class="mt-2 text-sm text-gray-500 dark:text-gray-400"></p>
+        </div>
+        <div id="source-local-fields">
           <label class="ui-label mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Mounted Base Path</label>
           <input id="source-path" required placeholder="/mnt/cctv33-recordings" class="ui-control w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+        </div>
+        <div id="source-remote-fields" class="hidden space-y-4">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label for="source-server" class="ui-label mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Storage server IP</label>
+              <input id="source-server" maxlength="45" placeholder="192.168.10.20" class="ui-control w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+            </div>
+            <div>
+              <label id="source-remote-label" for="source-remote-path" class="ui-label mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Share / export</label>
+              <input id="source-remote-path" maxlength="1024" class="ui-control w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+            </div>
+          </div>
+          <div id="source-smb-fields" class="space-y-4">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label for="source-smb-user" class="ui-label mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">SMB username</label>
+                <input id="source-smb-user" maxlength="255" autocomplete="off" class="ui-control w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+              </div>
+              <div>
+                <label for="source-smb-domain" class="ui-label mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Domain (optional)</label>
+                <input id="source-smb-domain" maxlength="255" autocomplete="off" class="ui-control w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+              </div>
+            </div>
+            <div>
+              <label for="source-smb-password" class="ui-label mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">SMB password</label>
+              <input id="source-smb-password" type="password" maxlength="1024" autocomplete="new-password" class="ui-control w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Stored encrypted. Leave blank when editing to keep the saved password.</p>
+            </div>
+          </div>
+          <div id="source-nfs-fields" class="hidden">
+            <label for="source-nfs-security" class="ui-label mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">NFS security</label>
+            <select id="source-nfs-security" class="ui-control w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+              <option value="krb5p">Kerberos with encryption (krb5p)</option>
+              <option value="sys">AUTH_SYS — isolated trusted network only</option>
+            </select>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Kerberos requires deployment configuration. AUTH_SYS does not encrypt traffic or authenticate users cryptographically and requires deployment opt-in.</p>
+          </div>
         </div>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div>
@@ -354,6 +400,11 @@ async function loadSources() {
   const res = await fetch('/api/record-checks/sources');
   const data = await res.json();
   sources = data.sources || [];
+  const capabilities = data.mount_capabilities || {};
+  document.getElementById('mount-deployment-note').textContent = capabilities.enabled && capabilities.linux
+    ? 'Native mounts enabled. Deployment must provide mount permissions. Mount locations are generated automatically.'
+    : 'Native mounts require an enabled Linux deployment. Existing mounted paths remain available.';
+  document.querySelector('#source-nfs-security option[value="sys"]').disabled = !capabilities.nfs_allow_sys;
   renderSources();
 }
 
@@ -385,8 +436,10 @@ function renderSources() {
           </div>
           <div class="mt-1 truncate font-mono text-xs text-gray-500" title="${escapeHtml(source.base_path)}">${escapeHtml(source.base_path)}</div>
           <div class="mt-2 text-xs text-gray-500">${source.enabled ? 'Enabled' : 'Disabled'}${source.nvr_name ? ' | ' + escapeHtml(source.nvr_name) : ''}</div>
+          ${source.connection_type !== 'local' ? `<div class="mt-1 text-xs text-gray-500">${escapeHtml((source.connection_type || '').toUpperCase())} | ${escapeHtml(source.server)} | ${source.mounted ? 'Mounted in web service' : 'Unmounted in web service'}</div>` : ''}
         </button>
         <div class="flex shrink-0 gap-1">
+          ${source.connection_type !== 'local' ? `<button onclick="mountSource('${source.id}', '${source.mounted ? 'unmount' : 'mount'}')" title="${source.mounted ? 'Unmount and disable' : 'Mount read-only'}" class="ui-button ui-button-secondary rounded p-2 text-xs text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">${source.mounted ? 'Unmount' : 'Mount'}</button>` : ''}
           <button onclick="runSource('${source.id}')" title="Run now" class="ui-button ui-button-secondary ui-button-icon rounded p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20">▶</button>
           <button onclick="editSource('${source.id}')" title="Edit" class="ui-button ui-button-secondary ui-button-icon rounded p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">✎</button>
           <button onclick="deleteSource('${source.id}')" title="Delete" class="ui-button ui-button-secondary ui-button-icon rounded p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">×</button>
@@ -577,11 +630,13 @@ function openSourceModal() {
   document.getElementById('source-stale').value = '70';
   document.getElementById('source-long-dead').value = '7';
   document.getElementById('source-enabled').checked = true;
+  updateConnectionFields();
   document.getElementById('source-modal').classList.remove('hidden');
   document.getElementById('source-modal').classList.add('flex');
 }
 
 function closeSourceModal() {
+  document.getElementById('source-smb-password').value = '';
   document.getElementById('source-modal').classList.add('hidden');
   document.getElementById('source-modal').classList.remove('flex');
 }
@@ -598,6 +653,47 @@ function editSource(id) {
   document.getElementById('source-stale').value = Math.round(source.stale_threshold_seconds / 60);
   document.getElementById('source-long-dead').value = Math.round(source.long_dead_threshold_seconds / 86400);
   document.getElementById('source-enabled').checked = source.enabled;
+  document.getElementById('source-type').value = source.connection_type || 'local';
+  document.getElementById('source-server').value = source.server || '';
+  document.getElementById('source-remote-path').value = source.remote_path || '';
+  document.getElementById('source-smb-user').value = source.smb_username || '';
+  document.getElementById('source-smb-domain').value = source.smb_domain || '';
+  document.getElementById('source-nfs-security').value = source.nfs_security || 'krb5p';
+  updateConnectionFields();
+}
+
+function updateConnectionFields() {
+  const type = document.getElementById('source-type').value;
+  document.getElementById('source-local-fields').classList.toggle('hidden', type !== 'local');
+  document.getElementById('source-remote-fields').classList.toggle('hidden', type === 'local');
+  document.getElementById('source-smb-fields').classList.toggle('hidden', type !== 'smb');
+  document.getElementById('source-nfs-fields').classList.toggle('hidden', type !== 'nfs');
+  document.getElementById('source-path').required = type === 'local';
+  document.getElementById('source-server').required = type !== 'local';
+  document.getElementById('source-remote-path').required = type !== 'local';
+  document.getElementById('source-smb-user').required = type === 'smb';
+  document.getElementById('source-remote-label').textContent = type === 'smb' ? 'SMB share name' : 'NFS export path';
+  document.getElementById('source-remote-path').placeholder = type === 'smb' ? 'recordings' : '/exports/recordings';
+}
+
+async function mountSource(id, action) {
+  if (action === 'unmount') {
+    const answer = await themedSwal({icon: 'question', title: 'Unmount and disable source?',
+      text: 'Automatic checks stop. The scheduler detaches its own mount on the next cycle.',
+      showCancelButton: true, confirmButtonText: 'Unmount'});
+    if (!answer.isConfirmed) return;
+  }
+  try {
+    const res = await fetch(`/api/record-checks/sources/${id}/${action}`, {
+      method: 'POST', headers: {'Accept': 'application/json', 'X-Record-Mount-Action': '1'},
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.detail || 'Mount operation failed');
+    Toast.success(data.message, {title: 'Record source'});
+    await refreshAll();
+  } catch (error) {
+    Toast.error(error.message || 'Mount operation failed', {title: 'Record source'});
+  }
 }
 
 document.getElementById('source-form').addEventListener('submit', async (event) => {
@@ -606,6 +702,13 @@ document.getElementById('source-form').addEventListener('submit', async (event) 
   const payload = {
     name: document.getElementById('source-name').value.trim(),
     base_path: document.getElementById('source-path').value.trim(),
+    connection_type: document.getElementById('source-type').value,
+    server: document.getElementById('source-server').value.trim(),
+    remote_path: document.getElementById('source-remote-path').value.trim(),
+    smb_username: document.getElementById('source-smb-user').value.trim(),
+    smb_domain: document.getElementById('source-smb-domain').value.trim(),
+    smb_password: document.getElementById('source-type').value === 'smb' ? document.getElementById('source-smb-password').value || null : null,
+    nfs_security: document.getElementById('source-nfs-security').value,
     nvr_id: document.getElementById('source-nvr').value || null,
     enabled: document.getElementById('source-enabled').checked,
     stale_threshold_seconds: Number(document.getElementById('source-stale').value) * 60,
@@ -628,7 +731,7 @@ document.getElementById('source-form').addEventListener('submit', async (event) 
 });
 
 async function runSource(id) {
-  const res = await fetch(`/api/record-checks/sources/${id}/run`, {method: 'POST', headers: {'Accept': 'application/json'}});
+  const res = await fetch(`/api/record-checks/sources/${id}/run`, {method: 'POST', headers: {'Accept': 'application/json', 'X-Record-Mount-Action': '1'}});
   const data = await res.json();
   if (res.ok && data.status === 'success') {
     Toast.success(data.message, {title: 'Success'});
