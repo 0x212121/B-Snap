@@ -2,98 +2,88 @@
 {% block title %}B-SNAP – NVR Management{% endblock %}
 {% from "_icons.html" import icon_server, icon_plus, icon_search, icon_check_circle, icon_x_circle, icon_warning, icon_map_pin, icon_pencil, icon_trash, icon_upload, icon_download, icon_arrow_path, icon_eye, icon_eye_slash, icon_save %}
 
+{% from "macros/ui.html" import page_header %}
+
 {% block content %}
 <!-- Header Section -->
-<div class="mb-6">
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div>
-      <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
-        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-          {{ icon_server("w-7 h-7 text-blue-600 dark:text-blue-400") }}
-        </div>
-        NVR Management
-      </h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-        Manage Network Video Recorders and their configurations
-      </p>
-    </div>
-    <div class="flex flex-wrap gap-2">
-      <button id="btnAddNVR" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+{% set page_description %}Manage Network Video Recorders and their configurations{% endset %}
+{% call page_header("NVR Management", page_description) %}
+<div class="flex flex-wrap gap-2">
+      <button id="btnAddNVR" class="ui-button ui-button-primary inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
         {{ icon_plus("w-5 h-5") }}
         Add NVR
       </button>
       <form method="post" enctype="multipart/form-data" action="/nvrs/upload_csv" class="flex items-center gap-2">
         <input type="file" name="file" accept=".csv" class="hidden" id="csvFileInput" onchange="this.form.submit()">
-        <button type="button" onclick="document.getElementById('csvFileInput').click()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+        <button type="button" onclick="document.getElementById('csvFileInput').click()" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
           {{ icon_upload("w-5 h-5") }}
           Upload CSV
         </button>
       </form>
-      <a href="/nvrs/export_csv" class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+      <a href="/nvrs/export_csv" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
         {{ icon_download("w-5 h-5") }}
         Export CSV
       </a>
     </div>
-  </div>
-</div>
+{% endcall %}
 
 <!-- Stats Cards -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total NVRs</p>
-        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-total">0</p>
+        <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-total">0</p>
       </div>
-      <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
         {{ icon_server("w-6 h-6 text-blue-600 dark:text-blue-400") }}
       </div>
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active</p>
-        <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="stat-active">0</p>
+        <p class="ui-kpi-value text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="stat-active">0</p>
       </div>
-      <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
         {{ icon_check_circle("w-6 h-6 text-green-600 dark:text-green-400") }}
       </div>
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Deactivated</p>
-        <p class="text-2xl font-bold text-gray-600 dark:text-gray-400 mt-1" id="stat-deactivated">0</p>
+        <p class="ui-kpi-value text-2xl font-bold text-gray-600 dark:text-gray-400 mt-1" id="stat-deactivated">0</p>
       </div>
-      <div class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
         {{ icon_x_circle("w-6 h-6 text-gray-600 dark:text-gray-400") }}
       </div>
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Restricted</p>
-        <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1" id="stat-restricted">0</p>
+        <p class="ui-kpi-value text-2xl font-bold text-red-600 dark:text-red-400 mt-1" id="stat-restricted">0</p>
       </div>
-      <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
         {{ icon_warning("w-6 h-6 text-red-600 dark:text-red-400") }}
       </div>
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">With Location</p>
-        <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1" id="stat-located">0</p>
+        <p class="ui-kpi-value text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1" id="stat-located">0</p>
       </div>
-      <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
         {{ icon_map_pin("w-6 h-6 text-purple-600 dark:text-purple-400") }}
       </div>
     </div>
@@ -101,19 +91,19 @@
 </div>
 
 <!-- Filter Section -->
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+<div class="ui-filter-bar ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
   <div class="flex flex-col lg:flex-row gap-4">
     <div class="relative flex-1">
       <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
         {{ icon_search("h-5 w-5 text-gray-400") }}
       </div>
-      <input type="text" id="searchInput" placeholder="Search by hostname, IP, location..."
-        class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+      <input aria-label="Search" type="text" id="searchInput" placeholder="Search by hostname, IP, location..."
+        class="ui-control pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
     </div>
     
     <div class="flex gap-2 items-center flex-wrap">
       <div class="relative w-36">
-        <select id="perPageSelect" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+        <select aria-label="Results per page" id="perPageSelect" class="ui-control pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
           <option value="10">10 / page</option>
           <option value="20" selected>20 / page</option>
           <option value="50">50 / page</option>
@@ -126,7 +116,7 @@
         </div>
       </div>
       
-      <button id="btnResetFilters" class="p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+      <button id="btnResetFilters" class="ui-button ui-button-secondary p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
         {{ icon_arrow_path("h-5 w-5") }}
       </button>
     </div>
@@ -146,7 +136,7 @@
 </div>
 
 <!-- Table Container -->
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
+<div class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
   <div id="loading-overlay" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
     <div class="flex flex-col items-center gap-3">
       <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
@@ -157,8 +147,8 @@
     </div>
   </div>
 
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-sm text-left" id="nvr-table">
+  <div class="ui-table-scroll overflow-x-auto">
+    <table class="ui-table min-w-full text-sm text-left" id="nvr-table">
       <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
         <tr>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Hostname</th>
@@ -176,7 +166,7 @@
   </div>
   
   <!-- Empty State -->
-  <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center">
+  <div id="empty-state" class="ui-empty-state hidden flex-col items-center justify-center py-16 text-center">
     <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
       {{ icon_server("w-12 h-12 text-gray-400") }}
     </div>
@@ -197,7 +187,7 @@
 
 <!-- Modal Add/Edit NVR -->
 <div id="nvrModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-auto max-h-[90vh] flex flex-col transform transition-all duration-200 opacity-0 -translate-y-4" id="modalContent">
+  <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-auto max-h-[90vh] flex flex-col transform transition-all duration-200 opacity-0 -translate-y-4" id="modalContent">
     <!-- Header -->
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
       <div class="flex items-center gap-3">
@@ -209,7 +199,7 @@
           <p id="modalSubtitle" class="text-sm text-gray-500 dark:text-gray-400">Configure NVR settings</p>
         </div>
       </div>
-      <button id="btnCloseModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+      <button id="btnCloseModal" class="ui-button ui-button-secondary ui-button-icon text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
@@ -218,11 +208,11 @@
     
     <!-- Tabs -->
     <div class="border-b border-gray-200 dark:border-gray-700 px-6 flex-shrink-0">
-      <nav class="-mb-px flex space-x-6" aria-label="Tabs" id="modalTabsContainer">
-        <button type="button" class="tab-btn border-b-2 border-blue-500 text-blue-600 py-3 px-1 text-sm font-medium transition-colors" data-tab="basic">
+      <nav class="ui-tabs -mb-px flex space-x-6" aria-label="Tabs" id="modalTabsContainer">
+        <button type="button" class="ui-tab tab-btn border-b-2 border-blue-500 text-blue-600 py-3 px-1 text-sm font-medium transition-colors" data-tab="basic">
           Basic Info
         </button>
-        <button type="button" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-3 px-1 text-sm font-medium transition-colors" data-tab="location">
+        <button type="button" class="ui-tab tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-3 px-1 text-sm font-medium transition-colors" data-tab="location">
           Location & Asset
         </button>
       </nav>
@@ -235,34 +225,34 @@
       <!-- Basic Info Tab -->
       <div id="tab-basic" class="tab-pane space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="name">Hostname <span class="text-red-500">*</span></label>
+          <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="name">Hostname <span class="text-red-500">*</span></label>
           <input type="text" id="name" name="name" required 
-                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                 class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                  pattern="^[A-Za-z0-9_#\(\)\- ]+$">
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Only letters, numbers, underscore, and hyphen allowed.</p>
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="ip">IP Address <span class="text-red-500">*</span></label>
+          <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="ip">IP Address <span class="text-red-500">*</span></label>
           <input type="text" id="ip" name="ip" required
-                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                 class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                  pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Format: xxx.xxx.xxx.xxx</p>
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="username">Username <span class="text-red-500">*</span></label>
+          <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="username">Username <span class="text-red-500">*</span></label>
           <input type="text" id="username" name="username" required
-                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                 class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
         </div>
         
         <div class="relative">
-          <label for="hs-toggle-password" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+          <label for="hs-toggle-password" class="ui-label block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
             Password <span id="password-required-marker" class="text-red-500">*</span>
           </label>
           <div class="relative">
             <input type="password" id="hs-toggle-password" name="password" required
-                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition pr-10">
+                   class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition pr-10">
             <button type="button" id="btnTogglePassword" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
               tabindex="-1" onclick="togglePasswordVisibility('hs-toggle-password', this)">
               <span class="eye-icon">{{ icon_eye("w-5 h-5") }}</span>
@@ -277,44 +267,44 @@
       <div id="tab-location" class="tab-pane space-y-4 hidden">
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="latitude">Latitude</label>
+            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="latitude">Latitude</label>
             <input type="number" step="any" id="latitude" name="latitude" placeholder="-7.252"
-                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                   class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">Longitude</label>
+            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">Longitude</label>
             <input type="number" step="any" id="longitude" name="longitude" placeholder="112.753"
-                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                   class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
           </div>
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="asset_no">Asset No.</label>
+          <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="asset_no">Asset No.</label>
           <input type="text" id="asset_no" name="asset_no" 
-                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                 class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="location">Location</label>
+          <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="location">Location</label>
           <input type="text" id="location" name="location" 
-                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                 class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="group_name">
+          <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="group_name">
             Division <span class="text-red-500">*</span>
           </label>
           <select id="group_name" name="group_name" required
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                  class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
             <option value="">-- Select Group --</option>
           </select>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Required: Group for organizing and filtering NVRs</p>
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="status">Status</label>
+          <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="status">Status</label>
           <select id="status" name="status" 
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                  class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
             <option value="Active">Active</option>
             <option value="Deactivated">Deactivated</option>
             <option value="Restricted">Restricted</option>
@@ -322,17 +312,17 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="note">Notes</label>
+          <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="note">Notes</label>
           <textarea id="note" name="note" rows="3" 
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition resize-none"></textarea>
+                    class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition resize-none"></textarea>
         </div>
       </div>
     </form>
     
     <!-- Footer -->
     <div class="flex justify-end space-x-3 pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
-      <button type="button" id="btnCancelModal" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded-lg font-semibold text-sm transition">Cancel</button>
-      <button type="submit" form="cameraForm" id="modalSubmitButton" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm shadow-sm transition">{{ icon_save("h-4 w-4 text-white") }}<span id="modalSubmitText">Submit</span></button>
+      <button type="button" id="btnCancelModal" class="ui-button ui-button-secondary px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded-lg font-semibold text-sm transition">Cancel</button>
+      <button type="submit" form="cameraForm" id="modalSubmitButton" class="ui-button ui-button-primary inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm shadow-sm transition">{{ icon_save("h-4 w-4 text-white") }}<span id="modalSubmitText">Submit</span></button>
     </div>
   </div>
 </div>
@@ -446,10 +436,10 @@
     // First & Prev
     if (page > 1) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="window.loadNVRPage(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
+        <button onclick="window.loadNVRPage(1)" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
         </button>
-        <button onclick="window.loadNVRPage(${page - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
+        <button onclick="window.loadNVRPage(${page - 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </button>
       `);
@@ -479,10 +469,10 @@
     // Next & Last
     if (page < totalPages) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="window.loadNVRPage(${page + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
+        <button onclick="window.loadNVRPage(${page + 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
         </button>
-        <button onclick="window.loadNVRPage(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
+        <button onclick="window.loadNVRPage(${totalPages})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
         </button>
       `);

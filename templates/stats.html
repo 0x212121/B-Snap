@@ -2,18 +2,20 @@
 {% block title %}B-SNAP – Camera Statistics{% endblock %}
 {% from "_icons.html" import icon_ppt_chart_bar, icon_clock, icon_no_symbol, icon_check_circle, icon_circle_stack, icon_x_circle, icon_database %}
 
+{% from "macros/ui.html" import page_header %}
+
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-  <h1 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">{{ icon_ppt_chart_bar(class="w-8 h-8 text-blue-600") }} Camera Snapshot Stats</h1>
+<div class="ui-page">
+  {{ page_header("Camera Snapshot Stats") }}
   
   <div class="flex items-center gap-4 mb-6">
-    <select id="cameraDropdown" class="border p-2 pr-8 rounded dark:bg-gray-800 dark:text-white">
+    <select id="cameraDropdown" class="ui-control border p-2 pr-8 rounded dark:bg-gray-800 dark:text-white">
       <option value="">All Cameras</option>
       {% for name in camera_names %}
       <option value="{{ name | urlencode }}" {% if selected_camera == name %}selected{% endif %}>{{ name }}</option>
       {% endfor %}
     </select>
-    <select id="periodDropdown" class="border p-2 pr-8 rounded dark:bg-gray-800 dark:text-white w-auto min-w-fit">
+    <select id="periodDropdown" class="ui-control border p-2 pr-8 rounded dark:bg-gray-800 dark:text-white w-auto min-w-fit">
       <option value="7" selected>Last 7 Days</option>
       <option value="14">Last 14 Days</option>
       <option value="30">Last 30 Days</option>
@@ -27,8 +29,8 @@
   </div>
   
   <div class="bg-white dark:bg-gray-800 p-6 rounded shadow mb-6">
-    <h2 class="text-xl font-semibold text-blue-600 dark:text-blue-300 mb-4">{{ icon_clock(class="w-5 h-5 text-gray-700 dark:text-gray-100 inline") }} Snapshot Scheduler Log</h2>
-    <table class="w-full table-auto text-sm">
+    <h2 class="ui-section-title text-xl font-semibold text-blue-600 dark:text-blue-300 mb-4">{{ icon_clock(class="w-5 h-5 text-gray-700 dark:text-gray-100 inline") }} Snapshot Scheduler Log</h2>
+    <table class="ui-table w-full table-auto text-sm">
       <thead class="bg-gray-100 dark:bg-gray-700">
         <tr>
           <th class="px-4 py-2 text-left">Started At</th>
@@ -62,8 +64,8 @@
   <!-- Storage Monitor Widget -->
   <div class="bg-white dark:bg-gray-800 p-6 rounded shadow mb-6">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300">{{ icon_database("w-6 h-6 text-blue-600 inline") }} Storage Health</h2>
-      <button id="refreshStorageBtn" class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded transition">
+      <h2 class="ui-section-title text-xl font-semibold text-gray-700 dark:text-gray-300">{{ icon_database("w-6 h-6 text-blue-600 inline") }} Storage Health</h2>
+      <button id="refreshStorageBtn" class="ui-button ui-button-primary text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded transition">
         Refresh
       </button>
     </div>
@@ -148,7 +150,7 @@
   </div>
 
   <div id="noDataCamerasSection" class="bg-red-100 dark:bg-red-900 p-4 rounded shadow hidden">
-    <h2 class="text-xl font-bold mb-2 text-red-700 dark:text-red-300">
+    <h2 class="ui-section-title text-xl font-bold mb-2 text-red-700 dark:text-red-300">
       {{ icon_no_symbol() }} Cameras Without Snapshots (<span id="totalNoDataCamerasCount">0</span>)
     </h2>
     <ul id="noDataCamerasList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-red-800 dark:text-red-100 list-disc list-inside">

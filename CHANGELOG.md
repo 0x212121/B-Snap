@@ -8,11 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Vertically center the selected camera name and search input in the Snapshot Gallery camera filter.
+- Vertically center the selected camera name and search input in the Video Gallery camera filter.
 - Fixed WhatsApp Bot Builder rendering by preventing Jinja from evaluating JavaScript response-template placeholders, which could redirect the user to login and clear session cookies.
 - Check camera online status before starting a WhatsApp `/snap` capture; offline or unknown cameras use the configured failure/fallback messages. Keep text attached as the image caption and send GoWA URL images using its documented multipart format.
 - Populate snapshot-stage template context from the latest saved snapshot and resolve bare snapshot fields and `|datetime` values inside `#each` blocks.
 
 ### Changed
+
+- Introduce shared UI tokens and reusable page headers, buttons, cards, tables, filters, form controls, tabs, badges, and feedback states across operational pages. Align responsive page spacing, separate gallery filters from page titles, and move the changelog/version utility into account navigation so it does not cover page actions.
 
 - Simplify global navigation with direct monitoring links, grouped secondary destinations under More, compact active states, and accessible mobile accordions. Move desktop theme/language preferences into the account menu and preserve all destination URLs and role restrictions.
 

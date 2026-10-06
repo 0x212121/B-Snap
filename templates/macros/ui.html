@@ -1,0 +1,74 @@
+{# Shared presentation components. Caller blocks retain existing actions and bindings. #}
+{% macro page_heading(title, description='') %}
+  <div class="ui-page-heading">
+    <h1 class="ui-page-title">{{ title }}</h1>
+    {% if description %}<p class="ui-description">{{ description }}</p>{% endif %}
+    {% if caller is defined %}<div class="ui-page-metadata">{{ caller() }}</div>{% endif %}
+  </div>
+{% endmacro %}
+
+{% macro page_header(title, description='') %}
+  <header class="ui-page-header">
+    {{ page_heading(title, description) }}
+    {% if caller is defined %}<div class="ui-page-actions">{{ caller() }}</div>{% endif %}
+  </header>
+{% endmacro %}
+
+{% macro section_header(title, description='') %}
+  <div class="ui-section-header">
+    <div><h2 class="ui-section-title">{{ title }}</h2>
+      {% if description %}<p class="ui-description">{{ description }}</p>{% endif %}</div>
+    {% if caller is defined %}<div class="ui-page-actions">{{ caller() }}</div>{% endif %}
+  </div>
+{% endmacro %}
+
+{% macro card(title='', description='') %}
+  <section class="ui-card ui-card-body">
+    {% if title %}{{ section_header(title, description) }}{% endif %}
+    {% if caller is defined %}{{ caller() }}{% endif %}
+  </section>
+{% endmacro %}
+
+{% macro kpi_card(label, value, description='') %}
+  <div class="ui-card ui-card-body ui-kpi">
+    <p class="ui-metadata">{{ label }}</p><p class="ui-kpi-value">{{ value }}</p>
+    {% if description %}<p class="ui-description">{{ description }}</p>{% endif %}
+  </div>
+{% endmacro %}
+
+{% macro status_badge(label, tone='neutral') %}
+  {% set valid_tone = tone if tone in ['neutral', 'info', 'success', 'warning', 'critical'] else 'neutral' %}
+  <span class="ui-badge ui-badge-{{ valid_tone }}">{{ label }}</span>
+{% endmacro %}
+
+{% macro empty_state(title, description='') %}
+  <div class="ui-empty-state">
+    <p class="ui-state-title">{{ title }}</p>
+    {% if description %}<p class="ui-description">{{ description }}</p>{% endif %}
+    {% if caller is defined %}<div class="ui-state-actions">{{ caller() }}</div>{% endif %}
+  </div>
+{% endmacro %}
+
+{% macro error_state(title, description='') %}
+  <div class="ui-feedback ui-feedback-critical" role="alert">
+    <p class="ui-state-title">{{ title }}</p>
+    {% if description %}<p>{{ description }}</p>{% endif %}
+    {% if caller is defined %}<div class="ui-state-actions">{{ caller() }}</div>{% endif %}
+  </div>
+{% endmacro %}
+
+{% macro loading_skeleton(label='Loading', rows=3) %}
+  <div class="ui-loading" role="status" aria-label="{{ label }}">
+    <span class="sr-only">{{ label }}</span>
+    {% for row in range(rows) %}<div class="ui-skeleton" aria-hidden="true"></div>{% endfor %}
+  </div>
+{% endmacro %}
+
+{% macro more_filters() %}
+  <details class="ui-more-filters" data-more-filters>
+    <summary>More filters <span data-filter-count class="ui-badge ui-badge-info" hidden></span></summary>
+    <div class="ui-more-filter-controls">
+      {% if caller is defined %}{{ caller() }}{% endif %}
+    </div>
+  </details>
+{% endmacro %}

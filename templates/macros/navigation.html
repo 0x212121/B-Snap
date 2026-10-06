@@ -40,7 +40,7 @@
   {% endif %}
 {% endmacro %}
 
-{% macro render_mobile_nav(nav_items, request) %}
+{% macro render_mobile_nav(nav_items, request, version='') %}
   {% if nav_items %}
     {% set secondary = nav_items | rejectattr('primary') | list %}
     {% set active = namespace(group=0) %}
@@ -70,6 +70,7 @@
     <a class="nav-link" href="/profile">Profile Settings</a>
     <a class="nav-link" href="/profile?tab=api_keys">API Keys</a>
     <button type="button" class="nav-link w-full" @click="toggleDark()">Toggle theme</button>
+    <button type="button" class="nav-link w-full justify-between" @click="$dispatch('open-changelog'); mobileMenuOpen = false"><span>Changelog</span>{% if version %}<span class="text-xs text-gray-500 dark:text-gray-400">v{{ version }}</span>{% endif %}</button>
     <a class="nav-link text-red-600 dark:text-red-400" href="/logout">Logout</a>
   </div>
 {% endmacro %}

@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – API Docs{% endblock %}
+{% from "macros/ui.html" import page_header %}
+
 {% block content %}
+{{ page_header("API Documentation") }}
 <!-- templates/swagger_embed.html -->
 <head>
     <meta charset="UTF-8" />

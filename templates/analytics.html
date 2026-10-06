@@ -2,8 +2,10 @@
 {% block title %}B-SNAP – Analytics{% endblock %}
 {% from "_icons.html" import icon_chart_bar, icon_arrow_path, icon_download, icon_trophy, icon_envelope, icon_clip_check, icon_ppt_chart_bar, icon_clock, icon_no_symbol, icon_check_circle, icon_circle_stack, icon_x_circle, icon_database %}
 
+{% from "macros/ui.html" import page_header, loading_skeleton %}
+
 {% block content %}
-<div class="container mx-auto px-4 py-6 space-y-6" x-data="{ activeTab: 'overview' }" x-init="
+<div class="ui-page space-y-6" x-data="{ activeTab: 'overview' }" x-init="
   const urlParams = new URLSearchParams(window.location.search);
   const tabFromUrl = urlParams.get('tab');
   if (tabFromUrl && ['overview', 'snapshots'].includes(tabFromUrl)) {
@@ -12,18 +14,11 @@
 ">
   
   <!-- HEADER -->
-  <div class="flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      {{ icon_chart_bar("w-8 h-8 text-blue-600 dark:text-blue-400") }}
-      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">
-        Analytics Dashboard
-      </h1>
-    </div>
-  </div>
+  {{ page_header("Analytics Dashboard") }}
 
-  <div class="bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 flex flex-wrap items-center gap-3">
+  <div class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 flex flex-wrap items-center gap-3">
     <label for="analyticsGroupFilter" class="text-sm font-medium text-gray-700 dark:text-gray-300">Camera Group</label>
-    <select id="analyticsGroupFilter" class="h-10 min-w-[14rem] border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 text-sm text-gray-800 dark:text-gray-100">
+    <select id="analyticsGroupFilter" class="ui-control h-10 min-w-[14rem] border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 text-sm text-gray-800 dark:text-gray-100">
       <option value="">All Groups</option>
       {% for group in camera_groups %}
       <option value="{{ group.id }}" {% if selected_group_id == group.id %}selected{% endif %}>{{ group.name }}</option>
@@ -34,16 +29,16 @@
 
   <!-- TABS -->
   <div class="border-b border-gray-200 dark:border-gray-700">
-    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+    <nav class="ui-tabs -mb-px flex space-x-8" aria-label="Tabs">
       <button @click="activeTab = 'overview'; window.setAnalyticsTab('overview');"
               :class="activeTab === 'overview' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'"
-              class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
+              class="ui-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
         System Overview
       </button>
       <button @click="activeTab = 'snapshots'; window.setAnalyticsTab('snapshots');"
               :class="activeTab === 'snapshots' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'"
-              class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
+              class="ui-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
         Snapshot Stats
       </button>
@@ -54,24 +49,24 @@
   <div x-show="activeTab === 'overview'" x-cloak class="space-y-6" id="overviewTabContent">
     
     <!-- FILTER BAR -->
-    <div class="bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 flex flex-wrap items-end gap-4">
+    <div class="ui-filter-bar ui-card ui-card-body bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 flex flex-wrap items-end gap-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
-        <input type="date" id="startDate"
-          class="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100">
+        <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
+        <input aria-label="Start Date" type="date" id="startDate"
+          class="ui-control border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100">
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
-        <input type="date" id="endDate"
-          class="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100">
+        <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
+        <input aria-label="End Date" type="date" id="endDate"
+          class="ui-control border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100">
       </div>
       <div class="flex gap-2 ml-auto">
         <button id="applyFilter"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2">
+          class="ui-button ui-button-primary bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2">
           {{ icon_arrow_path("w-5 h-5 text-white") }} Apply Filter
         </button>
         <button id="downloadReport"
-          class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2">
+          class="ui-button ui-button-secondary bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2">
           {{ icon_download("w-5 h-5 text-white") }} Download Report
         </button>
       </div>
@@ -79,26 +74,26 @@
 
     <!-- KPI CARDS -->
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-      <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-5">
+      <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 shadow rounded-xl p-5">
         <div class="text-xs text-gray-500 dark:text-gray-400">API Calls</div>
-        <div class="text-3xl font-bold mt-1" id="kpiApi">–</div>
+        <div class="ui-kpi-value text-3xl font-bold mt-1" id="kpiApi">–</div>
         <div class="text-sm mt-1" id="kpiApiDelta">–</div>
       </div>
-      <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-5">
+      <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 shadow rounded-xl p-5">
         <div class="text-xs text-gray-500 dark:text-gray-400">Commands</div>
-        <div class="text-3xl font-bold mt-1" id="kpiCmd">–</div>
+        <div class="ui-kpi-value text-3xl font-bold mt-1" id="kpiCmd">–</div>
         <div class="text-sm mt-1" id="kpiCmdDelta">–</div>
       </div>
-      <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-5">
+      <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 shadow rounded-xl p-5">
         <div class="text-xs text-gray-500 dark:text-gray-400">Emails</div>
-        <div class="text-3xl font-bold mt-1" id="kpiEmail">–</div>
+        <div class="ui-kpi-value text-3xl font-bold mt-1" id="kpiEmail">–</div>
         <div class="text-sm mt-1" id="kpiEmailDelta">–</div>
       </div>
-      <div class="bg-white dark:bg-gray-800 shadow rounded-xl p-5">
+      <div class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow rounded-xl p-5">
         <div class="text-xs text-gray-500 dark:text-gray-400">Activity Trend Index</div>
         <div class="text-3xl font-bold flex items-center gap-2 mt-1">
           <span id="activityValue">–</span>
-          <span id="activityBadge" class="text-xs font-semibold px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700">–</span>
+          <span id="activityBadge" class="ui-badge ui-badge-neutral text-xs font-semibold px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700">–</span>
         </div>
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Activity direction: 50 is stable; higher or lower values show change</div>
       </div>
@@ -107,27 +102,27 @@
 
     <!-- CHARTS -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
+      <div class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
         <div class="flex items-center gap-2 mb-4">
           {{ icon_clip_check("w-6 h-6 text-blue-600 dark:text-blue-400") }}
-          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200">API vs Command Logs</h2>
+          <h2 class="ui-section-title text-lg font-semibold text-gray-700 dark:text-gray-200">API vs Command Logs</h2>
         </div>
         <canvas id="chartApiCommand" height="140"></canvas>
       </div>
-      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
+      <div class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
         <div class="flex items-center gap-2 mb-4">
           {{ icon_envelope("w-6 h-6 text-yellow-500 dark:text-yellow-400") }}
-          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Email Notifications</h2>
+          <h2 class="ui-section-title text-lg font-semibold text-gray-700 dark:text-gray-200">Email Notifications</h2>
         </div>
         <canvas id="chartEmail" height="140"></canvas>
       </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
-      <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1">Cameras with Most Downtime</h2>
+    <div class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
+      <h2 class="ui-section-title text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1">Cameras with Most Downtime</h2>
       <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Ranked by monitored downtime in the selected date range. Select a camera to open its status history.</p>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
+      <div class="ui-table-scroll overflow-x-auto">
+        <table class="ui-table min-w-full text-sm">
           <thead class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-100">
             <tr><th class="p-3 text-left">Camera</th><th class="p-3 text-right">Downtime (hours)</th><th class="p-3 text-right">Availability</th></tr>
           </thead>
@@ -137,13 +132,13 @@
     </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
-        <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1">Camera Availability and Downtime</h2>
+      <div class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
+        <h2 class="ui-section-title text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1">Camera Availability and Downtime</h2>
         <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Availability = monitored uptime ÷ (uptime + downtime). Downtime is shown in hours.</p>
         <canvas id="chartCameraAvailability" height="140"></canvas>
       </div>
-      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
-        <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1">Offline Incidents</h2>
+      <div class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
+        <h2 class="ui-section-title text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1">Offline Incidents</h2>
         <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Counts each transition into Offline status in the selected date range.</p>
         <canvas id="chartOfflineIncidents" height="140"></canvas>
       </div>
@@ -151,12 +146,12 @@
 
     <!-- BOTTOM SECTION -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
-        <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2 mb-5">
+      <div class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
+        <h2 class="ui-section-title text-lg font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2 mb-5">
           {{ icon_trophy(class="w-6 h-6 text-amber-300 inline") }}
           Top 10 Most Executed Commands
         </h2>
-        <table class="min-w-full text-sm">
+        <table class="ui-table min-w-full text-sm">
           <thead class="bg-gray-700 text-gray-100">
             <tr>
               <th class="p-3 w-10 text-center">#</th>
@@ -167,12 +162,12 @@
           <tbody id="topCommandsBodyTable" class="divide-y divide-gray-700 text-gray-700 dark:text-gray-200"></tbody>
         </table>
       </div>
-      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
-        <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+      <div class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
+        <h2 class="ui-section-title text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
           {{ icon_envelope("w-6 h-6 text-yellow-500 dark:text-yellow-400") }}
           Top 5 Cameras by Email
         </h2>
-        <table class="min-w-full text-sm">
+        <table class="ui-table min-w-full text-sm">
           <thead class="bg-gray-700 text-gray-100">
             <tr>
               <th class="p-3 text-left">Camera</th>
@@ -189,10 +184,10 @@
   <div x-show="activeTab === 'snapshots'" x-cloak class="space-y-6" id="snapshotsTabContent">
     
     <!-- FILTERS -->
-    <div class="bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 flex flex-wrap items-start gap-4">
+    <div class="ui-filter-bar ui-card ui-card-body bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 flex flex-wrap items-start gap-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Camera</label>
-        <select id="cameraDropdown" class="h-10 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100 min-w-[200px]">
+        <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300">Camera</label>
+        <select id="cameraDropdown" class="ui-control h-10 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100 min-w-[200px]">
           <option value="">All Cameras</option>
           {% for name in camera_names %}
           <option value="{{ name }}" {% if selected_camera == name %}selected{% endif %}>{{ name }}</option>
@@ -200,8 +195,8 @@
         </select>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Period</label>
-        <select id="periodDropdown" class="h-10 min-w-[12rem] border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100">
+        <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300">Period</label>
+        <select id="periodDropdown" class="ui-control h-10 min-w-[12rem] border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100">
           <option value="7" {% if selected_days == 7 %}selected{% endif %}>Last 7 Days</option>
           <option value="14" {% if selected_days == 14 %}selected{% endif %}>Last 14 Days</option>
           <option value="30" {% if selected_days == 30 %}selected{% endif %}>Last 30 Days</option>
@@ -213,8 +208,8 @@
     </div>
 
     <!-- SNAPSHOT CHART -->
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
-      <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+    <div class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
+      <h2 class="ui-section-title text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
         {{ icon_ppt_chart_bar(class="w-6 h-6 text-blue-600") }}
         Snapshot Count by Date
       </h2>
@@ -223,23 +218,20 @@
     </div>
 
     <!-- STORAGE HEALTH WIDGET -->
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
+    <div class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+        <h2 class="ui-section-title text-lg font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
           {{ icon_database("w-6 h-6 text-blue-600") }}
           Storage Health
         </h2>
-        <button id="refreshStorageBtn" class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded transition">
+        <button id="refreshStorageBtn" class="ui-button ui-button-primary text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded transition">
           Refresh
         </button>
       </div>
       
       <div id="storageLoading" class="text-center py-4">
-        <svg class="animate-spin h-6 w-6 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-      </div>
+{{ loading_skeleton("Loading storage health", 4) }}
+</div>
       
       <div id="storageContent" class="hidden">
         <div class="mb-6">
@@ -309,13 +301,13 @@
     </div>
 
     <!-- SCHEDULER LOG -->
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
-      <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+    <div class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
+      <h2 class="ui-section-title text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
         {{ icon_clock(class="w-6 h-6 text-gray-700 dark:text-gray-100") }}
         Snapshot Scheduler Log
       </h2>
-      <div class="overflow-x-auto">
-        <table class="w-full table-auto text-sm">
+      <div class="ui-table-scroll overflow-x-auto">
+        <table class="ui-table w-full table-auto text-sm">
           <thead class="bg-gray-100 dark:bg-gray-700">
             <tr>
               <th class="px-4 py-2 text-left">Started At</th>
@@ -348,7 +340,7 @@
 
     <!-- CAMERAS WITHOUT SNAPSHOTS -->
     <div id="noDataCamerasSection" class="bg-red-100 dark:bg-red-900 p-4 rounded shadow hidden">
-      <h2 class="text-xl font-bold mb-2 text-red-700 dark:text-red-300">
+      <h2 class="ui-section-title text-xl font-bold mb-2 text-red-700 dark:text-red-300">
         {{ icon_no_symbol() }} Cameras Without Snapshots (<span id="totalNoDataCamerasCount">0</span>)
       </h2>
       <ul id="noDataCamerasList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-red-800 dark:text-red-100 list-disc list-inside"></ul>

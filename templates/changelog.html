@@ -1,23 +1,12 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – Changelog{% endblock %}
 
+{% from "macros/ui.html" import page_header %}
+
 {% block content %}
 <!-- Header Section -->
-<div class="mb-6">
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div>
-      <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
-        <div class="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
-          <svg class="w-7 h-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
-          </svg>
-        </div>
-        Changelog
-      </h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-        Track all changes, updates, and improvements to B-Snap
-      </p>
-    </div>
+{% call page_header("Changelog", "Track all changes, updates, and improvements to B-Snap") %}
+
     <a href="https://github.com/0x212121/b-snap/blob/main/CHANGELOG.md" target="_blank" 
        class="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition">
       <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -25,18 +14,18 @@
       </svg>
       View on GitHub
     </a>
-  </div>
-</div>
+
+{% endcall %}
 
 <!-- Stats Cards -->
 <div id="stats-section" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Versions</p>
-        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-versions">-</p>
+        <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-versions">-</p>
       </div>
-      <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
         <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
         </svg>
@@ -44,13 +33,13 @@
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Features Added</p>
-        <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="stat-added">-</p>
+        <p class="ui-kpi-value text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="stat-added">-</p>
       </div>
-      <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
         <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
         </svg>
@@ -58,13 +47,13 @@
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Bug Fixes</p>
-        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1" id="stat-fixed">-</p>
+        <p class="ui-kpi-value text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1" id="stat-fixed">-</p>
       </div>
-      <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
         <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
         </svg>
@@ -72,14 +61,14 @@
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Latest Version</p>
         <p class="text-xl font-bold text-purple-600 dark:text-purple-400 mt-1" id="stat-latest">-</p>
         <p class="text-xs text-gray-500 dark:text-gray-400" id="stat-latest-date">-</p>
       </div>
-      <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
         <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
         </svg>
@@ -89,7 +78,7 @@
 </div>
 
 <!-- Search & Filter Section -->
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+<div class="ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
   <div class="flex flex-col lg:flex-row gap-4">
     <!-- Search -->
     <div class="relative flex-1">
@@ -98,14 +87,14 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
         </svg>
       </div>
-      <input type="text" id="searchInput" placeholder="Search changelog..." value="{{ search }}"
-        class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+      <input aria-label="Search" type="text" id="searchInput" placeholder="Search changelog..." value="{{ search }}"
+        class="ui-control pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
     </div>
     
     <!-- Per Page -->
     <div class="flex gap-2 items-center">
       <div class="relative w-40">
-        <select id="perPageSelect" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition appearance-none">
+        <select aria-label="Results per page" id="perPageSelect" class="ui-control pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition appearance-none">
           <option value="3">3 per page</option>
           <option value="5" selected>5 per page</option>
           <option value="10">10 per page</option>
@@ -118,7 +107,7 @@
         </div>
       </div>
       
-      <button onclick="resetSearch()" class="p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Clear search">
+      <button onclick="resetSearch()" class="ui-button ui-button-secondary p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Clear search">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
@@ -142,7 +131,7 @@
 </div>
 
 <!-- Empty State -->
-<div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+<div id="empty-state" class="ui-empty-state ui-card hidden flex-col items-center justify-center py-16 text-center bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
   <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
     <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -271,7 +260,7 @@
     return `
       <div class="border-l-4 ${cat.border} ${cat.dark_border} pl-4">
         <h3 class="flex items-center gap-2 ${cat.text} ${cat.dark_text} font-semibold mb-2 mt-2">
-          <span class="${cat.bg} ${cat.dark_bg} px-2 py-0.5 rounded-full text-xs">${cat.icon} ${cat.label}</span>
+          <span class="ui-badge ${cat.bg} ${cat.dark_bg} px-2 py-0.5 rounded-full text-xs">${cat.icon} ${cat.label}</span>
         </h3>
         <ul class="space-y-2">
           ${items.map(item => `
@@ -360,10 +349,10 @@
     // First & Prev
     if (pagination.page > 1) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="loadChangelog(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
+        <button onclick="loadChangelog(1)" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
         </button>
-        <button onclick="loadChangelog(${pagination.page - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
+        <button onclick="loadChangelog(${pagination.page - 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </button>
       `);
@@ -395,10 +384,10 @@
     // Next & Last
     if (pagination.page < totalPages) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="loadChangelog(${pagination.page + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
+        <button onclick="loadChangelog(${pagination.page + 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
         </button>
-        <button onclick="loadChangelog(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
+        <button onclick="loadChangelog(${totalPages})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
         </button>
       `);

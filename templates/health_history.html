@@ -12,15 +12,17 @@
 
 {% block title %}B-SNAP – Historical Device Stats{% endblock %}
 
+{% from "macros/ui.html" import page_header %}
+
 {% block content %}
-<div class="container mx-auto px-4 py-8">
+<div class="ui-page">
     
-    <h1 class="text-3xl font-bold mb-4 text-gray-800 dark:text-gray-200">Historical Uptime/Downtime</h1>
+    {{ page_header("Historical Uptime/Downtime") }}
     
     <!-- Action Buttons Section -->
     <div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-750 rounded-xl p-4 border border-blue-100 dark:border-gray-700">
         <div class="flex flex-wrap items-center gap-3">
-            <a href="/health" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
+            <a href="/health" class="ui-button ui-button-secondary bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                 Back to Current Status
             </a>
@@ -29,17 +31,17 @@
             
             <span class="text-sm font-medium text-gray-600 dark:text-gray-400 mr-2">Reports:</span>
             
-            <a id="sla-report-link" href="/health/sla-report" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
+            <a id="sla-report-link" href="/health/sla-report" class="ui-button ui-button-primary bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z"></path></svg>
                 SLA Report
             </a>
             
-            <a href="/health/history/export?format=csv" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
+            <a href="/health/history/export?format=csv" class="ui-button ui-button-secondary bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 Export CSV
             </a>
             
-            <button onclick="openExportModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
+            <button onclick="openExportModal()" class="ui-button ui-button-primary bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                 PDF Report
             </button>
@@ -48,10 +50,10 @@
     
     <!-- Export Modal -->
     <div id="exportModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="ui-card bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-gray-800 dark:text-white">Export Health Report</h2>
+                    <h2 class="ui-section-title text-xl font-bold text-gray-800 dark:text-white">Export Health Report</h2>
                     <button onclick="closeExportModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
@@ -63,20 +65,20 @@
                     <!-- Date Range -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Date</label>
+                            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Date</label>
                             <input type="date" id="exportStartDate" name="start_date" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                                class="ui-control w-full px-3 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Date</label>
+                            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Date</label>
                             <input type="date" id="exportEndDate" name="end_date" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                                class="ui-control w-full px-3 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
                     
                     <!-- Device Groups -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Device Groups 
                             <span class="text-gray-400 font-normal">(Leave empty for all groups)</span>
                         </label>
@@ -104,9 +106,9 @@
                     
                     <!-- SLA Threshold -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">SLA Threshold (%)</label>
+                        <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">SLA Threshold (%)</label>
                         <input type="number" name="sla_threshold" value="99.5" min="0" max="100" step="0.1"
-                            class="w-32 px-3 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                            class="ui-control w-32 px-3 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     
                     <!-- Hidden format field (always PDF) -->
@@ -116,11 +118,11 @@
                 
                 <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
                     <button type="button" onclick="closeExportModal()" 
-                        class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                        class="ui-button ui-button-secondary px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
                         Cancel
                     </button>
                     <button type="submit" onclick="return validateExportForm()" 
-                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        class="ui-button ui-button-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
                         Generate Report
                     </button>
                 </div>
@@ -201,16 +203,16 @@
         <form method="GET" action="{{ request.url_for('health_history') }}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
             
             <div class="sm:col-span-2 md:col-span-2">
-                <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search Device</label>
+                <label for="search" class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search Device</label>
                 <input type="search" name="q" id="search" placeholder="e.g. CCTV-Lobby..."
                 value="{{ search_query or '' }}"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500 transition">
+                class="ui-control w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500 transition">
             </div>
             
             <div>
-                <label for="sort" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sort By</label>
+                <label for="sort" class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sort By</label>
                 <select name="sort" id="sort" onchange="this.form.submit()"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500 transition">
+                class="ui-control w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500 transition">
                 <option value="name_asc" {% if current_sort == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
                 <option value="name_desc" {% if current_sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
                 <option value="uptime_desc" {% if current_sort == 'uptime_desc' %}selected{% endif %}>Highest Uptime</option>
@@ -219,7 +221,7 @@
         </div>
         
         <div class="flex items-end">
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors">
+            <button type="submit" class="ui-button ui-button-primary w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors">
                 Search
             </button>
         </div>
@@ -231,7 +233,7 @@
     {% if historical_data %}
     {% for camera_data in historical_data %}
     <div x-data="{ isOpen: false }" x-init="$nextTick(() => isOpen = false)" x-cloak
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+        class="ui-card bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
         
         <div @click="isOpen = !isOpen" class="p-4 cursor-pointer flex justify-between items-center">
             <h3 class="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-200">{{ camera_data.hostname }}</h3>
@@ -252,8 +254,8 @@
     <div x-show="isOpen" x-transition x-cloak class="overflow-hidden">
         <div class="p-4 border-t border-gray-200 dark:border-gray-700">
             {% if camera_data.stats %}
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <div class="ui-table-scroll overflow-x-auto">
+                <table class="ui-table min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead class="bg-gray-50 dark:bg-gray-700/50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
@@ -299,7 +301,7 @@
 </div>
 {% endfor %}
 {% else %}
-<div class="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+<div class="ui-card text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow-md">
     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
         <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2z" />
     </svg>
@@ -320,9 +322,9 @@
     {# First & Prev #}
     {% if pagination.has_prev %}
     <a href="{{ request.url_for('health_history') }}?page=1&q={{ search_query | urlencode }}&sort={{ current_sort }}"
-    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">First</a>
+    class="ui-button ui-button-secondary px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">First</a>
     <a href="{{ request.url_for('health_history') }}?page={{ pagination.prev_num }}&q={{ search_query | urlencode }}&sort={{ current_sort }}"
-    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">«</a>
+    class="ui-button ui-button-secondary px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">«</a>
     {% else %}
     <span class="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded cursor-not-allowed">First</span>
     <span class="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded cursor-not-allowed">«</span>
@@ -345,7 +347,7 @@
     {# Ellipsis kiri #}
     {% if range_start > 1 %}
     <a href="{{ request.url_for('health_history') }}?page=1&q={{ search_query | urlencode }}&sort={{ current_sort }}"
-    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">1</a>
+    class="ui-button ui-button-secondary px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">1</a>
     {% if range_start > 2 %}
     <span class="px-3 py-1 text-gray-500">...</span>
     {% endif %}
@@ -357,7 +359,7 @@
     <span class="px-3 py-1 bg-blue-600 text-white rounded font-bold">{{ i }}</span>
     {% else %}
     <a href="{{ request.url_for('health_history') }}?page={{ i }}&q={{ search_query | urlencode }}&sort={{ current_sort }}"
-    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">{{ i }}</a>
+    class="ui-button ui-button-secondary px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">{{ i }}</a>
     {% endif %}
     {% endfor %}
     
@@ -367,15 +369,15 @@
     <span class="px-3 py-1 text-gray-500">...</span>
     {% endif %}
     <a href="{{ request.url_for('health_history') }}?page={{ total_pages }}&q={{ search_query | urlencode }}&sort={{ current_sort }}"
-    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">{{ total_pages }}</a>
+    class="ui-button ui-button-secondary px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">{{ total_pages }}</a>
     {% endif %}
     
     {# Next & Last #}
     {% if pagination.has_next %}
     <a href="{{ request.url_for('health_history') }}?page={{ pagination.next_num }}&q={{ search_query | urlencode }}&sort={{ current_sort }}"
-    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">»</a>
+    class="ui-button ui-button-secondary px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">»</a>
     <a href="{{ request.url_for('health_history') }}?page={{ total_pages }}&q={{ search_query | urlencode }}&sort={{ current_sort }}"
-    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">Last</a>
+    class="ui-button ui-button-secondary px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">Last</a>
     {% else %}
     <span class="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded cursor-not-allowed">»</span>
     <span class="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded cursor-not-allowed">Last</span>

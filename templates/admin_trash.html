@@ -2,63 +2,53 @@
 {% block title %}B-Snap – Trash Management{% endblock %}
 {% from "_icons.html" import icon_trash, icon_arrow_path, icon_eye, icon_download, icon_x_mark, icon_check_circle, icon_warning, icon_lock %}
 
+{% from "macros/ui.html" import page_header %}
+
 {% block content %}
 <!-- Header Section -->
-<div class="mb-6">
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div>
-      <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
-        <div class="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl">
-          {{ icon_trash("w-7 h-7 text-red-600 dark:text-red-400") }}
-        </div>
-        Trash Management
-      </h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-        Manage deleted snapshots and videos. Restore items or purge them permanently.
-      </p>
-    </div>
-    <div class="flex gap-2">
-      <button onclick="showPurgeModal()" class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+{% set page_description %}Manage deleted snapshots and videos. Restore items or purge them permanently.{% endset %}
+{% call page_header("Trash Management", page_description) %}
+<div class="flex gap-2">
+      <button onclick="showPurgeModal()" class="ui-button ui-button-danger inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
         {{ icon_trash("w-5 h-5") }}
         Bulk Purge
       </button>
     </div>
-  </div>
-</div>
+{% endcall %}
 
 <!-- Stats Cards -->
 <div class="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-3 gap-4 mb-6">
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Deleted Snapshots</p>
-        <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1" id="stat-snapshots">0</p>
+        <p class="ui-kpi-value text-2xl font-bold text-red-600 dark:text-red-400 mt-1" id="stat-snapshots">0</p>
       </div>
-      <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
         {{ icon_warning("w-6 h-6 text-red-600 dark:text-red-400") }}
       </div>
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Deleted Videos</p>
-        <p class="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1" id="stat-videos">0</p>
+        <p class="ui-kpi-value text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1" id="stat-videos">0</p>
       </div>
-      <div class="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
         {{ icon_warning("w-6 h-6 text-orange-600 dark:text-orange-400") }}
       </div>
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Size</p>
-        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1" id="stat-size">0 MB</p>
+        <p class="ui-kpi-value text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1" id="stat-size">0 MB</p>
       </div>
-      <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
         {{ icon_download("w-6 h-6 text-blue-600 dark:text-blue-400") }}
       </div>
     </div>
@@ -66,13 +56,13 @@
 </div>
 
 <!-- Tabs -->
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4">
+<div class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4">
   <div class="border-b border-gray-200 dark:border-gray-700">
-    <nav class="-mb-px flex" aria-label="Tabs">
-      <button type="button" class="tab-btn w-1/2 py-4 px-1 text-center border-b-2 border-blue-500 text-blue-600 font-medium text-sm" data-tab="snapshots" onclick="switchTab('snapshots')">
+    <nav class="ui-tabs -mb-px flex" aria-label="Tabs">
+      <button type="button" class="ui-tab tab-btn w-1/2 py-4 px-1 text-center border-b-2 border-blue-500 text-blue-600 font-medium text-sm" data-tab="snapshots" onclick="switchTab('snapshots')">
         Deleted Snapshots
       </button>
-      <button type="button" class="tab-btn w-1/2 py-4 px-1 text-center border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm" data-tab="videos" onclick="switchTab('videos')">
+      <button type="button" class="ui-tab tab-btn w-1/2 py-4 px-1 text-center border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm" data-tab="videos" onclick="switchTab('videos')">
         Deleted Videos
       </button>
     </nav>
@@ -80,7 +70,7 @@
 </div>
 
 <!-- Filter Section -->
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+<div class="ui-filter-bar ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
   <div class="flex flex-col lg:flex-row gap-4">
     <div class="relative flex-1">
       <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -88,13 +78,13 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
       </div>
-      <input type="text" id="searchInput" placeholder="Search by camera name..."
-        class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+      <input aria-label="Search" type="text" id="searchInput" placeholder="Search by camera name..."
+        class="ui-control pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
     </div>
     
     <div class="flex gap-2 items-center">
       <div class="relative w-40">
-        <select id="daysFilter" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+        <select aria-label="Deletion age" id="daysFilter" class="ui-control pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
           <option value="0">All items</option>
           <option value="7" selected>> 7 days old</option>
           <option value="30">> 30 days old</option>
@@ -107,7 +97,7 @@
         </div>
       </div>
       
-      <button onclick="refreshData()" class="p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+      <button onclick="refreshData()" class="ui-button ui-button-secondary p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
         {{ icon_arrow_path("h-5 w-5") }}
       </button>
     </div>
@@ -127,9 +117,9 @@
 </div>
 
 <!-- Snapshots Table -->
-<div id="snapshots-panel" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-sm text-left" id="snapshots-table" data-sortable-table>
+<div id="snapshots-panel" class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <div class="ui-table-scroll overflow-x-auto">
+    <table class="ui-table min-w-full text-sm text-left" id="snapshots-table" data-sortable-table>
       <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
         <tr>
           <th class="px-4 py-3.5 font-semibold" data-sort-key="snapshot">Snapshot</th>
@@ -162,9 +152,9 @@
 </div>
 
 <!-- Videos Table -->
-<div id="videos-panel" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hidden">
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-sm text-left" id="videos-table" data-sortable-table>
+<div id="videos-panel" class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hidden">
+  <div class="ui-table-scroll overflow-x-auto">
+    <table class="ui-table min-w-full text-sm text-left" id="videos-table" data-sortable-table>
       <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
         <tr>
           <th class="px-4 py-3.5 font-semibold" data-sort-key="video">Video</th>
@@ -198,7 +188,7 @@
 
 <!-- Bulk Purge Modal -->
 <div id="purgeModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-auto">
+  <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-auto">
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
       <div class="flex items-center gap-3">
         <div class="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
@@ -209,17 +199,17 @@
           <p class="text-sm text-gray-500 dark:text-gray-400">Permanently delete old items</p>
         </div>
       </div>
-      <button onclick="hidePurgeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+      <button onclick="hidePurgeModal()" class="ui-button ui-button-secondary ui-button-icon text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
         {{ icon_x_mark("w-5 h-5") }}
       </button>
     </div>
     
     <div class="p-6 space-y-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Purge items older than:
         </label>
-        <select id="purgeDays" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+        <select id="purgeDays" class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
           <option value="7">7 days</option>
           <option value="30" selected>30 days</option>
           <option value="90">90 days</option>
@@ -252,8 +242,8 @@
     </div>
     
     <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-      <button type="button" onclick="hidePurgeModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded-lg font-medium text-sm transition">Cancel</button>
-      <button type="button" onclick="executeBulkPurge()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm shadow-sm transition">
+      <button type="button" onclick="hidePurgeModal()" class="ui-button ui-button-secondary px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded-lg font-medium text-sm transition">Cancel</button>
+      <button type="button" onclick="executeBulkPurge()" class="ui-button ui-button-danger px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm shadow-sm transition">
         Purge Permanently
       </button>
     </div>
@@ -262,9 +252,9 @@
 
 <!-- Preview Modal -->
 <div id="previewModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4">
-  <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl max-h-[90vh] w-full">
+  <div class="ui-card relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl max-h-[90vh] w-full">
     <div class="absolute top-4 right-4 z-10">
-      <button onclick="hidePreviewModal()" class="bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition">
+      <button onclick="hidePreviewModal()" class="ui-button ui-button-secondary ui-button-icon bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition">
         {{ icon_x_mark("w-5 h-5") }}
       </button>
     </div>
@@ -273,7 +263,7 @@
       <video id="preview-video" controls class="rounded-lg w-full max-h-[70vh] hidden">
         <source src="" type="video/mp4">
       </video>
-      <div id="preview-info" class="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div id="preview-info" class="ui-card ui-card-body mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
         <p class="text-sm text-gray-700 dark:text-gray-300" id="preview-details"></p>
       </div>
     </div>
@@ -428,29 +418,29 @@ function renderSnapshots(snapshots, total, page) {
       <td class="px-4 py-3 text-center">
         ${s.file_hash ? 
           `<button onclick="verifyTrashIntegrity('${s.id}', this)" 
-                   class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition"
+                   class="ui-button ui-button-secondary inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition"
                    data-hash="${s.file_hash}">
              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
              Verify
            </button>` :
-          `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">Legacy</span>`
+          `<span class="ui-badge ui-badge-neutral inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">Legacy</span>`
         }
       </td>
       <td class="px-4 py-3 text-center">
         <div class="flex items-center justify-center gap-1">
           ${s.retention_hold ? 
-            `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 mr-2" title="${s.retention_hold_reason || 'Legal hold - cannot be purged'}">
+            `<span class="ui-badge ui-badge-warning inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 mr-2" title="${s.retention_hold_reason || 'Legal hold - cannot be purged'}">
               <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
               Hold
             </span>` : ''
           }
-          <button onclick="restoreSnapshot('${s.id}')" title="Restore" class="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition">
+          <button onclick="restoreSnapshot('${s.id}')" title="Restore" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
           </button>
-          <button onclick="toggleRetentionHold('${s.id}', 'snapshot', ${!s.retention_hold})" title="${s.retention_hold ? 'Remove retention hold' : 'Apply retention hold'}" class="p-2 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition">
+          <button onclick="toggleRetentionHold('${s.id}', 'snapshot', ${!s.retention_hold})" title="${s.retention_hold ? 'Remove retention hold' : 'Apply retention hold'}" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
           </button>
-          <button onclick="purgeSnapshot('${s.id}', '${s.camera}')" title="Purge Permanently" class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition ${s.retention_hold ? 'opacity-50 cursor-not-allowed' : ''}" ${s.retention_hold ? 'disabled' : ''}>
+          <button onclick="purgeSnapshot('${s.id}', '${s.camera}')" title="Purge Permanently" class="ui-button ui-button-icon p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition ${s.retention_hold ? 'opacity-50 cursor-not-allowed' : ''}" ${s.retention_hold ? 'disabled' : ''}>
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
           </button>
         </div>
@@ -528,18 +518,18 @@ function renderVideos(videos, total, page) {
       <td class="px-4 py-3 text-center">
         <div class="flex items-center justify-center gap-1">
           ${v.retention_hold ? 
-            `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 mr-2" title="${v.retention_hold_reason || 'Legal hold - cannot be purged'}">
+            `<span class="ui-badge ui-badge-warning inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 mr-2" title="${v.retention_hold_reason || 'Legal hold - cannot be purged'}">
               <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
               Hold
             </span>` : ''
           }
-          <button onclick="restoreVideo('${v.id}')" title="Restore" class="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition">
+          <button onclick="restoreVideo('${v.id}')" title="Restore" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
           </button>
-          <button onclick="toggleRetentionHold('${v.id}', 'video', ${!v.retention_hold})" title="${v.retention_hold ? 'Remove retention hold' : 'Apply retention hold'}" class="p-2 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition">
+          <button onclick="toggleRetentionHold('${v.id}', 'video', ${!v.retention_hold})" title="${v.retention_hold ? 'Remove retention hold' : 'Apply retention hold'}" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
           </button>
-          <button onclick="purgeVideo('${v.id}', '${v.camera}')" title="Purge Permanently" class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition ${v.retention_hold ? 'opacity-50 cursor-not-allowed' : ''}" ${v.retention_hold ? 'disabled' : ''}>
+          <button onclick="purgeVideo('${v.id}', '${v.camera}')" title="Purge Permanently" class="ui-button ui-button-icon p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition ${v.retention_hold ? 'opacity-50 cursor-not-allowed' : ''}" ${v.retention_hold ? 'disabled' : ''}>
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
           </button>
         </div>
@@ -570,8 +560,8 @@ function renderPagination(type, page, total) {
   
   if (page > 1) {
     container.innerHTML += `
-      <button onclick="${loadFunc}(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">«</button>
-      <button onclick="${loadFunc}(${page - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">‹</button>
+      <button onclick="${loadFunc}(1)" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">«</button>
+      <button onclick="${loadFunc}(${page - 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">‹</button>
     `;
   }
   
@@ -585,8 +575,8 @@ function renderPagination(type, page, total) {
   
   if (page < totalPages) {
     container.innerHTML += `
-      <button onclick="${loadFunc}(${page + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">›</button>
-      <button onclick="${loadFunc}(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">»</button>
+      <button onclick="${loadFunc}(${page + 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">›</button>
+      <button onclick="${loadFunc}(${totalPages})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">»</button>
     `;
   }
 }
@@ -657,11 +647,11 @@ async function verifyTrashIntegrity(id, btn) {
     const data = await res.json();
 
     if (data.integrity_verified === true) {
-      btn.outerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" title="Hash: ${data.stored_hash.substring(0, 16)}...">Verified</span>`;
+      btn.outerHTML = `<span class="ui-badge ui-badge-success inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" title="Hash: ${data.stored_hash.substring(0, 16)}...">Verified</span>`;
     } else if (data.integrity_verified === false) {
-      btn.outerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" title="${data.message}">Corrupted</span>`;
+      btn.outerHTML = `<span class="ui-badge ui-badge-critical inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" title="${data.message}">Corrupted</span>`;
     } else {
-      btn.outerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" title="${data.message}">No Hash</span>`;
+      btn.outerHTML = `<span class="ui-badge ui-badge-warning inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" title="${data.message}">No Hash</span>`;
     }
   } catch (err) {
     console.error('Verify error:', err);

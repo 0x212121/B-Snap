@@ -1,34 +1,26 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon_whatsapp, icon_plus, icon_check_circle, icon_server, icon_x_mark, icon_pencil, icon_trash, icon_play, icon_clip_check, icon_lock, icon_save %}
+{% from "macros/ui.html" import page_header, empty_state %}
+
 {% block content %}
 <div>
-  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-    <div>
-      <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
-        <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-xl">
-          {{ icon_whatsapp("h-6 w-6 text-green-600 dark:text-green-400") }}
-        </div>
-        WhatsApp Bot Builder
-      </h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-        Choose a command to edit its flow and response.
-      </p>
+  {% set page_description %}Choose a command to edit its flow and response.{% endset %}
+{% call page_header("WhatsApp Bot Builder", page_description) %}
+<div id="commandActions" class="flex flex-wrap gap-2">
+      <button id="addCommand" type="button" class="ui-button ui-button-secondary inline-flex items-center gap-2 rounded-lg bg-gray-200 px-4 py-2 text-gray-900 dark:bg-gray-700 dark:text-white">{{ icon_plus("h-4 w-4") }}Add command</button>
+      <button id="saveCommands" type="button" class="ui-button ui-button-primary inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white">{{ icon_save("h-4 w-4 text-white") }}Save changes</button>
     </div>
-    <div id="commandActions" class="flex flex-wrap gap-2">
-      <button id="addCommand" type="button" class="inline-flex items-center gap-2 rounded-lg bg-gray-200 px-4 py-2 text-gray-900 dark:bg-gray-700 dark:text-white">{{ icon_plus("h-4 w-4") }}Add command</button>
-      <button id="saveCommands" type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white">{{ icon_save("h-4 w-4 text-white") }}Save changes</button>
-    </div>
-  </div>
+{% endcall %}
 
-  <div class="mb-4 flex gap-2 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="WhatsApp bot sections">
-    <button type="button" id="commandsTab" role="tab" aria-selected="true" aria-controls="commandsPanel" class="border-b-2 border-blue-600 px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-300">Commands</button>
-    <button type="button" id="messagesTab" role="tab" aria-selected="false" aria-controls="messagesPanel" class="border-b-2 border-transparent px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">Message monitor</button>
+  <div class="ui-tabs mb-4 flex gap-2 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="WhatsApp bot sections">
+    <button type="button" id="commandsTab" role="tab" aria-selected="true" aria-controls="commandsPanel" class="ui-tab border-b-2 border-blue-600 px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-300">Commands</button>
+    <button type="button" id="messagesTab" role="tab" aria-selected="false" aria-controls="messagesPanel" class="ui-tab border-b-2 border-transparent px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">Message monitor</button>
   </div>
 
   <section id="commandsPanel" role="tabpanel" aria-labelledby="commandsTab">
-  <div class="mb-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-    <label class="block text-sm font-medium text-gray-800 dark:text-gray-100"><span class="inline-flex items-center gap-2">{{ icon_server("h-4 w-4 text-blue-500") }}Token for B-Snap internal APIs</span>
-      <select id="apiTokenId" class="mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 md:max-w-xl">
+  <div class="ui-card mb-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <label class="ui-label block text-sm font-medium text-gray-800 dark:text-gray-100"><span class="inline-flex items-center gap-2">{{ icon_server("h-4 w-4 text-blue-500") }}Token for B-Snap internal APIs</span>
+      <select id="apiTokenId" class="ui-control mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 md:max-w-xl">
         <option value="">No token (public APIs only)</option>
       </select>
     </label>
@@ -36,43 +28,43 @@
   </div>
 
   <div id="commandList" class="grid max-h-[62vh] grid-cols-1 content-start gap-3 overflow-y-auto rounded-xl p-1 sm:grid-cols-2 xl:grid-cols-3" aria-live="polite"></div>
-  <div id="emptyState" class="hidden rounded-xl border border-gray-300 p-10 text-center dark:border-gray-700">
-    <h2 class="flex items-center justify-center gap-2 font-semibold text-gray-800 dark:text-white">{{ icon_whatsapp("h-5 w-5 text-gray-400") }}No commands yet</h2>
-    <p class="mt-1 text-sm text-gray-500">Add a command to start building your bot flow.</p>
-    <button id="emptyAddCommand" type="button" class="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white">{{ icon_plus("h-4 w-4") }}Create your first command</button>
-  </div>
+  <div id="emptyState" class="hidden">
+{% call empty_state("No commands yet", "Add a command to start building your bot flow.") %}
+<button id="emptyAddCommand" type="button" class="ui-button ui-button-primary mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white">{{ icon_plus("h-4 w-4") }}Create your first command</button>
+{% endcall %}
+</div>
 
 
   </section>
-  <section id="messagesPanel" role="tabpanel" aria-labelledby="messagesTab" hidden class="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-    <div class="mb-3 flex items-center justify-between"><div><h3 class="text-lg font-semibold text-gray-900 dark:text-white">Message delivery monitor</h3><p class="text-xs text-gray-500">Latest 100 messages, refreshes every 30 seconds</p></div><button id="refreshWaMessages" type="button" class="rounded bg-gray-100 px-3 py-1.5 text-sm dark:bg-gray-700">Refresh</button></div>
-    <div class="max-h-[68vh] overflow-auto rounded-lg border border-gray-200 dark:border-gray-700"><table class="min-w-full text-left text-sm"><thead class="sticky top-0 bg-gray-50 dark:bg-gray-900"><tr class="border-b dark:border-gray-700"><th class="p-2">Time</th><th class="p-2">Phone</th><th class="p-2">Direction</th><th class="p-2">Gateway status</th><th class="p-2">Command</th><th class="p-2">Message / error</th></tr></thead><tbody id="waMessageRows"><tr><td colspan="6" class="p-3">Loading…</td></tr></tbody></table></div>
+  <section id="messagesPanel" role="tabpanel" aria-labelledby="messagesTab" hidden class="ui-card ui-card-body mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <div class="mb-3 flex items-center justify-between"><div><h3 class="text-lg font-semibold text-gray-900 dark:text-white">Message delivery monitor</h3><p class="text-xs text-gray-500">Latest 100 messages, refreshes every 30 seconds</p></div><button id="refreshWaMessages" type="button" class="ui-button ui-button-secondary rounded bg-gray-100 px-3 py-1.5 text-sm dark:bg-gray-700">Refresh</button></div>
+    <div class="max-h-[68vh] overflow-auto rounded-lg border border-gray-200 dark:border-gray-700"><table class="ui-table min-w-full text-left text-sm"><thead class="sticky top-0 bg-gray-50 dark:bg-gray-900"><tr class="border-b dark:border-gray-700"><th class="p-2">Time</th><th class="p-2">Phone</th><th class="p-2">Direction</th><th class="p-2">Gateway status</th><th class="p-2">Command</th><th class="p-2">Message / error</th></tr></thead><tbody id="waMessageRows"><tr><td colspan="6" class="p-3">Loading…</td></tr></tbody></table></div>
   </section>
 </div>
 
 <div id="commandEditor" class="fixed inset-0 z-50 hidden bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
-  <div class="mx-auto flex max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-xl dark:bg-gray-800" style="max-height: 94vh;">
+  <div class="ui-card mx-auto flex max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-xl dark:bg-gray-800" style="max-height: 94vh;">
     <div class="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
-      <div><h2 id="editorTitle" class="inline-flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">{{ icon_pencil("h-4 w-4 text-blue-500") }}<span id="editorTitleText">Edit command</span></h2><p id="editorSubtitle" class="text-xs text-gray-500"></p></div>
-      <button id="closeEditor" type="button" class="rounded px-3 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close">✕</button>
+      <div><h2 id="editorTitle" class="ui-section-title inline-flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">{{ icon_pencil("h-4 w-4 text-blue-500") }}<span id="editorTitleText">Edit command</span></h2><p id="editorSubtitle" class="text-xs text-gray-500"></p></div>
+      <button id="closeEditor" type="button" class="ui-button ui-button-secondary rounded px-3 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close">✕</button>
     </div>
     <form id="commandForm" class="space-y-4 overflow-y-auto p-5">
       <div class="grid gap-4 md:grid-cols-2">
         <label class="text-sm text-gray-700 dark:text-gray-200">Command name
-          <input name="name" required maxlength="80" class="mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900">
+          <input name="name" required maxlength="80" class="ui-control mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900">
         </label>
         <label class="text-sm text-gray-700 dark:text-gray-200">Primary trigger
-          <input name="trigger" required maxlength="80" placeholder="/alamat" class="mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900">
+          <input name="trigger" required maxlength="80" placeholder="/alamat" class="ui-control mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900">
         </label>
         <label class="text-sm text-gray-700 dark:text-gray-200">System action
-          <select name="action" class="mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900">
+          <select name="action" class="ui-control mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900">
             <option value="text">Reply with text</option><option value="help">Show help</option><option value="ping_test">Test bot</option><option value="bot_status">Check bot connectivity</option>
             <option value="ping">Ping host</option><option value="cctv">Send latest snapshot</option><option value="snap">Capture new snapshot</option>
             <option value="api_flow">Internal B-Snap API flow</option><option value="edit">Edit camera data (admin)</option><option value="token_check">View token (admin)</option><option value="whitelist_add">Add to whitelist (admin)</option><option value="whitelist_remove">Remove from whitelist (admin)</option>
           </select>
         </label>
         <label class="text-sm text-gray-700 dark:text-gray-200">Chat access
-          <select name="chat_scope" class="mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900">
+          <select name="chat_scope" class="ui-control mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900">
             <option value="all">Group and private chat</option>
             <option value="private">Private chat only</option>
           </select>
@@ -81,14 +73,14 @@
         <label class="flex items-center gap-2 self-end pb-2 text-sm text-gray-700 dark:text-gray-200"><input name="enabled" type="checkbox" class="rounded border-gray-300 text-blue-600"> Enabled</label>
         <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 md:col-span-2"><input name="quote_reply" type="checkbox" checked class="rounded border-gray-300 text-blue-600"> Quote reply to triggering message</label>
         <label class="text-sm text-gray-700 dark:text-gray-200 md:col-span-2">Aliases, comma-separated
-          <input name="aliases" placeholder="/camera, /kamera" class="mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900">
+          <input name="aliases" placeholder="/camera, /kamera" class="ui-control mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900">
         </label>
         <label class="text-sm text-gray-700 dark:text-gray-200 md:col-span-2">Required parameters, comma-separated
-          <input name="required_params" placeholder="camera_name, date" class="mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900">
+          <input name="required_params" placeholder="camera_name, date" class="ui-control mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900">
         </label>
         <p class="-mt-3 text-xs text-gray-500 md:col-span-2">Users must provide these values after the trigger. Separate multiple values with spaces; one parameter can contain spaces.</p>
         <label class="text-sm text-gray-700 dark:text-gray-200 md:col-span-2">Description shown in /help
-          <textarea name="description" rows="2" maxlength="300" class="mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900"></textarea>
+          <textarea name="description" rows="2" maxlength="300" class="ui-control mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900"></textarea>
         </label>
       </div>
 
@@ -96,7 +88,7 @@
         <div data-flow-editor class="mb-3">
         <div class="mb-3 flex items-center justify-between gap-3">
           <div><h3 data-flow-title class="inline-flex items-center gap-2 font-medium text-gray-900 dark:text-white">{{ icon_server("h-4 w-4 text-blue-500") }}GET API flow</h3><p data-flow-subtitle class="text-xs text-gray-500">Internal B-Snap nodes run in order, up to 8 nodes.</p></div>
-          <button data-add-step type="button" class="inline-flex items-center gap-1.5 rounded bg-blue-100 px-3 py-1 text-blue-800 dark:bg-blue-900 dark:text-blue-100">{{ icon_plus("h-4 w-4") }}Add node</button>
+          <button data-add-step type="button" class="ui-button ui-button-secondary inline-flex items-center gap-1.5 rounded bg-blue-100 px-3 py-1 text-blue-800 dark:bg-blue-900 dark:text-blue-100">{{ icon_plus("h-4 w-4") }}Add node</button>
         </div>
         <p class="mb-3 text-xs text-gray-500">Example path <code>/cctv/resolve-ip</code>, params <code>{% raw %}{"keyword":"{{argument}}","phone_number":"{{sender}}","sort_by":"hostname","sort_order":"asc"}{% endraw %}</code>. Sorting: <code>sort_by</code> = hostname/name, ip, or id; <code>sort_order</code> = asc or desc. Output: <code>{% raw %}{{steps.kamera.body.results.0.ip}}{% endraw %}</code>.</p>
         <div data-flow-list class="space-y-3"></div>
@@ -105,25 +97,25 @@
           <h4 class="inline-flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-100">{{ icon_play("h-4 w-4 text-indigo-500") }}Test API response</h4>
           <p data-test-description class="mt-1 text-xs text-gray-500">Use sample values for {% raw %}{{argument}}{% endraw %} and {% raw %}{{sender}}{% endraw %}. This test runs the current unsaved flow.</p>
           <div data-test-controls class="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_auto]">
-            <input data-test-argument class="rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900" placeholder="Sample argument (e.g. camera name)">
-            <input data-test-sender class="rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900" placeholder="Sample sender (phone number)">
-            <button data-test-flow type="button" class="inline-flex items-center justify-center gap-1.5 rounded bg-indigo-600 px-3 py-2 text-sm text-white">{{ icon_play("h-4 w-4 text-white") }}Run test</button>
+            <input data-test-argument class="ui-control rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900" placeholder="Sample argument (e.g. camera name)">
+            <input data-test-sender class="ui-control rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900" placeholder="Sample sender (phone number)">
+            <button data-test-flow type="button" class="ui-button ui-button-primary inline-flex items-center justify-center gap-1.5 rounded bg-indigo-600 px-3 py-2 text-sm text-white">{{ icon_play("h-4 w-4 text-white") }}Run test</button>
           </div>
           <div data-test-result class="mt-3 hidden" aria-live="polite">
             <p data-test-status class="mb-2 text-sm"></p>
             <pre data-test-json class="max-h-64 overflow-auto rounded bg-gray-950 p-3 text-xs text-gray-100"></pre>
             <div data-test-variables class="mt-3 flex flex-wrap gap-2"></div>
-            <div class="mt-3 flex flex-wrap items-center gap-2"><label class="text-xs text-gray-500">Insert into <select data-variable-target class="rounded border-gray-400 bg-transparent text-xs dark:bg-gray-900"><option value="response">Success response</option><option value="processing_messages">Processing message</option><option value="failure_messages">Fallback message</option></select></label><span class="text-xs text-gray-500">Select a variable or use the array mapper.</span></div>
+            <div class="mt-3 flex flex-wrap items-center gap-2"><label class="text-xs text-gray-500">Insert into <select data-variable-target class="ui-control rounded border-gray-400 bg-transparent text-xs dark:bg-gray-900"><option value="response">Success response</option><option value="processing_messages">Processing message</option><option value="failure_messages">Fallback message</option></select></label><span class="text-xs text-gray-500">Select a variable or use the array mapper.</span></div>
             <div data-array-mapper class="mt-4 hidden rounded-lg border border-gray-600 p-3">
               <h5 class="text-sm font-medium text-gray-100">Map array items</h5>
-              <label class="mt-2 block text-xs text-gray-300">Response array
-                <select data-array-select class="mt-1 w-full rounded border-gray-500 bg-gray-900 text-sm"></select>
+              <label class="ui-label mt-2 block text-xs text-gray-300">Response array
+                <select data-array-select class="ui-control mt-1 w-full rounded border-gray-500 bg-gray-900 text-sm"></select>
               </label>
               <p class="mt-2 text-xs text-gray-400">Choose the fields to show for every item in this array.</p>
               <div data-array-fields class="mt-3 flex flex-wrap gap-3 text-sm text-gray-200"></div>
               <div class="mt-3 flex items-center justify-between gap-3">
                 <label class="flex items-center gap-2 text-xs text-gray-300"><input data-array-index type="checkbox" checked> Include row number</label>
-                <button data-insert-array type="button" class="inline-flex items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-sm text-white">{{ icon_clip_check("h-4 w-4 text-white") }}Insert mapping</button>
+                <button data-insert-array type="button" class="ui-button ui-button-primary inline-flex items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-sm text-white">{{ icon_clip_check("h-4 w-4 text-white") }}Insert mapping</button>
               </div>
             </div>
           </div>
@@ -131,25 +123,25 @@
       </div>
 
       <div data-response-panel>
-        <label class="block text-sm text-gray-700 dark:text-gray-200"><span class="mb-1 inline-flex items-center gap-2"><img src="/static/icons/gowa.svg" alt="GoWA logo" class="w-8 h-8 inline-block align-middle mr-1 object-contain"><span data-response-label>WhatsApp response template</span></span>
-          <textarea name="response" rows="4" required maxlength="2000" placeholder="Camera IP: {% raw %}{{steps.kamera.body.results.0.ip}}{% endraw %}" class="mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900"></textarea>
+        <label class="ui-label block text-sm text-gray-700 dark:text-gray-200"><span class="mb-1 inline-flex items-center gap-2"><img src="/static/icons/gowa.svg" alt="GoWA logo" class="w-8 h-8 inline-block align-middle mr-1 object-contain"><span data-response-label>WhatsApp response template</span></span>
+          <textarea name="response" rows="4" required maxlength="2000" placeholder="Camera IP: {% raw %}{{steps.kamera.body.results.0.ip}}{% endraw %}" class="ui-control mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900"></textarea>
         </label>
         <p class="mt-1 text-xs text-gray-500"><span>System action variables are ready immediately; use the mapper to format array results. Only API Flow fields require a test. Variables work in response and processing/fallback messages.</span> <span>Normalize a timestamp with</span> <code>{% raw %}{{steps.data.body.updated_at|datetime}}{% endraw %}</code><span>; it uses the B-Snap timezone.</span></p>
       </div>
       <div data-snap-stage-panel class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
         <div>
-          <div class="mb-2 flex items-center justify-between"><span data-processing-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Processing messages</span><button type="button" data-add-snap-message="processing_messages" class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
+          <div class="mb-2 flex items-center justify-between"><span data-processing-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Processing messages</span><button type="button" data-add-snap-message="processing_messages" class="ui-button ui-button-secondary rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
           <div data-snap-message-list="processing_messages" class="space-y-2"></div>
         </div>
         <div>
-          <div class="mb-2 flex items-center justify-between"><span data-failure-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Failure / fallback messages</span><button type="button" data-add-snap-message="failure_messages" class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
+          <div class="mb-2 flex items-center justify-between"><span data-failure-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Failure / fallback messages</span><button type="button" data-add-snap-message="failure_messages" class="ui-button ui-button-secondary rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
           <div data-snap-message-list="failure_messages" class="space-y-2"></div>
         </div>
         <p class="text-xs text-gray-500">These messages are optional for all actions; `/snap` keeps its processing and fallback behavior. Image sources: direct URL, API result URL (for `/snap`), or latest saved snapshot. Text placeholders: <code>{% raw %}{{camera}}{% endraw %}</code>, <code>{% raw %}{{ip}}{% endraw %}</code>, <code>{% raw %}{{argument}}{% endraw %}</code>, <code>{% raw %}{{sender}}{% endraw %}</code>, <code>{% raw %}{{error}}{% endraw %}</code>.</p>
       </div>
       <p class="inline-flex items-center gap-1.5 text-xs text-gray-500">{{ icon_lock("h-3.5 w-3.5") }}<span data-role></span></p>
       <div class="flex justify-end gap-2 border-t border-gray-200 pt-4 dark:border-gray-700">
-        <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white">{{ icon_save("h-4 w-4 text-white") }}Save command</button>
+        <button type="submit" class="ui-button ui-button-primary inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white">{{ icon_save("h-4 w-4 text-white") }}Save command</button>
       </div>
     </form>
   </div>
@@ -294,7 +286,7 @@
     container.replaceChildren();
     const isIndonesian = document.documentElement.lang === 'id';
     list.forEach((item, index) => {
-      const card = document.createElement('div'); card.className = 'rounded-lg bg-gray-50 p-3 dark:bg-gray-900';
+      const card = document.createElement('div'); card.className = 'ui-card rounded-lg bg-gray-50 p-3 dark:bg-gray-900';
       const top = document.createElement('div'); top.className = 'mb-2 flex items-center justify-between text-xs font-medium';
       const title = document.createElement('span'); title.textContent = `${isIndonesian ? 'Pesan' : 'Message'} ${index + 1}`;
       const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'text-red-600'; remove.textContent = isIndonesian ? 'Hapus' : 'Remove';
@@ -306,10 +298,10 @@
       top.append(title, remove); card.appendChild(top);
       const text = document.createElement('textarea'); text.rows = 2; text.maxLength = 1000;
       text.placeholder = isIndonesian ? 'Isi pesan WhatsApp (opsional jika ada gambar)' : 'WhatsApp message (optional when an image is selected)';
-      text.className = 'mb-2 w-full rounded border-gray-300 font-mono text-sm dark:border-gray-600 dark:bg-gray-800'; text.value = item.text || '';
+      text.className = 'ui-control mb-2 w-full rounded border-gray-300 font-mono text-sm dark:border-gray-600 dark:bg-gray-800'; text.value = item.text || '';
       text.addEventListener('input', () => { item.text = text.value; }); card.appendChild(text);
       const sourceRow = document.createElement('div'); sourceRow.className = 'grid gap-2 sm:grid-cols-2';
-      const select = document.createElement('select'); select.className = 'rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-800';
+      const select = document.createElement('select'); select.className = 'ui-control rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-800';
       const choices = [
         ['none', isIndonesian ? 'Tanpa gambar' : 'No image'],
         ['url', isIndonesian ? 'Gambar dari URL' : 'Image URL'],
@@ -320,7 +312,7 @@
       select.value = item.image_source_type || 'none';
       const source = document.createElement('input'); source.type = 'text'; source.maxLength = 1500;
       source.placeholder = select.value === 'api' ? '{{steps.camera.body.image_url}}' : 'https://example.com/image.jpg';
-      source.className = 'rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-800'; source.value = item.image_source || '';
+      source.className = 'ui-control rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-800'; source.value = item.image_source || '';
       const updateSource = () => {
         item.image_source_type = select.value;
         source.hidden = !['url','api'].includes(select.value);
@@ -371,14 +363,14 @@
     if (!flowEditorVisible) container.replaceChildren();
     activeFlow.forEach((step, index) => {
       const card = document.createElement('div');
-      card.className = 'rounded-lg bg-gray-50 p-3 dark:bg-gray-900';
+      card.className = 'ui-card rounded-lg bg-gray-50 p-3 dark:bg-gray-900';
       const heading = document.createElement('div'); heading.className = 'mb-2 flex justify-between text-xs font-semibold';
       const title = document.createElement('span'); title.textContent = `Node ${index + 1}`;
       const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'inline-flex items-center gap-1.5 text-red-600'; appendIcon(remove, 'Delete'); remove.appendChild(document.createTextNode('Delete'));
       remove.addEventListener('click', () => { activeFlow.splice(index, 1); drawFlow(); });
       heading.append(title, remove); card.appendChild(heading);
       for (const [key, label, placeholder] of [['name','Output name','camera'],['path','API path','/cctv/resolve-ip'],['params','Query params JSON','{"keyword":"{{argument}}"}']]) {
-        const wrapper = document.createElement('label'); wrapper.className = 'mb-2 block text-xs'; wrapper.textContent = label;
+        const wrapper = document.createElement('label'); wrapper.className = 'ui-label mb-2 block text-xs'; wrapper.textContent = label;
         const input = document.createElement(key === 'params' ? 'textarea' : 'input');
         input.className = 'mt-1 w-full rounded border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-800'; input.placeholder = placeholder;
         if (key === 'params') { input.rows = 2; input.value = typeof step.params === 'string' ? step.params : JSON.stringify(step.params || {}, null, 2); }
@@ -456,16 +448,16 @@
     emptyState.classList.toggle('hidden', commands.length !== 0);
     for (const command of commands) {
       const row = document.createElement('div');
-      row.className = 'flex min-w-0 flex-row items-center gap-2 rounded-lg border border-gray-200 bg-white p-2 shadow-sm dark:border-gray-700 dark:bg-gray-800';
-      const open = document.createElement('button'); open.type = 'button'; open.className = 'flex min-w-0 flex-1 items-center justify-between gap-2 rounded-md p-1 text-left hover:bg-gray-50 dark:hover:bg-gray-700';
+      row.className = 'ui-card flex min-w-0 flex-row items-center gap-2 rounded-lg border border-gray-200 bg-white p-2 shadow-sm dark:border-gray-700 dark:bg-gray-800';
+      const open = document.createElement('button'); open.type = 'button'; open.className = 'ui-button ui-button-secondary ui-button-icon flex min-w-0 flex-1 items-center justify-between gap-2 rounded-md p-1 text-left hover:bg-gray-50 dark:hover:bg-gray-700';
       const info = document.createElement('span'); info.className = 'min-w-0';
       appendIcon(open, 'Edit');
       const title = document.createElement('span'); title.className = 'block truncate font-medium text-gray-900 dark:text-white'; title.textContent = command.name || '(Unnamed)';
       const detail = document.createElement('span'); detail.className = 'block truncate font-mono text-xs text-gray-500'; detail.textContent = `${command.trigger || '(no trigger)'} · ${actionLabels[command.action] || command.action}`;
       info.append(title, detail);
-      const state = document.createElement('span'); state.className = `shrink-0 rounded-full px-2 py-1 text-xs ${command.enabled ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`; state.textContent = command.enabled ? 'Active' : 'Inactive';
+      const state = document.createElement('span'); state.className = `ui-badge shrink-0 rounded-full px-2 py-1 text-xs ${command.enabled ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`; state.textContent = command.enabled ? 'Active' : 'Inactive';
       open.append(info, state); open.addEventListener('click', () => openEditor(command));
-      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'inline-flex shrink-0 items-center gap-1 rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950'; appendIcon(remove, 'Delete'); remove.appendChild(document.createTextNode('Delete'));
+      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'ui-button ui-button-secondary inline-flex shrink-0 items-center gap-1 rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950'; appendIcon(remove, 'Delete'); remove.appendChild(document.createTextNode('Delete'));
       remove.addEventListener('click', () => deleteCommand(command));
       row.append(open, remove); list.appendChild(row);
     }

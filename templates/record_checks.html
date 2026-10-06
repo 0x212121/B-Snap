@@ -2,51 +2,48 @@
 {% from "_icons.html" import icon_save %}
 {% block title %}B-SNAP - Record Checks{% endblock %}
 
+{% from "macros/ui.html" import page_header %}
+
 {% block content %}
-<div class="mb-6">
-  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-    <div>
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Record Checks</h2>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Monitor mounted SMB recording folders and save channel status history.</p>
-    </div>
-    <div class="flex flex-wrap gap-2">
-      <button onclick="openSourceModal()" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+{% set page_description %}Monitor mounted SMB recording folders and save channel status history.{% endset %}
+{% call page_header("Record Checks", page_description) %}
+<div class="flex flex-wrap gap-2">
+      <button onclick="openSourceModal()" class="ui-button ui-button-primary inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5"></path>
         </svg>
         Add Source
       </button>
-      <button onclick="refreshAll()" class="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-gray-700 transition hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-offset-gray-900">
+      <button onclick="refreshAll()" class="ui-button ui-button-secondary inline-flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-gray-700 transition hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-offset-gray-900">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M5 15a7 7 0 0 0 11.9 3.2M19 9A7 7 0 0 0 7.1 5.8"></path>
         </svg>
         Refresh
       </button>
     </div>
-  </div>
-</div>
+{% endcall %}
 
 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-6">
-  <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+  <div class="ui-kpi ui-card ui-card-body rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm text-gray-500 dark:text-gray-400">Healthy</p>
-        <p id="sum-healthy" class="mt-1 text-2xl font-bold text-green-600">0</p>
+        <p id="sum-healthy" class="ui-kpi-value mt-1 text-2xl font-bold text-green-600">0</p>
       </div>
-      <div class="rounded-lg bg-green-100 p-3 text-green-600 dark:bg-green-900/30 dark:text-green-300">
+      <div class="ui-kpi-icon rounded-lg bg-green-100 p-3 text-green-600 dark:bg-green-900/30 dark:text-green-300">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 13 4 4L19 7"></path>
         </svg>
       </div>
     </div>
   </div>
-  <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+  <div class="ui-kpi ui-card ui-card-body rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm text-gray-500 dark:text-gray-400">Missing</p>
-        <p id="sum-missing" class="mt-1 text-2xl font-bold text-fuchsia-600">0</p>
+        <p id="sum-missing" class="ui-kpi-value mt-1 text-2xl font-bold text-fuchsia-600">0</p>
       </div>
-      <div class="rounded-lg bg-fuchsia-100 p-3 text-fuchsia-600 dark:bg-fuchsia-900/30 dark:text-fuchsia-300">
+      <div class="ui-kpi-icon rounded-lg bg-fuchsia-100 p-3 text-fuchsia-600 dark:bg-fuchsia-900/30 dark:text-fuchsia-300">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2M3 7v10a2 2 0 0 0 2 2h6"></path>
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m16 16 5 5m0-5-5 5"></path>
@@ -54,39 +51,39 @@
       </div>
     </div>
   </div>
-  <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+  <div class="ui-kpi ui-card ui-card-body rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm text-gray-500 dark:text-gray-400">Stale</p>
-        <p id="sum-stale" class="mt-1 text-2xl font-bold text-red-600">0</p>
+        <p id="sum-stale" class="ui-kpi-value mt-1 text-2xl font-bold text-red-600">0</p>
       </div>
-      <div class="rounded-lg bg-red-100 p-3 text-red-600 dark:bg-red-900/30 dark:text-red-300">
+      <div class="ui-kpi-icon rounded-lg bg-red-100 p-3 text-red-600 dark:bg-red-900/30 dark:text-red-300">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M10.3 3.9 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path>
         </svg>
       </div>
     </div>
   </div>
-  <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+  <div class="ui-kpi ui-card ui-card-body rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm text-gray-500 dark:text-gray-400">Long Dead</p>
-        <p id="sum-long-dead" class="mt-1 text-2xl font-bold text-gray-700 dark:text-gray-200">0</p>
+        <p id="sum-long-dead" class="ui-kpi-value mt-1 text-2xl font-bold text-gray-700 dark:text-gray-200">0</p>
       </div>
-      <div class="rounded-lg bg-gray-100 p-3 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+      <div class="ui-kpi-icon rounded-lg bg-gray-100 p-3 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z"></path>
         </svg>
       </div>
     </div>
   </div>
-  <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+  <div class="ui-kpi ui-card ui-card-body rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm text-gray-500 dark:text-gray-400">Unknown</p>
-        <p id="sum-unknown" class="mt-1 text-2xl font-bold text-amber-600">0</p>
+        <p id="sum-unknown" class="ui-kpi-value mt-1 text-2xl font-bold text-amber-600">0</p>
       </div>
-      <div class="rounded-lg bg-amber-100 p-3 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300">
+      <div class="ui-kpi-icon rounded-lg bg-amber-100 p-3 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.9 9a3 3 0 1 1 4.2 2.8c-.9.5-1.1.9-1.1 2.2M12 18h.01"></path>
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>
@@ -97,18 +94,18 @@
 </div>
 
 <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-  <div class="xl:col-span-1 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+  <div class="ui-card xl:col-span-1 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
     <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
       <h3 class="font-semibold text-gray-900 dark:text-white">Sources</h3>
     </div>
     <div id="sources-list" class="divide-y divide-gray-200 dark:divide-gray-700"></div>
   </div>
 
-  <div class="xl:col-span-2 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+  <div class="ui-card xl:col-span-2 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
     <div class="flex flex-col gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-700 md:flex-row md:items-center md:justify-between">
       <h3 class="font-semibold text-gray-900 dark:text-white">Folder Status</h3>
       <div class="flex gap-2">
-        <select id="status-filter" onchange="loadStatuses()" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+        <select aria-label="HTTP Status" id="status-filter" onchange="loadStatuses()" class="ui-control rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
           <option value="">All status</option>
           <option value="healthy">Healthy</option>
           <option value="stale">Stale</option>
@@ -116,12 +113,12 @@
           <option value="missing">Missing</option>
           <option value="unknown">Unknown</option>
         </select>
-      <input id="search-input" oninput="debouncedLoadStatuses()" placeholder="Search folder/camera" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+      <input aria-label="Search" id="search-input" oninput="debouncedLoadStatuses()" placeholder="Search folder/camera" class="ui-control rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
       </div>
     </div>
     <datalist id="camera-options"></datalist>
-    <div class="overflow-x-auto">
-      <table class="min-w-full text-left text-sm">
+    <div class="ui-table-scroll overflow-x-auto">
+      <table class="ui-table min-w-full text-left text-sm">
         <thead class="bg-gray-50 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300">
           <tr>
             <th class="px-4 py-3 font-semibold">Folder</th>
@@ -138,12 +135,12 @@
   </div>
 </div>
 
-<div class="mt-6 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+<div class="ui-card mt-6 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
   <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
     <h3 class="font-semibold text-gray-900 dark:text-white">Recent Runs</h3>
   </div>
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-left text-sm">
+  <div class="ui-table-scroll overflow-x-auto">
+    <table class="ui-table min-w-full text-left text-sm">
       <thead class="bg-gray-50 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300">
         <tr>
           <th class="px-4 py-3 font-semibold">Time</th>
@@ -163,13 +160,13 @@
 </div>
 
 <div id="source-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
-  <div class="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-xl dark:bg-gray-800">
+  <div class="ui-card flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-xl dark:bg-gray-800">
     <div class="flex items-start justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
       <div>
         <h3 id="source-modal-title" class="text-lg font-bold text-gray-900 dark:text-white">Add Source</h3>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Configure a read-only mounted recording folder source.</p>
       </div>
-      <button type="button" onclick="closeSourceModal()" class="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200" title="Close">
+      <button type="button" onclick="closeSourceModal()" class="ui-button ui-button-secondary ui-button-icon rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200" title="Close">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 18 6M6 6l12 12"></path>
         </svg>
@@ -180,12 +177,12 @@
         <input type="hidden" id="source-id">
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-            <input id="source-name" required class="w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+            <label class="ui-label mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+            <input id="source-name" required class="ui-control w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
           </div>
           <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">NVR</label>
-            <select id="source-nvr" class="w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+            <label class="ui-label mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">NVR</label>
+            <select id="source-nvr" class="ui-control w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
               <option value="">No NVR link</option>
               {% for nvr in nvrs %}
               <option value="{{ nvr.id }}">{{ nvr.hostname }}</option>
@@ -194,17 +191,17 @@
           </div>
         </div>
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Mounted Base Path</label>
-          <input id="source-path" required placeholder="/mnt/cctv33-recordings" class="w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+          <label class="ui-label mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Mounted Base Path</label>
+          <input id="source-path" required placeholder="/mnt/cctv33-recordings" class="ui-control w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
         </div>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Stale minutes</label>
-            <input id="source-stale" type="number" min="1" value="70" class="w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+            <label class="ui-label mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Stale minutes</label>
+            <input id="source-stale" type="number" min="1" value="70" class="ui-control w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
           </div>
           <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Long-dead days</label>
-            <input id="source-long-dead" type="number" min="1" value="7" class="w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+            <label class="ui-label mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Long-dead days</label>
+            <input id="source-long-dead" type="number" min="1" value="7" class="ui-control w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
           </div>
           <label class="flex h-[42px] items-center gap-3 self-end rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900/30 dark:text-gray-300">
             <input id="source-enabled" type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
@@ -213,8 +210,8 @@
         </div>
       </div>
       <div class="flex flex-col-reverse gap-2 border-t border-gray-200 bg-gray-50 px-5 py-4 dark:border-gray-700 dark:bg-gray-900/30 sm:flex-row sm:items-center sm:justify-end">
-        <button type="button" onclick="closeSourceModal()" class="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-700">Cancel</button>
-        <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+        <button type="button" onclick="closeSourceModal()" class="ui-button ui-button-secondary inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-700">Cancel</button>
+        <button type="submit" class="ui-button ui-button-primary inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
           {{ icon_save("h-4 w-4 text-white") }}
           Save Source
         </button>
@@ -312,7 +309,7 @@ function statusBadge(status) {
     success: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
     fail: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
   }[status] || 'bg-gray-100 text-gray-800';
-  return `<span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${cls}">${escapeHtml(status || '-')}</span>`;
+  return `<span class="ui-badge inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${cls}">${escapeHtml(status || '-')}</span>`;
 }
 
 function iconSvg(name, cls = 'h-4 w-4') {
@@ -336,9 +333,9 @@ function cameraSelect(item) {
         list="camera-options"
         placeholder="Search camera..."
         onchange="updateMappingFromLabel('${item.id}', this.value)"
-        class="w-56 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+        class="ui-control w-56 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white"
       >
-      ${item.camera_id ? `<button onclick="updateMapping('${item.id}', '')" title="Clear mapping" class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700">${iconSvg('x', 'h-4 w-4')}</button>` : ''}
+      ${item.camera_id ? `<button onclick="updateMapping('${item.id}', '')" title="Clear mapping" class="ui-button ui-button-secondary ui-button-icon rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700">${iconSvg('x', 'h-4 w-4')}</button>` : ''}
     </div>
   `;
 }
@@ -390,9 +387,9 @@ function renderSources() {
           <div class="mt-2 text-xs text-gray-500">${source.enabled ? 'Enabled' : 'Disabled'}${source.nvr_name ? ' | ' + escapeHtml(source.nvr_name) : ''}</div>
         </button>
         <div class="flex shrink-0 gap-1">
-          <button onclick="runSource('${source.id}')" title="Run now" class="rounded p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20">▶</button>
-          <button onclick="editSource('${source.id}')" title="Edit" class="rounded p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">✎</button>
-          <button onclick="deleteSource('${source.id}')" title="Delete" class="rounded p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">×</button>
+          <button onclick="runSource('${source.id}')" title="Run now" class="ui-button ui-button-secondary ui-button-icon rounded p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20">▶</button>
+          <button onclick="editSource('${source.id}')" title="Edit" class="ui-button ui-button-secondary ui-button-icon rounded p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">✎</button>
+          <button onclick="deleteSource('${source.id}')" title="Delete" class="ui-button ui-button-secondary ui-button-icon rounded p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">×</button>
         </div>
       </div>
     </div>
@@ -490,10 +487,10 @@ function renderRunsPagination(pagination) {
 
   if (page > 1) {
     buttons += `
-      <button onclick="changeRunsPage(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
+      <button onclick="changeRunsPage(1)" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
       </button>
-      <button onclick="changeRunsPage(${page - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
+      <button onclick="changeRunsPage(${page - 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
       </button>`;
   }
@@ -521,10 +518,10 @@ function renderRunsPagination(pagination) {
 
   if (page < totalPages) {
     buttons += `
-      <button onclick="changeRunsPage(${page + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
+      <button onclick="changeRunsPage(${page + 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
       </button>
-      <button onclick="changeRunsPage(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
+      <button onclick="changeRunsPage(${totalPages})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
       </button>`;
   }
@@ -661,12 +658,12 @@ async function deleteSource(id) {
         </div>
         <div class="space-y-4">
           <div>
-            <label for="delete-source-password" class="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-200">Admin password</label>
-            <input id="delete-source-password" type="password" class="record-delete-field" placeholder="Enter your password" autocomplete="current-password">
+            <label for="delete-source-password" class="ui-label mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-200">Admin password</label>
+            <input id="delete-source-password" type="password" class="ui-control record-delete-field" placeholder="Enter your password" autocomplete="current-password">
           </div>
           <div>
-            <label for="delete-source-confirmation" class="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-200">Confirmation name</label>
-            <input id="delete-source-confirmation" class="record-delete-field" placeholder="${escapeHtml(confirmationName)}" autocomplete="off">
+            <label for="delete-source-confirmation" class="ui-label mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-200">Confirmation name</label>
+            <input id="delete-source-confirmation" class="ui-control record-delete-field" placeholder="${escapeHtml(confirmationName)}" autocomplete="off">
           </div>
         </div>
       </div>

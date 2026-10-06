@@ -2,6 +2,8 @@
 {% block title %}B-SNAP – Audit Logs{% endblock %}
 {% from "_icons.html" import icon_download, icon_config, icon_x_circle, icon_user, icon_globe, icon_newspaper, icon_clock, icon_search, icon_filter, icon_calendar, icon_lock, icon_shield_check %}
 
+{% from "macros/ui.html" import page_header, more_filters %}
+
 {% block content %}
 <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/utc.js"></script>
@@ -12,41 +14,25 @@
 </script>
 
 <!-- Header Section -->
-<div class="mb-6">
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div>
-      <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
-        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-          {{ icon_shield_check("w-7 h-7 text-blue-600 dark:text-blue-400") }}
-        </div>
-        <div>
-          Audit Logs
-        </div>
-      </h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-        Immutable audit trail with enhanced request tracking
-        <span class="mx-1">•</span>
-        <span class="font-medium text-gray-600 dark:text-gray-300">Timezone: {{ timezone }}</span>
-      </p>
-    </div>
-    <div class="flex gap-2">
-      <button onclick="showAuditInfo()" class="inline-flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300 px-4 py-2 rounded-lg transition duration-200">
+{% set page_description %}Immutable audit trail with enhanced request tracking • Timezone: {{ timezone }}{% endset %}
+{% call page_header("Audit Logs", page_description) %}
+<div class="flex gap-2">
+      <button onclick="showAuditInfo()" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300 px-4 py-2 rounded-lg transition duration-200">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         About
       </button>
-      <button onclick="showArchiveHistory()" class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 px-4 py-2 rounded-lg transition duration-200">
+      <button onclick="showArchiveHistory()" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 px-4 py-2 rounded-lg transition duration-200">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
         History
       </button>
-      <button onclick="exportToCSV()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-200 shadow-sm">
+      <button onclick="exportToCSV()" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-200 shadow-sm">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
         Export CSV
       </button>
     </div>
-  </div>
-</div>
+{% endcall %}
 
 <!-- Archive Warning Banner (shown if data needs archiving) -->
 <div id="archive-warning" class="hidden mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
@@ -62,7 +48,7 @@
         <span id="archive-eligible-count">0</span> records older than 6 months should be archived to maintain performance.
       </p>
     </div>
-    <button onclick="triggerArchive()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition">
+    <button onclick="triggerArchive()" class="ui-button ui-button-secondary px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition">
       Archive Now
     </button>
   </div>
@@ -70,63 +56,63 @@
 
 <!-- Summary Cards -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Logs</p>
-        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-total">-</p>
+        <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-total">-</p>
       </div>
-      <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
         <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
       </div>
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Today's Logs</p>
-        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-today">-</p>
+        <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-today">-</p>
       </div>
-      <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
         <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
       </div>
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Unique Users</p>
-        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-users">-</p>
+        <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-users">-</p>
       </div>
-      <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
         <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
       </div>
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Security Events</p>
-        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-security">-</p>
+        <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-security">-</p>
       </div>
-      <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
         <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
       </div>
     </div>
   </div>
   
   <!-- Archive Status Card -->
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition" onclick="showArchiveHistory()">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition" onclick="showArchiveHistory()">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Archive Status</p>
-        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-archive">-</p>
+        <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-archive">-</p>
         <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5" id="stat-archive-sub">Click for history</p>
       </div>
-      <div class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
         <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
         </svg>
@@ -136,7 +122,7 @@
 </div>
 
 <!-- Filter Section -->
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+<div class="ui-filter-bar ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
   <div class="flex flex-col lg:flex-row gap-4">
     <!-- Search & Action Filter -->
     <div class="flex flex-col sm:flex-row gap-3 flex-1">
@@ -144,15 +130,15 @@
         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         </div>
-        <input type="text" id="search-input" placeholder="Search user, target, or path..."
-        class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+        <input aria-label="Search" type="text" id="search-input" placeholder="Search user, target, or path..."
+        class="ui-control pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
       </div>
       
       <div class="relative sm:w-56">
         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
         </div>
-        <select id="action-filter" class="pl-10 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+        <select aria-label="Action" id="action-filter" class="ui-control pl-10 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
           <option value="">All Actions</option>
           <optgroup label="P0 - Evidence & Integrity">
             <option value="view_snapshot">📸 View Snapshot</option>
@@ -185,9 +171,10 @@
     </div>
     
     <!-- HTTP Method & Status Filter -->
-    <div class="flex gap-3">
+    {% call more_filters() %}
+<div class="flex gap-3">
       <div class="relative w-32">
-        <select id="method-filter" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+        <select aria-label="HTTP Method" id="method-filter" class="ui-control pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
           <option value="">All Methods</option>
           <option value="GET">GET</option>
           <option value="POST">POST</option>
@@ -200,7 +187,7 @@
       </div>
       
       <div class="relative w-32">
-        <select id="status-filter" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+        <select aria-label="HTTP Status" id="status-filter" class="ui-control pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
           <option value="">All Status</option>
           <option value="200">200 OK</option>
           <option value="201">201 Created</option>
@@ -214,20 +201,21 @@
         </div>
       </div>
     </div>
+{% endcall %}
     
     <!-- Date Range -->
     <div class="relative sm:w-64">
       <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
         <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
       </div>
-      <input type="text" id="date-range" placeholder="Select date range"
-      class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+      <input aria-label="Date Range" type="text" id="date-range" placeholder="Select date range"
+      class="ui-control pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
     </div>
     
     <!-- Per Page & Reset -->
     <div class="flex gap-2 items-center">
       <div class="relative w-32">
-        <select id="perPageSelect" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+        <select aria-label="Results per page" id="perPageSelect" class="ui-control pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
           <option value="10">10 / page</option>
           <option value="25">25 / page</option>
           <option value="50">50 / page</option>
@@ -238,7 +226,7 @@
         </div>
       </div>
       
-      <button onclick="resetFilters()" class="p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Reset all filters">
+      <button onclick="resetFilters()" class="ui-button ui-button-secondary p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Reset all filters">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
       </button>
     </div>
@@ -261,7 +249,7 @@
 </div>
 
 <!-- Table Container -->
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
+<div class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
   <div id="loading-overlay" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
     <div class="flex flex-col items-center gap-3">
       <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -269,8 +257,8 @@
     </div>
   </div>
   
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-sm text-left" id="audit-table">
+  <div class="ui-table-scroll overflow-x-auto">
+    <table class="ui-table min-w-full text-sm text-left" id="audit-table">
       <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
         <tr>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap">Time</th>
@@ -288,7 +276,7 @@
   </div>
   
   <!-- Empty State -->
-  <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center">
+  <div id="empty-state" class="ui-empty-state hidden flex-col items-center justify-center py-16 text-center">
     <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
       <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
     </div>
@@ -305,7 +293,7 @@
 
 <!-- Audit Info Modal -->
 <div id="auditInfoModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-auto">
+  <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-auto">
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
       <div class="flex items-center gap-3">
         <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -353,7 +341,7 @@
 
 <!-- Detail Modal -->
 <div id="detailModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-[100] p-4">
-  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
+  <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
       <h3 class="text-lg font-bold text-gray-900 dark:text-white">Audit Entry Detail</h3>
       <button onclick="hideDetailModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
@@ -368,7 +356,7 @@
 
 <!-- Archive History Modal -->
 <div id="archiveHistoryModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl mx-auto max-h-[80vh] flex flex-col">
+  <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl mx-auto max-h-[80vh] flex flex-col">
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
       <div class="flex items-center gap-3">
         <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -420,7 +408,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">
         Archives are encrypted with AES-256 and stored in <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">archives/audit_logs/</code>
       </p>
-      <button onclick="triggerArchive()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+      <button onclick="triggerArchive()" class="ui-button ui-button-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
         Archive Now
       </button>
     </div>
@@ -429,7 +417,7 @@
 
 <!-- Archive Logs Modal -->
 <div id="archiveLogsModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-[60] p-4">
-  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl mx-auto max-h-[90vh] flex flex-col">
+  <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl mx-auto max-h-[90vh] flex flex-col">
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
       <div>
         <h3 class="text-lg font-bold text-gray-900 dark:text-white">Archived Audit Logs</h3>
@@ -440,12 +428,12 @@
       </button>
     </div>
     <div class="p-4 flex gap-2 border-b border-gray-200 dark:border-gray-700">
-      <input id="archive-logs-search" type="search" placeholder="Search user, action, target, IP, or path..." class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
-      <button type="button" onclick="searchArchiveLogs()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">Search</button>
+      <input id="archive-logs-search" type="search" placeholder="Search user, action, target, IP, or path..." class="ui-control flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+      <button type="button" onclick="searchArchiveLogs()" class="ui-button ui-button-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">Search</button>
     </div>
     <div class="flex-1 overflow-auto p-4">
       <div id="archive-logs-empty" class="hidden text-center text-gray-500 py-12">No archived logs found.</div>
-      <table id="archive-logs-table" class="min-w-full text-sm">
+      <table id="archive-logs-table" class="ui-table min-w-full text-sm">
         <thead class="text-left text-xs uppercase text-gray-500 dark:text-gray-400">
           <tr><th class="px-3 py-2">Timestamp</th><th class="px-3 py-2">User</th><th class="px-3 py-2">Action</th><th class="px-3 py-2">Target</th><th class="px-3 py-2">Method</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">IP</th></tr>
         </thead>
@@ -524,7 +512,7 @@
   
   function getStatusBadge(status) {
     if (status === null || status === undefined || status === '-') {
-      return '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">-</span>';
+      return '<span class="ui-badge ui-badge-neutral inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">-</span>';
     }
     
     const statusNum = parseInt(status);
@@ -536,7 +524,7 @@
       else if (statusNum >= 500) bgClass = 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
     }
     
-    return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${bgClass}">${status}</span>`;
+    return `<span class="ui-badge inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${bgClass}">${status}</span>`;
   }
   
   function formatExtra(extra) {
@@ -642,7 +630,7 @@
                   </svg>
                 </div>
                 <span class="text-red-500 font-medium">Failed to load data: ${error.message}</span>
-                <button onclick="fetchLogs(${page})" class="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition">Retry</button>
+                <button onclick="fetchLogs(${page})" class="ui-button ui-button-secondary mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition">Retry</button>
               </div>
             </td>
           </tr>
@@ -705,13 +693,13 @@
         <td class="px-4 py-3 whitespace-nowrap">${getActionBadge(log.action)}</td>
         <td class="px-4 py-3 text-gray-700 dark:text-gray-300 max-w-xs truncate" title="${target}">${target}</td>
         <td class="px-4 py-3 whitespace-nowrap text-center">
-          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 font-mono">${method}</span>
+          <span class="ui-badge ui-badge-neutral inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 font-mono">${method}</span>
         </td>
         <td class="px-4 py-3 whitespace-nowrap text-center">${getStatusBadge(status)}</td>
         <td class="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400 font-mono text-xs">${ip}</td>
         <td class="px-4 py-3 whitespace-nowrap text-center">
           <button onclick='showDetailModal(${JSON.stringify(log).replace(/'/g, "&#39;")})' 
-            class="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition" 
+            class="ui-button ui-button-secondary p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition"
             title="View Details">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -1221,10 +1209,10 @@
 
     if (currentPage > 1) {
       buttons.insertAdjacentHTML('beforeend', `
-        <button type="button" onclick="loadArchiveLogsPage(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page" aria-label="First page">
+        <button type="button" onclick="loadArchiveLogsPage(1)" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page" aria-label="First page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
         </button>
-        <button type="button" onclick="loadArchiveLogsPage(${currentPage - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page" aria-label="Previous page">
+        <button type="button" onclick="loadArchiveLogsPage(${currentPage - 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page" aria-label="Previous page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </button>
       `);
@@ -1248,10 +1236,10 @@
 
     if (currentPage < totalPages) {
       buttons.insertAdjacentHTML('beforeend', `
-        <button type="button" onclick="loadArchiveLogsPage(${currentPage + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page" aria-label="Next page">
+        <button type="button" onclick="loadArchiveLogsPage(${currentPage + 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page" aria-label="Next page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
         </button>
-        <button type="button" onclick="loadArchiveLogsPage(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page" aria-label="Last page">
+        <button type="button" onclick="loadArchiveLogsPage(${totalPages})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page" aria-label="Last page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
         </button>
       `);

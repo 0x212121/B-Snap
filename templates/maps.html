@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP – Map{% endblock %}
+{% from "macros/ui.html" import page_header %}
+
 {% block content %}
+{{ page_header("Maps") }}
 
 <div id="map" class="h-[960px] mb-6 rounded shadow" data-timezone="{{ timezone }}" data-refresh-time="{{ refresh_time }}"></div>
 

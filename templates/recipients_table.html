@@ -1,6 +1,6 @@
-<div class="bg-white shadow rounded-lg overflow-hidden">
+<div class="ui-card bg-white shadow rounded-lg overflow-hidden">
 
-<table class="min-w-full text-sm">
+<table class="ui-table min-w-full text-sm">
 
 <thead class="bg-gray-50 border-b">
 
@@ -85,7 +85,7 @@ Total recipients: {{total}}
 {% if page > 1 %}
 
 <button
-class="px-3 py-1 border rounded"
+class="ui-button ui-button-secondary px-3 py-1 border rounded"
 
 hx-get="/recipients/table?page={{page-1}}"
 hx-target="#table-container"
@@ -102,7 +102,7 @@ Prev
 
 <button
 
-class="px-3 py-1 border rounded
+class="ui-button px-3 py-1 border rounded
 {% if p == page %}
 bg-blue-600 text-white
 {% endif %}
@@ -124,7 +124,7 @@ hx-include="#filters"
 {% if page < total_pages %}
 
 <button
-class="px-3 py-1 border rounded"
+class="ui-button ui-button-secondary px-3 py-1 border rounded"
 
 hx-get="/recipients/table?page={{page+1}}"
 hx-target="#table-container"

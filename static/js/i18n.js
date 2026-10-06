@@ -1,5 +1,15 @@
 (function () {
   const translations = {
+    "Results per page": "Hasil per halaman", "HTTP Method": "Metode HTTP",
+    "HTTP Status": "Status HTTP", "Date Range": "Rentang Tanggal",
+    "Device Type": "Jenis Perangkat", "Search cameras": "Cari kamera",
+    "Deletion age": "Usia penghapusan",
+    "More filters": "Filter lainnya",
+    "Loading storage health": "Memuat kesehatan penyimpanan",
+    "Loading cameras": "Memuat kamera",
+    "Use a strong password to protect your account.": "Gunakan kata sandi yang kuat untuk melindungi akun Anda.",
+    "No videos found": "Tidak ada video ditemukan",
+    "Adjust your filters or capture a new video.": "Sesuaikan filter atau rekam video baru.",
     "More": "Lainnya", "Devices": "Perangkat", "Notifications": "Notifikasi",
     "Help & developer": "Bantuan & pengembang", "Toggle theme": "Ubah tema",
     "Toggle navigation": "Buka/tutup navigasi", "Skip to content": "Lewati ke konten",

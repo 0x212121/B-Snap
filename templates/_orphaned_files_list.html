@@ -13,7 +13,7 @@
         {% if file.camera_id %}
         <span class="font-mono">📷 {{ file.camera_id[:8] }}...</span>
         {% endif %}
-        <span class="px-2 py-0.5 rounded text-xs
+        <span class="ui-badge px-2 py-0.5 rounded text-xs
           {% if file.status == 'pending' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
           {% elif file.status == 'reviewed' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
           {% elif file.status == 'deleted' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
@@ -28,12 +28,12 @@
     <div class="flex items-center gap-2">
       {% if file.status != 'deleted' %}
       <button onclick="reviewFile({{ file.id }}, this)" 
-        class="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+        class="ui-button ui-button-primary px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
         title="Mark as reviewed">
         ✓
       </button>
       <button onclick="deleteFile({{ file.id }}, this)" 
-        class="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+        class="ui-button ui-button-danger px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
         title="Delete from disk">
         🗑️
       </button>

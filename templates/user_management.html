@@ -2,40 +2,31 @@
 {% block title %}User Management Dashboard{% endblock %}
 {% from "_icons.html" import icon_users, icon_plus, icon_save %}
 
+{% from "macros/ui.html" import page_header %}
+
 {% block content %}
 
 <div class="mb-6">
   
   <!-- Header -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-    <div>
-      <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
-        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-          {{ icon_users("w-7 h-7 text-blue-600 dark:text-blue-400") }}
-        </div>
-        User Management
-      </h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-        Manage users, roles, and permissions
-      </p>
-    </div>
-    
-    <button onclick="openAddUserModal()" 
-      class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+  {% set page_description %}Manage users, roles, and permissions{% endset %}
+{% call page_header("User Management", page_description) %}
+<button onclick="openAddUserModal()"
+      class="ui-button ui-button-primary inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
       {{ icon_plus("w-5 h-5") }}
       Add User
     </button>
-  </div>
+{% endcall %}
 
   <!-- Stats -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Users</p>
-          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-total">0</p>
+          <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-total">0</p>
         </div>
-        <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+        <div class="ui-kpi-icon p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
           <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
           </svg>
@@ -43,13 +34,13 @@
       </div>
     </div>
     
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Admins</p>
-          <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1" id="stat-admins">0</p>
+          <p class="ui-kpi-value text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1" id="stat-admins">0</p>
         </div>
-        <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+        <div class="ui-kpi-icon p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
           <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
           </svg>
@@ -57,13 +48,13 @@
       </div>
     </div>
     
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Operators</p>
-          <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1" id="stat-operators">0</p>
+          <p class="ui-kpi-value text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1" id="stat-operators">0</p>
         </div>
-        <div class="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+        <div class="ui-kpi-icon p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
           <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -72,13 +63,13 @@
       </div>
     </div>
     
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Viewers</p>
-          <p class="text-2xl font-bold text-gray-600 dark:text-gray-400 mt-1" id="stat-viewers">0</p>
+          <p class="ui-kpi-value text-2xl font-bold text-gray-600 dark:text-gray-400 mt-1" id="stat-viewers">0</p>
         </div>
-        <div class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+        <div class="ui-kpi-icon p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
           <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -89,7 +80,7 @@
   </div>
 
   <!-- Filter Bar -->
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+  <div class="ui-filter-bar ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
     <div class="flex flex-col lg:flex-row gap-4">
       <div class="relative flex-1">
         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -97,13 +88,13 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
           </svg>
         </div>
-        <input type="text" id="searchInput" placeholder="Search users by username, role, or group..."
-          class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+        <input aria-label="Search" type="text" id="searchInput" placeholder="Search users by username, role, or group..."
+          class="ui-control pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
       </div>
       
       <div class="flex gap-2 items-center">
         <div class="relative w-36">
-          <select id="perPageSelect" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+          <select aria-label="Results per page" id="perPageSelect" class="ui-control pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
             <option value="10">10 / page</option>
             <option value="20" selected>20 / page</option>
             <option value="50">50 / page</option>
@@ -116,7 +107,7 @@
           </div>
         </div>
         
-        <button onclick="resetFilters()" class="p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Reset filters">
+        <button onclick="resetFilters()" class="ui-button ui-button-secondary p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Reset filters">
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
@@ -138,7 +129,7 @@
   </div>
 
   <!-- Table Container -->
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
+  <div class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
     <div id="loading-overlay" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
       <div class="flex flex-col items-center gap-3">
         <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
@@ -149,8 +140,8 @@
       </div>
     </div>
 
-    <div class="overflow-x-auto">
-      <table id="userTable" class="min-w-full text-sm text-left" data-sortable-table>
+    <div class="ui-table-scroll overflow-x-auto">
+      <table id="userTable" class="ui-table min-w-full text-sm text-left" data-sortable-table>
         <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
           <tr>
             <th class="px-4 py-3.5 font-semibold" data-sort-key="user">User</th>
@@ -165,7 +156,7 @@
     </div>
     
     <!-- Empty State -->
-    <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center">
+    <div id="empty-state" class="ui-empty-state hidden flex-col items-center justify-center py-16 text-center">
       <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
         <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
@@ -273,7 +264,7 @@
       : 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z';
     
     return `
-      <span class="role-badge ${roleClass}">
+      <span class="ui-badge ui-badge-neutral role-badge ${roleClass}">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path>
         </svg>
@@ -300,10 +291,10 @@
     // First & Prev
     if (data.page > 1) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="loadUsers(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
+        <button onclick="loadUsers(1)" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
         </button>
-        <button onclick="loadUsers(${data.page - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
+        <button onclick="loadUsers(${data.page - 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </button>
       `);
@@ -335,10 +326,10 @@
     // Next & Last
     if (data.page < totalPages) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="loadUsers(${data.page + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
+        <button onclick="loadUsers(${data.page + 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
         </button>
-        <button onclick="loadUsers(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
+        <button onclick="loadUsers(${totalPages})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
         </button>
       `);
@@ -417,7 +408,7 @@
               </td>
               <td class="px-4 py-3">${getRoleBadge(user.role)}</td>
               <td class="px-4 py-3">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                <span class="ui-badge ui-badge-neutral inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
                   ${escapeHTML(groupName)}
                 </span>
               </td>
@@ -429,7 +420,7 @@
                   <!-- Edit -->
                   <button onclick="showEditUserModal(${user.id}, '${escapeHTML(user.username)}', '${user.role}', '${user.group ? user.group.id : ''}', ${user.is_2fa_enabled || false})"
                     title="Edit user ${escapeHTML(user.username)}"
-                    class="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">
+                    class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                     </svg>
@@ -438,7 +429,7 @@
                   <!-- Generate Token -->
                   <button onclick="openGenerateTokenModal(${user.id}, '${escapeHTML(user.username)}')"
                     title="Generate token for ${escapeHTML(user.username)}"
-                    class="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition">
+                    class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
                     </svg>
@@ -449,7 +440,7 @@
                     <!-- Reset MFA -->
                     <button onclick="confirmResetMfa(${user.id}, '${escapeHTML(user.username)}')"
                       title="Reset MFA for ${escapeHTML(user.username)}"
-                      class="p-2 text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition">
+                      class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                       </svg>
@@ -459,7 +450,7 @@
                     <!-- Delete -->
                     <button onclick="confirmUserDelete(${user.id}, '${escapeHTML(user.username)}')"
                       title="Delete user ${escapeHTML(user.username)}"
-                      class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                      class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                       </svg>
@@ -503,7 +494,7 @@
   function openAddUserModal() {
     const modalHtml = `
     <div id="add-user-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+      <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -525,29 +516,29 @@
         
         <form id="add-user-form" class="p-6 space-y-4">
           <div>
-            <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Username <span class="text-red-500">*</span></label>
+            <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Username <span class="text-red-500">*</span></label>
             <input type="text" name="username" required placeholder="johndoe"
-              class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              class="ui-control px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
           </div>
           
           <div>
-            <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Password <span class="text-red-500">*</span></label>
+            <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Password <span class="text-red-500">*</span></label>
             <input type="password" name="password" required placeholder="••••••••"
-              class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              class="ui-control px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
           </div>
           
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Role <span class="text-red-500">*</span></label>
-              <select name="role" required class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Role <span class="text-red-500">*</span></label>
+              <select name="role" required class="ui-control px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                 <option value="viewer">Viewer</option>
                 <option value="operator">Operator</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
             <div>
-              <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Group</label>
-              <select name="group_id" class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Group</label>
+              <select name="group_id" class="ui-control px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                 <option value="">All Groups (Access to all cameras)</option>
                 ${cameraGroups.map(g => `<option value="${g.id}">${escapeHTML(g.name)}</option>`).join('')}
               </select>
@@ -555,8 +546,8 @@
           </div>
           
           <div class="flex justify-end gap-3 pt-4">
-            <button type="button" onclick="closeModal('add-user-modal')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 rounded-lg font-medium transition">Cancel</button>
-            <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition">Create User</button>
+            <button type="button" onclick="closeModal('add-user-modal')" class="ui-button ui-button-secondary px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 rounded-lg font-medium transition">Cancel</button>
+            <button type="submit" class="ui-button ui-button-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition">Create User</button>
           </div>
         </form>
       </div>
@@ -606,7 +597,7 @@
     
     const modalHtml = `
     <div id="edit-user-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+      <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
@@ -628,29 +619,29 @@
         
         <form id="edit-user-form" class="p-6 space-y-4">
           <div>
-            <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
+            <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
             <input type="text" value="${escapeHTML(username)}" disabled
-              class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed">
+              class="ui-control px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed">
           </div>
           
           <div>
-            <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">New Password <span class="text-xs text-gray-500">(leave blank to keep current)</span></label>
+            <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">New Password <span class="text-xs text-gray-500">(leave blank to keep current)</span></label>
             <input type="password" name="password" placeholder="••••••••"
-              class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition">
+              class="ui-control px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition">
           </div>
           
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
-              <select name="role" class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition">
+              <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
+              <select name="role" class="ui-control px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition">
                 <option value="viewer" ${role === 'viewer' ? 'selected' : ''}>Viewer</option>
                 <option value="operator" ${role === 'operator' ? 'selected' : ''}>Operator</option>
                 <option value="admin" ${role === 'admin' ? 'selected' : ''}>Admin</option>
               </select>
             </div>
             <div>
-              <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Group</label>
-              <select name="group_id" class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition">
+              <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Group</label>
+              <select name="group_id" class="ui-control px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition">
                 <option value="">All Groups (Access to all cameras)</option>
                 ${cameraGroups.map(g => `<option value="${g.id}" ${String(g.id) === String(groupId) ? 'selected' : ''}>${escapeHTML(g.name)}</option>`).join('')}
               </select>
@@ -658,8 +649,8 @@
           </div>
           
           <div class="flex justify-end gap-3 pt-4">
-            <button type="button" onclick="closeModal('edit-user-modal')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 rounded-lg font-medium transition">Cancel</button>
-            <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium shadow-sm transition">{{ icon_save("h-4 w-4 text-white") }}Save Changes</button>
+            <button type="button" onclick="closeModal('edit-user-modal')" class="ui-button ui-button-secondary px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 rounded-lg font-medium transition">Cancel</button>
+            <button type="submit" class="ui-button ui-button-secondary inline-flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium shadow-sm transition">{{ icon_save("h-4 w-4 text-white") }}Save Changes</button>
           </div>
         </form>
       </div>
@@ -759,7 +750,7 @@
     // Keep the existing token modal logic, just update the cell references after generation
     const modalHtml = `
     <div id="generate-token-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+      <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -781,8 +772,8 @@
         
         <div class="p-6 space-y-4">
           <div>
-            <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Token Expiry</label>
-            <select id="tokenExpiry" class="px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition">
+            <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Token Expiry</label>
+            <select id="tokenExpiry" class="ui-control px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition">
               <option value="7">7 days</option>
               <option value="30" selected>30 days</option>
               <option value="90">90 days</option>
@@ -791,11 +782,11 @@
           </div>
           
           <div id="token-result" class="hidden">
-            <label class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Generated Token <span class="text-xs text-red-500">(copy now, won't be shown again)</span></label>
+            <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Generated Token <span class="text-xs text-red-500">(copy now, won't be shown again)</span></label>
             <div class="flex gap-2">
               <input type="text" id="generated-token" readonly 
-                class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white font-mono text-sm">
-              <button onclick="copyToken()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition" title="Copy">
+                class="ui-control flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white font-mono text-sm">
+              <button onclick="copyToken()" class="ui-button ui-button-secondary px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition" title="Copy">
                 <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                 </svg>
@@ -804,8 +795,8 @@
           </div>
           
           <div class="flex justify-end gap-3 pt-4">
-            <button type="button" onclick="closeModal('generate-token-modal')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 rounded-lg font-medium transition">Close</button>
-            <button type="button" onclick="generateToken(${userId})" id="generate-token-btn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium shadow-sm transition">Generate</button>
+            <button type="button" onclick="closeModal('generate-token-modal')" class="ui-button ui-button-secondary px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 rounded-lg font-medium transition">Close</button>
+            <button type="button" onclick="generateToken(${userId})" id="generate-token-btn" class="ui-button ui-button-secondary px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium shadow-sm transition">Generate</button>
           </div>
         </div>
       </div>

@@ -2,57 +2,33 @@
 {% block title %}B-SNAP – Config{% endblock %}
 {% from "_icons.html" import icon_config, icon_globe, icon_camera, icon_bug, icon_paint, icon_folder, icon_download, icon_trash, icon_play, icon_email, icon_airplane, icon_save %}
 
+{% from "macros/ui.html" import page_header %}
+
 {% block content %}
 <style>
   body:has(#configPage) { overflow: hidden; }
-  #main-content:has(#configPage) { height: calc(100dvh - 4rem); padding: 1rem; overflow: hidden; }
+  #main-content:has(#configPage) { height: calc(100dvh - 4rem); overflow: hidden; }
   #configPage { height: 100%; }
   #configForm { min-height: 0; }
   #configPanels { flex: 1 1 0%; min-height: 0; overflow: hidden; margin-top: .5rem; }
   .config-tab-panel { display: none; height: 100%; min-height: 0; }
   .config-tab-panel.is-active { display: block; }
   .config-tab-panel[hidden] { display: none !important; }
-  .config-panel-card { height: 100%; overflow-y: auto; padding: 1rem; }
-  .config-panel-card { border: 1px solid rgb(229 231 235); border-radius: .75rem; box-shadow: 0 1px 2px rgb(0 0 0 / .05); padding: 1.25rem; }
-  .dark .config-panel-card { border-color: rgb(55 65 81); }
-  .config-panel-card > h2 { margin-bottom: .75rem; padding-bottom: .5rem; }
-  #configForm label:not(.relative) { margin-bottom: .375rem; }
-  #configForm input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
-  #configForm select,
-  #configForm textarea {
-    border-radius: .5rem;
-    box-shadow: 0 1px 2px rgb(0 0 0 / .05);
-    font-size: .875rem;
-    padding: .625rem 1rem;
-    transition: all .2s;
-  }
-  #configForm input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
-  #configForm select,
-  #configForm textarea { background-color: #fff; }
-  .dark #configForm input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
-  .dark #configForm select,
-  .dark #configForm textarea { background-color: rgb(55 65 81); color: rgb(243 244 246); }
-  .config-tab-button[aria-selected="true"] { border-bottom-color: #2563eb; }
-  .dark .config-tab-button[aria-selected="true"] { border-bottom-color: #3b82f6; }
-  @media (min-width: 768px) {
-    #main-content:has(#configPage) { padding: 2rem; }
-  }
+  .config-panel-card { height: 100%; overflow-y: auto; }
+  .config-panel-card > h2 { margin-bottom: var(--ui-space-4); padding-bottom: var(--ui-space-2); }
 </style>
-<div id="configPage" class="w-full text-gray-900 dark:text-gray-100 rounded-xl shadow-sm flex flex-col overflow-hidden">
-  <div class="flex items-center gap-3 mb-2 shrink-0">
-    <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">{{ icon_config("w-7 h-7 text-blue-600 dark:text-blue-400") }}</div>
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">App Config</h1>
-  </div>
+<div id="configPage" class="ui-page w-full text-gray-900 dark:text-gray-100 flex flex-col overflow-hidden">
+  {{ page_header("App Config") }}
   
   <div id="error-message-container" class="shrink-0"></div>
 
-  <div id="configTabBar" role="tablist" aria-label="Configuration sections" class="shrink-0 flex gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-700 whitespace-nowrap">
+  <div id="configTabBar" role="tablist" aria-label="Configuration sections" class="ui-tabs ui-table-scroll shrink-0 flex gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-700 whitespace-nowrap">
     {% for tab_id, tab_label in [
       ('general', 'General'), ('snapshots', 'Snapshots'), ('retention', 'Retention'),
       ('cron', 'Cron'), ('intervals', 'Intervals'),
       ('email', 'Email'), ('gowa', 'GoWA'), ('appearance', 'Appearance')
     ] %}
-    <button type="button" role="tab" id="config-tab-{{ tab_id }}" aria-controls="config-panel-{{ tab_id }}" aria-selected="false" data-config-tab-button="{{ tab_id }}" class="config-tab-button border-b-2 border-transparent whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+    <button type="button" role="tab" id="config-tab-{{ tab_id }}" aria-controls="config-panel-{{ tab_id }}" aria-selected="false" data-config-tab-button="{{ tab_id }}" class="ui-tab config-tab-button border-b-2 border-transparent whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
       {{ tab_label }}
     </button>
     {% endfor %}
@@ -60,19 +36,19 @@
   
   <form id="configForm" enctype="multipart/form-data" class="flex flex-1 flex-col overflow-hidden">
     
-    <div data-config-tab="general" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-      <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_globe("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} General</h2>
+    <div data-config-tab="general" class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+      <h2 class="ui-section-title text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6"> General</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label for="healthcheck_interval_minutes" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Health Check Interval (minutes)</label>
+          <label for="healthcheck_interval_minutes" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Health Check Interval (minutes)</label>
           <input type="number" id="healthcheck_interval_minutes" name="healthcheck_interval_minutes" value="{{ configs.get('healthcheck_interval_minutes', 60) }}" required
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
           <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Frequency for checking camera online status.</p>
         </div>
         <div>
-          <label for="timezone" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Timezone</label>
+          <label for="timezone" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Timezone</label>
           <select name="timezone" id="timezone" required
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
           {% for tz in timezones %}
           <option value="{{ tz }}" {% if configs.get('timezone') == tz %}selected{% endif %}>
             {{ tz }}
@@ -81,9 +57,9 @@
         </select>
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Used across all timestamps in the app.</p>
       </div>
-      <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+      <div class="ui-card ui-card-body flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
         <div>
-          <label for="debug_mode" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label for="debug_mode" class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300">
             {{ icon_bug("w-5 h-5 text-gray-900 dark:text-gray-100 inline") }} Debug Mode
           </label>
           <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -107,23 +83,23 @@
     </div>
   </div>
   
-  <div data-config-tab="snapshots" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_config("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Snapshot Behavior</h2>
+  <div data-config-tab="snapshots" class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+    <h2 class="ui-section-title text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6"> Snapshot Behavior</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
-        <label for="snapshot_interval_minutes" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Snapshot Interval (minutes)</label>
+        <label for="snapshot_interval_minutes" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Snapshot Interval (minutes)</label>
         <input type="number" id="snapshot_interval_minutes" name="snapshot_interval_minutes" value="{{ configs.get('snapshot_interval_minutes', 600) }}" required
-        class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How often each camera takes a snapshot.</p>
       </div>
       <div>
-        <label for="snapshot_concurrent_workers" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Concurrent Workers</label>
+        <label for="snapshot_concurrent_workers" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Concurrent Workers</label>
         <input type="number" id="snapshot_concurrent_workers" name="snapshot_concurrent_workers" value="{{ configs.get('snapshot_concurrent_workers', 5) }}" required
-        class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Number of parallel snapshot processes.</p>
       </div>
       <div>
-        <label for="snapshot_batch_size" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">
+        <label for="snapshot_batch_size" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">
           Snapshot Batch Size
         </label>
         <input type="number"
@@ -133,23 +109,23 @@
         required
         min="1"
         max="150"
-        class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
           Number of cameras to process in each batch for scheduled snapshots.
           Maximum allowed value is <strong>150</strong>.
         </p>
       </div>
       <div>
-        <label for="snapshot_batch_delay_seconds" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Batch Delay (seconds)</label>
+        <label for="snapshot_batch_delay_seconds" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Batch Delay (seconds)</label>
         <input type="number" id="snapshot_batch_delay_seconds" name="snapshot_batch_delay_seconds" value="{{ configs.get('snapshot_batch_delay_seconds', 5) }}" required
-        class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Time to wait between snapshot batches to manage system load.</p>
       </div>
 
             <!-- Ping Check Settings -->
-      <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+      <div class="ui-card ui-card-body flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
         <div>
-          <label for="snapshot_ping_check_enabled" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label for="snapshot_ping_check_enabled" class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300">
             {{ icon_camera("w-5 h-5 text-gray-900 dark:text-gray-100 inline") }} Pre-Snapshot Ping Check
           </label>
           <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -171,61 +147,61 @@
       </div>
       
       <div>
-        <label for="snapshot_ping_timeout_ms" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Ping Timeout (milliseconds)</label>
+        <label for="snapshot_ping_timeout_ms" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Ping Timeout (milliseconds)</label>
         <input type="number" id="snapshot_ping_timeout_ms" name="snapshot_ping_timeout_ms" 
           value="{{ configs.get('snapshot_ping_timeout_ms', 3000) }}" 
           min="100" max="10000" step="100"
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Timeout for ping check in ms (100-10000). Default: 3000ms (3 seconds). Lower = faster but less reliable.</p>
       </div>
       <div>
-        <label for="max_screenshot_per_camera" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Max Snapshots per Camera</label>
+        <label for="max_screenshot_per_camera" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Max Snapshots per Camera</label>
         <input type="number" id="max_screenshot_per_camera" name="max_screenshot_per_camera" value="{{ configs.get('max_screenshot_per_camera', 3) }}" required
-        class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Old snapshots are deleted when this limit is reached.</p>
       </div>
     </div>
   </div>
   
-  <div data-config-tab="retention" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_trash("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Log Retention</h2>
+  <div data-config-tab="retention" class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+    <h2 class="ui-section-title text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6"> Log Retention</h2>
     <p class="mb-5 text-sm text-blue-700 dark:text-blue-300">Archived audit logs are retained and remain available in Archive History. Scheduled and manual cleanup do not delete audit logs.</p>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
-        <label for="retention_api_logs_days" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">API Logs (days)</label>
+        <label for="retention_api_logs_days" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">API Logs (days)</label>
         <input type="number" id="retention_api_logs_days" name="retention_api_logs_days" 
           value="{{ configs.get('retention_api_logs_days', 90) }}" 
           min="7" max="3650" required
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How long to keep API request logs. Default: 90 days.</p>
       </div>
       <div>
-        <label for="retention_command_logs_days" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Command Logs (days)</label>
+        <label for="retention_command_logs_days" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Command Logs (days)</label>
         <input type="number" id="retention_command_logs_days" name="retention_command_logs_days" 
           value="{{ configs.get('retention_command_logs_days', 90) }}" 
           min="7" max="3650" required
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How long to keep chatbot command logs. Default: 90 days.</p>
       </div>
       <div>
-        <label for="retention_camera_stats_days" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Camera Stats (days)</label>
+        <label for="retention_camera_stats_days" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Camera Stats (days)</label>
         <input type="number" id="retention_camera_stats_days" name="retention_camera_stats_days" 
           value="{{ configs.get('retention_camera_stats_days', 90) }}" 
           min="7" max="3650" required
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How long to keep daily camera statistics. Default: 90 days.</p>
       </div>
       <div>
-        <label for="retention_email_logs_days" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Email Logs (days)</label>
+        <label for="retention_email_logs_days" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Email Logs (days)</label>
         <input type="number" id="retention_email_logs_days" name="retention_email_logs_days" 
           value="{{ configs.get('retention_email_logs_days', 90) }}" 
           min="7" max="3650" required
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How long to keep email notification logs. Default: 90 days.</p>
       </div>
       <div class="flex items-end">
         <button type="button" id="runCleanupBtn" 
-          class="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium px-4 py-2 rounded-lg shadow transition-colors duration-200 flex items-center justify-center gap-2">
+          class="ui-button ui-button-secondary w-full bg-orange-600 hover:bg-orange-700 text-white font-medium px-4 py-2 rounded-lg shadow transition-colors duration-200 flex items-center justify-center gap-2">
           {{ icon_play("w-5 h-5") }} Run Cleanup Now
         </button>
       </div>
@@ -233,8 +209,8 @@
     <div id="cleanupResult" class="mt-4 hidden"></div>
   </div>
 
-  <div data-config-tab="cron" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">
+  <div data-config-tab="cron" class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+    <h2 class="ui-section-title text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">
       <svg class="w-8 h-8 text-gray-900 dark:text-gray-100 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
       </svg> Job Scheduling
@@ -254,11 +230,11 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Snapshot Cron -->
         <div>
-          <label for="snapshot_cron" class="block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Snapshot Schedule (Cron)</label>
+          <label for="snapshot_cron" class="ui-label block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Snapshot Schedule (Cron)</label>
           <input type="text" id="snapshot_cron" name="snapshot_cron" 
             value="{{ configs.get('snapshot_cron', '') }}" 
             placeholder="e.g., 0 8,13,23 * * *"
-            class="w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
+            class="ui-control w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
           <p class="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
             <span class="font-semibold">Examples:</span><br>
             <code>0 8 * * *</code> = Every day at 08:00<br>
@@ -269,11 +245,11 @@
         
         <!-- Healthcheck Cron -->
         <div>
-          <label for="healthcheck_cron" class="block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Healthcheck Schedule (Cron)</label>
+          <label for="healthcheck_cron" class="ui-label block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Healthcheck Schedule (Cron)</label>
           <input type="text" id="healthcheck_cron" name="healthcheck_cron" 
             value="{{ configs.get('healthcheck_cron', '') }}" 
             placeholder="e.g., */15 * * * *"
-            class="w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
+            class="ui-control w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
           <p class="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
             Default (empty): uses interval below<br>
             <code>*/15 * * * *</code> = Every 15 minutes
@@ -282,11 +258,11 @@
         
         <!-- Cleanup Cron -->
         <div>
-          <label for="cleanup_cron" class="block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Cleanup Schedule (Cron)</label>
+          <label for="cleanup_cron" class="ui-label block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Cleanup Schedule (Cron)</label>
           <input type="text" id="cleanup_cron" name="cleanup_cron" 
             value="{{ configs.get('cleanup_cron', '0 2 * * *') }}" 
             placeholder="e.g., 0 2 * * *"
-            class="w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
+            class="ui-control w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
           <p class="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
             Default: <code>0 2 * * *</code> (2 AM daily)
           </p>
@@ -294,11 +270,11 @@
         
         <!-- Email Retry Cron -->
         <div>
-          <label for="email_retry_cron" class="block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Email Retry Schedule (Cron)</label>
+          <label for="email_retry_cron" class="ui-label block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Email Retry Schedule (Cron)</label>
           <input type="text" id="email_retry_cron" name="email_retry_cron" 
             value="{{ configs.get('email_retry_cron', '') }}" 
             placeholder="e.g., */5 * * * *"
-            class="w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
+            class="ui-control w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
           <p class="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
             <code>*/5 * * * *</code> = Every 5 minutes
           </p>
@@ -308,8 +284,8 @@
     
   </div>
 
-  <div data-config-tab="intervals" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-4">
+  <div data-config-tab="intervals" class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+    <h2 class="ui-section-title text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-4">
       <svg class="w-8 h-8 text-gray-900 dark:text-gray-100 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="9" stroke-width="1.5"></circle>
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 7v5l3 2"></path>
@@ -321,32 +297,32 @@
     <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Intervals</h3>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
-        <label for="cleanup_interval_days" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Cleanup Interval (days)</label>
+        <label for="cleanup_interval_days" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Cleanup Interval (days)</label>
         <input type="number" id="cleanup_interval_days" name="cleanup_interval_days" 
           value="{{ configs.get('cleanup_interval_days', '1') }}" 
           min="1" max="7" required
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How often to run cleanup jobs. Default: 1 day</p>
       </div>
       <div>
-        <label for="email_retry_interval_minutes" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Email Retry Interval (minutes)</label>
+        <label for="email_retry_interval_minutes" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Email Retry Interval (minutes)</label>
         <input type="number" id="email_retry_interval_minutes" name="email_retry_interval_minutes" 
           value="{{ configs.get('email_retry_interval_minutes', '1') }}" 
           min="1" max="60" required
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How often to retry failed emails. Default: 1 minute</p>
       </div>
       <div>
-        <label for="retention_job_logs_days" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Job Logs Retention (days)</label>
+        <label for="retention_job_logs_days" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Job Logs Retention (days)</label>
         <input type="number" id="retention_job_logs_days" name="retention_job_logs_days" 
           value="{{ configs.get('retention_job_logs_days', '30') }}" 
           min="7" max="365" required
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How long to keep job execution logs. Default: 30 days</p>
       </div>
     </div>
     <div class="mt-4 flex gap-2">
-      <a href="/admin/jobs/" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg shadow transition-colors duration-200">
+      <a href="/admin/jobs/" class="ui-button ui-button-primary inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg shadow transition-colors duration-200">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
         </svg>
@@ -355,27 +331,27 @@
     </div>
   </div>
 
-  <div data-config-tab="email" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_email("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Email (SMTP) Configuration</h2>
+  <div data-config-tab="email" class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+    <h2 class="ui-section-title text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6"> Email (SMTP) Configuration</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
-        <label for="smtp_host" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">SMTP Host</label>
+        <label for="smtp_host" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">SMTP Host</label>
         <input type="text" id="smtp_host" name="smtp_host" value="{{ configs.get('smtp_host', '') }}" 
           placeholder="smtp.gmail.com"
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">SMTP server hostname (e.g., smtp.gmail.com, mail.office365.com)</p>
       </div>
       <div>
-        <label for="smtp_port" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">SMTP Port</label>
+        <label for="smtp_port" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">SMTP Port</label>
         <input type="number" id="smtp_port" name="smtp_port" value="{{ configs.get('smtp_port', '587') }}" 
           min="1" max="65535"
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Usually 587 for STARTTLS, 465 for SSL/TLS, or 25 for non-secure relay.</p>
       </div>
       <div>
-        <label for="smtp_security" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">SMTP Security</label>
+        <label for="smtp_security" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">SMTP Security</label>
         <select id="smtp_security" name="smtp_security"
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
           <option value="starttls" {% if configs.get('smtp_security', 'starttls') == 'starttls' %}selected{% endif %}>STARTTLS (recommended for port 587)</option>
           <option value="ssl_tls" {% if configs.get('smtp_security') == 'ssl_tls' %}selected{% endif %}>SSL/TLS (usually port 465)</option>
           <option value="none" {% if configs.get('smtp_security') == 'none' %}selected{% endif %}>None / non-secure (usually port 25)</option>
@@ -383,31 +359,31 @@
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Choose None only for a trusted internal SMTP relay.</p>
       </div>
       <div>
-        <label for="smtp_user" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">SMTP Username</label>
+        <label for="smtp_user" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">SMTP Username</label>
         <input type="text" id="smtp_user" name="smtp_user" value="{{ configs.get('smtp_user', '') }}" 
           placeholder="your-email@example.com"
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Optional. Leave both username and password empty for an anonymous relay.</p>
       </div>
       <div>
-        <label for="smtp_pass" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">SMTP Password</label>
+        <label for="smtp_pass" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">SMTP Password</label>
         <input type="password" id="smtp_pass" name="smtp_pass" value="{{ configs.get('smtp_pass', '') }}" 
           placeholder="••••••••"
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Optional. Must be filled together with SMTP Username.</p>
       </div>
       <div>
-        <label for="email_from" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">From Email</label>
+        <label for="email_from" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">From Email</label>
         <input type="email" id="email_from" name="email_from" value="{{ configs.get('email_from', '') }}" 
           placeholder="noreply@example.com"
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Sender email address shown in notifications. Required when SMTP authentication is not used.</p>
       </div>
       <div>
-        <label for="email_cc" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">CC Email (Optional)</label>
+        <label for="email_cc" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">CC Email (Optional)</label>
         <input type="email" id="email_cc" name="email_cc" value="{{ configs.get('email_cc', '') }}" 
           placeholder="helpdesk@example.com"
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Optional CC recipient for all email notifications</p>
       </div>
     </div>
@@ -418,13 +394,13 @@
       </p>
     </div>
     <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-5">
-      <label for="smtp_test_recipient" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Test SMTP Delivery</label>
+      <label for="smtp_test_recipient" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Test SMTP Delivery</label>
       <div class="flex flex-col sm:flex-row gap-3">
         <input type="email" id="smtp_test_recipient" required
           placeholder="recipient@example.com"
-          class="flex-1 p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          class="ui-control flex-1 p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <button type="button" id="smtpTestButton"
-          class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-medium px-4 py-2 rounded-lg shadow transition-colors">
+          class="ui-button ui-button-primary inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-medium px-4 py-2 rounded-lg shadow transition-colors">
           {{ icon_airplane("w-5 h-5 text-white") }}
           <span>Send Test Email</span>
         </button>
@@ -434,12 +410,12 @@
   </div>
 
   <!-- WhatsApp Gateway Configuration -->
-  <div data-config-tab="gowa" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6"><img src="/static/icons/gowa.svg" alt="GoWA logo" class="w-8 h-8 inline-block align-middle mr-1 object-contain"> WhatsApp Gateway (GoWA)</h2>
+  <div data-config-tab="gowa" class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+    <h2 class="ui-section-title text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6"><img src="/static/icons/gowa.svg" alt="GoWA logo" class="w-8 h-8 inline-block align-middle mr-1 object-contain"> WhatsApp Gateway (GoWA)</h2>
     
-    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 mb-6">
+    <div class="ui-card ui-card-body flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 mb-6">
       <div>
-        <label for="gowa_enabled" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label for="gowa_enabled" class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300">
           Enable WhatsApp Notifications
         </label>
         <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -462,54 +438,54 @@
     
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="gowa-config-section" style="{% if configs.get('gowa_enabled') != '1' %}display: none;{% endif %}">
       <div>
-        <label for="gowa_base_url" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">GoWA Base URL</label>
+        <label for="gowa_base_url" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">GoWA Base URL</label>
         <input type="url" id="gowa_base_url" name="gowa_base_url" value="{{ configs.get('gowa_base_url', 'http://localhost:3000') }}" 
           placeholder="http://localhost:3000"
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">GoWA API endpoint (e.g., http://localhost:3000)</p>
       </div>
       <div>
-        <label for="gowa_api_key" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">API Key / Auth Secret (Optional)</label>
+        <label for="gowa_api_key" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">API Key / Auth Secret (Optional)</label>
         <input type="password" id="gowa_api_key" name="gowa_api_key" value="{{ configs.get('gowa_api_key', '') }}" 
           placeholder="user:password, token, or leave empty"
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
           Fill <code>user:password</code> when GoWA uses <code>APP_BASIC_AUTH</code>. For older <code>AUTH_TOKEN</code> deployments, fill the token only. Leave empty if GoWA has no auth.
           <a href="#" onclick="document.getElementById('gowa-setup-help').classList.toggle('hidden'); return false;" class="text-blue-600 hover:underline">How to setup?</a>
         </p>
       </div>
       <div>
-        <label for="gowa_device_id" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">GoWA Device ID (Optional)</label>
+        <label for="gowa_device_id" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">GoWA Device ID (Optional)</label>
         <input type="text" id="gowa_device_id" name="gowa_device_id" value="{{ configs.get('gowa_device_id', '') }}"
           placeholder="e.g. b-snap2"
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Set this when GoWA has multiple devices. It is sent as the <code>X-Device-Id</code> header.</p>
       </div>
       <div>
-        <label for="gowa_default_receiver" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Default Receiver(s)</label>
+        <label for="gowa_default_receiver" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Default Receiver(s)</label>
         <input type="text" id="gowa_default_receiver" name="gowa_default_receiver" value="{{ configs.get('gowa_default_receiver', '') }}" 
           placeholder="6281234567890, 120363xxxxxxxx@g.us"
-          class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
           WhatsApp personal number or group JID for alerts, comma separated. Use number format like <code>6281234567890</code> or group format like <code>120363xxxxxxxx@g.us</code>.
         </p>
         <div class="mt-3 flex flex-col gap-2 sm:flex-row">
           <button type="button" id="loadWaGroupsBtn"
-            class="inline-flex items-center justify-center rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/40">
+            class="ui-button ui-button-secondary inline-flex items-center justify-center rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/40">
             Load Groups from GoWA
           </button>
           <select id="gowa_group_select"
-            class="hidden flex-1 p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
+            class="ui-control hidden flex-1 p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
           </select>
           <button type="button" id="addWaGroupBtn"
-            class="hidden inline-flex items-center justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-green-700">
+            class="ui-button ui-button-secondary hidden inline-flex items-center justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-green-700">
             Add Group
           </button>
         </div>
       </div>
       <div class="flex items-end">
         <button type="button" id="testWaBtn" 
-          class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors">
+          class="ui-button ui-button-secondary w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
           Test Connection
         </button>
@@ -558,23 +534,23 @@
     </div>
   </div>
 
-  <div data-config-tab="appearance" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">{{ icon_paint("w-8 h-8 text-gray-900 dark:text-gray-100 inline") }} Appearance</h2>
+  <div data-config-tab="appearance" class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+    <h2 class="ui-section-title text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6"> Appearance</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
-        <label for="watermark_text" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Snapshot Watermark</label>
+        <label for="watermark_text" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Snapshot Watermark</label>
         <input type="text" id="watermark_text" name="watermark_text" value="{{ configs.get('watermark_text', '') }}"
-        class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Property of ABC Corp">
+        class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Property of ABC Corp">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Text to overlay on each snapshot. Leave blank for no watermark.</p>
       </div>
       <div>
-        <label for="map_title" class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Map Title</label>
+        <label for="map_title" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Map Title</label>
         <input type="text" id="map_title" name="map_title" value="{{ configs.get('map_title', '') }}"
-        class="w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Camera Location Overview">
+        class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Camera Location Overview">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Title shown on the map view.</p>
       </div>
       <div class="md:col-span-1">
-        <label class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Application Logo</label>
+        <label class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Application Logo</label>
         
         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <img id="logoPreview"
@@ -601,7 +577,7 @@
   
   
   <div class="flex shrink-0 justify-end pt-2">
-    <button type="button" id="saveButton" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+    <button type="button" id="saveButton" class="ui-button ui-button-primary inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
       <span id="buttonText">{{ icon_save("w-5 h-5 text-gray-100 inline") }} Save Changes</span>
       <span id="buttonSpinner" class="hidden">
         <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -1027,21 +1003,21 @@
         
         cleanupResult.classList.remove('hidden');
         if (response.ok) {
-          cleanupResult.className = 'mt-4 p-4 bg-green-100 dark:bg-green-900 rounded-lg';
+          cleanupResult.className = 'ui-feedback ui-feedback-success mt-4 bg-green-100 dark:bg-green-900 rounded-lg';
           cleanupResult.innerHTML = `<p class="text-green-800 dark:text-green-200 font-medium">✅ Cleanup completed successfully!</p><pre class="mt-2 text-sm text-green-700 dark:text-green-300 overflow-x-auto">${JSON.stringify(result.details, null, 2)}</pre>`;
           Toast.success('Cleanup completed successfully!', { title: 'Success' });
         } else if (response.status === 401) {
-          cleanupResult.className = 'mt-4 p-4 bg-red-100 dark:bg-red-900 rounded-lg';
+          cleanupResult.className = 'ui-feedback ui-feedback-critical mt-4 bg-red-100 dark:bg-red-900 rounded-lg';
           cleanupResult.innerHTML = `<p class="text-red-800 dark:text-red-200">❌ Invalid password. Cleanup aborted.</p>`;
           Toast.error('Invalid password. Cleanup aborted.', { title: 'Error' });
         } else {
-          cleanupResult.className = 'mt-4 p-4 bg-red-100 dark:bg-red-900 rounded-lg';
+          cleanupResult.className = 'ui-feedback ui-feedback-critical mt-4 bg-red-100 dark:bg-red-900 rounded-lg';
           cleanupResult.innerHTML = `<p class="text-red-800 dark:text-red-200">❌ ${result.message || 'Cleanup failed'}</p>`;
           Toast.error(result.message || 'Cleanup failed', { title: 'Error' });
         }
       } catch (error) {
         cleanupResult.classList.remove('hidden');
-        cleanupResult.className = 'mt-4 p-4 bg-red-100 dark:bg-red-900 rounded-lg';
+        cleanupResult.className = 'ui-feedback ui-feedback-critical mt-4 bg-red-100 dark:bg-red-900 rounded-lg';
         cleanupResult.innerHTML = `<p class="text-red-800 dark:text-red-200">❌ Error: ${error.message}</p>`;
         Toast.error(error.message, { title: 'Error' });
       } finally {

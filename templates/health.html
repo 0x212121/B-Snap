@@ -2,41 +2,31 @@
 {% block title %}B-SNAP – Devices Status{% endblock %}
 {% from "_icons.html" import icon_chart_bar, icon_arrow_path, icon_video_camera, icon_server, icon_no_symbol, icon_search, icon_camera, icon_play, icon_face_frown %}
 
+{% from "macros/ui.html" import page_header %}
+
 {% block content %}
 <!-- Header Section -->
-<div class="mb-6">
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div>
-      <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
-        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-          {{ icon_chart_bar("w-7 h-7 text-blue-600 dark:text-blue-400") }}
-        </div>
-        Devices Status
-      </h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-        Monitor real-time health status of all cameras and NVR devices
-      </p>
-    </div>
-    <div class="flex gap-2">
-      <button id="ping-all-btn" onclick="triggerAllHealthcheck()" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+{% set page_description %}Monitor real-time health status of all cameras and NVR devices{% endset %}
+{% call page_header("Devices Status", page_description) %}
+<div class="flex gap-2">
+      <button id="ping-all-btn" onclick="triggerAllHealthcheck()" class="ui-button ui-button-primary inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
         {{ icon_arrow_path("w-5 h-5") }}
         Ping All Devices
       </button>
-      <button onclick="refreshTable()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+      <button onclick="refreshTable()" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
         {{ icon_arrow_path("w-5 h-5") }}
         Refresh Table
       </button>
-      <a href="/health/history" class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+      <a href="/health/history" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
         {{ icon_chart_bar("w-5 h-5") }}
         Historical Data
       </a>
     </div>
-  </div>
-</div>
+{% endcall %}
 
 <!-- Stats Cards -->
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Camera Online</p>
@@ -48,7 +38,7 @@
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Camera Offline</p>
@@ -60,7 +50,7 @@
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">NVR Online</p>
@@ -72,7 +62,7 @@
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">NVR Offline</p>
@@ -86,7 +76,7 @@
 </div>
 
 <!-- Health Check Progress -->
-<div id="healthCheckStatus" class="mb-4 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hidden">
+<div id="healthCheckStatus" class="ui-card ui-card-body mb-4 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hidden">
   <div class="flex items-center justify-between mb-2">
     <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Health check is running...</p>
     <p id="progressText" class="text-sm text-gray-500 dark:text-gray-400">0/0 devices completed</p>
@@ -97,21 +87,21 @@
 </div>
 
 <!-- Filter Section -->
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+<div class="ui-filter-bar ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
   <div class="flex flex-col lg:flex-row gap-4">
     <!-- Search -->
     <div class="relative flex-1">
       <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
         {{ icon_search("h-5 w-5 text-gray-400") }}
       </div>
-      <input type="text" id="searchInput" onkeyup="filterAndRenderTable()" placeholder="Search by Name or IP..."
-        class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+      <input aria-label="Search" type="text" id="searchInput" onkeyup="filterAndRenderTable()" placeholder="Search by Name or IP..."
+        class="ui-control pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
     </div>
     
     <!-- Filters -->
     <div class="flex gap-2 flex-wrap lg:flex-nowrap">
       <div class="relative w-40">
-        <select id="typeFilter" onchange="filterAndRenderTable()" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+        <select aria-label="Device Type" id="typeFilter" onchange="filterAndRenderTable()" class="ui-control pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
           <option value="All">All Types</option>
           <option value="Camera">Camera</option>
           <option value="NVR">NVR</option>
@@ -119,7 +109,7 @@
       </div>
       
       <div class="relative w-44">
-        <select id="statusFilter" onchange="filterAndRenderTable()" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+        <select aria-label="Status" id="statusFilter" onchange="filterAndRenderTable()" class="ui-control pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
           <option value="All">All Statuses</option>
           <option value="Online">Online</option>
           <option value="Offline">Offline</option>
@@ -129,7 +119,7 @@
       </div>
       
       <div class="relative w-36">
-        <select id="perPageSelect" onchange="changePerPage()" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+        <select aria-label="Results per page" id="perPageSelect" onchange="changePerPage()" class="ui-control pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
           <option value="10">10 / page</option>
           <option value="20" selected>20 / page</option>
           <option value="50">50 / page</option>
@@ -153,7 +143,7 @@
 </div>
 
 <!-- Table Container -->
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
+<div class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
   <div id="loading-overlay" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
     <div class="flex flex-col items-center gap-3">
       <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
@@ -164,8 +154,8 @@
     </div>
   </div>
 
-  <div class="overflow-x-auto">
-    <table id="healthCheckTable" class="min-w-full text-sm text-left">
+  <div class="ui-table-scroll overflow-x-auto">
+    <table id="healthCheckTable" class="ui-table min-w-full text-sm text-left">
       <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
         <tr>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortAndRenderTable('hostname')">
@@ -198,7 +188,7 @@
   </div>
   
   <!-- Empty State -->
-  <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center">
+  <div id="empty-state" class="ui-empty-state hidden flex-col items-center justify-center py-16 text-center">
     <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
       {{ icon_face_frown("w-12 h-12 text-gray-400") }}
     </div>
@@ -219,26 +209,26 @@
 
 <!-- Snapshot Modal -->
 <div id="snapshotModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
-  <div class="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl max-h-[80vh]">
+  <div class="ui-card ui-card-body relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl max-h-[80vh]">
     <div class="relative">
       <img id="snapshotImg" src="" class="rounded w-full object-contain max-h-[70vh]" />
       <div id="snapshotInfo" class="absolute top-0 right-0 bg-black bg-opacity-60 text-white text-sm px-3 py-1 rounded shadow">
       </div>
     </div>
     <div class="flex justify-end mt-2 space-x-4">
-      <a id="download-btn" href="#" download class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">⬇️ Download</a>
-      <button onclick="hideSnapshotModal()" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded">✖ Close</button>
+      <a id="download-btn" href="#" download class="ui-button ui-button-primary bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">⬇️ Download</a>
+      <button onclick="hideSnapshotModal()" class="ui-button ui-button-danger bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded">✖ Close</button>
     </div>
   </div>
 </div>
 
 <!-- Alert Modal -->
 <div id="alertModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
-    <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">⚠️ Alert</h2>
+  <div class="ui-card ui-card-body bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
+    <h2 class="ui-section-title text-lg font-semibold text-gray-800 dark:text-white mb-4">⚠️ Alert</h2>
     <p id="alertModalMessage" class="text-gray-700 dark:text-gray-300"></p>
     <div class="flex justify-end mt-6">
-      <button onclick="hideAlertModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+      <button onclick="hideAlertModal()" class="ui-button ui-button-primary bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
         OK
       </button>
     </div>
@@ -339,15 +329,15 @@
       device.status?.includes('Offline') ? 'bg-red-100 text-red-800' :
       device.status?.includes('High Latency') ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800';
       
-      const pingButton = `<button onclick='triggerHealth(this, "${device.id}", "${device.type.toLowerCase()}")' class="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition" title="Ping Device">
+      const pingButton = `<button onclick='triggerHealth(this, "${device.id}", "${device.type.toLowerCase()}")' class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition" title="Ping Device">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M4.755 10.059a7.5 7.5 0 0 1 12.548-3.364l1.903 1.903h-3.183a.75.75 0 0 0 0 1.5h4.992a.75.75 0 0 0 .75-.75V4.356a.75.75 0 0 0-1.5 0v3.18l-1.9-1.9A9 9 0 0 0 3.306 9.67a.75.75 0 1 0 1.45.388Zm15.408 3.352a.75.75 0 0 0-.919.53 7.5 7.5 0 0 1-12.548 3.364l-1.902-1.903h3.183a.75.75 0 0 0 0-1.5H2.984a.75.75 0 0 0-.75.75v4.992a.75.75 0 0 0 1.5 0v-3.18l1.9 1.9a9 9 0 0 0 15.059-4.035.75.75 0 0 0-.53-.918Z" clip-rule="evenodd" /></svg>
       </button>`;
       
-      const viewButton = device.type === 'Camera' ? `<button class="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition" onclick='viewSnapshot(${JSON.stringify(device.id)}, ${JSON.stringify(device.hostname)})' title="View Snapshot">
+      const viewButton = device.type === 'Camera' ? `<button class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition" onclick='viewSnapshot(${JSON.stringify(device.id)}, ${JSON.stringify(device.hostname)})' title="View Snapshot">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 9a3.75 3.75 0 1 0 0 7.5A3.75 3.75 0 0 0 12 9Z" /><path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 0 1 5.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 0 1-3 3h-15a3 3 0 0 1-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 0 0 1.11-.71l.822-1.315a2.942 2.942 0 0 1 2.332-1.39ZM6.75 12.75a5.25 5.25 0 1 1 10.5 0 5.25 5.25 0 0 1-10.5 0Zm12-1.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" /></svg>
       </button>` : '';
       
-      const realtimeButton = device.type === 'Camera' && device.status !== 'Offline' ? `<button class="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 transition" onclick='viewRealtimeSnapshot(this, ${JSON.stringify(device.id)}, ${JSON.stringify(device.hostname)})' title="Realtime Snapshot">
+      const realtimeButton = device.type === 'Camera' && device.status !== 'Offline' ? `<button class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 transition" onclick='viewRealtimeSnapshot(this, ${JSON.stringify(device.id)}, ${JSON.stringify(device.hostname)})' title="Realtime Snapshot">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clip-rule="evenodd" /></svg>
       </button>` : '';
       
@@ -356,7 +346,7 @@
         <td class="px-4 py-3.5 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${device.hostname}</td>
         <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 font-mono">${device.ip}</td>
         <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${device.type === 'Camera' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400'}">
+          <span class="ui-badge inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${device.type === 'Camera' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400'}">
             ${device.type}
           </span>
         </td>
@@ -364,7 +354,7 @@
         <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${latency}</td>
         <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${formatReadableDate(checkedAt)}</td>
         <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${statusDisplay}</span>
+          <span class="ui-badge px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${statusDisplay}</span>
         </td>
         <td class="px-4 py-3.5 whitespace-nowrap text-center">
           <div class="flex items-center justify-center gap-1">
@@ -441,10 +431,10 @@
 
     if (currentPage > 1) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="goToPage(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
+        <button onclick="goToPage(1)" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
         </button>
-        <button onclick="goToPage(${currentPage - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
+        <button onclick="goToPage(${currentPage - 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </button>
       `);
@@ -474,10 +464,10 @@
 
     if (currentPage < totalPages) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="goToPage(${currentPage + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
+        <button onclick="goToPage(${currentPage + 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
         </button>
-        <button onclick="goToPage(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
+        <button onclick="goToPage(${totalPages})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
         </button>
       `);

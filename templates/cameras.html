@@ -2,63 +2,53 @@
 {% block title %}B-SNAP – Camera Management{% endblock %}
 {% from "_icons.html" import icon_clip_check, icon_search, icon_pencil, icon_trash, icon_camera, icon_video_camera, icon_upload, icon_download, icon_plus, icon_filter, icon_x_mark, icon_map_pin, icon_funnel, icon_eye, icon_eye_slash, icon_save %}
 
+{% from "macros/ui.html" import page_header, more_filters, loading_skeleton %}
+
 {% block content %}
 <!-- Header Section -->
-<div class="mb-6">
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div>
-      <h2 class="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
-        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-          {{ icon_video_camera("w-7 h-7 text-blue-600 dark:text-blue-400") }}
-        </div>
-        Camera Management
-      </h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-        Manage CCTV cameras, configure settings, and monitor device status
-      </p>
-    </div>
-    <div class="flex flex-wrap gap-2">
-      <button onclick="showAddCameraModal()" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+{% set page_description %}Manage CCTV cameras, configure settings, and monitor device status{% endset %}
+{% call page_header("Camera Management", page_description) %}
+<div class="flex flex-wrap gap-2">
+      <button onclick="showAddCameraModal()" class="ui-button ui-button-primary inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
         {{ icon_plus("w-5 h-5") }}
         Add Camera
       </button>
       <form method="post" enctype="multipart/form-data" action="/cameras/upload_csv" class="flex items-center gap-2">
         <input type="file" name="file" accept=".csv" class="hidden" id="csvFileInput" onchange="this.form.submit()">
-        <button type="button" onclick="document.getElementById('csvFileInput').click()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+        <button type="button" onclick="document.getElementById('csvFileInput').click()" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
           {{ icon_upload("w-5 h-5") }}
           Upload CSV
         </button>
       </form>
-      <a href="/cameras/export_csv" class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+      <a href="/cameras/export_csv" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
         {{ icon_download("w-5 h-5") }}
         Export CSV
       </a>
     </div>
-  </div>
-</div>
+{% endcall %}
 
 <!-- Stats Cards -->
 <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Cameras</p>
-        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1" id="stat-total">-</p>
+        <p class="ui-kpi-value text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1" id="stat-total">-</p>
       </div>
-      <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
         {{ icon_video_camera("w-6 h-6 text-blue-600 dark:text-blue-400") }}
       </div>
     </div>
   </div>
   
   <!-- P2-002: Safety Classification Stats -->
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Critical Safety</p>
-        <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1" id="stat-critical">-</p>
+        <p class="ui-kpi-value text-2xl font-bold text-red-600 dark:text-red-400 mt-1" id="stat-critical">-</p>
       </div>
-      <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
         <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
         </svg>
@@ -66,25 +56,25 @@
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active</p>
-        <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="stat-active">-</p>
+        <p class="ui-kpi-value text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="stat-active">-</p>
       </div>
-      <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
         {{ icon_clip_check("w-6 h-6 text-green-600 dark:text-green-400") }}
       </div>
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Deactivated</p>
-        <p class="text-2xl font-bold text-gray-600 dark:text-gray-400 mt-1" id="stat-deactivated">-</p>
+        <p class="ui-kpi-value text-2xl font-bold text-gray-600 dark:text-gray-400 mt-1" id="stat-deactivated">-</p>
       </div>
-      <div class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
         <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
@@ -92,13 +82,13 @@
     </div>
   </div>
   
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Maintenance</p>
-        <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1" id="stat-maintenance">-</p>
+        <p class="ui-kpi-value text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1" id="stat-maintenance">-</p>
       </div>
-      <div class="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+      <div class="ui-kpi-icon p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
         {{ icon_filter("w-6 h-6 text-amber-600 dark:text-amber-400") }}
       </div>
     </div>
@@ -106,7 +96,7 @@
 </div>
 
 <!-- Filter Section -->
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+<div class="ui-filter-bar ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
   <div class="flex flex-col gap-4">
     <!-- Row 1: Search and Per Page -->
     <div class="flex flex-col lg:flex-row gap-4 justify-between">
@@ -115,15 +105,15 @@
         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           {{ icon_search("h-5 w-5 text-gray-400") }}
         </div>
-        <input name="search" id="searchInput" type="text" placeholder="Search by Name, IP, Location, Asset No..." 
+        <input aria-label="Search" name="search" id="searchInput" type="text" placeholder="Search by Name, IP, Location, Asset No..."
           value="{{ search or '' }}"
-          class="pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+          class="ui-control pl-10 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
       </div>
       
       <!-- Controls -->
       <div class="flex gap-2 items-center">
         <div class="relative w-40">
-          <select id="perPageSelect" class="pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
+          <select aria-label="Results per page" id="perPageSelect" class="ui-control pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
             <option value="10">10 / page</option>
             <option value="25">25 / page</option>
             <option value="50">50 / page</option>
@@ -136,7 +126,7 @@
           </div>
         </div>
         
-        <button onclick="resetFilters()" class="p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Reset filters">
+        <button onclick="resetFilters()" class="ui-button ui-button-secondary p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Reset filters">
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
@@ -148,7 +138,7 @@
     <div class="flex flex-wrap gap-3">
       <!-- Group Filter -->
       <div class="relative w-48">
-        <select id="groupFilter" class="pl-3 pr-8 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none text-sm">
+        <select aria-label="Camera Group" id="groupFilter" class="ui-control pl-3 pr-8 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none text-sm">
           <option value="">All Groups</option>
           {% for group in groups %}
           <option value="{{ group.id }}">{{ group.name }}</option>
@@ -162,8 +152,9 @@
       </div>
       
       <!-- Location Filter -->
-      <div class="relative w-48">
-        <select id="locationFilter" class="pl-3 pr-8 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none text-sm">
+      {% call more_filters() %}
+<div class="relative w-48">
+        <select aria-label="Location" id="locationFilter" class="ui-control pl-3 pr-8 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none text-sm">
           <option value="">All Locations</option>
           {% for loc in locations %}
           <option value="{{ loc }}">{{ loc }}</option>
@@ -175,10 +166,8 @@
           </svg>
         </div>
       </div>
-      
-      <!-- Safety Filter -->
-      <div class="relative w-40">
-        <select id="safetyFilter" class="pl-3 pr-8 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none text-sm">
+<div class="relative w-40">
+        <select aria-label="Safety Classification" id="safetyFilter" class="ui-control pl-3 pr-8 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none text-sm">
           <option value="">All Safety</option>
           {% for option in safety_options %}
           <option value="{{ option.value }}">{{ option.label }}</option>
@@ -190,10 +179,8 @@
           </svg>
         </div>
       </div>
-      
-      <!-- Status Filter -->
-      <div class="relative w-40">
-        <select id="statusFilter" class="pl-3 pr-8 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none text-sm">
+<div class="relative w-40">
+        <select aria-label="Status" id="statusFilter" class="ui-control pl-3 pr-8 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none text-sm">
           <option value="">All Status</option>
           {% for option in status_options %}
           <option value="{{ option.value }}">{{ option.label }}</option>
@@ -205,6 +192,7 @@
           </svg>
         </div>
       </div>
+{% endcall %}
     </div>
   </div>
 </div>
@@ -222,19 +210,13 @@
 </div>
 
 <!-- Table Container -->
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[400px]">
-  <div id="loading-overlay" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
-    <div class="flex flex-col items-center gap-3">
-      <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      <span class="text-gray-600 dark:text-gray-300 font-medium">Loading cameras...</span>
-    </div>
-  </div>
+<div class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[400px]">
+  <div id="loading-overlay" class="ui-table-loading absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
+{{ loading_skeleton("Loading cameras", 4) }}
+</div>
 
-  <div class="overflow-x-auto">
-    <table id="camera-table" class="min-w-full text-sm text-left">
+  <div class="ui-table-scroll overflow-x-auto">
+    <table id="camera-table" class="ui-table min-w-full text-sm text-left">
       <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
         <tr>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortTable(0)">
@@ -275,7 +257,7 @@
   </div>
   
   <!-- Empty State -->
-  <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center">
+  <div id="empty-state" class="ui-empty-state hidden flex-col items-center justify-center py-16 text-center">
     <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
       {{ icon_camera("w-12 h-12 text-gray-400") }}
     </div>
@@ -296,7 +278,7 @@
 
 <!-- Camera Modal (Add/Edit) -->
 <div id="cameraModal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto max-h-[90vh] flex flex-col transform transition-all">
+  <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto max-h-[90vh] flex flex-col transform transition-all">
     <!-- Modal Header -->
     <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700">
       <div class="flex items-center gap-3">
@@ -304,11 +286,11 @@
           {{ icon_video_camera("w-5 h-5 text-blue-600 dark:text-blue-400") }}
         </div>
         <div>
-          <h2 id="modalTitle" class="text-lg font-bold text-gray-900 dark:text-white">Add Camera</h2>
+          <h2 id="modalTitle" class="ui-section-title text-lg font-bold text-gray-900 dark:text-white">Add Camera</h2>
           <p class="text-xs text-gray-500 dark:text-gray-400">Configure camera settings and details</p>
         </div>
       </div>
-      <button onclick="hideCameraModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+      <button onclick="hideCameraModal()" class="ui-button ui-button-secondary ui-button-icon text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
         {{ icon_x_mark("w-5 h-5") }}
       </button>
     </div>
@@ -316,10 +298,10 @@
     <!-- Tabs -->
     <div class="px-6 border-b border-gray-200 dark:border-gray-700">
       <nav id="modalTabs" class="-mb-px flex space-x-6">
-        <button type="button" class="tab-button inline-flex items-center py-3 px-1 border-b-2 border-blue-500 text-blue-600 font-medium text-sm" data-tab="basic">
+        <button type="button" class="ui-tab tab-button inline-flex items-center py-3 px-1 border-b-2 border-blue-500 text-blue-600 font-medium text-sm" data-tab="basic">
           {{ icon_video_camera("w-4 h-4 mr-2") }} Basic Info
         </button>
-        <button type="button" class="tab-button inline-flex items-center py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm" data-tab="location">
+        <button type="button" class="ui-tab tab-button inline-flex items-center py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm" data-tab="location">
           {{ icon_map_pin("w-4 h-4 mr-2") }} Location & Asset
         </button>
       </nav>
@@ -333,53 +315,53 @@
       <div id="tab-basic" class="tab-content space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="name">
+            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="name">
               Hostname <span class="text-red-500">*</span>
             </label>
             <input type="text" id="name" name="name" required
               pattern="^[A-Za-z0-9_#\(\)\-& ]+$"
               title="Only letters, numbers, underscore, hash, parentheses, ampersand, and hyphen allowed"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Letters, numbers, underscore, hash, parentheses, hyphen</p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="previous-name">Previous hostname</label>
+            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="previous-name">Previous hostname</label>
             <input type="text" id="previous-name" name="previous-name" disabled 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">
+              class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="ip">IP Address</label>
+            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="ip">IP Address</label>
             <input type="text" id="ip" name="ip" 
               pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
               title="Please enter a valid IP address"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition font-mono">
+              class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition font-mono">
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Format: xxx.xxx.xxx.xxx</p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="port">Port</label>
+            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="port">Port</label>
             <input type="number" id="port" name="port" min="1" max="65535" step="1" inputmode="numeric"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Range: 1-65535</p>
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="username">Username</label>
+            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="username">Username</label>
             <input type="text" id="username" name="username" 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
           </div>
           
           <div class="relative">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="hs-toggle-password">Password</label>
+            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="hs-toggle-password">Password</label>
             <div class="relative">
               <input id="hs-toggle-password" type="password"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10 transition"
+                class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10 transition"
                 placeholder="Enter password" name="password" autocomplete="new-password">
               <button type="button" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
                 tabindex="-1" onclick="togglePasswordVisibility('hs-toggle-password', this)">
@@ -392,20 +374,20 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="snapshot_url">Snapshot URL</label>
+          <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="snapshot_url">Snapshot URL</label>
           <input id="snapshot_url" name="snapshot_url" type="text"
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+            class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Use this if snapshot using automatic method fails</p>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="note">Notes</label>
+          <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="note">Notes</label>
           <textarea id="note" name="note" rows="2" 
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition resize-none"></textarea>
+            class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition resize-none"></textarea>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Optional notes about this camera</p>
         </div>
 
-        <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+        <div class="ui-card flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
           <input type="checkbox" id="is_flipped" name="is_flipped" value="true"
             class="h-4 w-4 text-blue-600 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 focus:ring-blue-500">
           <label for="is_flipped" class="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -419,47 +401,47 @@
       <div id="tab-location" class="tab-content space-y-4 hidden">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="latitude">Latitude</label>
+            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="latitude">Latitude</label>
             <input type="number" step="0.0000001" id="latitude" name="latitude" 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: -7.252</p>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">Longitude</label>
+            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">Longitude</label>
             <input type="number" step="0.0000001" id="longitude" name="longitude" 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: 112.753</p>
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="asset_no">Asset No.</label>
+            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="asset_no">Asset No.</label>
             <input type="text" id="asset_no" name="asset_no" 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="location">Location</label>
+            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="location">Location</label>
             <input type="text" id="location" name="location" 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="group_name">
+            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="group_name">
               Camera Group <span class="text-red-500">*</span>
             </label>
             <select id="group_name" name="group_name" multiple size="4"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
             </select>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Select one or more groups. Use Ctrl/Cmd to select multiple.</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Required: Group for organizing and filtering cameras</p>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="status">Status</label>
+            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="status">Status</label>
             <select id="status" name="status" 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
               <option value="Active">Active</option>
               <option value="Deactivated">Deactivated</option>
               <option value="Restricted">Restricted</option>
@@ -468,11 +450,11 @@
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="safety_classification">
+            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="safety_classification">
               Safety Classification <span class="text-xs text-amber-600 font-normal">(P2-002)</span>
             </label>
             <select id="safety_classification" name="safety_classification" 
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition">
+              class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition">
               <option value="critical">🔴 Critical - Incident coverage</option>
               <option value="standard" selected>🟡 Standard - Regular monitoring</option>
               <option value="low">🟢 Low - General surveillance</option>
@@ -497,11 +479,11 @@
     <!-- Modal Footer -->
     <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 rounded-b-2xl">
       <button type="button" onclick="hideCameraModal()" 
-        class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition">
+        class="ui-button ui-button-secondary px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition">
         Cancel
       </button>
       <button type="submit" form="cameraForm" id="modalSubmitButton" 
-        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition flex items-center gap-2">
+        class="ui-button ui-button-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition flex items-center gap-2">
         {{ icon_save("w-5 h-5") }}
         <span>Submit</span>
       </button>
@@ -511,7 +493,7 @@
 
 <!-- Snapshot Modal -->
 <div id="snapshotModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50 p-4">
-  <div class="relative bg-white dark:bg-gray-800 p-4 rounded-xl shadow-2xl max-w-4xl max-h-[90vh] w-full">
+  <div class="ui-card ui-card-body relative bg-white dark:bg-gray-800 p-4 rounded-xl shadow-2xl max-w-4xl max-h-[90vh] w-full">
     <div class="relative">
       <img id="snapshot-img" src="" class="rounded-lg w-full object-contain max-h-[70vh]" />
       <div id="snapshot-info" class="absolute top-4 right-4 bg-black bg-opacity-60 text-white text-sm px-3 py-1.5 rounded-lg shadow backdrop-blur-sm">
@@ -519,11 +501,11 @@
     </div>
     <div class="flex justify-end mt-4 gap-3">
       <a id="download-btn" href="#" download 
-        class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition">
+        class="ui-button ui-button-primary inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition">
         {{ icon_download("w-5 h-5") }} Download
       </a>
       <button onclick="hideSnapshotModal()" 
-        class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition">
+        class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition">
         {{ icon_x_mark("w-5 h-5") }} Close
       </button>
     </div>
@@ -721,10 +703,10 @@
       
       if (currentPage > 1) {
         paginationButtons.insertAdjacentHTML('beforeend', `
-          <button onclick="loadPage(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
+          <button onclick="loadPage(1)" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
           </button>
-          <button onclick="loadPage(${currentPage - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
+          <button onclick="loadPage(${currentPage - 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
           </button>
         `);
@@ -752,10 +734,10 @@
       
       if (currentPage < totalPages) {
         paginationButtons.insertAdjacentHTML('beforeend', `
-          <button onclick="loadPage(${currentPage + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
+          <button onclick="loadPage(${currentPage + 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
           </button>
-          <button onclick="loadPage(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
+          <button onclick="loadPage(${totalPages})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
           </button>
         `);

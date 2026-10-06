@@ -2,17 +2,19 @@
 
 {% block title %}B-SNAP – SLA Compliance Report{% endblock %}
 
-{% block content %}
-<div class="container mx-auto px-4 py-8">
+{% from "macros/ui.html" import page_header %}
 
-    <h1 class="text-3xl font-bold mb-4 text-gray-800 dark:text-gray-200">SLA Compliance Report</h1>
+{% block content %}
+<div class="ui-page">
+
+    {{ page_header("SLA Compliance Report") }}
 
     <div class="mb-6 flex flex-wrap gap-3">
-        <a href="/health/history" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors">
+        <a href="/health/history" class="ui-button ui-button-secondary bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             Back to Health History
         </a>
-        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors">
+        <button onclick="window.print()" class="ui-button ui-button-primary bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
             Print Report
         </button>
@@ -20,28 +22,28 @@
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div class="ui-card ui-card-body bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Report Period</h3>
             <p class="text-2xl font-bold text-gray-800 dark:text-gray-200 mt-2">{{ start_date.strftime('%d %b') }} - {{ end_date.strftime('%d %b %Y') }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div class="ui-card ui-card-body bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Total Cameras</h3>
             <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-2">{{ summary.total_cameras }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div class="ui-card ui-card-body bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Average Uptime</h3>
             <p class="text-2xl font-bold {% if summary.average_uptime >= sla_threshold %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %} mt-2">{{ "%.2f"|format(summary.average_uptime) }}%</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div class="ui-card ui-card-body bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">SLA Threshold</h3>
             <p class="text-2xl font-bold text-gray-800 dark:text-gray-200 mt-2">{{ sla_threshold }}%</p>
         </div>
     </div>
 
     <!-- Compliance Summary -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow mb-8">
+    <div class="ui-card bg-white dark:bg-gray-800 rounded-lg shadow mb-8">
         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Compliance Summary</h2>
+            <h2 class="ui-section-title text-lg font-semibold text-gray-800 dark:text-gray-200">Compliance Summary</h2>
         </div>
         <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -73,7 +75,7 @@
     <!-- Performance Highlights -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {% if summary.best_performer %}
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-green-500">
+        <div class="ui-card ui-card-body bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-green-500">
             <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">Best Performer</h3>
             <p class="text-xl font-bold text-gray-800 dark:text-gray-200">{{ summary.best_performer.camera_name }}</p>
             <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{{ "%.2f"|format(summary.best_performer.uptime_percentage) }}%</p>
@@ -81,7 +83,7 @@
         </div>
         {% endif %}
         {% if summary.worst_performer %}
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-red-500">
+        <div class="ui-card ui-card-body bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-red-500">
             <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">Needs Attention</h3>
             <p class="text-xl font-bold text-gray-800 dark:text-gray-200">{{ summary.worst_performer.camera_name }}</p>
             <p class="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{{ "%.2f"|format(summary.worst_performer.uptime_percentage) }}%</p>
@@ -91,9 +93,9 @@
     </div>
 
     <!-- Incident Summary -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow mb-8">
+    <div class="ui-card bg-white dark:bg-gray-800 rounded-lg shadow mb-8">
         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Incident Summary</h2>
+            <h2 class="ui-section-title text-lg font-semibold text-gray-800 dark:text-gray-200">Incident Summary</h2>
         </div>
         <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -123,13 +125,13 @@
     </div>
 
     <!-- Detailed Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+    <div class="ui-card bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Device Details</h2>
+            <h2 class="ui-section-title text-lg font-semibold text-gray-800 dark:text-gray-200">Device Details</h2>
             <span class="text-sm text-gray-500 dark:text-gray-400">{{ sla_data|length }} cameras</span>
         </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <div class="ui-table-scroll overflow-x-auto">
+            <table class="ui-table min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700/50">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Camera</th>
@@ -170,7 +172,7 @@
                             </div>
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap text-center">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if camera.compliance_status == 'Pass' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300{% elif camera.compliance_status == 'Warning' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300{% else %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300{% endif %}">
+                            <span class="ui-badge inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if camera.compliance_status == 'Pass' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300{% elif camera.compliance_status == 'Warning' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300{% else %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300{% endif %}">
                                 {{ camera.compliance_status }}
                             </span>
                         </td>

@@ -1,39 +1,27 @@
 {% extends "base.html" %}
 {% block title %}B-SNAP - Power BI Record Checks{% endblock %}
 
+{% from "macros/ui.html" import page_header %}
+
 {% block content %}
-<div class="mb-6">
-  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-    <div>
-      <h2 class="flex items-center gap-3 text-2xl font-bold text-gray-900 dark:text-gray-100">
-        <div class="rounded-xl bg-blue-100 p-2 dark:bg-blue-900/30">
-          <svg class="h-7 w-7 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19V5m0 14h16M8 17V9m4 8V7m4 10v-5"></path>
-          </svg>
-        </div>
-        Power BI Record Checks
-      </h2>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        Preview all read-only record-check datasets exposed for Power BI Gateway.
-      </p>
-    </div>
-    <div class="flex flex-wrap items-center gap-2">
-      <select id="limit-select" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
+{% set page_description %}Preview all read-only record-check datasets exposed for Power BI Gateway.{% endset %}
+{% call page_header("Power BI Record Checks", page_description) %}
+<div class="flex flex-wrap items-center gap-2">
+      <select id="limit-select" class="ui-control rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
         <option value="100">100 rows</option>
         <option value="500">500 rows</option>
         <option value="1000">1000 rows</option>
       </select>
-      <button type="button" onclick="refreshActiveDataset()" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700">
+      <button type="button" onclick="refreshActiveDataset()" class="ui-button ui-button-primary inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 0 0 4.582 9M4.582 9H9m11 11v-5h-.581m0 0a8.003 8.003 0 0 1-15.357-2m15.357 2H15"></path>
         </svg>
         Refresh
       </button>
     </div>
-  </div>
-</div>
+{% endcall %}
 
-<div class="mb-4 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+<div class="ui-card mb-4 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
   <div class="flex flex-wrap border-b border-gray-200 dark:border-gray-700" id="dataset-tabs"></div>
   <div class="grid grid-cols-1 gap-4 p-4 sm:grid-cols-4">
     <div>
@@ -55,7 +43,7 @@
   </div>
 </div>
 
-<div class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+<div class="ui-card rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
   <div id="loading-panel" class="hidden items-center gap-2 border-b border-gray-200 px-4 py-3 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
     <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -63,8 +51,8 @@
     </svg>
     Loading dataset...
   </div>
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-left text-sm" data-sortable-table>
+  <div class="ui-table-scroll overflow-x-auto">
+    <table class="ui-table min-w-full text-left text-sm" data-sortable-table>
       <thead class="bg-gray-50 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300">
         <tr id="dataset-head"></tr>
       </thead>
@@ -112,7 +100,7 @@ function renderTabs() {
   root.innerHTML = datasets.map(dataset => `
     <button type="button"
       onclick="selectDataset('${dataset.key}')"
-      class="border-b-2 px-4 py-3 text-sm font-medium transition ${dataset.key === activeKey ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}">
+      class="ui-tab border-b-2 px-4 py-3 text-sm font-medium transition ${dataset.key === activeKey ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}">
       ${dataset.label}
     </button>
   `).join('');

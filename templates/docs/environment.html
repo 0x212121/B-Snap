@@ -2,36 +2,27 @@
 
 {% block title %}Environment Variables Documentation - B-Snap{% endblock %}
 
+{% from "macros/ui.html" import page_header %}
+
 {% block content %}
-<div class="min-h-screen bg-slate-50 dark:bg-gray-900">
+<div class="ui-page">
   <!-- Header -->
-  <header class="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Documentation</h1>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Environment Variables • {{ total_vars }} variables across {{ env_docs|length }} categories
-          </p>
-        </div>
-        <a href="/" class="text-blue-600 dark:text-blue-400 hover:underline">← Back to Dashboard</a>
-      </div>
-      <!-- Documentation Tabs -->
-      <nav class="mt-4 flex space-x-1 border-b border-gray-200 dark:border-slate-700">
-        <a href="/docs/environment" class="px-4 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-600 dark:text-blue-400">
+  {% call page_header("Documentation", "Environment Variables ? " ~ total_vars ~ " variables across " ~ env_docs|length ~ " categories") %}
+<a href="/" class="ui-button ui-button-secondary">Back to Dashboard</a>
+{% endcall %}
+<nav class="ui-tabs mt-4 flex space-x-1 border-b border-gray-200 dark:border-slate-700">
+        <a href="/docs/environment" class="ui-tab px-4 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-600 dark:text-blue-400">
           Environment
         </a>
-        <a href="/docs/api" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600">
+        <a href="/docs/api" class="ui-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600">
           API Reference
         </a>
-        <a href="/docs/security" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600">
+        <a href="/docs/security" class="ui-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600">
           Security
         </a>
       </nav>
-    </div>
-  </header>
 
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="ui-page mt-6">
     <!-- Important Notice -->
     <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-8">
       <div class="flex items-start gap-3">
@@ -49,11 +40,11 @@
     </div>
 
     <!-- Table of Contents -->
-    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6 mb-8">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Navigation</h2>
+    <div class="ui-card ui-card-body bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6 mb-8">
+      <h2 class="ui-section-title text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Navigation</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {% for key, section in env_docs.items() %}
-        <a href="#{{ key }}" class="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border border-gray-100 dark:border-slate-700">
+        <a href="#{{ key }}" class="ui-button ui-button-secondary ui-button-icon flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border border-gray-100 dark:border-slate-700">
           <span class="text-blue-600 dark:text-blue-400 font-medium">{{ section.title }}</span>
           <span class="text-xs text-gray-400 ml-auto">{{ section.vars|length }} vars</span>
         </a>
@@ -64,16 +55,16 @@
     <!-- Environment Variable Sections -->
     {% for key, section in env_docs.items() %}
     <section id="{{ key }}" class="mb-12">
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+      <div class="ui-card bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
         <!-- Section Header -->
         <div class="bg-gray-50 dark:bg-slate-700 border-b border-gray-200 dark:border-slate-700 px-6 py-4">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ section.title }}</h2>
+          <h2 class="ui-section-title text-xl font-semibold text-gray-900 dark:text-white">{{ section.title }}</h2>
           <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">{{ section.description }}</p>
         </div>
 
         <!-- Variables Table -->
-        <div class="overflow-x-auto">
-          <table class="w-full">
+        <div class="ui-table-scroll overflow-x-auto">
+          <table class="ui-table w-full">
             <thead class="bg-gray-50 dark:bg-slate-700 text-left">
               <tr>
                 <th class="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Variable</th>
@@ -88,16 +79,16 @@
                 <td class="px-6 py-4">
                   <code class="text-sm font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">{{ var.name }}</code>
                   {% if var.security and 'CRITICAL' in var.security %}
-                  <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">CRITICAL</span>
+                  <span class="ui-badge ui-badge-critical ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">CRITICAL</span>
                   {% endif %}
                 </td>
                 <td class="px-6 py-4">
                   {% if var.required %}
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                  <span class="ui-badge ui-badge-critical inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
                     Required
                   </span>
                   {% else %}
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                  <span class="ui-badge ui-badge-neutral inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
                     Optional
                   </span>
                   {% endif %}
@@ -140,7 +131,7 @@
                     <span class="text-xs text-gray-500 dark:text-gray-500">Options:</span>
                     <div class="flex flex-wrap gap-1 mt-1">
                       {% for opt in var.options %}
-                      <span class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">{{ opt }}</span>
+                      <span class="ui-badge ui-badge-info text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">{{ opt }}</span>
                       {% endfor %}
                     </div>
                   </div>
@@ -157,7 +148,7 @@
 
     <!-- Quick Reference Card -->
     <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-6 text-white">
-      <h2 class="text-xl font-bold mb-4">Quick Reference</h2>
+      <h2 class="ui-section-title text-xl font-bold mb-4">Quick Reference</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <h3 class="font-semibold mb-2">Critical (Must Change)</h3>
