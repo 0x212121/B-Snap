@@ -106,6 +106,11 @@ Templates retain `{{target}}`, `{{result}}`, and `steps.ping.body.target`,
 `replies`, and `online`; `{{steps.ping.body.result}}` contains the raw API text.
 All timeouts expose `steps.error.status_code = 504`; ping execution errors use 502.
 
+Native camera commands distinguish permission failures (403) from missing cameras
+or saved snapshots (404). Camera edits and target group changes follow the sender's
+whitelist group. Fallback templates can show `{{steps.error.body.message}}` and
+`{{steps.error.status_code}}` for the actual failure reason.
+
 Bot Builder's Execute action test calls `POST /api/admin/wa-bot/test-action`
 requiring a whitelisted `sender` phone number. Native actions use that sender's
 whitelist role and camera group, matching live WhatsApp execution. Admin login
@@ -814,3 +819,15 @@ Consider implementing rate limiting for:
 - {doc}`configuration` - Environment variables
 - {doc}`security` - Security best practices
 - OpenAPI Spec: `/docs/openapi.json`
+
+
+### Resolve camera IP for WhatsApp commands
+
+`GET /api/cctv/resolve-ip?keyword={name}&phone_number={sender}` requires admin
+session/API authentication and a whitelisted sender. Omitting `phone_number` no
+longer grants unrestricted access. Assigned camera groups apply even when the
+whitelist role is admin; an API user's assigned group also limits results.
+Numbers beginning with `0`, `+62`, and device-qualified GoWA JIDs are normalized.
+Success retains `count` and `results`; JSON errors return 403 for missing/unlisted
+phones or denied camera/group access and 404 for no matching camera with an IP.
+In Bot Builder API-node query parameters, set `phone_number` to `{{sender}}`.

@@ -26,6 +26,14 @@ class WorkflowMethodTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(bind_command_arguments(["hostname"], "Camera Gate One"), {"hostname": "Camera Gate One"})
         self.assertEqual(bind_command_arguments(["hostname", "note"], "gate Camera Gate One"), {"hostname": "gate", "note": "Camera Gate One"})
         self.assertEqual(bind_command_arguments([], "gate"), {})
+    def test_legacy_resolver_nodes_use_new_api_path_and_sender(self) -> None:
+        for path in ("/cctv/resolve-ip", "/cctv/resolve-ip?keyword=gate"):
+            node = normalize_flow([{"name": "camera", "path": path, "params": {"keyword": "{{argument}}"}}])[0]
+            self.assertEqual(node["path"], "/api" + path)
+            self.assertEqual(node["params"]["phone_number"], "{{sender}}")
+        node = normalize_flow([{"name": "camera", "path": "/cctv/resolve-ip", "params": {"phone_number": "628123456789"}}])[0]
+        self.assertEqual(node["params"]["phone_number"], "628123456789")
+
     def test_legacy_nodes_default_to_get(self) -> None:
         node = normalize_flow([{"name": "data", "path": "/data"}])[0]
         self.assertEqual(node["method"], "GET")

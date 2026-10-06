@@ -617,7 +617,8 @@ async def test_flow_preview_checks_whitelist_before_any_api_call(db_session, mon
 
 
 @pytest.mark.asyncio
-async def test_builder_camera_access_uses_sender_group_not_logged_in_admin(db_session, monkeypatch):
+@pytest.mark.parametrize("action", ["snap", "cctv", "edit"])
+async def test_builder_camera_access_uses_sender_group_not_logged_in_admin(db_session, monkeypatch, action):
     import json
     from unittest.mock import AsyncMock
     from app.models.camera import Camera
@@ -628,15 +629,20 @@ async def test_builder_camera_access_uses_sender_group_not_logged_in_admin(db_se
     camera = Camera(hostname="outside-group", ip="192.168.1.80", status="Active")
     db_session.add_all([group, camera]); db_session.flush()
     entry = db_session.query(WhatsappWhitelist).filter_by(phone_number="628123456789").first()
-    entry.group_id = group.id; db_session.flush()
+    entry.group_id = group.id
+    if action == "edit":
+        entry.role = "admin"
+    db_session.flush()
     capture = AsyncMock()
     monkeypatch.setattr(wa_webhook.SnapshotService, "capture_snapshot", capture)
     result = await wa_webhook.test_wa_bot_action(SimpleNamespace(json=AsyncMock(return_value={
-        "command": {"action": "snap", "response": "Done"}, "sender": "628123456789",
-        "argument": "outside-group", "execute": True,
+        "command": {"action": action, "response": "Done"}, "sender": "628123456789",
+        "argument": "outside-group, user: changed, pass: changed" if action == "edit" else "outside-group", "execute": True,
     })), db_session, SimpleNamespace(id=1, role="admin", group_id=None, api_tokens=[]))
-    assert result.status_code == 404
-    assert json.loads(result.body)["status"] == "error"
+    assert result.status_code == 403
+    payload = json.loads(result.body)
+    assert payload["status"] == "error"
+    assert "permission" in payload["steps"]["error"]["body"]["message"]
     capture.assert_not_awaited()
 
 
@@ -665,3 +671,80 @@ async def test_system_ping_matches_existing_api_output(db_session, monkeypatch, 
     assert handler.action_failed == (latency is None or latency is False or latency == "exception")
     if handler.action_failed:
         assert handler.action_api_context["steps"]["error"]["status_code"] == (502 if latency == "exception" else 504)
+
+
+@pytest.mark.asyncio
+async def test_edit_cannot_assign_camera_to_unauthorized_group(db_session):
+    from app.models.camera import Camera
+    from app.models.camera_group import CameraGroup
+    from app.models.whitelist import WhatsappWhitelist
+    group = CameraGroup(name="Allowed edit group")
+    other = CameraGroup(name="Forbidden edit group")
+    db_session.add_all([group, other]); db_session.flush()
+    camera = Camera(hostname="edit-group-camera", ip="192.168.1.99", group_id=group.id, username="original")
+    entry = db_session.query(WhatsappWhitelist).filter_by(phone_number="628111111111").first()
+    entry.group_id = group.id
+    db_session.add(camera); db_session.flush()
+    bot = WABotHandler(db_session)
+    bot._test_command = {"action": "edit", "trigger": "/edit", "response": "Done"}
+    bot._test_argument = "edit-group-camera, user: changed, pass: changed, group: Forbidden edit group"
+    response = await bot.handle(entry.phone_number, "/edit")
+    assert bot.action_failed
+    assert bot.action_api_context["steps"]["error"]["status_code"] == 403
+    assert "requested group" in response
+    assert camera.username == "original"
+    assert camera.group_id == group.id
+
+
+@pytest.mark.parametrize("scenario,expected", [
+    ("missing_phone", 403), ("unlisted", 403), ("denied_host", 403),
+    ("denied_group", 403), ("admin_denied", 403), ("api_group_denied", 403),
+    ("missing_camera", 404), ("allowed_host", 200), ("allowed_group", 200),
+    ("unrestricted", 200), ("normalized", 200),
+])
+def test_resolve_ip_enforces_phone_and_group(db_session, scenario, expected):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from app.db.database import get_db
+    from app.routes.auth import admin_access_required
+    from app.routes.resolve_ip import router
+    from app.models.camera import Camera
+    from app.models.camera_group import CameraGroup
+    from app.models.whitelist import WhatsappWhitelist
+    from app import main
+    allowed = CameraGroup(name="Allowed resolver group")
+    denied = CameraGroup(name="Denied resolver group")
+    db_session.add_all([allowed, denied]); db_session.flush()
+    cameras = [Camera(hostname="resolve-allowed", ip="192.168.1.10", groups=[allowed]),
+               Camera(hostname="resolve-denied", ip="192.168.1.20", groups=[denied])]
+    entry = db_session.query(WhatsappWhitelist).filter_by(phone_number="628123456789").first()
+    entry.group_id = None if scenario == "unrestricted" else allowed.id
+    if scenario == "admin_denied":
+        entry.role = "admin"
+    db_session.add_all(cameras); db_session.flush()
+    app = FastAPI(exception_handlers=main.app.exception_handlers.copy())
+    app.include_router(router)
+    app.dependency_overrides[get_db] = lambda: db_session
+    app.dependency_overrides[admin_access_required] = lambda: SimpleNamespace(
+        group_id=denied.id if scenario == "api_group_denied" else None)
+    phone = "628123456789"
+    keyword = "resolve-allowed"
+    if scenario == "missing_phone": phone = ""
+    if scenario == "unlisted": phone = "628999999999"
+    if scenario in {"denied_host", "admin_denied", "unrestricted"}: keyword = "resolve-denied"
+    if scenario == "denied_group": keyword = "Denied resolver group"
+    if scenario == "missing_camera": keyword = "nonexistent-camera"
+    if scenario == "allowed_group": keyword = "Allowed resolver group"
+    if scenario == "normalized": phone = "08123456789:12@s.whatsapp.net"
+    with TestClient(app) as client:
+        result = client.get("/api/cctv/resolve-ip", params={"keyword": keyword, "phone_number": phone})
+    assert result.status_code == expected
+    assert "application/json" in result.headers["content-type"]
+    body = result.json()
+    if expected == 200:
+        assert body["count"] == 1
+        expected_name = "resolve-denied" if scenario == "unrestricted" else "resolve-allowed"
+        assert body["results"][0]["name"] == expected_name
+    else:
+        assert body["detail"]
+        assert "results" not in body

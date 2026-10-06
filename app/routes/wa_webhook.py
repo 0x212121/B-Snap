@@ -608,7 +608,7 @@ class WABotHandler:
             except Exception as exc:
                 logger.exception("WhatsApp system action failed for %s", command.get("trigger"))
                 self.action_failed = True
-                response = f"Action failed: {exc}"
+                response = str(exc.detail) if isinstance(exc, HTTPException) else f"Action failed: {exc}"
                 self._set_action_error(response, exc.status_code if isinstance(exc, HTTPException) else 502)
             if self.action_failed and "error" not in self.action_api_context.get("steps", {}):
                 self._set_action_error(response or "The action failed")
@@ -877,8 +877,27 @@ class WABotHandler:
                     if len(sent_items) == 5:
                         break
                 if not sent_items:
-                    self.action_failed = True
-                    return "No snapshot is available for the matching cameras."
+                    escaped_prefix = hostname_prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+                    cameras = self.db.query(Camera).filter(
+                        Camera.hostname.ilike(f"{escaped_prefix}%", escape="\\")
+                    ).all()
+                    if not cameras:
+                        message = "No camera matches the provided hostname prefix."
+                    else:
+                        accessible = False
+                        for matching in cameras:
+                            try:
+                                self._require_camera_access(matching)
+                                accessible = True
+                                break
+                            except HTTPException as exc:
+                                if exc.status_code != 403:
+                                    raise
+                        if not accessible:
+                            raise HTTPException(status_code=403, detail="You do not have permission to access the matching cameras or their groups.")
+                        message = "No saved snapshot file is available for the accessible matching cameras."
+                    self._set_action_error(message, 404)
+                    return message
                 self.media_items = sent_items
                 self.media_path = sent_items[0]["path"]
                 self.media_caption = sent_items[0]["caption"]
@@ -894,8 +913,8 @@ class WABotHandler:
             )
             if not camera:
                 if action == "snap":
-                    self._set_action_error(f"Camera hostname or IP '{argument}' was not found or is inaccessible.", 404)
-                    return f"Camera hostname or IP '{argument}' was not found or is inaccessible."
+                    self._set_action_error(f"Camera hostname or IP '{argument}' was not found.", 404)
+                    return f"Camera hostname or IP '{argument}' was not found."
                 self.action_failed = True
                 return f"Camera '{argument}' was not found or is inaccessible."
             if action == "cctv":
@@ -1062,7 +1081,15 @@ class WABotHandler:
             if not camera:
                 self.action_failed = True
                 return f"Camera '{hostname}' was not found."
+            self._require_camera_access(camera)
             fields = {key: re.search(rf"{key}\s*:\s*([^,]+)", argument, re.I) for key in ("user", "pass", "ip", "port", "status", "group")}
+            if fields["group"]:
+                requested_group = self.db.query(CameraGroup).filter(
+                    CameraGroup.name.ilike(fields["group"].group(1).strip())
+                ).first()
+                entry = _whitelisted_sender(self.db, sender)
+                if requested_group and entry.group_id is not None and requested_group.id != entry.group_id:
+                    raise HTTPException(status_code=403, detail="You do not have permission to assign this camera to the requested group.")
             for key in ("user", "pass"):
                 if not fields[key]:
                     self.action_failed = True
@@ -1166,12 +1193,28 @@ class WABotHandler:
         rendered = render_flow_template(template, context, timezone_name=timezone_name)
         return render_response(rendered, **legacy_values)
 
+    def _require_camera_access(self, camera: Camera) -> None:
+        """Reject an existing camera outside the sender's allowed group."""
+        entry = _whitelisted_sender(self.db, self._sender)
+        if not entry:
+            raise HTTPException(status_code=403, detail="Sender is not on the WhatsApp whitelist.")
+        if entry.group_id is not None and camera.group_id != entry.group_id and not any(
+            group.id == entry.group_id for group in camera.groups
+        ):
+            raise HTTPException(status_code=403, detail="You do not have permission to access this camera or its group.")
+
     def _find_camera(self, query: str):
         entry = _whitelisted_sender(self.db, self._sender)
         camera_query = self.db.query(Camera).filter(Camera.status.in_(["Active", "Restricted", "Maintenance"]))
         if entry and entry.group_id:
             camera_query = camera_query.filter((Camera.group_id == entry.group_id) | Camera.groups.any(id=entry.group_id))
-        return camera_query.filter((Camera.hostname.ilike(f"%{query}%")) | (Camera.ip == query)).order_by(Camera.hostname).first()
+        selector = (Camera.hostname.ilike(f"%{query}%")) | (Camera.ip == query)
+        camera = camera_query.filter(selector).order_by(Camera.hostname).first()
+        if camera is None:
+            existing = self.db.query(Camera).filter(selector).order_by(Camera.hostname).first()
+            if existing:
+                self._require_camera_access(existing)
+        return camera
 
     def _find_camera_for_capture(self, hostname_or_ip: str) -> Optional[Camera]:
         """Find one accessible camera by exact hostname (case-insensitive) or exact IP."""
@@ -1186,7 +1229,15 @@ class WABotHandler:
             camera_query = camera_query.filter(
                 (Camera.group_id == entry.group_id) | Camera.groups.any(id=entry.group_id)
             )
-        return camera_query.order_by(Camera.hostname).first()
+        camera = camera_query.order_by(Camera.hostname).first()
+        if camera is None:
+            existing = self.db.query(Camera).filter(
+                (Camera.hostname.ilike(escaped_hostname, escape="\\")) | (Camera.ip == lookup)
+            ).first()
+            if existing:
+                self._require_camera_access(existing)
+                raise HTTPException(status_code=409, detail=f"Camera cannot be captured while its status is {existing.status}.")
+        return camera
 
     def _find_latest_camera_snapshots_by_hostname_prefix(self, prefix: str) -> list[tuple[Camera, Snapshot]]:
         """Find each accessible matching camera's latest snapshot, newest cameras first."""

@@ -70,6 +70,9 @@ def normalize_flow(value: Any) -> list[dict[str, Any]]:
             raise ValueError("Setiap node workflow harus berupa objek")
         name = str(item.get("name", "")).strip()
         path = str(item.get("path", "")).strip()
+        legacy_resolver = path.split("?", 1)[0] == "/cctv/resolve-ip"
+        if legacy_resolver:
+            path = "/api" + path
         if not STEP_NAME_PATTERN.fullmatch(name):
             raise ValueError("Nama node hanya boleh berisi huruf, angka, dan underscore; awali dengan huruf")
         if name in names:
@@ -96,6 +99,8 @@ def normalize_flow(value: Any) -> list[dict[str, Any]]:
                 raise ValueError(f"Query params node {name} harus JSON object yang valid") from exc
         if not isinstance(params, dict) or len(params) > 50:
             raise ValueError(f"Query params node {name} harus berupa JSON object (maksimal 50 item)")
+        if legacy_resolver and "phone_number" not in params and "phone_number=" not in path:
+            params = {**params, "phone_number": "{{sender}}"}
         normalized.append({
             "name": name, "path": path[:500], "params": params,
             "method": method, "body": body,

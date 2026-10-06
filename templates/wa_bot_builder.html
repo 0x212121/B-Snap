@@ -90,7 +90,7 @@
           <div><h3 data-flow-title class="inline-flex items-center gap-2 font-medium text-gray-900 dark:text-white">{{ icon_server("h-4 w-4 text-blue-500") }}API flow (GET / POST)</h3><p data-flow-subtitle class="text-xs text-gray-500">Internal B-Snap nodes run in order, up to 8 nodes.</p></div>
           <button data-add-step type="button" class="ui-button ui-button-secondary inline-flex items-center gap-1.5 rounded bg-blue-100 px-3 py-1 text-blue-800 dark:bg-blue-900 dark:text-blue-100">{{ icon_plus("h-4 w-4") }}Add node</button>
         </div>
-        <p class="mb-3 text-xs text-gray-500">Example path <code>/cctv/resolve-ip</code>, params <code>{% raw %}{"keyword":"{{argument}}","phone_number":"{{sender}}","sort_by":"hostname","sort_order":"asc"}{% endraw %}</code>. Sorting: <code>sort_by</code> = hostname/name, ip, or id; <code>sort_order</code> = asc or desc. Output: <code>{% raw %}{{steps.kamera.body.results.0.ip}}{% endraw %}</code>.</p>
+        <p class="mb-3 text-xs text-gray-500">Example path <code>/api/cctv/resolve-ip</code>, params <code>{% raw %}{"keyword":"{{argument}}","phone_number":"{{sender}}","sort_by":"hostname","sort_order":"asc"}{% endraw %}</code>. Sorting: <code>sort_by</code> = hostname/name, ip, or id; <code>sort_order</code> = asc or desc. Output: <code>{% raw %}{{steps.kamera.body.results.0.ip}}{% endraw %}</code>.</p>
         <div data-flow-list class="space-y-3"></div>
         <p class="mt-2 text-xs text-gray-500">POST <code>/api/videos/record-and-wait</code> returns a completed recording. To send it, select Video as the response type and choose its video ID or secure URL from the API result. Run test records and previews JSON; it does not send WhatsApp media.</p>
         </div>
@@ -400,7 +400,7 @@
       methodSelect.value = step.method || 'GET';
       methodSelect.addEventListener('change', () => { step.method = methodSelect.value; drawFlow(); });
       methodLabel.appendChild(methodSelect); card.appendChild(methodLabel);
-      const fields = [['name','Output name','camera'],['path','API path','/cctv/resolve-ip'],['params','Query params JSON','{"keyword":"{{argument}}"}']];
+      const fields = [['name','Output name','camera'],['path','API path','/api/cctv/resolve-ip'],['params','Query params JSON','{"keyword":"{{argument}}","phone_number":"{{sender}}"}']];
       if ((step.method || 'GET') === 'POST') fields.push(['body',isIndonesian ? 'Body JSON' : 'JSON body','{"hostname":"{{argument}}","duration":30}']);
       for (const [key, label, placeholder] of fields) {
         const wrapper = document.createElement('label'); wrapper.className = 'ui-label mb-2 block text-xs'; wrapper.textContent = label;

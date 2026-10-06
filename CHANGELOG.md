@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Move the camera-IP resolver to `/api/cctv/resolve-ip`; update Bot Builder examples, n8n workflow, OpenAPI docs, and tests. Existing saved Bot Builder nodes using the old path are normalized to the new path with sender phone filtering.
+
+- Require a whitelisted phone_number for `/cctv/resolve-ip`, enforce sender and API-user camera groups even for whitelist admins, and return JSON 403 for denied access or 404 for no matching camera.
+- Report camera/group permission failures as HTTP 403 in WhatsApp commands and Bot Builder instead of camera/snapshot-not-found errors. Enforce sender group access for camera edits and target group assignment, and distinguish missing cameras from missing saved snapshots.
+
 - Use the trigger configured in Bot Builder in the Ping host usage message.
 - Reuse the existing `/ping?ip=...` API handler for system Ping host commands so replies, timings, and errors match the API. Keep execution off the event loop and expose the raw result alongside ping template variables; treat failed ICMP responses as timeouts.
 

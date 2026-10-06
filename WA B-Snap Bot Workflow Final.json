@@ -240,7 +240,7 @@
     },
     {
       "parameters": {
-        "url": "={{ $('sender number and IP').item.json.serverIP }}/cctv/resolve-ip?keyword={{ $json.cctvName }}",
+        "url": "={{ $('sender number and IP').item.json.serverIP }}/api/cctv/resolve-ip?keyword={{ encodeURIComponent($json.cctvName) }}&phone_number={{ $('sender number and IP').item.json.senderNo }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpBearerAuth",
         "options": {}
