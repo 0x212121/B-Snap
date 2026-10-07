@@ -1,11 +1,6 @@
-# services:
-#   pgloader:
-#     image: dimitri/pgloader:latest
-#     volumes:
-#       - ./app:/app:ro
-#     entrypoint: >
-#       pgloader
-#       sqlite:///app/data.db
-#       postgresql://bsnap_user:bsnap_pass@postgres:5432/bsnap_db
-#     depends_on:
-#       - postgres
+# No default overrides. Deployment configuration lives in docker-compose.yml.
+# Local image: explicitly add docker-compose.dev.yml.
+# Native recording mounts: explicitly add docker-compose.record-mounts.yml.
+# The legacy SQLite importer is in docker-compose-build.yml and requires an
+# explicit PGLOADER_TARGET_URL; it is unrelated to the normal migrate service.
+services: {}

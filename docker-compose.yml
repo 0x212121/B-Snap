@@ -2,6 +2,10 @@ services:
   migrate:
     build: .
     image: kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.3.0
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     env_file:
       - .env
     working_dir: /app
@@ -17,9 +21,11 @@ services:
     container_name: bsnap-app
     ports:
       - "8080:8080"
-    privileged: true
+    privileged: false
     cap_add:
       - NET_RAW
+    security_opt:
+      - no-new-privileges:true
     env_file:
       - .env
     depends_on:
@@ -46,6 +52,10 @@ services:
     build: .
     image: kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.3.0
     container_name: bsnap-scheduler
+    security_opt:
+      - no-new-privileges:true
+    cap_add:
+      - NET_RAW
     env_file:
       - .env
     working_dir: /app
@@ -67,6 +77,10 @@ services:
     build: .
     image: kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.3.0
     container_name: bsnap-notifier
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     env_file:
       - .env
     working_dir: /app
@@ -82,32 +96,34 @@ services:
     image: postgres:17.5
     container_name: bsnap-postgres
     environment:
-      POSTGRES_DB: bsnap_db
-      POSTGRES_USER: bsnap_user
-      POSTGRES_PASSWORD: bsnapDBP4ss2025
+      POSTGRES_DB: ${POSTGRES_DB:-bsnap_db}
+      POSTGRES_USER: ${POSTGRES_USER:-bsnap_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bsnap_user -d bsnap_db"]
+      test: ["CMD-SHELL", 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 10s
 
   pgadmin:
+    profiles: ["admin"]
     image: dpage/pgadmin4
     container_name: bsnap-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: wijaya.indra2196@gmail.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-}
     ports:
-      - "5050:80"
+      - "127.0.0.1:${PGADMIN_PORT:-5050}:80"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

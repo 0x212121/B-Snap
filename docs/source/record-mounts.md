@@ -33,7 +33,7 @@ sudo apparmor_parser -r deploy/apparmor/bsnap-record-mounts
 docker compose -f docker-compose.yml -f docker-compose.record-mounts.yml up -d --build
 ```
 
-The overlay replaces the base web service's `privileged: true` with
+The base services run without privileged mode. The overlay keeps
 `privileged: false`, adds `SYS_ADMIN` only to web/scheduler, and restricts mount
 operations to CIFS/NFS with `ro,nosuid,nodev,noexec` at generated record paths.
 It keeps Docker's seccomp filtering. Do not use `privileged: true`, unconfined

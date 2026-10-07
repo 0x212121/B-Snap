@@ -55,19 +55,70 @@ ready. Running `alembic upgrade head` alone does not seed defaults; use
 For native SMB/NFS recording mounts, apply the opt-in overlay described in
 [record-mounts.md](record-mounts.md); the migration service needs no mount privileges.
 
-Set .env file like below:
+## Deployment credentials and access
+
+Copy `.env.example` to `.env` for a new deployment and set the existing
+application keys plus `POSTGRES_PASSWORD`. Compose rejects an empty/missing
+PostgreSQL password instead of using a built-in credential. Set
+`POSTGRES_DB`/`POSTGRES_USER` if the existing database uses other names; the
+healthcheck reads those settings from the PostgreSQL container environment.
+
+`DATABASE_URL` must match the database name, user and password. Within the
+Compose network use hostname `postgres` and port `5432`; local Python processes
+use `localhost` and `POSTGRES_PORT`. URL-encode special characters in the URL
+password, but keep the original password in `POSTGRES_PASSWORD`. Keep the same
+`SECRET_KEY` and `ENCRYPTION_KEY` across application services and upgrades.
+
+For an existing `postgres_data` volume, set credentials matching the active
+database. Changing `POSTGRES_PASSWORD` in `.env` does not alter the existing
+PostgreSQL role password; PostgreSQL initialization variables only apply to an
+empty data directory. Rotate a previously exposed password explicitly through
+database administration, then update both `.env` values. Never delete the volume
+to change a password.
+
+Validate configuration without printing resolved credentials:
+
 ```bash
-DATABASE_URL=postgresql+psycopg2://bsnap_user:bsnap_pass@postgres:5432/bsnap_db
-SECRET_KEY = "YourSecretKey"
-TZ=Asia/Singapore
-WORKERS=2
-SMTP_HOST=192.168.0.1 # Your SMTP Server
-SMTP_PORT=587
-SMTP_USER=YourSMTPUser
-SMTP_PASS=SMTPUserPassword
-EMAIL_FROM=bsnap-noreply@example.com
-TRUSTED_HOSTS = "*"
+docker compose config --quiet
 ```
+
+PostgreSQL's published port is restricted to `127.0.0.1` (default `5432`,
+configurable with `POSTGRES_PORT`). Application containers still connect directly
+to `postgres:5432`. Use a secure tunnel or explicit reviewed overlay for remote
+administration rather than exposing this port on all interfaces.
+
+pgAdmin is disabled in the default stack. Set `PGADMIN_DEFAULT_EMAIL` and
+`PGADMIN_DEFAULT_PASSWORD` to enable it; blank credentials cause pgAdmin itself
+to reject startup, without preventing the default application stack from loading.
+Its published port is also restricted to localhost:
+
+```bash
+docker compose --profile admin up -d pgadmin
+```
+
+Open `http://127.0.0.1:5050` on the Docker host (or use a secure tunnel).
+`PGADMIN_PORT` can change the host port. Environment values are deployment
+configuration, not Docker secrets: users with Docker administration access can
+inspect container environment variables. Protect `.env` on the deployment host.
+
+The base web/scheduler services retain `NET_RAW` for ICMP health checks and no
+longer use privileged mode. All four application services enable
+`no-new-privileges`; migrate/notifier also drop all Linux capabilities. Native
+mounts remain opt-in through the restricted Linux/AppArmor overlay and still
+require root plus `SYS_ADMIN` for web/scheduler. Default Docker capabilities and
+the root runtime of web/scheduler have not yet been replaced by a non-root setup.
+
+For local image builds, use the development overlay with the base file:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
+
+The development overlay only changes image names, preserving base startup,
+volumes and security. `docker-compose-build.yml` is a legacy standalone import
+configuration; its pgloader target URL must be supplied through
+`PGLOADER_TARGET_URL` when explicitly enabling its `migrate` profile. This is
+separate from the normal Alembic migration service.
 
 Other valid environment variables:
 ```bash

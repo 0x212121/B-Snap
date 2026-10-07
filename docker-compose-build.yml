@@ -18,23 +18,24 @@ services:
     image: postgres:16
     container_name: bsnap-postgres
     environment:
-      POSTGRES_DB: bsnap_db
-      POSTGRES_USER: bsnap_user
-      POSTGRES_PASSWORD: bsnap_pass
+      POSTGRES_DB: ${POSTGRES_DB:-bsnap_db}
+      POSTGRES_USER: ${POSTGRES_USER:-bsnap_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
   pgadmin:
+    profiles: ["admin"]
     image: dpage/pgadmin4
     container_name: bsnap-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: wijaya.indra2196@gmail.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-}
     ports:
-      - "5050:80"
+      - "127.0.0.1:${PGADMIN_PORT:-5050}:80"
     depends_on:
       - postgres
     restart: unless-stopped
@@ -44,10 +45,12 @@ services:
     profiles: ["migrate"]  # <--- hanya jalan kalau kamu minta
     volumes:
       - ./app:/app:ro
-    entrypoint: >
-      pgloader
-      sqlite:///app/sqlite.db
-      postgresql://bsnap_user:bsnap_pass@postgres:5432/bsnap_db
+    environment:
+      PGLOADER_TARGET_URL: ${PGLOADER_TARGET_URL:-}
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - 'exec pgloader sqlite:///app/sqlite.db "$${PGLOADER_TARGET_URL:?Set PGLOADER_TARGET_URL for the legacy import}"'
     depends_on:
       - postgres
     restart: "no"

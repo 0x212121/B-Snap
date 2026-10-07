@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Remove privileged mode and embedded database/admin passwords from Compose deployments; require deployment credentials, restrict database/admin ports to localhost, and make pgAdmin opt-in through the admin profile.
 - Run Docker database migrations and default configuration initialization in a one-shot service before web, scheduler, and notifier; support empty PostgreSQL databases through a frozen baseline and stop startup on migration failure.
 - Standardized remaining menu pages and AJAX rows with shared KPI cards, semantic badges, action icons, loading skeletons, modal controls, and accessible numbered pagination; use shared NVR row templates and clipboard feedback.
 - Aligned Camera Management and Devices Status KPI cards, filters, table actions, status badges, loading states, and icons with the shared UI standard; preserve Ping All icons after completion and escape device data in rendered rows.
