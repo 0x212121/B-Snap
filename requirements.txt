@@ -18,6 +18,7 @@ frozenlist==1.8.0
 greenlet==3.5.6
 gunicorn==23.0.0
 h11==0.16.0
+httpx==0.28.1
 idna==3.10
 isodate==0.7.2
 itsdangerous==2.2.0

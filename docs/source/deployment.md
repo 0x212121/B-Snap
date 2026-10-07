@@ -221,6 +221,10 @@ Pip/npm download caches are reused during builds. Runtime startup validates CSS
 instead of attempting to run npm. The build checks Python dependency consistency,
 imports native image/database/crypto libraries, checks ffprobe, and validates the
 OCI version label against both `pyproject.toml` and `app/version.py`.
+It also checks mandatory top-level application import modules without starting
+services or reading `.env`, so missing runtime dependencies fail the image build.
+HTTPX belongs to runtime dependencies because WhatsApp API workflows use its
+ASGI client; installing development extras is not required to boot web workers.
 
 The current default image tag and `APP_VERSION` build argument follow the package
 version. On a version bump, update both defaults; inconsistent source/label
