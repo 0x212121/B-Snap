@@ -112,7 +112,7 @@ nav_items = [
                 "roles": ["admin"],
             },
             {
-                "label": "WA Whitelist",
+                "label": "WhatsApp Whitelist",
                 "href": "/admin/whitelist",
                 "icon": "shield-check",
                 "roles": ["admin"],

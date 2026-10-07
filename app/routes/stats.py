@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 from fastapi import APIRouter, Query, Request, Depends, HTTPException
 import pytz
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, ORJSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import not_, and_, func, or_, select
 from app.db.database import get_db
@@ -352,7 +352,7 @@ async def get_camera_stats_data(
     })
 
 
-@router.get("/stats/operations", response_class=JSONResponse)
+@router.get("/stats/operations", response_class=ORJSONResponse)
 async def get_camera_operations_data(
     request: Request,
     start_date: date = Query(...),
@@ -491,7 +491,7 @@ async def get_camera_operations_data(
     return result
 
 
-@router.get("/stats/no-data-cameras", response_class=JSONResponse)
+@router.get("/stats/no-data-cameras", response_class=ORJSONResponse)
 async def get_no_data_cameras(
     request: Request,
     days: int = Query(7, ge=1, le=365),
@@ -564,7 +564,7 @@ async def get_no_data_cameras(
     }
 
 
-@router.get("/stats/heatmap", response_class=JSONResponse)
+@router.get("/stats/heatmap", response_class=ORJSONResponse)
 async def get_snapshot_heatmap(
     request: Request,
     camera: str = Query(None),
@@ -572,10 +572,10 @@ async def get_snapshot_heatmap(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    sg_tz = timezone("Asia/Singapore")
+    tz = pytz.timezone(get_current_timezone(db))
 
-    # Set end and start datetime in Singapore timezone
-    end_datetime = datetime.now(sg_tz)
+    # Set end and start datetime in the configured timezone
+    end_datetime = datetime.now(tz)
     start_datetime = end_datetime - timedelta(days=days)
 
     query = db.query(SnapshotLog).filter(SnapshotLog.timestamp >= start_datetime)
@@ -592,12 +592,12 @@ async def get_snapshot_heatmap(
         # Ensure log.timestamp is timezone-aware first
         if log.timestamp.tzinfo is None:
             # Assume it's in UTC if not aware
-            log_ts = log.timestamp.replace(tzinfo=timezone("UTC"))
+            log_ts = log.timestamp.replace(tzinfo=timezone.utc)
         else:
             log_ts = log.timestamp
 
-        # Convert to Singapore time
-        timestamp = log_ts.astimezone(sg_tz)
+        # Convert to the configured timezone
+        timestamp = log_ts.astimezone(tz)
         date_str = timestamp.strftime("%Y-%m-%d")
         hour = timestamp.hour
         heatmap_data[date_str][hour] += 1

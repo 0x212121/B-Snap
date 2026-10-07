@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request, HTTPException, Query
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, ORJSONResponse
 from app.models.user import User
 from app.routes.auth import operator_access_required
 from app.utils.template_helper import templates
@@ -144,13 +144,13 @@ async def get_log_content(
     log_path = LOG_DIR / safe_filename
 
     if not log_path.exists() or not log_path.is_file():
-        return JSONResponse(content={"entries": [], "total": 0, "error": f"{filename} not found."})
+        return ORJSONResponse(content={"entries": [], "total": 0, "error": f"{filename} not found."})
 
     try:
         with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()
     except Exception as e:
-        return JSONResponse(content={"entries": [], "total": 0, "error": str(e)})
+        return ORJSONResponse(content={"entries": [], "total": 0, "error": str(e)})
 
     # Parse all lines
     entries = []
@@ -185,7 +185,7 @@ async def get_log_content(
     for e in entries:
         level_counts[e.level] = level_counts.get(e.level, 0) + 1
 
-    return JSONResponse(content={
+    return ORJSONResponse(content={
         "entries": [e.to_dict() for e in paginated],
         "total": total,
         "offset": offset,

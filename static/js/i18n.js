@@ -173,7 +173,7 @@
     "Manage B-SNAP email distribution lists": "Kelola daftar distribusi email B-SNAP",
     "Manage authorized WhatsApp numbers for bot access": "Kelola nomor WhatsApp yang diizinkan untuk akses bot",
     "Customize notification email messages with drag-and-drop variables": "Sesuaikan pesan email notifikasi dengan variabel yang dapat diseret dan dilepas",
-    "Devices": "Perangkat", "WA Whitelist": "Daftar Izin WA", "API Docs": "Dokumentasi API",
+    "Devices": "Perangkat", "WhatsApp Whitelist": "Daftar Izin WhatsApp", "API Docs": "Dokumentasi API",
     "Sign In": "Masuk", "Configuration": "Konfigurasi", "Developer": "Pengembang",
     "Device Groups": "Grup Perangkat", "Camera Management": "Manajemen Kamera",
     "Camera Statistics": "Statistik Kamera", "Historical Device Stats": "Statistik Perangkat Historis",

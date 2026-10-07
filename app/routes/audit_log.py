@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, ORJSONResponse
 from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
@@ -131,7 +131,7 @@ async def get_audit_logs_api(
         AuditLog.timestamp < cutoff_date
     ).count()
     
-    return JSONResponse({
+    return ORJSONResponse({
         "logs": [
             {
                 "id": log.id,
@@ -283,7 +283,7 @@ async def get_legacy_logs(
     total = query.count()
     logs = query.order_by(AuditLogLegacy.timestamp.desc()).offset(offset).limit(per_page).all()
     
-    return JSONResponse({
+    return ORJSONResponse({
         "logs": [
             {
                 "id": log.id,
@@ -323,7 +323,7 @@ async def get_archive_history_logs(
         AuditArchiveHistory.status == "completed",
     ).first()
     if archive is None:
-        return JSONResponse(status_code=404, content={"message": "Completed archive was not found."})
+        return ORJSONResponse(status_code=404, content={"message": "Completed archive was not found."})
 
     query = db.query(AuditLogLegacy).filter(
         AuditLogLegacy.timestamp >= archive.archive_period_start,
@@ -346,7 +346,7 @@ async def get_archive_history_logs(
         (page - 1) * per_page
     ).limit(per_page).all()
 
-    return JSONResponse({
+    return ORJSONResponse({
         "archive": {
             "id": archive.id,
             "archived_at": archive.archived_at.isoformat() if archive.archived_at else None,

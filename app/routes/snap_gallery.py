@@ -5,7 +5,7 @@ from typing import Optional, List, Dict, Any
 from uuid import uuid4
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, ORJSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.utils.template_helper import templates
@@ -346,7 +346,7 @@ def show_snapshots(request: Request, db: Session = Depends(get_db), camera: str 
     })
 
 
-@router.get("/gallery-data", response_class=JSONResponse)
+@router.get("/gallery-data", response_class=ORJSONResponse)
 async def get_gallery_data(
     request: Request,
     db: Session = Depends(get_db),
@@ -363,7 +363,7 @@ async def get_gallery_data(
     # group_id can be None (access to all cameras) or a specific group ID
     # Check if user is authenticated by checking user_id in session
     if not request.session.get("user_id"):
-        return JSONResponse(status_code=403, content={"detail": "Authentication required."})
+        return ORJSONResponse(status_code=403, content={"detail": "Authentication required."})
 
     filtered_images = _get_filtered_snapshots(
         db,
@@ -386,7 +386,7 @@ async def get_gallery_data(
         'role': request.session.get("user_role")
     })
 
-    return JSONResponse({
+    return ORJSONResponse({
         'html': gallery_html,
         'buttons_html': buttons_html
     })

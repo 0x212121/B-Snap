@@ -8,12 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Reproducible JSONResponse/ORJSONResponse benchmark for log-content serialization and complete handler execution, with response-equivalence checks.
+
 - Native read-only SMB/NFS recording mounts with admin controls, encrypted SMB passwords, deployment IP allowlists, and restricted Linux deployment support.
 - WhatsApp Bot Builder with custom commands, API flows, and configurable text, image, and video replies.
 - Live conversation previews, action testing, template variables, and message delivery monitoring.
 - Video recording through APIs and WhatsApp commands.
 
 ### Changed
+
+- Audit-log, camera analytics, camera-list, and snapshot/video gallery data responses now use ORJSON for faster JSON serialization.
+
+- Log-content responses now use ORJSON for faster serialization while preserving payloads, status codes, and headers.
 
 - Health, galleries, audit/email logs, and other frontend date/time displays now follow the selected English/Indonesian language instead of a fixed locale or the browser language.
 
@@ -26,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Simplified release notes across all versions to highlight important changes.
 
 ### Fixed
+
+- Snapshot heatmap now uses the configured timezone and correctly handles naive UTC timestamps without raising a timezone TypeError.
 
 - Scheduler triggers and WhatsApp camera report dates now follow the configured timezone, including timezone changes on configuration reload. WhatsApp camera and NVR report date headers display the timezone abbreviation (WIB/WITA/WIT).
 

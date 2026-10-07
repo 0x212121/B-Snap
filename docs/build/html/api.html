@@ -21,22 +21,22 @@
 <meta content="#ffffff" media="(prefers-color-scheme: light)" name="theme-color"/>
 <meta content="#030711" media="(prefers-color-scheme: dark)" name="theme-color"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>API Documentation | B-SNAP v2.3.0 documentation</title>
-<meta content="API Documentation | B-SNAP v2.3.0 documentation" property="og:title"/>
-<meta content="API Documentation | B-SNAP v2.3.0 documentation" name="twitter:title"/>
+<title>API Documentation | B-SNAP v2.4.0 documentation</title>
+<meta content="API Documentation | B-SNAP v2.4.0 documentation" property="og:title"/>
+<meta content="API Documentation | B-SNAP v2.4.0 documentation" name="twitter:title"/>
 <link href="_static/pygments.css?v=e72c8e07" rel="stylesheet" type="text/css"/>
 <link href="_static/theme.css?v=73505e79" rel="stylesheet" type="text/css"/>
 <link href="search.html" rel="search" title="Search"/>
 <link href="genindex.html" rel="index" title="Index"/>
 <link href="security.html" rel="next" title="Security"/>
-<link href="configuration.html" rel="prev" title="Configuration Guide"/>
+<link href="record-mounts.html" rel="prev" title="Native SMB and NFS recording mounts"/>
 </head>
 <body :class="{ 'overflow-hidden': showSidebar }" class="min-h-screen font-sans antialiased bg-background text-foreground" x-data="{ showSidebar: false, showScrollTop: false }">
 <div @click.self="showSidebar = false" class="fixed inset-0 z-50 overflow-hidden bg-background/80 backdrop-blur-sm md:hidden" x-cloak="" x-show="showSidebar"></div><div class="relative flex flex-col min-h-screen" id="page"><a class="absolute top-0 left-0 z-[100] block bg-background p-4 text-xl transition -translate-x-full opacity-0 focus:translate-x-0 focus:opacity-100" href="#content">
       Skip to content
     </a><header class="sticky top-0 z-40 w-full border-b shadow-xs border-border bg-background/90 backdrop-blur"><div class="container flex items-center h-14">
 <div class="hidden mr-4 md:flex">
-<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.3.0 documentation</span>
+<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.4.0 documentation</span>
 </a></div><button @click="showSidebar = true" class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden" type="button">
 <svg aria-hidden="true" fill="currentColor" height="24" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
 <path d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z"></path>
@@ -66,7 +66,7 @@
 </div>
 </header>
 <div class="flex-1"><div class="container md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }" class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky" id="left-sidebar">
-<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.3.0 documentation</span>
+<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.4.0 documentation</span>
 </a>
 <div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
 <div class="overflow-y-auto h-full w-full relative pr-6"><nav class="table w-full min-w-full my-6 lg:my-8">
@@ -74,6 +74,7 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="architecture.html">System Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="record-mounts.html">Native SMB and NFS recording mounts</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="security.html">Security</a></li>
 <li class="toctree-l1"><a class="reference internal" href="audit_logging.html">Audit Logging System</a></li>
@@ -96,7 +97,7 @@
 <div class="w-full min-w-0 mx-auto">
 <nav aria-label="breadcrumbs" class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
 <a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground" href="index.html">
-<span class="hidden md:inline">B-SNAP v2.3.0 documentation</span>
+<span class="hidden md:inline">B-SNAP v2.4.0 documentation</span>
 <svg aria-label="Home" class="md:hidden" fill="currentColor" height="18" stroke="none" viewbox="0 96 960 960" width="18" xmlns="http://www.w3.org/2000/svg">
 <path d="M240 856h120V616h240v240h120V496L480 316 240 496v360Zm-80 80V456l320-240 320 240v480H520V696h-80v240H160Zm320-350Z"></path>
 </svg>
@@ -196,6 +197,151 @@
 <hr class="docutils"/>
 <section id="videos-api">
 <h2>Videos API<a class="headerlink" href="#videos-api" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#videos-api'"><span>#</span></a></h2>
+<section id="configurable-whatsapp-command-responses">
+<h3>Configurable WhatsApp Command Responses<a class="headerlink" href="#configurable-whatsapp-command-responses" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#configurable-whatsapp-command-responses'"><span>#</span></a></h3>
+<p>The system Ping host action reuses the existing <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/ping?ip={host}</span></code> handler
+in a worker thread. Its reply text matches the API, including latency formatting.
+Templates retain <code class="docutils literal notranslate"><span class="pre">{{target}}</span></code>, <code class="docutils literal notranslate"><span class="pre">{{result}}</span></code>, and <code class="docutils literal notranslate"><span class="pre">steps.ping.body.target</span></code>,
+<code class="docutils literal notranslate"><span class="pre">replies</span></code>, and <code class="docutils literal notranslate"><span class="pre">online</span></code>; <code class="docutils literal notranslate"><span class="pre">{{steps.ping.body.result}}</span></code> contains the raw API text.
+All timeouts expose <code class="docutils literal notranslate"><span class="pre">steps.error.status_code</span> <span class="pre">=</span> <span class="pre">504</span></code>; ping execution errors use 502.</p>
+<p>Native camera commands distinguish permission failures (403) from missing cameras
+or saved snapshots (404). Camera edits and target group changes follow the sender’s
+whitelist group. Fallback templates can show <code class="docutils literal notranslate"><span class="pre">{{steps.error.body.message}}</span></code> and
+<code class="docutils literal notranslate"><span class="pre">{{steps.error.status_code}}</span></code> for the actual failure reason.</p>
+<p>Bot Builder’s Execute action test calls <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/api/admin/wa-bot/test-action</span></code>
+requiring a whitelisted <code class="docutils literal notranslate"><span class="pre">sender</span></code> phone number. Native actions use that sender’s
+whitelist role and camera group, matching live WhatsApp execution. Admin login
+is required to access the test endpoint but does not bypass sender restrictions.
+API-flow tests also require a whitelisted sender; API calls retain the selected
+API token’s permissions. Missing/unlisted senders or insufficient command roles
+return HTTP 403 with <code class="docutils literal notranslate"><span class="pre">steps.error</span></code> before executing any action.
+It executes the unsaved native action and
+returns JSON <code class="docutils literal notranslate"><span class="pre">status</span></code>, <code class="docutils literal notranslate"><span class="pre">steps</span></code>, input <code class="docutils literal notranslate"><span class="pre">params</span></code>, <code class="docutils literal notranslate"><span class="pre">response_preview</span></code>, and failure
+previews without sending WhatsApp messages. Capture, camera-edit, and whitelist
+tests really perform their actions; API callers must explicitly set <code class="docutils literal notranslate"><span class="pre">execute:</span> <span class="pre">true</span></code>.
+Success fields use the existing action-specific result nodes. Every native failure
+also exposes <code class="docutils literal notranslate"><span class="pre">{{steps.error.status_code}}</span></code>, <code class="docutils literal notranslate"><span class="pre">{{steps.error.body.status}}</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">{{steps.error.body.message}}</span></code> in fallback messages. Tests show selectable fields
+even on failure. Missing camera, offline camera, and failed capture return
+404, 503, and 502 respectively for Capture new snapshot.</p>
+<p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/api/snapshots/capture/{identifier}</span></code> (or <code class="docutils literal notranslate"><span class="pre">/snap/{identifier}</span></code>) captures a
+new snapshot using operator/admin authentication and camera group restrictions.
+Success returns <code class="docutils literal notranslate"><span class="pre">status</span></code>, <code class="docutils literal notranslate"><span class="pre">success</span></code>, <code class="docutils literal notranslate"><span class="pre">message</span></code>, <code class="docutils literal notranslate"><span class="pre">hostname</span></code>, <code class="docutils literal notranslate"><span class="pre">snapshot_id</span></code>, and
+the protected <code class="docutils literal notranslate"><span class="pre">snapshot_url</span></code>; failures return JSON <code class="docutils literal notranslate"><span class="pre">status:</span> <span class="pre">error</span></code>, <code class="docutils literal notranslate"><span class="pre">success:</span> <span class="pre">false</span></code>,
+<code class="docutils literal notranslate"><span class="pre">message</span></code>, and <code class="docutils literal notranslate"><span class="pre">detail</span></code>, with a non-success HTTP status.</p>
+<p><code class="docutils literal notranslate"><span class="pre">processing_delay_seconds</span></code> controls when processing messages appear (0–60 seconds).
+New Bot Builder commands default to three seconds; existing settings default to
+zero. Processing does not block command execution and is canceled if success or
+failure is ready before the delay expires. Remaining processing messages are
+suppressed before fallback delivery. Messages already delivered to WhatsApp
+cannot be withdrawn by this setting.</p>
+<p>Command inputs are available before any API completes. Set required parameters
+to <code class="docutils literal notranslate"><span class="pre">hostname,</span> <span class="pre">duration</span></code> and invoke <code class="docutils literal notranslate"><span class="pre">/record</span> <span class="pre">CCTV-GATE-01</span> <span class="pre">30</span></code>. Processing messages
+can use <code class="docutils literal notranslate"><span class="pre">Recording</span> <span class="pre">{{params.hostname}}</span> <span class="pre">for</span> <span class="pre">{{duration}}s</span></code>. The explicit forms
+<code class="docutils literal notranslate"><span class="pre">{{params.hostname}}</span></code> and <code class="docutils literal notranslate"><span class="pre">{{params.duration}}</span></code> and short named aliases work in
+API paths/query/JSON bodies and message templates. For example, use JSON body
+<code class="docutils literal notranslate"><span class="pre">{"hostname":"{{params.hostname}}","duration":"{{params.duration}}"}</span></code> with the
+recording endpoint. A single parameter receives the entire argument; with
+multiple parameters, the last receives the remaining text. Run test uses the
+unsaved required-parameter names and previews bound inputs. API result variables
+such as <code class="docutils literal notranslate"><span class="pre">{{steps.data.body.hostname}}</span></code> only exist after that node responds.</p>
+<p>Failed API Flow nodes retain their <code class="docutils literal notranslate"><span class="pre">status_code</span></code> and JSON <code class="docutils literal notranslate"><span class="pre">body</span></code>. Run test shows
+these fields as selectable variables even when the API returns an error.
+For a node named <code class="docutils literal notranslate"><span class="pre">data</span></code>, a fallback message can use
+<code class="docutils literal notranslate"><span class="pre">HTTP</span> <span class="pre">{{steps.data.status_code}}:</span> <span class="pre">{{steps.data.body.detail}}</span></code> and
+<code class="docutils literal notranslate"><span class="pre">{{steps.data.body.status}}</span></code> when supplied by the endpoint. Completed earlier
+node results also remain available. The flow stops at the failed node and uses
+failure/fallback messages instead of the success response.</p>
+<p>Every Bot Builder command action offers Text, Image, and Video response types.
+For Image, set <code class="docutils literal notranslate"><span class="pre">response_image_source</span></code> to an HTTP(S) image URL or a protected
+snapshot URL, including action/API templates such as
+<code class="docutils literal notranslate"><span class="pre">{{steps.result.body.0.url}}</span></code> or <code class="docutils literal notranslate"><span class="pre">{{steps.data.body.image_url}}</span></code>.
+The command’s rendered response becomes the optional image caption.
+For Video, set <code class="docutils literal notranslate"><span class="pre">response_video_source</span></code> to a protected video ID/URL or a result
+template. Protected videos require an operator/admin API token; protected images
+check the API token for API Flow commands and whitelist group access for native
+commands. Missing/deleted files, invalid sources, and denied access produce a
+failure response. Selecting Image replaces the action’s success media while
+preserving processing/fallback messages. Existing command defaults are preserved.</p>
+</section>
+<section id="record-and-send-video-from-a-whatsapp-api-flow">
+<h3>Record and Send Video from a WhatsApp API Flow<a class="headerlink" href="#record-and-send-video-from-a-whatsapp-api-flow" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#record-and-send-video-from-a-whatsapp-api-flow'"><span>#</span></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/api/videos/record-and-wait</span></code> accepts the same hostname/IP JSON body and
+operator/admin Bearer authentication as <code class="docutils literal notranslate"><span class="pre">/api/videos/record</span></code>, but returns
+<code class="docutils literal notranslate"><span class="pre">200</span> <span class="pre">OK</span></code> only after the video has been recorded and saved. Allow a long HTTP
+request timeout for capture and processing. Recording failures return <code class="docutils literal notranslate"><span class="pre">502</span></code>;
+unknown cameras return <code class="docutils literal notranslate"><span class="pre">404</span></code>, ambiguous IPs return <code class="docutils literal notranslate"><span class="pre">409</span></code>, and validation/access
+errors return <code class="docutils literal notranslate"><span class="pre">422</span></code>/<code class="docutils literal notranslate"><span class="pre">403</span></code>. Failed recordings are not sent to WhatsApp.</p>
+<p>Configure an API Flow node named <code class="docutils literal notranslate"><span class="pre">data</span></code>:</p>
+<ul class="simple">
+<li><p>Method: <code class="docutils literal notranslate"><span class="pre">POST</span></code></p></li>
+<li><p>API path: <code class="docutils literal notranslate"><span class="pre">/api/videos/record-and-wait</span></code></p></li>
+<li><p>Query params: <code class="docutils literal notranslate"><span class="pre">{}</span></code></p></li>
+<li><p>JSON body: <code class="docutils literal notranslate"><span class="pre">{"hostname":"{{argument}}","duration":30}</span></code>
+(use <code class="docutils literal notranslate"><span class="pre">ip</span></code> instead of <code class="docutils literal notranslate"><span class="pre">hostname</span></code> to select by IP).</p></li>
+<li><p>Response template: <code class="docutils literal notranslate"><span class="pre">Video</span> <span class="pre">{{steps.data.body.hostname}}</span> <span class="pre">—</span> <span class="pre">{{steps.data.body.duration}}</span> <span class="pre">seconds</span></code></p></li>
+<li><p>Response type: <code class="docutils literal notranslate"><span class="pre">Video</span></code></p></li>
+<li><p>Video source: <code class="docutils literal notranslate"><span class="pre">{{steps.data.body.video_id}}</span></code> or <code class="docutils literal notranslate"><span class="pre">{{steps.data.body.video_url}}</span></code></p></li>
+</ul>
+<p>The completed response contains <code class="docutils literal notranslate"><span class="pre">status</span></code>, <code class="docutils literal notranslate"><span class="pre">message</span></code>, <code class="docutils literal notranslate"><span class="pre">media_type:</span> <span class="pre">"video"</span></code>,
+<code class="docutils literal notranslate"><span class="pre">video_id</span></code>, <code class="docutils literal notranslate"><span class="pre">camera_id</span></code>, <code class="docutils literal notranslate"><span class="pre">hostname</span></code>, <code class="docutils literal notranslate"><span class="pre">duration</span></code>, <code class="docutils literal notranslate"><span class="pre">file_size</span></code>, and the authenticated
+<code class="docutils literal notranslate"><span class="pre">video_url</span></code>. Only commands configured with a Video response upload the selected file to GoWA’s
+<code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/send/video</span></code> as multipart <code class="docutils literal notranslate"><span class="pre">video</span></code>, with the response text as <code class="docutils literal notranslate"><span class="pre">caption</span></code>.
+It sends the result to the invoking user’s private chat, matching other API Flow
+replies. It does not expose an unauthenticated static URL or send an API token to GoWA.
+Text is the default response type, including for existing recording commands;
+calling the recording API alone does not send video. The configured source can
+select an ID or secure URL from any API node, subject to the selected token’s
+role, expiration, and camera group access. Deleted or missing videos are rejected.</p>
+<p>Optional processing messages are sent before the recording starts; failure
+messages handle capture/API failures. Gateway send failures are logged and
+reported to the user. Webhook event deduplication also applies to these commands.
+The Bot Builder Run test button records a video and previews the completed JSON;
+it does not deliver a WhatsApp video. Invoke the saved command to test delivery.</p>
+</section>
+<section id="start-video-recording-by-hostname-or-ip">
+<h3>Start Video Recording by Hostname or IP<a class="headerlink" href="#start-video-recording-by-hostname-or-ip" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#start-video-recording-by-hostname-or-ip'"><span>#</span></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">POST /api/videos/record
+</span><span id="line-2">Authorization: Bearer your-api-token
+</span><span id="line-3">Content-Type: application/json
+</span></code></pre></div>
+</div>
+<p>Requires an operator or admin account with access to the camera’s group. The camera
+must already be registered with its connection credentials and a storage group.
+Provide exactly one of <code class="docutils literal notranslate"><span class="pre">hostname</span></code> or <code class="docutils literal notranslate"><span class="pre">ip</span></code>. Hostname matching is exact and
+case-insensitive; IP matching is exact. Surrounding input whitespace is removed.
+<code class="docutils literal notranslate"><span class="pre">duration</span></code> defaults to 10 seconds and must be between 5 and 60 seconds.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="p">{</span><span class="nt">"hostname"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CCTV-GATE-01"</span><span class="p">,</span><span class="w"> </span><span class="nt">"duration"</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">}</span>
+</span></code></pre></div>
+</div>
+<p>Alternatively:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="p">{</span><span class="nt">"ip"</span><span class="p">:</span><span class="w"> </span><span class="s2">"192.168.1.100"</span><span class="p">,</span><span class="w"> </span><span class="nt">"duration"</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">}</span>
+</span></code></pre></div>
+</div>
+<p><strong>Responses</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">202</span> <span class="pre">Accepted</span></code> - Recording queued in the background; includes <code class="docutils literal notranslate"><span class="pre">message</span></code>,
+<code class="docutils literal notranslate"><span class="pre">camera_id</span></code>, <code class="docutils literal notranslate"><span class="pre">hostname</span></code>, and <code class="docutils literal notranslate"><span class="pre">duration</span></code>. This does not guarantee capture success.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">401</span> <span class="pre">Unauthorized</span></code> - Missing, invalid, or expired authentication.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">403</span> <span class="pre">Forbidden</span></code> - Insufficient role or camera group access.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">404</span> <span class="pre">Not</span> <span class="pre">Found</span></code> - No matching registered camera.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">409</span> <span class="pre">Conflict</span></code> - Multiple matching cameras; recording is not started. Duplicate
+IPs are rejected even when only one matching camera belongs to the user’s group.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">422</span> <span class="pre">Unprocessable</span> <span class="pre">Entity</span></code> - Missing/both selectors, blank selector, or invalid duration.</p></li>
+</ul>
+<p>Example duplicate IP error:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="p">{</span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Multiple cameras match this IP address. Recording was not started. Use a unique hostname or camera ID."</span><span class="p">}</span>
+</span></code></pre></div>
+</div>
+<p>The existing <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/videos/record/{camera_id}?duration=30</span></code> endpoint remains available
+and applies the same role and camera group checks.</p>
+<p>In WhatsApp Bot Builder, use an API Flow node with method <code class="docutils literal notranslate"><span class="pre">POST</span></code>, path
+<code class="docutils literal notranslate"><span class="pre">/api/videos/record</span></code>, query params <code class="docutils literal notranslate"><span class="pre">{}</span></code>, and JSON body
+<code class="docutils literal notranslate"><span class="pre">{"hostname":"{{argument}}","duration":30}</span></code> (or use <code class="docutils literal notranslate"><span class="pre">ip</span></code> instead of <code class="docutils literal notranslate"><span class="pre">hostname</span></code>).
+Select a valid operator/admin API token. Use <code class="docutils literal notranslate"><span class="pre">{{steps.data.body.message}}</span></code> in the
+response template when the node output name is <code class="docutils literal notranslate"><span class="pre">data</span></code>. The Run test button
+executes the request, including starting a recording for POST nodes.</p>
+</section>
 <section id="get-video-file">
 <h3>Get Video File<a class="headerlink" href="#get-video-file" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#get-video-file'"><span>#</span></a></h3>
 <p>Retrieve a video file by ID with authentication.</p>
@@ -737,6 +883,17 @@
 <li><p><a class="reference internal" href="security.html"><span class="doc">Security</span></a> - Security best practices</p></li>
 <li><p>OpenAPI Spec: <code class="docutils literal notranslate"><span class="pre">/docs/openapi.json</span></code></p></li>
 </ul>
+<section id="resolve-camera-ip-for-whatsapp-commands">
+<h3>Resolve camera IP for WhatsApp commands<a class="headerlink" href="#resolve-camera-ip-for-whatsapp-commands" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#resolve-camera-ip-for-whatsapp-commands'"><span>#</span></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/api/cctv/resolve-ip?keyword={name}&amp;phone_number={sender}</span></code> requires admin
+session/API authentication and a whitelisted sender. Omitting <code class="docutils literal notranslate"><span class="pre">phone_number</span></code> no
+longer grants unrestricted access. Assigned camera groups apply even when the
+whitelist role is admin; an API user’s assigned group also limits results.
+Numbers beginning with <code class="docutils literal notranslate"><span class="pre">0</span></code>, <code class="docutils literal notranslate"><span class="pre">+62</span></code>, and device-qualified GoWA JIDs are normalized.
+Success retains <code class="docutils literal notranslate"><span class="pre">count</span></code> and <code class="docutils literal notranslate"><span class="pre">results</span></code>; JSON errors return 403 for missing/unlisted
+phones or denied camera/group access and 404 for no matching camera with an IP.
+In Bot Builder API-node query parameters, set <code class="docutils literal notranslate"><span class="pre">phone_number</span></code> to <code class="docutils literal notranslate"><span class="pre">{{sender}}</span></code>.</p>
+</section>
 </section>
 </section>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
@@ -755,6 +912,9 @@
 </ul>
 </li>
 <li><a :data-current="activeSection === '#videos-api'" class="reference internal" href="#videos-api">Videos API</a><ul>
+<li><a :data-current="activeSection === '#configurable-whatsapp-command-responses'" class="reference internal" href="#configurable-whatsapp-command-responses">Configurable WhatsApp Command Responses</a></li>
+<li><a :data-current="activeSection === '#record-and-send-video-from-a-whatsapp-api-flow'" class="reference internal" href="#record-and-send-video-from-a-whatsapp-api-flow">Record and Send Video from a WhatsApp API Flow</a></li>
+<li><a :data-current="activeSection === '#start-video-recording-by-hostname-or-ip'" class="reference internal" href="#start-video-recording-by-hostname-or-ip">Start Video Recording by Hostname or IP</a></li>
 <li><a :data-current="activeSection === '#get-video-file'" class="reference internal" href="#get-video-file">Get Video File</a></li>
 <li><a :data-current="activeSection === '#get-video-by-file-path'" class="reference internal" href="#get-video-by-file-path">Get Video by File Path</a></li>
 <li><a :data-current="activeSection === '#start-video-recording'" class="reference internal" href="#start-video-recording">Start Video Recording</a></li>
@@ -829,7 +989,10 @@
 <li><a :data-current="activeSection === '#rate-limiting'" class="reference internal" href="#rate-limiting">Rate Limiting</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#see-also'" class="reference internal" href="#see-also">See Also</a></li>
+<li><a :data-current="activeSection === '#see-also'" class="reference internal" href="#see-also">See Also</a><ul>
+<li><a :data-current="activeSection === '#resolve-camera-ip-for-whatsapp-commands'" class="reference internal" href="#resolve-camera-ip-for-whatsapp-commands">Resolve camera IP for WhatsApp commands</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </aside>
@@ -843,7 +1006,7 @@
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=387c4177"></script>
+<script src="_static/documentation_options.js?v=b627b0b9"></script>
 <script src="_static/doctools.js?v=fd6eb6e6"></script>
 <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script defer="defer" src="_static/theme.js?v=582b20c5"></script>

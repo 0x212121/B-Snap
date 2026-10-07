@@ -12,6 +12,7 @@ Welcome to B-Snap Documentation!
 
    architecture
    configuration
+   record-mounts
    api
    security
    audit_logging

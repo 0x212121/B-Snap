@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, ORJSONResponse, RedirectResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -136,7 +136,7 @@ def show_videos(
     })
 
 
-@router.get("/video-gallery-data", response_class=JSONResponse)  
+@router.get("/video-gallery-data", response_class=ORJSONResponse)
 async def get_video_gallery_data(
     request: Request,
     page: int = Query(1, ge=1),
@@ -151,13 +151,13 @@ async def get_video_gallery_data(
     # group_id can be None (access to all cameras) or a specific group ID
     # Check if user is authenticated by checking user_id in session
     if not request.session.get("user_id"):
-        return JSONResponse(status_code=403, content={"detail": "Authentication required."})
+        return ORJSONResponse(status_code=403, content={"detail": "Authentication required."})
 
     offset = (page - 1) * 12
     videos = _get_filtered_videos(db, group_id, camera_filter=camera, search_query=q, offset=offset, limit=12)
 
     gallery_html = templates.get_template("_video_grid.html").render({"videos": videos, "request": request})
-    return JSONResponse({'html': gallery_html})
+    return ORJSONResponse({'html': gallery_html})
 
 
 @router.delete("/videos/{video_id}", response_class=JSONResponse)

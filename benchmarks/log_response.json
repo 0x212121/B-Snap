@@ -1,0 +1,67 @@
+{
+  "source": "healthcheck.log",
+  "source_sha256": "059ca318124427c9e1996e2be132857e01e72a9fbee217fab3642c657369ac33",
+  "file_bytes": 2680012,
+  "nonblank_lines": 19628,
+  "python": "3.13.12",
+  "packages": {
+    "fastapi": "0.116.1",
+    "starlette": "0.47.2",
+    "orjson": "3.11.0"
+  },
+  "route_repeats": 15,
+  "serialization_iterations_per_batch": 100,
+  "serialization_batches": 7,
+  "scope": "Warm filesystem cache; function call excludes HTTP, auth, middleware, database, and network. Serialization uses the actual handler payload.",
+  "cases": [
+    {
+      "limit": 100,
+      "returned_entries": 100,
+      "payload_bytes": 36626,
+      "identical_bytes_status_headers": true,
+      "serialization_median_ms": {
+        "JSONResponse": 0.341133,
+        "ORJSONResponse": 0.046978
+      },
+      "function_median_ms": {
+        "JSONResponse": 123.847,
+        "ORJSONResponse": 121.8581
+      },
+      "serialization_speedup": 7.261547958618928,
+      "function_speedup": 1.0163214427272376
+    },
+    {
+      "limit": 1000,
+      "returned_entries": 1000,
+      "payload_bytes": 367156,
+      "identical_bytes_status_headers": true,
+      "serialization_median_ms": {
+        "JSONResponse": 3.920722,
+        "ORJSONResponse": 0.404966
+      },
+      "function_median_ms": {
+        "JSONResponse": 115.4902,
+        "ORJSONResponse": 113.2893
+      },
+      "serialization_speedup": 9.681607838682753,
+      "function_speedup": 1.0194272539418991
+    },
+    {
+      "limit": 5000,
+      "returned_entries": 5000,
+      "payload_bytes": 1816678,
+      "identical_bytes_status_headers": true,
+      "serialization_median_ms": {
+        "JSONResponse": 22.877272,
+        "ORJSONResponse": 2.751215
+      },
+      "function_median_ms": {
+        "JSONResponse": 139.5558,
+        "ORJSONResponse": 120.8341
+      },
+      "serialization_speedup": 8.315334134191621,
+      "function_speedup": 1.1549372238465798
+    }
+  ],
+  "edge_cases_identical": true
+}

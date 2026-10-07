@@ -11,7 +11,7 @@ The original header gave six dropdowns the same visual priority:
 | --- | --- |
 | Monitoring | Maps, Snapshots, Videos |
 | Devices | Cameras, NVRs, Record Checks, Status |
-| Administration | Users, Camera Groups, WA Whitelist, WhatsApp Bot, Email Recipients, Email Templates, Configuration, Job Management, Power BI Record Checks, Trash Management |
+| Administration | Users, Camera Groups, WhatsApp Whitelist, WhatsApp Bot, Email Recipients, Email Templates, Configuration, Job Management, Power BI Record Checks, Trash Management |
 | Logs | Logs Viewer, Audit Logs, Email Logs |
 | Developer | API Docs, Environment, Documentation |
 | Analytics | Dashboard |
@@ -32,7 +32,7 @@ notification configuration. Logs remain together to preserve a clear audit task.
 | --- | --- | --- |
 | Primary | Always visible on desktop | Maps, Snapshots, Videos, Analytics |
 | Secondary operations | More → Devices | Cameras, NVRs, Camera Groups, Record Checks, Status |
-| Notification configuration | More → Notifications | WhatsApp Bot, WA Whitelist, Email Recipients, Email Templates |
+| Notification configuration | More → Notifications | WhatsApp Bot, WhatsApp Whitelist, Email Recipients, Email Templates |
 | Administration | More → Administration | Users, Configuration, Job Management, Power BI Record Checks, Trash Management |
 | Secondary investigation | More → Logs | Logs Viewer, Audit Logs, Email Logs |
 | Rare utilities | More → Help & developer | API Docs, Environment, Documentation |

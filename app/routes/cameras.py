@@ -12,7 +12,7 @@ from typing import Optional, Union
 
 from app.models.user import User
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, UploadFile, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, ORJSONResponse, RedirectResponse, StreamingResponse
 from sqlalchemy import or_, func
 from sqlalchemy.orm import Session, joinedload
 
@@ -62,7 +62,7 @@ async def manage(request: Request, db: Session = Depends(get_db)):
     })
 
 
-@router.get("/cameras/data", response_class=JSONResponse)
+@router.get("/cameras/data", response_class=ORJSONResponse)
 async def manage_data(
     request: Request,
     db: Session = Depends(get_db),
@@ -215,7 +215,7 @@ async def manage_data(
             </tr>
         """
 
-    return JSONResponse(content={
+    return ORJSONResponse(content={
         "stats": stats,
         "total": total,
         "rows": rows_html,
