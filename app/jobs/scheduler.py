@@ -1,52 +1,59 @@
 from __future__ import annotations
 
+import logging
+import os
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import copy
-from datetime import datetime, timedelta, timezone, tzinfo
-from uuid import uuid4
+from datetime import UTC, datetime, timedelta, timezone, tzinfo
 from functools import wraps
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.triggers.cron import CronTrigger
+from time import monotonic, sleep
+from uuid import uuid4
+
+import psutil
+
 from apscheduler.jobstores.base import JobLookupError
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.util import astimezone as scheduler_timezone
+from ping3 import ping
+from sqlalchemy import func as sql_func
+from sqlalchemy.orm import Session
+
+from app.core.config import get_config
+from app.core.job_schedules import JOB_SCHEDULES, build_job_trigger, get_job_schedule
 from app.core.logging_config import setup_logging
 from app.db.database import SessionLocal, engine
+from app.models.audit_log import AuditLog
 from app.models.camera import Camera
-from app.models.health import CameraHealth
+from app.models.camera_daily_stats import CameraDailyStats
+from app.models.camera_email_notification_log import CameraEmailNotificationLog
 from app.models.email_retry_queue import EmailRetryQueue
+from app.models.health import CameraHealth
+from app.models.job_execution_log import JobExecutionLog
 from app.models.log import CommandLog
-from app.utils.api_daily_stats import archive_expired_api_logs
-from app.utils.timezone_helper import get_current_timezone, to_current_timezone
+from app.models.snapshot_log import SnapshotLog
+from app.models.task_timing import TaskTiming
 from app.snapshot import load_active_cameras
+from app.utils.api_daily_stats import archive_expired_api_logs
+from app.utils.check_stats import check_stats
+from app.utils.email_delivery import EmailDeliveryResult, incident_utc
 from app.utils.email_notifier import (
+    send_offline_incident_email_once,  # For offline alerts (online alerts intentionally disabled)
     send_recovery_alert,  # For tampered -> normal transitions
-    send_tamper_alert,     # For tamper detection
-    send_offline_incident_email_once  # For offline alerts (online alerts intentionally disabled)
+    send_tamper_alert,  # For tamper detection
 )
+from app.utils.healthcheck import ping_all_devices
+from app.utils.record_check import cleanup_old_record_checks, run_all_record_checks
+from app.utils.record_check_report import send_record_check_daily_reports
 from app.utils.snapshot_locker import get_camera_lock
 from app.utils.snapshot_process import run_camera_process
 from app.utils.snapshot_service import take_snapshot
-from app.utils.healthcheck import ping_all_devices
+from app.utils.snapshot_utils import check_orphaned_snapshots, record_snapshot_metadata
+from app.utils.timezone_helper import get_current_timezone, to_current_timezone
 from app.utils.wa_gateway import WAGatewayService, format_phone_number
-from app.core.config import get_config
-from app.core.job_schedules import JOB_SCHEDULES, get_job_schedule, build_job_trigger
-from app.models.audit_log import AuditLog
-from app.models.camera_daily_stats import CameraDailyStats
-from app.models.snapshot_log import SnapshotLog
-from app.models.job_execution_log import JobExecutionLog
-from app.utils.snapshot_utils import record_snapshot_metadata, check_orphaned_snapshots
-from app.utils.check_stats import check_stats
-from app.utils.record_check import cleanup_old_record_checks, run_all_record_checks
-from app.utils.record_check_report import send_record_check_daily_reports
-from sqlalchemy.orm import Session
-from app.models.task_timing import TaskTiming
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import logging
-from ping3 import ping
-import psutil
-import os
-from time import monotonic, sleep
 
 # --- Scheduler Init with Database Job Store ---
 # Use SQLAlchemyJobStore so jobs are persisted and accessible from web app
@@ -608,8 +615,15 @@ def start_scheduler():
             logger.info("[Scheduler] Creating APScheduler tables...")
             # Create the table using SQLAlchemy's create_all via the jobstore's metadata
             # This ensures compatibility with different database backends
-            from sqlalchemy import Column, String, Float, LargeBinary, Index, MetaData
-            from sqlalchemy import Table as SATable
+            from sqlalchemy import (
+                Column,
+                Float,
+                Index,
+                LargeBinary,
+                MetaData,
+                String,
+                Table as SATable,
+            )
 
             metadata = MetaData()
             apscheduler_jobs = SATable(
@@ -1164,143 +1178,148 @@ def send_record_check_daily_report():
         db.close()
 
 
-def process_email_retry_queue():
-    """Process queued emails with adaptive retry."""
+def _apply_email_retry_result(
+    db: Session, task: EmailRetryQueue, result: EmailDeliveryResult
+) -> bool:
+    """Apply one outcome and persist an exhausted-incident marker in the log."""
+    now = datetime.now(UTC)
+    if result.smtp_attempted:
+        task.attempts += 1
+        task.last_attempt = now
+    if result.status in {"sent", "already_sent"}:
+        task.sent = True
+        task.status = "sent"
+        task.completed_at = now
+        task.next_retry_at = None
+        return True
+    exhausted = result.status == "exhausted" or (
+        result.status == "failed" and result.smtp_attempted and task.attempts >= task.max_attempts
+    )
+    if exhausted:
+        task.status = "exhausted"
+        task.completed_at = now
+        task.next_retry_at = None
+        log = (
+            db.query(CameraEmailNotificationLog)
+            .filter_by(
+                camera_id=task.camera_id,
+                incident_started_at=incident_utc(task.incident_time),
+            )
+            .first()
+        )
+        if log and not log.success:
+            log.retry_exhausted = True
+        logger.warning("[RETRY STOPPED] Max attempts for camera %s", task.camera_id)
+    elif result.status == "failed" and result.smtp_attempted:
+        delay = min(5 * (2 ** (task.attempts - 1)), 60)
+        task.next_retry_at = now + timedelta(minutes=delay)
+    else:
+        task.next_retry_at = max(
+            now + timedelta(minutes=5),
+            incident_utc(result.retry_at) if result.retry_at else now,
+        )
+        logger.info("[RETRY DEFERRED] Camera %s: %s", task.camera_id, result.reason)
+    return False
+
+
+def process_email_retry_queue() -> dict:
+    """Retry pending incidents, spending attempts only on SMTP delivery calls."""
     db = SessionLocal()
-    now = datetime.now(timezone.utc)
-
-    SCHEDULER_INTERVAL_MINUTES = 1
-    BASE_RETRY_DELAY_MINUTES = 5
-    MAX_RETRY_DELAY_MINUTES = 60
-
-    def _adaptive_delay(attempt: int) -> int:
-        delay = BASE_RETRY_DELAY_MINUTES * (2 ** (attempt - 1))
-        return min(max(delay, SCHEDULER_INTERVAL_MINUTES), MAX_RETRY_DELAY_MINUTES)
-
+    success_count = 0
     try:
         pending = (
             db.query(EmailRetryQueue)
             .filter(
-                EmailRetryQueue.sent.is_(False),
+                EmailRetryQueue.status == "pending",
                 EmailRetryQueue.attempts < EmailRetryQueue.max_attempts,
-                EmailRetryQueue.next_retry_at <= now,
+                EmailRetryQueue.next_retry_at <= datetime.now(UTC),
             )
             .order_by(EmailRetryQueue.created_at.asc())
             .all()
         )
-    except Exception:
-        db.close()
-        raise
-
-    if not pending:
-        db.close()
-        return {"records_processed": 0}
-
-    total = len(pending)
-    success_count = 0
-    fail_count = 0
-    logger.info("[RETRY] Processing %d queued emails...", total)
-
-    for task in pending:
-        cam = db.query(Camera).filter(Camera.id == task.camera_id).first()
-        if not cam:
-            logger.warning("[RETRY] Camera %s not found", task.camera_id)
-            task.sent = True
-            db.commit()
-            continue
-
-        ok = False
-        attempt_num = task.attempts + 1
-        try:
-            if task.type == "tamper":
-                # BUG FIX: Use task.created_at as incident_time for retry
-                # This preserves the original detection time from first attempt
-                incident_time = task.created_at
-                if incident_time.tzinfo is None:
-                    incident_time = incident_time.replace(tzinfo=timezone.utc)
-                ok = bool(send_tamper_alert(db, cam, task.reason, task.file_path, incident_time=incident_time))
-            elif task.type == "recovery":
-                ok = bool(send_recovery_alert(db, cam))
-            elif task.type == "offline":
-                ok = bool(send_offline_incident_email_once(
-                    db, camera=cam,
-                    incident_started_at=now - timedelta(minutes=30),
-                    offline_duration_seconds=1800,
-                ))
-            elif task.type == "online":
-                # NOTE: Online notifications (offline -> online) are intentionally disabled
-                # as per requirement. Only offline alerts and tamper/recovery alerts are sent.
-                logger.info("[ONLINE] Camera %s is back online - no email sent (as per policy)", cam.hostname)
-                ok = True  # Mark as processed but don't send email
-            else:
-                task.sent = True
+        for task in pending:
+            camera = db.query(Camera).filter(Camera.id == task.camera_id).first()
+            if not camera or task.type not in {"tamper", "recovery", "offline"}:
+                task.status = "cancelled"
+                task.completed_at = datetime.now(UTC)
+                task.next_retry_at = None
                 db.commit()
                 continue
+            incident_time = incident_utc(task.incident_time)
+            try:
+                if task.type == "tamper":
+                    result = send_tamper_alert(
+                        db,
+                        camera,
+                        task.reason,
+                        task.file_path,
+                        incident_time=incident_time,
+                        retry=True,
+                    )
+                elif task.type == "recovery":
+                    result = send_recovery_alert(
+                        db,
+                        camera,
+                        incident_time=incident_time,
+                        retry=True,
+                    )
+                else:
+                    duration = task.offline_duration_seconds
+                    if duration is None:
+                        duration = max(0, int((datetime.now(UTC) - incident_time).total_seconds()))
+                    result = send_offline_incident_email_once(
+                        db,
+                        camera=camera,
+                        incident_started_at=incident_time,
+                        offline_duration_seconds=duration,
+                        retry=True,
+                    )
+            except Exception:
+                # Database/template errors have not confirmed a failed SMTP attempt.
+                db.rollback()
+                task.next_retry_at = datetime.now(UTC) + timedelta(minutes=5)
+                db.commit()
+                logger.exception("[RETRY] Notification processing error for camera %s", camera.id)
+                continue
 
-            if ok:
-                task.sent = True
-                success_count += 1
-            else:
-                raise RuntimeError("Email send returned False")
-
-        except Exception as e:
-            task.attempts = attempt_num
-            task.last_attempt = now
-            delay_minutes = _adaptive_delay(task.attempts)
-            task.next_retry_at = now + timedelta(minutes=delay_minutes)
-            fail_count += 1
-
-            logger.error(
-                "[RETRY FAIL] Attempt %d/%d for %s: %s; next retry in %d min",
-                task.attempts, task.max_attempts, cam.hostname, e, delay_minutes
-            )
-
-            if task.attempts >= task.max_attempts:
-                logger.error("[RETRY STOPPED] Max attempts for %s", cam.hostname)
-        finally:
+            success_count += int(_apply_email_retry_result(db, task, result))
             db.commit()
+        return {"records_processed": success_count}
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
-    db.close()
-    logger.info("[RETRY SUMMARY] %d tasks: success=%d, fail=%d", total, success_count, fail_count)
-    return {"records_processed": success_count}
 
-
-def cleanup_email_retry_queue():
-    """Delete old completed/failed email retries."""
+def cleanup_email_retry_queue() -> dict:
+    """Retain successful tasks for 14 days and other terminal tasks for 7 days."""
     db = SessionLocal()
-    now = datetime.now(timezone.utc)
-
+    now = datetime.now(UTC)
     try:
-        cutoff_success = now - timedelta(days=14)
-        cutoff_fail = now - timedelta(days=7)
-
+        completed = sql_func.coalesce(
+            EmailRetryQueue.completed_at, EmailRetryQueue.last_attempt, EmailRetryQueue.created_at
+        )
         deleted_success = (
             db.query(EmailRetryQueue)
             .filter(
-                EmailRetryQueue.sent.is_(True),
-                EmailRetryQueue.last_attempt < cutoff_success,
+                EmailRetryQueue.status == "sent",
+                completed < now - timedelta(days=14),
             )
             .delete(synchronize_session=False)
         )
-
         deleted_fail = (
             db.query(EmailRetryQueue)
             .filter(
-                EmailRetryQueue.sent.is_(False),
-                EmailRetryQueue.attempts >= EmailRetryQueue.max_attempts,
-                EmailRetryQueue.last_attempt < cutoff_fail,
+                EmailRetryQueue.status.in_(["exhausted", "cancelled"]),
+                completed < now - timedelta(days=7),
             )
             .delete(synchronize_session=False)
         )
-
         db.commit()
-        total = (deleted_success or 0) + (deleted_fail or 0)
-        if total > 0:
-            logger.info("[CLEANUP] Deleted %d email retry rows", total)
-        return {"records_processed": total}
-    except Exception as e:
+        return {"records_processed": (deleted_success or 0) + (deleted_fail or 0)}
+    except Exception:
         db.rollback()
-        logger.error("[CLEANUP ERROR] %s", e, exc_info=True)
         raise
     finally:
         db.close()

@@ -1,7 +1,9 @@
 # app/models/camera_email_notification_log.py
-from sqlalchemy import Column, String, DateTime, Integer, Boolean, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy.orm import relationship
+
 from app.db.database import Base
 
 
@@ -15,6 +17,7 @@ class CameraEmailNotificationLog(Base):
     type = Column(String, nullable=True, default="alert")
     sent_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
     success = Column(Boolean, default=False, nullable=False)
+    retry_exhausted = Column(Boolean, default=False, server_default="false", nullable=False)
     error_message = Column(String, nullable=True)
     reason = Column(String(64), nullable=True)
 

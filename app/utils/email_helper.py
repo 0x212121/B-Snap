@@ -1,14 +1,18 @@
-from datetime import datetime, timezone
-from email.mime.application import MIMEApplication
 import os
 import smtplib
 import socket
 import ssl
-from email.mime.text import MIMEText
+
+from datetime import datetime, timezone
+from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
-from fastapi import BackgroundTasks
+from email.mime.text import MIMEText
 from typing import List, Optional
+
+from fastapi import BackgroundTasks
 from sqlalchemy.orm import Session
+
+from app.utils.email_delivery import EmailTransportError
 
 # Import SMTP config helper (with DB + env fallback)
 from app.utils.smtp_config import get_smtp_config
@@ -181,20 +185,20 @@ def _send_email_with_image(
     snapshot_time: datetime,
     body: str,
     html: str,
-    image_path: str = None
+    image_path: str = None,
 ) -> Optional[str]:
     """
     Kirim email dengan plain text + HTML.
     Snapshot (jika ada) dikirim sebagai attachment, bukan inline.
-    
+
     ✅ RETURNS: CC email address yang digunakan, atau None jika tidak ada.
     """
     # Load SMTP config from database (with env fallback)
     config = get_smtp_config()
-    
+
     if not config["is_configured"]:
         raise RuntimeError("SMTP not configured. Please configure SMTP settings in /config page.")
-    
+
     msg = MIMEMultipart("mixed")  # mixed = bisa ada lampiran
     msg["Subject"] = subject
     msg["From"] = config["email_from"]
@@ -213,27 +217,39 @@ def _send_email_with_image(
 
     # attach snapshot sebagai file (bukan inline)
     if image_path and os.path.exists(image_path):
-        ts_str = snapshot_time.strftime("%Y%m%d-%H%M%Z") if snapshot_time else datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%Z")
+        ts_str = (
+            snapshot_time.strftime("%Y%m%d-%H%M%Z")
+            if snapshot_time
+            else datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%Z")
+        )
         snapshot_file_name = f"B-Snap_{cam_group if cam_group else 'NoGroup'}_{cam_hostname}_LastSnapshot_{ts_str}.jpg"
-        
+
         with open(image_path, "rb") as f:
             part = MIMEApplication(f.read(), Name=snapshot_file_name)
-        part['Content-Disposition'] = f'attachment; filename="{snapshot_file_name}"'
+        part["Content-Disposition"] = f'attachment; filename="{snapshot_file_name}"'
         msg.attach(part)
 
     # gabungkan recipients (to + cc) untuk pengiriman
-    all_recipients = to_emails + ([cc_email.strip()] if cc_email and isinstance(cc_email, str) else [])
+    all_recipients = to_emails + (
+        [cc_email.strip()] if cc_email and isinstance(cc_email, str) else []
+    )
 
     try:
         with _open_smtp_connection(config) as server:
             server.sendmail(config["email_from"], all_recipients, msg.as_string())
     except socket.gaierror as e:
-        raise RuntimeError(f"Cannot resolve SMTP host '{config['smtp_host']}': {e}. Please check your SMTP configuration.")
+        raise EmailTransportError(
+            f"Cannot resolve SMTP host '{config['smtp_host']}': {e}. Please check your SMTP configuration."
+        ) from e
     except socket.timeout as e:
-        raise RuntimeError(f"SMTP connection timeout: {e}. Please check your network connection.")
+        raise EmailTransportError(
+            f"SMTP connection timeout: {e}. Please check your network connection."
+        ) from e
     except smtplib.SMTPException as e:
-        raise RuntimeError(f"SMTP error: {e}")
-    
+        raise EmailTransportError(f"SMTP error: {e}") from e
+    except OSError as e:
+        raise EmailTransportError("SMTP connection failed") from e
+
     # ✅ RETURN CC email untuk keperluan logging
     return cc_email.strip() if cc_email and isinstance(cc_email, str) and cc_email.strip() else None
 
@@ -242,8 +258,9 @@ def _send_email_with_image(
 # RECIPIENT HELPER (gabungan recipient_utils)
 # =========================
 
-from app.models.recipient import GroupRecipient
 from app.models.camera import Camera as DBCamera
+from app.models.recipient import GroupRecipient
+
 
 def _normalize(s: str) -> str:
     return s.strip().lower()

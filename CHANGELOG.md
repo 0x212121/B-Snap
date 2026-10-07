@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Corrected email retry queue fields, generated IDs, tamper/recovery parameters, and configured retry attempt limits.
+- Preserved original notification incident times during email retries; distinguished SMTP failures from cooldown/configuration deferrals, reused incident logs, and released terminal retry tasks with reliable retention cleanup.
 - Removed duplicate Devices Status refreshes while preserving refresh after active checks.
 - Corrected snapshot heatmap, scheduler, and WhatsApp report timezone handling, including WIB/WITA/WIT labels.
 - Improved WhatsApp capture, delivery, retries, and duplicate handling; enforced whitelist, role, and camera-group access.

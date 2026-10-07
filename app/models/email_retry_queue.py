@@ -1,9 +1,25 @@
-from sqlalchemy import Column, String, DateTime, Integer, Boolean, Text, ForeignKey
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    text,
+)
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
+
 from app.db.database import Base
 
+
 class EmailRetryQueue(Base):
+    """Track a notification incident through pending and terminal retry states."""
+
     __tablename__ = "email_retry_queue"
 
     id = Column(String, primary_key=True)
@@ -16,6 +32,25 @@ class EmailRetryQueue(Base):
     last_attempt = Column(DateTime(timezone=True), nullable=True)
     next_retry_at = Column(DateTime(timezone=True), nullable=True)
     sent = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    status = Column(String(16), nullable=False, default="pending", server_default="pending")
+    incident_time = Column(DateTime(timezone=True), nullable=False)
+    offline_duration_seconds = Column(Integer, nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     camera = relationship("Camera")
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending', 'sent', 'exhausted', 'cancelled')",
+            name="ck_email_retry_status",
+        ),
+        Index(
+            "ux_email_retry_active",
+            "camera_id",
+            "type",
+            unique=True,
+            postgresql_where=text("status = 'pending'"),
+            sqlite_where=text("status = 'pending'"),
+        ),
+    )

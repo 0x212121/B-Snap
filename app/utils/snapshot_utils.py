@@ -1,19 +1,21 @@
-import os
 import logging
-from datetime import datetime, timezone, timedelta
+import os
+
+from datetime import datetime, timedelta, timezone
 from io import BytesIO
-from PIL import Image
-import numpy as np
-from sqlalchemy.orm import Session
+from typing import List, Tuple
 from uuid import uuid4
-from typing import Tuple, List
+
+import numpy as np
+
+from PIL import Image
+from sqlalchemy.orm import Session
 
 from app.models.camera import Camera
-from app.models.snapshot import Snapshot
 from app.models.health import CameraHealth
-from app.models.email_retry_queue import EmailRetryQueue
+from app.models.snapshot import Snapshot
+from app.utils.email_notifier import queue_email_retry, send_recovery_alert, send_tamper_alert
 from app.utils.image_check import detect_blur, detect_brightness, detect_occlusion
-from app.utils.email_notifier import send_tamper_alert, send_recovery_alert, queue_email_retry
 
 logger = logging.getLogger("snapshot")
 
@@ -98,7 +100,72 @@ def set_alert_cooldown(health: CameraHealth, reason: str):
     )
 
 
-def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolution: str) -> Snapshot:
+def _notify_snapshot_transition(
+    db: Session,
+    camera: Camera,
+    health: CameraHealth,
+    snapshot: Snapshot,
+    file_path: str,
+    *,
+    previous_status: str,
+) -> CameraHealth:
+    """Queue explicit unsent results while preserving the health transition on errors."""
+    status = health.tamper_status
+    if previous_status != "tampered" and status == "tampered":
+        kind = "tamper"
+    elif previous_status == "tampered" and status == "normal":
+        kind = "recovery"
+    else:
+        return health
+    reason = snapshot.tamper_reason if kind == "tamper" else None
+    attachment = file_path if kind == "tamper" else None
+    counters = (health.consecutive_tamper, health.consecutive_normal)
+    try:
+        if kind == "tamper":
+            result = send_tamper_alert(
+                db, camera, reason, attachment, incident_time=snapshot.timestamp
+            )
+        else:
+            result = send_recovery_alert(db, camera, incident_time=snapshot.timestamp)
+            set_alert_cooldown(health, "recovery")
+        if result.status in {"failed", "deferred", "blocked"}:
+            queue_email_retry(
+                db,
+                camera,
+                kind,
+                reason=reason,
+                file_path=attachment,
+                incident_time=snapshot.timestamp,
+                retry_at=result.retry_at,
+            )
+        logger.info("[SNAPSHOT EMAIL] Camera %s: %s", camera.hostname, result.status)
+    except Exception:
+        db.rollback()
+        health = db.query(CameraHealth).filter_by(camera_id=camera.id).first()
+        if health is None:
+            health = CameraHealth(camera_id=camera.id)
+            db.add(health)
+        health.tamper_status = status
+        health.consecutive_tamper, health.consecutive_normal = counters
+        if kind == "tamper":
+            set_alert_cooldown(health, reason)
+        else:
+            health.alert_cooldown_until = datetime.now(timezone.utc) + timedelta(minutes=5)
+        logger.exception("[SNAPSHOT EMAIL] Notification processing failed for %s", camera.hostname)
+        queue_email_retry(
+            db,
+            camera,
+            kind,
+            reason=reason,
+            file_path=attachment,
+            incident_time=snapshot.timestamp,
+        )
+    return health
+
+
+def record_snapshot_metadata(
+    db: Session, camera_id: str, file_path: str, resolution: str
+) -> Snapshot:
     camera = db.query(Camera).filter(Camera.id == camera_id).first()
     if not camera:
         raise ValueError("Camera not found")
@@ -113,6 +180,7 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
 
     # === P0-001: Calculate file hash for integrity verification ===
     import hashlib
+
     file_hash = hashlib.sha256(image_bytes).hexdigest()
 
     # === analisis citra ===
@@ -135,7 +203,8 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
         camera_ip=camera.ip,
         camera_port=camera.port,
         camera_location=camera.location,
-        camera_group=", ".join(group.name for group in camera.groups) or (camera.group.name if camera.group else None),
+        camera_group=", ".join(group.name for group in camera.groups)
+        or (camera.group.name if camera.group else None),
         file_path=file_path,
         file_size=file_size,
         resolution=resolution,
@@ -150,13 +219,15 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
     db.add(snapshot)
     db.commit()
     db.refresh(snapshot)
-    
+
     # === Enforce max snapshot limit per camera ===
     # Soft-delete oldest snapshots if limit exceeded
     try:
         enforce_max_snapshots_per_camera(db, camera.id)
     except Exception as e:
-        logger.error("[MAX_SNAPSHOT_LIMIT] Error enforcing limit for camera %s: %s", camera.hostname, e)
+        logger.error(
+            "[MAX_SNAPSHOT_LIMIT] Error enforcing limit for camera %s: %s", camera.hostname, e
+        )
         # Don't raise - this shouldn't block snapshot creation
 
     # === update CameraHealth ===
@@ -192,86 +263,12 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
         prev_status,
         new_status,
         health.consecutive_tamper,
-        is_tampered
+        is_tampered,
     )
 
-    # === Transisi: normal → tampered ===
-    if prev_status != "tampered" and new_status == "tampered":
-        logger.info(
-            "[TAMPER_TRANSITION] %s: normal→tampered (consecutive=%d, threshold=%d)",
-            camera.hostname,
-            health.consecutive_tamper,
-            TAMPER_CONFIRM_THRESHOLD
-        )
-        # Check cooldown to prevent flooding
-        if is_alert_in_cooldown(health, snapshot.tamper_reason):
-            logger.info(
-                "[ALERT SKIP] %s is tampered but in cooldown period (%s)",
-                camera.hostname,
-                snapshot.tamper_reason
-            )
-        else:
-            try:
-                # BUG FIX: Pass snapshot.timestamp as incident_time (not current time)
-                # This ensures email shows the ACTUAL time when tamper was detected
-                logger.info(
-                    "[ALERT_SEND] Calling send_tamper_alert for %s (%s)",
-                    camera.hostname,
-                    snapshot.tamper_reason
-                )
-                send_tamper_alert(
-                    db, 
-                    camera, 
-                    snapshot.tamper_reason, 
-                    abs_file_path,
-                    incident_time=snapshot.timestamp  # Actual detection time from snapshot
-                )
-                # Note: Cooldown is now set INSIDE send_tamper_alert after dedup check
-                # We don't need to set it again here
-                logger.warning(
-                    "[ALERT] %s marked tampered (%s) at %s",
-                    camera.hostname,
-                    snapshot.tamper_reason,
-                    snapshot.timestamp.isoformat()
-                )
-            except Exception as e:
-                # Even on failure, set short cooldown to prevent immediate retry flooding
-                set_alert_cooldown(health, snapshot.tamper_reason)
-                logger.exception("[ALERT_FAIL] Tamper email failed for %s: %s", camera.hostname, e)
-                
-                # Pastikan tidak duplikat di queue
-                existing_retry = db.query(EmailRetryQueue).filter(
-                    EmailRetryQueue.camera_id == camera.id,
-                    EmailRetryQueue.type == "tamper",
-                    EmailRetryQueue.sent == False
-                ).first()
-                if not existing_retry:
-                    queue_email_retry(db, camera, "tamper", reason=snapshot.tamper_reason, file_path=abs_file_path, delay_minutes=5)
-                else:
-                    logger.info("[QUEUE] Skip duplicate tamper retry for %s", camera.hostname)
-
-    # === Transisi: tampered → normal ===
-    elif prev_status == "tampered" and new_status == "normal":
-        # Recovery alerts are important - allow them even in cooldown
-        # but use shorter cooldown to prevent flooding
-        try:
-            send_recovery_alert(db, camera)
-            set_alert_cooldown(health, "recovery")
-            logger.info("[RECOVERY] %s back to normal", camera.hostname)
-        except Exception as e:
-            # Set short cooldown even on failure
-            health.alert_cooldown_until = datetime.now(timezone.utc) + timedelta(minutes=5)
-            logger.exception("[RECOVERY FAIL] Recovery email failed for %s: %s", camera.hostname, e)
-            
-            existing_retry = db.query(EmailRetryQueue).filter(
-                EmailRetryQueue.camera_id == camera.id,
-                EmailRetryQueue.type == "recovery",
-                EmailRetryQueue.sent == False
-            ).first()
-            if not existing_retry:
-                queue_email_retry(db, camera, "recovery", delay_minutes=5)
-            else:
-                logger.info("[QUEUE] Skip duplicate recovery retry for %s", camera.hostname)
+    health = _notify_snapshot_transition(
+        db, camera, health, snapshot, abs_file_path, previous_status=prev_status
+    )
 
     # === pembaruan umum ===
     health.checked = datetime.now(timezone.utc)
@@ -281,7 +278,9 @@ def record_snapshot_metadata(db: Session, camera_id: str, file_path: str, resolu
 
     # === log tambahan ===
     if is_tampered:
-        logger.warning("[TAMPER DETECTED] %s: %s (%.2f)", camera.hostname, snapshot.tamper_reason, blur_score)
+        logger.warning(
+            "[TAMPER DETECTED] %s: %s (%.2f)", camera.hostname, snapshot.tamper_reason, blur_score
+        )
     else:
         logger.info("[SNAPSHOT OK] %s – %.2f", camera.hostname, blur_score)
 
