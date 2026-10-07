@@ -71,9 +71,12 @@ def _as_aware(value: datetime) -> datetime:
     return value
 
 
-def _fmt_report_date(value: datetime) -> str:
+def _fmt_report_date(value: datetime, *, include_timezone: bool = False) -> str:
     local_value = value.astimezone(_tz())
-    return f"{local_value.day}/{local_value.month}/{local_value.year}, {local_value:%H.%M.%S}"
+    formatted = f"{local_value.day}/{local_value.month}/{local_value.year}, {local_value:%H.%M.%S}"
+    if include_timezone:
+        return f"{formatted} {local_value:%Z}"
+    return formatted
 
 
 def _fmt_event_time(value: datetime) -> str:
@@ -360,7 +363,7 @@ def format_daily_report_message(report: SourceDailyReport) -> str:
 
     lines = [
         f"📊 Daily Report NVR {nvr_name}",
-        f"📅 {_fmt_report_date(datetime.now(timezone.utc))}",
+        f"📅 {_fmt_report_date(datetime.now(timezone.utc), include_timezone=True)}",
         "",
         "",
     ]

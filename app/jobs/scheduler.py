@@ -1,4 +1,7 @@
-from datetime import datetime, timedelta, timezone
+from __future__ import annotations
+
+from copy import copy
+from datetime import datetime, timedelta, timezone, tzinfo
 from uuid import uuid4
 from functools import wraps
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -6,13 +9,14 @@ from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.jobstores.base import JobLookupError
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.util import astimezone as scheduler_timezone
 from app.core.logging_config import setup_logging
 from app.db.database import SessionLocal, engine
 from app.models.camera import Camera
 from app.models.health import CameraHealth
 from app.models.email_retry_queue import EmailRetryQueue
 from app.models.log import ApiLog, CommandLog
-from app.models.config import Configuration
+from app.utils.timezone_helper import get_current_timezone, to_current_timezone
 from app.snapshot import load_active_cameras
 from app.utils.email_notifier import (
     send_recovery_alert,  # For tampered -> normal transitions
@@ -41,7 +45,6 @@ from ping3 import ping
 import psutil
 import os
 from time import monotonic, sleep
-import pytz
 
 # --- Scheduler Init with Database Job Store ---
 # Use SQLAlchemyJobStore so jobs are persisted and accessible from web app
@@ -50,6 +53,7 @@ jobstores = {
 }
 
 scheduler = BackgroundScheduler(
+    timezone=timezone.utc,
     jobstores=jobstores,
     job_defaults={
         "coalesce": True,
@@ -61,34 +65,62 @@ scheduler = BackgroundScheduler(
 setup_logging()
 logger = logging.getLogger("scheduler")
 
+
+def get_scheduler_timezone() -> tzinfo:
+    """Read the configured timezone, falling back to UTC for invalid settings."""
+    db = SessionLocal()
+    try:
+        return scheduler_timezone(get_current_timezone(db))
+    finally:
+        db.close()
+
+
+def update_scheduler_timezone() -> None:
+    """Apply timezone changes to all existing cron and interval jobs."""
+    configured_timezone = scheduler_timezone(get_scheduler_timezone())
+    timezone_name = str(configured_timezone)
+    if timezone_name == last_config.get("timezone"):
+        return
+
+    scheduler.timezone = configured_timezone
+    for job in scheduler.get_jobs():
+        if isinstance(job.trigger, (CronTrigger, IntervalTrigger)):
+            trigger = copy(job.trigger)
+            trigger.timezone = configured_timezone
+            job.reschedule(trigger=trigger)
+    last_config["timezone"] = timezone_name
+    logger.info("[Scheduler] Timezone updated to %s", timezone_name)
+
+
 def create_trigger(cron_expr: str, default_trigger):
     """Create trigger from cron expression or return default trigger.
-    
+
     Args:
         cron_expr: Cron expression string (e.g., "0 8,13,23 * * *")
         default_trigger: Fallback trigger if cron_expr is empty or invalid
-        
+
     Returns:
         CronTrigger if cron_expr is valid, otherwise default_trigger
     """
     if not cron_expr or not cron_expr.strip():
         return default_trigger
-    
+
     try:
         # Parse cron expression: minute hour day month weekday
         parts = cron_expr.strip().split()
         if len(parts) != 5:
             logger.warning("[Scheduler] Invalid cron expression '%s', using default", cron_expr)
             return default_trigger
-        
+
         minute, hour, day, month, day_of_week = parts
-        
+
         return CronTrigger(
             minute=minute,
             hour=hour,
             day=day,
             month=month,
-            day_of_week=day_of_week
+            day_of_week=day_of_week,
+            timezone=scheduler.timezone,
         )
     except Exception as e:
         logger.warning("[Scheduler] Error parsing cron '%s': %s, using default", cron_expr, e)
@@ -97,6 +129,7 @@ def create_trigger(cron_expr: str, default_trigger):
 
 # --- Global Config State ---
 last_config = {
+    "timezone": None,
     "snapshot_interval_minutes": None,
     "healthcheck_interval_minutes": None,
     "snapshot_concurrent_workers": None,
@@ -413,10 +446,15 @@ def handle_snapshot_interval(scheduler, new_value):
     # Check if cron expression is set - if so, don't override with interval
     cron_expr = get_config("snapshot_cron", "").strip()
     if cron_expr:
-        logger.info("[Scheduler] Snapshot job has cron expression '%s', skipping interval update", cron_expr)
+        logger.info(
+            "[Scheduler] Snapshot job has cron expression '%s', skipping interval update", cron_expr
+        )
         return
     try:
-        scheduler.reschedule_job("scheduled_snapshot", trigger=IntervalTrigger(minutes=new_value))
+        scheduler.reschedule_job(
+            "scheduled_snapshot",
+            trigger=IntervalTrigger(minutes=new_value, timezone=scheduler.timezone),
+        )
         logger.info("[Scheduler] Snapshot job interval updated to %d minutes", new_value)
     except JobLookupError:
         logger.warning("[Scheduler] Job 'scheduled_snapshot' not found.")
@@ -426,10 +464,15 @@ def handle_healthcheck_interval(scheduler, new_value):
     # Check if cron expression is set - if so, don't override with interval
     cron_expr = get_config("healthcheck_cron", "").strip()
     if cron_expr:
-        logger.info("[Scheduler] Healthcheck job has cron expression '%s', skipping interval update", cron_expr)
+        logger.info(
+            "[Scheduler] Healthcheck job has cron expression '%s', skipping interval update",
+            cron_expr,
+        )
         return
     try:
-        scheduler.reschedule_job("health_check", trigger=IntervalTrigger(minutes=new_value))
+        scheduler.reschedule_job(
+            "health_check", trigger=IntervalTrigger(minutes=new_value, timezone=scheduler.timezone)
+        )
         logger.info("[Scheduler] Healthcheck job interval updated to %d minutes", new_value)
     except JobLookupError:
         logger.warning("[Scheduler] Job 'health_check' not found.")
@@ -456,10 +499,15 @@ def handle_storage_check_interval(scheduler, new_value):
     # Check if cron expression is set - if so, don't override with interval
     cron_expr = get_config("storage_check_cron", "").strip()
     if cron_expr:
-        logger.info("[Scheduler] Storage check job has cron expression '%s', skipping interval update", cron_expr)
+        logger.info(
+            "[Scheduler] Storage check job has cron expression '%s', skipping interval update",
+            cron_expr,
+        )
         return
     try:
-        scheduler.reschedule_job("storage_check", trigger=IntervalTrigger(hours=new_value))
+        scheduler.reschedule_job(
+            "storage_check", trigger=IntervalTrigger(hours=new_value, timezone=scheduler.timezone)
+        )
         logger.info("[Scheduler] Storage check interval updated to %d hours", new_value)
     except JobLookupError:
         logger.warning("[Scheduler] Job 'storage_check' not found.")
@@ -468,10 +516,16 @@ def handle_storage_check_interval(scheduler, new_value):
 def handle_record_check_interval(scheduler, new_value):
     cron_expr = get_config("record_check_cron", "").strip()
     if cron_expr:
-        logger.info("[Scheduler] Record check job has cron expression '%s', skipping interval update", cron_expr)
+        logger.info(
+            "[Scheduler] Record check job has cron expression '%s', skipping interval update",
+            cron_expr,
+        )
         return
     try:
-        scheduler.reschedule_job("record_folder_check", trigger=IntervalTrigger(minutes=new_value))
+        scheduler.reschedule_job(
+            "record_folder_check",
+            trigger=IntervalTrigger(minutes=new_value, timezone=scheduler.timezone),
+        )
         logger.info("[Scheduler] Record check interval updated to %d minutes", new_value)
     except JobLookupError:
         logger.warning("[Scheduler] Job 'record_folder_check' not found.")
@@ -482,10 +536,14 @@ def handle_email_retry_interval(scheduler, new_value):
     cron_expr = get_config("email_retry_cron", "").strip()
     if cron_expr:
         # Cron takes precedence, only update the fallback default
-        logger.info("[Scheduler] Email retry has cron expression '%s', skipping interval update", cron_expr)
+        logger.info(
+            "[Scheduler] Email retry has cron expression '%s', skipping interval update", cron_expr
+        )
         return
     try:
-        scheduler.reschedule_job("email_retry", trigger=IntervalTrigger(minutes=new_value))
+        scheduler.reschedule_job(
+            "email_retry", trigger=IntervalTrigger(minutes=new_value, timezone=scheduler.timezone)
+        )
         logger.info("[Scheduler] Email retry interval updated to %d minutes", new_value)
     except JobLookupError:
         logger.warning("[Scheduler] Job 'email_retry' not found.")
@@ -497,21 +555,27 @@ def handle_cleanup_interval(scheduler, new_value):
     if cron_expr:
         logger.info("[Scheduler] Cleanup jobs have cron expression '%s', skipping interval update", cron_expr)
         return
-    jobs = ['cleanup_camera_stats', 'cleanup_api_logs', 'cleanup_command_logs']
+    jobs = ["cleanup_camera_stats", "cleanup_api_logs", "cleanup_command_logs"]
     for job_id in jobs:
         try:
-            scheduler.reschedule_job(job_id, trigger=IntervalTrigger(days=new_value))
+            scheduler.reschedule_job(
+                job_id, trigger=IntervalTrigger(days=new_value, timezone=scheduler.timezone)
+            )
         except JobLookupError:
             pass
     logger.info("[Scheduler] Cleanup jobs interval updated to %d days", new_value)
 
 
 def handle_wa_daily_report_time(scheduler, hour, minute):
-    try:
-        scheduler.reschedule_job("wa_daily_report", trigger=CronTrigger(hour=hour, minute=minute))
-        logger.info("[Scheduler] WA daily report time updated to %02d:%02d", hour, minute)
-    except JobLookupError:
-        logger.warning("[Scheduler] Job 'wa_daily_report' not found.")
+    for job_id in ("wa_daily_report", "record_check_daily_report"):
+        try:
+            scheduler.reschedule_job(
+                job_id,
+                trigger=CronTrigger(hour=hour, minute=minute, timezone=scheduler.timezone),
+            )
+        except JobLookupError:
+            logger.warning("[Scheduler] Job '%s' not found.", job_id)
+    logger.info("[Scheduler] Daily report time updated to %02d:%02d", hour, minute)
 
 
 CONFIG_HANDLERS = {
@@ -531,12 +595,12 @@ CONFIG_HANDLERS = {
 # Scheduler Lifecycle
 # ----------------------------
 def start_scheduler():
-    
+
     # Ensure APScheduler tables exist before starting scheduler
     # This prevents errors when the table doesn't exist yet (first run or fresh database)
     try:
         from sqlalchemy import inspect, text
-        
+
         inspector = inspect(engine)
         if not inspector.has_table('apscheduler_jobs'):
             logger.info("[Scheduler] Creating APScheduler tables...")
@@ -544,7 +608,7 @@ def start_scheduler():
             # This ensures compatibility with different database backends
             from sqlalchemy import Column, String, Float, LargeBinary, Index, MetaData
             from sqlalchemy import Table as SATable
-            
+
             metadata = MetaData()
             apscheduler_jobs = SATable(
                 'apscheduler_jobs',
@@ -558,7 +622,7 @@ def start_scheduler():
             logger.info("[Scheduler] APScheduler tables created")
     except Exception as e:
         logger.warning("[Scheduler] Could not create APScheduler tables: %s", e)
-    
+
     # Clear apscheduler_jobs table to prevent duplicate key errors
     # This is necessary when the scheduler container restarts
     try:
@@ -569,7 +633,7 @@ def start_scheduler():
             logger.info("[Scheduler] Cleared apscheduler_jobs table")
     except Exception as e:
         logger.warning("[Scheduler] Could not clear apscheduler_jobs table: %s", e)
-    
+
     # Load all config with new interval settings and cron expressions
     config = {
         "snapshot_interval_minutes": int(get_config("snapshot_interval_minutes", 480)),
@@ -593,49 +657,53 @@ def start_scheduler():
         "email_retry_cron": get_config("email_retry_cron", ""),
     }
 
+    scheduler.timezone = scheduler_timezone(get_scheduler_timezone())
+    config["timezone"] = str(scheduler.timezone)
     last_config.update(config)
 
     # Main jobs with cron support
     snapshot_trigger = create_trigger(
         config["snapshot_cron"],
-        IntervalTrigger(minutes=config["snapshot_interval_minutes"])
+        IntervalTrigger(minutes=config["snapshot_interval_minutes"], timezone=scheduler.timezone),
     )
     scheduler.add_job(
         scheduled_snapshot,
         trigger=snapshot_trigger,
-        id='scheduled_snapshot',
+        id="scheduled_snapshot",
         max_instances=1,
         coalesce=True,
         misfire_grace_time=60,
-        replace_existing=True
+        replace_existing=True,
     )
 
     healthcheck_trigger = create_trigger(
         config["healthcheck_cron"],
-        IntervalTrigger(minutes=config["healthcheck_interval_minutes"])
+        IntervalTrigger(
+            minutes=config["healthcheck_interval_minutes"], timezone=scheduler.timezone
+        ),
     )
     scheduler.add_job(
         health_check_job,
         trigger=healthcheck_trigger,
-        id='health_check',
+        id="health_check",
         max_instances=1,
         coalesce=True,
         misfire_grace_time=30,
-        replace_existing=True
+        replace_existing=True,
     )
 
     # Cleanup jobs with cron support (default: 2 AM daily)
     cleanup_trigger = create_trigger(
         config["cleanup_cron"],
-        IntervalTrigger(days=config["cleanup_interval_days"])
+        IntervalTrigger(days=config["cleanup_interval_days"], timezone=scheduler.timezone),
     )
     cleanup_jobs = [
-        ('cleanup_camera_stats', delete_old_camera_stats),
-        ('cleanup_api_logs', delete_old_api_logs),
-        ('cleanup_command_logs', delete_old_command_logs),
-        ('cleanup_record_checks', cleanup_record_checks_job),
+        ("cleanup_camera_stats", delete_old_camera_stats),
+        ("cleanup_api_logs", delete_old_api_logs),
+        ("cleanup_command_logs", delete_old_command_logs),
+        ("cleanup_record_checks", cleanup_record_checks_job),
     ]
-    
+
     cleanup_job_wrappers = {
         'cleanup_camera_stats': cleanup_camera_stats_job,
         'cleanup_api_logs': cleanup_api_logs_job,
@@ -655,7 +723,9 @@ def start_scheduler():
     # Email retry with cron support
     email_retry_trigger = create_trigger(
         config["email_retry_cron"],
-        IntervalTrigger(minutes=config["email_retry_interval_minutes"])
+        IntervalTrigger(
+            minutes=config["email_retry_interval_minutes"], timezone=scheduler.timezone
+        ),
     )
     scheduler.add_job(
         email_retry_job,
@@ -665,20 +735,22 @@ def start_scheduler():
         coalesce=True,
         replace_existing=True
     )
-    
+
     scheduler.add_job(
         cleanup_email_retry_job,
-        trigger=IntervalTrigger(days=config["cleanup_retry_queue_interval_days"]),
-        id='cleanup_email_retry',
+        trigger=IntervalTrigger(
+            days=config["cleanup_retry_queue_interval_days"], timezone=scheduler.timezone
+        ),
+        id="cleanup_email_retry",
         max_instances=1,
         coalesce=True,
-        replace_existing=True
+        replace_existing=True,
     )
-    
+
     # Storage monitoring with cron support
     storage_trigger = create_trigger(
         config["storage_check_cron"],
-        IntervalTrigger(hours=config["storage_check_interval_hours"])
+        IntervalTrigger(hours=config["storage_check_interval_hours"], timezone=scheduler.timezone),
     )
     scheduler.add_job(
         storage_check_job,
@@ -692,7 +764,9 @@ def start_scheduler():
 
     record_check_trigger = create_trigger(
         config["record_check_cron"],
-        IntervalTrigger(minutes=config["record_check_interval_minutes"])
+        IntervalTrigger(
+            minutes=config["record_check_interval_minutes"], timezone=scheduler.timezone
+        ),
     )
     scheduler.add_job(
         record_folder_check_job,
@@ -703,50 +777,58 @@ def start_scheduler():
         misfire_grace_time=300,
         replace_existing=True
     )
-    
+
     # WhatsApp daily report with configurable time
     scheduler.add_job(
         wa_daily_report_job,
-        trigger=CronTrigger(hour=config["wa_daily_report_hour"], minute=config["wa_daily_report_minute"]),
-        id='wa_daily_report',
+        trigger=CronTrigger(
+            hour=config["wa_daily_report_hour"],
+            minute=config["wa_daily_report_minute"],
+            timezone=scheduler.timezone,
+        ),
+        id="wa_daily_report",
         max_instances=1,
         coalesce=True,
         misfire_grace_time=300,
-        replace_existing=True
+        replace_existing=True,
     )
 
     scheduler.add_job(
         record_check_daily_report_job,
-        trigger=CronTrigger(hour=config["wa_daily_report_hour"], minute=config["wa_daily_report_minute"]),
-        id='record_check_daily_report',
+        trigger=CronTrigger(
+            hour=config["wa_daily_report_hour"],
+            minute=config["wa_daily_report_minute"],
+            timezone=scheduler.timezone,
+        ),
+        id="record_check_daily_report",
         max_instances=1,
         coalesce=True,
         misfire_grace_time=300,
-        replace_existing=True
+        replace_existing=True,
     )
-    
+
     # Orphaned snapshots check - runs every hour
     scheduler.add_job(
         orphaned_snapshots_check_job,
-        trigger=IntervalTrigger(hours=1),
+        trigger=IntervalTrigger(hours=1, timezone=scheduler.timezone),
         id='orphaned_snapshots_check',
         max_instances=1,
         coalesce=True,
         misfire_grace_time=300,
         replace_existing=True
     )
-    
+
     # MED-003: Retention policy enforcement - runs daily at 3 AM
     scheduler.add_job(
         retention_policy_job,
-        trigger=CronTrigger(hour=3, minute=0),
+        trigger=CronTrigger(hour=3, minute=0, timezone=scheduler.timezone),
         id='retention_policy',
         max_instances=1,
         coalesce=True,
         misfire_grace_time=3600,
         replace_existing=True
     )
-    
+
     scheduler.start()
     logger.info("[Scheduler] Started with %d jobs", len(scheduler.get_jobs()))
     return scheduler
@@ -754,6 +836,7 @@ def start_scheduler():
 
 def update_scheduler_config():
     try:
+        update_scheduler_timezone()
         new_config = {
             "snapshot_interval_minutes": int(get_config("snapshot_interval_minutes", 480)),
             "healthcheck_interval_minutes": int(get_config("healthcheck_interval_minutes", 15)),
@@ -782,7 +865,7 @@ def update_scheduler_config():
             'cleanup_cron': 'cleanup_camera_stats',  # Cleanup jobs use the shared trigger
             'email_retry_cron': 'email_retry',
         }
-        
+
         for cron_key, job_id in cron_jobs.items():
             new_cron = new_config.get(cron_key, "")
             old_cron = last_config.get(cron_key, "")
@@ -791,21 +874,38 @@ def update_scheduler_config():
                 job = scheduler.get_job(job_id)
                 if job:
                     # Get the appropriate default trigger
-                    if cron_key == 'snapshot_cron':
-                        default_trigger = IntervalTrigger(minutes=new_config["snapshot_interval_minutes"])
-                    elif cron_key == 'healthcheck_cron':
-                        default_trigger = IntervalTrigger(minutes=new_config["healthcheck_interval_minutes"])
-                    elif cron_key == 'storage_check_cron':
-                        default_trigger = IntervalTrigger(hours=new_config["storage_check_interval_hours"])
-                    elif cron_key == 'record_check_cron':
-                        default_trigger = IntervalTrigger(minutes=new_config["record_check_interval_minutes"])
-                    elif cron_key == 'cleanup_cron':
-                        default_trigger = IntervalTrigger(days=new_config["cleanup_interval_days"])
-                    elif cron_key == 'email_retry_cron':
-                        default_trigger = IntervalTrigger(minutes=new_config["email_retry_interval_minutes"])
+                    if cron_key == "snapshot_cron":
+                        default_trigger = IntervalTrigger(
+                            minutes=new_config["snapshot_interval_minutes"],
+                            timezone=scheduler.timezone,
+                        )
+                    elif cron_key == "healthcheck_cron":
+                        default_trigger = IntervalTrigger(
+                            minutes=new_config["healthcheck_interval_minutes"],
+                            timezone=scheduler.timezone,
+                        )
+                    elif cron_key == "storage_check_cron":
+                        default_trigger = IntervalTrigger(
+                            hours=new_config["storage_check_interval_hours"],
+                            timezone=scheduler.timezone,
+                        )
+                    elif cron_key == "record_check_cron":
+                        default_trigger = IntervalTrigger(
+                            minutes=new_config["record_check_interval_minutes"],
+                            timezone=scheduler.timezone,
+                        )
+                    elif cron_key == "cleanup_cron":
+                        default_trigger = IntervalTrigger(
+                            days=new_config["cleanup_interval_days"], timezone=scheduler.timezone
+                        )
+                    elif cron_key == "email_retry_cron":
+                        default_trigger = IntervalTrigger(
+                            minutes=new_config["email_retry_interval_minutes"],
+                            timezone=scheduler.timezone,
+                        )
                     else:
                         continue
-                    
+
                     new_trigger = create_trigger(new_cron, default_trigger)
                     job.reschedule(trigger=new_trigger)
                     logger.info("[Scheduler] Rescheduled %s with trigger: %s", job_id, new_trigger)
@@ -822,7 +922,7 @@ def update_scheduler_config():
                 if handler:
                     handler(scheduler, new_value)
                 last_config[key] = new_value
-        
+
         # Handle WA daily report time separately (needs both hour and minute)
         new_hour = int(get_config("wa_daily_report_hour", 8))
         new_minute = int(get_config("wa_daily_report_minute", 0))
@@ -831,11 +931,15 @@ def update_scheduler_config():
             handle_wa_daily_report_time(scheduler, new_hour, new_minute)
             last_config["wa_daily_report_hour"] = new_hour
             last_config["wa_daily_report_minute"] = new_minute
-        
+
         # Log next run times
         for job in scheduler.get_jobs():
             if job and job.next_run_time:
-                logger.info("[Scheduler] Next run '%s' at %s", job.id, job.next_run_time)
+                logger.info(
+                    "[Scheduler] Next run '%s' at %s",
+                    job.id,
+                    job.next_run_time.astimezone(scheduler.timezone),
+                )
 
         logger.info("[Scheduler] Config reloaded")
 
@@ -958,11 +1062,9 @@ def delete_old_camera_stats():
     db: Session = SessionLocal()
     try:
         retention_days = int(get_config("retention_camera_stats_days", 90))
-        # Use configured timezone for date calculation
-        cfg = db.query(Configuration).filter_by(key="timezone").first()
-        tz_name = cfg.value if cfg else "UTC"
-        tz = pytz.timezone(tz_name)
-        cutoff_date = datetime.now(tz).date() - timedelta(days=retention_days)
+        cutoff_date = to_current_timezone(datetime.now(timezone.utc), db).date() - timedelta(
+            days=retention_days
+        )
         deleted_rows = (
             db.query(CameraDailyStats)
             .filter(CameraDailyStats.date < cutoff_date)
@@ -1342,7 +1444,9 @@ def send_wa_camera_no_snapshot_report():
         if not receiver:
             return {"records_processed": 0}
         
-        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+        now = datetime.now(timezone.utc)
+        local_now = to_current_timezone(now, db)
+        snapshot_cutoff = now - timedelta(days=7)
         cameras = db.query(Camera).filter(Camera.status.in_(["Active", "Restricted", "Maintenance"])).all()
         
         no_snapshot_cameras = []
@@ -1350,7 +1454,7 @@ def send_wa_camera_no_snapshot_report():
             recent_snapshot = (
                 db.query(SnapshotLog)
                 .filter(SnapshotLog.camera_id == cam.id)
-                .filter(SnapshotLog.timestamp >= yesterday)
+                .filter(SnapshotLog.timestamp >= snapshot_cutoff)
                 .first()
             )
             if not recent_snapshot:
@@ -1366,10 +1470,10 @@ def send_wa_camera_no_snapshot_report():
             return {"records_processed": 0}
         
         lines = ["📊 *B-SNAP Daily Camera Status Report*\n"]
-        lines.append(f"Date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC\n")
+        lines.append(f"Date: {local_now:%Y-%m-%d %H:%M %Z}\n")
         
         if no_snapshot_cameras:
-            lines.append(f"⚠️ *Cameras without snapshots:* {len(no_snapshot_cameras)}")
+            lines.append(f"⚠️ *Cameras without snapshots in the last 7 days:* {len(no_snapshot_cameras)}")
             for cam in no_snapshot_cameras[:50]:
                 camera_label = cam.hostname or cam.ip or str(cam.id)
                 if cam.ip and cam.hostname:

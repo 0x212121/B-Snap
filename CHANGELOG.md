@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Scheduler triggers and WhatsApp camera report dates now follow the configured timezone, including timezone changes on configuration reload. WhatsApp camera and NVR report date headers display the timezone abbreviation (WIB/WITA/WIT).
+
 - Improved WhatsApp capture, media delivery, retries, and duplicate-message handling.
 - Enforced sender whitelist, role, and camera-group access across commands and tests.
 - Improved API error reporting and moved camera-IP lookup to `/api/cctv/resolve-ip`.
