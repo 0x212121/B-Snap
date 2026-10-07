@@ -206,11 +206,11 @@ db-reset: ## Reset database (drop all tables and recreate)
 
 .PHONY: docker-build
 docker-build: ## Build Docker image
-	docker-compose build
+	docker compose build b-snap
 
 .PHONY: docker-up
-docker-up: ## Start Docker containers
-	docker-compose up -d
+docker-up: docker-build ## Build the shared image and start Docker containers
+	docker compose up -d --no-build
 
 .PHONY: docker-down
 docker-down: ## Stop Docker containers

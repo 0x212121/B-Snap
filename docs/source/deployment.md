@@ -40,7 +40,7 @@ start the complete stack after a successful exit. Do not leave old workers
 running against a schema being upgraded:
 
 ```bash
-docker compose build
+docker compose build b-snap
 docker compose stop b-snap scheduler notifier
 docker compose run --rm migrate
 docker compose up -d
@@ -194,3 +194,52 @@ stored securely outside the image. `docker compose down` retains named volumes;
 `docker compose down -v` deletes them. Runtime archives, backups, logs and test
 outputs are excluded from the Docker build context. Files are not moved or
 removed by these configuration changes.
+
+## Shared image build
+
+Only `b-snap` defines a build in the base Compose file. Migrator, scheduler and
+notifier reuse the same image reference through a YAML anchor. Build before
+running an individual worker/migrator on a fresh host:
+
+```bash
+docker compose build b-snap
+docker compose up -d --no-build
+```
+
+The Dockerfile uses BuildKit (Dockerfile syntax v1) with three stages:
+
+- `python-wheels`: compile/download wheels using the existing Python runtime
+  version; build tools and headers stay in this stage.
+- `frontend`: install from `package-lock.json` using `npm ci`, then build minified
+  Tailwind CSS from templates, Python, JavaScript and CSS source files.
+- `runtime`: install wheels offline through a temporary BuildKit mount, copy
+  application code and generated CSS, and retain FFmpeg, curl, CIFS/NFS helpers
+  plus native runtime libraries. Node/npm, compilers and the wheelhouse are not
+  copied from their build stages into the final image.
+
+Pip/npm download caches are reused during builds. Runtime startup validates CSS
+instead of attempting to run npm. The build checks Python dependency consistency,
+imports native image/database/crypto libraries, checks ffprobe, and validates the
+OCI version label against both `pyproject.toml` and `app/version.py`.
+
+The current default image tag and `APP_VERSION` build argument follow the package
+version. On a version bump, update both defaults; inconsistent source/label
+versions fail the build. For a manual build supply `--build-arg APP_VERSION=...`
+matching the checked-out package version. `PYTHON_IMAGE` can override the shared
+base for both wheel-builder and runtime; keep their ABI and Debian libraries
+compatible. No image-size reduction is claimed until a Docker build is measured.
+
+For CI-built images, set `BSNAP_IMAGE` to the published release tag or digest,
+pull it once, then deploy without local builds or implicit application-image pulls.
+On a fresh host, also pull PostgreSQL (and pgAdmin if enabling the admin profile)
+before using `--pull never`:
+
+```bash
+docker compose pull b-snap postgres
+docker compose up -d --no-build --pull never
+```
+
+For an upgrade, stop old application services and run the migration service
+successfully with that image before starting web/scheduler/notifier, as described
+above. `BSNAP_IMAGE` changes the image reference, not the application version.
+The local-image development overlay still uses `b-snap:local` for all four roles.

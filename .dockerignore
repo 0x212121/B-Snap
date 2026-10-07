@@ -1,7 +1,11 @@
 node_modules/
+static/css/output.css
 secret/
 *.log
 *.env
+**/*.env
+**/.env
+**/.env.*
 static/snapshots/
 static/videos/
 static/images/

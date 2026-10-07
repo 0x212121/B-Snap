@@ -1,7 +1,9 @@
+# All application services consume the exact same image reference.
+x-bsnap-image: &bsnap-image ${BSNAP_IMAGE:-kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.4.0}
+
 services:
   migrate:
-    build: .
-    image: kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.3.0
+    image: *bsnap-image
     cap_drop:
       - ALL
     security_opt:
@@ -17,7 +19,7 @@ services:
 
   b-snap:
     build: .
-    image: kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.3.0
+    image: *bsnap-image
     container_name: bsnap-app
     ports:
       - "8080:8080"
@@ -50,8 +52,7 @@ services:
     # command: gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8080 --workers 2 --worker-connections 1000 --timeout 60 --keep-alive 2
 
   scheduler:
-    build: .
-    image: kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.3.0
+    image: *bsnap-image
     container_name: bsnap-scheduler
     security_opt:
       - no-new-privileges:true
@@ -76,8 +77,7 @@ services:
     command: ["/app/start.sh", "scheduler"]
   
   notifier:
-    build: .
-    image: kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.3.0
+    image: *bsnap-image
     container_name: bsnap-notifier
     cap_drop:
       - ALL

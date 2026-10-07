@@ -62,7 +62,7 @@ yarl==1.25.1
 zeep==4.3.1
 psutil==7.0.0
 cachetools==6.2.0
-concurrent-log-handler
+concurrent-log-handler==0.9.29
 cryptography==50.0.1
 reportlab==5.0.1
 # sphinx

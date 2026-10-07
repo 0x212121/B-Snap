@@ -87,3 +87,11 @@ def test_persistent_files_are_shared_at_the_same_container_paths(compose_files: 
     assert services["b-snap"]["working_dir"] == services["scheduler"]["working_dir"] == "/app"
     assert "pgadmin_data:/var/lib/pgadmin" in services["pgadmin"]["volumes"]
     assert "pgadmin_data" in compose_files["docker-compose.yml"]["volumes"]
+
+
+def test_application_image_is_built_once(compose_files: dict) -> None:
+    services = compose_files["docker-compose.yml"]["services"]
+    assert {name for name, service in services.items() if "build" in service} == {"b-snap"}
+    image = services["b-snap"]["image"]
+    for name in ("migrate", "scheduler", "notifier"):
+        assert services[name]["image"] == image

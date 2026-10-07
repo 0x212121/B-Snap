@@ -109,19 +109,13 @@ require_database_ready() {
     python3 -c 'from app.db.migrate import require_current_schema; require_current_schema()'
 }
 
-# Collect static files (if needed)
+# Validate the CSS artifact built into the image.
 collect_static() {
     log_info "Setting up static files..."
     # Ensure CSS output exists
-    if [ ! -f "${STATIC_DIR}/css/output.css" ]; then
-        log_warning "Tailwind CSS output not found. Building..."
-        if command -v npm &> /dev/null && [ -f "${APP_DIR}/package.json" ]; then
-            cd "${APP_DIR}"
-            npm run build
-            log_success "Tailwind CSS built"
-        else
-            log_warning "npm not available or package.json not found. Using default CSS."
-        fi
+    if [ ! -s "${STATIC_DIR}/css/output.css" ]; then
+        log_error "Tailwind CSS artifact is missing or empty. Rebuild the application image."
+        return 1
     fi
 }
 
