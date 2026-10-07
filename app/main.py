@@ -43,6 +43,7 @@ from app.ws.routes import notification_listener, router as ws_router
 from app.version import __version__
 from app.api import whatsapp_routes
 from app.api import observability_log
+from app.api.readiness import router as readiness_router
 from app.ws.manager import websocket_connections
 from functools import lru_cache
 
@@ -79,6 +80,7 @@ templates.env.globals["version"] = __version__
 # ====================================================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.ready = False
     # Log startup environment
     env_display = ENVIRONMENT.upper()
     if ENVIRONMENT == "production":
@@ -139,8 +141,10 @@ async def lifespan(app: FastAPI):
 
     try:
         logger.info("Application startup complete.")
+        app.state.ready = True
         yield
     finally:
+        app.state.ready = False
         if app.state.notification_listener_task:
             app.state.notification_listener_task.cancel()
             try:
@@ -372,6 +376,8 @@ async def custom_swagger_ui():
 @lru_cache()
 def get_version_info():
     return {"version": __version__}
+
+app.include_router(readiness_router)
 
 @app.get("/version")
 async def version():

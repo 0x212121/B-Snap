@@ -243,3 +243,107 @@ For an upgrade, stop old application services and run the migration service
 successfully with that image before starting web/scheduler/notifier, as described
 above. `BSNAP_IMAGE` changes the image reference, not the application version.
 The local-image development overlay still uses `b-snap:local` for all four roles.
+
+
+## Container readiness, budgets and shutdown
+
+The web container probes `GET /readyz` rather than `/version`. This exact public
+GET endpoint returns only `ready` (HTTP 200) or `unavailable` (HTTP 503), bypasses
+login/setup and API-row logging, and checks completed application startup plus
+`SELECT 1` on the current database connection pool. It works before the first
+admin account is created. It does not report individual camera availability.
+
+Scheduler and notifier publish atomic process-local heartbeats under
+`/tmp/bsnap-health`; they are not stored on the shared reload-flag volume. Docker
+runs `python -m app.core.service_health scheduler` or `notifier` every 30 seconds.
+Scheduler health requires a successful configuration reload, live PostgreSQL
+query, and a running scheduler thread; its heartbeat expires after 180 seconds.
+Notifier checks its registered LISTEN connection every 30 seconds, reconnects
+following failures, and expires after 90 seconds without a successful query.
+A connection termination invalidates notifier health immediately. A worker
+heartbeat checks the worker control loop; it does not prove that every job or
+notification completed successfully. Notifications are queued and wake-up signals
+published in one transaction; health queries and deliveries serialize access to
+the listener connection. Notification payloads and raw connection errors are not
+printed to container logs.
+
+`docker compose ps` and `docker compose logs --tail 100 scheduler notifier b-snap`
+show status and recent diagnostics. Compose does not restart a running container
+just because its healthcheck reports unhealthy: `unless-stopped` restarts exited
+processes. Alert on persistent unhealthy states through your monitoring system;
+inspect the cause before restarting a service. A configuration reload failure
+stops the scheduler process and clears its health while draining active jobs.
+Keep exactly one scheduler and one notifier for this job store/channel; these
+workers are not designed for replicas or concurrent rolling replacements.
+
+The Compose defaults are starting limits to tune to host capacity and camera
+workload; they are ceilings, not reserved RAM or CPU:
+
+| Service | CPU ceiling | Memory ceiling | Stop grace | Main DB pool / overflow |
+| --- | --- | --- | --- | --- |
+| Web | 2 | 2 GiB | 120 s | 5 / 5 per Gunicorn worker |
+| Scheduler | 2 | 4 GiB | 180 s | 10 / 5 |
+| Notifier | 0.5 | 512 MiB | 60 s | 1 / 0 for startup; one asyncpg listener |
+| Migrator | 1 | 512 MiB | 60 s | 2 / 0 |
+| PostgreSQL | 2 | 2 GiB | 60 s | Server connection limit |
+| pgAdmin (optional) | 1 | 512 MiB | 60 s | Independent admin connections |
+
+Use the role variables in `.env.example` (`WEB_CPUS`, `SCHEDULER_MEM_LIMIT`, etc.)
+to adjust limits. A memory ceiling can terminate a process if its workload exceeds
+that budget; measure capture/video workloads before choosing tighter values.
+`WEB_CONCURRENCY` takes precedence over `WORKERS`; both entrypoint reporting and
+Gunicorn use that order. Compose fixes the internal web bind to port 8080 to match
+the published port and probe. For a different host port, override the published
+port in Compose while retaining the internal port.
+
+`WEB_DB_POOL_SIZE`, `WEB_DB_MAX_OVERFLOW`, `SCHEDULER_DB_POOL_SIZE`,
+`SCHEDULER_DB_MAX_OVERFLOW` and `MIGRATE_DB_POOL_SIZE` feed role-specific engine
+settings through Compose. Outside Docker, `DB_POOL_SIZE` and `DB_MAX_OVERFLOW`
+control the engine directly (unset defaults remain 20 and 10). All deployments
+now use pool pre-ping and a five-second PostgreSQL connect timeout; pool timeout
+and recycle use `DB_POOL_TIMEOUT` and `DB_POOL_RECYCLE` (native unset defaults 30
+and 1800 seconds, Compose defaults 5 and 1800). Keep sizes positive, overflow
+non-negative, and timeouts positive. Invalid values fail startup instead of
+creating unbounded pools. `DB_POOL_RECYCLE=-1` disables recycling if needed.
+
+With two web workers, the steady main SQLAlchemy pools allow at most
+`2 * (5 + 5) + (10 + 5) = 35` connections. Allow additional connections for the
+notifier, per-web-worker asyncpg polling, startup hooks, migration, administration
+and backups. These pool ceilings are not the total PostgreSQL connection budget.
+Increasing web worker count multiplies its pool budget; increasing capture
+concurrency also raises scheduler demand. Leave headroom under PostgreSQL's
+`max_connections` rather than setting each container pool to the server limit.
+
+Application containers use `init: true` for child-process reaping and signal
+forwarding. On SIGTERM/SIGINT, scheduler stops its control loop promptly, pauses
+new jobs and waits for already-running jobs. Notifier stops listening, allows up
+to 30 seconds for pending deliveries, and closes the PostgreSQL connection with
+a five-second close timeout. Gunicorn uses `GRACEFUL_TIMEOUT` (default 90 s),
+which must stay below `WEB_STOP_GRACE_PERIOD` (default 120 s). Scheduler job
+batches may take longer than the default 180-second grace; increase its grace to
+cover the longest normal job. Docker sends SIGKILL after the configured grace,
+so a timeout can still interrupt captures or pending deliveries. This shutdown
+handling does not add durable replay for PostgreSQL notifications lost while the
+listener is offline.
+
+All six services use Docker's `local` log driver with rotation at 10 MiB and five
+files per container. This bounds Docker stdout/stderr logs; Python file handlers
+continue their existing rotation under `./logs`, and audit-archive retention is
+managed separately. Container log settings take effect after container recreation.
+
+Before production rollout, build and smoke-test the image on a Docker host:
+
+```bash
+docker compose config --quiet
+docker compose build b-snap
+docker compose up -d --no-build
+docker compose ps
+curl --fail http://127.0.0.1:8080/readyz
+docker compose exec scheduler python -m app.core.service_health scheduler
+docker compose exec notifier python -m app.core.service_health notifier
+```
+
+In an isolated deployment, verify a database outage makes readiness/workers
+unhealthy, restores notifier health after reconnect, and inspect logs when using
+`docker compose stop scheduler notifier b-snap` to confirm orderly shutdown.
+Do not run outage or capture-interruption checks against production camera jobs.

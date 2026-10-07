@@ -38,15 +38,24 @@ def mask_db_url(db_url: str) -> str:
 masked_url = mask_db_url(DATABASE_URL)
 logger.info("Database URL: %s", masked_url)
 
+def _pool_int(name: str, default: int, minimum: int) -> int:
+    value = int(os.getenv(name, str(default)))
+    if value < minimum:
+        raise ValueError(f"{name} must be at least {minimum}")
+    return value
+
+
 # === Create SQLAlchemy Engine ===
 # Set connect_args to ensure UTC timezone for all connections
 # This ensures timestamps are consistently handled in UTC
 engine = create_engine(
-    DATABASE_URL, pool_size=20,
-    max_overflow=10,
-    pool_timeout=30,
-    pool_recycle=1800,
-    connect_args={"options": "-c timezone=utc"},
+    DATABASE_URL,
+    pool_size=_pool_int("DB_POOL_SIZE", 20, 1),
+    max_overflow=_pool_int("DB_MAX_OVERFLOW", 10, 0),
+    pool_timeout=_pool_int("DB_POOL_TIMEOUT", 30, 1),
+    pool_recycle=_pool_int("DB_POOL_RECYCLE", 1800, -1),
+    pool_pre_ping=True,
+    connect_args={"options": "-c timezone=utc", "connect_timeout": 5},
     # echo=True # Enable SQL query logging for debugging
 )
 

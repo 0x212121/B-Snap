@@ -95,3 +95,30 @@ def test_application_image_is_built_once(compose_files: dict) -> None:
     image = services["b-snap"]["image"]
     for name in ("migrate", "scheduler", "notifier"):
         assert services[name]["image"] == image
+
+
+def test_roles_have_health_resource_limits_and_bounded_logs(compose_files: dict) -> None:
+    services = compose_files["docker-compose.yml"]["services"]
+    for service in services.values():
+        assert "CPUS:-" in service["cpus"]
+        assert "MEM_LIMIT:-" in service["mem_limit"]
+        assert "STOP_GRACE_PERIOD:-" in service["stop_grace_period"]
+        assert service["logging"] == {
+            "driver": "local",
+            "options": {"max-size": "10m", "max-file": "5"},
+        }
+    for name in ("migrate", "b-snap", "scheduler", "notifier"):
+        assert services[name]["init"] is True
+        assert services[name]["environment"]["DB_POOL_TIMEOUT"] == "${DB_POOL_TIMEOUT:-5}"
+    assert services["migrate"]["environment"]["DB_MAX_OVERFLOW"] == "0"
+    web = services["b-snap"]
+    assert web["healthcheck"]["test"][-1] == "http://127.0.0.1:8080/readyz"
+    assert web["environment"]["BIND"] == "0.0.0.0:8080"
+    for name in ("scheduler", "notifier"):
+        assert services[name]["healthcheck"]["test"] == [
+            "CMD",
+            "python",
+            "-m",
+            "app.core.service_health",
+            name,
+        ]

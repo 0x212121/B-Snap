@@ -22,7 +22,7 @@ API_PATH_PREFIXES = [
 def is_excluded_path(request: Request) -> bool:
     """Return True for traffic that should never be observed as API calls."""
     path = request.url.path
-    return any(path.startswith(p) for p in EXCLUDE_PATHS)
+    return path == "/readyz" or any(path.startswith(p) for p in EXCLUDE_PATHS)
 
 
 def should_log_api_request(request: Request, response=None) -> bool:

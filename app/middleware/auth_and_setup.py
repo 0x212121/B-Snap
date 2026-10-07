@@ -44,6 +44,8 @@ ALLOWED_PUBLIC_PATHS = [
 
 class AuthAndSetupMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        if request.url.path == "/readyz" and request.method == "GET":
+            return await call_next(request)
         db = SessionLocal()
         try:
             return await self._do_dispatch(request, call_next, db)

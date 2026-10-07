@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Add database-backed web readiness and worker heartbeats, graceful scheduler/notifier shutdown, per-role Docker resource budgets and database pools, and bounded container log rotation.
+
 - Build one shared version-checked Docker image with separate Python wheel and Tailwind stages; retain only native runtime libraries/tooling, ship minified CSS, and pin the log-handler dependency.
 - Persist shared audit archives and pgAdmin state across container recreation; use application-root storage paths, monitor the footage filesystem, exclude runtime archives from image builds, and require a stable audit archive key without logging key material.
 - Remove privileged mode and embedded database/admin passwords from Compose deployments; require deployment credentials, restrict database/admin ports to localhost, and make pgAdmin opt-in through the admin profile.

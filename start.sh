@@ -157,7 +157,7 @@ check_environment() {
 start_web() {
     log_info "Starting ${APP_NAME} web server..."
     
-    local workers="${WORKERS:-2}"
+    local workers="${WEB_CONCURRENCY:-${WORKERS:-2}}"
     local bind="${BIND:-0.0.0.0:8080}"
     local timeout="${TIMEOUT:-60}"
     local keepalive="${KEEPALIVE:-2}"

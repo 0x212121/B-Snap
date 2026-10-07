@@ -797,7 +797,7 @@ def start_scheduler():
     return scheduler
 
 
-def update_scheduler_config():
+def update_scheduler_config() -> bool:
     """Reload each job's schedule independently from database configuration."""
     try:
         update_scheduler_timezone()
@@ -822,8 +822,10 @@ def update_scheduler_config():
             if value != last_config.get(key):
                 CONFIG_HANDLERS[key](scheduler, value)
                 last_config[key] = value
+        return True
     except Exception:
         logger.exception("[Scheduler] Failed to reload config")
+        return False
 
 
 # ----------------------------

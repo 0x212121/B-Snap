@@ -21,9 +21,10 @@ from app.core.logging_config import LOGGING_CONFIG, set_debug_mode
 
 # --- Worker & binding
 worker_class = "uvicorn.workers.UvicornWorker"
-workers = int(os.getenv("WEB_CONCURRENCY", "2"))
+workers = int(os.getenv("WEB_CONCURRENCY", os.getenv("WORKERS", "2")))
 bind = os.getenv("BIND", "0.0.0.0:8080")
 timeout = int(os.getenv("TIMEOUT", "60"))
+graceful_timeout = int(os.getenv("GRACEFUL_TIMEOUT", "90"))
 keepalive = int(os.getenv("KEEPALIVE", "2"))
 
 # --- Logging: pakai dictConfig milik aplikasi (yang sudah include gunicorn/uvicorn logger)
