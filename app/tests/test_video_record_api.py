@@ -312,21 +312,22 @@ class VideoRecordAPITests(unittest.TestCase):
                 patch.object(bot, "_selected_api_token", return_value="test-token"),
                 patch.object(wa_webhook, "get_current_user", new=AsyncMock(return_value=self.user)),
             ):
-                asyncio.run(bot.handle("628123456789", "/record CCTV-GATE-01"))
+                asyncio.run(bot.handle("628123456789", "/record CCTV-GATE-01", is_group=True))
                 command.pop("response_type")
                 text_bot = wa_webhook.WABotHandler(self.db)
                 text_bot.progress_sender = AsyncMock()
                 with patch.object(text_bot, "_selected_api_token", return_value="test-token"):
                     asyncio.run(text_bot.handle("628123456789", "/record CCTV-GATE-01"))
                 self.assertEqual(text_bot.outbound_items, [])
-            self.assertTrue(bot.private_response)
+                assert text_bot.private_response
+            self.assertFalse(bot.private_response)
             self.assertFalse(bot.action_failed)
             progress.assert_awaited_once()
             self.assertEqual(bot.outbound_items, [{"video_path": str(video_path), "text": "Video CCTV-GATE-01"}])
             gateway = Mock()
-            wa_webhook._send_wa_message_item(gateway, "628123456789", bot.outbound_items[0])
+            wa_webhook._send_wa_message_item(gateway, "record-group@g.us", bot.outbound_items[0], "command-id")
             gateway.send_video_file.assert_called_once_with(
-                "628123456789", str(video_path), "Video CCTV-GATE-01", reply_to=None
+                "record-group@g.us", str(video_path), "Video CCTV-GATE-01", reply_to="command-id"
             )
             gateway.send_image_file.assert_not_called()
 

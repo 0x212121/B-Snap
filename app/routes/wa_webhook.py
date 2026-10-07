@@ -611,7 +611,9 @@ class WABotHandler:
             }
             action_flow = command.get("flow") if action == "api_flow" else None
             if action_flow:
-                self.private_response = True
+                # Video commands reply in the invoking chat; other API results
+                # retain private delivery because they can expose system data.
+                self.private_response = command.get("response_type", "text") != "video"
             if action_flow:
                 try:
                     await self._schedule_action_processing(command, argument, sender)
@@ -794,7 +796,7 @@ class WABotHandler:
         log_audit(
             db=self.db, user=owner.username, action="prepare_video_whatsapp",
             target=f"{video.camera_name}/{video.id}",
-            extra="Configured video response prepared for the invoking user's private WhatsApp chat",
+            extra="Configured video response prepared for the invoking WhatsApp chat",
         )
         self.outbound_items.append({"video_path": str(path), "text": caption})
 
@@ -1491,7 +1493,7 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
 
         async def send_snapshot_progress(message_item: dict[str, str]) -> dict:
             progress_recipient = sender if bot.private_response else chat_id
-            progress_reply_to = (message_id or None) if bot.quote_reply else None
+            progress_reply_to = (message_id or None) if bot.quote_reply and not bot.private_response else None
             result = await run_gateway_blocking(
                 _send_wa_progress_item, progress_recipient, message_item, sender, command, progress_reply_to
             )
@@ -1501,8 +1503,7 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
         # GoWA documents chat_id as the target chat JID. This also preserves a
         # group JID when the command was sent in a group chat.
         response = await bot.handle(sender, message, is_group=is_group)
-        # API workflows can return protected system data; keep those replies in
-        # the invoking admin's direct chat even when the trigger came from group chat.
+        # Non-video API workflows retain private delivery for protected system data.
         recipient = sender if bot.private_response else chat_id
         reply_to = (message_id or None) if bot.quote_reply and not bot.private_response else None
         

@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Deliver WhatsApp API-flow video responses to the originating chat with the command quote; prevent private API processing replies from quoting messages from another chat.
+
 - Fix WhatsApp Bot Builder Add Command on HTTP origins without `crypto.randomUUID`, and prevent Preline from initializing custom tabs in the builder, Configuration, and Record Checks.
 
 - Allow web startup without generated documentation, include built documentation HTML when available, resolve static mounts from the application root, and smoke-check the web application import during Docker builds.
