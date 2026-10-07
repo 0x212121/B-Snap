@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Retained daily API call aggregates for Analytics: API log cleanup atomically archives expired complete days, and dashboards/reports combine archived counts with live logs without double counting.
+
 - Reproducible JSONResponse/ORJSONResponse benchmark for log-content serialization and complete handler execution, with response-equivalence checks.
 
 - Native read-only SMB/NFS recording mounts with admin controls, encrypted SMB passwords, deployment IP allowlists, and restricted Linux deployment support.
@@ -16,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Video recording through APIs and WhatsApp commands.
 
 ### Changed
+
+- Move Recent Runs into a separate Record Checks tab and expand the Sources and Folder Status workspace, with keyboard-accessible tabs and the selected source shown in run history.
+
+- Make Record Checks more compact with inline summaries, a narrower Sources panel, tighter spacing, and bounded scrolling tables with sticky headers.
 
 - Align the locations without email recipients dialog with shared KPI cards, table styling, SVG actions, and numbered pagination; handle loading failures with Toast feedback.
 

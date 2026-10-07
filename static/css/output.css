@@ -1626,6 +1626,10 @@ select {
   min-width: 100%;
 }
 
+.min-w-48 {
+  min-width: 12rem;
+}
+
 .max-w-2xl {
   max-width: 42rem;
 }
@@ -2020,6 +2024,10 @@ select {
 .divide-gray-800 > :not([hidden]) ~ :not([hidden]) {
   --tw-divide-opacity: 1;
   border-color: rgb(31 41 55 / var(--tw-divide-opacity));
+}
+
+.self-start {
+  align-self: flex-start;
 }
 
 .self-end {
@@ -5053,6 +5061,10 @@ select {
 
   .sm\:grid-cols-4 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .sm\:grid-cols-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .sm\:flex-row {

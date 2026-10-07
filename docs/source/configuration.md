@@ -192,6 +192,26 @@ nano .env
 - **Note**: Record sources, folder mappings, and current folder statuses are preserved
 - **Used In**: `app/jobs/scheduler.py`, `app/utils/record_check.py`
 
+### retention_api_logs_days
+
+- **Default**: `90`; configurable through **Log Retention → API Logs (days)**.
+- **Cleanup**: `cleanup_api_logs` follows its own cron override or the shared
+  cleanup schedule. Before deleting detailed logs, it archives expired complete
+  local days into `api_daily_stats` in the same transaction. The incomplete
+  cutoff day stays in detailed logs until the next eligible cleanup.
+- **Analytics**: daily charts, totals, comparisons, and reports combine retained
+  detailed logs with the archived daily totals. These totals have no automatic
+  expiry. A cleanup retry cannot count the same log twice, and late logs are
+  added when they expire. No per-request counter update is needed.
+- **Timezone**: each archived bucket stores its original local date and timezone.
+  Changing the configured timezone does not shift archived dates; counts sharing
+  a date are combined. Retained logs follow the current timezone. Archived data
+  has day-level precision, so historical sub-day ranges include the full bucket.
+- **Upgrade**: apply Alembic migration `20261007_api_daily_stats` before starting
+  the updated web application and scheduler. Existing detailed logs remain
+  available and are archived by subsequent cleanups; already-deleted logs cannot
+  be reconstructed. Downgrading removes the aggregate history.
+
 ---
 
 ## Job Scheduling

@@ -7,6 +7,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.log import ApiLog, CommandLog
+from app.utils.api_daily_stats import api_daily_counts
 from app.models.camera_email_notification_log import CameraEmailNotificationLog
 from app.models.camera_group import CameraGroup
 from app.utils.template_helper import templates
@@ -80,6 +81,8 @@ def _parse_range(start_date: str | None, end_date: str | None, db: Session = Non
 
 
 def _daily_counts(db: Session, model, ts_field, start_dt, end_dt, success_only=False):
+    if model is ApiLog:
+        return api_daily_counts(db, start_dt, end_dt)
     tz_name = get_current_timezone(db)
 
     if db.get_bind().dialect.name == "sqlite":
@@ -123,6 +126,8 @@ def _daily_counts(db: Session, model, ts_field, start_dt, end_dt, success_only=F
 
 
 def _total_count(db: Session, model, ts_field, start_dt, end_dt, success_only=False):
+    if model is ApiLog:
+        return sum(row["count"] for row in api_daily_counts(db, start_dt, end_dt))
     query = db.query(func.count("*")).filter(
         getattr(model, ts_field) >= start_dt,
         getattr(model, ts_field) <= end_dt

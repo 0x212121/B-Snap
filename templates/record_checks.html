@@ -7,6 +7,7 @@
 {% from "macros/ui.html" import page_header %}
 
 {% block content %}
+<div class="record-checks-workspace">
 {% set page_description %}Monitor local, SMB and NFS recording folders and save channel status history.{% endset %}
 {% call page_header("Record Checks", page_description) %}
 <div class="flex flex-wrap gap-2">
@@ -21,7 +22,13 @@
     </div>
 {% endcall %}
 
-<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-6">
+<nav class="ui-tabs mb-3" role="tablist" aria-label="Record Checks">
+  <button type="button" id="record-tab-status" class="ui-tab" role="tab" aria-selected="true" aria-controls="record-panel-status" onclick="switchRecordTab('status')">Sources &amp; Folder Status</button>
+  <button type="button" id="record-tab-runs" class="ui-tab" role="tab" aria-selected="false" aria-controls="record-panel-runs" tabindex="-1" onclick="switchRecordTab('runs')">Recent Runs</button>
+</nav>
+
+<section id="record-panel-status" class="record-checks-panel" role="tabpanel" aria-labelledby="record-tab-status">
+<div class="record-checks-summary grid grid-cols-2 gap-2 sm:grid-cols-5">
   {% call kpi_card("Healthy", "0", value_id="sum-healthy", tone="success") %}
   {{ ui_icons.icon_check_circle("w-5 h-5") }}
 {% endcall %}
@@ -39,19 +46,19 @@
 {% endcall %}
 </div>
 
-<div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-  <div class="ui-card xl:col-span-1 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-    <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+<div class="record-checks-grid">
+  <div class="ui-card self-start">
+    <div class="record-checks-section-header border-b border-gray-200 dark:border-gray-700">
       <h3 class="font-semibold text-gray-900 dark:text-white">Sources</h3>
     </div>
-    <div id="sources-list" class="divide-y divide-gray-200 dark:divide-gray-700"></div>
+    <div id="sources-list" class="record-checks-sources divide-y divide-gray-200 dark:divide-gray-700"></div>
   </div>
 
-  <div class="ui-card xl:col-span-2 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-    <div class="flex flex-col gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-700 md:flex-row md:items-center md:justify-between">
+  <div class="ui-card min-w-0">
+    <div class="record-checks-section-header flex flex-col gap-2 border-b border-gray-200 dark:border-gray-700 md:flex-row md:items-center md:justify-between">
       <h3 class="font-semibold text-gray-900 dark:text-white">Folder Status</h3>
-      <div class="flex flex-wrap gap-2">
-        <select aria-label="HTTP Status" id="status-filter" onchange="loadStatuses()" class="ui-control rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+      <div class="record-checks-filters flex flex-wrap gap-2">
+        <select aria-label="Folder status" id="status-filter" onchange="loadStatuses()" class="ui-control px-3">
           <option value="">All status</option>
           <option value="healthy">Healthy</option>
           <option value="stale">Stale</option>
@@ -59,11 +66,11 @@
           <option value="missing">Missing</option>
           <option value="unknown">Unknown</option>
         </select>
-      <input aria-label="Search" id="search-input" oninput="debouncedLoadStatuses()" placeholder="Search folder/camera" class="ui-control rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+      <input aria-label="Search" id="search-input" oninput="debouncedLoadStatuses()" placeholder="Search folder/camera" class="ui-control min-w-0 px-3">
       </div>
     </div>
     <datalist id="camera-options"></datalist>
-    <div class="ui-table-scroll overflow-x-auto">
+    <div class="record-checks-status-scroll ui-table-scroll">
       <table class="ui-table min-w-full text-left text-sm">
         <thead class="bg-gray-50 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300">
           <tr>
@@ -81,11 +88,14 @@
   </div>
 </div>
 
-<div class="ui-card mt-6 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-  <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+</section>
+<section id="record-panel-runs" class="record-checks-panel" role="tabpanel" aria-labelledby="record-tab-runs" hidden>
+<div class="ui-card record-checks-runs">
+  <div class="record-checks-section-header flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 dark:border-gray-700">
     <h3 class="font-semibold text-gray-900 dark:text-white">Recent Runs</h3>
+    <span id="runs-source-label" class="ui-metadata">All Sources</span>
   </div>
-  <div class="ui-table-scroll overflow-x-auto">
+  <div class="record-checks-runs-scroll ui-table-scroll">
     <table class="ui-table min-w-full text-left text-sm">
       <thead class="bg-gray-50 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300">
         <tr>
@@ -100,9 +110,11 @@
     </table>
   </div>
 </div>
-<div id="runs-pagination" class="mt-3 flex items-center justify-between px-2">
+<div id="runs-pagination" class="mt-2 flex flex-wrap items-center justify-between gap-2">
   <div class="text-sm text-gray-500 dark:text-gray-400" id="runs-page-info"></div>
-  <div class="flex items-center gap-1" id="runs-pagination-buttons"></div>
+  <div class="flex flex-wrap items-center gap-1" id="runs-pagination-buttons"></div>
+</div>
+</section>
 </div>
 
 <div id="source-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
@@ -211,6 +223,39 @@
 </div>
 
 <style>
+  .record-checks-workspace { --record-checks-table-height: clamp(360px, calc(100dvh - 330px), 720px); }
+  .record-checks-panel[hidden] { display: none; }
+  .record-checks-workspace .ui-page-header { margin-bottom: 12px; }
+  .record-checks-summary { margin-bottom: 12px; }
+  .record-checks-summary .ui-kpi { padding: 12px; }
+  .record-checks-summary .ui-kpi-summary > div {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 8px;
+  }
+  .record-checks-summary .ui-kpi-value { margin-top: 0; font-size: 24px; }
+  .record-checks-summary .ui-kpi-icon { display: none; }
+  .record-checks-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .record-checks-section-header { padding: 8px 12px; }
+  .record-checks-sources { max-height: 240px; overflow-y: auto; }
+  .record-checks-filters { min-width: 0; }
+  .record-checks-filters input { flex: 1; width: 192px; }
+  .record-checks-status-scroll { max-height: var(--record-checks-table-height); overflow-y: auto; }
+  .record-checks-runs-scroll { max-height: clamp(360px, calc(100dvh - 260px), 800px); overflow-y: auto; }
+  .record-checks-workspace .ui-table > thead { position: sticky; top: 0; z-index: 1; }
+  .record-checks-workspace .ui-table > tbody > tr > td { padding: 8px 12px; }
+  .record-checks-source-row { display: flex; flex-direction: column; gap: 8px; }
+  .record-checks-source-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+  @media (min-width: 1024px) {
+    .record-checks-grid { grid-template-columns: 280px minmax(0, 1fr); }
+    .record-checks-sources { max-height: calc(var(--record-checks-table-height) + 24px); }
+  }
+  @media print {
+    .record-checks-sources, .record-checks-status-scroll, .record-checks-runs-scroll { max-height: none; overflow: visible; }
+  }
   .record-delete-popup {
     width: min(92vw, 520px);
     padding: 1.25rem 1.5rem 1.5rem;
@@ -273,6 +318,31 @@ let statusTimer = null;
 let runsPage = 1;
 const runsLimit = 10;
 
+function switchRecordTab(activeTab) {
+  ['status', 'runs'].forEach((name) => {
+    const active = name === activeTab;
+    const tab = document.getElementById(`record-tab-${name}`);
+    tab.setAttribute('aria-selected', String(active));
+    tab.tabIndex = active ? 0 : -1;
+    document.getElementById(`record-panel-${name}`).hidden = !active;
+  });
+}
+
+const recordTabs = ['status', 'runs'];
+recordTabs.forEach((name, index) => {
+  document.getElementById(`record-tab-${name}`).addEventListener('keydown', (event) => {
+    let next;
+    if (event.key === 'ArrowRight') next = (index + 1) % recordTabs.length;
+    else if (event.key === 'ArrowLeft') next = (index + recordTabs.length - 1) % recordTabs.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = recordTabs.length - 1;
+    else return;
+    event.preventDefault();
+    switchRecordTab(recordTabs[next]);
+    document.getElementById(`record-tab-${recordTabs[next]}`).focus();
+  });
+});
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -312,13 +382,13 @@ function cameraSelect(item) {
   const current = cameras.find(camera => camera.id === item.camera_id);
   const value = current ? cameraLabel(current) : '';
   return `
-    <div class="flex min-w-64 items-center gap-2">
+    <div class="flex min-w-48 items-center gap-1">
       <input
         value="${escapeHtml(value)}"
         list="camera-options"
         placeholder="Search camera..."
         onchange="updateMappingFromLabel('${item.id}', this.value)"
-        class="ui-control w-56 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+        class="ui-control w-44 px-2"
       >
       ${item.camera_id ? `<button onclick="updateMapping('${item.id}', '')" title="Clear mapping" class="ui-button ui-button-secondary ui-button-icon">${iconSvg('x', 'h-4 w-4')}</button>` : ''}
     </div>
@@ -356,9 +426,11 @@ async function loadCameras() {
 
 function renderSources() {
   const root = document.getElementById('sources-list');
+  const selectedSource = sources.find(source => source.id === selectedSourceId);
+  document.getElementById('runs-source-label').textContent = selectedSource ? selectedSource.name : 'All Sources';
   if (!sources.length) {
     root.innerHTML = `
-      <div class="flex flex-col items-center justify-center px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+      <div class="flex flex-col items-center justify-center px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
         <div class="mb-3 rounded-lg bg-gray-100 p-3 text-gray-400 dark:bg-gray-700 dark:text-gray-300">${iconSvg('folder', 'h-6 w-6')}</div>
         <p>No record sources configured.</p>
       </div>
@@ -366,8 +438,8 @@ function renderSources() {
     return;
   }
   root.innerHTML = sources.map(source => `
-    <div class="p-4 transition ${selectedSourceId === source.id ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/30'}">
-      <div class="flex items-start justify-between gap-3">
+    <div class="p-3 transition ${selectedSourceId === source.id ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/30'}">
+      <div class="record-checks-source-row">
         <button onclick="selectSource('${source.id}')" class="min-w-0 flex-1 text-left">
           <div class="flex items-center gap-2 font-semibold text-gray-900 dark:text-white">
             <span class="text-indigo-600 dark:text-indigo-400">${iconSvg('folder')}</span>
@@ -377,7 +449,7 @@ function renderSources() {
           <div class="mt-2 text-xs text-gray-500">${source.enabled ? 'Enabled' : 'Disabled'}${source.nvr_name ? ' | ' + escapeHtml(source.nvr_name) : ''}</div>
           ${source.connection_type !== 'local' ? `<div class="mt-1 text-xs text-gray-500">${escapeHtml((source.connection_type || '').toUpperCase())} | ${escapeHtml(source.server)} | ${source.mounted ? 'Mounted in web service' : 'Unmounted in web service'}</div>` : ''}
         </button>
-        <div class="flex shrink-0 gap-1">
+        <div class="record-checks-source-actions">
           ${source.connection_type !== 'local' ? `<button onclick="mountSource('${source.id}', '${source.mounted ? 'unmount' : 'mount'}')" title="${source.mounted ? 'Unmount and disable' : 'Mount read-only'}" class="ui-button ui-button-secondary">${source.mounted ? 'Unmount' : 'Mount'}</button>` : ''}
           <button onclick="runSource('${source.id}')" title="Run now" class="ui-button ui-button-secondary ui-button-icon">▶</button>
           <button onclick="editSource('${source.id}')" title="Edit" class="ui-button ui-button-secondary ui-button-icon">✎</button>

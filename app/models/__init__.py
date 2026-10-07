@@ -22,6 +22,7 @@ from .notification import Notification
 # Additional models
 from .recipient import GroupRecipient
 from .log import CommandLog, ApiLog, WhatsAppMessageLog
+from .api_daily_stats import ApiDailyStats
 from .email_retry_queue import EmailRetryQueue
 from .remember_token import RememberToken
 from .camera_email_notification_log import (
@@ -65,6 +66,7 @@ __all__ = [
     "GroupRecipient",
     "CommandLog",
     "ApiLog",
+    "ApiDailyStats",
     "WhatsAppMessageLog",
     "EmailRetryQueue",
     "RememberToken",

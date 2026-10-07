@@ -15,7 +15,8 @@ from app.db.database import SessionLocal, engine
 from app.models.camera import Camera
 from app.models.health import CameraHealth
 from app.models.email_retry_queue import EmailRetryQueue
-from app.models.log import ApiLog, CommandLog
+from app.models.log import CommandLog
+from app.utils.api_daily_stats import archive_expired_api_logs
 from app.utils.timezone_helper import get_current_timezone, to_current_timezone
 from app.snapshot import load_active_cameras
 from app.utils.email_notifier import (
@@ -967,11 +968,7 @@ def delete_old_api_logs():
     try:
         retention_days = int(get_config("retention_api_logs_days", 90))
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
-        deleted_rows = (
-            db.query(ApiLog)
-            .filter(ApiLog.timestamp < cutoff_date)
-            .delete(synchronize_session=False)
-        )
+        deleted_rows = archive_expired_api_logs(db, cutoff_date)
         db.commit()
         logger.info("[delete_old_api_logs] Deleted %d rows older than %s", deleted_rows, cutoff_date.date())
         return {"records_processed": deleted_rows}

@@ -51,7 +51,7 @@ JOB_DESCRIPTIONS = {
     'storage_check': 'Records storage usage metrics and evaluates warning or critical thresholds.',
     'record_folder_check': 'Scans mounted NVR/SMB record folders, updates current folder status, and sends stale/missing/recovery alerts.',
     'cleanup_camera_stats': 'Deletes old camera daily statistics based on camera stats retention.',
-    'cleanup_api_logs': 'Deletes old API request logs based on API log retention.',
+    'cleanup_api_logs': 'Archives daily API call totals, then deletes expired detailed logs. Analytics history is retained.',
     'cleanup_command_logs': 'Deletes old command logs based on command log retention.',
     'cleanup_record_checks': 'Hard-deletes old record-check run, folder-check, and event history. Sources, mappings, and current statuses are kept.',
     'email_retry': 'Processes queued email notifications that previously failed and are ready to retry.',
