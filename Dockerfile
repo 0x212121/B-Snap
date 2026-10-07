@@ -28,7 +28,7 @@ RUN apt-get update && \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /
+WORKDIR /app
 
 COPY requirements.txt .
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \

@@ -28,6 +28,7 @@ services:
       - no-new-privileges:true
     env_file:
       - .env
+    working_dir: /app
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,6 +69,7 @@ services:
       - ./static/snapshots:/app/static/snapshots
       - ./static/videos:/app/static/videos
       - ./logs:/app/logs
+      - ./archives/audit_logs:/app/archives/audit_logs
       - shared_tmp:/tmp/shared
 
     restart: unless-stopped
@@ -121,6 +123,8 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-}
     ports:
       - "127.0.0.1:${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
     depends_on:
       postgres:
         condition: service_healthy
@@ -128,4 +132,5 @@ services:
 
 volumes:
   postgres_data:
+  pgadmin_data:
   shared_tmp:

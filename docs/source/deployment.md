@@ -135,8 +135,8 @@ Record check deployments must mount the SMB/NVR recording share into the schedul
 services:
   scheduler:
     volumes:
-      - ./static/snapshots:/static/snapshots
-      - ./static/videos:/static/videos
+      - ./static/snapshots:/app/static/snapshots
+      - ./static/videos:/app/static/videos
       - /mnt/cctv33-recordings:/mnt/cctv33-recordings:ro
 ```
 
@@ -148,3 +148,49 @@ Run:
 ```bash
 docker compose up -d
 ```
+
+## Persistent storage
+
+Web and scheduler share the same host directories at the same container paths:
+
+| Host directory / volume | Container path | Services |
+| --- | --- | --- |
+| `./static/snapshots` | `/app/static/snapshots` | web, scheduler |
+| `./static/videos` | `/app/static/videos` | web, scheduler |
+| `./logs` | `/app/logs` | web, scheduler |
+| `./archives/audit_logs` | `/app/archives/audit_logs` | web, scheduler |
+| `shared_tmp` | `/tmp/shared` | web, scheduler |
+| `postgres_data` | `/var/lib/postgresql/data` | PostgreSQL |
+| `pgadmin_data` | `/var/lib/pgadmin` | pgAdmin (optional) |
+
+Keep footage writable in both web and scheduler: manual capture, soft-delete,
+restore and cleanup still need the existing access. Camera file locks and reload
+flags use `shared_tmp`; it is coordination storage for a single Docker host,
+not a backup or a mechanism for coordinating multiple hosts. Managed SMB/NFS
+mount roots remain private to each service's mount namespace.
+
+The scheduler checks capacity of the snapshot filesystem by default, instead of
+the container's `/` filesystem. Set `STORAGE_MONITOR_PATH` to an existing absolute
+path to monitor another device. This checks one filesystem; when snapshots,
+videos and archives live on separate devices, monitor each additional device
+with deployment monitoring. Directory-size breakdown uses application-root
+paths and the existing `LOG_DIR` setting, regardless of working directory.
+
+Audit archive files are encrypted with `AUDIT_ARCHIVE_KEY`, a separate Fernet key
+from the camera `ENCRYPTION_KEY`. Generate it once, configure the same value for
+web and scheduler, and store a secure backup. Missing/invalid keys make archiving
+fail before file publication or deletion of source audit rows; no temporary key
+is generated or printed. Existing archives still require their original key.
+Archive metadata stores a SHA-256 key fingerprint for new archives.
+
+For deployments upgraded from the previous configuration, recover any archives
+written inside an old scheduler container before removing that container. The
+new shared bind mount hides files previously written in its writable layer. If
+pgAdmin is already in use, export its existing configuration before recreating
+it with the new volume; pre-existing container state is not copied automatically.
+
+Back up PostgreSQL consistently, snapshots/videos, audit archive files, and keys
+stored securely outside the image. `docker compose down` retains named volumes;
+`docker compose down -v` deletes them. Runtime archives, backups, logs and test
+outputs are excluded from the Docker build context. Files are not moved or
+removed by these configuration changes.

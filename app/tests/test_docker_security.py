@@ -71,3 +71,19 @@ def test_dev_overlay_preserves_base_startup_and_security(compose_files: dict) ->
     for name, override in dev.items():
         assert name in base
         assert override == {"image": "b-snap:local"}
+
+
+def test_persistent_files_are_shared_at_the_same_container_paths(compose_files: dict) -> None:
+    services = compose_files["docker-compose.yml"]["services"]
+    for mount in (
+        "./static/snapshots:/app/static/snapshots",
+        "./static/videos:/app/static/videos",
+        "./logs:/app/logs",
+        "./archives/audit_logs:/app/archives/audit_logs",
+        "shared_tmp:/tmp/shared",
+    ):
+        assert mount in services["b-snap"]["volumes"]
+        assert mount in services["scheduler"]["volumes"]
+    assert services["b-snap"]["working_dir"] == services["scheduler"]["working_dir"] == "/app"
+    assert "pgadmin_data:/var/lib/pgadmin" in services["pgadmin"]["volumes"]
+    assert "pgadmin_data" in compose_files["docker-compose.yml"]["volumes"]

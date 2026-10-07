@@ -19,6 +19,16 @@ README.md
 app/data.db
 docker-compose*
 logs
+archives/
+backup/
+backups/
+htmlcov/
+.coverage
+coverage.xml
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+docs/build/
 app/*.exe
 app/logs
 backup.sql

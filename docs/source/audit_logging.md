@@ -290,7 +290,7 @@ Shows:
 ### Archive Job Failed
 
 1. Check logs: `logs/audit_archive.log`
-2. Verify encryption key is set: `echo $AUDIT_ARCHIVE_KEY`
+2. Verify `AUDIT_ARCHIVE_KEY` is configured without printing its value.
 3. Check disk space: `df -h archives/`
 4. Review database connection
 
@@ -346,3 +346,12 @@ The migration (`20260328_dual_table_audit_logs.py`) handles:
 - **Chain of Custody**: Every access logged with user, timestamp, IP
 - **Tamper Evidence**: SHA-256 checksums on archives
 - **Retention**: Configurable retention periods with legal hold support
+
+### Archive key persistence in containers
+
+Set a valid `AUDIT_ARCHIVE_KEY` before running archival. Web and scheduler must
+use the same stable Fernet key. Missing/invalid keys reject the operation before
+publishing archives or deleting source records; temporary keys are not generated.
+New archive metadata stores a SHA-256 fingerprint instead of a key prefix.
+Existing encrypted archives continue to need their original key. The Compose
+services share `/app/archives/audit_logs` through a persistent host bind mount.

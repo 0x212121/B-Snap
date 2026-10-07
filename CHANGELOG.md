@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Persist shared audit archives and pgAdmin state across container recreation; use application-root storage paths, monitor the footage filesystem, exclude runtime archives from image builds, and require a stable audit archive key without logging key material.
 - Remove privileged mode and embedded database/admin passwords from Compose deployments; require deployment credentials, restrict database/admin ports to localhost, and make pgAdmin opt-in through the admin profile.
 - Run Docker database migrations and default configuration initialization in a one-shot service before web, scheduler, and notifier; support empty PostgreSQL databases through a frozen baseline and stop startup on migration failure.
 - Standardized remaining menu pages and AJAX rows with shared KPI cards, semantic badges, action icons, loading skeletons, modal controls, and accessible numbered pagination; use shared NVR row templates and clipboard feedback.
