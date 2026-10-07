@@ -12,7 +12,7 @@
     </div>
 {% endcall %}
 
-  <div class="ui-tabs mb-4 flex gap-2 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="WhatsApp bot sections">
+  <div class="ui-tabs --prevent-on-load-init mb-4 flex gap-2 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="WhatsApp bot sections">
     <button type="button" id="commandsTab" role="tab" aria-selected="true" aria-controls="commandsPanel" class="ui-tab border-b-2 border-blue-600 px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-300">Commands</button>
     <button type="button" id="messagesTab" role="tab" aria-selected="false" aria-controls="messagesPanel" class="ui-tab border-b-2 border-transparent px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">Message monitor</button>
   </div>
@@ -69,7 +69,7 @@
       <div><h2 id="editorTitle" class="ui-section-title inline-flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">{{ icon_pencil("h-4 w-4 text-blue-500") }}<span id="editorTitleText">Edit command</span></h2><p id="editorSubtitle" class="text-xs text-gray-500"></p></div>
       <button id="closeEditor" type="button" class="ui-button ui-button-ghost ui-button-icon" aria-label="Close">✕</button>
     </div>
-    <div id="editorTabs" class="ui-tabs wa-editor-tabs px-4" role="tablist" aria-label="Command editor sections">
+    <div id="editorTabs" class="ui-tabs --prevent-on-load-init wa-editor-tabs px-4" role="tablist" aria-label="Command editor sections">
       <button id="editorTab-settings" type="button" class="ui-tab" role="tab" aria-controls="editorPanel-settings" aria-selected="true" data-editor-tab="settings">Command settings</button>
       <button id="editorTab-action" type="button" class="ui-tab" role="tab" aria-controls="editorPanel-action" aria-selected="false" data-editor-tab="action">Action / API</button>
       <button id="editorTab-response" type="button" class="ui-tab" role="tab" aria-controls="editorPanel-response" aria-selected="false" data-editor-tab="response">Responses</button>

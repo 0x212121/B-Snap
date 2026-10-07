@@ -430,12 +430,23 @@
     addVariableSuggestion(variables, 'argument', 'sample argument');
     addVariableSuggestion(variables, 'sender', '628123456789');
   }
+  function newCommandId() {
+    if (typeof window.crypto.randomUUID === 'function') {
+      return `custom_${window.crypto.randomUUID()}`;
+    }
+    // getRandomValues also works on HTTP origins where randomUUID is unavailable.
+    const bytes = window.crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    return `custom_${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
   function openEditor(command = null) {
+    draft = command ? structuredClone(command) : {id:newCommandId(),name:'',trigger:'',aliases:[],required_params:[],action:'text',role:'user',chat_scope:'all',enabled:true,quote_reply:true,description:'',response:'',flow:[],image_flow:[]};
     previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     editorReturnFocus = document.activeElement;
     originalId = command?.id || null;
-    draft = command ? structuredClone(command) : {id:`custom_${crypto.randomUUID()}`,name:'',trigger:'',aliases:[],required_params:[],action:'text',role:'user',chat_scope:'all',enabled:true,quote_reply:true,description:'',response:'',flow:[],image_flow:[]};
     document.getElementById('editorTitleText').textContent = command ? 'Edit command' : 'New command';
     document.getElementById('editorSubtitle').textContent = command?.trigger || 'Enter a trigger, action, and response.';
     for (const key of ['name','trigger','description','response']) form.elements[key].value = draft[key] || '';
