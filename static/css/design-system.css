@@ -110,6 +110,13 @@ html.dark {
 }
 .ui-card-body.ui-card-body { padding: var(--ui-space-4); }
 .ui-kpi-value { margin-top: var(--ui-space-1); font-size: 28px; font-weight: 600; line-height: 1.3; }
+.ui-kpi-summary { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); }
+.ui-kpi-icon { color: var(--ui-muted); flex-shrink: 0; }
+.ui-kpi-icon > svg { width: 20px; height: 20px; color: inherit; }
+.ui-kpi-value-info { color: var(--ui-info-text); }
+.ui-kpi-value-success { color: var(--ui-success-text); }
+.ui-kpi-value-warning { color: var(--ui-warning-text); }
+.ui-kpi-value-critical { color: var(--ui-critical-text); }
 .ui-card-interactive:hover { border-color: var(--ui-control-border); }
 
 .ui-button.ui-button {
@@ -141,6 +148,7 @@ html.dark {
 .ui-button.ui-button-danger-quiet:hover { background: var(--ui-critical-bg); }
 .dark .ui-button.ui-button-danger-quiet { color: var(--ui-critical-text); border-color: var(--ui-critical-text); }
 .ui-button.ui-button-icon { min-width: 40px; min-height: 40px; padding: var(--ui-space-2); }
+.ui-button.ui-pagination-button { min-width: 44px; padding-inline: var(--ui-space-2); }
 .ui-button > svg { width: 16px; height: 16px; flex-shrink: 0; color: inherit; }
 .ui-button:disabled,
 .ui-button[aria-disabled="true"] { cursor: not-allowed; opacity: .55; }
@@ -317,6 +325,8 @@ textarea.ui-control { min-height: 96px; }
 .ui-tab:not(.hidden) { display: inline-flex; }
 .ui-shell [hidden] { display: none !important; }
 .ui-log-workspace { height: calc(100dvh - 64px - 2 * var(--ui-space-6)); min-height: 400px; }
+.ui-button.ui-log-file { width: 100%; flex-direction: column; align-items: stretch; justify-content: flex-start; text-align: left; }
+.ui-button.ui-log-file-active { background: var(--ui-hover); color: var(--ui-text); font-weight: 600; }
 .ui-tab[aria-selected="true"] { border-bottom: 2px solid var(--ui-focus); color: var(--ui-focus); }
 .ui-tab > svg { width: 16px; height: 16px; }
 .ui-empty-state { text-align: center; padding: var(--ui-space-8) var(--ui-space-4); }

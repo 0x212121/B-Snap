@@ -4,17 +4,13 @@
 
 {% block content %}
 {{ page_header("API Documentation") }}
-<!-- templates/swagger_embed.html -->
-<head>
-    <meta charset="UTF-8" />
-    <title>Developer Docs</title>
-    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
+<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
+<div id="swagger-ui"></div>
+{% endblock %}
+
+{% block scripts %}
     <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
     <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-standalone-preset.js"></script>
-</head>
-
-<body>
-    <div id="swagger-ui"></div>
     <script>
         SwaggerUIBundle({
             url: "/openapi.json",
@@ -24,6 +20,4 @@
             layout: "BaseLayout"
         });
     </script>
-</body>
-
 {% endblock %}

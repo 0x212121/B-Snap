@@ -1,3 +1,5 @@
+{% import "_icons.html" as ui_icons %}
+{% from "macros/ui.html" import kpi_card %}
 {% extends "base.html" %}
 {% block title %}B-SNAP – Changelog{% endblock %}
 
@@ -19,47 +21,17 @@
 
 <!-- Stats Cards -->
 <div id="stats-section" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Versions</p>
-        <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-versions">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-        </svg>
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Total Versions", "-", value_id="stat-versions", tone="neutral") %}
+  {{ ui_icons.icon_circle_stack("w-5 h-5") }}
+{% endcall %}
   
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Features Added</p>
-        <p class="ui-kpi-value text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="stat-added">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-        </svg>
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Features Added", "-", value_id="stat-added", tone="neutral") %}
+  {{ ui_icons.icon_plus("w-5 h-5") }}
+{% endcall %}
   
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Bug Fixes</p>
-        <p class="ui-kpi-value text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1" id="stat-fixed">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-        </svg>
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Bug Fixes", "-", value_id="stat-fixed", tone="neutral") %}
+  {{ ui_icons.icon_bug("w-5 h-5") }}
+{% endcall %}
   
   <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
     <div class="flex items-center justify-between">
@@ -68,7 +40,7 @@
         <p class="text-xl font-bold text-purple-600 dark:text-purple-400 mt-1" id="stat-latest">-</p>
         <p class="text-xs text-gray-500 dark:text-gray-400" id="stat-latest-date">-</p>
       </div>
-      <div class="ui-kpi-icon p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+      <div class="ui-kpi-icon">
         <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
         </svg>
@@ -107,10 +79,8 @@
         </div>
       </div>
       
-      <button onclick="resetSearch()" class="ui-button ui-button-secondary p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Clear search">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
+      <button onclick="resetSearch()" class="ui-button ui-button-secondary" title="Clear search" aria-label="Clear search">
+        {{ ui_icons.icon_arrow_path("w-5 h-5") }}
       </button>
     </div>
   </div>
@@ -132,20 +102,20 @@
 
 <!-- Empty State -->
 <div id="empty-state" class="ui-empty-state ui-card hidden flex-col items-center justify-center py-16 text-center bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-  <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
-    <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <div class="mb-4">
+    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
     </svg>
   </div>
   <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No results found</h3>
   <p class="text-gray-500 dark:text-gray-400 max-w-sm">Try adjusting your search terms to find what you're looking for.</p>
-  <button onclick="resetSearch()" class="mt-4 text-emerald-600 hover:text-emerald-700 font-medium">Clear search</button>
+  <button onclick="resetSearch()" class="ui-button ui-button-secondary mt-4">Clear search</button>
 </div>
 
 <!-- Pagination -->
 <div id="pagination-controls" class="flex items-center justify-between mt-6 px-2">
   <div class="text-sm text-gray-500 dark:text-gray-400" id="page-info"></div>
-  <div class="flex items-center gap-1" id="pagination-buttons"></div>
+  <div class="flex flex-wrap items-center gap-1" id="pagination-buttons"></div>
 </div>
 
 {% endblock %}
@@ -218,18 +188,18 @@
 <script>
   let currentPage = {{ page }};
   let perPage = {{ per_page }};
-  let currentSearch = "{{ search }}";
+  let currentSearch = {{ (search or "") | tojson }};
   let totalPages = 1;
   
   // Category configurations
   const categories = {
-    added: { label: 'Added', icon: '✨', color: 'green', bg: 'bg-green-100', text: 'text-green-700', dark_bg: 'dark:bg-green-900/30', dark_text: 'dark:text-green-400', border: 'border-green-200', dark_border: 'dark:border-green-800' },
-    changed: { label: 'Changed', icon: '🔧', color: 'amber', bg: 'bg-amber-100', text: 'text-amber-700', dark_bg: 'dark:bg-amber-900/30', dark_text: 'dark:text-amber-400', border: 'border-amber-200', dark_border: 'dark:border-amber-800' },
-    fixed: { label: 'Fixed', icon: '🐛', color: 'blue', bg: 'bg-blue-100', text: 'text-blue-700', dark_bg: 'dark:bg-blue-900/30', dark_text: 'dark:text-blue-400', border: 'border-blue-200', dark_border: 'dark:border-blue-800' },
-    deprecated: { label: 'Deprecated', icon: '⚠️', color: 'orange', bg: 'bg-orange-100', text: 'text-orange-700', dark_bg: 'dark:bg-orange-900/30', dark_text: 'dark:text-orange-400', border: 'border-orange-200', dark_border: 'dark:border-orange-800' },
-    removed: { label: 'Removed', icon: '🗑️', color: 'red', bg: 'bg-red-100', text: 'text-red-700', dark_bg: 'dark:bg-red-900/30', dark_text: 'dark:text-red-400', border: 'border-red-200', dark_border: 'dark:border-red-800' },
-    security: { label: 'Security', icon: '🔒', color: 'purple', bg: 'bg-purple-100', text: 'text-purple-700', dark_bg: 'dark:bg-purple-900/30', dark_text: 'dark:text-purple-400', border: 'border-purple-200', dark_border: 'dark:border-purple-800' },
-    other: { label: 'Other', icon: '📝', color: 'gray', bg: 'bg-gray-100', text: 'text-gray-700', dark_bg: 'dark:bg-gray-700', dark_text: 'dark:text-gray-300', border: 'border-gray-200', dark_border: 'dark:border-gray-600' }
+    added: { label: 'Added', icon: {{ ui_icons.icon_plus('w-4 h-4') | tojson }}, color: 'green', bg: 'bg-green-100', text: 'text-green-700', dark_bg: 'dark:bg-green-900/30', dark_text: 'dark:text-green-400', border: 'border-green-200', dark_border: 'dark:border-green-800' },
+    changed: { label: 'Changed', icon: {{ ui_icons.icon_config('w-4 h-4') | tojson }}, color: 'amber', bg: 'bg-amber-100', text: 'text-amber-700', dark_bg: 'dark:bg-amber-900/30', dark_text: 'dark:text-amber-400', border: 'border-amber-200', dark_border: 'dark:border-amber-800' },
+    fixed: { label: 'Fixed', icon: {{ ui_icons.icon_bug('w-4 h-4') | tojson }}, color: 'blue', bg: 'bg-blue-100', text: 'text-blue-700', dark_bg: 'dark:bg-blue-900/30', dark_text: 'dark:text-blue-400', border: 'border-blue-200', dark_border: 'dark:border-blue-800' },
+    deprecated: { label: 'Deprecated', icon: {{ ui_icons.icon_warning('w-4 h-4') | tojson }}, color: 'orange', bg: 'bg-orange-100', text: 'text-orange-700', dark_bg: 'dark:bg-orange-900/30', dark_text: 'dark:text-orange-400', border: 'border-orange-200', dark_border: 'dark:border-orange-800' },
+    removed: { label: 'Removed', icon: {{ ui_icons.icon_trash('w-4 h-4') | tojson }}, color: 'red', bg: 'bg-red-100', text: 'text-red-700', dark_bg: 'dark:bg-red-900/30', dark_text: 'dark:text-red-400', border: 'border-red-200', dark_border: 'dark:border-red-800' },
+    security: { label: 'Security', icon: {{ ui_icons.icon_lock('w-4 h-4') | tojson }}, color: 'purple', bg: 'bg-purple-100', text: 'text-purple-700', dark_bg: 'dark:bg-purple-900/30', dark_text: 'dark:text-purple-400', border: 'border-purple-200', dark_border: 'dark:border-purple-800' },
+    other: { label: 'Other', icon: {{ ui_icons.icon_clip_check('w-4 h-4') | tojson }}, color: 'gray', bg: 'bg-gray-100', text: 'text-gray-700', dark_bg: 'dark:bg-gray-700', dark_text: 'dark:text-gray-300', border: 'border-gray-200', dark_border: 'dark:border-gray-600' }
   };
   
   function updateStats(stats) {
@@ -260,7 +230,7 @@
     return `
       <div class="border-l-4 ${cat.border} ${cat.dark_border} pl-4">
         <h3 class="flex items-center gap-2 ${cat.text} ${cat.dark_text} font-semibold mb-2 mt-2">
-          <span class="ui-badge ${cat.bg} ${cat.dark_bg} px-2 py-0.5 rounded-full text-xs">${cat.icon} ${cat.label}</span>
+          <span class="ui-badge ui-badge-neutral">${cat.icon} ${cat.label}</span>
         </h3>
         <ul class="space-y-2">
           ${items.map(item => `
@@ -339,7 +309,7 @@
     
     if (totalPages <= 1) {
       pageInfo.textContent = pagination.total_items > 0 
-        ? `Showing all ${pagination.total_items} versions` 
+        ? `Page ${pagination.page} of ${totalPages} (${pagination.total_items} versions)`
         : '';
       return;
     }
@@ -349,11 +319,11 @@
     // First & Prev
     if (pagination.page > 1) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="loadChangelog(1)" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+        <button onclick="loadChangelog(1)" class="ui-button ui-button-secondary ui-button-icon" title="First page">
+          {{ ui_icons.icon_chevron_double_left("w-5 h-5") | replace("\n", "") }}
         </button>
-        <button onclick="loadChangelog(${pagination.page - 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        <button onclick="loadChangelog(${pagination.page - 1})" class="ui-button ui-button-secondary ui-button-icon" title="Previous page">
+          {{ ui_icons.icon_chevron_left("w-5 h-5") | replace("\n", "") }}
         </button>
       `);
     }
@@ -368,11 +338,11 @@
     for (let i = Math.max(1, pagination.page - window); i <= Math.min(totalPages, pagination.page + window); i++) {
       if (i === pagination.page) {
         paginationButtons.insertAdjacentHTML('beforeend', `
-          <button class="w-9 h-9 bg-emerald-600 text-white rounded-lg font-medium shadow-sm">${i}</button>
+          <button class="ui-button ui-pagination-button ui-button-primary" aria-current="page">${i}</button>
         `);
       } else {
         paginationButtons.insertAdjacentHTML('beforeend', `
-          <button onclick="loadChangelog(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>
+          <button onclick="loadChangelog(${i})" class="ui-button ui-pagination-button ui-button-ghost">${i}</button>
         `);
       }
     }
@@ -384,11 +354,11 @@
     // Next & Last
     if (pagination.page < totalPages) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="loadChangelog(${pagination.page + 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        <button onclick="loadChangelog(${pagination.page + 1})" class="ui-button ui-button-secondary ui-button-icon" title="Next page">
+          {{ ui_icons.icon_chevron_right("w-5 h-5") | replace("\n", "") }}
         </button>
-        <button onclick="loadChangelog(${totalPages})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+        <button onclick="loadChangelog(${totalPages})" class="ui-button ui-button-secondary ui-button-icon" title="Last page">
+          {{ ui_icons.icon_chevron_double_right("w-5 h-5") | replace("\n", "") }}
         </button>
       `);
     }

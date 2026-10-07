@@ -1,3 +1,6 @@
+{% from "macros/ui.html" import loading_skeleton %}
+{% import "_icons.html" as ui_icons %}
+{% from "macros/ui.html" import kpi_card %}
 {% extends "base.html" %}
 {% block title %}B-SNAP – Audit Logs{% endblock %}
 {% from "_icons.html" import icon_download, icon_config, icon_x_circle, icon_user, icon_globe, icon_newspaper, icon_clock, icon_search, icon_filter, icon_calendar, icon_lock, icon_shield_check %}
@@ -16,19 +19,19 @@
 <!-- Header Section -->
 {% set page_description %}Immutable audit trail with enhanced request tracking • Timezone: {{ timezone }}{% endset %}
 {% call page_header("Audit Logs", page_description) %}
-<div class="flex gap-2">
-      <button onclick="showAuditInfo()" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300 px-4 py-2 rounded-lg transition duration-200">
+<div class="flex flex-wrap gap-2">
+      <button onclick="showAuditInfo()" class="ui-button ui-button-secondary">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         About
       </button>
-      <button onclick="showArchiveHistory()" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 px-4 py-2 rounded-lg transition duration-200">
+      <button onclick="showArchiveHistory()" class="ui-button ui-button-secondary">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
         History
       </button>
-      <button onclick="exportToCSV()" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-200 shadow-sm">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+      <button onclick="exportToCSV()" class="ui-button ui-button-secondary">
+        {{ ui_icons.icon_download("w-5 h-5") | replace("\n", "") }}
         Export CSV
       </button>
     </div>
@@ -48,7 +51,7 @@
         <span id="archive-eligible-count">0</span> records older than 6 months should be archived to maintain performance.
       </p>
     </div>
-    <button onclick="triggerArchive()" class="ui-button ui-button-secondary px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition">
+    <button onclick="triggerArchive()" class="ui-button ui-button-secondary">
       Archive Now
     </button>
   </div>
@@ -56,53 +59,21 @@
 
 <!-- Summary Cards -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Logs</p>
-        <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-total">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Total Logs", "-", value_id="stat-total", tone="neutral") %}
+  {{ ui_icons.icon_clip_check("w-5 h-5") }}
+{% endcall %}
   
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Today's Logs</p>
-        <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-today">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Today's Logs", "-", value_id="stat-today", tone="neutral") %}
+  {{ ui_icons.icon_calendar("w-5 h-5") }}
+{% endcall %}
   
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Unique Users</p>
-        <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-users">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-        <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Unique Users", "-", value_id="stat-users", tone="neutral") %}
+  {{ ui_icons.icon_users("w-5 h-5") }}
+{% endcall %}
   
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Security Events</p>
-        <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-security">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-        <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Security Events", "-", value_id="stat-security", tone="critical") %}
+  {{ ui_icons.icon_shield_check("w-5 h-5") }}
+{% endcall %}
   
   <!-- Archive Status Card -->
   <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition" onclick="showArchiveHistory()">
@@ -112,7 +83,7 @@
         <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-archive">-</p>
         <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5" id="stat-archive-sub">Click for history</p>
       </div>
-      <div class="ui-kpi-icon p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+      <div class="ui-kpi-icon">
         <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
         </svg>
@@ -226,8 +197,8 @@
         </div>
       </div>
       
-      <button onclick="resetFilters()" class="ui-button ui-button-secondary p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Reset all filters">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+      <button onclick="resetFilters()" class="ui-button ui-button-secondary" title="Reset all filters" aria-label="Reset all filters">
+        {{ ui_icons.icon_arrow_path("w-5 h-5") | replace("\n", "") }}
       </button>
     </div>
   </div>
@@ -249,13 +220,10 @@
 </div>
 
 <!-- Table Container -->
-<div class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
-  <div id="loading-overlay" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
-    <div class="flex flex-col items-center gap-3">
-      <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-      <span class="text-gray-600 dark:text-gray-300 font-medium">Loading logs...</span>
+<div class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[400px]">
+  <div id="loading-overlay" class="ui-table-loading absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
+      {{ loading_skeleton("Loading logs...", 4) }}
     </div>
-  </div>
   
   <div class="ui-table-scroll overflow-x-auto">
     <table class="ui-table min-w-full text-sm text-left" id="audit-table">
@@ -277,8 +245,8 @@
   
   <!-- Empty State -->
   <div id="empty-state" class="ui-empty-state hidden flex-col items-center justify-center py-16 text-center">
-    <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
-      <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+    <div class="mb-4">
+      <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
     </div>
     <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No audit logs found</h3>
     <p class="text-gray-500 dark:text-gray-400">Try adjusting your filters or date range</p>
@@ -286,9 +254,9 @@
 </div>
 
 <!-- Pagination -->
-<div class="flex items-center justify-between mt-4 px-2">
+<div class="flex flex-wrap items-center justify-between gap-3 mt-4 px-2">
   <div class="text-sm text-gray-500 dark:text-gray-400" id="page-info"></div>
-  <div class="flex items-center gap-1" id="pagination-buttons"></div>
+  <div class="flex flex-wrap items-center gap-1" id="pagination-buttons"></div>
 </div>
 
 <!-- Audit Info Modal -->
@@ -301,9 +269,7 @@
         </div>
         <h3 class="text-lg font-bold text-gray-900 dark:text-white">About Audit Logs</h3>
       </div>
-      <button onclick="hideAuditInfo()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-      </button>
+      <button onclick="hideAuditInfo()" class="ui-button ui-button-ghost ui-button-icon" aria-label="Close">{{ ui_icons.icon_x_mark("w-5 h-5") }}</button>
     </div>
     <div class="p-6 space-y-4">
       <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
@@ -344,9 +310,7 @@
   <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
       <h3 class="text-lg font-bold text-gray-900 dark:text-white">Audit Entry Detail</h3>
-      <button onclick="hideDetailModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-      </button>
+      <button onclick="hideDetailModal()" class="ui-button ui-button-ghost ui-button-icon" aria-label="Close">{{ ui_icons.icon_x_mark("w-5 h-5") }}</button>
     </div>
     <div class="p-6" id="detailContent">
       <!-- Content populated by JS -->
@@ -369,9 +333,7 @@
           <p class="text-xs text-gray-500 dark:text-gray-400">Audit log archival operations</p>
         </div>
       </div>
-      <button onclick="hideArchiveHistory()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-      </button>
+      <button onclick="hideArchiveHistory()" class="ui-button ui-button-ghost ui-button-icon" aria-label="Close">{{ ui_icons.icon_x_mark("w-5 h-5") }}</button>
     </div>
     
     <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
@@ -408,7 +370,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">
         Archives are encrypted with AES-256 and stored in <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">archives/audit_logs/</code>
       </p>
-      <button onclick="triggerArchive()" class="ui-button ui-button-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+      <button onclick="triggerArchive()" class="ui-button ui-button-primary">
         Archive Now
       </button>
     </div>
@@ -423,13 +385,11 @@
         <h3 class="text-lg font-bold text-gray-900 dark:text-white">Archived Audit Logs</h3>
         <p id="archive-logs-subtitle" class="text-xs text-gray-500 dark:text-gray-400"></p>
       </div>
-      <button type="button" onclick="hideArchiveLogs()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition" aria-label="Close archived logs">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-      </button>
+      <button type="button" onclick="hideArchiveLogs()" class="ui-button ui-button-ghost ui-button-icon" aria-label="Close archived logs">{{ ui_icons.icon_x_mark("w-5 h-5") }}</button>
     </div>
     <div class="p-4 flex gap-2 border-b border-gray-200 dark:border-gray-700">
       <input id="archive-logs-search" type="search" placeholder="Search user, action, target, IP, or path..." class="ui-control flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
-      <button type="button" onclick="searchArchiveLogs()" class="ui-button ui-button-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">Search</button>
+      <button type="button" onclick="searchArchiveLogs()" class="ui-button ui-button-primary">Search</button>
     </div>
     <div class="flex-1 overflow-auto p-4">
       <div id="archive-logs-empty" class="hidden text-center text-gray-500 py-12">No archived logs found.</div>
@@ -512,7 +472,7 @@
   
   function getStatusBadge(status) {
     if (status === null || status === undefined || status === '-') {
-      return '<span class="ui-badge ui-badge-neutral inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">-</span>';
+      return '<span class="ui-badge ui-badge-neutral">-</span>';
     }
     
     const statusNum = parseInt(status);
@@ -630,7 +590,7 @@
                   </svg>
                 </div>
                 <span class="text-red-500 font-medium">Failed to load data: ${error.message}</span>
-                <button onclick="fetchLogs(${page})" class="ui-button ui-button-secondary mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition">Retry</button>
+                <button onclick="fetchLogs(${page})" class="ui-button ui-button-secondary mt-2">Retry</button>
               </div>
             </td>
           </tr>
@@ -693,13 +653,13 @@
         <td class="px-4 py-3 whitespace-nowrap">${getActionBadge(log.action)}</td>
         <td class="px-4 py-3 text-gray-700 dark:text-gray-300 max-w-xs truncate" title="${target}">${target}</td>
         <td class="px-4 py-3 whitespace-nowrap text-center">
-          <span class="ui-badge ui-badge-neutral inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 font-mono">${method}</span>
+          <span class="ui-badge ui-badge-neutral">${method}</span>
         </td>
         <td class="px-4 py-3 whitespace-nowrap text-center">${getStatusBadge(status)}</td>
         <td class="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400 font-mono text-xs">${ip}</td>
         <td class="px-4 py-3 whitespace-nowrap text-center">
           <button onclick='showDetailModal(${JSON.stringify(log).replace(/'/g, "&#39;")})' 
-            class="ui-button ui-button-secondary p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition"
+            class="ui-button ui-button-secondary"
             title="View Details">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -718,7 +678,7 @@
     
     paginationButtons.innerHTML = '';
     if (data.total_pages <= 1) {
-      if (pageInfo) pageInfo.textContent = '';
+      if (pageInfo) pageInfo.textContent = `Page ${data.page} of ${Math.max(1, data.total_pages)}`;
       return;
     }
     
@@ -731,11 +691,11 @@
     // First & Prev
     if (currentPageNum > 1) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="fetchLogs(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+        <button onclick="fetchLogs(1)" class="ui-button ui-button-secondary ui-button-icon" title="First page">
+          {{ ui_icons.icon_chevron_double_left("w-5 h-5") | replace("\n", "") }}
         </button>
-        <button onclick="fetchLogs(${currentPageNum - 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        <button onclick="fetchLogs(${currentPageNum - 1})" class="ui-button ui-button-secondary ui-button-icon" title="Previous page">
+          {{ ui_icons.icon_chevron_left("w-5 h-5") | replace("\n", "") }}
         </button>
       `);
     }
@@ -749,11 +709,11 @@
     for (let i = Math.max(1, currentPageNum - window); i <= Math.min(totalPages, currentPageNum + window); i++) {
       if (i === currentPageNum) {
         paginationButtons.insertAdjacentHTML('beforeend', `
-          <button class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium shadow-sm">${i}</button>
+          <button class="ui-button ui-pagination-button ui-button-primary" aria-current="page">${i}</button>
         `);
       } else {
         paginationButtons.insertAdjacentHTML('beforeend', `
-          <button onclick="fetchLogs(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>
+          <button onclick="fetchLogs(${i})" class="ui-button ui-pagination-button ui-button-ghost">${i}</button>
         `);
       }
     }
@@ -766,11 +726,11 @@
     // Next & Last
     if (currentPageNum < totalPages) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="fetchLogs(${currentPageNum + 1})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        <button onclick="fetchLogs(${currentPageNum + 1})" class="ui-button ui-button-secondary ui-button-icon" title="Next page">
+          {{ ui_icons.icon_chevron_right("w-5 h-5") | replace("\n", "") }}
         </button>
-        <button onclick="fetchLogs(${totalPages})" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+        <button onclick="fetchLogs(${totalPages})" class="ui-button ui-button-secondary ui-button-icon" title="Last page">
+          {{ ui_icons.icon_chevron_double_right("w-5 h-5") | replace("\n", "") }}
         </button>
       `);
     }
@@ -1200,7 +1160,7 @@
     }
 
     if (totalPages <= 1) {
-      pageInfo.textContent = '';
+      pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
       return;
     }
 
@@ -1209,11 +1169,11 @@
 
     if (currentPage > 1) {
       buttons.insertAdjacentHTML('beforeend', `
-        <button type="button" onclick="loadArchiveLogsPage(1)" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page" aria-label="First page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+        <button type="button" onclick="loadArchiveLogsPage(1)" class="ui-button ui-button-secondary ui-button-icon" title="First page" aria-label="First page">
+          {{ ui_icons.icon_chevron_double_left("w-5 h-5") | replace("\n", "") }}
         </button>
-        <button type="button" onclick="loadArchiveLogsPage(${currentPage - 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page" aria-label="Previous page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        <button type="button" onclick="loadArchiveLogsPage(${currentPage - 1})" class="ui-button ui-button-secondary ui-button-icon" title="Previous page" aria-label="Previous page">
+          {{ ui_icons.icon_chevron_left("w-5 h-5") | replace("\n", "") }}
         </button>
       `);
     }
@@ -1224,9 +1184,9 @@
 
     for (let page = Math.max(1, currentPage - windowSize); page <= Math.min(totalPages, currentPage + windowSize); page++) {
       if (page === currentPage) {
-        buttons.insertAdjacentHTML('beforeend', `<button type="button" class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium shadow-sm" aria-current="page">${page}</button>`);
+        buttons.insertAdjacentHTML('beforeend', `<button type="button" class="ui-button ui-pagination-button ui-button-primary" aria-current="page">${page}</button>`);
       } else {
-        buttons.insertAdjacentHTML('beforeend', `<button type="button" onclick="loadArchiveLogsPage(${page})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${page}</button>`);
+        buttons.insertAdjacentHTML('beforeend', `<button type="button" onclick="loadArchiveLogsPage(${page})" class="ui-button ui-pagination-button ui-button-ghost">${page}</button>`);
       }
     }
 
@@ -1236,11 +1196,11 @@
 
     if (currentPage < totalPages) {
       buttons.insertAdjacentHTML('beforeend', `
-        <button type="button" onclick="loadArchiveLogsPage(${currentPage + 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page" aria-label="Next page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        <button type="button" onclick="loadArchiveLogsPage(${currentPage + 1})" class="ui-button ui-button-secondary ui-button-icon" title="Next page" aria-label="Next page">
+          {{ ui_icons.icon_chevron_right("w-5 h-5") | replace("\n", "") }}
         </button>
-        <button type="button" onclick="loadArchiveLogsPage(${totalPages})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page" aria-label="Last page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+        <button type="button" onclick="loadArchiveLogsPage(${totalPages})" class="ui-button ui-button-secondary ui-button-icon" title="Last page" aria-label="Last page">
+          {{ ui_icons.icon_chevron_double_right("w-5 h-5") | replace("\n", "") }}
         </button>
       `);
     }

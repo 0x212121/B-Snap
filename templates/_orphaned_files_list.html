@@ -28,12 +28,12 @@
     <div class="flex items-center gap-2">
       {% if file.status != 'deleted' %}
       <button onclick="reviewFile({{ file.id }}, this)" 
-        class="ui-button ui-button-primary px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+        class="ui-button ui-button-primary"
         title="Mark as reviewed">
         ✓
       </button>
       <button onclick="deleteFile({{ file.id }}, this)" 
-        class="ui-button ui-button-danger px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+        class="ui-button ui-button-danger"
         title="Delete from disk">
         🗑️
       </button>

@@ -1,3 +1,6 @@
+{% from "macros/ui.html" import loading_skeleton %}
+{% import "_icons.html" as ui_icons %}
+{% from "macros/ui.html" import kpi_card %}
 {% extends "base.html" %}
 {% block title %}B-SNAP – NVR Management{% endblock %}
 {% from "_icons.html" import icon_server, icon_plus, icon_search, icon_check_circle, icon_x_circle, icon_warning, icon_map_pin, icon_pencil, icon_trash, icon_upload, icon_download, icon_arrow_path, icon_eye, icon_eye_slash, icon_save %}
@@ -9,18 +12,18 @@
 {% set page_description %}Manage Network Video Recorders and their configurations{% endset %}
 {% call page_header("NVR Management", page_description) %}
 <div class="flex flex-wrap gap-2">
-      <button id="btnAddNVR" class="ui-button ui-button-primary inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+      <button id="btnAddNVR" class="ui-button ui-button-primary">
         {{ icon_plus("w-5 h-5") }}
         Add NVR
       </button>
       <form method="post" enctype="multipart/form-data" action="/nvrs/upload_csv" class="flex items-center gap-2">
         <input type="file" name="file" accept=".csv" class="hidden" id="csvFileInput" onchange="this.form.submit()">
-        <button type="button" onclick="document.getElementById('csvFileInput').click()" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+        <button type="button" onclick="document.getElementById('csvFileInput').click()" class="ui-button ui-button-secondary">
           {{ icon_upload("w-5 h-5") }}
           Upload CSV
         </button>
       </form>
-      <a href="/nvrs/export_csv" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+      <a href="/nvrs/export_csv" class="ui-button ui-button-secondary">
         {{ icon_download("w-5 h-5") }}
         Export CSV
       </a>
@@ -29,65 +32,25 @@
 
 <!-- Stats Cards -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total NVRs</p>
-        <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-total">0</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-        {{ icon_server("w-6 h-6 text-blue-600 dark:text-blue-400") }}
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Total NVRs", "0", value_id="stat-total", tone="neutral") %}
+  {{ ui_icons.icon_server("w-5 h-5") }}
+{% endcall %}
   
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active</p>
-        <p class="ui-kpi-value text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="stat-active">0</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-        {{ icon_check_circle("w-6 h-6 text-green-600 dark:text-green-400") }}
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Active", "0", value_id="stat-active", tone="success") %}
+  {{ ui_icons.icon_check_circle("w-5 h-5") }}
+{% endcall %}
   
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Deactivated</p>
-        <p class="ui-kpi-value text-2xl font-bold text-gray-600 dark:text-gray-400 mt-1" id="stat-deactivated">0</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-        {{ icon_x_circle("w-6 h-6 text-gray-600 dark:text-gray-400") }}
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Deactivated", "0", value_id="stat-deactivated", tone="neutral") %}
+  {{ ui_icons.icon_no_symbol("w-5 h-5") }}
+{% endcall %}
   
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Restricted</p>
-        <p class="ui-kpi-value text-2xl font-bold text-red-600 dark:text-red-400 mt-1" id="stat-restricted">0</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-        {{ icon_warning("w-6 h-6 text-red-600 dark:text-red-400") }}
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Restricted", "0", value_id="stat-restricted", tone="neutral") %}
+  {{ ui_icons.icon_lock("w-5 h-5") }}
+{% endcall %}
   
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">With Location</p>
-        <p class="ui-kpi-value text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1" id="stat-located">0</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-        {{ icon_map_pin("w-6 h-6 text-purple-600 dark:text-purple-400") }}
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("With Location", "0", value_id="stat-located", tone="neutral") %}
+  {{ ui_icons.icon_map_pin("w-5 h-5") }}
+{% endcall %}
 </div>
 
 <!-- Filter Section -->
@@ -116,7 +79,7 @@
         </div>
       </div>
       
-      <button id="btnResetFilters" class="ui-button ui-button-secondary p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+      <button id="btnResetFilters" class="ui-button ui-button-secondary">
         {{ icon_arrow_path("h-5 w-5") }}
       </button>
     </div>
@@ -136,16 +99,10 @@
 </div>
 
 <!-- Table Container -->
-<div class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
-  <div id="loading-overlay" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
-    <div class="flex flex-col items-center gap-3">
-      <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      <span class="text-gray-600 dark:text-gray-300 font-medium">Loading NVRs...</span>
+<div class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[400px]">
+  <div id="loading-overlay" class="ui-table-loading absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
+      {{ loading_skeleton("Loading NVRs...", 4) }}
     </div>
-  </div>
 
   <div class="ui-table-scroll overflow-x-auto">
     <table class="ui-table min-w-full text-sm text-left" id="nvr-table">
@@ -167,12 +124,12 @@
   
   <!-- Empty State -->
   <div id="empty-state" class="ui-empty-state hidden flex-col items-center justify-center py-16 text-center">
-    <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
-      {{ icon_server("w-12 h-12 text-gray-400") }}
+    <div class="mb-4">
+      {{ icon_server("w-8 h-8 text-gray-400") }}
     </div>
     <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No NVRs found</h3>
     <p class="text-gray-500 dark:text-gray-400 max-w-sm">Add a new NVR to get started or adjust your search filters.</p>
-    <button id="btnEmptyAdd" class="mt-4 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
+    <button id="btnEmptyAdd" class="ui-button ui-button-secondary mt-4">
       {{ icon_plus("w-5 h-5") }}
       Add your first NVR
     </button>
@@ -180,9 +137,9 @@
 </div>
 
 <!-- Pagination -->
-<div id="pagination-controls" class="flex items-center justify-between mt-4 px-2">
+<div id="pagination-controls" class="flex flex-wrap items-center justify-between gap-3 mt-4 px-2">
   <div class="text-sm text-gray-500 dark:text-gray-400" id="page-info"></div>
-  <div class="flex items-center gap-1" id="pagination-buttons"></div>
+  <div class="flex flex-wrap items-center gap-1" id="pagination-buttons"></div>
 </div>
 
 <!-- Modal Add/Edit NVR -->
@@ -199,10 +156,8 @@
           <p id="modalSubtitle" class="text-sm text-gray-500 dark:text-gray-400">Configure NVR settings</p>
         </div>
       </div>
-      <button id="btnCloseModal" class="ui-button ui-button-secondary ui-button-icon text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
+      <button id="btnCloseModal" class="ui-button ui-button-secondary ui-button-icon">
+        {{ ui_icons.icon_x_mark("w-5 h-5") }}
       </button>
     </div>
     
@@ -321,8 +276,8 @@
     
     <!-- Footer -->
     <div class="flex justify-end space-x-3 pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
-      <button type="button" id="btnCancelModal" class="ui-button ui-button-secondary px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded-lg font-semibold text-sm transition">Cancel</button>
-      <button type="submit" form="cameraForm" id="modalSubmitButton" class="ui-button ui-button-primary inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm shadow-sm transition">{{ icon_save("h-4 w-4 text-white") }}<span id="modalSubmitText">Submit</span></button>
+      <button type="button" id="btnCancelModal" class="ui-button ui-button-secondary">Cancel</button>
+      <button type="submit" form="cameraForm" id="modalSubmitButton" class="ui-button ui-button-primary">{{ icon_save("h-4 w-4 text-white") }}<span id="modalSubmitText">Submit</span></button>
     </div>
   </div>
 </div>
@@ -425,7 +380,7 @@
     const totalPages = Math.ceil(total / perPage) || 1;
     
     if (totalPages <= 1) {
-      pageInfo.textContent = '';
+      pageInfo.textContent = `Page ${page} of ${totalPages}`;
       return;
     }
     
@@ -436,11 +391,11 @@
     // First & Prev
     if (page > 1) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="window.loadNVRPage(1)" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+        <button onclick="window.loadNVRPage(1)" class="ui-button ui-button-secondary ui-button-icon" title="First page">
+          {{ ui_icons.icon_chevron_double_left("w-5 h-5") | replace("\n", "") }}
         </button>
-        <button onclick="window.loadNVRPage(${page - 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        <button onclick="window.loadNVRPage(${page - 1})" class="ui-button ui-button-secondary ui-button-icon" title="Previous page">
+          {{ ui_icons.icon_chevron_left("w-5 h-5") | replace("\n", "") }}
         </button>
       `);
     }
@@ -453,11 +408,11 @@
     for (let i = Math.max(1, page - window); i <= Math.min(totalPages, page + window); i++) {
       if (i === page) {
         paginationButtons.insertAdjacentHTML('beforeend', `
-          <button class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium shadow-sm">${i}</button>
+          <button class="ui-button ui-pagination-button ui-button-primary" aria-current="page">${i}</button>
         `);
       } else {
         paginationButtons.insertAdjacentHTML('beforeend', `
-          <button onclick="window.loadNVRPage(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>
+          <button onclick="window.loadNVRPage(${i})" class="ui-button ui-pagination-button ui-button-ghost">${i}</button>
         `);
       }
     }
@@ -469,11 +424,11 @@
     // Next & Last
     if (page < totalPages) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="window.loadNVRPage(${page + 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        <button onclick="window.loadNVRPage(${page + 1})" class="ui-button ui-button-secondary ui-button-icon" title="Next page">
+          {{ ui_icons.icon_chevron_right("w-5 h-5") | replace("\n", "") }}
         </button>
-        <button onclick="window.loadNVRPage(${totalPages})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+        <button onclick="window.loadNVRPage(${totalPages})" class="ui-button ui-button-secondary ui-button-icon" title="Last page">
+          {{ ui_icons.icon_chevron_double_right("w-5 h-5") | replace("\n", "") }}
         </button>
       `);
     }

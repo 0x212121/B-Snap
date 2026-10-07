@@ -44,7 +44,7 @@
       <h2 class="ui-section-title text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Navigation</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {% for key, section in env_docs.items() %}
-        <a href="#{{ key }}" class="ui-button ui-button-secondary ui-button-icon flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border border-gray-100 dark:border-slate-700">
+        <a href="#{{ key }}" class="ui-button ui-button-secondary ui-button-icon">
           <span class="text-blue-600 dark:text-blue-400 font-medium">{{ section.title }}</span>
           <span class="text-xs text-gray-400 ml-auto">{{ section.vars|length }} vars</span>
         </a>
@@ -79,16 +79,16 @@
                 <td class="px-6 py-4">
                   <code class="text-sm font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">{{ var.name }}</code>
                   {% if var.security and 'CRITICAL' in var.security %}
-                  <span class="ui-badge ui-badge-critical ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">CRITICAL</span>
+                  <span class="ui-badge ui-badge-critical ml-2">CRITICAL</span>
                   {% endif %}
                 </td>
                 <td class="px-6 py-4">
                   {% if var.required %}
-                  <span class="ui-badge ui-badge-critical inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                  <span class="ui-badge ui-badge-critical">
                     Required
                   </span>
                   {% else %}
-                  <span class="ui-badge ui-badge-neutral inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                  <span class="ui-badge ui-badge-neutral">
                     Optional
                   </span>
                   {% endif %}
@@ -131,7 +131,7 @@
                     <span class="text-xs text-gray-500 dark:text-gray-500">Options:</span>
                     <div class="flex flex-wrap gap-1 mt-1">
                       {% for opt in var.options %}
-                      <span class="ui-badge ui-badge-info text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">{{ opt }}</span>
+                      <span class="ui-badge ui-badge-info">{{ opt }}</span>
                       {% endfor %}
                     </div>
                   </div>

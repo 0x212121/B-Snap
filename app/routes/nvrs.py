@@ -101,65 +101,8 @@ async def get_nvrs_data(
     
     total_pages = (total + per_page - 1) // per_page if total > 0 else 1
     
-    # Generate rows HTML with new styling
-    rows_html = ""
-    if not nvrs:
-        rows_html = '<tr><td colspan="7" class="p-4 text-center text-gray-500 dark:text-gray-400">No NVRs found.</td></tr>'
-    else:
-        for nvr in nvrs:
-            # Status badge class
-            status_class = "status-active" if nvr.status == "Active" else "status-deactivated" if nvr.status == "Deactivated" else "status-restricted"
-            
-            # Initials for avatar
-            initials = (nvr.hostname or "NVR")[:2].upper()
-            
-            rows_html += f"""
-            <tr class="group">
-              <td class="px-4 py-3">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold">
-                    {initials}
-                  </div>
-                  <div>
-                    <p class="font-semibold text-gray-900 dark:text-white">{nvr.hostname or ''}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{nvr.ip or ''}</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-4 py-3 text-gray-700 dark:text-gray-300 font-mono text-xs">{nvr.ip or ''}</td>
-              <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{nvr.username or ''}</td>
-              <td class="px-4 py-3 text-gray-700 dark:text-gray-300 max-w-xs truncate" title="{nvr.location or ''}">{nvr.location or '-'}</td>
-              <td class="px-4 py-3">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                  {nvr.group.name if nvr.group else 'No Group'}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-center">
-                <span class="status-badge {status_class}">
-                  {nvr.status or 'Unknown'}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-center">
-                <div class="flex items-center justify-center gap-1">
-                  <button onclick="showEditNVRModal('{nvr.id}')"
-                          title="Edit"
-                          class="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                    </svg>
-                  </button>
-                  <button onclick="confirmDelete('{nvr.id}', '{nvr.hostname}')"
-                          title="Delete"
-                          class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            """
-    
+    rows_html = templates.env.get_template("partials/nvr_rows.html").render(nvrs=nvrs)
+
     # Return with stats as third part
     return HTMLResponse(content=f"{rows_html}|||{''}|||{json.dumps(stats)}")
 

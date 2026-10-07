@@ -1,3 +1,5 @@
+{% import "_icons.html" as ui_icons %}
+{% from "macros/ui.html" import kpi_card %}
 {% extends "base.html" %}
 {% from "_icons.html" import icon_save %}
 {% block title %}B-SNAP - Record Checks{% endblock %}
@@ -8,89 +10,33 @@
 {% set page_description %}Monitor local, SMB and NFS recording folders and save channel status history.{% endset %}
 {% call page_header("Record Checks", page_description) %}
 <div class="flex flex-wrap gap-2">
-      <button onclick="openSourceModal()" class="ui-button ui-button-primary inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5"></path>
-        </svg>
+      <button onclick="openSourceModal()" class="ui-button ui-button-primary">
+        {{ ui_icons.icon_plus("w-5 h-5") }}
         Add Source
       </button>
-      <button onclick="refreshAll()" class="ui-button ui-button-secondary inline-flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-gray-700 transition hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-offset-gray-900">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M5 15a7 7 0 0 0 11.9 3.2M19 9A7 7 0 0 0 7.1 5.8"></path>
-        </svg>
+      <button onclick="refreshAll()" class="ui-button ui-button-secondary">
+        {{ ui_icons.icon_arrow_path("w-5 h-5") }}
         Refresh
       </button>
     </div>
 {% endcall %}
 
 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-6">
-  <div class="ui-kpi ui-card ui-card-body rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Healthy</p>
-        <p id="sum-healthy" class="ui-kpi-value mt-1 text-2xl font-bold text-green-600">0</p>
-      </div>
-      <div class="ui-kpi-icon rounded-lg bg-green-100 p-3 text-green-600 dark:bg-green-900/30 dark:text-green-300">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 13 4 4L19 7"></path>
-        </svg>
-      </div>
-    </div>
-  </div>
-  <div class="ui-kpi ui-card ui-card-body rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Missing</p>
-        <p id="sum-missing" class="ui-kpi-value mt-1 text-2xl font-bold text-fuchsia-600">0</p>
-      </div>
-      <div class="ui-kpi-icon rounded-lg bg-fuchsia-100 p-3 text-fuchsia-600 dark:bg-fuchsia-900/30 dark:text-fuchsia-300">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2M3 7v10a2 2 0 0 0 2 2h6"></path>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m16 16 5 5m0-5-5 5"></path>
-        </svg>
-      </div>
-    </div>
-  </div>
-  <div class="ui-kpi ui-card ui-card-body rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Stale</p>
-        <p id="sum-stale" class="ui-kpi-value mt-1 text-2xl font-bold text-red-600">0</p>
-      </div>
-      <div class="ui-kpi-icon rounded-lg bg-red-100 p-3 text-red-600 dark:bg-red-900/30 dark:text-red-300">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M10.3 3.9 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path>
-        </svg>
-      </div>
-    </div>
-  </div>
-  <div class="ui-kpi ui-card ui-card-body rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Long Dead</p>
-        <p id="sum-long-dead" class="ui-kpi-value mt-1 text-2xl font-bold text-gray-700 dark:text-gray-200">0</p>
-      </div>
-      <div class="ui-kpi-icon rounded-lg bg-gray-100 p-3 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z"></path>
-        </svg>
-      </div>
-    </div>
-  </div>
-  <div class="ui-kpi ui-card ui-card-body rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Unknown</p>
-        <p id="sum-unknown" class="ui-kpi-value mt-1 text-2xl font-bold text-amber-600">0</p>
-      </div>
-      <div class="ui-kpi-icon rounded-lg bg-amber-100 p-3 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.9 9a3 3 0 1 1 4.2 2.8c-.9.5-1.1.9-1.1 2.2M12 18h.01"></path>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>
-        </svg>
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Healthy", "0", value_id="sum-healthy", tone="success") %}
+  {{ ui_icons.icon_check_circle("w-5 h-5") }}
+{% endcall %}
+  {% call kpi_card("Missing", "0", value_id="sum-missing", tone="critical") %}
+  {{ ui_icons.icon_warning("w-5 h-5") }}
+{% endcall %}
+  {% call kpi_card("Stale", "0", value_id="sum-stale", tone="warning") %}
+  {{ ui_icons.icon_clock("w-5 h-5") }}
+{% endcall %}
+  {% call kpi_card("Long Dead", "0", value_id="sum-long-dead", tone="critical") %}
+  {{ ui_icons.icon_no_symbol("w-5 h-5") }}
+{% endcall %}
+  {% call kpi_card("Unknown", "0", value_id="sum-unknown", tone="warning") %}
+  {{ ui_icons.icon_warning("w-5 h-5") }}
+{% endcall %}
 </div>
 
 <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -104,7 +50,7 @@
   <div class="ui-card xl:col-span-2 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
     <div class="flex flex-col gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-700 md:flex-row md:items-center md:justify-between">
       <h3 class="font-semibold text-gray-900 dark:text-white">Folder Status</h3>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
         <select aria-label="HTTP Status" id="status-filter" onchange="loadStatuses()" class="ui-control rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
           <option value="">All status</option>
           <option value="healthy">Healthy</option>
@@ -166,10 +112,8 @@
         <h3 id="source-modal-title" class="text-lg font-bold text-gray-900 dark:text-white">Add Source</h3>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Native SMB/NFS mounts are read-only and restricted to deployment-approved storage servers.</p>
       </div>
-      <button type="button" onclick="closeSourceModal()" class="ui-button ui-button-secondary ui-button-icon rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200" title="Close">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 18 6M6 6l12 12"></path>
-        </svg>
+      <button type="button" onclick="closeSourceModal()" class="ui-button ui-button-secondary ui-button-icon" title="Close" aria-label="Close">
+        {{ ui_icons.icon_x_mark("w-5 h-5") }}
       </button>
     </div>
     <form id="source-form" class="flex min-h-0 flex-1 flex-col">
@@ -256,8 +200,8 @@
         </div>
       </div>
       <div class="flex flex-col-reverse gap-2 border-t border-gray-200 bg-gray-50 px-5 py-4 dark:border-gray-700 dark:bg-gray-900/30 sm:flex-row sm:items-center sm:justify-end">
-        <button type="button" onclick="closeSourceModal()" class="ui-button ui-button-secondary inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-300 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-700">Cancel</button>
-        <button type="submit" class="ui-button ui-button-primary inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+        <button type="button" onclick="closeSourceModal()" class="ui-button ui-button-secondary">Cancel</button>
+        <button type="submit" class="ui-button ui-button-primary">
           {{ icon_save("h-4 w-4 text-white") }}
           Save Source
         </button>
@@ -346,27 +290,22 @@ function formatAge(seconds) {
 }
 
 function statusBadge(status) {
-  const cls = {
-    healthy: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-    stale: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-    long_dead: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
-    missing: 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/30 dark:text-fuchsia-300',
-    unknown: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-    success: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-    fail: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-  }[status] || 'bg-gray-100 text-gray-800';
-  return `<span class="ui-badge inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${cls}">${escapeHtml(status || '-')}</span>`;
+  const tone = {
+    healthy: 'success', stale: 'warning', long_dead: 'critical',
+    missing: 'critical', unknown: 'warning', success: 'success', fail: 'critical',
+  }[status] || 'neutral';
+  return `<span class="ui-badge ui-badge-${tone}">${escapeHtml(status || '-')}</span>`;
 }
 
 function iconSvg(name, cls = 'h-4 w-4') {
   const icons = {
-    play: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5v14l11-7-11-7Z"></path>',
-    edit: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m16.862 4.487 1.688-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"></path>',
-    trash: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12m-9 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m2 0-.7 12.2A2 2 0 0 1 14.3 21H9.7a2 2 0 0 1-2-1.8L7 7m3 4v6m4-6v6"></path>',
-    folder: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"></path>',
-    x: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 18 6M6 6l12 12"></path>',
+    play: {{ ui_icons.icon_play('h-4 w-4') | tojson }},
+    edit: {{ ui_icons.icon_pencil('h-4 w-4') | tojson }},
+    trash: {{ ui_icons.icon_trash('h-4 w-4') | tojson }},
+    folder: {{ ui_icons.icon_folder('h-4 w-4') | tojson }},
+    x: {{ ui_icons.icon_x_mark('h-4 w-4') | tojson }},
   };
-  return `<svg class="${cls}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">${icons[name] || ''}</svg>`;
+  return (icons[name] || '').replace('class="h-4 w-4"', `class="${escapeHtml(cls)}"`);
 }
 
 function cameraSelect(item) {
@@ -381,7 +320,7 @@ function cameraSelect(item) {
         onchange="updateMappingFromLabel('${item.id}', this.value)"
         class="ui-control w-56 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white"
       >
-      ${item.camera_id ? `<button onclick="updateMapping('${item.id}', '')" title="Clear mapping" class="ui-button ui-button-secondary ui-button-icon rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700">${iconSvg('x', 'h-4 w-4')}</button>` : ''}
+      ${item.camera_id ? `<button onclick="updateMapping('${item.id}', '')" title="Clear mapping" class="ui-button ui-button-secondary ui-button-icon">${iconSvg('x', 'h-4 w-4')}</button>` : ''}
     </div>
   `;
 }
@@ -439,26 +378,29 @@ function renderSources() {
           ${source.connection_type !== 'local' ? `<div class="mt-1 text-xs text-gray-500">${escapeHtml((source.connection_type || '').toUpperCase())} | ${escapeHtml(source.server)} | ${source.mounted ? 'Mounted in web service' : 'Unmounted in web service'}</div>` : ''}
         </button>
         <div class="flex shrink-0 gap-1">
-          ${source.connection_type !== 'local' ? `<button onclick="mountSource('${source.id}', '${source.mounted ? 'unmount' : 'mount'}')" title="${source.mounted ? 'Unmount and disable' : 'Mount read-only'}" class="ui-button ui-button-secondary rounded p-2 text-xs text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">${source.mounted ? 'Unmount' : 'Mount'}</button>` : ''}
-          <button onclick="runSource('${source.id}')" title="Run now" class="ui-button ui-button-secondary ui-button-icon rounded p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20">▶</button>
-          <button onclick="editSource('${source.id}')" title="Edit" class="ui-button ui-button-secondary ui-button-icon rounded p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">✎</button>
-          <button onclick="deleteSource('${source.id}')" title="Delete" class="ui-button ui-button-secondary ui-button-icon rounded p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">×</button>
+          ${source.connection_type !== 'local' ? `<button onclick="mountSource('${source.id}', '${source.mounted ? 'unmount' : 'mount'}')" title="${source.mounted ? 'Unmount and disable' : 'Mount read-only'}" class="ui-button ui-button-secondary">${source.mounted ? 'Unmount' : 'Mount'}</button>` : ''}
+          <button onclick="runSource('${source.id}')" title="Run now" class="ui-button ui-button-secondary ui-button-icon">▶</button>
+          <button onclick="editSource('${source.id}')" title="Edit" class="ui-button ui-button-secondary ui-button-icon">✎</button>
+          <button onclick="deleteSource('${source.id}')" title="Delete" class="ui-button ui-button-secondary ui-button-icon">×</button>
         </div>
       </div>
     </div>
   `).join('');
   root.querySelectorAll('button[title="Run now"]').forEach((button) => {
-    button.className = 'rounded-lg p-2 text-green-600 transition hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 dark:hover:bg-green-900/20';
+    button.className = 'ui-button ui-button-secondary ui-button-icon';
+    button.setAttribute('aria-label', button.title);
     button.innerHTML = iconSvg('play');
   });
   root.querySelectorAll('button[title="Edit"]').forEach((button) => {
     button.title = 'Edit source';
-    button.className = 'rounded-lg p-2 text-indigo-600 transition hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:hover:bg-indigo-900/20';
+    button.className = 'ui-button ui-button-secondary ui-button-icon';
+    button.setAttribute('aria-label', button.title);
     button.innerHTML = iconSvg('edit');
   });
   root.querySelectorAll('button[title="Delete"]').forEach((button) => {
     button.title = 'Delete source';
-    button.className = 'rounded-lg p-2 text-red-600 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 dark:hover:bg-red-900/20';
+    button.className = 'ui-button ui-button-danger-quiet ui-button-icon';
+    button.setAttribute('aria-label', button.title);
     button.innerHTML = iconSvg('trash');
   });
 }
@@ -540,11 +482,11 @@ function renderRunsPagination(pagination) {
 
   if (page > 1) {
     buttons += `
-      <button onclick="changeRunsPage(1)" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+      <button onclick="changeRunsPage(1)" class="ui-button ui-button-secondary ui-button-icon" title="First page">
+        {{ ui_icons.icon_chevron_double_left("w-5 h-5") | replace("\n", "") }}
       </button>
-      <button onclick="changeRunsPage(${page - 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+      <button onclick="changeRunsPage(${page - 1})" class="ui-button ui-button-secondary ui-button-icon" title="Previous page">
+        {{ ui_icons.icon_chevron_left("w-5 h-5") | replace("\n", "") }}
       </button>`;
   }
 
@@ -552,30 +494,30 @@ function renderRunsPagination(pagination) {
   let endPage = Math.min(totalPages, page + windowSize);
 
   if (startPage > 1) {
-    buttons += `<button onclick="changeRunsPage(1)" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">1</button>`;
+    buttons += `<button onclick="changeRunsPage(1)" class="ui-button ui-pagination-button ui-button-ghost">1</button>`;
     if (startPage > 2) buttons += `<span class="px-2 text-gray-400">...</span>`;
   }
 
   for (let i = startPage; i <= endPage; i++) {
     if (i === page) {
-      buttons += `<button class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium shadow-sm">${i}</button>`;
+      buttons += `<button class="ui-button ui-pagination-button ui-button-primary" aria-current="page">${i}</button>`;
     } else {
-      buttons += `<button onclick="changeRunsPage(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>`;
+      buttons += `<button onclick="changeRunsPage(${i})" class="ui-button ui-pagination-button ui-button-ghost">${i}</button>`;
     }
   }
 
   if (endPage < totalPages) {
     if (endPage < totalPages - 1) buttons += `<span class="px-2 text-gray-400">...</span>`;
-    buttons += `<button onclick="changeRunsPage(${totalPages})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${totalPages}</button>`;
+    buttons += `<button onclick="changeRunsPage(${totalPages})" class="ui-button ui-pagination-button ui-button-ghost">${totalPages}</button>`;
   }
 
   if (page < totalPages) {
     buttons += `
-      <button onclick="changeRunsPage(${page + 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+      <button onclick="changeRunsPage(${page + 1})" class="ui-button ui-button-secondary ui-button-icon" title="Next page">
+        {{ ui_icons.icon_chevron_right("w-5 h-5") | replace("\n", "") }}
       </button>
-      <button onclick="changeRunsPage(${totalPages})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+      <button onclick="changeRunsPage(${totalPages})" class="ui-button ui-button-secondary ui-button-icon" title="Last page">
+        {{ ui_icons.icon_chevron_double_right("w-5 h-5") | replace("\n", "") }}
       </button>`;
   }
 

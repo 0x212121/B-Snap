@@ -29,9 +29,16 @@
   </section>
 {% endmacro %}
 
-{% macro kpi_card(label, value, description='') %}
+{% macro kpi_card(label, value, description='', value_id='', tone='neutral') %}
+  {% set valid_tone = tone if tone in ['neutral', 'info', 'success', 'warning', 'critical'] else 'neutral' %}
   <div class="ui-card ui-card-body ui-kpi">
-    <p class="ui-metadata">{{ label }}</p><p class="ui-kpi-value">{{ value }}</p>
+    <div class="ui-kpi-summary">
+      <div>
+        <p class="ui-metadata">{{ label }}</p>
+        <p class="ui-kpi-value ui-kpi-value-{{ valid_tone }}"{% if value_id %} id="{{ value_id }}"{% endif %}>{{ value }}</p>
+      </div>
+      {% if caller is defined %}<span class="ui-kpi-icon" aria-hidden="true">{{ caller() }}</span>{% endif %}
+    </div>
     {% if description %}<p class="ui-description">{{ description }}</p>{% endif %}
   </div>
 {% endmacro %}

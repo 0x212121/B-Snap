@@ -1,3 +1,6 @@
+{% from "macros/ui.html" import loading_skeleton %}
+{% import "_icons.html" as ui_icons %}
+{% from "macros/ui.html" import kpi_card %}
 {% extends "base.html" %}
 {% block title %}B-SNAP – Email Recipients{% endblock %}
 {% from "_icons.html" import icon_envelope_open, icon_envelope, icon_plus, icon_pencil, icon_trash, icon_airplane, icon_download, icon_upload, icon_save %}
@@ -14,9 +17,9 @@
   <!-- Header -->
   {% set page_description %}Manage B-SNAP email distribution lists{% endset %}
 {% call page_header("Email Recipients", page_description) %}
-<div class="flex gap-2">
+<div class="flex flex-wrap gap-2">
         <button onclick="showLocationsWithoutRecipients()" 
-          class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium" title="View locations without recipients">
+          class="ui-button ui-button-secondary" title="View locations without recipients">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -24,15 +27,15 @@
           Missing Recipients
         </button>
         <button onclick="exportRecipients()" 
-          class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+          class="ui-button ui-button-secondary">
           {{ icon_download("w-5 h-5") }} Export
         </button>
         <button onclick="showImportModal()" 
-          class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+          class="ui-button ui-button-secondary">
           {{ icon_upload("w-5 h-5") }} Import
         </button>
         <button onclick="toggleSection('addFormContent')" 
-          class="ui-button ui-button-primary inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+          class="ui-button ui-button-primary">
           {{ icon_plus("w-5 h-5") }} Add New
         </button>
       </div>
@@ -40,60 +43,19 @@
 
   <!-- Stats Cards -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Recipients</p>
-          <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-total">-</p>
-        </div>
-        <div class="ui-kpi-icon p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-          {{ icon_envelope("w-6 h-6 text-blue-600 dark:text-blue-400") }}
-        </div>
-      </div>
-    </div>
+    {% call kpi_card("Total Recipients", "-", value_id="stat-total", tone="neutral") %}
+  {{ ui_icons.icon_envelope("w-5 h-5") }}
+{% endcall %}
     
-    <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Groups</p>
-          <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-groups">-</p>
-        </div>
-        <div class="ui-kpi-icon p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-          <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-          </svg>
-        </div>
-      </div>
-    </div>
+    {% call kpi_card("Groups", "-", value_id="stat-groups", tone="neutral") %}
+  {{ ui_icons.icon_circle_stack("w-5 h-5") }}
+{% endcall %}
     
-    <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Locations</p>
-          <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-locations">-</p>
-        </div>
-        <div class="ui-kpi-icon p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-          <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-          </svg>
-        </div>
-      </div>
-    </div>
+    {% call kpi_card("Total Locations", "-", value_id="stat-locations", tone="neutral") %}
+  {{ ui_icons.icon_map_pin("w-5 h-5") }}
+{% endcall %}
     
-    <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Last Updated</p>
-          <p class="text-sm font-bold text-gray-900 dark:text-white mt-1" id="stat-updated">Just now</p>
-        </div>
-        <div class="ui-kpi-icon p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-          <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-        </div>
-      </div>
-    </div>
+    <div class="ui-card ui-card-body ui-kpi"><div class="ui-kpi-summary"><div><p class="ui-metadata">Last Updated</p><p class="ui-metadata mt-1" id="stat-updated">Just now</p></div><span class="ui-kpi-icon" aria-hidden="true">{{ ui_icons.icon_clock("w-5 h-5") }}</span></div></div>
   </div>
 
   <!-- Add Recipient Form (Collapsible) -->
@@ -134,7 +96,7 @@
           <!-- Action Column -->
           <div class="lg:col-span-2 flex items-end">
             <button type="submit"
-              class="ui-button ui-button-primary w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow-sm transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+              class="ui-button ui-button-primary w-full">
               {{ icon_plus("w-4 h-4") }} Add Recipient
             </button>
           </div>
@@ -197,10 +159,8 @@
           </div>
         </div>
         
-        <button id="btnResetFilter" class="ui-button ui-button-secondary p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Reset filters">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-          </svg>
+        <button id="btnResetFilter" class="ui-button ui-button-secondary" title="Reset filters" aria-label="Reset filters">
+          {{ ui_icons.icon_arrow_path("w-5 h-5") }}
         </button>
       </div>
     </div>
@@ -222,16 +182,10 @@
   <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
     
     <!-- Recipients Table -->
-    <div class="ui-card xl:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
-      <div id="loading-overlay" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
-        <div class="flex flex-col items-center gap-3">
-          <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span class="text-gray-600 dark:text-gray-300 font-medium">Loading recipients...</span>
-        </div>
-      </div>
+    <div class="ui-card xl:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[400px]">
+      <div id="loading-overlay" class="ui-table-loading absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
+      {{ loading_skeleton("Loading recipients...", 4) }}
+    </div>
 
       <div class="ui-table-scroll overflow-x-auto">
         <table class="ui-table min-w-full text-sm text-left" id="recipients-table" data-sortable-table>
@@ -259,17 +213,15 @@
 
       <!-- Empty State -->
       <div id="empty-state" class="ui-empty-state hidden flex-col items-center justify-center py-16 text-center">
-        <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
-          <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="mb-4">
+          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
           </svg>
         </div>
         <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No recipients found</h3>
         <p class="text-gray-500 dark:text-gray-400 max-w-sm">Add a new recipient to get started or adjust your search filters.</p>
-        <button onclick="toggleSection('addFormContent')" class="mt-4 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-          </svg>
+        <button onclick="toggleSection('addFormContent')" class="ui-button ui-button-secondary mt-4">
+          {{ ui_icons.icon_plus("w-5 h-5") }}
           Add your first recipient
         </button>
       </div>
@@ -325,7 +277,7 @@
 
         <div class="pt-2">
           <button id="btnTestSend" onclick="sendTestEmail()"
-            class="ui-button ui-button-secondary w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow-md transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
+            class="ui-button ui-button-secondary w-full disabled:opacity-50 disabled:cursor-not-allowed">
             {{ icon_airplane("w-5 h-5") }}
             <span>Send Test Email</span>
           </button>
@@ -347,9 +299,9 @@
   </div>
 
   <!-- Pagination -->
-  <div id="pagination-controls" class="flex items-center justify-between mt-4 px-2">
+  <div id="pagination-controls" class="flex flex-wrap items-center justify-between gap-3 mt-4 px-2">
     <div class="text-sm text-gray-500 dark:text-gray-400" id="page-info"></div>
-    <div class="flex items-center gap-1" id="pagination-buttons"></div>
+    <div class="flex flex-wrap items-center gap-1" id="pagination-buttons"></div>
   </div>
 </div>
 
@@ -366,9 +318,7 @@
           <p class="text-sm text-gray-500 dark:text-gray-400">Update recipient details</p>
         </div>
       </div>
-      <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-      </button>
+      <button onclick="closeEditModal()" class="ui-button ui-button-ghost ui-button-icon" aria-label="Close">{{ ui_icons.icon_x_mark("w-5 h-5") }}</button>
     </div>
     
     <form id="editForm" class="p-6 space-y-4">
@@ -407,11 +357,11 @@
       
       <div class="flex gap-3 pt-4">
         <button type="button" onclick="closeEditModal()"
-          class="ui-button ui-button-secondary flex-1 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors">
+          class="ui-button ui-button-secondary flex-1">
           Cancel
         </button>
         <button type="submit"
-          class="ui-button ui-button-primary flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm">
+          class="ui-button ui-button-primary flex-1">
           {{ icon_save("w-4 h-4") }} Save Changes
         </button>
       </div>
@@ -478,7 +428,7 @@ function escapeHtml(text) {
   if (!text) return ''
   const div = document.createElement('div')
   div.textContent = text
-  return div.innerHTML
+  return div.innerHTML.replaceAll("'", "&#39;").replaceAll('"', '&quot;')
 }
 
 function escapeRegex(text){
@@ -719,18 +669,18 @@ function renderTable(rows){
 <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">${highlight(r.email)}</td>
 <td class="px-4 py-3 text-gray-700 dark:text-gray-300">${highlight(r.nickname || "-")}</td>
 <td class="px-4 py-3">
-<span class="ui-badge ui-badge-info inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+<span class="ui-badge ui-badge-info">
 ${escapeHtml(r.group_name || "-")}
 </span>
 </td>
 <td class="px-4 py-3 text-gray-700 dark:text-gray-300">${escapeHtml(locDisplay)}</td>
 <td class="px-4 py-3 text-center">
 <div class="flex items-center justify-center gap-1">
-<button class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition" title="Edit" onclick='openEditModal(${r.id}, ${JSON.stringify(r.email || "")}, ${JSON.stringify(r.nickname || "")}, ${JSON.stringify(r.group_id || "")}, ${JSON.stringify(r.locations || "")})'>
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+<button class="ui-button ui-button-secondary ui-button-icon" title="Edit" onclick='openEditModal(${r.id}, ${escapeHtml(JSON.stringify(r.email || ""))}, ${escapeHtml(JSON.stringify(r.nickname || ""))}, ${escapeHtml(JSON.stringify(r.group_id || ""))}, ${escapeHtml(JSON.stringify(r.locations || ""))})' aria-label="Edit">
+{{ ui_icons.icon_pencil("w-5 h-5") | replace("\n", "") }}
 </button>
-<button class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition" title="Delete" onclick="deleteRecipient(${r.id})">
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+<button class="ui-button ui-button-danger-quiet ui-button-icon" title="Delete" onclick="deleteRecipient(${r.id})" aria-label="Delete">
+{{ ui_icons.icon_trash("w-5 h-5") | replace("\n", "") }}
 </button>
 </div>
 </td>`
@@ -748,7 +698,7 @@ function renderPagination(){
   container.innerHTML = ""
   
   if(state.totalPages <= 1) {
-    pageInfo.textContent = ''
+    pageInfo.textContent = `Page ${state.page} of ${state.totalPages}`
     return
   }
   
@@ -761,11 +711,11 @@ function renderPagination(){
   // First & Prev
   if(state.page > 1) {
     container.insertAdjacentHTML('beforeend', `
-      <button onclick="changePage(1)" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+      <button onclick="changePage(1)" class="ui-button ui-button-secondary ui-button-icon" title="First page">
+        {{ ui_icons.icon_chevron_double_left("w-5 h-5") | replace("\n", "") }}
       </button>
-      <button onclick="changePage(${state.page - 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+      <button onclick="changePage(${state.page - 1})" class="ui-button ui-button-secondary ui-button-icon" title="Previous page">
+        {{ ui_icons.icon_chevron_left("w-5 h-5") | replace("\n", "") }}
       </button>
     `)
   }
@@ -778,11 +728,11 @@ function renderPagination(){
   for(let i = Math.max(1, start - 1); i <= Math.min(state.totalPages, end + 1); i++){
     if(i === state.page) {
       container.insertAdjacentHTML('beforeend', `
-        <button class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium shadow-sm">${i}</button>
+        <button class="ui-button ui-pagination-button ui-button-primary" aria-current="page">${i}</button>
       `)
     } else {
       container.insertAdjacentHTML('beforeend', `
-        <button onclick="changePage(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>
+        <button onclick="changePage(${i})" class="ui-button ui-pagination-button ui-button-ghost">${i}</button>
       `)
     }
   }
@@ -794,11 +744,11 @@ function renderPagination(){
   // Next & Last
   if(state.page < state.totalPages) {
     container.insertAdjacentHTML('beforeend', `
-      <button onclick="changePage(${state.page + 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+      <button onclick="changePage(${state.page + 1})" class="ui-button ui-button-secondary ui-button-icon" title="Next page">
+        {{ ui_icons.icon_chevron_right("w-5 h-5") | replace("\n", "") }}
       </button>
-      <button onclick="changePage(${state.totalPages})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+      <button onclick="changePage(${state.totalPages})" class="ui-button ui-button-secondary ui-button-icon" title="Last page">
+        {{ ui_icons.icon_chevron_double_right("w-5 h-5") | replace("\n", "") }}
       </button>
     `)
   }

@@ -1,26 +1,27 @@
+{% import "_icons.html" as ui_icons %}
 {% extends "base.html" %}
 {% block title %}B-SNAP – Camera Management{% endblock %}
-{% from "_icons.html" import icon_clip_check, icon_search, icon_pencil, icon_trash, icon_camera, icon_video_camera, icon_upload, icon_download, icon_plus, icon_filter, icon_x_mark, icon_map_pin, icon_funnel, icon_eye, icon_eye_slash, icon_save %}
+{% from "_icons.html" import icon_clip_check, icon_search, icon_pencil, icon_trash, icon_camera, icon_video_camera, icon_upload, icon_download, icon_plus, icon_filter, icon_x_mark, icon_map_pin, icon_funnel, icon_eye, icon_eye_slash, icon_save, icon_arrow_path, icon_warning, icon_no_symbol, icon_check_circle, icon_config %}
 
-{% from "macros/ui.html" import page_header, more_filters, loading_skeleton %}
+{% from "macros/ui.html" import kpi_card, page_header, more_filters, loading_skeleton %}
 
 {% block content %}
 <!-- Header Section -->
 {% set page_description %}Manage CCTV cameras, configure settings, and monitor device status{% endset %}
 {% call page_header("Camera Management", page_description) %}
 <div class="flex flex-wrap gap-2">
-      <button onclick="showAddCameraModal()" class="ui-button ui-button-primary inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+      <button onclick="showAddCameraModal()" class="ui-button ui-button-primary">
         {{ icon_plus("w-5 h-5") }}
         Add Camera
       </button>
       <form method="post" enctype="multipart/form-data" action="/cameras/upload_csv" class="flex items-center gap-2">
         <input type="file" name="file" accept=".csv" class="hidden" id="csvFileInput" onchange="this.form.submit()">
-        <button type="button" onclick="document.getElementById('csvFileInput').click()" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+        <button type="button" onclick="document.getElementById('csvFileInput').click()" class="ui-button ui-button-secondary">
           {{ icon_upload("w-5 h-5") }}
           Upload CSV
         </button>
       </form>
-      <a href="/cameras/export_csv" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
+      <a href="/cameras/export_csv" class="ui-button ui-button-secondary">
         {{ icon_download("w-5 h-5") }}
         Export CSV
       </a>
@@ -29,70 +30,21 @@
 
 <!-- Stats Cards -->
 <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Cameras</p>
-        <p class="ui-kpi-value text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1" id="stat-total">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-        {{ icon_video_camera("w-6 h-6 text-blue-600 dark:text-blue-400") }}
-      </div>
-    </div>
-  </div>
-  
-  <!-- P2-002: Safety Classification Stats -->
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Critical Safety</p>
-        <p class="ui-kpi-value text-2xl font-bold text-red-600 dark:text-red-400 mt-1" id="stat-critical">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-        <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-        </svg>
-      </div>
-    </div>
-  </div>
-  
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active</p>
-        <p class="ui-kpi-value text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="stat-active">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-        {{ icon_clip_check("w-6 h-6 text-green-600 dark:text-green-400") }}
-      </div>
-    </div>
-  </div>
-  
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Deactivated</p>
-        <p class="ui-kpi-value text-2xl font-bold text-gray-600 dark:text-gray-400 mt-1" id="stat-deactivated">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-        <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-      </div>
-    </div>
-  </div>
-  
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Maintenance</p>
-        <p class="ui-kpi-value text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1" id="stat-maintenance">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-        {{ icon_filter("w-6 h-6 text-amber-600 dark:text-amber-400") }}
-      </div>
-    </div>
-  </div>
+{% call kpi_card("Total Cameras", "-", value_id="stat-total", tone="neutral") %}
+  {{ icon_video_camera("w-5 h-5") }}
+{% endcall %}
+{% call kpi_card("Critical Safety", "-", value_id="stat-critical", tone="critical") %}
+  {{ icon_warning("w-5 h-5") }}
+{% endcall %}
+{% call kpi_card("Active", "-", value_id="stat-active", tone="success") %}
+  {{ icon_check_circle("w-5 h-5") }}
+{% endcall %}
+{% call kpi_card("Deactivated", "-", value_id="stat-deactivated", tone="neutral") %}
+  {{ icon_no_symbol("w-5 h-5") }}
+{% endcall %}
+{% call kpi_card("Maintenance", "-", value_id="stat-maintenance", tone="warning") %}
+  {{ icon_config("w-5 h-5") }}
+{% endcall %}
 </div>
 
 <!-- Filter Section -->
@@ -111,7 +63,7 @@
       </div>
       
       <!-- Controls -->
-      <div class="flex gap-2 items-center">
+      <div class="flex flex-wrap gap-2 items-center">
         <div class="relative w-40">
           <select aria-label="Results per page" id="perPageSelect" class="ui-control pl-3 pr-8 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none">
             <option value="10">10 / page</option>
@@ -126,10 +78,8 @@
           </div>
         </div>
         
-        <button onclick="resetFilters()" class="ui-button ui-button-secondary p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Reset filters">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-          </svg>
+        <button onclick="resetFilters()" class="ui-button ui-button-secondary ui-button-icon" title="Reset filters" aria-label="Reset filters">
+          {{ icon_arrow_path("w-5 h-5") }}
         </button>
       </div>
     </div>
@@ -258,12 +208,12 @@
   
   <!-- Empty State -->
   <div id="empty-state" class="ui-empty-state hidden flex-col items-center justify-center py-16 text-center">
-    <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
-      {{ icon_camera("w-12 h-12 text-gray-400") }}
+    <div class="mb-4">
+      {{ icon_camera("w-8 h-8 text-gray-400") }}
     </div>
     <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No cameras found</h3>
     <p class="text-gray-500 dark:text-gray-400 max-w-sm">Add a new camera or adjust your search filters to get started.</p>
-    <button onclick="showAddCameraModal()" class="mt-4 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
+    <button onclick="showAddCameraModal()" class="ui-button ui-button-secondary mt-4">
       {{ icon_plus("w-5 h-5") }}
       Add your first camera
     </button>
@@ -271,9 +221,9 @@
 </div>
 
 <!-- Pagination -->
-<div id="pagination-controls" class="flex items-center justify-between mt-4 px-2">
+<div id="pagination-controls" class="flex flex-wrap items-center justify-between gap-3 mt-4 px-2">
   <div class="text-sm text-gray-500 dark:text-gray-400" id="page-info"></div>
-  <div class="flex items-center gap-1" id="pagination-buttons"></div>
+  <div class="flex flex-wrap items-center gap-1" id="pagination-buttons"></div>
 </div>
 
 <!-- Camera Modal (Add/Edit) -->
@@ -290,7 +240,7 @@
           <p class="text-xs text-gray-500 dark:text-gray-400">Configure camera settings and details</p>
         </div>
       </div>
-      <button onclick="hideCameraModal()" class="ui-button ui-button-secondary ui-button-icon text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+      <button onclick="hideCameraModal()" class="ui-button ui-button-secondary ui-button-icon">
         {{ icon_x_mark("w-5 h-5") }}
       </button>
     </div>
@@ -479,11 +429,11 @@
     <!-- Modal Footer -->
     <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 rounded-b-2xl">
       <button type="button" onclick="hideCameraModal()" 
-        class="ui-button ui-button-secondary px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition">
+        class="ui-button ui-button-secondary">
         Cancel
       </button>
       <button type="submit" form="cameraForm" id="modalSubmitButton" 
-        class="ui-button ui-button-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition flex items-center gap-2">
+        class="ui-button ui-button-primary">
         {{ icon_save("w-5 h-5") }}
         <span>Submit</span>
       </button>
@@ -501,11 +451,11 @@
     </div>
     <div class="flex justify-end mt-4 gap-3">
       <a id="download-btn" href="#" download 
-        class="ui-button ui-button-primary inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition">
+        class="ui-button ui-button-primary">
         {{ icon_download("w-5 h-5") }} Download
       </a>
       <button onclick="hideSnapshotModal()" 
-        class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition">
+        class="ui-button ui-button-secondary">
         {{ icon_x_mark("w-5 h-5") }} Close
       </button>
     </div>
@@ -703,11 +653,11 @@
       
       if (currentPage > 1) {
         paginationButtons.insertAdjacentHTML('beforeend', `
-          <button onclick="loadPage(1)" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+          <button onclick="loadPage(1)" class="ui-button ui-button-secondary ui-button-icon" title="First page">
+            {{ ui_icons.icon_chevron_double_left("w-5 h-5") | replace("\n", "") }}
           </button>
-          <button onclick="loadPage(${currentPage - 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+          <button onclick="loadPage(${currentPage - 1})" class="ui-button ui-button-secondary ui-button-icon" title="Previous page">
+            {{ ui_icons.icon_chevron_left("w-5 h-5") | replace("\n", "") }}
           </button>
         `);
       }
@@ -719,11 +669,11 @@
       for (let i = Math.max(1, currentPage - window); i <= Math.min(totalPages, currentPage + window); i++) {
         if (i === currentPage) {
           paginationButtons.insertAdjacentHTML('beforeend', `
-            <button class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium shadow-sm">${i}</button>
+            <button class="ui-button ui-pagination-button ui-button-primary" aria-current="page">${i}</button>
           `);
         } else {
           paginationButtons.insertAdjacentHTML('beforeend', `
-            <button onclick="loadPage(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>
+            <button onclick="loadPage(${i})" class="ui-button ui-pagination-button ui-button-ghost">${i}</button>
           `);
         }
       }
@@ -734,11 +684,11 @@
       
       if (currentPage < totalPages) {
         paginationButtons.insertAdjacentHTML('beforeend', `
-          <button onclick="loadPage(${currentPage + 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+          <button onclick="loadPage(${currentPage + 1})" class="ui-button ui-button-secondary ui-button-icon" title="Next page">
+            {{ ui_icons.icon_chevron_right("w-5 h-5") | replace("\n", "") }}
           </button>
-          <button onclick="loadPage(${totalPages})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+          <button onclick="loadPage(${totalPages})" class="ui-button ui-button-secondary ui-button-icon" title="Last page">
+            {{ ui_icons.icon_chevron_double_right("w-5 h-5") | replace("\n", "") }}
           </button>
         `);
       }

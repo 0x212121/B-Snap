@@ -41,6 +41,11 @@ their interaction-specific layout.
 - `page_header(title, description)` uses a caller slot for existing actions;
   `page_heading` also supports metadata. Primary actions belong in that slot.
 - `section_header`, `card`, and `kpi_card` provide reusable content grouping.
+  `kpi_card(label, value, description='', value_id='', tone='neutral')` keeps
+  existing AJAX counter IDs through `value_id`; its caller slot accepts an icon
+  from `_icons.html`. Use neutral icons at 20px, with semantic color on the value
+  for health/success, warning, and failure. Counts of roles, groups, or locations
+  stay neutral. Keep date/time metadata at metadata size rather than KPI number size.
 - Buttons: `ui-button` plus `ui-button-primary`, `ui-button-secondary`,
   `ui-button-ghost`, `ui-button-danger`, or `ui-button-danger-quiet`. Use solid red
   for destructive command deletion and red outlines for removing draft nodes/messages.
@@ -52,6 +57,10 @@ their interaction-specific layout.
 - Tables: `ui-table` inside `ui-table-scroll`. Preserve sort/selection handlers,
   alignment, bulk controls, and existing pagination renderers. Row actions remain
   on the right. Preserve IDs and data attributes used by scripts.
+  Numbered pagination uses `ui-button ui-pagination-button` with a primary active
+  page (`aria-current="page"`) and ghost inactive pages. Reuse the shared chevron
+  macros for first/previous/next/last controls. Keep the result range above the
+  table and the page indicator below it; wrap controls on mobile.
 - Filters: `ui-filter-bar` and `ui-control`. Search first, then primary selectors,
   date range and reset when available. Existing immediate/apply behavior remains;
   controls must state when an explicit Apply action is required.

@@ -48,7 +48,7 @@
   <div class="shrink-0">
     <header class="ui-page-header">
 {% call page_heading("Logs Viewer") %}
-        <span id="liveBadge" class="ui-badge ui-badge-success hidden items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900/50 text-green-300 border border-green-700">
+        <span id="liveBadge" class="ui-badge ui-badge-success hidden">
           <span class="w-2 h-2 bg-green-400 rounded-full live-indicator"></span>
           LIVE
         </span>
@@ -63,13 +63,13 @@
         </label>
         
         <!-- Refresh Button -->
-        <button id="refreshBtn" class="ui-button ui-button-primary flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow transition-colors">
+        <button id="refreshBtn" class="ui-button ui-button-primary">
           {{ icon_arrow_path("w-4 h-4") }}
           <span>Refresh</span>
         </button>
         
         <!-- Download Button -->
-        <a id="downloadBtn" href="#" class="ui-button ui-button-secondary flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition-colors opacity-50 pointer-events-none">
+        <a id="downloadBtn" href="#" class="ui-button ui-button-secondary opacity-50 pointer-events-none">
           {{ icon_download("w-4 h-4") }}
           <span>Download</span>
         </a>
@@ -86,11 +86,11 @@
       <div class="p-4 border-b border-gray-200 dark:border-gray-700">
         <label class="ui-label block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Log Type</label>
         <select id="logTypeSelect" class="ui-control w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white">
-          <option value="main">📝 Main</option>
-          <option value="snapshot">📸 Snapshot</option>
-          <option value="healthcheck">❤️ Health Check</option>
-          <option value="scheduler">⏰ Scheduler</option>
-          <option value="management">⚙️ Management</option>
+          <option value="main">Main</option>
+          <option value="snapshot">Snapshot</option>
+          <option value="healthcheck">Health Check</option>
+          <option value="scheduler">Scheduler</option>
+          <option value="management">Management</option>
         </select>
       </div>
       
@@ -131,10 +131,10 @@
         <!-- Level Filter -->
         <select id="levelFilter" class="ui-control px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-100 focus:ring-2 focus:ring-blue-500">
           <option value="">All Levels</option>
-          <option value="ERROR">❌ Error</option>
-          <option value="WARNING,WARN">⚠️ Warning</option>
-          <option value="INFO">ℹ️ Info</option>
-          <option value="DEBUG">🐛 Debug</option>
+          <option value="ERROR">Error</option>
+          <option value="WARNING,WARN">Warning</option>
+          <option value="INFO">Info</option>
+          <option value="DEBUG">Debug</option>
         </select>
         
         <!-- Logger Filter -->
@@ -143,7 +143,7 @@
         </select>
         
         <!-- Clear Filters -->
-        <button id="clearFilters" class="px-3 py-2 text-sm text-gray-400 hover:text-gray-200 transition-colors">
+        <button id="clearFilters" class="ui-button ui-button-secondary">
           Clear
         </button>
         
@@ -168,8 +168,8 @@
           <span id="filterInfo"></span>
         </div>
         <div class="flex items-center gap-2">
-          <button id="scrollTop" class="ui-button ui-button-secondary px-3 py-1 hover:bg-gray-700 rounded transition-colors">Top</button>
-          <button id="scrollBottom" class="ui-button ui-button-secondary px-3 py-1 hover:bg-gray-700 rounded transition-colors">Bottom</button>
+          <button id="scrollTop" class="ui-button ui-button-secondary">Top</button>
+          <button id="scrollBottom" class="ui-button ui-button-secondary">Bottom</button>
         </div>
       </div>
     </div>
@@ -300,11 +300,11 @@ async function loadLogFiles(logType) {
     
     data.files.forEach((file, index) => {
       const btn = document.createElement('button');
-      btn.className = `ui-button w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${index === 0 ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`;
+      btn.className = `ui-button ui-button-ghost ui-log-file ${index === 0 ? 'ui-log-file-active' : ''}`;
       btn.innerHTML = `
-        <div class="flex items-center justify-between">
-          <span class="font-medium truncate">${file.name}</span>
-          <span class="text-xs opacity-75">${file.size_human}</span>
+        <div class="flex w-full items-center justify-between gap-2">
+          <span class="font-medium truncate">${escapeHtml(file.name)}</span>
+          <span class="text-xs shrink-0 opacity-75">${escapeHtml(file.size_human)}</span>
         </div>
         <div class="text-xs opacity-60 mt-0.5">${formatDate(file.modified)}</div>
       `;
@@ -327,9 +327,9 @@ function selectLogFile(filename, btnElement) {
   
   // Update UI
   Array.from(elements.logFilesList.children).forEach(child => {
-    child.className = 'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300';
+    child.className = 'ui-button ui-button-ghost ui-log-file';
   });
-  btnElement.className = 'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors bg-blue-600 text-white';
+  btnElement.className = 'ui-button ui-button-ghost ui-log-file ui-log-file-active';
   
   // Update download button
   elements.downloadBtn.href = `/logs/download/${currentState.logType}/${filename}`;

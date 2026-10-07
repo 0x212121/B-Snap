@@ -27,7 +27,6 @@ from app.utils.healthcheck import ping_camera_by_id
 from app.utils.template_helper import templates
 from app.utils.notification_service import NotificationService
 from app.utils.video import record_video_and_save_db
-from app.utils.status_utils import get_status_classes
 from app.core.logging_config import setup_logging
 
 # Dependency injection for router
@@ -145,75 +144,7 @@ async def manage_data(
     cameras = query.distinct().offset((page - 1) * per_page).limit(per_page).all()
     total_pages = (total + per_page - 1) // per_page if total > 0 else 1
 
-    ICONS = {
-        "pencil": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" /></svg>',
-        "video": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M4.5 4.5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h8.25a3 3 0 0 0 3-3v-9a3 3 0 0 0-3-3H4.5ZM19.94 18.75l-2.69-2.69V7.94l2.69-2.69c.944-.945 2.56-.276 2.56 1.06v11.38c0 1.336-1.616 2.005-2.56 1.06Z" /></svg>',
-        "camera": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 9a3.75 3.75 0 1 0 0 7.5A3.75 3.75 0 0 0 12 9Z" /><path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 0 1 5.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 0 1-3 3h-15a3 3 0 0 1-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 0 0 1.11-.71l.822-1.315a2.942 2.942 0 0 1 2.332-1.39ZM6.75 12.75a5.25 5.25 0 1 1 10.5 0 5.25 5.25 0 0 1-10.5 0Zm12-1.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" /></svg>',
-        "trash": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" /></svg>'
-    }
-
-    rows_html = ""
-    for cam in cameras:
-        gps_loc = f"{cam.latitude}, {cam.longitude}" if cam.latitude is not None or cam.longitude is not None else ""
-        status_classes = get_status_classes(cam.status)
-        status_label = cam.status or "Unknown"
-        
-        # P2-002: Safety classification badge
-        safety = cam.safety_classification or 'standard'
-        if safety == 'critical':
-            safety_badge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800" title="Critical Safety - Incident Coverage">🔴 Critical</span>'
-        elif safety == 'low':
-            safety_badge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800" title="Low Safety - General Surveillance">🟢 Low</span>'
-        else:
-            safety_badge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800" title="Standard Safety - Regular Monitoring">🟡 Standard</span>'
-
-        rows_html += f"""
-            <tr class="group border-b dark:border-gray-700 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors duration-150 text-sm text-gray-700 dark:text-gray-300">
-                <td class="px-4 py-3.5 font-semibold text-gray-900 dark:text-white">
-                    <div class="flex items-center gap-2">
-                        {cam.hostname}
-                        {safety_badge if safety == 'critical' else ''}
-                    </div>
-                </td>
-                <td class="px-4 py-3.5 font-mono text-gray-600 dark:text-gray-400">{cam.ip}</td>
-                <td class="px-4 py-3.5">{cam.port}</td>
-                <td class="px-4 py-3.5">{cam.username}</td>
-                <td class="px-4 py-3.5 text-xs">{gps_loc}</td>
-                <td class="px-4 py-3.5">{cam.asset_no or ''}</td>
-                <td class="px-4 py-3.5">{cam.location or ''}</td>
-                <td class="px-4 py-3.5">{', '.join(group.name for group in cam.groups)}</td>
-                <td class="px-4 py-3.5">{safety_badge}</td>
-                <td class="px-4 py-3.5">
-                    <span class="px-2.5 py-1 text-xs font-semibold rounded-full {status_classes}">
-                        {status_label}
-                    </span>
-                </td>
-                <td class="px-4 py-3.5 text-center">
-                    <div class="flex items-center justify-center gap-1">
-                        <button onclick="showEditCameraModal('{cam.id}')"
-                            title="Edit camera"
-                            class="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">
-                            {ICONS['pencil']}
-                        </button>
-                        <button onclick="confirmDelete('{cam.id}', '{cam.hostname}')"
-                            title="Delete camera"
-                            class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
-                            {ICONS['trash']}
-                        </button>
-                        <button onclick="captureVideo('{cam.id}')"
-                            title="Capture video (5s)"
-                            class="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition">
-                            {ICONS['video']}
-                        </button>
-                        <button onclick='viewSnapshot({json.dumps(cam.hostname)})'
-                            title="View snapshot"
-                            class="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 transition">
-                            {ICONS['camera']}
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        """
+    rows_html = templates.env.get_template("partials/camera_rows.html").render(cameras=cameras)
 
     return ORJSONResponse(content={
         "stats": stats,

@@ -1,3 +1,4 @@
+{% import "_icons.html" as ui_icons %}
 {% extends "base.html" %}
 
 {% block head %}
@@ -17,46 +18,30 @@
 {% block content %}
 <div class="ui-page">
     
-    {{ page_header("Historical Uptime/Downtime") }}
-    
-    <!-- Action Buttons Section -->
-    <div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-750 rounded-xl p-4 border border-blue-100 dark:border-gray-700">
-        <div class="flex flex-wrap items-center gap-3">
-            <a href="/health" class="ui-button ui-button-secondary bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                Back to Current Status
-            </a>
-            
-            <div class="w-px h-8 bg-gray-300 dark:bg-gray-600 mx-1"></div>
-            
-            <span class="text-sm font-medium text-gray-600 dark:text-gray-400 mr-2">Reports:</span>
-            
-            <a id="sla-report-link" href="/health/sla-report" class="ui-button ui-button-primary bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z"></path></svg>
-                SLA Report
-            </a>
-            
-            <a href="/health/history/export?format=csv" class="ui-button ui-button-secondary bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                Export CSV
-            </a>
-            
-            <button onclick="openExportModal()" class="ui-button ui-button-primary bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm inline-flex items-center transition-colors shadow-sm">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                PDF Report
-            </button>
-        </div>
-    </div>
-    
+    {% call page_header("Historical Uptime/Downtime") %}
+      <div class="flex flex-wrap gap-2">
+        <a href="/health" class="ui-button ui-button-secondary">
+          {{ ui_icons.icon_chevron_left("w-5 h-5") }} Back to Current Status
+        </a>
+        <a id="sla-report-link" href="/health/sla-report" class="ui-button ui-button-secondary">
+          {{ ui_icons.icon_chart_bar("w-5 h-5") }} SLA Report
+        </a>
+        <a href="/health/history/export?format=csv" class="ui-button ui-button-secondary">
+          {{ ui_icons.icon_download("w-5 h-5") }} Export CSV
+        </a>
+        <button onclick="openExportModal()" class="ui-button ui-button-primary">
+          {{ ui_icons.icon_download("w-5 h-5") }} PDF Report
+        </button>
+      </div>
+    {% endcall %}
+
     <!-- Export Modal -->
     <div id="exportModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
         <div class="ui-card bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex justify-between items-center">
                     <h2 class="ui-section-title text-xl font-bold text-gray-800 dark:text-white">Export Health Report</h2>
-                    <button onclick="closeExportModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
+                    <button onclick="closeExportModal()" class="ui-button ui-button-ghost ui-button-icon" aria-label="Close">{{ ui_icons.icon_x_mark("w-5 h-5") }}</button>
                 </div>
             </div>
             
@@ -118,11 +103,11 @@
                 
                 <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
                     <button type="button" onclick="closeExportModal()" 
-                        class="ui-button ui-button-secondary px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                        class="ui-button ui-button-secondary">
                         Cancel
                     </button>
                     <button type="submit" onclick="return validateExportForm()" 
-                        class="ui-button ui-button-primary px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        class="ui-button ui-button-primary">
                         Generate Report
                     </button>
                 </div>
@@ -221,7 +206,7 @@
         </div>
         
         <div class="flex items-end">
-            <button type="submit" class="ui-button ui-button-primary w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors">
+            <button type="submit" class="ui-button ui-button-primary w-full">
                 Search
             </button>
         </div>
@@ -311,77 +296,29 @@
 {% endif %}
 </div>
 
-{% if pagination and pagination.total_pages > 1 %}
-<div class="flex justify-center items-center gap-2 mt-6 text-sm flex-wrap">
-    {# Info halaman #}
-    <span class="text-gray-600 dark:text-gray-400 mr-2">
-        Page {{ pagination.page }} of {{ pagination.total_pages }} 
-        ({{ pagination.start_item }}-{{ pagination.end_item }} of {{ pagination.total }})
-    </span>
-    
-    {# First & Prev #}
+{% if pagination and pagination.total > 0 %}
+<div class="flex flex-wrap items-center justify-between gap-3 mt-4 px-2">
+  <div class="text-sm text-gray-500 dark:text-gray-400">
+    Showing {{ pagination.start_item }}-{{ pagination.end_item }} of {{ pagination.total }} results
+    <span class="block">Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
+  </div>
+  {% if pagination.total_pages > 1 %}
+  <nav class="flex flex-wrap items-center gap-1" aria-label="Pagination">
     {% if pagination.has_prev %}
-    <a href="{{ request.url_for('health_history') }}?page=1&q={{ search_query | urlencode }}&sort={{ current_sort }}"
-    class="ui-button ui-button-secondary px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">First</a>
-    <a href="{{ request.url_for('health_history') }}?page={{ pagination.prev_num }}&q={{ search_query | urlencode }}&sort={{ current_sort }}"
-    class="ui-button ui-button-secondary px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">«</a>
-    {% else %}
-    <span class="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded cursor-not-allowed">First</span>
-    <span class="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded cursor-not-allowed">«</span>
+    <a href="{{ request.url_for('health_history') }}?page=1&q={{ search_query | urlencode }}&sort={{ current_sort | urlencode }}" class="ui-button ui-button-secondary ui-button-icon" title="First page" aria-label="First page">{{ ui_icons.icon_chevron_double_left() }}</a>
+    <a href="{{ request.url_for('health_history') }}?page={{ pagination.prev_num }}&q={{ search_query | urlencode }}&sort={{ current_sort | urlencode }}" class="ui-button ui-button-secondary ui-button-icon" title="Previous page" aria-label="Previous page">{{ ui_icons.icon_chevron_left() }}</a>
     {% endif %}
-    
-    {# Hitung range halaman yang ditampilkan #}
-    {% set current_page = pagination.page %}
-    {% set total_pages = pagination.total_pages %}
-    {% set range_start = [1, current_page - 2] | max %}
-    {% set range_end = [total_pages, current_page + 2] | min %}
-    
-    {# Adjust jika di dekat awal/akhir #}
-    {% if current_page <= 3 %}
-    {% set range_end = [total_pages, 5] | min %}
-    {% endif %}
-    {% if current_page > total_pages - 3 %}
-    {% set range_start = [1, total_pages - 4] | max %}
-    {% endif %}
-    
-    {# Ellipsis kiri #}
-    {% if range_start > 1 %}
-    <a href="{{ request.url_for('health_history') }}?page=1&q={{ search_query | urlencode }}&sort={{ current_sort }}"
-    class="ui-button ui-button-secondary px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">1</a>
-    {% if range_start > 2 %}
-    <span class="px-3 py-1 text-gray-500">...</span>
-    {% endif %}
-    {% endif %}
-    
-    {# Page numbers #}
-    {% for i in range(range_start, range_end + 1) %}
-    {% if i == current_page %}
-    <span class="px-3 py-1 bg-blue-600 text-white rounded font-bold">{{ i }}</span>
-    {% else %}
-    <a href="{{ request.url_for('health_history') }}?page={{ i }}&q={{ search_query | urlencode }}&sort={{ current_sort }}"
-    class="ui-button ui-button-secondary px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">{{ i }}</a>
-    {% endif %}
+    {% if pagination.page > 4 %}<span class="px-2 text-gray-400">...</span>{% endif %}
+    {% for i in range([1, pagination.page - 2] | max, [pagination.total_pages, pagination.page + 2] | min + 1) %}
+      <a href="{{ request.url_for('health_history') }}?page={{ i }}&q={{ search_query | urlencode }}&sort={{ current_sort | urlencode }}" class="ui-button ui-pagination-button {{ 'ui-button-primary' if i == pagination.page else 'ui-button-ghost' }}"{% if i == pagination.page %} aria-current="page"{% endif %}>{{ i }}</a>
     {% endfor %}
-    
-    {# Ellipsis kanan #}
-    {% if range_end < total_pages %}
-    {% if range_end < total_pages - 1 %}
-    <span class="px-3 py-1 text-gray-500">...</span>
-    {% endif %}
-    <a href="{{ request.url_for('health_history') }}?page={{ total_pages }}&q={{ search_query | urlencode }}&sort={{ current_sort }}"
-    class="ui-button ui-button-secondary px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">{{ total_pages }}</a>
-    {% endif %}
-    
-    {# Next & Last #}
+    {% if pagination.page < pagination.total_pages - 3 %}<span class="px-2 text-gray-400">...</span>{% endif %}
     {% if pagination.has_next %}
-    <a href="{{ request.url_for('health_history') }}?page={{ pagination.next_num }}&q={{ search_query | urlencode }}&sort={{ current_sort }}"
-    class="ui-button ui-button-secondary px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">»</a>
-    <a href="{{ request.url_for('health_history') }}?page={{ total_pages }}&q={{ search_query | urlencode }}&sort={{ current_sort }}"
-    class="ui-button ui-button-secondary px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition">Last</a>
-    {% else %}
-    <span class="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded cursor-not-allowed">»</span>
-    <span class="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded cursor-not-allowed">Last</span>
+    <a href="{{ request.url_for('health_history') }}?page={{ pagination.next_num }}&q={{ search_query | urlencode }}&sort={{ current_sort | urlencode }}" class="ui-button ui-button-secondary ui-button-icon" title="Next page" aria-label="Next page">{{ ui_icons.icon_chevron_right() }}</a>
+    <a href="{{ request.url_for('health_history') }}?page={{ pagination.total_pages }}&q={{ search_query | urlencode }}&sort={{ current_sort | urlencode }}" class="ui-button ui-button-secondary ui-button-icon" title="Last page" aria-label="Last page">{{ ui_icons.icon_chevron_double_right() }}</a>
     {% endif %}
+  </nav>
+  {% endif %}
 </div>
 {% endif %}
 </div>

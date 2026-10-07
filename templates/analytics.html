@@ -1,3 +1,4 @@
+{% import "_icons.html" as ui_icons %}
 {% extends "base.html" %}
 {% block title %}B-SNAP – Analytics{% endblock %}
 {% from "_icons.html" import icon_chart_bar, icon_arrow_path, icon_download, icon_trophy, icon_envelope, icon_clip_check, icon_ppt_chart_bar, icon_clock, icon_no_symbol, icon_check_circle, icon_circle_stack, icon_x_circle, icon_database %}
@@ -39,7 +40,7 @@
       <button @click="activeTab = 'snapshots'; window.setAnalyticsTab('snapshots');"
               :class="activeTab === 'snapshots' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'"
               class="ui-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        {{ ui_icons.icon_camera("w-5 h-5") }}
         Snapshot Stats
       </button>
     </nav>
@@ -62,11 +63,11 @@
       </div>
       <div class="flex gap-2 ml-auto">
         <button id="applyFilter"
-          class="ui-button ui-button-primary bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2">
+          class="ui-button ui-button-primary">
           {{ icon_arrow_path("w-5 h-5 text-white") }} Apply Filter
         </button>
         <button id="downloadReport"
-          class="ui-button ui-button-secondary bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2">
+          class="ui-button ui-button-secondary">
           {{ icon_download("w-5 h-5 text-white") }} Download Report
         </button>
       </div>
@@ -93,7 +94,7 @@
         <div class="text-xs text-gray-500 dark:text-gray-400">Activity Trend Index</div>
         <div class="text-3xl font-bold flex items-center gap-2 mt-1">
           <span id="activityValue">–</span>
-          <span id="activityBadge" class="ui-badge ui-badge-neutral text-xs font-semibold px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700">–</span>
+          <span id="activityBadge" class="ui-badge ui-badge-neutral">–</span>
         </div>
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Activity direction: 50 is stable; higher or lower values show change</div>
       </div>
@@ -224,7 +225,7 @@
           {{ icon_database("w-6 h-6 text-blue-600") }}
           Storage Health
         </h2>
-        <button id="refreshStorageBtn" class="ui-button ui-button-primary text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded transition">
+        <button id="refreshStorageBtn" class="ui-button ui-button-primary">
           Refresh
         </button>
       </div>

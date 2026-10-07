@@ -1,0 +1,46 @@
+{% from "_icons.html" import icon_pencil, icon_trash, icon_video_camera, icon_camera %}
+{% from "macros/ui.html" import status_badge %}
+{% for cam in cameras %}
+  {% set safety = cam.safety_classification or 'standard' %}
+  {% set safety_label = 'Critical' if safety == 'critical' else 'Low' if safety == 'low' else 'Standard' %}
+  {% set safety_tone = 'critical' if safety == 'critical' else 'success' if safety == 'low' else 'warning' %}
+  {% set status = cam.status or 'Unknown' %}
+  {% set status_tone = 'success' if status == 'Active' else 'warning' if status == 'Maintenance' else 'neutral' %}
+  <tr>
+    <td class="font-medium">
+      <div class="flex items-center gap-2">
+        {{ cam.hostname }}
+        {% if safety == 'critical' %}{{ status_badge(safety_label, safety_tone) }}{% endif %}
+      </div>
+    </td>
+    <td class="font-mono">{{ cam.ip }}</td>
+    <td>{{ cam.port }}</td>
+    <td>{{ cam.username }}</td>
+    <td class="text-xs">{% if cam.latitude is not none or cam.longitude is not none %}{{ cam.latitude }}, {{ cam.longitude }}{% endif %}</td>
+    <td>{{ cam.asset_no or '' }}</td>
+    <td>{{ cam.location or '' }}</td>
+    <td>{{ cam.groups | map(attribute='name') | join(', ') }}</td>
+    <td>{{ status_badge(safety_label, safety_tone) }}</td>
+    <td>{{ status_badge(status, status_tone) }}</td>
+    <td class="text-center">
+      <div class="flex items-center justify-center gap-1">
+        <button type="button" onclick='showEditCameraModal({{ (cam.id | string) | tojson }})'
+                title="Edit camera" aria-label="Edit camera" class="ui-button ui-button-secondary ui-button-icon">
+          {{ icon_pencil("w-5 h-5") }}
+        </button>
+        <button type="button" onclick='confirmDelete({{ (cam.id | string) | tojson }}, {{ cam.hostname | tojson }})'
+                title="Delete camera" aria-label="Delete camera" class="ui-button ui-button-danger-quiet ui-button-icon">
+          {{ icon_trash("w-5 h-5") }}
+        </button>
+        <button type="button" onclick='captureVideo({{ (cam.id | string) | tojson }})'
+                title="Capture video (5s)" aria-label="Capture video (5s)" class="ui-button ui-button-secondary ui-button-icon">
+          {{ icon_video_camera("w-5 h-5") }}
+        </button>
+        <button type="button" onclick='viewSnapshot({{ cam.hostname | tojson }})'
+                title="View snapshot" aria-label="View snapshot" class="ui-button ui-button-secondary ui-button-icon">
+          {{ icon_camera("w-5 h-5") }}
+        </button>
+      </div>
+    </td>
+  </tr>
+{% endfor %}

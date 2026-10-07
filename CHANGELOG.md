@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Standardized remaining menu pages and AJAX rows with shared KPI cards, semantic badges, action icons, loading skeletons, modal controls, and accessible numbered pagination; use shared NVR row templates and clipboard feedback.
+- Aligned Camera Management and Devices Status KPI cards, filters, table actions, status badges, loading states, and icons with the shared UI standard; preserve Ping All icons after completion and escape device data in rendered rows.
 - Audit-log, camera analytics, camera-list, and snapshot/video gallery data responses now use ORJSON for faster JSON serialization.
 
 - Log-content responses now use ORJSON for faster serialization while preserving payloads, status codes, and headers.
@@ -32,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Simplified release notes across all versions to highlight important changes.
 
 ### Fixed
+
+- Prevent a second Devices Status table refresh on page load when no health check is running; retain the refresh after an active check or Ping All completes.
 
 - Snapshot heatmap now uses the configured timezone and correctly handles naive UTC timestamps without raising a timezone TypeError.
 

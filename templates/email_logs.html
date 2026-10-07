@@ -1,3 +1,6 @@
+{% from "macros/ui.html" import loading_skeleton %}
+{% import "_icons.html" as ui_icons %}
+{% from "macros/ui.html" import kpi_card %}
 {% extends "base.html" %}
 {% block title %}B-SNAP – Email Notification Logs{% endblock %}
 
@@ -7,17 +10,13 @@
 <!-- Header Section -->
 {% set page_description %}Track email notifications sent for camera alerts • Timezone: {{ timezone }}{% endset %}
 {% call page_header("Email Notification Logs", page_description) %}
-<div class="flex gap-2">
-      <button onclick="exportLogs('filtered')" class="ui-button ui-button-primary inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg transition duration-200 shadow-sm font-medium">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-        </svg>
+<div class="flex flex-wrap gap-2">
+      <button onclick="exportLogs('filtered')" class="ui-button ui-button-primary">
+        {{ ui_icons.icon_download("w-5 h-5") }}
         Export Filtered
       </button>
-      <button onclick="exportLogs('all')" class="ui-button ui-button-secondary inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 px-4 py-2.5 rounded-lg transition duration-200 font-medium">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-        </svg>
+      <button onclick="exportLogs('all')" class="ui-button ui-button-secondary">
+        {{ ui_icons.icon_download("w-5 h-5") }}
         Export All
       </button>
     </div>
@@ -25,75 +24,25 @@
 
 <!-- Stats Cards -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Emails</p>
-        <p class="ui-kpi-value text-2xl font-bold text-gray-900 dark:text-white mt-1" id="stat-total">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-        </svg>
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Total Emails", "-", value_id="stat-total", tone="neutral") %}
+  {{ ui_icons.icon_envelope("w-5 h-5") }}
+{% endcall %}
   
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Success</p>
-        <p class="ui-kpi-value text-2xl font-bold text-green-600 dark:text-green-400 mt-1" id="stat-success">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Success", "-", value_id="stat-success", tone="success") %}
+  {{ ui_icons.icon_check_circle("w-5 h-5") }}
+{% endcall %}
   
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Failed</p>
-        <p class="ui-kpi-value text-2xl font-bold text-red-600 dark:text-red-400 mt-1" id="stat-failed">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-        <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Failed", "-", value_id="stat-failed", tone="critical") %}
+  {{ ui_icons.icon_x_circle("w-5 h-5") }}
+{% endcall %}
   
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Success Rate</p>
-        <p class="ui-kpi-value text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1" id="stat-rate">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-        <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-        </svg>
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Success Rate", "-", value_id="stat-rate", tone="success") %}
+  {{ ui_icons.icon_check_circle("w-5 h-5") }}
+{% endcall %}
   
-  <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Today</p>
-        <p class="ui-kpi-value text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1" id="stat-today">-</p>
-      </div>
-      <div class="ui-kpi-icon p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-        <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-        </svg>
-      </div>
-    </div>
-  </div>
+  {% call kpi_card("Today", "-", value_id="stat-today", tone="neutral") %}
+  {{ ui_icons.icon_calendar("w-5 h-5") }}
+{% endcall %}
 </div>
 
 <!-- Filter Section -->
@@ -168,10 +117,8 @@
         </div>
       </div>
       
-      <button onclick="resetFilters()" class="ui-button ui-button-secondary p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition" title="Reset all filters">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-        </svg>
+      <button onclick="resetFilters()" class="ui-button ui-button-secondary" title="Reset all filters" aria-label="Reset all filters">
+        {{ ui_icons.icon_arrow_path("w-5 h-5") }}
       </button>
     </div>
   </div>
@@ -196,16 +143,10 @@
 </div>
 
 <!-- Table Container -->
-<div class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[300px]">
-  <div id="loading-overlay" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
-    <div class="flex flex-col items-center gap-3">
-      <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      <span class="text-gray-600 dark:text-gray-300 font-medium">Loading email logs...</span>
+<div class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative min-h-[400px]">
+  <div id="loading-overlay" class="ui-table-loading absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10 hidden items-center justify-center">
+      {{ loading_skeleton("Loading email logs...", 4) }}
     </div>
-  </div>
 
   <div class="ui-table-scroll overflow-x-auto">
     <table class="ui-table min-w-full text-sm text-left" id="email-table">
@@ -226,21 +167,21 @@
   
   <!-- Empty State -->
   <div id="empty-state" class="ui-empty-state hidden flex-col items-center justify-center py-16 text-center">
-    <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-full mb-4">
-      <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="mb-4">
+      <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
       </svg>
     </div>
     <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No email logs found</h3>
     <p class="text-gray-500 dark:text-gray-400 max-w-sm">Adjust your filters or date range to see more results.</p>
-    <button onclick="resetFilters()" class="mt-4 text-blue-600 hover:text-blue-700 font-medium">Clear all filters</button>
+    <button onclick="resetFilters()" class="ui-button ui-button-secondary mt-4">Clear all filters</button>
   </div>
 </div>
 
 <!-- Pagination -->
-<div id="pagination-controls" class="flex items-center justify-between mt-4 px-2">
+<div id="pagination-controls" class="flex flex-wrap items-center justify-between gap-3 mt-4 px-2">
   <div class="text-sm text-gray-500 dark:text-gray-400" id="page-info"></div>
-  <div class="flex items-center gap-1" id="pagination-buttons"></div>
+  <div class="flex flex-wrap items-center gap-1" id="pagination-buttons"></div>
 </div>
 
 <!-- Detail Modal -->
@@ -257,11 +198,7 @@
           <h3 class="text-lg font-bold text-gray-900 dark:text-white">Email Details</h3>
         </div>
       </div>
-      <button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-      </button>
+      <button onclick="closeDetailModal()" class="ui-button ui-button-ghost ui-button-icon" aria-label="Close">{{ ui_icons.icon_x_mark("w-5 h-5") }}</button>
     </div>
     
     <div id="detail-content" class="p-6 overflow-auto">
@@ -269,7 +206,7 @@
     </div>
     
     <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-      <button onclick="closeDetailModal()" class="ui-button ui-button-secondary px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition font-medium">Close</button>
+      <button onclick="closeDetailModal()" class="ui-button ui-button-secondary">Close</button>
     </div>
   </div>
 </div>
@@ -356,14 +293,14 @@
   // Get status badge
   function getStatusBadge(success) {
     if (success) {
-      return `<span class="ui-badge ui-badge-success inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+      return `<span class="ui-badge ui-badge-success">
         <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
         <span class="leading-none">Success</span>
       </span>`;
     }
-    return `<span class="ui-badge ui-badge-critical inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+    return `<span class="ui-badge ui-badge-critical">
       <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
       </svg>
@@ -406,7 +343,7 @@
     totalPages = data.total_pages || 1;
     
     if (totalPages <= 1) {
-      pageInfo.textContent = '';
+      pageInfo.textContent = `Page ${data.page} of ${totalPages}`;
       return;
     }
 
@@ -415,11 +352,11 @@
     // First & Prev
     if (data.page > 1) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="loadLogs(1)" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="First page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+        <button onclick="loadLogs(1)" class="ui-button ui-button-secondary ui-button-icon" title="First page">
+          {{ ui_icons.icon_chevron_double_left("w-5 h-5") | replace("\n", "") }}
         </button>
-        <button onclick="loadLogs(${data.page - 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Previous page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        <button onclick="loadLogs(${data.page - 1})" class="ui-button ui-button-secondary ui-button-icon" title="Previous page">
+          {{ ui_icons.icon_chevron_left("w-5 h-5") | replace("\n", "") }}
         </button>
       `);
     }
@@ -434,11 +371,11 @@
     for (let i = Math.max(1, data.page - window); i <= Math.min(totalPages, data.page + window); i++) {
       if (i === data.page) {
         paginationButtons.insertAdjacentHTML('beforeend', `
-          <button class="w-9 h-9 bg-blue-600 text-white rounded-lg font-medium shadow-sm">${i}</button>
+          <button class="ui-button ui-pagination-button ui-button-primary" aria-current="page">${i}</button>
         `);
       } else {
         paginationButtons.insertAdjacentHTML('beforeend', `
-          <button onclick="loadLogs(${i})" class="w-9 h-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">${i}</button>
+          <button onclick="loadLogs(${i})" class="ui-button ui-pagination-button ui-button-ghost">${i}</button>
         `);
       }
     }
@@ -450,11 +387,11 @@
     // Next & Last
     if (data.page < totalPages) {
       paginationButtons.insertAdjacentHTML('beforeend', `
-        <button onclick="loadLogs(${data.page + 1})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Next page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        <button onclick="loadLogs(${data.page + 1})" class="ui-button ui-button-secondary ui-button-icon" title="Next page">
+          {{ ui_icons.icon_chevron_right("w-5 h-5") | replace("\n", "") }}
         </button>
-        <button onclick="loadLogs(${totalPages})" class="ui-button ui-button-secondary ui-button-icon p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Last page">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+        <button onclick="loadLogs(${totalPages})" class="ui-button ui-button-secondary ui-button-icon" title="Last page">
+          {{ ui_icons.icon_chevron_double_right("w-5 h-5") | replace("\n", "") }}
         </button>
       `);
     }
@@ -594,18 +531,18 @@
     const tags = [];
     
     if (camera) {
-      tags.push(`<span class="ui-badge ui-badge-info inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full">Camera: ${camera}<button onclick="clearFilter('cameraFilter')" class="hover:text-blue-900">×</button></span>`);
+      tags.push(`<span class="ui-badge ui-badge-info">Camera: ${camera}<button onclick="clearFilter('cameraFilter')" class="hover:text-blue-900">×</button></span>`);
     }
     if (status) {
       const statusLabel = status === 'true' ? 'Success' : 'Failed';
-      tags.push(`<span class="ui-badge ui-badge-success inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs rounded-full">Status: ${statusLabel}<button onclick="clearFilter('statusFilter')" class="hover:text-green-900">×</button></span>`);
+      tags.push(`<span class="ui-badge ui-badge-success">Status: ${statusLabel}<button onclick="clearFilter('statusFilter')" class="hover:text-green-900">×</button></span>`);
     }
     if (reason) {
-      tags.push(`<span class="ui-badge ui-badge-neutral inline-flex items-center gap-1 px-2.5 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs rounded-full">Reason: ${reason}<button onclick="clearFilter('reasonFilter')" class="hover:text-purple-900">×</button></span>`);
+      tags.push(`<span class="ui-badge ui-badge-neutral">Reason: ${reason}<button onclick="clearFilter('reasonFilter')" class="hover:text-purple-900">×</button></span>`);
     }
     if (startDate || endDate) {
       const dateRange = startDate && endDate ? `${startDate} to ${endDate}` : (startDate || endDate);
-      tags.push(`<span class="ui-badge ui-badge-warning inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs rounded-full">Date: ${dateRange}<button onclick="clearDateFilter()" class="hover:text-amber-900">×</button></span>`);
+      tags.push(`<span class="ui-badge ui-badge-warning">Date: ${dateRange}<button onclick="clearDateFilter()" class="hover:text-amber-900">×</button></span>`);
     }
     
     if (tags.length > 0) {

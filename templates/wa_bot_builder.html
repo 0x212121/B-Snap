@@ -7,7 +7,7 @@
   {% set page_description %}Choose a command to edit its flow and response.{% endset %}
 {% call page_header("WhatsApp Bot Builder", page_description) %}
 <div id="commandActions" class="flex flex-wrap gap-2">
-      <button id="addCommand" type="button" class="ui-button ui-button-primary inline-flex items-center gap-2 rounded-lg bg-gray-200 px-4 py-2 text-gray-900 dark:bg-gray-700 dark:text-white">{{ icon_plus("h-4 w-4") }}Add command</button>
+      <button id="addCommand" type="button" class="ui-button ui-button-primary">{{ icon_plus("h-4 w-4") }}Add command</button>
 
     </div>
 {% endcall %}
@@ -27,7 +27,7 @@
     <p class="mt-2 text-xs text-gray-500">Select a token owned by an admin account. The token value is never shown or stored again.</p>
     </div>
     <div class="wa-api-actions">
-      <button id="saveCommands" type="button" class="ui-button ui-button-secondary inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white">{{ icon_save("h-4 w-4 text-white") }}Save API settings</button>
+      <button id="saveCommands" type="button" class="ui-button ui-button-secondary">{{ icon_save("h-4 w-4 text-white") }}Save API settings</button>
     <p id="apiSettingsState" class="mt-2 text-sm text-gray-500" role="status">API settings saved</p>
     </div>
   </div>
@@ -42,14 +42,14 @@
   <div id="commandList" class="wa-command-grid" aria-live="polite"></div>
   <div id="emptyState" class="hidden">
 {% call empty_state("No commands yet", "Add a command to start building your bot flow.") %}
-<button id="emptyAddCommand" type="button" class="ui-button ui-button-primary mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white">{{ icon_plus("h-4 w-4") }}Create your first command</button>
+<button id="emptyAddCommand" type="button" class="ui-button ui-button-primary mt-4">{{ icon_plus("h-4 w-4") }}Create your first command</button>
 {% endcall %}
 </div>
 
 
   </section>
   <section id="messagesPanel" role="tabpanel" aria-labelledby="messagesTab" hidden class="ui-card ui-card-body mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-    <div class="wa-section-toolbar mb-3"><div><h3 class="text-lg font-semibold text-gray-900 dark:text-white">Message delivery monitor</h3><p class="text-xs text-gray-500">Latest 100 messages, refreshes every 30 seconds</p></div><button id="refreshWaMessages" type="button" class="ui-button ui-button-secondary rounded bg-gray-100 px-3 py-1.5 text-sm dark:bg-gray-700">Refresh</button></div>
+    <div class="wa-section-toolbar mb-3"><div><h3 class="text-lg font-semibold text-gray-900 dark:text-white">Message delivery monitor</h3><p class="text-xs text-gray-500">Latest 100 messages, refreshes every 30 seconds</p></div><button id="refreshWaMessages" type="button" class="ui-button ui-button-secondary">Refresh</button></div>
     <div class="wa-monitor-filters mb-3">
       <label class="ui-label">Phone number<input id="messagePhone" type="search" aria-label="Filter sender phone" placeholder="Phone number" class="ui-control"></label>
       <label class="ui-label">Command<input id="messageCommand" type="search" aria-label="Filter message command" placeholder="Command" class="ui-control"></label>
@@ -115,7 +115,7 @@
         <div data-flow-editor class="mb-3">
         <div class="wa-section-toolbar mb-3">
           <div><h3 data-flow-title class="inline-flex items-center gap-2 font-medium text-gray-900 dark:text-white">{{ icon_server("h-4 w-4 text-blue-500") }}API flow (GET / POST)</h3><p data-flow-subtitle class="text-xs text-gray-500">Internal B-Snap nodes run in order, up to 8 nodes.</p></div>
-          <button data-add-step type="button" class="ui-button ui-button-secondary inline-flex items-center gap-1.5 rounded bg-blue-100 px-3 py-1 text-blue-800 dark:bg-blue-900 dark:text-blue-100">{{ icon_plus("h-4 w-4") }}Add node</button>
+          <button data-add-step type="button" class="ui-button ui-button-secondary">{{ icon_plus("h-4 w-4") }}Add node</button>
         </div>
         <p class="mb-3 text-xs text-gray-500">Example path <code>/api/cctv/resolve-ip</code>, params <code>{% raw %}{"keyword":"{{argument}}","phone_number":"{{sender}}","sort_by":"hostname","sort_order":"asc"}{% endraw %}</code>. Sorting: <code>sort_by</code> = hostname/name, ip, or id; <code>sort_order</code> = asc or desc. Output: <code>{% raw %}{{steps.kamera.body.results.0.ip}}{% endraw %}</code>.</p>
         <div data-flow-list class="space-y-3"></div>
@@ -127,7 +127,7 @@
           <div data-test-controls class="wa-test-controls mt-3">
             <label class="ui-label">Sample argument<input data-test-argument class="ui-control rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900" placeholder="Sample argument (e.g. camera name)" aria-label="Sample argument"></label>
             <label class="ui-label">Sample sender<input data-test-sender class="ui-control rounded border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900" placeholder="Whitelisted sender phone number (required)" aria-label="Sample sender"></label>
-            <button data-test-flow type="button" class="ui-button ui-button-secondary inline-flex items-center justify-center gap-1.5">{{ icon_play("h-4 w-4") }}Run test</button>
+            <button data-test-flow type="button" class="ui-button ui-button-secondary">{{ icon_play("h-4 w-4") }}Run test</button>
           </div>
           <section data-conversation-panel class="wa-conversation-panel ui-card p-4" aria-label="WhatsApp conversation preview">
             <h3 class="ui-section-title flex items-center gap-2">{{ icon_whatsapp("h-5 w-5 text-green-600") }}<span>WhatsApp conversation preview</span></h3>
@@ -160,7 +160,7 @@
               <div data-array-fields class="mt-3 flex flex-wrap gap-3 text-sm text-gray-200"></div>
               <div class="mt-3 flex items-center justify-between gap-3">
                 <label class="flex items-center gap-2 text-xs text-gray-300"><input data-array-index type="checkbox" checked> Include row number</label>
-                <button data-insert-array type="button" class="ui-button ui-button-secondary inline-flex items-center gap-1.5">{{ icon_clip_check("h-4 w-4") }}Insert mapping</button>
+                <button data-insert-array type="button" class="ui-button ui-button-secondary">{{ icon_clip_check("h-4 w-4") }}Insert mapping</button>
               </div>
             </div>
           </div>
@@ -187,7 +187,7 @@
       </div>
       <div data-editor-section="response" data-snap-stage-panel class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
         <div>
-          <div class="wa-section-toolbar mb-2"><span data-processing-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Processing messages</span><button type="button" data-add-snap-message="processing_messages" class="ui-button ui-button-secondary rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
+          <div class="wa-section-toolbar mb-2"><span data-processing-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Processing messages</span><button type="button" data-add-snap-message="processing_messages" class="ui-button ui-button-secondary">Add message</button></div>
           <div data-snap-message-list="processing_messages" class="space-y-2"></div>
           <label class="ui-label mt-3 block text-sm"><span data-processing-delay-label>Processing delay (seconds)</span>
             <input name="processing_delay_seconds" type="number" min="0" max="60" step="1" value="3" class="ui-control mt-1 w-full rounded-lg dark:bg-gray-900">
@@ -195,7 +195,7 @@
           </label>
         </div>
         <div>
-          <div class="wa-section-toolbar mb-2"><span data-failure-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Failure / fallback messages</span><button type="button" data-add-snap-message="failure_messages" class="ui-button ui-button-secondary rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-100">Add message</button></div>
+          <div class="wa-section-toolbar mb-2"><span data-failure-label class="text-sm font-medium text-gray-700 dark:text-gray-200">Failure / fallback messages</span><button type="button" data-add-snap-message="failure_messages" class="ui-button ui-button-secondary">Add message</button></div>
           <div data-snap-message-list="failure_messages" class="space-y-2"></div>
         </div>
         <p class="text-xs text-gray-500">These messages are optional for all actions; `/snap` keeps its processing and fallback behavior. Image sources: direct URL, API result URL (for `/snap`), or latest saved snapshot. Text placeholders: <code>{% raw %}{{camera}}{% endraw %}</code>, <code>{% raw %}{{ip}}{% endraw %}</code>, <code>{% raw %}{{argument}}{% endraw %}</code>, <code>{% raw %}{{sender}}{% endraw %}</code>, <code>{% raw %}{{error}}{% endraw %}</code>.</p>
@@ -204,7 +204,7 @@
     </form>
     <div class="wa-editor-footer flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 p-4 dark:border-gray-700">
       <p id="editorSaveState" class="text-sm text-gray-500" role="status">No unsaved changes</p>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
         <button id="cancelEditor" type="button" class="ui-button ui-button-secondary">Cancel</button>
         <button id="saveCommandButton" type="submit" form="commandForm" class="ui-button ui-button-primary">Save command</button>
       </div>
