@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Align the locations without email recipients dialog with shared KPI cards, table styling, SVG actions, and numbered pagination; handle loading failures with Toast feedback.
+
 - Add database-backed web readiness and worker heartbeats, graceful scheduler/notifier shutdown, per-role Docker resource budgets and database pools, and bounded container log rotation.
 
 - Build one shared version-checked Docker image with separate Python wheel and Tailwind stages; retain only native runtime libraries/tooling, ship minified CSS, and pin the log-handler dependency.

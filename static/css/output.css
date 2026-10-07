@@ -3105,6 +3105,11 @@ select {
   font-style: italic;
 }
 
+.tabular-nums {
+  --tw-numeric-spacing: tabular-nums;
+  font-variant-numeric: var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction);
+}
+
 .leading-5 {
   line-height: 1.25rem;
 }
@@ -4766,11 +4771,6 @@ select {
 :is(.dark .dark\:text-indigo-400) {
   --tw-text-opacity: 1;
   color: rgb(129 140 248 / var(--tw-text-opacity));
-}
-
-:is(.dark .dark\:text-orange-300) {
-  --tw-text-opacity: 1;
-  color: rgb(253 186 116 / var(--tw-text-opacity));
 }
 
 :is(.dark .dark\:text-orange-400) {

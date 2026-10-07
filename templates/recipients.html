@@ -1152,128 +1152,138 @@ async function importRecipients(file) {
 LOCATIONS WITHOUT RECIPIENTS
 ================================ */
 async function showLocationsWithoutRecipients() {
-  const isDark = document.documentElement.classList.contains('dark')
-  
   try {
-    // Show loading state
     themedSwal({
-      title: 'Loading...',
-      html: '<div class="flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>',
+      title: 'Loading locations',
+      html: {{ loading_skeleton("Loading locations", 3) | tojson }},
+      showConfirmButton: false,
       allowOutsideClick: false,
-      allowEscapeKey: false,
-      didOpen: async () => {
-        Swal.showLoading()
-        
-        // Fetch locations without recipients
-        const res = await fetch('/api/recipients/locations-without-recipients')
-        if (!res.ok) throw new Error('Failed to fetch data')
-        
-        const json = await res.json()
-        if (json.status !== 'success') throw new Error(json.message || 'Unknown error')
-        
-        const locations = json.data.locations || []
-        const locationCameraCount = json.data.location_camera_count || {}
-        const totalUncovered = json.data.total_uncovered || 0
-        const totalCameras = Object.values(locationCameraCount).reduce((a, b) => a + b, 0)
-        
-        // Close current modal and show new one
-        Swal.close()
-        
-        if (totalUncovered === 0) {
-          themedSwal({
-            icon: 'success',
-            title: 'All Covered!',
-            text: 'All locations already have email recipients.',
-            background: isDark ? '#1f2937' : '#ffffff',
-            color: isDark ? '#f3f4f6' : '#111827'
-          })
-          return
-        }
-        
-        // Build table HTML
-        const tableHtml = `
-          <div class="text-left mb-4">
-            <div class="grid grid-cols-2 gap-2 mb-4">
-              <div class="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
-                <div class="text-xs text-orange-600 dark:text-orange-400 font-medium mb-1">Locations Without Recipients</div>
-                <div class="text-2xl font-bold text-orange-700 dark:text-orange-300">${totalUncovered}</div>
-              </div>
-              <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
-                <div class="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">Total Cameras in These Locations</div>
-                <div class="text-2xl font-bold text-blue-700 dark:text-blue-300">${totalCameras}</div>
-              </div>
-            </div>
-            
-            <div class="max-h-96 overflow-y-auto">
-              <table class="ui-table w-full text-sm border-collapse">
-                <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
-                  <tr>
-                    <th class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left font-semibold">#</th>
-                    <th class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left font-semibold">Location</th>
-                    <th class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center font-semibold">Camera Count</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${locations.map((loc, idx) => `
-                    <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">${idx + 1}</td>
-                      <td class="border border-gray-300 dark:border-gray-600 px-3 py-2">${escapeHtml(loc)}</td>
-                      <td class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center font-medium">${locationCameraCount[loc] || 0}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
+      allowEscapeKey: false
+    })
+
+    const res = await fetch('/api/recipients/locations-without-recipients', {
+      headers: { Accept: 'application/json' }
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok || json.status !== 'success') {
+      throw new Error(json.message || json.detail || 'Failed to load locations without recipients')
+    }
+
+    const locations = json.data.locations || []
+    const locationCameraCount = json.data.location_camera_count || {}
+    const totalUncovered = json.data.total_uncovered || 0
+    const totalCameras = Object.values(locationCameraCount).reduce((a, b) => a + b, 0)
+    Swal.close()
+
+    if (totalUncovered === 0) {
+      themedSwal({
+        icon: 'success',
+        title: 'All Covered!',
+        text: 'All locations already have email recipients.'
+      })
+      return
+    }
+
+    const pageSize = 20
+    const totalPages = Math.max(1, Math.ceil(locations.length / pageSize))
+    let page = 1
+    const tableHtml = `
+      <div class="text-left">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          {% call kpi_card("Locations Without Recipients", "${escapeHtml(String(totalUncovered))}") %}
+            {{ ui_icons.icon_map_pin("w-5 h-5") }}
+          {% endcall %}
+          {% call kpi_card("Total Cameras in These Locations", "${escapeHtml(String(totalCameras))}") %}
+            {{ ui_icons.icon_video_camera("w-5 h-5") }}
+          {% endcall %}
+        </div>
+        <p id="uncovered-results" class="ui-metadata mb-3" aria-live="polite"></p>
+        <div class="ui-card overflow-hidden">
+          <div class="ui-table-scroll max-h-96 overflow-y-auto">
+            <table class="ui-table" aria-label="Locations without email recipients">
+              <thead class="sticky top-0">
+                <tr>
+                  <th scope="col" class="text-left">#</th>
+                  <th scope="col" class="text-left">Location</th>
+                  <th scope="col" class="text-right">Camera Count</th>
+                </tr>
+              </thead>
+              <tbody id="uncovered-rows"></tbody>
+            </table>
           </div>
-        `
-        
-        themedSwal({
-          title: '📍 Locations Without Email Recipients',
-          html: tableHtml,
-          width: '90%',
-          showCancelButton: true,
-          confirmButtonText: '⬇️ Export to Excel',
-          confirmButtonColor: '#f59e0b',
-          cancelButtonText: '✕ Close',
-          background: isDark ? '#1f2937' : '#ffffff',
-          color: isDark ? '#f3f4f6' : '#111827',
-          confirmButtonDark: isDark,
-          cancelButtonDark: isDark
-        }).then((result) => {
-          if (result.isConfirmed) {
-            exportLocationsWithoutRecipients()
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 mt-4">
+          <p id="uncovered-page-info" class="ui-metadata"></p>
+          <nav id="uncovered-pagination" class="flex flex-wrap items-center gap-1" aria-label="Locations pagination"></nav>
+        </div>
+      </div>
+    `
+
+    const result = await themedSwal({
+      title: 'Locations Without Email Recipients',
+      html: tableHtml,
+      width: 'min(960px, calc(100% - 2rem))',
+      showCancelButton: true,
+      buttonsStyling: false,
+      customClass: {
+        popup: 'ui-dialog',
+        confirmButton: 'ui-button ui-button-primary',
+        cancelButton: 'ui-button ui-button-secondary',
+        actions: 'gap-2'
+      },
+      confirmButtonText: {{ (icon_download("w-5 h-5") ~ ' Export to Excel') | tojson }},
+      cancelButtonText: {{ (ui_icons.icon_x_mark("w-5 h-5") ~ ' Close') | tojson }},
+      didOpen: (popup) => {
+        const pagination = popup.querySelector('#uncovered-pagination')
+        function renderPage() {
+          const start = (page - 1) * pageSize
+          const end = Math.min(start + pageSize, locations.length)
+          popup.querySelector('#uncovered-rows').innerHTML = locations.slice(start, end).map((loc, idx) => `
+            <tr>
+              <td class="text-left">${start + idx + 1}</td>
+              <td class="text-left break-words">${escapeHtml(loc)}</td>
+              <td class="text-right tabular-nums">${escapeHtml(String(locationCameraCount[loc] || 0))}</td>
+            </tr>
+          `).join('')
+          popup.querySelector('#uncovered-results').textContent = `Showing ${locations.length ? start + 1 : 0}-${end} of ${locations.length} results`
+          popup.querySelector('#uncovered-page-info').textContent = `Page ${page} of ${totalPages}`
+          pagination.innerHTML = ''
+          if (totalPages <= 1) return
+          const control = (target, label, icon) => `<button type="button" data-page="${target}" class="ui-button ui-button-secondary ui-button-icon" aria-label="${label}" title="${label}">${icon}</button>`
+          if (page > 1) {
+            pagination.innerHTML += control(1, 'First page', {{ ui_icons.icon_chevron_double_left("w-5 h-5") | tojson }})
+            pagination.innerHTML += control(page - 1, 'Previous page', {{ ui_icons.icon_chevron_left("w-5 h-5") | tojson }})
           }
+          if (page > 4) pagination.innerHTML += '<span class="ui-metadata px-2">...</span>'
+          for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) {
+            pagination.innerHTML += `<button type="button" data-page="${i}" class="ui-button ui-pagination-button ${i === page ? 'ui-button-primary' : 'ui-button-ghost'}" ${i === page ? 'aria-current="page"' : ''}>${i}</button>`
+          }
+          if (page < totalPages - 3) pagination.innerHTML += '<span class="ui-metadata px-2">...</span>'
+          if (page < totalPages) {
+            pagination.innerHTML += control(page + 1, 'Next page', {{ ui_icons.icon_chevron_right("w-5 h-5") | tojson }})
+            pagination.innerHTML += control(totalPages, 'Last page', {{ ui_icons.icon_chevron_double_right("w-5 h-5") | tojson }})
+          }
+        }
+        pagination.addEventListener('click', (event) => {
+          const button = event.target.closest('button[data-page]')
+          if (!button) return
+          page = Number(button.dataset.page)
+          renderPage()
+          popup.querySelector('.ui-table-scroll').scrollTop = 0
         })
+        renderPage()
       }
     })
+    if (result.isConfirmed) exportLocationsWithoutRecipients()
   } catch (err) {
-    console.error('Error:', err)
-    themedSwal({
-      icon: 'error',
-      title: 'Error',
-      text: err.message || 'Failed to load locations without recipients',
-      background: isDark ? '#1f2937' : '#ffffff',
-      color: isDark ? '#f3f4f6' : '#111827'
-    })
+    Swal.close()
+    console.error('Failed to load locations without recipients:', err)
+    Toast.error(err.message || 'Failed to load locations without recipients')
   }
 }
 
 function exportLocationsWithoutRecipients() {
-  // Export to Excel
-  const btn = event ? event.target : null
-  if (btn) {
-    btn.disabled = true
-    btn.innerHTML = `<div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div> Exporting...`
-  }
-  
   window.location.href = '/api/recipients/export-locations-without-recipients'
-  
-  if (btn) {
-    setTimeout(() => {
-      btn.disabled = false
-      btn.innerHTML = '⬇️ Export to Excel'
-    }, 1000)
-  }
 }
 
 /* ===============================
