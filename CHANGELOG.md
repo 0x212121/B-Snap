@@ -8,56 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Retained daily API call aggregates for Analytics: API log cleanup atomically archives expired complete days, and dashboards/reports combine archived counts with live logs without double counting.
-
-- Reproducible JSONResponse/ORJSONResponse benchmark for log-content serialization and complete handler execution, with response-equivalence checks.
-
-- Native read-only SMB/NFS recording mounts with admin controls, encrypted SMB passwords, deployment IP allowlists, and restricted Linux deployment support.
-- WhatsApp Bot Builder with custom commands, API flows, and configurable text, image, and video replies.
-- Live conversation previews, action testing, template variables, and message delivery monitoring.
+- Persistent daily API-call totals for Analytics, preserved after detailed log cleanup.
+- Read-only SMB/NFS recording mounts with admin controls, encrypted credentials, server allowlists, and Linux deployment support.
+- WhatsApp Bot Builder with custom commands/API flows, text/image/video replies, previews, testing, variables, delivery monitoring, and draft protection.
 - Video recording through APIs and WhatsApp commands.
+- Reproducible JSON/ORJSON log-handler benchmarks with response-equivalence checks.
 
 ### Changed
 
-- Move Recent Runs into a separate Record Checks tab and expand the Sources and Folder Status workspace, with keyboard-accessible tabs and the selected source shown in run history.
-
-- Make Record Checks more compact with inline summaries, a narrower Sources panel, tighter spacing, and bounded scrolling tables with sticky headers.
-
-- Align the locations without email recipients dialog with shared KPI cards, table styling, SVG actions, and numbered pagination; handle loading failures with Toast feedback.
-
-- Add database-backed web readiness and worker heartbeats, graceful scheduler/notifier shutdown, per-role Docker resource budgets and database pools, and bounded container log rotation.
-
-- Build one shared version-checked Docker image with separate Python wheel and Tailwind stages; retain only native runtime libraries/tooling, ship minified CSS, and pin the log-handler dependency.
-- Persist shared audit archives and pgAdmin state across container recreation; use application-root storage paths, monitor the footage filesystem, exclude runtime archives from image builds, and require a stable audit archive key without logging key material.
-- Remove privileged mode and embedded database/admin passwords from Compose deployments; require deployment credentials, restrict database/admin ports to localhost, and make pgAdmin opt-in through the admin profile.
-- Run Docker database migrations and default configuration initialization in a one-shot service before web, scheduler, and notifier; support empty PostgreSQL databases through a frozen baseline and stop startup on migration failure.
-- Standardized remaining menu pages and AJAX rows with shared KPI cards, semantic badges, action icons, loading skeletons, modal controls, and accessible numbered pagination; use shared NVR row templates and clipboard feedback.
-- Aligned Camera Management and Devices Status KPI cards, filters, table actions, status badges, loading states, and icons with the shared UI standard; preserve Ping All icons after completion and escape device data in rendered rows.
-- Audit-log, camera analytics, camera-list, and snapshot/video gallery data responses now use ORJSON for faster JSON serialization.
-
-- Log-content responses now use ORJSON for faster serialization while preserving payloads, status codes, and headers.
-
-- Health, galleries, audit/email logs, and other frontend date/time displays now follow the selected English/Indonesian language instead of a fixed locale or the browser language.
-
-- Job Management now shows both date and time for Next Run and formats timestamps using the selected English/Indonesian language, updating immediately when the language changes.
-
-- All 14 jobs in Job Management now support independent cron schedules, full cron validation, and automatic schedule reload within 60 seconds while preserving legacy defaults.
-
-- Unified page styling, simpler navigation, and clearer destructive actions.
-- Improved Bot Builder editing, search, draft protection, and English/Indonesian support.
-- Simplified release notes across all versions to highlight important changes.
+- Standardized menus, AJAX rows, recipient-coverage dialogs, icons, KPI cards, feedback, and accessible pagination; simplified navigation, destructive actions, and release notes.
+- Made Record Checks compact, with separate status/history tabs, sticky table headers, and more space for sources and folders.
+- Localized dates and job timestamps for EN/ID, with immediate updates when switching language.
+- Added independent, validated cron schedules for all 14 jobs, with reload within 60 seconds.
+- Improved JSON response performance with ORJSON across logs, analytics, cameras, and galleries.
+- Streamlined Docker builds with one version-checked image, separate wheel/CSS stages, minimal runtime dependencies, and minified CSS.
+- Improved service readiness, worker heartbeats, graceful shutdown, resource budgets, database pools, and log rotation.
+- Hardened Compose credentials and privileges, restricted database/admin ports to localhost, and made pgAdmin optional; persist audit archives and pgAdmin state, monitor footage storage, and require a stable archive key.
+- Run migrations and configuration initialization before application services, supporting empty PostgreSQL databases and stopping startup on migration failure.
 
 ### Fixed
 
-- Prevent a second Devices Status table refresh on page load when no health check is running; retain the refresh after an active check or Ping All completes.
-
-- Snapshot heatmap now uses the configured timezone and correctly handles naive UTC timestamps without raising a timezone TypeError.
-
-- Scheduler triggers and WhatsApp camera report dates now follow the configured timezone, including timezone changes on configuration reload. WhatsApp camera and NVR report date headers display the timezone abbreviation (WIB/WITA/WIT).
-
-- Improved WhatsApp capture, media delivery, retries, and duplicate-message handling.
-- Enforced sender whitelist, role, and camera-group access across commands and tests.
-- Improved API error reporting and moved camera-IP lookup to `/api/cctv/resolve-ip`.
+- Removed duplicate Devices Status refreshes while preserving refresh after active checks.
+- Corrected snapshot heatmap, scheduler, and WhatsApp report timezone handling, including WIB/WITA/WIT labels.
+- Improved WhatsApp capture, delivery, retries, and duplicate handling; enforced whitelist, role, and camera-group access.
+- Improved API errors and moved camera-IP lookup to `/api/cctv/resolve-ip`.
 
 ## [2.3.0] - 2026-09-29
 
