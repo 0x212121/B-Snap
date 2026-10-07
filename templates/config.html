@@ -320,7 +320,20 @@
           class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How long to keep job execution logs. Default: 30 days</p>
       </div>
+      {% for key, label, fallback, upper in [
+        ('email_retry_batch_size', 'Email Retry Batch Size', 50, 500),
+        ('email_retry_max_run_seconds', 'Email Retry Run Budget (seconds)', 120, 3600),
+        ('email_retry_smtp_timeout_seconds', 'Email Retry SMTP Timeout (seconds)', 30, 30)
+      ] %}
+      <div>
+        <label for="{{ key }}" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">{{ label }}</label>
+        <input type="number" id="{{ key }}" name="{{ key }}" value="{{ configs.get(key, fallback) }}"
+          min="1" max="{{ upper }}" required
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+      </div>
+      {% endfor %}
     </div>
+    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">The run budget is checked between tasks. An in-progress delivery may finish after the budget.</p>
     <div class="mt-4 flex gap-2">
       <a href="/admin/jobs/" class="ui-button ui-button-primary">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

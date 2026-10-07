@@ -1,5 +1,10 @@
 (function () {
   const translations = {
+    "Deferred": "Ditunda",
+    "Email Retry Batch Size": "Ukuran Batch Retry Email",
+    "Email Retry Run Budget (seconds)": "Anggaran Waktu Retry Email (detik)",
+    "Email Retry SMTP Timeout (seconds)": "Timeout SMTP Retry Email (detik)",
+    "The run budget is checked between tasks. An in-progress delivery may finish after the budget.": "Anggaran waktu diperiksa di antara task. Pengiriman yang sedang berjalan dapat selesai setelah anggaran habis.",
     "Results per page": "Hasil per halaman", "HTTP Method": "Metode HTTP",
     "HTTP Status": "Status HTTP", "Date Range": "Rentang Tanggal",
     "Device Type": "Jenis Perangkat", "Search cameras": "Cari kamera",

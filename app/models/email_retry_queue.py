@@ -41,6 +41,13 @@ class EmailRetryQueue(Base):
     camera = relationship("Camera")
 
     __table_args__ = (
+        Index(
+            "ix_email_retry_due",
+            "next_retry_at",
+            "created_at",
+            postgresql_where=text("status = 'pending'"),
+            sqlite_where=text("status = 'pending'"),
+        ),
         CheckConstraint(
             "status IN ('pending', 'sent', 'exhausted', 'cancelled')",
             name="ck_email_retry_status",

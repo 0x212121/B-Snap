@@ -26,6 +26,7 @@ from app.utils.email_helper import (
     build_email_body,
     get_recipients_for_camera,
 )
+from app.utils.email_retry_runtime import EmailRetryBudgetExpiredError
 from app.utils.email_template_renderer import render_template
 from app.utils.timezone_helper import format_datetime_with_tz, to_current_timezone
 
@@ -133,16 +134,18 @@ def is_notification_suppressed(db: Session, camera: Camera) -> bool:
     return False
 
 
-def record_notification_failure(db: Session, camera: Camera, error_message: str):
+def record_notification_failure(
+    db: Session, camera: Camera, error_message: str, *, commit: bool = True
+) -> None:
     """
     Record a notification failure and activate suppression if needed.
-    
+
     Circuit breaker: After MAX_NOTIFICATION_FAILURES consecutive failures,
     notifications are suppressed for NOTIFICATION_SUPPRESS_MINUTES.
     """
     camera.notification_fail_count += 1
     camera.last_notification_at = datetime.now(timezone.utc)
-    
+
     # If we've reached max failures, activate suppression
     if camera.notification_fail_count >= MAX_NOTIFICATION_FAILURES:
         camera.notification_suppressed_until = datetime.now(timezone.utc) + timedelta(
@@ -153,7 +156,7 @@ def record_notification_failure(db: Session, camera: Camera, error_message: str)
             "Notifications suppressed for %d minutes.",
             camera.hostname,
             camera.notification_fail_count,
-            NOTIFICATION_SUPPRESS_MINUTES
+            NOTIFICATION_SUPPRESS_MINUTES,
         )
     else:
         logger.info(
@@ -161,20 +164,22 @@ def record_notification_failure(db: Session, camera: Camera, error_message: str)
             camera.notification_fail_count,
             MAX_NOTIFICATION_FAILURES,
             camera.hostname,
-            error_message
+            error_message,
         )
-    
-    db.commit()
+
+    if commit:
+        db.commit()
 
 
-def record_notification_success(db: Session, camera: Camera):
+def record_notification_success(db: Session, camera: Camera, *, commit: bool = True) -> None:
     """
     Record a successful notification and reset failure counter.
     """
     camera.notification_fail_count = 0
     camera.notification_suppressed_until = None
     camera.last_notification_at = datetime.now(timezone.utc)
-    db.commit()
+    if commit:
+        db.commit()
     logger.info("Notification success for camera %s, failure counter reset", camera.hostname)
 
 
@@ -351,6 +356,8 @@ def _deliver_notification(
             html=html_body,
             image_path=snapshot_path,
         )
+    except EmailRetryBudgetExpiredError:
+        return EmailDeliveryResult("deferred", "run_budget_exhausted")
     except EmailTransportError as exc:
         from app.utils.smtp_config import get_smtp_config
 
@@ -361,9 +368,9 @@ def _deliver_notification(
             synchronize_session=False
         )
         _log_recipients_with_cc(db, log.id, recipients, get_smtp_config().get("email_cc"))
-        db.commit()
         if count_failures:
-            record_notification_failure(db, camera, str(exc))
+            record_notification_failure(db, camera, str(exc), commit=False)
+        db.commit()
         logger.warning("Email delivery failed for camera %s", camera.hostname)
         return EmailDeliveryResult("failed", "smtp_delivery_failed", smtp_attempted=True)
 
@@ -374,9 +381,9 @@ def _deliver_notification(
         synchronize_session=False
     )
     _log_recipients_with_cc(db, log.id, recipients, cc_used)
-    db.commit()
     if count_failures:
-        record_notification_success(db, camera)
+        record_notification_success(db, camera, commit=False)
+    db.commit()
     return EmailDeliveryResult("sent", smtp_attempted=True)
 
 

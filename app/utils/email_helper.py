@@ -13,6 +13,7 @@ from fastapi import BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.utils.email_delivery import EmailTransportError
+from app.utils.email_retry_runtime import email_smtp_timeout
 
 # Import SMTP config helper (with DB + env fallback)
 from app.utils.smtp_config import get_smtp_config
@@ -25,23 +26,42 @@ from app.utils.smtp_config import get_smtp_config
 # EMAIL CORE FUNCTIONS
 # =========================
 
+def _set_smtp_operation_timeout(server: smtplib.SMTP) -> None:
+    """Refresh socket waits against the current retry budget before an operation."""
+    timeout = email_smtp_timeout()
+    if server.sock is not None:
+        server.sock.settimeout(timeout)
+
+
 def _open_smtp_connection(config: dict) -> smtplib.SMTP:
-    """Open and prepare an SMTP connection according to the configured security mode."""
+    """Prepare SMTP with bounded waits and close it if TLS/login fails."""
     security = config["smtp_security"]
+    timeout = email_smtp_timeout()
     if security == "ssl_tls":
         server = smtplib.SMTP_SSL(
-            config["smtp_host"], config["smtp_port"], timeout=30, context=ssl.create_default_context()
+            config["smtp_host"],
+            config["smtp_port"],
+            timeout=timeout,
+            context=ssl.create_default_context(),
         )
     else:
-        server = smtplib.SMTP(config["smtp_host"], config["smtp_port"], timeout=30)
+        server = smtplib.SMTP(config["smtp_host"], config["smtp_port"], timeout=timeout)
+    try:
         if security == "starttls":
+            _set_smtp_operation_timeout(server)
             server.ehlo()
+            _set_smtp_operation_timeout(server)
             server.starttls(context=ssl.create_default_context())
+            _set_smtp_operation_timeout(server)
             server.ehlo()
-
-    if config["has_credentials"]:
-        server.login(config["smtp_user"], config["smtp_pass"])
+        if config["has_credentials"]:
+            _set_smtp_operation_timeout(server)
+            server.login(config["smtp_user"], config["smtp_pass"])
+    except Exception:
+        server.close()
+        raise
     return server
+
 
 def _send_email_sync(to: list[str], subject: str, body: str, html: str | None = None):
     """
@@ -236,6 +256,7 @@ def _send_email_with_image(
 
     try:
         with _open_smtp_connection(config) as server:
+            _set_smtp_operation_timeout(server)
             server.sendmail(config["email_from"], all_recipients, msg.as_string())
     except socket.gaierror as e:
         raise EmailTransportError(

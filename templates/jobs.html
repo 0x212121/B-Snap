@@ -93,10 +93,11 @@
       <table class="ui-table min-w-full text-sm" data-sortable-table>
         <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
           <tr>
-            <th class="px-4 py-2 text-left font-semibold" data-sort-key="time" data-sort-type="date">Time</th>
+            <th class="px-4 py-2 text-left font-semibold" data-sort-key="time" data-sort-type="date"><span>Time</span> ({{ timezone }})</th>
             <th class="px-4 py-2 text-left font-semibold" data-sort-key="duration" data-sort-type="number">Duration</th>
             <th class="px-4 py-2 text-left font-semibold" data-sort-key="status">Status</th>
             <th class="px-4 py-2 text-left font-semibold" data-sort-key="records" data-sort-type="number">Records</th>
+            <th class="px-4 py-2 text-left font-semibold">Details</th>
           </tr>
         </thead>
         <tbody id="history-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -185,6 +186,7 @@
     if (!isoString) return 'Never';
     const date = new Date(isoString);
     return date.toLocaleString(getDateLocale(), {
+      timeZone: {{ timezone | tojson }},
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -202,13 +204,14 @@
   function getStatusBadge(status) {
     const badges = {
       partial: '<span class="ui-badge ui-badge-warning">Partial</span>',
+      deferred: '<span class="ui-badge ui-badge-warning">Deferred</span>',
       no_camera: '<span class="text-gray-500">No active cameras</span>',
       success: '<span class="ui-badge ui-badge-success">✓ Success</span>',
       fail: '<span class="ui-badge ui-badge-critical">✗ Failed</span>',
       running: '<span class="ui-badge ui-badge-info">⟳ Running</span>',
       timeout: '<span class="ui-badge ui-badge-warning">⏱ Timeout</span>',
     };
-    return badges[status] || `<span class="text-gray-500">${status}</span>`;
+    return badges[status] || `<span class="text-gray-500">${escapeAttr(status)}</span>`;
   }
   
   async function loadJobs() {
@@ -418,41 +421,108 @@
   
   async function runJob(jobId) {
     try {
-      const res = await fetch(`/admin/jobs/api/jobs/${jobId}/run`, { method: 'POST' });
+      const job = currentJobs.find(job => job.id === jobId);
+      const jobName = job?.name || jobId;
+      const isIndonesian = document.documentElement.lang === 'id';
+      const result = await themedSwal({
+        title: isIndonesian ? 'Jalankan Job Sekarang?' : 'Run Job Now?',
+        text: isIndonesian
+          ? `Jalankan "${jobName}" sekarang?`
+          : `Run "${jobName}" now?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: isIndonesian ? 'Jalankan Sekarang' : 'Run Now',
+        cancelButtonText: isIndonesian ? 'Batal' : 'Cancel',
+        focusCancel: true,
+      });
+      if (!result.isConfirmed) return;
+
+      const res = await fetch(`/admin/jobs/api/jobs/${jobId}/run`, {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+      });
       const data = await res.json();
       
-      if (data.status === 'success') {
+      if (res.ok && data.status === 'success') {
         Toast.success(data.message, { title: 'Success' });
         setTimeout(loadJobs, 1000);
       } else {
-        Toast.error(data.message, { title: 'Error' });
+        Toast.error(data.message || data.detail || 'Failed to trigger job', { title: 'Error' });
       }
     } catch (err) {
       Toast.error('Failed to trigger job', { title: 'Error' });
     }
   }
   
+  function formatRetryDetails(metadata) {
+    if (!metadata || typeof metadata !== 'object' || !('batch_size' in metadata)) return '-';
+    const id = document.documentElement.lang === 'id';
+    const count = key => {
+      const value = Number(metadata[key]);
+      return Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
+    };
+    const fields = [
+      ['sent', id ? 'Terkirim' : 'Sent'],
+      ['already_sent', id ? 'Sudah terkirim' : 'Already sent'],
+      ['smtp_attempted', id ? 'Percobaan SMTP' : 'SMTP attempts'],
+      ['smtp_failed', id ? 'Gagal SMTP' : 'SMTP failed'],
+      ['deferred', id ? 'Ditunda' : 'Deferred'],
+      ['blocked', id ? 'Konfigurasi terblokir' : 'Configuration blocked'],
+      ['exhausted', id ? 'Habis attempt' : 'Exhausted'],
+      ['cancelled', id ? 'Dibatalkan' : 'Cancelled'],
+      ['processing_errors', id ? 'Error pemrosesan' : 'Processing errors'],
+      ['pending_total', id ? 'Total antrean pending' : 'Total pending'],
+      ['remaining_due', id ? 'Masih jatuh tempo' : 'Remaining due'],
+    ];
+    const parts = fields.map(([key, label]) => `${label}: ${count(key)}`);
+    parts.unshift(`${id ? 'Diproses' : 'Processed'}: ${count('processed')}/${count('selected')}`);
+    if (metadata.oldest_pending_age_seconds != null) {
+      parts.push(`${id ? 'Usia antrean tertua (menit)' : 'Oldest pending age (minutes)'}: ${Math.floor(count('oldest_pending_age_seconds') / 60)}`);
+    }
+    const reasons = metadata.deferral_reasons || {};
+    const reasonLabels = {
+      notification_suppressed: id ? 'Suppression aktif' : 'Notifications suppressed',
+      tamper_cooldown: id ? 'Cooldown tamper' : 'Tamper cooldown',
+      smtp_not_configured: id ? 'SMTP belum dikonfigurasi' : 'SMTP not configured',
+      no_recipients: id ? 'Penerima kosong' : 'No recipients',
+      run_budget_exhausted: id ? 'Anggaran waktu habis' : 'Time budget reached',
+      processing_error: id ? 'Error pemrosesan' : 'Processing error',
+      awaiting_retry: id ? 'Menunggu retry' : 'Awaiting retry',
+      incident_in_progress: id ? 'Incident sedang diproses' : 'Incident in progress',
+    };
+    for (const [key, label] of Object.entries(reasonLabels)) {
+      const value = Number(reasons[key]);
+      if (Number.isFinite(value) && value > 0) parts.push(`${label}: ${Math.floor(value)}`);
+    }
+    if (metadata.stopped_reason === 'time_budget') parts.push(id ? 'Batas waktu tercapai' : 'Time limit reached');
+    if (metadata.stopped_reason === 'batch_limit') parts.push(id ? 'Batas batch tercapai' : 'Batch limit reached');
+    return parts.join('; ');
+  }
+
   async function showHistory(jobId, jobName) {
     document.getElementById('history-modal-title').textContent = jobName;
     document.getElementById('history-modal').classList.remove('hidden');
     
     try {
-      const res = await fetch(`/admin/jobs/api/jobs/${jobId}/history?limit=50`);
+      const res = await fetch(`/admin/jobs/api/jobs/${jobId}/history?limit=50`, {
+        headers: { Accept: 'application/json' },
+      });
       if (!res.ok) throw new Error('Failed to load history');
       const data = await res.json();
       
       const tbody = document.getElementById('history-table-body');
       if (data.history.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">No history found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No history found</td></tr>';
         return;
       }
       
       tbody.innerHTML = data.history.map(h => `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <td data-job-time="${escapeAttr(h.started_at)}" class="px-4 py-2 text-gray-600 dark:text-gray-400">${formatTime(h.started_at)}</td>
+          <td data-job-datetime="${escapeAttr(h.started_at)}" class="px-4 py-2 text-gray-600 dark:text-gray-400">${formatDateTime(h.started_at)}</td>
           <td class="px-4 py-2 text-gray-600 dark:text-gray-400">${formatDuration(h.duration_ms)}</td>
           <td class="px-4 py-2">${getStatusBadge(h.status)}</td>
-          <td class="px-4 py-2 text-gray-600 dark:text-gray-400">${h.records_processed || '-'}</td>
+          <td class="px-4 py-2 text-gray-600 dark:text-gray-400">${escapeAttr(h.records_processed ?? 0)}</td>
+          <td data-retry-summary="${escapeAttr(JSON.stringify(h.metadata ?? null))}" class="px-4 py-2 text-xs text-gray-600 dark:text-gray-400">${escapeAttr(formatRetryDetails(h.metadata))}</td>
         </tr>
       `).join('');
     } catch (err) {
@@ -515,6 +585,13 @@
   });
   
   window.addEventListener('bsnap:languagechange', () => {
+    document.querySelectorAll('[data-retry-summary]').forEach(element => {
+      try {
+        element.textContent = formatRetryDetails(JSON.parse(element.dataset.retrySummary));
+      } catch (_) {
+        element.textContent = '-';
+      }
+    });
     document.querySelectorAll('[data-job-datetime]').forEach(element => {
       element.textContent = formatDateTime(element.dataset.jobDatetime);
     });

@@ -66,7 +66,8 @@ def upgrade() -> None:
         "email_retry_queue",
         "status IN ('pending', 'sent', 'exhausted', 'cancelled')",
     )
-    op.drop_index("ux_email_retry_active", table_name="email_retry_queue")
+    # Some legacy databases do not have the old optional queue index.
+    op.drop_index("ux_email_retry_active", table_name="email_retry_queue", if_exists=True)
     op.create_index(
         "ux_email_retry_active",
         "email_retry_queue",
@@ -78,7 +79,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Restore legacy uniqueness; fail if history cannot fit the old constraint."""
-    op.drop_index("ux_email_retry_active", table_name="email_retry_queue")
+    op.drop_index("ux_email_retry_active", table_name="email_retry_queue", if_exists=True)
     op.create_index(
         "ux_email_retry_active",
         "email_retry_queue",

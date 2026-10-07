@@ -4,35 +4,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.4.0] 2026-10-07
 
 ### Added
 
-- Persistent daily API-call totals for Analytics, preserved after detailed log cleanup.
-- Read-only SMB/NFS recording mounts with admin controls, encrypted credentials, server allowlists, and Linux deployment support.
-- WhatsApp Bot Builder with custom commands/API flows, text/image/video replies, previews, testing, variables, delivery monitoring, and draft protection.
-- Video recording through APIs and WhatsApp commands.
-- Reproducible JSON/ORJSON log-handler benchmarks with response-equivalence checks.
+- Persistent daily API-call totals for Analytics after log cleanup.
+- Read-only SMB/NFS recording mounts with admin controls, encrypted credentials, and server allowlists on Linux.
+- WhatsApp Bot Builder with custom commands/API flows, media replies, previews, testing, delivery monitoring, and draft protection; video recording via API/WhatsApp.
+- JSON/ORJSON log-handler benchmarks with response-equivalence checks.
 
 ### Changed
 
-- Standardized menus, AJAX rows, recipient-coverage dialogs, icons, KPI cards, feedback, and accessible pagination; simplified navigation, destructive actions, and release notes.
-- Made Record Checks compact, with separate status/history tabs, sticky table headers, and more space for sources and folders.
-- Localized dates and job timestamps for EN/ID, with immediate updates when switching language.
-- Added independent, validated cron schedules for all 14 jobs, with reload within 60 seconds.
-- Improved JSON response performance with ORJSON across logs, analytics, cameras, and galleries.
-- Streamlined Docker builds with one version-checked image, separate wheel/CSS stages, minimal runtime dependencies, and minified CSS.
-- Improved service readiness, worker heartbeats, graceful shutdown, resource budgets, database pools, and log rotation.
-- Hardened Compose credentials and privileges, restricted database/admin ports to localhost, and made pgAdmin optional; persist audit archives and pgAdmin state, monitor footage storage, and require a stable archive key.
-- Run migrations and configuration initialization before application services, supporting empty PostgreSQL databases and stopping startup on migration failure.
+- Independent cron schedules for all 14 jobs, reload within 60 seconds, and EN/ID confirmation for manual runs.
+- Bounded email retry batches/runtime, cached SMTP settings, fewer database operations, and delivery/backlog summaries in job history.
+- Standardized UI components, dialogs, feedback, and pagination; compact Record Checks tabs and immediate EN/ID date updates.
+- Faster JSON responses with ORJSON across logs, analytics, cameras, and galleries.
+- Streamlined Docker builds and improved service readiness, shutdown, resource limits, database pools, and log rotation.
+- Hardened Compose credentials/privileges and localhost ports, optional pgAdmin, persistent audit/pgAdmin data, storage monitoring, and stable archive keys.
+- Run migrations/configuration initialization before services; support empty PostgreSQL databases and stop startup on migration failure.
 
 ### Fixed
 
-- Corrected email retry queue fields, generated IDs, tamper/recovery parameters, and configured retry attempt limits.
-- Preserved original notification incident times during email retries; distinguished SMTP failures from cooldown/configuration deferrals, reused incident logs, and released terminal retry tasks with reliable retention cleanup.
-- Removed duplicate Devices Status refreshes while preserving refresh after active checks.
-- Corrected snapshot heatmap, scheduler, and WhatsApp report timezone handling, including WIB/WITA/WIT labels.
-- Improved WhatsApp capture, delivery, retries, and duplicate handling; enforced whitelist, role, and camera-group access.
+- Corrected email retry migrations, queue fields/IDs, tamper/recovery parameters, and attempt limits; preserved incident times, distinguished SMTP failures from deferrals, reused logs, and cleaned up terminal tasks.
+- Removed duplicate Devices Status refreshes while retaining refresh after active checks.
+- Corrected heatmap, scheduler, and WhatsApp report timezones, including WIB/WITA/WIT labels.
+- Improved WhatsApp capture/delivery retries and deduplication; enforced whitelist, role, and camera-group access.
 - Improved API errors and moved camera-IP lookup to `/api/cctv/resolve-ip`.
 
 ## [2.3.0] - 2026-09-29

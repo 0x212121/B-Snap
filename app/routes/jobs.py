@@ -3,25 +3,27 @@
 Dashboard and API endpoints for managing background jobs.
 """
 
-from datetime import datetime, timezone, timedelta
+import json
+
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request, Query, HTTPException
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 
-from app.db.database import get_db, engine
-from app.models.user import User
-from app.models.job_execution_log import JobExecutionLog
-from app.models.config import Configuration
-from app.routes.auth import admin_access_required
-from app.utils.template_helper import templates
 from app.core.config import get_config
 from app.core.job_schedules import JOB_SCHEDULES, get_job_schedule
-from apscheduler.triggers.cron import CronTrigger
+from app.db.database import engine, get_db
+from app.models.config import Configuration
+from app.models.job_execution_log import JobExecutionLog
+from app.models.user import User
+from app.routes.auth import admin_access_required
 from app.utils.record_check_report import send_record_check_daily_reports
+from app.utils.template_helper import templates
 
 router = APIRouter(prefix="/admin/jobs", tags=["Job Management"])
 
@@ -179,31 +181,49 @@ async def list_jobs(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def _job_execution_metadata(log: JobExecutionLog) -> dict | None:
+    """Return stored job details while tolerating legacy invalid metadata."""
+    if not log.metadata_json:
+        return None
+    try:
+        metadata = json.loads(log.metadata_json)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    return metadata if isinstance(metadata, dict) else None
+
+
 @router.get("/api/jobs/{job_id}/history")
 async def job_history(
     job_id: str,
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_admin: User = Depends(admin_access_required)
+    current_admin: User = Depends(admin_access_required),
 ):
     """Get execution history for a specific job."""
     logs = JobExecutionLog.get_recent_executions(db, job_id=job_id, limit=limit)
-    
-    return JSONResponse({
-        "job_id": job_id,
-        "history": [
-            {
-                "id": log.id,
-                "started_at": log.started_at.isoformat() if log.started_at else None,
-                "ended_at": log.ended_at.isoformat() if log.ended_at else None,
-                "duration_ms": log.duration_ms,
-                "status": log.status,
-                "error_message": log.error_message,
-                "records_processed": log.records_processed,
-            }
-            for log in logs
-        ]
-    })
+
+    return JSONResponse(
+        {
+            "job_id": job_id,
+            "history": [
+                {
+                    "id": log.id,
+                    "started_at": (
+                        log.started_at.replace(tzinfo=timezone.utc).isoformat()
+                        if log.started_at and log.started_at.tzinfo is None
+                        else log.started_at.isoformat() if log.started_at else None
+                    ),
+                    "ended_at": log.ended_at.isoformat() if log.ended_at else None,
+                    "duration_ms": log.duration_ms,
+                    "status": log.status,
+                    "error_message": log.error_message,
+                    "records_processed": log.records_processed,
+                    "metadata": _job_execution_metadata(log),
+                }
+                for log in logs
+            ],
+        }
+    )
 
 
 @router.post("/api/jobs/{job_id}/run")

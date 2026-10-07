@@ -136,6 +136,31 @@ nano .env
 - **Description**: Default sender and CC email addresses
 - **Used In**: `app/utils/smtp_config.py`
 
+### Email retry resource limits
+
+These are database settings, editable in App Config under job settings. They are
+read at the start of each retry run. Initialization seeds missing values only.
+
+| Key | Default | Accepted range | Purpose |
+| --- | --- | --- | --- |
+| `email_retry_batch_size` | `50` | 1–500 | Maximum due tasks loaded in one run. |
+| `email_retry_max_run_seconds` | `120` | 1–3600 | Cooperative run budget, checked before each task. |
+| `email_retry_smtp_timeout_seconds` | `30` | 1–30 | Socket timeout, capped by the remaining run budget. |
+
+Tasks left by a batch or time limit keep their original incident, attempt count,
+and retry timestamp for the next execution. An in-progress delivery can finish
+after the run budget; this is not a hard process deadline. SMTP configuration is
+cached only during one run, so subsequent runs pick up saved changes. Successful
+delivery/failure log updates are committed before the worker moves to another task.
+
+Job history shows actual sends, already-delivered incidents, SMTP failures,
+policy/configuration deferrals and their reasons, exhausted/cancelled tasks,
+processing errors, due backlog, oldest pending age, and duration. Status is `fail`
+when errors occur without a completed delivery, `partial` when completed deliveries
+coexist with errors or unfinished work, and `deferred` for runs containing only
+deferrals or unfinished work. An empty run is `success`. `exhausted` can overlap
+with `smtp_failed`, and a successful batch may still have future pending retries.
+
 ---
 
 ## Storage & Paths

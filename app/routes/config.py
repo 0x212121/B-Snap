@@ -1,23 +1,27 @@
 import os
-from typing import Optional
-from fastapi import APIRouter, File, Form, Request, Depends, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
-from pydantic import BaseModel
+
+from io import BytesIO
+from typing import Annotated, Optional
+
 import pytz
+
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse
 from PIL import Image
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
+from app.core.logging_config import set_debug_mode
+from app.db.database import get_db
 from app.models.config import Configuration
 from app.models.user import User
-from app.db.database import get_db
 from app.routes.auth import admin_access_required
-from app.utils.template_helper import templates
-from app.core.logging_config import set_debug_mode
 from app.utils.audit_logger import log_audit
 from app.utils.auth import verify_password
-from app.utils.notification_service import NotificationService
-from app.utils.timezone_helper import clear_timezone_cache
 from app.utils.email_helper import send_email
-from io import BytesIO
+from app.utils.notification_service import NotificationService
+from app.utils.template_helper import templates
+from app.utils.timezone_helper import clear_timezone_cache
 
 router = APIRouter(tags=["Config"])
 
@@ -124,28 +128,35 @@ async def config_save(
     smtp_security: str = Form("starttls"),
     email_from: str = Form(""),
     email_cc: str = Form(""),
+    email_retry_batch_size: Annotated[int | None, Form(ge=1, le=500)] = None,
+    email_retry_max_run_seconds: Annotated[int | None, Form(ge=1, le=3600)] = None,
+    email_retry_smtp_timeout_seconds: Annotated[int | None, Form(ge=1, le=30)] = None,
     gowa_enabled: Optional[bool] = Form(False),
     gowa_base_url: str = Form("http://localhost:3000"),
     gowa_api_key: str = Form(""),
     gowa_device_id: str = Form(""),
     gowa_default_receiver: str = Form(""),
-    app_logo: UploadFile = File(None)
+    app_logo: UploadFile = File(None),
 ):
     # Validasi timezone
     if timezone not in pytz.all_timezones:
         # Mengembalikan JSONResponse dengan status 400 Bad Request
         return JSONResponse(status_code=400, content={"message": "Invalid timezone selected."})
-    
+
     # Validasi batch size
     if snapshot_batch_size > 150 or snapshot_batch_size < 1:
         # Mengembalikan JSONResponse dengan status 400 Bad Request
-        return JSONResponse(status_code=400, content={"message": "Snapshot batch size must be between 1 and 150."})
-    
+        return JSONResponse(
+            status_code=400, content={"message": "Snapshot batch size must be between 1 and 150."}
+        )
+
     # Validasi ping timeout (100ms - 10 detik)
     if snapshot_ping_timeout_ms < 100 or snapshot_ping_timeout_ms > 10000:
         return JSONResponse(
             status_code=400,
-            content={"message": "Ping timeout must be between 100 and 10000 milliseconds (0.1-10 seconds)."}
+            content={
+                "message": "Ping timeout must be between 100 and 10000 milliseconds (0.1-10 seconds)."
+            },
         )
 
     # Validasi retention settings (7 hari - 10 tahun)
@@ -158,59 +169,54 @@ async def config_save(
     for field_name, value in retention_fields.items():
         if value < 7 or value > 3650:
             return JSONResponse(
-                status_code=400, 
-                content={"message": f"{field_name} must be between 7 and 3650 days."}
+                status_code=400,
+                content={"message": f"{field_name} must be between 7 and 3650 days."},
             )
-    
+
     # Validasi storage percentage thresholds (50-99%)
-    for field_name, value in [("storage_critical_percent", storage_critical_percent),
-                               ("storage_warning_percent", storage_warning_percent),
-                               ("storage_info_percent", storage_info_percent)]:
+    for field_name, value in [
+        ("storage_critical_percent", storage_critical_percent),
+        ("storage_warning_percent", storage_warning_percent),
+        ("storage_info_percent", storage_info_percent),
+    ]:
         if value < 50 or value > 99:
             return JSONResponse(
-                status_code=400,
-                content={"message": f"{field_name} must be between 50 and 99."}
+                status_code=400, content={"message": f"{field_name} must be between 50 and 99."}
             )
-    
+
     # Validasi storage critical free GB (1-100 GB)
     if storage_critical_free_gb < 1 or storage_critical_free_gb > 100:
         return JSONResponse(
             status_code=400,
-            content={"message": "storage_critical_free_gb must be between 1 and 100."}
+            content={"message": "storage_critical_free_gb must be between 1 and 100."},
         )
 
     # Validasi storage thresholds
     if storage_critical_percent < storage_warning_percent:
         return JSONResponse(
             status_code=400,
-            content={"message": "Critical threshold must be higher than warning threshold."}
+            content={"message": "Critical threshold must be higher than warning threshold."},
         )
     if storage_warning_percent < storage_info_percent:
         return JSONResponse(
             status_code=400,
-            content={"message": "Warning threshold must be higher than info threshold."}
+            content={"message": "Warning threshold must be higher than info threshold."},
         )
-    
+
     # Validasi SMTP port (1-65535)
     if smtp_port < 1 or smtp_port > 65535:
         return JSONResponse(
-            status_code=400,
-            content={"message": "SMTP port must be between 1 and 65535."}
+            status_code=400, content={"message": "SMTP port must be between 1 and 65535."}
         )
-    
+
     # Validasi email format jika diisi
     import re
-    email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+
+    email_regex = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     if email_from and not re.match(email_regex, email_from):
-        return JSONResponse(
-            status_code=400,
-            content={"message": "Invalid 'From Email' format."}
-        )
+        return JSONResponse(status_code=400, content={"message": "Invalid 'From Email' format."})
     if email_cc and not re.match(email_regex, email_cc):
-        return JSONResponse(
-            status_code=400,
-            content={"message": "Invalid 'CC Email' format."}
-        )
+        return JSONResponse(status_code=400, content={"message": "Invalid 'CC Email' format."})
 
     if smtp_security not in {"starttls", "ssl_tls", "none"}:
         return JSONResponse(
@@ -221,7 +227,9 @@ async def config_save(
     if bool(smtp_user.strip()) != bool(smtp_pass):
         return JSONResponse(
             status_code=400,
-            content={"message": "SMTP username and password must both be filled, or both left empty."},
+            content={
+                "message": "SMTP username and password must both be filled, or both left empty."
+            },
         )
 
     gowa_base_url = gowa_base_url.strip().rstrip("/")
@@ -229,12 +237,14 @@ async def config_save(
         if not gowa_base_url.startswith(("http://", "https://")):
             return JSONResponse(
                 status_code=400,
-                content={"message": "GoWA Base URL must start with http:// or https://."}
+                content={"message": "GoWA Base URL must start with http:// or https://."},
             )
         if not gowa_default_receiver.strip():
             return JSONResponse(
                 status_code=400,
-                content={"message": "Default Receiver is required when WhatsApp notifications are enabled."}
+                content={
+                    "message": "Default Receiver is required when WhatsApp notifications are enabled."
+                },
             )
 
     keys = {
@@ -272,6 +282,19 @@ async def config_save(
         "gowa_default_receiver": gowa_default_receiver.strip(),
     }
 
+    # Older clients can omit these fields without overwriting saved resource budgets.
+    keys.update(
+        {
+            key: value
+            for key, value in {
+                "email_retry_batch_size": email_retry_batch_size,
+                "email_retry_max_run_seconds": email_retry_max_run_seconds,
+                "email_retry_smtp_timeout_seconds": email_retry_smtp_timeout_seconds,
+            }.items()
+            if value is not None
+        }
+    )
+
     for config_key, config_value in keys.items():
         config_entry = db.query(Configuration).filter_by(key=config_key).first()
         if config_entry:
@@ -287,19 +310,27 @@ async def config_save(
 
         # Validate extension & MIME type
         if ext not in ALLOWED_EXTENSIONS or content_type not in ALLOWED_MIME_TYPES:
-            return JSONResponse(status_code=400, content={"message": "Invalid logo file format. Only .png or .ico are allowed."})
+            return JSONResponse(
+                status_code=400,
+                content={"message": "Invalid logo file format. Only .png or .ico are allowed."},
+            )
 
         # Read file content
         contents = await app_logo.read()
         if len(contents) > MAX_LOGO_SIZE:
-            return JSONResponse(status_code=400, content={"message": "Uploaded logo file is too large (max 512 KB)."})
+            return JSONResponse(
+                status_code=400,
+                content={"message": "Uploaded logo file is too large (max 512 KB)."},
+            )
 
         # Validate image integrity with Pillow
         try:
             image = Image.open(BytesIO(contents))
             image.verify()
         except Exception:
-            return JSONResponse(status_code=400, content={"message": "The uploaded image file is corrupt."})
+            return JSONResponse(
+                status_code=400, content={"message": "The uploaded image file is corrupt."}
+            )
 
         # Save file securely
         save_path = os.path.join("static", "icons", f"logo{ext}")
@@ -311,14 +342,15 @@ async def config_save(
 
     # Clear timezone cache so new timezone takes effect immediately
     clear_timezone_cache()
-    
+
     set_debug_mode(debug_mode)
-    
+
     # Sanitize loggers to ensure no DEBUG handlers are left behind
     # This handles cases where uvicorn/gunicorn might have added new handlers
     from app.core.logging_config import sanitize_loggers
+
     sanitize_loggers()
-    
+
     # Note: Toast notification is handled by frontend
 
     return JSONResponse(status_code=200, content={"message": "Configuration saved successfully."})
@@ -360,8 +392,8 @@ async def run_cleanup_now(
     """
     from app.jobs.scheduler import (
         delete_old_api_logs,
-        delete_old_command_logs,
         delete_old_camera_stats,
+        delete_old_command_logs,
     )
     from app.utils.email_notifier import cleanup_old_email_logs
     

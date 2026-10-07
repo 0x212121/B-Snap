@@ -1597,8 +1597,8 @@ select {
   min-width: 0px;
 }
 
-.min-w-64 {
-  min-width: 16rem;
+.min-w-48 {
+  min-width: 12rem;
 }
 
 .min-w-\[12rem\] {
@@ -1624,10 +1624,6 @@ select {
 
 .min-w-full {
   min-width: 100%;
-}
-
-.min-w-48 {
-  min-width: 12rem;
 }
 
 .max-w-2xl {
@@ -2860,11 +2856,6 @@ select {
 .py-1\.5 {
   padding-top: 0.375rem;
   padding-bottom: 0.375rem;
-}
-
-.py-10 {
-  padding-top: 2.5rem;
-  padding-bottom: 2.5rem;
 }
 
 .py-12 {
@@ -5201,10 +5192,6 @@ select {
 }
 
 @media (min-width: 1280px) {
-  .xl\:col-span-1 {
-    grid-column: span 1 / span 1;
-  }
-
   .xl\:col-span-2 {
     grid-column: span 2 / span 2;
   }

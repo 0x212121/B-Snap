@@ -44,6 +44,9 @@ DEFAULT_CONFIG = {
     # Email retry settings
     "email_retry_interval_minutes": "10",  # New: configurable email retry interval
     "email_retry_max_attempts": "5",
+    "email_retry_batch_size": "50",
+    "email_retry_max_run_seconds": "120",
+    "email_retry_smtp_timeout_seconds": "30",
     
     # Cleanup job settings
     "storage_check_interval_hours": "1",  # New: storage check interval
