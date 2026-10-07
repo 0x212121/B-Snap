@@ -335,7 +335,7 @@ function escapeHtml(value) {
 
 function formatDate(value) {
   if (!value) return '-';
-  return new Date(value).toLocaleString();
+  return BSnapDates.html(value);
 }
 
 function formatAge(seconds) {

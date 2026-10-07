@@ -12,6 +12,7 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
 from app.jobs import scheduler as jobs
+from app.core import job_schedules
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -27,11 +28,12 @@ def test_start_scheduler_applies_timezone_to_every_job(monkeypatch, use_cron: bo
     monkeypatch.setattr(jobs, "last_config", {})
     monkeypatch.setattr(jobs, "get_scheduler_timezone", lambda: pytz.timezone("Asia/Makassar"))
     monkeypatch.setattr(
-        jobs,
+        job_schedules,
         "get_config",
         lambda key, default: "0 8 * * *" if use_cron and key.endswith("_cron") else default,
     )
     monkeypatch.setattr(scheduler, "start", MagicMock())
+    monkeypatch.setattr(jobs, "get_config", job_schedules.get_config)
     jobs.start_scheduler()
     registered_jobs = scheduler.get_jobs()
     assert len(registered_jobs) == 14
@@ -39,7 +41,12 @@ def test_start_scheduler_applies_timezone_to_every_job(monkeypatch, use_cron: bo
     assert jobs.last_config["timezone"] == "Asia/Makassar"
     now = datetime(2026, 10, 6, 18, tzinfo=timezone.utc)
     next_run = scheduler.get_job("retention_policy").trigger.get_next_fire_time(None, now)
-    assert next_run.astimezone(timezone.utc) == datetime(2026, 10, 6, 19, tzinfo=timezone.utc)
+    expected = (
+        datetime(2026, 10, 7, 0, tzinfo=timezone.utc)
+        if use_cron
+        else datetime(2026, 10, 6, 19, tzinfo=timezone.utc)
+    )
+    assert next_run.astimezone(timezone.utc) == expected
 
 
 @pytest.mark.parametrize("timezone_name", ["Asia/Makassar", "Asia/Jakarta", "UTC"])

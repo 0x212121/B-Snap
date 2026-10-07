@@ -66,7 +66,10 @@ class ProcessTests(unittest.TestCase):
                  "from unittest.mock import MagicMock; "
                  "s.engine=MagicMock(); s.scheduler=MagicMock(); "
                  "s.scheduler.get_jobs.return_value=[]; "
-                 "s.get_config=lambda key,default: default; s.start_scheduler(); "
+                 "s.get_config=lambda key,default: default; "
+                 "s.get_scheduler_timezone=lambda: __import__('datetime').timezone.utc; "
+                 "import app.core.job_schedules as js; js.get_config=s.get_config; "
+                 "s.start_scheduler(); "
                  "calls=[c for c in s.scheduler.add_job.call_args_list "
                  "if c.kwargs.get('id')=='scheduled_snapshot']; "
                  "assert len(calls)==1 and calls[0].kwargs['max_instances']==1"],

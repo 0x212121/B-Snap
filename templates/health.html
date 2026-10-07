@@ -279,10 +279,10 @@
     if (!isoString) return "-";
     const date = new Date(isoString);
     try {
-      const formatted = new Intl.DateTimeFormat("en-GB", {
+      const formatted = new Intl.DateTimeFormat(BSnapDates.locale(), {
         timeZone: serverTimezone,
         year: "numeric",
-        month: "long",
+        month: "short",
         day: "2-digit",
         hour: "2-digit",
         minute: "2-digit",
@@ -294,7 +294,7 @@
       return cleaned + " " + serverTimezoneLabel;
     } catch (err) {
       console.warn("Invalid timezone fallback:", serverTimezone, err);
-      return date.toLocaleString();
+      return date.toLocaleString(BSnapDates.locale());
     }
   }
   
@@ -749,6 +749,8 @@
     }
   });
   
+  window.addEventListener('bsnap:languagechange', filterAndRenderTable);
+
   window.goToPage = goToPage;
   window.changePerPage = changePerPage;
   window.resetFilters = resetFilters;

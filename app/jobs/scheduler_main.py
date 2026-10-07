@@ -5,7 +5,7 @@ from app.jobs.scheduler import start_scheduler, update_scheduler_config
 import time
 
 
-# Check file flag for reload scheduler config every 60 seconds
+# Poll configuration every 60 seconds across local and container deployments.
 if __name__ == "__main__":
     setup_logging()
     logger = logging.getLogger("scheduler")
@@ -15,8 +15,8 @@ if __name__ == "__main__":
 
     try:
         while True:
+            update_scheduler_config()
             if os.path.exists("/tmp/shared/reload_scheduler.flag"):
-                update_scheduler_config()
                 os.remove("/tmp/shared/reload_scheduler.flag")
                 logger.info("✅ Scheduler config reloaded from trigger.")
 

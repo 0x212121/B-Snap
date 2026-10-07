@@ -62,6 +62,18 @@ DEFAULT_CONFIG = {
     "cleanup_cron": "0 2 * * *",  # Default: 2 AM daily
     "email_retry_cron": "",  # Empty = use interval
     
+    # Independent job schedules; empty restores the legacy/default schedule.
+    "cleanup_camera_stats_cron": "",
+    "cleanup_api_logs_cron": "",
+    "cleanup_command_logs_cron": "",
+    "cleanup_record_checks_cron": "",
+    "cleanup_email_retry_cron": "",
+    "wa_daily_report_cron": "",
+    "record_check_daily_report_cron": "",
+    "orphaned_snapshots_check_cron": "",
+    "retention_policy_cron": "",
+    "cleanup_retry_queue_interval_days": "1",
+
     # WhatsApp Gateway settings
     "gowa_enabled": "0",
     "gowa_base_url": "http://172.16.1.200:3535",

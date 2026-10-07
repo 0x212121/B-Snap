@@ -174,7 +174,7 @@
           class="ui-control w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
           placeholder="e.g., 0 8 * * *">
         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          Leave empty to use interval fallback
+          Leave empty to restore the default schedule. Times follow the configured timezone.
         </p>
       </div>
       
@@ -215,22 +215,27 @@
     return `${(ms/60000).toFixed(1)}m`;
   }
   
+  function getDateLocale() {
+    return BSnapDates.locale();
+  }
+
   function formatTime(isoString) {
     if (!isoString) return 'Never';
     const date = new Date(isoString);
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return date.toLocaleTimeString(getDateLocale(), { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   }
 
   function formatDateTime(isoString) {
     if (!isoString) return 'Never';
     const date = new Date(isoString);
-    return date.toLocaleString('id-ID', {
+    return date.toLocaleString(getDateLocale(), {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
+      hour12: false,
     });
   }
 
@@ -282,9 +287,6 @@
     }
   }
   
-  // Editable job IDs that support cron scheduling
-  const editableJobs = ['scheduled_snapshot', 'health_check', 'storage_check', 'record_folder_check', 'cleanup_camera_stats', 'cleanup_api_logs', 'cleanup_command_logs', 'cleanup_record_checks', 'email_retry', 'wa_daily_report'];
-  
   function renderJobs(jobs) {
     const tbody = document.getElementById('jobs-table-body');
     const emptyState = document.getElementById('empty-state');
@@ -319,7 +321,7 @@
         </span>
       ` : '';
       
-      const canEditSchedule = editableJobs.includes(job.id);
+      const canEditSchedule = job.schedule_editable === true;
       
       // Escape values for JavaScript
       const escapeJs = (str) => str ? str.replace(/'/g, "\\'") : '';
@@ -371,15 +373,15 @@
           <td class="px-6 py-4">
             ${job.last_run?.started_at ? `
               <div class="flex items-center gap-2">
-                <span class="text-gray-600 dark:text-gray-400">${formatDateTime(job.last_run.started_at)}</span>
+                <span data-job-datetime="${escapeAttr(job.last_run.started_at)}" class="text-gray-600 dark:text-gray-400">${formatDateTime(job.last_run.started_at)}</span>
                 ${getStatusBadge(job.last_run.status)}
               </div>
             ` : '<span class="text-gray-400 text-sm">Never</span>'}
           </td>
           <td class="px-6 py-4">
             ${job.next_run_time ? `
-              <span class="ui-badge ui-badge-success inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                ${formatTime(job.next_run_time)}
+              <span data-job-datetime="${escapeAttr(job.next_run_time)}" class="ui-badge ui-badge-success inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                ${formatDateTime(job.next_run_time)}
               </span>
             ` : '<span class="ui-badge ui-badge-neutral inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400">Paused</span>'}
           </td>
@@ -444,7 +446,8 @@
   async function updateJobSchedule(jobId, cronExpression) {
     try {
       const res = await fetch(`/admin/jobs/api/jobs/${jobId}/schedule?cron_expression=${encodeURIComponent(cronExpression)}`, {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'Accept': 'application/json' }
       });
       const data = await res.json();
       
@@ -492,7 +495,7 @@
       
       tbody.innerHTML = data.history.map(h => `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <td class="px-4 py-2 text-gray-600 dark:text-gray-400">${formatTime(h.started_at)}</td>
+          <td data-job-time="${escapeAttr(h.started_at)}" class="px-4 py-2 text-gray-600 dark:text-gray-400">${formatTime(h.started_at)}</td>
           <td class="px-4 py-2 text-gray-600 dark:text-gray-400">${formatDuration(h.duration_ms)}</td>
           <td class="px-4 py-2">${getStatusBadge(h.status)}</td>
           <td class="px-4 py-2 text-gray-600 dark:text-gray-400">${h.records_processed || '-'}</td>
@@ -557,6 +560,15 @@
     }
   });
   
+  window.addEventListener('bsnap:languagechange', () => {
+    document.querySelectorAll('[data-job-datetime]').forEach(element => {
+      element.textContent = formatDateTime(element.dataset.jobDatetime);
+    });
+    document.querySelectorAll('[data-job-time]').forEach(element => {
+      element.textContent = formatTime(element.dataset.jobTime);
+    });
+  });
+
   // Initialize
   document.addEventListener('DOMContentLoaded', () => {
     loadJobs();

@@ -681,7 +681,7 @@
       const ip = log.ip || '-';
       
       row.innerHTML = `
-        <td class="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300 font-mono text-xs">${timestamp}</td>
+        <td class="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300 font-mono text-xs">${BSnapDates.html(timestamp)}</td>
         <td class="px-4 py-3 whitespace-nowrap">
           <div class="flex items-center gap-2">
             <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
@@ -911,7 +911,7 @@
         <div class="grid grid-cols-2 gap-4">
           <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Timestamp</p>
-            <p class="font-medium text-gray-900 dark:text-white font-mono text-sm">${timestamp}</p>
+            <p class="font-medium text-gray-900 dark:text-white font-mono text-sm">${BSnapDates.html(timestamp)}</p>
           </div>
           <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">User</p>
@@ -1075,7 +1075,7 @@
               ${item.status === 'completed' ? '✓ Completed' : '✗ Failed'}
             </span>
             <span class="text-sm text-gray-600 dark:text-gray-400">
-              ${new Date(item.archived_at).toLocaleString()}
+              ${BSnapDates.html(item.archived_at)}
             </span>
           </div>
           <span class="text-sm font-medium text-gray-900 dark:text-white">
@@ -1153,7 +1153,7 @@
       } else {
         tbody.innerHTML = currentArchiveLogItems.map((log, index) => `
           <tr data-log-index="${index}" class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <td class="px-3 py-2 whitespace-nowrap">${escapeArchiveHtml(log.timestamp)}</td>
+            <td class="px-3 py-2 whitespace-nowrap">${BSnapDates.html(log.timestamp)}</td>
             <td class="px-3 py-2">${escapeArchiveHtml(log.user)}</td>
             <td class="px-3 py-2">${escapeArchiveHtml(log.action)}</td>
             <td class="px-3 py-2">${escapeArchiveHtml(log.target)}</td>

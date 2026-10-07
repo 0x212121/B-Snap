@@ -9,7 +9,7 @@
       </p>
       <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1">
         <span>📁 {{ ((file.file_size or 0) / 1024 / 1024)|round(2) }} MB</span>
-        <span>📅 {{ file.detected_at.strftime('%Y-%m-%d %H:%M') if file.detected_at else 'Unknown' }}</span>
+        <span>📅 {% if file.detected_at %}<span data-localized-date="{{ file.detected_at.isoformat() }}">{{ file.detected_at.strftime('%Y-%m-%d %H:%M') }}</span>{% else %}Unknown{% endif %}</span>
         {% if file.camera_id %}
         <span class="font-mono">📷 {{ file.camera_id[:8] }}...</span>
         {% endif %}

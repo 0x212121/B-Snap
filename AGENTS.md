@@ -1,974 +1,232 @@
-# AGENTS.md - B-Snap Project Guide
+# AGENTS.md - B-Snap
 
-> **Panduan untuk AI Agents** yang berkontribusi pada project B-Snap.
+Panduan kerja untuk agent yang mengubah repository B-Snap. Detail instalasi,
+operasional, dan riwayat fitur ada di dokumentasi yang ditautkan di bawah.
 
----
+## Project dan sumber informasi
 
-## 📋 Project Overview
+B-Snap adalah aplikasi self-hosted untuk capture snapshot/video IP camera,
+monitoring kesehatan kamera dan recording NVR, serta notifikasi email/WhatsApp.
 
-**B-Snap** adalah aplikasi self-hosted berbasis web untuk mengambil, mengelola, dan memonitor snapshot dari IP Camera yang mendukung ONVIF atau RTSP.
+- Backend: FastAPI, SQLAlchemy 2.0, Alembic, APScheduler.
+- Frontend: Jinja2, Tailwind CSS, JavaScript, SweetAlert2, Toast.js.
+- Database utama: PostgreSQL. Jangan mengasumsikan aplikasi lengkap mendukung
+  SQLite: konfigurasi engine memakai opsi PostgreSQL dan beberapa model memakai
+  `JSONB`. SQLite hanya untuk tes yang memang kompatibel.
+- Minimum Python package mengikuti `requires-python` di [pyproject.toml](pyproject.toml)
+  (saat ini 3.11+). Runtime container mengikuti [Dockerfile](Dockerfile)
+  (saat ini Python 3.14). Bedakan keduanya saat mengubah dependency.
+- Versi aplikasi: gunakan `pyproject.toml`; riwayat perubahan: [CHANGELOG.md](CHANGELOG.md).
+- Struktur utama: `app/routes/`, `app/api/`, `app/models/`, `app/utils/`,
+  `app/jobs/`, `app/tests/`, `templates/`, `static/`, dan `alembic/`.
 
-### Tech Stack
-- **Backend**: FastAPI (Python 3.14+)
-- **Database**: PostgreSQL (production) / SQLite (development)
-- **ORM**: SQLAlchemy 2.0 + Alembic
-- **Scheduler**: APScheduler
-- **Frontend**: Jinja2 Templates + Tailwind CSS
-- **Container**: Docker + Docker Compose
-- **Web Server**: Gunicorn + Uvicorn
+Periksa implementasi dan konfigurasi repository sebelum menggunakan contoh dari
+panduan lama. Jangan menyalin nilai default, nomor versi, atau struktur folder
+sebagai fakta tanpa memeriksa sumbernya.
 
----
+## Perintah kerja
 
-## 🚀 Quick Start
+Jalankan perintah dari root repository menggunakan environment Python project.
+Setup lengkap ada di [README.md](README.md) dan
+[docs/source/development.md](docs/source/development.md).
 
-Pilih salah satu metode eksekusi:
-
-| Metode | Use Case |
-|--------|----------|
-| [Docker](#1-run-with-docker) | Production deployment, consistent environment |
-| [Local Development](#2-run-without-docker-local-development) | Development, debugging, quick testing |
-
----
-
-## 1. Run with Docker
-
-### Prerequisites
-- Docker 20.10+
-- Docker Compose 2.0+
-
-### Steps
-
-1. **Clone repository**
-   ```bash
-   git clone https://github.com/0x212121/b-snap.git
-   cd b-snap
-   ```
-
-2. **Setup environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env: Set SECRET_KEY dan konfigurasi lainnya
-   ```
-
-3. **Build dan start services**
-   ```bash
-   docker-compose up -d
-   ```
-
-4. **Verify running**
-   ```bash
-   curl http://localhost:8080/version
-   ```
-
-5. **Access application**
-   - Web UI: http://localhost:8080
-   - pgAdmin: http://localhost:5050
-
-### Services (Docker)
-| Service | Port | Description |
-|---------|------|-------------|
-| b-snap | 8080 | Main web application |
-| scheduler | - | Background job scheduler |
-| notifier | - | WebSocket notification service |
-| postgres | 5432 | PostgreSQL database |
-| pgadmin | 5050 | Database admin UI |
-
-### Useful Commands
-```bash
-# View logs
-docker-compose logs -f app
-
-# Run migrations manual
-docker-compose exec app alembic upgrade head
-
-# Stop services
-docker-compose down
-
-# Full reset (data akan hilang)
-docker-compose down -v
-```
-
----
-
-## 2. Run without Docker (Local Development)
-
-### Prerequisites
-- Python 3.14+
-- Node.js 18+ (untuk Tailwind CSS build)
-- FFmpeg (executable di PATH atau di project root)
-- PostgreSQL 14+ (opsional, bisa pakai SQLite)
-
-### Steps
-
-1. **Clone repository**
-   ```bash
-   git clone https://github.com/0x212121/b-snap.git
-   cd b-snap
-   ```
-
-2. **Create virtual environment**
-   ```bash
-   python -m venv .venv
-   
-   # Windows
-   .venv\Scripts\activate
-   
-   # Linux/Mac
-   source .venv/bin/activate
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   pip install -e ".[dev]"
-   ```
-
-4. **Install Node dependencies (untuk CSS)**
-   ```bash
-   npm install
-   npm run build
-   ```
-
-5. **Setup environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env:
-   # - Set SECRET_KEY (wajib)
-   # - Database: Gunakan SQLite (default) atau PostgreSQL
-   ```
-
-6. **Run database migrations**
-   ```bash
-   alembic upgrade head
-   ```
-
-7. **Start application**
-   
-   **Windows (PowerShell):**
-   ```powershell
-   .\start-local.ps1 web
-   ```
-   
-   **Windows (CMD):**
-   ```cmd
-   start-local.bat web
-   ```
-   
-   **Linux/Mac:**
-   ```bash
-   # Using Makefile
-   make dev
-   
-   # Atau manual
-   uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-   ```
-
-8. **Verify running**
-   ```bash
-   curl http://localhost:8000/version
-   ```
-
-9. **Access application**
-   - Web UI: http://localhost:8000
-   - Auto-reload: Enabled (server restart saat file berubah)
-
-### Local Startup Options
-
-**Windows PowerShell:**
 ```powershell
-.\start-local.ps1 web       # Production-like server (uvicorn) - web only
-.\start-local.ps1 dev       # Development server (uvicorn + reload) - web only
-.\start-local.ps1 all       # Start all services (web + scheduler + notifier)
-.\start-local.ps1 scheduler # Start scheduler only
-.\start-local.ps1 notifier  # Start notifier only
-.\start-local.ps1 migrate   # Run migrations only
-.\start-local.ps1 check     # Check environment
+# Windows: web/all default 8080; dev default 8000.
+# PORT/BIND dapat mengubah alamat; periksa start-local.ps1 dan environment.
+.\start-local.ps1 check
+.\start-local.ps1 dev
+.\start-local.ps1 all
+
+# Tes terarah dan pemeriksaan file yang diubah.
+python -m pytest app/tests/test_scheduler_timezone.py -v
+python -m ruff check path/to/changed_file.py
+python -m black --check --line-length 100 path/to/changed_file.py
+
+# Build CSS setelah mengubah class/source Tailwind.
+npm run build
 ```
-
-**Windows CMD:**
-```cmd
-start-local.bat web       # Production-like server
-start-local.bat dev       # Development server with auto-reload
-start-local.bat scheduler
-```
-
-> **Note**: Gunicorn tidak support Windows, jadi di Windows menggunakan `uvicorn` langsung. Gunakan mode `all` untuk menjalankan web server, scheduler, dan notifier dalam satu perintah.
-
-**Linux/Mac (Makefile):**
-```bash
-make dev              # Development server
-make serve            # Production server
-make dev-worker       # Scheduler
-```
-
-### Database Options (Local)
-
-**SQLite (Default - simplest):**
-```env
-# .env
-DATABASE_URL=sqlite:///./data.db
-```
-
-**PostgreSQL (Production-like):**
-```env
-# .env
-DATABASE_URL=postgresql+psycopg2://user:password@localhost:5432/bsnap_db
-```
-
----
-
-## 📁 Directory Structure
-
-```
-b-snap/
-├── app/                    # Main application code
-│   ├── api/               # API routes (FastAPI routers)
-│   ├── core/              # Core config, logging
-│   ├── db/                # Database setup
-│   ├── jobs/              # Background jobs & scheduler
-│   ├── middleware/        # FastAPI middleware
-│   ├── models/            # SQLAlchemy models
-│   ├── routes/            # Web routes (Jinja2 templates)
-│   ├── schemas/           # Pydantic schemas
-│   ├── tests/             # Test suite
-│   ├── utils/             # Utility functions
-│   └── ws/                # WebSocket handlers
-├── alembic/               # Database migrations
-├── assets/                # Source assets (CSS, JS)
-├── docs/                  # Sphinx documentation
-├── static/                # Static files (served)
-├── templates/             # Jinja2 templates
-├── logs/                  # Application logs
-├── pyproject.toml         # Modern Python project config
-├── pytest.ini            # Test configuration
-├── Makefile              # Development commands
-├── docker-compose.yml    # Docker services
-├── start.sh              # Docker startup script
-├── start-local.ps1       # Windows local startup
-└── start-local.bat       # Windows CMD local startup
-```
-
----
-
-## 🔧 Development Commands
-
-Gunakan `Makefile` (Linux/Mac) atau `start-local.ps1` (Windows) untuk commands:
 
 ```bash
-# Development Server
-make dev                    # Run dev server with hot reload
-make serve                  # Run production server
+# Linux: server dan scheduler adalah proses terpisah.
+make dev
+make dev-worker
 
-# Testing
-make test                   # Run all tests
-make test-unit              # Run unit tests only
-make test-integration       # Run integration tests
-make test-coverage          # Run tests with coverage
-
-# Code Quality
-make lint                   # Run all linters
-make format                 # Format code (black + ruff)
-make check-format           # Check formatting
-
-# Database
-make db-migrate             # Run migrations
-make db-makemigrations      # Create new migration
-make db-reset               # Reset database
-
-# Utilities
-make clean                  # Clean build artifacts
+# Docker: gunakan nama service dari docker-compose.yml.
+docker compose up -d
+docker compose logs -f b-snap
+docker compose exec b-snap alembic upgrade head
 ```
 
----
-
-## 🧪 Testing Guidelines
-
-### Test Structure
-```
-app/tests/
-├── conftest.py          # Shared fixtures
-├── unit/               # Unit tests
-│   ├── test_models/
-│   ├── test_utils/
-│   └── test_services/
-└── integration/        # Integration tests
-    ├── test_api/
-    └── test_camera/
-```
-
-### Running Tests
-```bash
-# All tests
-pytest
-
-# With coverage
-pytest --cov=app --cov-report=html
-
-# Specific marker
-pytest -m unit          # Unit tests only
-pytest -m integration   # Integration tests
-pytest -m "not slow"    # Skip slow tests
-```
-
----
-
-## 📝 Code Standards
-
-### Python Style
-- **Formatter**: Black (line length: 100)
-- **Linter**: Ruff (replaces flake8, isort, pydocstyle)
-- **Type Checker**: mypy (strict mode)
-- **Security**: bandit
-
-### Import Order
-```python
-# 1. Standard library
-import os
-from datetime import datetime
-
-# 2. Third-party
-from fastapi import FastAPI
-from sqlalchemy import Column
-
-# 3. Local application
-from app.db.database import Base
-from app.models.user import User
-```
-
-### Type Hints
-- Selalu gunakan type hints untuk function arguments dan return values
-- Gunakan `from __future__ import annotations` untuk Python 3.14+
-
-### Docstrings (Google Style)
-```python
-def get_camera_snapshot(camera_id: int, timeout: int = 10) -> bytes:
-    """Capture snapshot from camera.
-    
-    Args:
-        camera_id: The ID of the camera to capture from.
-        timeout: Maximum time to wait for snapshot in seconds.
-        
-    Returns:
-        Raw bytes of the captured image.
-        
-    Raises:
-        CameraNotFoundError: If camera doesn't exist.
-    """
-```
-
----
-
-## 🔒 Security Best Practices
-
-1. **Never commit secrets**: Gunakan `.env` file
-2. **Validate inputs**: Gunakan Pydantic schemas
-3. **SQL Injection**: Gunakan SQLAlchemy ORM
-4. **XSS Protection**: Escape output di templates Jinja2
-5. **CSRF**: Session-based auth include protection
-6. **Dependencies**: Jalankan `safety check` dan `bandit`
-
----
-
-## 🔔 SweetAlert2 (Alerts & Notifications)
-
-Project menggunakan **SweetAlert2** untuk semua modal, alert, dan konfirmasi. Tidak lagi menggunakan native `alert()` atau `confirm()`.
-
-### Setup
-
-SweetAlert2 di-install via NPM dan disimpan di static folder untuk offline support:
-
-```bash
-npm install sweetalert2
-```
-
-Files:
-- `static/js/sweetalert2.min.js`
-- `static/css/sweetalert2.min.css`
-
-### Global Functions (base.html)
-
-Sudah tersedia global function yang bisa dipakai di semua template:
-
-```javascript
-// Confirmation dialog
-showGlobalConfirm(message, onConfirm, options);
-
-// Alert dialog
-showGlobalAlert(message, title, options);
-
-// Themed Swal (untuk custom Swal dengan dark mode support)
-themedSwal({
-  icon: 'success',
-  title: 'Success',
-  text: 'Operation completed'
-});
-```
-
-### Usage Examples
-
-**Basic Confirmation:**
-```javascript
-showGlobalConfirm('Delete this camera?', () => {
-    // Execute delete
-    deleteCamera(id);
-}, {
-    title: 'Confirm Delete',
-    confirmText: 'Delete',
-    confirmButtonColor: '#dc2626'  // red for danger
-});
-```
-
-**SweetAlert2 dengan Dark Mode Support:**
-```javascript
-// Gunakan themedSwal() untuk otomatis mendukung dark mode
-themedSwal({
-    icon: 'success',
-    title: 'Success',
-    text: 'Camera added successfully',
-    timer: 1500,
-    showConfirmButton: false
-});
-
-themedSwal({
-    icon: 'error',
-    title: 'Error',
-    text: 'Failed to load camera data'
-});
-
-themedSwal({
-    icon: 'warning',
-    title: 'Validation Error',
-    text: 'Please select both start and end dates'
-});
-```
-
-### Dark Mode Support
-
-SweetAlert2 otomatis mengikuti tema dark/light mode melalui helper function `getSwalThemeConfig()` dan `themedSwal()` di `base.html`:
-
-```javascript
-// Helper: Get current theme config
-function getSwalThemeConfig() {
-  const isDark = document.documentElement.classList.contains('dark');
-  return {
-    background: isDark ? '#1f2937' : '#ffffff',
-    color: isDark ? '#f3f4f6' : '#111827',
-    confirmButtonColor: '#2563eb',
-    cancelButtonColor: isDark ? '#4b5563' : '#9ca3af',
-    iconColor: isDark ? '#60a5fa' : '#3b82f6',
-  };
-}
-
-// Helper: Create themed Swal instance
-function themedSwal(options = {}) {
-  return Swal.fire({...getSwalThemeConfig(), ...options});
-}
-```
-
-**Catatan:** Selalu gunakan `themedSwal()` alih-alih `Swal.fire()` langsung agar dark mode berfungsi dengan baik.
-
-### Icon Types
-
-- `success` - Green checkmark (success operations)
-- `error` - Red X (errors, failures)
-- `warning` - Yellow triangle (validation, caution)
-- `info` - Blue info (informational)
-- `question` - Blue question mark (choices)
-
-### Files yang sudah pakai SweetAlert2
-
-| Template | Usage |
-|----------|-------|
-| `recipients.html` | CRUD operations, CSV import, test email |
-| `cameras.html` | Snapshot download errors |
-| `health_history.html` | Date validation |
-| `insights.html` | Report generation errors |
-| `nvrs.html` | Delete confirmations |
-| `snapshot_gallery.html` | Bulk delete confirmation |
-
----
-
-## 🍞 Toast Notifications (Toast.js)
-
-Project menggunakan **Toast.js** (via `static/js/toast.js`) untuk menampilkan notifikasi non-blocking. Toast digunakan untuk feedback setelah operasi AJAX/CRUD.
-
-### Setup
-
-Toast.js sudah tersedia global di `base.html`:
-
-```javascript
-// Success toast
-Toast.success('Operation completed', { title: 'Success', duration: 3000 });
-
-// Error toast
-Toast.error('Something went wrong', { title: 'Error', duration: 5000 });
-
-// Info toast
-Toast.info('Please wait...', { title: 'Info' });
-
-// Warning toast
-Toast.warning('Check your input', { title: 'Warning' });
-```
-
-### AJAX Form Submission Best Practice
-
-Ketika membuat form dengan AJAX submission, **PENTING** untuk mengirim header `Accept: application/json` agar backend mengembalikan JSON response, bukan HTML page.
-
-**❌ INCORRECT - Will cause "Unexpected token '<'" error:**
-```javascript
-const response = await fetch('/profile/change-password', {
-    method: 'POST',
-    body: formData  // Missing Accept header!
-});
-const result = await response.json();  // Error: HTML returned instead of JSON
-```
-
-**✅ CORRECT:**
-```javascript
-const response = await fetch('/profile/change-password', {
-    method: 'POST',
-    headers: { 'Accept': 'application/json' },  // Required!
-    body: formData
-});
-const result = await response.json();  // Works: JSON returned
-```
-
-### Backend Response Format
-
-Backend menggunakan header `Accept` untuk mendeteksi AJAX requests:
-
-```python
-@router.post("/some-endpoint")
-async def some_endpoint(request: Request, ...):
-    # Check if request wants JSON (AJAX)
-    if request.headers.get("Accept") == "application/json":
-        return JSONResponse({
-            "status": "success",
-            "message": "Operation completed"
-        })
-    
-    # Otherwise return HTML page (traditional form submission)
-    return templates.TemplateResponse("page.html", {...})
-```
-
-### Complete AJAX Form Example
-
-```javascript
-async function submitForm(formData) {
-    try {
-        const response = await fetch('/api/endpoint', {
-            method: 'POST',
-            headers: { 'Accept': 'application/json' },
-            body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok && result.status === 'success') {
-            Toast.success(result.message, { title: 'Success' });
-            // Update UI or refresh data
-        } else {
-            Toast.error(result.message || 'Operation failed', { title: 'Error' });
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        Toast.error('Network error. Please try again.', { title: 'Error' });
-    }
-}
-```
-
-### Common Toast Error Messages
-
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `SyntaxError: Unexpected token '<'` | Server returned HTML instead of JSON | Add `headers: { 'Accept': 'application/json' }` to fetch |
-| `Network error` | CORS issue or server unreachable | Check network connection and server status |
-| Toast not showing | Toast.js not loaded | Check if `toast.js` is included in base.html |
-
----
-
-## 📧 Notification System - Important Notes
-
-### Incident Time Accuracy (Critical Fix)
-
-**Issue**: Tamper alert emails previously showed incorrect incident times (email send time instead of actual detection time).
-
-**Fix**: The `send_tamper_alert()` function now accepts an `incident_time` parameter:
-
-```python
-def send_tamper_alert(
-    db: Session, 
-    camera, 
-    reason: str, 
-    snapshot_path: str, 
-    incident_time: datetime = None  # NEW PARAMETER
-) -> bool:
-```
-
-**Usage:**
-```python
-# When triggering from snapshot detection, pass the snapshot timestamp:
-from app.utils.email_notifier import send_tamper_alert
-
-send_tamper_alert(
-    db, 
-    camera, 
-    snapshot.tamper_reason, 
-    file_path,
-    incident_time=snapshot.timestamp  # Pass actual detection time
-)
-```
-
-**Key Points:**
-- Always pass `snapshot.timestamp` when calling from snapshot detection
-- The function defaults to `datetime.now()` if not provided (for backwards compatibility)
-- Both email body and database log entries use the provided `incident_time`
-- Recovery alerts don't need this as they represent current events
-
-### Anti-Flooding Protection
-
-The notification system has 4-layer protection:
-
-1. **Scheduler Rate Limit**: `MIN_SNAPSHOT_INTERVAL_SECONDS = 30` (30s between snapshots)
-2. **Consecutive Counter Check**: `TAMPER_CONFIRM_THRESHOLD = 3` (3 tamper snapshots before alert)
-3. **Cooldown Mechanism**: `ALERT_COOLDOWN_MINUTES = 15` (15-min deduplication window)
-4. **Circuit Breaker**: 5 failures → 1 hour suppression
-
-Cooldown is set **immediately** upon entering `send_tamper_alert()`, before SMTP check, to prevent flooding even on SMTP failures.
-
----
-
-## 📚 Database Migrations
-
-Menggunakan Alembic untuk database migrations:
-
-```bash
-# Generate new migration
-alembic revision --autogenerate -m "add users table"
-
-# Apply migrations
-alembic upgrade head
-
-# Downgrade one revision
-alembic downgrade -1
-
-# View current version
-alembic current
-```
-
----
-
-## 🎯 Common Tasks
-
-### Add New Model
-1. Buat model di `app/models/`
-2. Import di `app/models/__init__.py`
-3. Generate migration: `make db-makemigrations message="add model"`
-4. Apply: `make db-migrate`
-
-### Add New Route
-1. Buat router di `app/routes/`
-2. Import dan register di `app/main.py`
-
-### Add Background Job
-1. Buat function di `app/jobs/`
-2. Register di `app/jobs/scheduler.py`
-
----
-
-## 🐛 Debugging
-
-```bash
-# Enable debug logging
-LOG_LEVEL=DEBUG make dev
-
-# Run with pdb
-python -m pdb -m uvicorn app.main:app
-
-# Memory profiling
-python -m memray run app/main.py
-```
-
----
-
-## 👥 Online Users Tracking
-
-Fitur untuk melacak user yang sedang online. Hanya admin yang dapat melihat informasi ini.
-
-### Components
-
-**Backend:**
-- `app/utils/online_users.py` - Thread-safe tracker untuk user online
-- `app/middleware/online_user_tracker.py` - Middleware untuk update activity
-- `app/routes/online_users.py` - API endpoints
-
-**Frontend:**
-- Sticky popup di `templates/base.html` (hanya untuk admin)
-- Auto-refresh setiap 30 detik
-
-### API Endpoints
-
-| Endpoint | Method | Access | Description |
-|----------|--------|--------|-------------|
-| `/api/online-users` | GET | Admin | Get detailed list of online users |
-| `/api/online-users/count` | GET | Admin | Get count only (lightweight) |
-
-### How It Works
-
-1. **Tracking**: Middleware `OnlineUserTrackerMiddleware` memperbarui timestamp setiap request
-2. **Timeout**: User dianggap offline setelah 5 menit tidak ada aktivitas
-3. **Logout**: User dihapus dari tracking saat logout
-4. **Display**: Sticky popup menampilkan jumlah user online dan detail saat diklik
-
-### Usage Example (Backend)
-
-```python
-from app.utils.online_users import get_online_tracker
-
-tracker = get_online_tracker()
-
-# Get online users
-users = tracker.get_online_users()
-count = tracker.get_online_count()
-stats = tracker.get_stats()
-```
-
----
-
-## 📖 Resources
-
-- [FastAPI Docs](https://fastapi.tiangolo.com/)
-- [SQLAlchemy 2.0](https://docs.sqlalchemy.org/)
-- [Alembic](https://alembic.sqlalchemy.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [ONVIF Specs](https://www.onvif.org/profiles/specifications/)
-
----
-
-**Version**: 1.17.0  
-**Last Updated**: 2026-04-07
-
----
-
-## Frontend Consistency
+Gunakan mode `dev` untuk auto-reload web. Mode `web` dan `all` tidak otomatis
+mengaktifkan reload. Verifikasi server pada `/version` menggunakan port aktif.
+Untuk migration, jalankan `alembic upgrade head` pada database pengembangan atau
+`docker compose exec b-snap alembic upgrade head` pada deployment yang dituju.
+
+## Standar implementasi
+
+- Ikuti pola modul dan fitur yang sudah ada; gunakan helper bersama sebelum
+  membuat implementasi baru.
+- Python: Black dengan line length 100, Ruff, type hints untuk argumen dan return,
+  serta docstring Google style bila penjelasan diperlukan. Gunakan
+  `from __future__ import annotations` pada modul baru sesuai kebutuhan anotasi.
+- Kelompokkan import standard library, third-party, lalu aplikasi lokal.
+- Konfigurasi mypy dan tool lainnya mengikuti `pyproject.toml` dan `Makefile`.
+- Tambahkan model dan registrasinya pada pola model yang berlaku; perubahan schema
+  harus disertai migration Alembic. Periksa chain migration sebelum menambahkan revision.
+- Daftarkan router baru di `app/main.py` dan gunakan dependency autentikasi/role
+  sesuai endpoint yang sejenis.
+- Tambahkan entry singkat di `CHANGELOG.md` bagian `[Unreleased]` untuk setiap
+  perubahan kode atau perilaku pengguna dalam change set yang sama.
+
+## Frontend consistency
+
+### Komponen, dialog, dan AJAX
+
+- Gunakan komponen, Tailwind classes, dan dark-mode behavior dari halaman sejenis.
+- Gunakan `themedSwal()`, `showGlobalConfirm()`, atau `showGlobalAlert()` untuk
+  dialog SweetAlert2. Hindari native `alert()`/`confirm()` dan pemanggilan
+  `Swal.fire()` langsung. Custom modal mengikuti pola komponen yang sudah ada.
+- Gunakan `Toast.success/error/info/warning()` untuk feedback operasi non-blocking.
+- Request AJAX yang mengharapkan JSON harus mengirim `Accept: application/json`,
+  memeriksa status HTTP, dan menangani error response serta error jaringan.
+- Escape output Jinja2 dan data yang dimasukkan ke HTML/atribut JavaScript.
+  Jangan menganggap data dari API aman untuk interpolasi `innerHTML`.
 
 ### Pagination
-- Keep paginated lists consistent with established pages such as `audit_logs.html` and `cameras.html`.
-- Use a result range (`Showing x-y of N results`), a `Page x of y` indicator, numbered page buttons with a two-page window, ellipses for distant pages, and first/previous/next/last controls when multiple pages exist.
-- Reuse an existing pagination renderer or copy its markup, Tailwind classes, dark-mode support, and behavior. Do not introduce a previous/next-only control for a page when the established pattern is available.
 
-### Changelog
-- Add a concise entry to `CHANGELOG.md` under `[Unreleased]` for every code or user-facing behavior change in the same change set.
+- Ikuti pola `audit_logs.html` dan `cameras.html`: range
+  `Showing x-y of N results`, indikator `Page x of y`, nomor halaman dengan
+  window dua halaman, ellipsis, dan first/previous/next/last untuk beberapa halaman.
+- Reuse renderer atau markup, Tailwind classes, dark-mode support, dan behavior
+  yang sudah ada. Jangan mengganti pola tersebut dengan previous/next saja.
 
----
+### Tampilan tanggal dan waktu
 
-## 🔒 Security Features (P0/P1/P2)
+- Bahasa user mengatur format: `document.documentElement.lang`, dengan
+  `en` -> `en-US` dan `id` -> `id-ID`. Hindari locale tampilan yang tetap atau
+  mengikuti bahasa browser/OS.
+- Konfigurasi database `timezone` mengatur clock. Pergantian bahasa tidak boleh
+  mengubah timezone atau waktu kejadian.
+- Reuse `static/js/date-format.js`, yang dimuat global oleh `base.html`:
+  - `BSnapDates.locale()` untuk formatter `Intl` / `toLocale*` yang sudah ada.
+  - `BSnapDates.format(value, options)` untuk plain text. Saat menerima ISO mentah,
+    berikan `{ timeZone: configuredTimezone }` secara eksplisit.
+  - `BSnapDates.html(value)` atau `data-localized-date` untuk tanggal HTML yang
+    ikut berubah saat bahasa diganti; gunakan style `'date'` atau
+    `data-date-style="date"` untuk date-only.
+- Helper tidak otomatis mengambil timezone config untuk ISO mentah.
+  `BSnapDates.html()` saat ini menerima value dan style, bukan opsi timezone.
+  Gunakan timestamp backend yang sudah dikonversi, atau perluas helper bersama
+  sebelum memakainya untuk ISO mentah yang perlu timezone config.
+- Simpan dan bandingkan timestamp dalam UTC. API sebaiknya mengirim ISO 8601
+  dengan `Z` atau offset eksplisit. Perlakukan timestamp database naive sebagai
+  UTC secara eksplisit sebelum konversi.
+- String dari `format_datetime_standard()` sudah berada di timezone config.
+  Helper mendukung `DD/MM/YYYY - HH:mm:ss TZ`; pertahankan clock dan labelnya,
+  tanpa konversi kedua atau reinterpretasi sebagai UTC.
+- Gunakan clock 24 jam. Historical events, Last Run, Next Run, incident, dan logs
+  menampilkan tanggal serta jam. Time-only boleh jika tanggalnya jelas di konteks.
+- Letakkan label timezone pada header tanggal/laporan atau header kolom jika
+  berlaku untuk seluruh bagian. Hindari pengulangan per baris jika header sudah
+  jelas; pertahankan label yang sudah ada.
+- Label mengikuti zone: `Asia/Jakarta` -> `WIB`, `Asia/Makassar` -> `WITA`,
+  `Asia/Jayapura` -> `WIT`. Untuk zone lain, gunakan abbreviation atau nama zone
+  yang benar; jangan hardcode WITA sebagai label semua timezone.
+- Visible dates harus langsung diformat ulang pada `bsnap:languagechange`.
+  Helper menangani marked dates; custom renderer harus menangani event tersebut.
+  Dynamic/AJAX rows memakai aturan yang sama.
+- Nilai mesin tetap stabil: date input, parameter API, filter, filename, dan
+  chronological sorting key memakai format ISO seperti `YYYY-MM-DD`.
+  Locale tetap untuk menghasilkan nilai mesin diperbolehkan, bukan label tampilan.
+- Export/report yang memerlukan tanggal lokal menerima bahasa pilihan secara
+  eksplisit di backend, memakai timezone config, dan mencantumkan timezone pada
+  header. Jangan mengandalkan locale proses backend.
+- Verifikasi EN/ID, pergantian bahasa dua arah, waktu dekat tengah malam, WIB/WITA/WIT,
+  date-only yang tidak bergeser hari, dan konversi timezone tepat satu kali.
 
-### Evidence Integrity (P0-001)
-- SHA-256 hash untuk semua snapshot dan video
-- Endpoint: `GET /snap/{id}/verify` untuk verifikasi integritas
-- Kolom: `snapshots.file_hash`, `videos.file_hash`
-
-### Soft Delete (P0-002)
-- Data dihapus = soft delete (flag `deleted_at`)
-- Trash Management: `/admin/trash`
-- Restore: `POST /snap/{id}/restore`, `POST /videos/{id}/restore`
-- Purge: `POST /admin/snapshots/purge`, `POST /admin/videos/purge`
-
-### Password Encryption (P1-001)
-- Algorithm: AES-256-GCM
-- Key: `ENCRYPTION_KEY` environment variable (32-byte hex)
-- Format: `ENC:<base64>`
-
-### Append-Only Audit Log (P2-001)
-- Database triggers mencegah UPDATE/DELETE pada `audit_logs`
-- Enhanced columns: `user_agent`, `request_path`, `request_method`, `response_status`
-- Functions: `log_audit()`, `log_api_access()`
-
-### Safety Classification (P2-002)
-- Klasifikasi kamera: `critical`, `standard`, `low`
-- Kolom: `cameras.safety_classification`
-- Untuk mining safety compliance
-
-### Retention Hold (P2-003)
-- Legal hold untuk footage kritis
-- Kolom: `retention_hold`, `retention_hold_reason`, `retention_hold_by`, `retention_hold_at`
-- Purge otomatis skip items dengan retention hold
-
-### Secure Snapshot Serving (P2-004)
-- Direct access ke `/static/snapshots/*` → 403 Forbidden
-- **Anti-Flooding Audit Log:**
-  - Gallery view: `POST /api/snapshots/gallery-view` (batch log)
-  - Thumbnail: `GET /api/snapshots/secure/{id}?thumb=true` (minimal log)
-  - Detail view: `GET /api/snapshots/secure/{id}` (full log)
-- API endpoints dengan autentikasi:
-  - `GET /api/snapshots/file/{file_path}`
-  - `GET /api/snapshots/secure/{snapshot_id}`
-- Download: `GET /api/snapshots/secure/{id}?download=true`
-- Semua akses dilog ke audit_logs dengan konteks yang sesuai
-
----
-
-## 🔒 Critical Security Fixes (CRIT)
-
-### Secure Video Serving (CRIT-001)
-- **Issue:** Video files bisa diakses langsung via `/static/videos/*` tanpa autentikasi
-- **Fix:** 
-  - Direct access ke `/static/videos/*` → 403 Forbidden
-  - API endpoints dengan autentikasi:
-    - `GET /api/videos/file/{file_path}`
-    - `GET /api/videos/secure/{video_id}`
-  - Download: `GET /api/videos/secure/{id}?download=true`
-  - Batch logging: `POST /api/videos/gallery-view`
-  - Semua akses dilog ke audit_logs
-- **Files Modified:** `app/main.py`, `app/routes/videos.py`, `templates/video_gallery.html`, `templates/_video_grid.html`
-
-### Group-Based Access Control Fix (CRIT-002)
-- **Issue:** Group filtering menggunakan camera name matching (`Snapshot.camera_group == user_group.name`) yang bisa menyebabkan akses tidak sah jika nama grup berubah
-- **Fix:** Menggunakan foreign key relationship via JOIN dengan Camera table:
-  ```python
-  db.query(Snapshot).join(
-      Camera, Snapshot.camera_id == Camera.id, isouter=True
-  ).filter(Camera.group_id == group_id)
-  ```
-- **Files Modified:** `app/routes/snap_gallery.py`, `app/routes/videos.py`
-
-### CSV Import Validation (CRIT-003)
-- **Issue:** CSV import tidak memvalidasi safety_classification dengan ketat dan tidak warning untuk password lemah
-- **Fix:**
-  - Validasi strict untuk safety_classification (critical/standard/low)
-  - Skip row dengan invalid safety_classification
-  - Log warning untuk "critical" classification (require verification)
-  - Log warning untuk password yang terlalu lemah (< 4 karakter)
-- **Files Modified:** `app/routes/cameras.py`
-
----
-
-## 🔧 Medium Security Fixes (MED)
-
-### Session Cookie Consistency (MED-001)
-- **Issue:** Session token max_age (24 jam) tidak konsisten dengan expires_at (30 hari)
-- **Fix:**
-  - Align token expiration dengan cookie max_age (24 jam untuk mining environment)
-  - Configurable via `SESSION_MAX_AGE_SECONDS` environment variable
-  - Default: 86400 seconds (24 hours)
-  - **Remember Me Integration:** Session di-auto-refresh untuk user dengan Remember Me aktif
-    - Memungkinkan CCTV monitoring 24/7 tanpa manual re-login
-    - Session tetap 24 jam tapi di-refresh otomatis setiap request
-    - Remember Me token tetap 1 tahun
-- **Files Modified:** `app/routes/auth.py`, `app/middleware/auth_and_setup.py`
-
-### API Token Expiration Enforcement (MED-002)
-- **Issue:** API tokens tanpa expires_at diterima indefinitely
-- **Fix:**
-  - Tokens tanpa expiration ditolak dengan error 401
-  - Token generation memerlukan expires_in_days > 0
-  - Clear error message: "Token has no expiration. Please generate a new token."
-- **Files Modified:** `app/routes/auth.py`, `app/routes/user_management.py`
-
-### Automated Retention Policy (MED-003)
-- **Issue:** `MAX_SNAPSHOT_AGE_DAYS` dan `MAX_VIDEO_AGE_DAYS` ada di config tapi tidak di-enforce
-- **Fix:**
-  - New scheduled job: `retention_policy` - runs daily at 3 AM
-  - Soft-deletes snapshots/videos older than retention period
-  - Items dengan `retention_hold=True` di-skip
-  - Configurable via:
-    - `retention_snapshot_days` (default: 30)
-    - `retention_video_days` (default: 7)
-- **Files Modified:** `app/jobs/scheduler.py`
-
-### GPS Coordinate Validation (MED-004)
-- **Issue:** GPS coordinates tidak divalidasi untuk valid ranges
-- **Fix:**
-  - Latitude validation: -90 to 90
-  - Longitude validation: -180 to 180
-  - SQLAlchemy `@validates` decorator pada model
-  - Raises ValueError untuk invalid coordinates
-- **Files Modified:** `app/models/camera.py`
-
----
-
-## 🟢 Low Fixes (LOW)
-
-### Remove Default Group "ALL" References (LOW-002)
-- **Issue:** Group "ALL" sudah dihapus dari database tapi masih ada di `default_groups`
-- **Fix:**
-  - Removed `{"id": 11, "name": "ALL"}` dari `default_groups` list
-  - Added comment explaining NULL group_id gives access to all cameras
-  - Migration `20260330_remove_all_group.py` sudah handle database cleanup
-- **Files Modified:** `app/models/camera_group.py`
----
-
-## 📚 Environment Variables Documentation
-
-All environment variables are documented at `/docs/environment` endpoint:
-
-### Accessing Documentation
-- **Web UI**: Navigate to `/docs/environment` (e.g., http://localhost:8080/docs/environment)
-- **Categories**: 10 categories covering 40+ environment variables
-- **Sections**:
-  1. **Core** - SECRET_KEY, ENCRYPTION_KEY, DATABASE_URL, ENVIRONMENT
-  2. **Session** - SESSION_MAX_AGE_SECONDS, MAX_WEB_SESSIONS
-  3. **Security** - TRUSTED_HOSTS, DEBUG
-  4. **Email** - SMTP_HOST, SMTP_PORT, SMTP_USER, etc.
-  5. **Storage** - SNAPSHOT_PATH, VIDEO_PATH, LOG_DIR
-  6. **Retention** - RETENTION_SNAPSHOT_DAYS, RETENTION_VIDEO_DAYS
-  7. **Camera** - OFFLINE_ALERT_THRESHOLD_SECONDS, CAMERA_TIMEOUT
-  8. **Logging** - LOG_LEVEL, LOG_DIR, BSNAP_LOG_VIA_GUNICORN
-  9. **Server** - WORKERS, PORT, BIND
-  10. **Timezone** - TZ, SCHEDULER_ENABLED
-
-### Configuration Files
-- `.env.example` - Template with all variables and descriptions
-- `.env` - Your local configuration (DO NOT COMMIT)
-- Config location: Project root
-
-### Critical Variables (Must Change in Production)
-| Variable | Purpose | Security Level |
-|----------|---------|----------------|
-| `SECRET_KEY` | Session & CSRF protection | CRITICAL |
-| `ENCRYPTION_KEY` | Camera password encryption | CRITICAL |
-| `DATABASE_URL` | Database connection | CRITICAL |
-| `ENVIRONMENT` | App mode (dev/test/prod) | HIGH |
-
-### Configuration Priority
-1. Environment Variables (highest priority)
-2. Database Configuration (via admin UI)
-3. Default values (lowest priority)
-
-### Usage Example
-```bash
-# Copy template
-cp .env.example .env
-
-# Edit configuration
-nano .env
-
-# Important variables to set
-SECRET_KEY=$(openssl rand -hex 32)
-ENCRYPTION_KEY=$(openssl rand -hex 32)
-DATABASE_URL="postgresql+psycopg2://user:pass@localhost/bsnap_db"
-ENVIRONMENT=production
+```javascript
+label.textContent = BSnapDates.format(isoTimestamp, { timeZone: configuredTimezone });
+const timestampCell = BSnapDates.html(backendFormattedTimestamp);
 ```
 
-### Sphinx Documentation
-
-Documentation juga tersedia dalam format Sphinx:
-
-```bash
-# Build documentation
-cd docs
-make html
-
-# View documentation
-open build/html/index.html
+```html
+<span data-localized-date="2026-10-07" data-date-style="date"></span>
 ```
 
-**Location**: `docs/source/configuration.md`  
-**Files**:
-- `docs/source/configuration.md` - Environment variables
-- `docs/source/api.md` - API reference
-- `docs/source/security.md` - Security documentation
+## Konfigurasi, scheduler, dan notifikasi
 
-**Version**: 1.17.0  
-**Last Updated**: 2026-04-07
+- Environment settings memakai loader terkait; `get_config()` di
+  `app/core/config.py` membaca database `Configuration`, kemudian default.
+  Jangan mengasumsikan environment selalu mengalahkan nilai database untuk semua key.
+- Default database settings ada di `app/core/config_initializer.py`. Seed hanya
+  key yang belum ada; jangan menimpa pengaturan user.
+- Jadwal per job terpusat di `app/core/job_schedules.py`. Cron override tiap job
+  berdiri sendiri; nilai kosong mengembalikan default/legacy schedule yang berlaku.
+- Saat menambah job: daftarkan fungsi/wrapper di scheduler, schedule di
+  `JOB_SCHEDULES`, serta nama/deskripsi di `app/routes/jobs.py`. Pastikan job dapat
+  dilihat dan diatur melalui `/admin/jobs`.
+- Semua cron/interval trigger dan report date header memakai timezone config.
+  Perubahan schedule/timezone harus berlaku pada config reload. Scheduler worker
+  saat ini melakukan polling setiap 60 detik melalui `scheduler_main.py`.
+- Verifikasi startup, edit schedule, reload, reset ke default, timezone, dan bahwa
+  perubahan satu job tidak mengubah jadwal job lain. Jangan menjalankan scheduler
+  riil yang dapat mengirim notifikasi/capture kamera dalam tes terisolasi.
+- Alert incident memakai waktu deteksi: selalu teruskan `snapshot.timestamp`
+  sebagai `incident_time` ke `send_tamper_alert()` dari snapshot detection.
+  Default fungsi adalah UTC now; retry harus mempertahankan waktu incident asli.
+- Pertahankan deduplikasi, consecutive-confirmation, cooldown, rate limiting,
+  dan circuit breaker. Gunakan sumber konfigurasi/konstanta di kode; jangan
+  menduplikasi angka threshold dalam panduan. Cooldown tamper dipasang setelah
+  pemeriksaan deduplikasi dan sebelum pengiriman; jangan mengubah urutan tanpa
+  memeriksa dampak terhadap flooding dan retry.
+
+## Invariant keamanan
+
+- Jangan commit `.env`, token, password, atau encryption key. Jangan memasukkan
+  secret ke log, response, contoh dokumentasi, atau artefak tes.
+- Validasi input dan pertahankan autentikasi, role checks, CSRF protection, serta
+  group restrictions pada endpoint baru maupun endpoint yang diubah.
+- Akses grup kamera memakai relasi `Camera.groups` / association table, seperti
+  `Camera.groups.any(CameraGroup.id == group_id)`. Jangan memakai nama grup atau
+  legacy `Camera.group_id` sebagai satu-satunya pembatas akses.
+- `group_id` user yang NULL berarti tanpa pembatas grup; fitur online-user detail
+  tetap admin-only. Ikuti helper/dependency akses yang berlaku.
+- File snapshot/video harus dilayani melalui endpoint authenticated. Pertahankan
+  blokir akses langsung `/static/snapshots/*` dan `/static/videos/*`, pemeriksaan
+  group access, serta audit access/download.
+- Pertahankan SHA-256 evidence integrity dan append-only audit trail. Pencatatan
+  thumbnail/gallery memakai pola minimal/batch yang ada agar audit tidak flooding.
+- Delete footage menggunakan soft delete. Retention hold harus dihormati oleh
+  cleanup/purge; restore dan purge mengikuti pemeriksaan akses yang ada.
+- Password kamera memakai helper enkripsi yang ada; jangan menyimpan plaintext
+  baru atau melewati mekanisme enkripsi pada import/update.
+- Safety classification dan GPS coordinates harus memakai validasi model/schema
+  yang berlaku. Token expiry, session expiry, dan Remember Me mengikuti auth code.
+
+## Pengujian dan verifikasi
+
+- Tes berada di `app/tests/`; periksa file/marker yang benar sebelum memilih suite.
+  Jangan mengasumsikan ada subfolder `unit/` atau `integration/`.
+- Jalankan tes terarah sesuai perubahan, lalu pemeriksaan lint/format yang relevan.
+  Pilih database test atau mock yang terisolasi dari data aplikasi.
+- Fixture umum `app/tests/conftest.py` membuat schema SQLite. Model PostgreSQL
+  seperti `JSONB` dapat membuat setup gagal; bedakan kegagalan fixture dari
+  kegagalan kode. Tes database PostgreSQL memerlukan database test yang sesuai.
+- Tes terisolasi yang memock DB tidak memerlukan schema lengkap. Dokumentasikan
+  fixture override lokal jika dipakai; jangan mengklaim seluruh suite lulus
+  berdasarkan tes terarah saja.
+- Jalankan `npm run build` bila diperlukan untuk menghasilkan CSS, dan periksa
+  JavaScript/template serta tampilan light/dark pada perubahan frontend.
+- Laporkan perubahan, hasil verifikasi, dan keterbatasan material secara jelas.
+
+## Dokumentasi lanjutan
+
+- [README.md](README.md): overview dan setup.
+- [Development](docs/source/development.md): workflow pengembangan.
+- [Deployment](docs/source/deployment.md): deployment dan layanan.
+- [Configuration](docs/source/configuration.md): environment/configuration.
+- [Security](docs/source/security.md): fitur dan mekanisme keamanan.
+- [Audit logging](docs/source/audit_logging.md): audit trail.
+- [Notifications](docs/source/notifications.md): email dan notifikasi.
+- [Record mounts](docs/source/record-mounts.md): akses recording SMB/NFS.
+- [CHANGELOG.md](CHANGELOG.md): riwayat rilis dan perbaikan.

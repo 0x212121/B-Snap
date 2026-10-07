@@ -148,7 +148,7 @@
     const body=document.getElementById('waMessageRows'); body.replaceChildren();
     for (const item of rows) {
       const row=document.createElement('tr'); row.className='border-b align-top dark:border-gray-700';
-      for (const value of [item.timestamp ? new Date(item.timestamp).toLocaleString() : '',item.phone_number,item.direction,item.status,item.command || '',item.error || item.message || '']) {
+      for (const value of [item.timestamp ? new Date(item.timestamp).toLocaleString(BSnapDates.locale()) : '',item.phone_number,item.direction,item.status,item.command || '',item.error || item.message || '']) {
         const cell=document.createElement('td'); cell.className='max-w-sm break-words p-2';
         if (row.children.length===3) { const badge=document.createElement('span'); badge.className=`ui-badge ${item.error || /fail|error|reject/i.test(item.status) ? 'ui-badge-critical' : item.status==='sent' ? 'ui-badge-success' : 'ui-badge-neutral'}`; badge.textContent=value; cell.appendChild(badge); }
         else { const text=document.createElement('span'); text.className='wa-message-summary'; text.textContent=value; cell.appendChild(text); }
@@ -535,9 +535,9 @@
       if (!response.ok) throw new Error(data.detail || 'Failed to load message monitor');
       messageRows = data.messages || [];
       lastMonitorRefresh = new Date(); renderMessages();
-      document.getElementById('messageRefreshState').textContent = `${t('Updated','Diperbarui')} ${lastMonitorRefresh.toLocaleTimeString()} · ${t('Filters apply to the latest 100 messages','Filter berlaku pada 100 pesan terbaru')}`;
+      document.getElementById('messageRefreshState').textContent = `${t('Updated','Diperbarui')} ${lastMonitorRefresh.toLocaleTimeString(BSnapDates.locale())} · ${t('Filters apply to the latest 100 messages','Filter berlaku pada 100 pesan terbaru')}`;
     } catch (error) {
-      document.getElementById('messageRefreshState').textContent = `${t('Refresh failed','Pembaruan gagal')}: ${error.message}${lastMonitorRefresh ? ' · '+t('Last updated','Terakhir diperbarui')+' '+lastMonitorRefresh.toLocaleTimeString() : ''}`;
+      document.getElementById('messageRefreshState').textContent = `${t('Refresh failed','Pembaruan gagal')}: ${error.message}${lastMonitorRefresh ? ' · '+t('Last updated','Terakhir diperbarui')+' '+lastMonitorRefresh.toLocaleTimeString(BSnapDates.locale()) : ''}`;
       throw error;
     } finally { monitorLoading = false; document.getElementById('refreshWaMessages').disabled = false; }
   }

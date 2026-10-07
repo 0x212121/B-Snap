@@ -116,6 +116,7 @@
   </style>
   <!-- SweetAlert2 CSS -->
   <link rel="stylesheet" href="/static/css/sweetalert2.min.css">
+  <script src="/static/js/date-format.js"></script>
   <script src="/static/js/i18n.js" defer></script>
   <script src="/static/js/ui.js" defer></script>
 </head>
@@ -479,7 +480,7 @@ function onlineUsersPopup() {
       if (diff < 60) return 'Just now';
       if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
       if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-      return date.toLocaleDateString();
+      return date.toLocaleDateString(BSnapDates.locale());
     },
     
     revokeUser(user) {

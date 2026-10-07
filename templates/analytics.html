@@ -945,7 +945,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('storageStatusText').textContent = data.alert_level.charAt(0).toUpperCase() + data.alert_level.slice(1);
     document.getElementById('storageStatusText').className = `text-sm font-medium ${statusColor}`;
     document.getElementById('storagePercentText').textContent = `${percent}%`;
-    document.getElementById('storageDetailText').textContent = data.last_updated ? `Last updated: ${new Date(data.last_updated).toLocaleString()}` : '';
+    document.getElementById('storageDetailText').textContent = data.last_updated ? `Last updated: ${new Date(data.last_updated).toLocaleString(BSnapDates.locale())}` : '';
     
     document.getElementById('storageTotal').textContent = data.total;
     document.getElementById('storageUsed').textContent = data.used;

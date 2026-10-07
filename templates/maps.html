@@ -449,7 +449,7 @@
       const timezone = mapElement.dataset.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
       const now = new Date();
-      const timeString = now.toLocaleTimeString('en-US', {
+      const timeString = now.toLocaleTimeString(BSnapDates.locale(), {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',

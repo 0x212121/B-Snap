@@ -664,7 +664,7 @@ async function loadRecipients(){
     // Update stats and info
     const total = data.pagination?.total || 0
     document.getElementById("stat-total").textContent = total.toLocaleString()
-    document.getElementById("stat-updated").textContent = new Date().toLocaleTimeString()
+    document.getElementById("stat-updated").textContent = new Date().toLocaleTimeString(BSnapDates.locale())
     
     // Update results info text
     const resultsInfo = document.getElementById("results-info")
@@ -1016,7 +1016,7 @@ async function sendTestEmail() {
     
     const json = await res.json()
     lastTestEmailTime = new Date()
-    document.getElementById('test-last-send').textContent = lastTestEmailTime.toLocaleTimeString()
+    document.getElementById('test-last-send').textContent = lastTestEmailTime.toLocaleTimeString(BSnapDates.locale())
     
     themedSwal({
       icon: 'success',

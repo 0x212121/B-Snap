@@ -330,7 +330,9 @@
   function showModal(src, camera, time) {
     document.getElementById("modal-img").src = src;
     document.getElementById("modal-camera").textContent = camera;
-    document.getElementById("modal-time").textContent = time;
+    const modalTime = document.getElementById("modal-time");
+    modalTime.dataset.localizedDate = time;
+    modalTime.textContent = BSnapDates.format(time);
     // P2-004: Use download=true query param for proper filename from server
     document.getElementById("download-btn").href = src + (src.includes("?") ? "&" : "?") + "download=true";
     document.getElementById("download-btn").download = "";

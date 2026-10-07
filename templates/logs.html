@@ -554,8 +554,7 @@ function debounce(fn, delay) {
 
 // Utility: Format date
 function formatDate(isoString) {
-  const date = new Date(isoString);
-  return date.toLocaleString();
+  return BSnapDates.html(isoString);
 }
 
 // Utility: Escape HTML

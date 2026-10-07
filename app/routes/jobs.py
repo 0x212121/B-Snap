@@ -19,6 +19,8 @@ from app.models.config import Configuration
 from app.routes.auth import admin_access_required
 from app.utils.template_helper import templates
 from app.core.config import get_config
+from app.core.job_schedules import JOB_SCHEDULES, get_job_schedule
+from apscheduler.triggers.cron import CronTrigger
 from app.utils.record_check_report import send_record_check_daily_reports
 
 router = APIRouter(prefix="/admin/jobs", tags=["Job Management"])
@@ -117,20 +119,9 @@ async def list_jobs(
 ):
     """Get list of all configured jobs with their settings."""
     try:
-        # Get cron expressions from config
-        cleanup_cron = get_config('cleanup_cron', '0 2 * * *')
-        cron_configs = {
-            'scheduled_snapshot': get_config('snapshot_cron', ''),
-            'health_check': get_config('healthcheck_cron', ''),
-            'storage_check': get_config('storage_check_cron', ''),
-            'record_folder_check': get_config('record_check_cron', ''),
-            'cleanup_camera_stats': cleanup_cron,
-            'cleanup_api_logs': cleanup_cron,
-            'cleanup_command_logs': cleanup_cron,
-            'cleanup_record_checks': cleanup_cron,
-            'email_retry': get_config('email_retry_cron', ''),
-        }
-        
+        schedules = {job_id: get_job_schedule(job_id) for job_id in CONFIGURED_JOBS}
+        cron_configs = {job_id: settings["cron_expression"] for job_id, settings in schedules.items()}
+
         # Read jobs directly from database
         db_jobs_by_id = {job['id']: job for job in get_jobs_from_db()}
         
@@ -161,7 +152,10 @@ async def list_jobs(
                 "id": job_id,
                 "name": job_name,
                 "description": JOB_DESCRIPTIONS.get(job_id, "Background scheduler job."),
-                "trigger": "Cron/Interval",  # Simplified, read from config
+                "trigger": "Cron" if cron_expr else (
+                    f"Every {schedules[job_id]['interval']} {schedules[job_id]['interval_unit']}"
+                ),
+                "schedule_editable": job_id in JOB_SCHEDULES,
                 "cron_expression": cron_expr,
                 "next_run_time": next_run_iso,
                 "registered": job_id in db_jobs_by_id,
@@ -392,30 +386,9 @@ async def update_job_schedule(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    """Update cron schedule for a job.
-    
-    Job IDs mapping to config keys:
-    - scheduled_snapshot -> snapshot_cron
-    - health_check -> healthcheck_cron
-    - storage_check -> storage_check_cron
-    - record_folder_check -> record_check_cron
-    - cleanup_* -> cleanup_cron
-    - email_retry -> email_retry_cron
-    """
-    # Map job_id to config key
-    job_to_config = {
-        'scheduled_snapshot': 'snapshot_cron',
-        'health_check': 'healthcheck_cron',
-        'storage_check': 'storage_check_cron',
-        'record_folder_check': 'record_check_cron',
-        'cleanup_camera_stats': 'cleanup_cron',
-        'cleanup_api_logs': 'cleanup_cron',
-        'cleanup_command_logs': 'cleanup_cron',
-        'cleanup_record_checks': 'cleanup_cron',
-        'email_retry': 'email_retry_cron',
-    }
-    
-    config_key = job_to_config.get(job_id)
+    """Update an individual job's cron override; empty restores its default."""
+    definition = JOB_SCHEDULES.get(job_id)
+    config_key = definition[0] if definition else None
     if not config_key:
         return JSONResponse(
             status_code=400,
@@ -424,14 +397,15 @@ async def update_job_schedule(
     
     cron_value = cron_expression.strip()
 
-    # Validate cron expression (basic check). Empty means use interval fallback.
-    cron_parts = cron_value.split()
-    if cron_value and len(cron_parts) != 5:
-        return JSONResponse(
-            status_code=400,
-            content={"status": "error", "message": "Invalid cron expression. Must have 5 parts: minute hour day month weekday"}
-        )
-    
+    if cron_value:
+        try:
+            CronTrigger.from_crontab(cron_value, timezone=timezone.utc)
+        except ValueError as exc:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": f"Invalid cron expression: {exc}"},
+            )
+
     try:
         # Update config in database
         config = db.query(Configuration).filter(Configuration.key == config_key).first()
@@ -444,8 +418,8 @@ async def update_job_schedule(
         
         return JSONResponse({
             "status": "success",
-            "message": f"Schedule updated for '{job_id}'. Changes will take effect on next config reload.",
-            "cron_expression": cron_value
+            "message": f"Schedule updated for '{job_id}'. The scheduler applies changes within 60 seconds.",
+            "cron_expression": cron_value,
         })
     except Exception as e:
         db.rollback()

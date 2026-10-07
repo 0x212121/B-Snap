@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Health, galleries, audit/email logs, and other frontend date/time displays now follow the selected English/Indonesian language instead of a fixed locale or the browser language.
+
+- Job Management now shows both date and time for Next Run and formats timestamps using the selected English/Indonesian language, updating immediately when the language changes.
+
+- All 14 jobs in Job Management now support independent cron schedules, full cron validation, and automatic schedule reload within 60 seconds while preserving legacy defaults.
+
 - Unified page styling, simpler navigation, and clearer destructive actions.
 - Improved Bot Builder editing, search, draft protection, and English/Indonesian support.
 - Simplified release notes across all versions to highlight important changes.

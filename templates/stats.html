@@ -403,7 +403,7 @@
     document.getElementById('storageStatusText').className = `text-sm font-medium ${statusColor}`;
     document.getElementById('storagePercentText').textContent = `${percent}%`;
     document.getElementById('storageDetailText').textContent = 
-      data.last_updated ? `Last updated: ${new Date(data.last_updated).toLocaleString()}` : '';
+      data.last_updated ? `Last updated: ${new Date(data.last_updated).toLocaleString(BSnapDates.locale())}` : '';
     
     // Update stats
     document.getElementById('storageTotal').textContent = data.total;

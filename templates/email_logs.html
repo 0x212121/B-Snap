@@ -536,8 +536,8 @@
                   <span class="font-medium text-gray-900 dark:text-white">${log.camera_name || '-'}</span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-gray-600 dark:text-gray-400 font-mono text-xs">${log.incident_started_at}</td>
-              <td class="px-4 py-3 text-gray-600 dark:text-gray-400 font-mono text-xs">${log.sent_at}</td>
+              <td class="px-4 py-3 text-gray-600 dark:text-gray-400 font-mono text-xs">${BSnapDates.html(log.incident_started_at)}</td>
+              <td class="px-4 py-3 text-gray-600 dark:text-gray-400 font-mono text-xs">${BSnapDates.html(log.sent_at)}</td>
               <td class="px-4 py-3">${renderRecipients(log.recipients, log.id)}</td>
               <td class="px-4 py-3">${getReasonBadge(log.reason)}</td>
               <td class="px-4 py-3 text-center">${getStatusBadge(log.success)}</td>
