@@ -32,7 +32,9 @@ coverage.xml
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
-docs/build/
+docs/build/*
+!docs/build/html/
+!docs/build/html/**
 app/*.exe
 app/logs
 backup.sql

@@ -4,6 +4,7 @@
 import asyncio
 import logging
 import os
+from pathlib import Path
 from contextlib import asynccontextmanager
 import traceback
 
@@ -27,6 +28,7 @@ from app.middleware.online_user_tracker import OnlineUserTrackerMiddleware
 
 from app.db.migrate import require_current_schema
 from app.core.logging_config import setup_logging
+from app.core.static_assets import mount_documentation
 from app.db.database import engine, SessionLocal
 from app.utils.timezone_helper import clear_timezone_cache
 
@@ -258,8 +260,9 @@ async def block_video_access(request: Request, path: str):
         }
     )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/documentation", StaticFiles(directory="docs/build/html"), name="docs")
+project_root = Path(__file__).resolve().parents[1]
+app.mount("/static", StaticFiles(directory=project_root / "static"), name="static")
+mount_documentation(app, project_root)
 
 # Registrasi routers
 app.include_router(auth.router)

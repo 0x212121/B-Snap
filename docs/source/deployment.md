@@ -225,6 +225,19 @@ It also checks mandatory top-level application import modules without starting
 services or reading `.env`, so missing runtime dependencies fail the image build.
 HTTPX belongs to runtime dependencies because WhatsApp API workflows use its
 ASGI client; installing development extras is not required to boot web workers.
+A full `app.main` import smoke check also runs with a synthetic localhost database
+URL and test secret during the image build; it does not enter the FastAPI lifespan
+or start scheduler/notifier processes. This catches missing startup assets as
+well as import errors before publishing the image.
+
+Generated documentation is optional for web startup. If `docs/build/html` exists
+in the build context, its HTML/assets are copied into the image and served under
+`/documentation`. Build it before building the image (`make docs-build`) when
+you need this documentation bundle. If it is absent, the web application still
+boots and `/documentation` has no static mount (404 for authenticated users);
+the application documentation routes and Swagger UI remain available. Static
+and documentation mount paths resolve from the application root, independently
+of the working directory.
 
 The current default image tag and `APP_VERSION` build argument follow the package
 version. On a version bump, update both defaults; inconsistent source/label

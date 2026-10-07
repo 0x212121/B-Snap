@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Allow web startup without generated documentation, include built documentation HTML when available, resolve static mounts from the application root, and smoke-check the web application import during Docker builds.
+
 - Include HTTPX in runtime dependencies so Docker web workers can import WhatsApp workflows; reject image builds with missing top-level application import modules.
 
 ## [2.4.0] 2026-10-07

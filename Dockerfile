@@ -51,6 +51,7 @@ COPY . /app
 COPY --from=frontend /build/static/css/output.css /app/static/css/output.css
 RUN python scripts/check_image_version.py "${APP_VERSION}" && \
     python scripts/check_runtime_imports.py && \
+    DATABASE_URL=postgresql+psycopg2://image_check@127.0.0.1:1/image_check SECRET_KEY=image-build-check ENVIRONMENT=testing python -c "import app.main" && \
     python -c "import cv2, psycopg2, asyncpg; from PIL import Image; from cryptography.fernet import Fernet" && \
     ffprobe -version && \
     python -c "from pathlib import Path; paths = [Path('start.sh'), Path('gunicorn.conf.py')]; [p.write_bytes(p.read_bytes().replace(b'\r\n', b'\n')) for p in paths]" && \
