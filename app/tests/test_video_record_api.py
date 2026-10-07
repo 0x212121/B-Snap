@@ -317,9 +317,9 @@ class VideoRecordAPITests(unittest.TestCase):
                 text_bot = wa_webhook.WABotHandler(self.db)
                 text_bot.progress_sender = AsyncMock()
                 with patch.object(text_bot, "_selected_api_token", return_value="test-token"):
-                    asyncio.run(text_bot.handle("628123456789", "/record CCTV-GATE-01"))
+                    asyncio.run(text_bot.handle("628123456789", "/record CCTV-GATE-01", is_group=True))
                 self.assertEqual(text_bot.outbound_items, [])
-                assert text_bot.private_response
+                assert not text_bot.private_response
             self.assertFalse(bot.private_response)
             self.assertFalse(bot.action_failed)
             progress.assert_awaited_once()

@@ -12,16 +12,26 @@ from app.routes import wa_webhook
 
 
 class ReplyRoutingTests(unittest.TestCase):
-    def test_processing_and_video_quote_the_originating_chat(self) -> None:
+    def test_processing_and_api_results_quote_the_originating_chat(self) -> None:
         for chat_id in ("record-group@g.us", "628123456789@s.whatsapp.net"):
             for quote_reply in (True, False):
-                with self.subTest(chat_id=chat_id, quote_reply=quote_reply):
-                    self.check_routing(chat_id, quote_reply, private_response=False)
+                for response_type in ("text", "image", "video"):
+                    with self.subTest(
+                        chat_id=chat_id, quote_reply=quote_reply, response_type=response_type
+                    ):
+                        self.check_routing(
+                            chat_id,
+                            quote_reply,
+                            private_response=False,
+                            response_type=response_type,
+                        )
 
     def test_private_api_replies_do_not_quote_the_group_message(self) -> None:
         self.check_routing("record-group@g.us", True, private_response=True)
 
-    def check_routing(self, chat_id: str, quote_reply: bool, private_response: bool) -> None:
+    def check_routing(
+        self, chat_id: str, quote_reply: bool, private_response: bool, response_type: str = "video"
+    ) -> None:
         sender = "628123456789"
         message_id = "original-command-id"
         db = Mock()
@@ -29,7 +39,16 @@ class ReplyRoutingTests(unittest.TestCase):
         bot = Mock(
             private_response=private_response,
             quote_reply=quote_reply,
-            outbound_items=[{"video_path": "recorded.mp4", "text": "Recorded"}],
+            outbound_items=[
+                {
+                    "text": "Recorded",
+                    **(
+                        {"video_path": "recorded.mp4"}
+                        if response_type == "video"
+                        else {"image_path": "snapshot.jpg"} if response_type == "image" else {}
+                    ),
+                }
+            ],
         )
         bot.parse_command.return_value = ("record", "camera")
 
@@ -50,6 +69,8 @@ class ReplyRoutingTests(unittest.TestCase):
         )
         gateway = Mock()
         gateway.send_video_file.return_value = {"success": True}
+        gateway.send_image_file.return_value = {"success": True}
+        gateway.send_text.return_value = {"success": True}
         with (
             patch.object(wa_webhook, "WABotHandler", return_value=bot),
             patch.object(wa_webhook, "_whitelisted_sender", return_value=Mock()),
@@ -68,9 +89,16 @@ class ReplyRoutingTests(unittest.TestCase):
         progress.assert_called_once_with(
             recipient, {"text": "Recording"}, sender, "record", reply_to
         )
-        gateway.send_video_file.assert_called_once_with(
-            recipient, "recorded.mp4", "Recorded", reply_to=reply_to
-        )
+        if response_type == "video":
+            gateway.send_video_file.assert_called_once_with(
+                recipient, "recorded.mp4", "Recorded", reply_to=reply_to
+            )
+        elif response_type == "image":
+            gateway.send_image_file.assert_called_once_with(
+                recipient, "snapshot.jpg", "Recorded", reply_to=reply_to
+            )
+        else:
+            gateway.send_text.assert_called_once_with(recipient, "Recorded", reply_to=reply_to)
         bot.handle.assert_awaited_once_with(
             sender, "/record camera", is_group=chat_id.endswith("@g.us")
         )

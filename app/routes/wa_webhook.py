@@ -611,10 +611,6 @@ class WABotHandler:
             }
             action_flow = command.get("flow") if action == "api_flow" else None
             if action_flow:
-                # Video commands reply in the invoking chat; other API results
-                # retain private delivery because they can expose system data.
-                self.private_response = command.get("response_type", "text") != "video"
-            if action_flow:
                 try:
                     await self._schedule_action_processing(command, argument, sender)
                     self.action_api_context = await run_api_flow(
@@ -1503,7 +1499,7 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
         # GoWA documents chat_id as the target chat JID. This also preserves a
         # group JID when the command was sent in a group chat.
         response = await bot.handle(sender, message, is_group=is_group)
-        # Non-video API workflows retain private delivery for protected system data.
+        # Replies, including API-flow results, follow the invoking conversation.
         recipient = sender if bot.private_response else chat_id
         reply_to = (message_id or None) if bot.quote_reply and not bot.private_response else None
         
