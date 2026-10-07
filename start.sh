@@ -6,13 +6,13 @@
 # It handles database migrations, static file collection, and server startup.
 #
 # Usage:
-#   ./start.sh [web|worker|scheduler|all]
+#   ./start.sh [web|scheduler|notifier|migrate|check]
 #
 # Modes:
 #   web       - Start web server only (gunicorn)
-#   worker    - Start background worker only
 #   scheduler - Start scheduler only
-#   all       - Start all services (default)
+#   notifier  - Start notification relay only
+#   migrate   - Run migrations and seed missing configuration
 # =============================================================================
 
 set -euo pipefail
@@ -44,8 +44,8 @@ log_error() {
 # Configuration
 APP_NAME="B-Snap"
 APP_DIR="/app"
-LOG_DIR="/logs"
-STATIC_DIR="/static"
+LOG_DIR="${APP_DIR}/logs"
+STATIC_DIR="${APP_DIR}/static"
 MODE="${1:-web}"
 
 # Create necessary directories
@@ -67,11 +67,12 @@ wait_for_db() {
         local attempt=1
         
         while [ $attempt -le $max_attempts ]; do
-            if python3 << EOF 2>/dev/null
+            if python3 << 'EOF' 2>/dev/null
+import os
 import sys
 from sqlalchemy import create_engine, text
 try:
-    engine = create_engine('$DATABASE_URL', connect_args={'connect_timeout': 5})
+    engine = create_engine(os.environ['DATABASE_URL'], connect_args={'connect_timeout': 5})
     with engine.connect() as conn:
         conn.execute(text('SELECT 1'))
         conn.commit()
@@ -99,18 +100,13 @@ run_migrations() {
     log_info "Running database migrations..."
     cd "${APP_DIR}"
     
-    if alembic upgrade head; then
-        log_success "Migrations completed"
-    else
-        log_warning "Migration failed, attempting to initialize database..."
-        python3 -c "
-from app.db.database import Base, engine
-Base.metadata.create_all(bind=engine)
-print('Database tables created')
-"
-        # Stamp alembic version
-        alembic stamp head || true
-    fi
+    python3 -m app.db.migrate
+    log_success "Migrations and configuration initialization completed"
+}
+
+require_database_ready() {
+    cd "${APP_DIR}"
+    python3 -c 'from app.db.migrate import require_current_schema; require_current_schema()'
 }
 
 # Collect static files (if needed)
@@ -151,7 +147,8 @@ check_environment() {
     
     # Check database URL
     if [[ -z "${DATABASE_URL:-}" ]]; then
-        log_warning "DATABASE_URL not set, using SQLite"
+        log_error "DATABASE_URL must be set to a PostgreSQL database"
+        exit 1
     else
         # Show masked DATABASE_URL for debugging
         local masked_url
@@ -245,7 +242,7 @@ main() {
             check_environment
             create_directories
             wait_for_db
-            run_migrations
+            require_database_ready
             collect_static
             start_web
             ;;
@@ -253,11 +250,14 @@ main() {
             check_environment
             create_directories
             wait_for_db
+            require_database_ready
             start_scheduler
             ;;
         notifier)
             check_environment
             create_directories
+            wait_for_db
+            require_database_ready
             start_notifier
             ;;
         all)

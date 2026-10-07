@@ -1,4 +1,16 @@
 services:
+  migrate:
+    build: .
+    image: kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.3.0
+    env_file:
+      - .env
+    working_dir: /app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["/app/start.sh", "migrate"]
+    restart: "no"
+
   b-snap:
     build: .
     image: kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.3.0
@@ -12,7 +24,9 @@ services:
       - .env
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     volumes:
       - ./static/snapshots:/app/static/snapshots
       - ./static/videos:/app/static/videos
@@ -36,7 +50,10 @@ services:
       - .env
     working_dir: /app
     depends_on:
-      - b-snap
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     volumes:
       - ./static/snapshots:/app/static/snapshots
       - ./static/videos:/app/static/videos
@@ -44,7 +61,7 @@ services:
       - shared_tmp:/tmp/shared
 
     restart: unless-stopped
-    command: python -m app.jobs.scheduler_main
+    command: ["/app/start.sh", "scheduler"]
   
   notifier:
     build: .
@@ -54,9 +71,12 @@ services:
       - .env
     working_dir: /app
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
-    command: python -m app.ws.notifier
+    command: ["/app/start.sh", "notifier"]
 
   postgres: 
     image: postgres:17.5

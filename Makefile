@@ -181,12 +181,12 @@ pre-commit-update: ## Update pre-commit hooks
 # =============================================================================
 
 .PHONY: db-init
-db-init: ## Initialize database (create tables)
-	$(PYTHON) -c "from app.db.database import Base, engine; Base.metadata.create_all(bind=engine)"
+db-init: ## Initialize database schema and missing configuration defaults
+	$(PYTHON) -m app.db.migrate
 
 .PHONY: db-migrate
-db-migrate: ## Run database migrations
-	alembic upgrade head
+db-migrate: ## Run database migrations and seed missing configuration defaults
+	$(PYTHON) -m app.db.migrate
 
 .PHONY: db-makemigrations
 db-makemigrations: ## Create new migration

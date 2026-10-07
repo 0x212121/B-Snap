@@ -119,13 +119,11 @@ except Exception as e:
 function Run-Migrations {
     Write-Info "Running database migrations..."
 
-    try {
-        alembic upgrade head
-        Write-Success "Migrations completed"
-    } catch {
-        Write-Warning "Migration failed, attempting stamp..."
-        alembic stamp head
+    python -m app.db.migrate
+    if ($LASTEXITCODE -ne 0) {
+        throw "Database migrations or configuration initialization failed."
     }
+    Write-Success "Migrations and configuration initialization completed"
 }
 
 # Check environment

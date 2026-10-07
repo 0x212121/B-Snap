@@ -85,10 +85,14 @@ DEFAULT_CONFIG = {
 }
 
 
-def seed_config(db: Session):
+def seed_config(db: Session, *, raise_on_error: bool = False) -> None:
     """Initialize default configuration values in database.
     
     Only inserts missing keys, never overwrites existing values.
+
+    Args:
+        db: Database session used to insert missing configuration keys.
+        raise_on_error: Propagate database errors for the one-shot migration service.
     """
     try:
         for key, value in DEFAULT_CONFIG.items():
@@ -99,4 +103,6 @@ def seed_config(db: Session):
         db.commit()
     except SQLAlchemyError as e:
         db.rollback()
+        if raise_on_error:
+            raise
         print(f"[seed_config] Failed to seed config: {e}")

@@ -25,13 +25,12 @@ from app.middleware.auth_and_setup import AuthAndSetupMiddleware
 from app.middleware.session_restore import RestoreSessionMiddleware
 from app.middleware.online_user_tracker import OnlineUserTrackerMiddleware
 
-from app.core.config_initializer import seed_config
+from app.db.migrate import require_current_schema
 from app.core.logging_config import setup_logging
-from app.db.database import Base, engine, SessionLocal
+from app.db.database import engine, SessionLocal
 from app.utils.timezone_helper import clear_timezone_cache
 
-# Import all models to register them with Base.metadata
-# This MUST happen before Base.metadata.create_all() is called
+# Register all models without performing schema changes during web startup.
 import app.models  # noqa: F401 - imports all models via __init__.py
 from app.routes import (
     admin, auth, audit, audit_log, cameras, camera_groups, config, dev_docs, docs, health, jobs, logs, maps,
@@ -46,15 +45,8 @@ from app.api import whatsapp_routes
 from app.api import observability_log
 from app.ws.manager import websocket_connections
 from functools import lru_cache
-from alembic.config import Config
-from alembic import command
-from pathlib import Path
 
 from app.utils.template_helper import templates
-
-# Get project root for alembic config
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-ALEMBIC_INI_PATH = os.getenv("ALEMBIC_INI_PATH", str(PROJECT_ROOT / "alembic.ini"))
 
 # ====================================================================
 # 2. INITIAL SETUP & CONFIGURATION
@@ -120,56 +112,18 @@ async def lifespan(app: FastAPI):
     clear_timezone_cache()
     logger.info("Timezone cache cleared on startup.")
     
-    # Always create missing tables (for new models that don't have migrations yet)
-    logger.info("Creating any missing tables from Base metadata...")
-    try:
-        Base.metadata.create_all(bind=engine)
-        logger.info("Table creation check complete.")
-    except Exception as e:
-        logger.error(f"Failed to create tables: {e}")
-    
-    if not tables:
-        logger.info("No existing tables found, stamping Alembic version...")
-        try:
-            alembic_cfg = Config(ALEMBIC_INI_PATH)
-            command.stamp(alembic_cfg, "head")
-            logger.info("Alembic schema version stamped to head.")
-        except Exception as e:
-            logger.error(f"Failed to stamp Alembic version: {e}")
-    else:
-        logger.info("Tables already exist, running Alembic upgrade...")
-        try:
-            alembic_cfg = Config(ALEMBIC_INI_PATH)
-            command.upgrade(alembic_cfg, "head")
-            logger.info("Alembic migrations applied.")
-        except Exception as e:
-            logger.error(f"Alembic migration failed: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
-            # Don't raise - allow app to start even if migration fails
-            # This prevents worker boot failure due to migration issues
+    # Workers only validate readiness; schema changes and seeding belong to migrate.
+    require_current_schema()
 
     db = SessionLocal()
     try:
-        seed_config(db)
-        logger.info("Database seeded with initial configuration.")
-        
-        # Load debug mode from database and apply to logging
-        try:
-            from app.models.config import Configuration
-            from app.core.logging_config import set_debug_mode
-            
-            debug_config = db.query(Configuration).filter_by(key="debug_mode").first()
-            if debug_config and debug_config.value == "1":
-                set_debug_mode(True)
-                logger.info("Debug mode loaded from database: ENABLED")
-            else:
-                logger.info("Debug mode loaded from database: DISABLED")
-        except Exception as e:
-            logger.warning(f"Could not load debug mode from database: {e}")
+        from app.models.config import Configuration
+        from app.core.logging_config import set_debug_mode
+
+        debug_config = db.query(Configuration).filter_by(key="debug_mode").first()
+        set_debug_mode(bool(debug_config and debug_config.value == "1"))
     except Exception as e:
-        logger.error(f"Database seeding failed: {e}")
-        # Don't raise - allow app to start
+        logger.warning(f"Could not load debug mode from database: {e}")
     finally:
         db.close()
 

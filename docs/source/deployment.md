@@ -2,6 +2,7 @@
 
 ## Development
 ```bash
+python -m app.db.migrate
 uvicorn app.main:app --reload
 ```
 
@@ -9,84 +10,50 @@ uvicorn app.main:app --reload
 ## Production
 Deploy using docker compose
 
-docker-compose.yml file:
-```docker
-services:
-  b-snap:
-    image: wijayaindra21/b-snap:v1.10.0
-    container_name: bsnap-app
-    ports:
-      - "8080:8080"
-    cap_add:
-      - NET_RAW
-    env_file:
-      - .env
-    depends_on:
-      - postgres
-    volumes:
-      - ./static/snapshots:/static/snapshots
-      - ./static/videos:/static/videos
-      - ./logs:/logs
-      - shared_tmp:/tmp/shared
-    restart: unless-stopped
+Use the repository `docker-compose.yml` as the deployment source of truth.
+The web, scheduler, notifier, and one-shot `migrate` service use the same image.
+PostgreSQL must be healthy before `migrate` runs; application services start only
+after migrations and default configuration initialization succeed.
 
-  scheduler:
-    image: wijayaindra21/b-snap:v1.10.0
-    container_name: bsnap-scheduler
-    env_file:
-      - .env
-    working_dir: /
-    depends_on:
-      - b-snap
-    volumes:
-      - ./static/snapshots:/static/snapshots
-      - ./static/videos:/static/videos
-      - ./logs:/logs
-      - shared_tmp:/tmp/shared
+```bash
+# First installation or normal upgrade (build and start the complete stack)
+docker compose up -d --build
 
-    restart: unless-stopped
-    command: python -m app.jobs.scheduler_main
-  
-  notifier:
-    image: wijayaindra21/b-snap:v1.10.0
-    container_name: bsnap-notifier
-    env_file:
-      - .env
-    depends_on:
-      - postgres
-    restart: unless-stopped
-    command: python -m ws.notifier
-
-  postgres:
-    image: postgres:17.5
-    container_name: bsnap-postgres
-    environment:
-      POSTGRES_DB: bsnap_db
-      POSTGRES_USER: bsnap_user
-      POSTGRES_PASSWORD: bsnap_pass
-      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: bsnap-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: wijaya.indra2196@gmail.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
-    ports:
-      - "5050:80"
-    depends_on:
-      - postgres
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-  shared_tmp:
+# Check migration completion and service state
+docker compose logs migrate
+docker compose ps -a
 ```
+
+A successful `migrate` container exits with code 0; this is expected. A non-zero
+exit blocks dependent application services. Fix the migration/seed error and
+run the complete stack again. Do not stamp the database to bypass a failure.
+
+The frozen baseline creates historical base tables on an empty PostgreSQL
+database, then the full Alembic chain installs schema changes, audit triggers,
+and views. Existing versioned databases skip that baseline ancestor. Seeding
+adds missing keys only and preserves user settings. The initial admin-account
+setup remains available through the web application.
+
+For a controlled production upgrade, back up persistent data, stop web,
+scheduler and notifier, run the migration service with the new image, then
+start the complete stack after a successful exit. Do not leave old workers
+running against a schema being upgraded:
+
+```bash
+docker compose build
+docker compose stop b-snap scheduler notifier
+docker compose run --rm migrate
+docker compose up -d
+```
+
+Run the last command only if migration exits successfully. A web/scheduler/
+notifier restart does not apply migrations or seed defaults. Standalone web
+startup also checks that schema revisions, model tables, and default keys are
+ready. Running `alembic upgrade head` alone does not seed defaults; use
+`python -m app.db.migrate` (or the `migrate` service) for full initialization.
+
+For native SMB/NFS recording mounts, apply the opt-in overlay described in
+[record-mounts.md](record-mounts.md); the migration service needs no mount privileges.
 
 Set .env file like below:
 ```bash
