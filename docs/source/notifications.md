@@ -15,6 +15,33 @@ The notification system sends alerts for:
 
 B-SNAP can send WhatsApp notifications directly through GoWA.
 
+### Device outage email alerts
+
+In **Configuration → GoWA**, enable **Email alerts for WhatsApp device outages**,
+enter the administrator email addresses (comma separated), and select the device
+check interval. Configure and test SMTP in the Email tab first. Monitoring is off
+by default and uses the configured GoWA Device ID; it does not monitor every device
+in the gateway.
+
+The scheduler checks the device's connection and login status independently of
+incoming webhooks. After consecutive failed checks, it sends one email for a
+disconnected device, a logged-off device, or an unreachable gateway. The confirmation
+threshold is defined by `CONFIRMATIONS` in `app/utils/wa_monitor.py`. A single healthy
+check clears the incident and enables alerts for a subsequent outage. Changing the
+GoWA endpoint, credentials, or Device ID starts a new confirmation sequence.
+
+Incident state is persisted in the existing Configuration table, so worker restarts
+do not repeat successful alerts. Device outage emails are marked as high importance.
+If SMTP fails, the next check retries with the
+original incident time, displayed in the configured timezone. This monitor does not
+use the camera email retry queue. SMTP acceptance is the delivery confirmation;
+like other SMTP notifications, it does not guarantee arrival in the recipient's inbox.
+
+The scheduler worker must be running. **Job Management → WhatsApp Device Check**
+supports an independent cron override; clearing it restores the configured interval.
+Schedule changes are picked up by the scheduler's configuration reload. This checks
+device availability, not webhook delivery from GoWA to B-Snap.
+
 ### Authentication
 
 - Use `APP_BASIC_AUTH=user:password` on current GoWA deployments, then enter `user:password` in the B-SNAP GoWA auth field.

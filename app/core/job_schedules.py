@@ -11,6 +11,7 @@ from app.core.config import get_config
 
 # job ID: cron config key, interval config key, interval unit, interval default
 JOB_SCHEDULES = {
+    "gowa_device_check": ("gowa_monitor_cron", "gowa_monitor_interval_minutes", "minutes", 1),
     "scheduled_snapshot": ("snapshot_cron", "snapshot_interval_minutes", "minutes", 480),
     "health_check": ("healthcheck_cron", "healthcheck_interval_minutes", "minutes", 15),
     "storage_check": ("storage_check_cron", "storage_check_interval_hours", "hours", 1),

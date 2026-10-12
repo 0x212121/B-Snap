@@ -63,7 +63,14 @@ def _open_smtp_connection(config: dict) -> smtplib.SMTP:
     return server
 
 
-def _send_email_sync(to: list[str], subject: str, body: str, html: str | None = None):
+def _send_email_sync(
+    to: list[str],
+    subject: str,
+    body: str,
+    html: str | None = None,
+    *,
+    high_importance: bool = False,
+) -> None:
     """
     Kirim email secara sinkron (langsung).
     """
@@ -80,6 +87,10 @@ def _send_email_sync(to: list[str], subject: str, body: str, html: str | None = 
     msg["From"] = config["email_from"]
     msg["To"] = ", ".join(to)
     msg["Subject"] = subject
+    if high_importance:
+        msg["Importance"] = "high"
+        msg["X-Priority"] = "1"
+        msg["X-MSMail-Priority"] = "High"
 
     # Isi plain text
     msg.attach(MIMEText(body, "plain"))
@@ -104,16 +115,20 @@ def send_email(
     body: str,
     html: str | None = None,
     background_tasks: BackgroundTasks | None = None,
-):
+    *,
+    high_importance: bool = False,
+) -> None:
     """
     Fungsi utama kirim email.
     - Jika background_tasks diberikan → jalan async (tidak blokir).
     - Jika tidak → jalan sinkron (langsung).
     """
     if background_tasks:
-        background_tasks.add_task(_send_email_sync, to, subject, body, html)
+        background_tasks.add_task(
+            _send_email_sync, to, subject, body, html, high_importance=high_importance
+        )
     else:
-        _send_email_sync(to, subject, body, html)
+        _send_email_sync(to, subject, body, html, high_importance=high_importance)
 
 
 def build_email_body(

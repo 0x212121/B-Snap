@@ -49,6 +49,7 @@ def cron_preview(
 from sqlalchemy import text
 
 CONFIGURED_JOBS = {
+    'gowa_device_check': 'WhatsApp Device Check',
     'scheduled_snapshot': 'Scheduled Snapshot',
     'health_check': 'Health Check',
     'storage_check': 'Storage Check',
@@ -65,6 +66,7 @@ CONFIGURED_JOBS = {
 }
 
 JOB_DESCRIPTIONS = {
+    'gowa_device_check': 'Checks the configured GoWA device and emails administrators once per confirmed disconnected, logged-off, or unreachable incident.',
     'scheduled_snapshot': 'Takes scheduled snapshots for active cameras and stores snapshot metadata.',
     'health_check': 'Checks camera and NVR health status, including online/offline state.',
     'storage_check': 'Records storage usage metrics and evaluates warning or critical thresholds.',
@@ -192,7 +194,7 @@ async def list_jobs(
             })
         
         return JSONResponse({
-            "jobs": jobs,
+            "jobs": sorted(jobs, key=lambda job: (job["name"].casefold(), job["id"])),
             "timezone": get_current_timezone(db),
             "registered_job_ids": list(db_jobs_by_id.keys()),
             "cron_configs": cron_configs,

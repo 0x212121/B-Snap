@@ -419,12 +419,19 @@ class WAGatewayService:
                 }
             
             status_payload = result.get("results", result)
+            connected = status_payload.get("connected", status_payload.get("is_connected"))
+            logged_in = status_payload.get(
+                "logged_in", status_payload.get("is_logged_in", connected)
+            )
+            if not isinstance(connected, bool) or not isinstance(logged_in, bool):
+                return {
+                    "connected": False,
+                    "response_time_ms": elapsed_ms(),
+                    "error": "Invalid device status from GoWA",
+                }
             return {
-                "connected": status_payload.get("connected", status_payload.get("is_connected", False)),
-                "logged_in": status_payload.get(
-                    "logged_in",
-                    status_payload.get("is_logged_in", status_payload.get("connected", False)),
-                ),
+                "connected": connected,
+                "logged_in": logged_in,
                 "user": status_payload.get("user", status_payload),
                 "response_time_ms": elapsed_ms(),
                 "error": None

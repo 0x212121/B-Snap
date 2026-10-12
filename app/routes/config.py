@@ -22,6 +22,7 @@ from app.utils.email_helper import send_email
 from app.utils.notification_service import NotificationService
 from app.utils.template_helper import templates
 from app.utils.timezone_helper import clear_timezone_cache
+from app.utils.wa_monitor import parse_monitor_recipients
 
 router = APIRouter(tags=["Config"])
 
@@ -138,6 +139,10 @@ async def config_save(
     gowa_device_id: str = Form(""),
     gowa_default_receiver: str = Form(""),
     app_logo: UploadFile = File(None),
+    *,
+    gowa_monitor_enabled: Annotated[bool, Form()] = False,
+    gowa_monitor_recipients: Annotated[str, Form(max_length=2000)] = "",
+    gowa_monitor_interval_minutes: Annotated[int, Form(ge=1, le=1440)] = 1,
 ):
     # Validasi timezone
     if timezone not in pytz.all_timezones:
@@ -248,6 +253,13 @@ async def config_save(
                 },
             )
 
+    try:
+        monitor_recipients = parse_monitor_recipients(
+            gowa_monitor_recipients, enabled=gowa_monitor_enabled, gateway_enabled=gowa_enabled
+        )
+    except ValueError as exc:
+        return JSONResponse(status_code=400, content={"message": str(exc)})
+
     keys = {
         "snapshot_interval_minutes": snapshot_interval_minutes,
         "healthcheck_interval_minutes": healthcheck_interval_minutes,
@@ -281,6 +293,9 @@ async def config_save(
         "gowa_api_key": gowa_api_key.strip(),
         "gowa_device_id": gowa_device_id.strip(),
         "gowa_default_receiver": gowa_default_receiver.strip(),
+        "gowa_monitor_enabled": str(int(gowa_monitor_enabled)),
+        "gowa_monitor_recipients": ", ".join(monitor_recipients),
+        "gowa_monitor_interval_minutes": gowa_monitor_interval_minutes,
     }
 
     # Older clients can omit these fields without overwriting saved resource budgets.

@@ -1,5 +1,15 @@
 (function () {
   const translations = {
+    "Email alerts for WhatsApp device outages": "Email peringatan gangguan device WhatsApp",
+    "GoWA Alert Email Recipients": "Penerima Email Peringatan GoWA",
+    "Administrator email addresses, comma separated. Uses the SMTP settings above.": "Alamat email admin, pisahkan dengan koma. Menggunakan pengaturan SMTP di atas.",
+    "Device Check Interval (minutes)": "Interval Pemeriksaan Device (menit)",
+    "Sends one email after two consecutive failed checks for the selected device: disconnected, logged off, or gateway unreachable. A healthy check enables alerts for the next outage. Failed emails are retried on the next check.": "Mengirim satu email setelah dua pemeriksaan gagal berturut-turut pada device yang dipilih: terputus, keluar akun, atau gateway tidak dapat dijangkau. Pemeriksaan sehat mengaktifkan peringatan untuk gangguan berikutnya. Email gagal dicoba lagi pada pemeriksaan berikutnya.",
+    "The scheduler must be running. A custom cron in Job Management overrides this interval.": "Scheduler harus berjalan. Cron khusus di Manajemen Tugas menggantikan interval ini.",
+    "WhatsApp Device Check": "Pemeriksaan Device WhatsApp",
+    "Checks the configured GoWA device and emails administrators once per confirmed disconnected, logged-off, or unreachable incident.": "Memeriksa device GoWA yang dikonfigurasi dan mengirim email ke admin satu kali per gangguan terkonfirmasi: terputus, keluar akun, atau tidak dapat dijangkau.",
+    "Invalid GoWA alert email recipients.": "Alamat penerima email peringatan GoWA tidak valid.",
+    "Enable WhatsApp and enter GoWA alert email recipients first.": "Aktifkan WhatsApp dan isi penerima email peringatan GoWA terlebih dahulu.",
     "Deferred": "Ditunda",
     "Email Retry Batch Size": "Ukuran Batch Retry Email",
     "Email Retry Run Budget (seconds)": "Anggaran Waktu Retry Email (detik)",

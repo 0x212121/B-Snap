@@ -23,6 +23,7 @@ def setup_test_database() -> None:
 @pytest.mark.parametrize("use_cron", [False, True])
 def test_start_scheduler_applies_timezone_to_every_job(monkeypatch, use_cron: bool) -> None:
     scheduler = BackgroundScheduler(timezone=pytz.UTC)
+    monkeypatch.setattr(jobs, "sync_command_jobs", lambda scheduler: None)
     monkeypatch.setattr(jobs, "scheduler", scheduler)
     monkeypatch.setattr(jobs, "engine", MagicMock())
     monkeypatch.setattr(jobs, "last_config", {})
@@ -36,7 +37,7 @@ def test_start_scheduler_applies_timezone_to_every_job(monkeypatch, use_cron: bo
     monkeypatch.setattr(jobs, "get_config", job_schedules.get_config)
     jobs.start_scheduler()
     registered_jobs = scheduler.get_jobs()
-    assert len(registered_jobs) == 13
+    assert len(registered_jobs) == 14
     assert scheduler.get_job("wa_daily_report") is None
     assert scheduler.get_job("record_check_daily_report") is not None
     assert all(str(job.trigger.timezone) == "Asia/Makassar" for job in registered_jobs)

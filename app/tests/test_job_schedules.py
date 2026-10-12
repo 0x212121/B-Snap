@@ -24,6 +24,8 @@ def setup_test_database() -> None:
 @pytest.fixture
 def config(monkeypatch) -> dict:
     values = {}
+    monkeypatch.setattr(worker, "sync_command_jobs", lambda scheduler: None)
+    monkeypatch.setattr(routes, "scheduled_commands", lambda db: {})
 
     def get_config(key, default=None):
         return values.get(key, default)
@@ -37,7 +39,7 @@ def config(monkeypatch) -> dict:
 @pytest.mark.asyncio
 async def test_every_listed_job_has_an_independent_schedule(job_id: str) -> None:
     assert set(routes.CONFIGURED_JOBS) == set(schedules.JOB_SCHEDULES)
-    assert len({definition[0] for definition in schedules.JOB_SCHEDULES.values()}) == 13
+    assert len({definition[0] for definition in schedules.JOB_SCHEDULES.values()}) == 14
     db = MagicMock()
     db.query.return_value.filter.return_value.first.return_value = None
     response = await routes.update_job_schedule(
@@ -148,9 +150,46 @@ async def test_job_list_exposes_editing_for_all_jobs(monkeypatch, config) -> Non
     monkeypatch.setattr(routes.JobExecutionLog, "get_job_stats", lambda *args, **kwargs: {})
     response = await routes.list_jobs(db=db, current_admin=MagicMock())
     result = json.loads(response.body)
-    assert len(result["jobs"]) == 13
+    assert len(result["jobs"]) == 14
     assert all(job["schedule_editable"] for job in result["jobs"])
-    assert len(result["cron_configs"]) == 13
+    assert len(result["cron_configs"]) == 14
+
+
+@pytest.mark.asyncio
+async def test_job_list_sorts_builtin_and_database_commands_by_name(monkeypatch, config) -> None:
+    db = MagicMock()
+    db.query.return_value.filter.return_value.order_by.return_value.first.return_value = None
+    monkeypatch.setattr(routes, "get_jobs_from_db", lambda: [])
+    monkeypatch.setattr(routes.JobExecutionLog, "get_job_stats", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(
+        routes,
+        "CONFIGURED_JOBS",
+        {"health_check": "Zulu", "storage_check": "alpha", "email_retry": "ALPHA"},
+    )
+    monkeypatch.setattr(
+        routes,
+        "scheduled_commands",
+        lambda _db: {
+            "wa_command:z": {"name": "zebra", "schedule": {"mode": "cron", "cron": "0 8 * * *"}},
+            "wa_command:a": {"name": "Alpha", "schedule": {"mode": "cron", "cron": "0 8 * * *"}},
+        },
+    )
+    response = await routes.list_jobs(db=db, current_admin=MagicMock())
+    jobs = json.loads(response.body)["jobs"]
+    assert [job["id"] for job in jobs] == [
+        "email_retry",
+        "storage_check",
+        "wa_command:a",
+        "wa_command:z",
+        "health_check",
+    ]
+    assert [job["name"] for job in jobs] == [
+        "ALPHA",
+        "alpha",
+        "WhatsApp: Alpha",
+        "WhatsApp: zebra",
+        "Zulu",
+    ]
 
 
 @pytest.mark.parametrize("zone", ["Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura"])

@@ -6,7 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.4.0] - 2026-10-07
+### Added
+
+- Configurable administrator email alerts for the selected GoWA device when disconnected, logged off, or unreachable, with consecutive-check confirmation, persistent incident deduplication, SMTP retry on subsequent checks, and an independently configurable scheduler job.
+
+### Changed
+
+- GoWA device outage alert emails are marked as high importance.
+- Job Management now returns jobs sorted alphabetically by name from the backend, including scheduled WhatsApp commands, with case-insensitive ordering.
+
+## [2.4.0] - 2026-10-12
 
 ### Added
 

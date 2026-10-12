@@ -55,6 +55,7 @@ from app.utils.snapshot_process import run_camera_process
 from app.utils.snapshot_service import take_snapshot
 from app.utils.snapshot_utils import check_orphaned_snapshots, record_snapshot_metadata
 from app.utils.timezone_helper import get_current_timezone, to_current_timezone
+from app.utils.wa_monitor import check_gowa_device
 
 # --- Scheduler Init with Database Job Store ---
 # Use SQLAlchemyJobStore so jobs are persisted and accessible from web app
@@ -804,6 +805,15 @@ def start_scheduler():
         replace_existing=True
     )
 
+    scheduler.add_job(
+        gowa_device_check_job,
+        trigger=build_job_trigger(job_schedules["gowa_device_check"], scheduler.timezone),
+        id="gowa_device_check",
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=60,
+        replace_existing=True,
+    )
     sync_command_jobs(scheduler)
     scheduler.start()
     logger.info("[Scheduler] Started with %d jobs", len(scheduler.get_jobs()))
@@ -848,6 +858,13 @@ def update_scheduler_config() -> bool:
 # when using SQLAlchemyJobStore. Inline decorator application doesn't work
 # because the wrapper function can't be properly serialized/deserialized.
 # ----------------------------
+
+@logged_job("gowa_device_check", "WhatsApp Device Check")
+def gowa_device_check_job() -> dict:
+    """Monitor the configured GoWA device without relying on webhook delivery."""
+    with SessionLocal() as db:
+        return check_gowa_device(db)
+
 
 @logged_job("health_check", "Health Check")
 def health_check_job():
