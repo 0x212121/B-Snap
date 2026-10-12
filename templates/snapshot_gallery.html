@@ -309,7 +309,7 @@
 
   function deleteSnapshot(id, element) {
     const card = element.closest("[data-card]");
-    showGlobalConfirm("Delete this snapshot?", async () => {
+    showGlobalConfirm(BSnapI18n.t("Delete this snapshot?"), async () => {
       try {
         const res = await fetch(`/snap/${id}`, { method: "DELETE" });
         const data = await res.json();
@@ -318,14 +318,14 @@
           card.style.opacity = "0";
           setTimeout(() => card.remove(), 200);
           GalleryState.offset = Math.max(0, GalleryState.offset - 1);
-          Toast.success("Deleted", { title: "Success" });
+          Toast.success(BSnapI18n.t("Deleted"), { title: BSnapI18n.t("Success") });
         } else {
           throw new Error(data.detail);
         }
       } catch (err) {
-        Toast.error(err.message, { title: "Error" });
+        Toast.error(BSnapI18n.t(err.message), { title: BSnapI18n.t("Error") });
       }
-    }, { title: "Confirm", confirmText: "Delete", confirmButtonColor: "#b91c1c" });
+    }, { title: BSnapI18n.t("Confirm"), confirmText: BSnapI18n.t("Delete"), confirmButtonColor: "#b91c1c" });
   }
 
   function showModal(src, camera, time) {
@@ -396,6 +396,12 @@
     }
   }
 
+  function escapeGalleryText(value) {
+    const element = document.createElement('span');
+    element.textContent = String(value ?? '');
+    return element.innerHTML;
+  }
+
   async function verifySnapshot(id, btn) {
     const originalContent = btn.innerHTML;
     btn.disabled = true;
@@ -409,14 +415,14 @@
         themedSwal({
           icon: 'success',
           title: 'Integrity Verified',
-          html: `<div class="text-left"><p class="mb-2">${data.message}</p><p class="text-xs text-gray-500 dark:text-slate-400 font-mono break-all">Hash: ${data.stored_hash}</p></div>`,
+          html: `<div class="text-left"><p class="mb-2">${escapeGalleryText(data.message)}</p><p class="text-xs text-gray-500 dark:text-slate-400 font-mono break-all">Hash: ${escapeGalleryText(data.stored_hash)}</p></div>`,
           confirmButtonText: 'OK'
         });
       } else if (data.integrity_verified === false) {
         themedSwal({
           icon: 'error',
           title: 'Integrity Check Failed',
-          html: `<div class="text-left"><p class="mb-2 text-red-600 dark:text-red-400">${data.message}</p><p class="text-xs text-gray-500 dark:text-slate-400 font-mono break-all">Stored Hash: ${data.stored_hash}</p></div>`,
+          html: `<div class="text-left"><p class="mb-2 text-red-600 dark:text-red-400">${escapeGalleryText(data.message)}</p><p class="text-xs text-gray-500 dark:text-slate-400 font-mono break-all">Stored Hash: ${escapeGalleryText(data.stored_hash)}</p></div>`,
           confirmButtonText: 'OK',
           confirmButtonColor: '#dc2626'
         });

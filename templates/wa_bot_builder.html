@@ -72,6 +72,7 @@
     </div>
     <div id="editorTabs" class="ui-tabs --prevent-on-load-init wa-editor-tabs px-4" role="tablist" aria-label="Command editor sections">
       <button id="editorTab-settings" type="button" class="ui-tab" role="tab" aria-controls="editorPanel-settings" aria-selected="true" data-editor-tab="settings">Command settings</button>
+      <button id="editorTab-schedules" type="button" class="ui-tab" role="tab" aria-controls="editorPanel-schedules" aria-selected="false" data-editor-tab="schedules">Schedules</button>
       <button id="editorTab-action" type="button" class="ui-tab" role="tab" aria-controls="editorPanel-action" aria-selected="false" data-editor-tab="action">Action / API</button>
       <button id="editorTab-response" type="button" class="ui-tab" role="tab" aria-controls="editorPanel-response" aria-selected="false" data-editor-tab="response">Responses</button>
       <button id="editorTab-test" type="button" class="ui-tab" role="tab" aria-controls="editorPanel-test" aria-selected="false" data-editor-tab="test">Preview & execution</button>
@@ -112,8 +113,12 @@
         </label>
       </div>
 
-      <fieldset data-editor-section="settings" class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-        <legend class="text-sm font-medium text-gray-900 dark:text-white">Scheduled delivery</legend>
+      <fieldset id="editorPanel-schedules" role="tabpanel" aria-labelledby="editorTab-schedules" data-editor-section="schedules" hidden class="space-y-3 rounded-lg">
+        <div id="commandSchedules" class="space-y-3"></div>
+        <button type="button" id="addCommandSchedule" class="ui-button ui-button-secondary">Add schedule</button>
+        <template id="commandScheduleTemplate">
+          <div data-command-schedule class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+            <div class="flex items-center justify-between gap-3"><span data-schedule-label class="no-translate text-sm font-medium text-gray-700 dark:text-gray-200"></span><button type="button" data-remove-schedule class="ui-button ui-button-secondary">Remove schedule</button></div>
         <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200"><input name="schedule_enabled" type="checkbox" class="rounded border-gray-300 text-blue-600"> Enable schedule</label>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <label class="text-sm text-gray-700 dark:text-gray-200">Schedule
@@ -132,12 +137,14 @@
             <input name="schedule_argument" maxlength="500" placeholder="CAM-01" class="ui-control mt-1 w-full rounded-lg dark:bg-gray-900">
           </label>
         </div>
+          </div>
+        </template>
         <p class="text-xs text-gray-500"><span>Timezone:</span> <span id="scheduleTimezone"></span>. <span>Recipient whitelist permissions apply.</span> <span>Manage schedules in Bot Builder; view jobs and execution history in Job Management. Changes take effect within 60 seconds.</span> <a href="/admin/jobs/" class="text-blue-600 dark:text-blue-300">Job Management</a></p>
       </fieldset>
 
-      <div id="editorPanel-action" role="tabpanel" aria-labelledby="editorTab-action" data-editor-section="action" data-flow-panel class="hidden rounded-lg border border-blue-200 p-4 dark:border-blue-900">
+      <div id="editorPanel-action" role="tabpanel" aria-labelledby="editorTab-action" data-editor-section="action" data-flow-panel class="hidden rounded-lg border border-gray-200 p-4 dark:border-gray-200">
         <div data-flow-editor class="mb-3">
-        <div class="wa-section-toolbar mb-3">
+        <div class="wa-section-toolbar mt-3 mb-3">
           <div><h3 data-flow-title class="inline-flex items-center gap-2 font-medium text-gray-900 dark:text-white">{{ icon_server("h-4 w-4 text-blue-500") }}API flow (GET / POST)</h3><p data-flow-subtitle class="text-xs text-gray-500">Internal B-Snap nodes run in order, up to 8 nodes.</p></div>
           <button data-add-step type="button" class="ui-button ui-button-secondary">{{ icon_plus("h-4 w-4") }}Add node</button>
         </div>
@@ -165,7 +172,7 @@
             <details class="mt-3">
               <summary class="cursor-pointer text-sm">Preview data (JSON, editable)</summary>
               <label class="ui-label mt-3 block">Sample API results
-                <textarea data-preview-context rows="4" class="ui-control mt-1 w-full font-mono text-xs" spellcheck="false"></textarea>
+                <textarea data-preview-context rows="8" class="ui-control mt-1 w-full font-mono text-xs" spellcheck="false"></textarea>
               </label>
             </details>
           </section>
@@ -205,7 +212,7 @@
           </label>
         </div>
         <label class="ui-label block text-sm text-gray-700 dark:text-gray-200"><span class="mb-1 inline-flex items-center gap-2"><img src="/static/icons/gowa.svg" alt="GoWA logo" class="w-8 h-8 inline-block align-middle mr-1 object-contain"><span data-response-label>WhatsApp response template</span></span>
-          <textarea name="response" rows="4" required maxlength="2000" placeholder="Camera IP: {% raw %}{{steps.kamera.body.results.0.ip}}{% endraw %}" class="ui-control mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900"></textarea>
+          <textarea name="response" rows="8" required maxlength="2000" placeholder="Camera IP: {% raw %}{{steps.kamera.body.results.0.ip}}{% endraw %}" class="ui-control mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900"></textarea>
         </label>
         <p class="mt-1 text-xs text-gray-500"><span>System action variables are ready immediately; use the mapper to format array results. Only API Flow fields require a test. Variables work in response and processing/fallback messages.</span> <span>Normalize a timestamp with</span> <code>{% raw %}{{steps.data.body.updated_at|datetime}}{% endraw %}</code><span>; it uses the B-Snap timezone.</span></p>
       </div>

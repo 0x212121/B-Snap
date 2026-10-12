@@ -42,6 +42,26 @@ supports an independent cron override; clearing it restores the configured inter
 Schedule changes are picked up by the scheduler's configuration reload. This checks
 device availability, not webhook delivery from GoWA to B-Snap.
 
+### Scheduled bot commands
+
+In Bot Builder, **Schedules → Add schedule** creates an independent
+schedule for the same command. Each entry has its own enabled flag, command
+arguments, whitelist recipient, and daily time or five-field cron expression.
+A command supports up to 50 entries. All schedules use the configured timezone.
+
+Saving validates arguments and recipient permissions for every enabled entry.
+Execution checks recipient permissions again, so revoked access takes effect
+without editing the schedule. Job Management shows each enabled entry separately,
+including its arguments and recipient, with independent execution history.
+
+Schedules are stored in the command's existing Configuration JSON. No database
+schema migration is required. Existing single schedules are read as one entry
+with the legacy job ID, preserving their history. Additional entries have stable
+schedule IDs; editing arguments, recipients, or timing preserves their history.
+Disabling or removing an entry removes its scheduled job on the next scheduler
+reload, while retaining its execution logs. Removing an entry and adding a new
+one creates a new identity and history. A job already running may finish.
+
 ### Authentication
 
 - Use `APP_BASIC_AUTH=user:password` on current GoWA deployments, then enter `user:password` in the B-SNAP GoWA auth field.

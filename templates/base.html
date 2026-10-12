@@ -267,7 +267,7 @@ class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 s
 {% if request.session.user_role == 'admin' %}
 <!-- Online Users Sticky Popup - Admin Only -->
 <div x-data="onlineUsersPopup()" 
-     class="fixed bottom-12 right-4 z-40"
+     class="fixed bottom-4 right-4 z-40"
      x-init="init()">
   <!-- Minimized Button -->
   <button @click="toggle()" 
@@ -899,6 +899,20 @@ function getSwalThemeConfig() {
 }
 
 function themedSwal(options = {}) {
+  // A factory keeps dynamic popup text in sync without resetting typed input.
+  const localizedOptions = typeof options === 'function' ? options : null;
+  if (localizedOptions) options = localizedOptions();
+  const updateLanguage = () => {
+    const current = localizedOptions();
+    Swal.update({
+      title: current.title,
+      text: current.text,
+      confirmButtonText: current.confirmButtonText,
+      cancelButtonText: current.cancelButtonText,
+    });
+  };
+  const originalDidDestroy = options.didDestroy;
+  const originalDidRender = options.didRender;
   const isDark = document.documentElement.classList.contains('dark');
   
   // Custom input class based on theme
@@ -927,6 +941,7 @@ function themedSwal(options = {}) {
       }
     }
     
+    if (localizedOptions) window.addEventListener('bsnap:languagechange', updateLanguage);
     if (originalDidOpen) originalDidOpen(popup);
   };
   
@@ -934,8 +949,17 @@ function themedSwal(options = {}) {
   const mergedOptions = {
     ...options,
     didOpen: didOpen,
+    didRender: (popup) => {
+      if (originalDidRender) originalDidRender(popup);
+      window.BSnapI18n?.localize(popup);
+    },
+    didDestroy: () => {
+      if (localizedOptions) window.removeEventListener('bsnap:languagechange', updateLanguage);
+      if (originalDidDestroy) originalDidDestroy();
+    },
     customClass: {
       ...options.customClass,
+      ...(localizedOptions ? {popup: 'no-translate ' + (options.customClass?.popup || '')} : {}),
       input: inputClass + ' ' + (options.customClass?.input || ''),
     }
   };

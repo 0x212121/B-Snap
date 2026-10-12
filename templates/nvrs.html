@@ -892,19 +892,19 @@
           }
         });
       }, {
-        title: '⚠️ Delete NVR',
-        confirmText: 'Yes, Delete',
+        title: BSnapI18n.t("Delete NVR?"),
+        confirmText: BSnapI18n.t("Yes, Delete"),
         confirmClasses: 'bg-red-600 hover:bg-red-700'
       });
     } else {
       // Fallback using SweetAlert2
       themedSwal({
-        title: 'Delete NVR?',
+        title: BSnapI18n.t("Delete NVR?"),
         text: message,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Yes, Delete',
-        cancelButtonText: 'Cancel',
+        confirmButtonText: BSnapI18n.t("Yes, Delete"),
+        cancelButtonText: BSnapI18n.t("Cancel"),
         confirmButtonColor: '#dc2626',
         cancelButtonColor: document.documentElement.classList.contains('dark') ? '#4b5563' : '#9ca3af'
       }).then((result) => {

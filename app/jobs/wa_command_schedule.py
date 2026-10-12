@@ -14,21 +14,37 @@ from app.models.log import CommandLog
 from app.utils.wa_bot_commands import (
     command_schedule_cron,
     get_command_settings,
-    normalize_command_schedule,
+    normalize_command_schedules,
 )
 
 JOB_PREFIX = "wa_command:"
+
+
+def command_job_id(command_id: str, schedule_id: str = "legacy") -> str:
+    """Keep existing history keys while assigning independent new schedule IDs."""
+    suffix = "" if schedule_id == "legacy" else f":{schedule_id}"
+    return f"{JOB_PREFIX}{command_id}{suffix}"
+
+
+def scheduled_command_name(command: dict) -> str:
+    """Identify each schedule by its arguments and recipient in Job Management."""
+    name = f"WhatsApp: {command['name']}"
+    schedule = command["schedule"]
+    if schedule.get("id", "legacy") != "legacy":
+        name += f" - {schedule['argument'][:80] or '(no arguments)'} -> {schedule['recipient']}"
+    return name[:200]
 
 
 def scheduled_commands(db: Any) -> dict[str, dict]:
     """Return enabled commands with validated, enabled schedules."""
     result = {}
     for command in get_command_settings(db):
-        schedule = normalize_command_schedule(
-            command.get("schedule"), command.get("required_params", [])
-        )
-        if command.get("enabled") and schedule["enabled"]:
-            result[JOB_PREFIX + command["id"]] = {**command, "schedule": schedule}
+        if not command.get("enabled"):
+            continue
+        for schedule in normalize_command_schedules(command, command.get("required_params", [])):
+            if schedule["enabled"]:
+                job_id = command_job_id(command["id"], schedule["id"])
+                result[job_id] = {**command, "schedule": schedule}
     return result
 
 
@@ -49,13 +65,21 @@ def sync_command_jobs(scheduler: Any) -> None:
                 run_scheduled_command,
                 trigger=trigger,
                 id=job_id,
-                args=[command["id"]],
-                name=f"WhatsApp: {command['name']}",
+                args=(
+                    [command["id"]]
+                    if command["schedule"]["id"] == "legacy"
+                    else [command["id"], command["schedule"]["id"]]
+                ),
+                name=scheduled_command_name(command),
                 max_instances=1,
                 coalesce=True,
                 misfire_grace_time=60,
             )
-        elif str(job.trigger) != str(trigger) or str(job.trigger.timezone) != str(trigger.timezone):
+        elif job.name != scheduled_command_name(command):
+            job.modify(name=scheduled_command_name(command))
+        if job is not None and (
+            str(job.trigger) != str(trigger) or str(job.trigger.timezone) != str(trigger.timezone)
+        ):
             job.reschedule(trigger=trigger)
 
 
@@ -119,14 +143,14 @@ async def execute_scheduled_command(db: Any, command: dict) -> int:
     return delivered
 
 
-def run_scheduled_command(command_id: str) -> None:
+def run_scheduled_command(command_id: str, schedule_id: str = "legacy") -> None:
     """Reload settings and permissions at run time and record job execution history."""
-    job_id = JOB_PREFIX + command_id
+    job_id = command_job_id(command_id, schedule_id)
     with SessionLocal() as db:
         command = scheduled_commands(db).get(job_id)
         if not command:
             return
-        log = JobExecutionLog.start_execution(db, job_id, f"WhatsApp: {command['name']}")
+        log = JobExecutionLog.start_execution(db, job_id, scheduled_command_name(command))
         db.commit()
         try:
             count = asyncio.run(execute_scheduled_command(db, command))

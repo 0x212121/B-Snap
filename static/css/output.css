@@ -989,8 +989,8 @@ select {
   bottom: 0px;
 }
 
-.bottom-12 {
-  bottom: 3rem;
+.bottom-4 {
+  bottom: 1rem;
 }
 
 .left-0 {
@@ -4362,9 +4362,9 @@ select {
   border-color: rgb(30 64 175 / var(--tw-border-opacity));
 }
 
-:is(.dark .dark\:border-blue-900) {
+:is(.dark .dark\:border-gray-200) {
   --tw-border-opacity: 1;
-  border-color: rgb(30 58 138 / var(--tw-border-opacity));
+  border-color: rgb(229 231 235 / var(--tw-border-opacity));
 }
 
 :is(.dark .dark\:border-gray-500) {

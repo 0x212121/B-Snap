@@ -1,5 +1,9 @@
 (function () {
   const translations = {
+    "Schedules": "Jadwal",
+    "Add schedule": "Tambah jadwal",
+    "Remove schedule": "Hapus jadwal",
+    "A command can have at most 50 schedules": "Satu command dapat memiliki maksimal 50 jadwal",
     "Email alerts for WhatsApp device outages": "Email peringatan gangguan device WhatsApp",
     "GoWA Alert Email Recipients": "Penerima Email Peringatan GoWA",
     "Administrator email addresses, comma separated. Uses the SMTP settings above.": "Alamat email admin, pisahkan dengan koma. Menggunakan pengaturan SMTP di atas.",
@@ -779,17 +783,171 @@
     "Pending email notifications expire from their original queue creation time. Expired notifications are cancelled and retained for 7 days. Default: 24 hours.": "Notifikasi email pending kedaluwarsa sejak pertama kali masuk antrean. Notifikasi kedaluwarsa dibatalkan dan disimpan selama 7 hari. Default: 24 jam."
   });
 
+  Object.assign(translations, {
+    "Message details": "Detail pesan",
+    "Direction": "Arah",
+    "Discard unsaved changes?": "Buang perubahan yang belum disimpan?",
+    "Discard": "Buang",
+    "Keep editing": "Lanjutkan edit",
+    "Execute this action?": "Jalankan aksi ini?",
+    "Execute action": "Jalankan aksi",
+    "Sender": "Pengirim",
+    "Argument": "Argumen",
+    "Check bot connectivity": "Periksa konektivitas bot",
+    "Internal B-Snap API flow": "Alur API internal B-Snap",
+    "Edit camera data": "Edit data kamera",
+    "View token": "Lihat token",
+    "This executes the action using sender permissions. WhatsApp messages are not sent.": "Aksi akan dijalankan dengan izin pengirim. Pesan WhatsApp tidak dikirim.",
+    'Type the function name "{name}" to confirm deletion.': 'Ketik nama fungsi "{name}" untuk mengonfirmasi penghapusan.'
+  });
+
+  // Shared SweetAlert titles, content, validation, and dynamic message templates.
+  Object.assign(translations, {
+    "Apply Retention Hold": "Terapkan Retention Hold",
+    "Enter reason for retention hold (e.g., Legal case #12345):": "Masukkan alasan retention hold (misalnya, kasus hukum #12345):",
+    "Enter reason...": "Masukkan alasan...",
+    "Apply Hold": "Terapkan Hold",
+    "Charts not ready. Please wait for charts to load.": "Grafik belum siap. Tunggu hingga grafik dimuat.",
+    "Report Failed": "Laporan Gagal",
+    "Failed to generate report: {details}": "Gagal membuat laporan: {details}",
+    "An error occurred while generating report: {details}": "Terjadi kesalahan saat membuat laporan: {details}",
+    "Cannot Delete Group": "Grup Tidak Dapat Dihapus",
+    "is currently in use.": "sedang digunakan.",
+    "Please reassign or remove all cameras, NVRs, and users from this group before deleting.": "Pindahkan atau hapus semua kamera, NVR, dan pengguna dari grup ini sebelum menghapusnya.",
+    "Download Failed": "Unduhan Gagal",
+    "Failed to load image for download.": "Gagal memuat gambar untuk diunduh.",
+    "No Snapshot": "Tidak Ada Snapshot",
+    "No snapshot found": "Snapshot tidak ditemukan",
+    "Failed to load snapshot info.": "Gagal memuat informasi snapshot.",
+    "Confirm Cleanup": "Konfirmasi Pembersihan",
+    "This will permanently delete old logs based on retention settings.": "Log lama akan dihapus secara permanen berdasarkan pengaturan retensi.",
+    "Please enter your password to confirm:": "Masukkan kata sandi Anda untuk mengonfirmasi:",
+    "Enter your password": "Masukkan kata sandi Anda",
+    "Run Cleanup": "Jalankan Pembersihan",
+    "Missing Dates": "Tanggal Belum Diisi",
+    "Invalid Date Range": "Rentang Tanggal Tidak Valid",
+    "Start date must be before end date": "Tanggal mulai harus sebelum tanggal akhir",
+    "Run Job Now?": "Jalankan Job Sekarang?",
+    "Run \"{name}\" now?": "Jalankan \"{name}\" sekarang?",
+    "Run Now": "Jalankan Sekarang",
+    "Delete NVR?": "Hapus NVR?",
+    "Delete Camera?": "Hapus Kamera?",
+    "Are you sure you want to delete this NVR: {name}? This action cannot be undone.": "Anda yakin ingin menghapus NVR ini: {name}? Tindakan ini tidak dapat dibatalkan.",
+    "Yes, Delete": "Ya, Hapus",
+    "Recipient added successfully": "Penerima berhasil ditambahkan",
+    "Failed to add recipient": "Gagal menambahkan penerima",
+    "Saved": "Tersimpan",
+    "Update failed": "Pembaruan gagal",
+    "Delete recipient?": "Hapus penerima?",
+    "This action cannot be undone": "Tindakan ini tidak dapat dibatalkan",
+    "Deleted": "Dihapus",
+    "Failed to delete": "Gagal menghapus",
+    "Select Group": "Pilih Grup",
+    "Please select a target group first": "Pilih grup tujuan terlebih dahulu",
+    "Test Email Sent": "Email Uji Terkirim",
+    "Email sent to {count} recipient(s)": "Email dikirim ke {count} penerima",
+    "Send Failed": "Pengiriman Gagal",
+    "Import Recipients from CSV": "Impor Penerima dari CSV",
+    "CSV format:": "Format CSV:",
+    "and": "dan",
+    "are required": "wajib diisi",
+    "\u2022 locations can be comma-separated": "\u2022 locations dapat dipisahkan dengan koma",
+    "Please select a CSV file": "Pilih file CSV",
+    "Import Complete": "Impor Selesai",
+    "Errors:": "Kesalahan:",
+    "Import Failed": "Impor Gagal",
+    "Unknown error": "Kesalahan tidak diketahui",
+    "Loading locations": "Memuat lokasi",
+    "All Covered!": "Semua Terjangkau!",
+    "All locations already have email recipients.": "Semua lokasi sudah memiliki penerima email.",
+    "Locations Without Email Recipients": "Lokasi Tanpa Penerima Email",
+    "Locations Without Recipients": "Lokasi Tanpa Penerima",
+    "Total Cameras in These Locations": "Total Kamera di Lokasi Ini",
+    "Export to Excel": "Ekspor ke Excel",
+    "Unmount and disable source?": "Lepaskan mount dan nonaktifkan sumber?",
+    "Automatic checks stop. The scheduler detaches its own mount on the next cycle.": "Pemeriksaan otomatis berhenti. Scheduler melepaskan mount miliknya pada siklus berikutnya.",
+    "Unmount": "Lepaskan Mount",
+    "Delete Record Source": "Hapus Sumber Rekaman",
+    "This will delete the record source and its record-check history.": "Sumber rekaman dan riwayat pemeriksaan rekamannya akan dihapus.",
+    "to confirm the NVR hostname.": "untuk mengonfirmasi hostname NVR.",
+    "to confirm the record source name.": "untuk mengonfirmasi nama sumber rekaman.",
+    "Admin password": "Kata sandi admin",
+    "Confirmation name": "Nama konfirmasi",
+    "Password and confirmation name are required.": "Kata sandi dan nama konfirmasi wajib diisi.",
+    "Confirmation must match \"{name}\".": "Konfirmasi harus sesuai dengan \"{name}\".",
+    "Delete All Snapshots?": "Hapus Semua Snapshot?",
+    "Confirm Delete": "Konfirmasi Hapus",
+    "Video deleted": "Video dihapus",
+    "Delete failed": "Gagal menghapus",
+    "Delete this snapshot?": "Hapus snapshot ini?",
+    "Delete this video?": "Hapus video ini?",
+    "Delete ALL snapshots for {camera}? This action cannot be undone.": "Hapus SEMUA snapshot untuk {camera}? Tindakan ini tidak dapat dibatalkan.",
+    "Integrity Verified": "Integritas Terverifikasi",
+    "Integrity Check Failed": "Pemeriksaan Integritas Gagal",
+    "No Hash Available": "Hash Tidak Tersedia",
+    "Stored Hash: {hash}": "Hash Tersimpan: {hash}",
+    "Integrity verified": "Integritas terverifikasi",
+    "Integrity check FAILED - file may be corrupted or tampered": "Pemeriksaan integritas GAGAL - file mungkin rusak atau telah diubah",
+    "No hash stored for this snapshot (legacy data)": "Tidak ada hash tersimpan untuk snapshot ini (data lama)"
+});
+
+  Object.assign(translations, {
+    "Are you sure you want to revoke the session for \"{name}\"? This will immediately log them out.": "Anda yakin ingin mencabut sesi untuk \"{name}\"? Pengguna akan langsung keluar.",
+    "Delete Camera \"{name}\"? All camera snapshots will be lost permanently. This cannot be undone.": "Hapus Kamera \"{name}\"? Semua snapshot kamera akan hilang secara permanen. Tindakan ini tidak dapat dibatalkan.",
+    "Are you sure you want to delete group \"{name}\"? This action cannot be undone.": "Anda yakin ingin menghapus grup \"{name}\"? Tindakan ini tidak dapat dibatalkan.",
+    "Permanently purge snapshot from \"{name}\"? This cannot be undone.": "Hapus permanen snapshot dari \"{name}\"? Tindakan ini tidak dapat dibatalkan.",
+    "Permanently purge video from \"{name}\"? This cannot be undone.": "Hapus permanen video dari \"{name}\"? Tindakan ini tidak dapat dibatalkan.",
+    "Are you sure you want to revoke this token for user '{name}'?": "Anda yakin ingin mencabut token ini untuk pengguna '{name}'?",
+    "Are you sure you want to delete {count} selected users? This action cannot be undone.": "Anda yakin ingin menghapus {count} pengguna terpilih? Tindakan ini tidak dapat dibatalkan.",
+    "Are you sure you want to delete the user '{name}'? This action cannot be undone.": "Anda yakin ingin menghapus pengguna '{name}'? Tindakan ini tidak dapat dibatalkan.",
+    "Are you sure you want to revoke the API key \"{name}\"? This action cannot be undone.": "Anda yakin ingin mencabut API key \"{name}\"? Tindakan ini tidak dapat dibatalkan.",
+    "Failed to save template: {details}": "Gagal menyimpan template: {details}",
+    "Failed to preview: {details}": "Gagal menampilkan pratinjau: {details}",
+    "Failed to reset template: {details}": "Gagal mereset template: {details}",
+    "Archive audit logs older than 6 months? This exports them to an encrypted file, copies them to the legacy table, then removes them from the current table. This operation cannot be undone.": "Arsipkan log audit yang lebih lama dari 6 bulan? Log akan diekspor ke file terenkripsi, disalin ke tabel lama, lalu dihapus dari tabel saat ini. Operasi ini tidak dapat dibatalkan."
+});
+
   const originalText = new WeakMap();
   const originalAttributes = new WeakMap();
   const relevantAttributes = ['placeholder', 'title', 'aria-label', 'alt'];
   let language = 'en';
+
+  function messagePattern(template) {
+    const parameters = [];
+    const escape = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let pattern = '', start = 0;
+    for (const match of template.matchAll(/(?<!\{)\{(\w+)\}(?!\})/g)) {
+      pattern += escape(template.slice(start, match.index)) + '([\\s\\S]+?)';
+      parameters.push(match[1]);
+      start = match.index + match[0].length;
+    }
+    if (!parameters.length) return null;
+    return {regex: new RegExp('^' + pattern + escape(template.slice(start)) + '$'), parameters};
+  }
+
+  const messageTemplates = Object.entries(translations).flatMap(([source, translated]) => {
+    const forward = messagePattern(source), reverse = messagePattern(translated);
+    return forward && reverse ? [{source, translated, forward, reverse}] : [];
+  });
+
+  function translateMessage(value, reverse = false) {
+    for (const entry of messageTemplates) {
+      const pattern = reverse ? entry.reverse : entry.forward;
+      const match = value.trim().match(pattern.regex);
+      if (!match) continue;
+      const parameters = Object.fromEntries(pattern.parameters.map((key, index) => [key, match[index + 1]]));
+      return (reverse ? entry.source : entry.translated).replace(/(?<!\{)\{(\w+)\}(?!\})/g,
+        (placeholder, key) => parameters[key] ?? placeholder);
+    }
+    return value;
+  }
 
   function recoverSource(value) {
     const normalized = normalize(value);
     for (const [source, translated] of Object.entries(translations)) {
       if (normalize(translated) === normalized) return source;
     }
-    return value;
+    return translateMessage(value, true);
   }
 
   function normalize(value) {
@@ -807,8 +965,17 @@
     if (match) return `Menampilkan ${match[1]} dari ${match[2]} hasil`;
     match = text.match(/^(\d+)\s+online$/i);
     if (match) return `${match[1]} Online`;
-    return value;
+    return translateMessage(value);
   }
+
+  window.BSnapI18n = {
+    localize: processNode,
+    t(value, parameters = {}) {
+      const localized = language === 'id' ? translate(value) : value;
+      return localized.replace(/\{(\w+)\}/g, (match, key) =>
+        Object.prototype.hasOwnProperty.call(parameters, key) ? String(parameters[key]) : match);
+    }
+  };
 
   function shouldSkipText(node) {
     const parent = node.parentElement;
@@ -824,7 +991,10 @@
 
   function processTextNode(node) {
     if (shouldSkipText(node)) return;
-    if (!originalText.has(node)) originalText.set(node, node.nodeValue);
+    if (!originalText.has(node)) {
+      const source = node.parentElement.closest('.swal2-popup') ? recoverSource(node.nodeValue) : node.nodeValue;
+      originalText.set(node, source);
+    }
     else if (node.nodeValue !== renderText(originalText.get(node))) originalText.set(node, recoverSource(node.nodeValue));
     const value = renderText(originalText.get(node));
     if (node.nodeValue !== value) node.nodeValue = value;
@@ -839,7 +1009,10 @@
         saved = {};
         originalAttributes.set(element, saved);
       }
-      if (!(name in saved)) saved[name] = element.getAttribute(name);
+      if (!(name in saved)) {
+        const source = element.getAttribute(name);
+        saved[name] = element.closest('.swal2-popup') ? recoverSource(source) : source;
+      }
       else {
         const expected = language === 'id' ? translate(saved[name]) : saved[name];
         if (element.getAttribute(name) !== expected) saved[name] = recoverSource(element.getAttribute(name));

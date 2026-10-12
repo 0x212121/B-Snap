@@ -63,6 +63,39 @@ def normalize_command_schedule(value: Any, required_params: list[str]) -> dict[s
     return schedule
 
 
+def normalize_command_schedules(
+    command: dict[str, Any], required_params: list[str]
+) -> list[dict[str, Any]]:
+    """Read multiple schedules, preserving the legacy job identity on upgrade."""
+    values = command.get("schedules")
+    if values is None:
+        return [
+            {"id": "legacy", **normalize_command_schedule(command.get("schedule"), required_params)}
+        ]
+    if not isinstance(values, list) or len(values) > 50:
+        raise ValueError("A command can have at most 50 schedules")
+    result = []
+    seen = set()
+    for value in values:
+        if not isinstance(value, dict):
+            raise ValueError("Each schedule must be an object")
+        schedule_id = value.get("id", "")
+        if (
+            not isinstance(schedule_id, str)
+            or not re.fullmatch(r"[a-zA-Z0-9_-]{1,32}", schedule_id)
+            or schedule_id in seen
+        ):
+            raise ValueError("Schedule IDs must be unique and contain at most 32 safe characters")
+        if (
+            schedule_id != "legacy"
+            and len(f"wa_command:{command.get('id', '')}:{schedule_id}") > 100
+        ):
+            raise ValueError("Combined command and schedule ID must be at most 100 characters")
+        seen.add(schedule_id)
+        result.append({"id": schedule_id, **normalize_command_schedule(value, required_params)})
+    return result
+
+
 def normalize_response_media(item: dict[str, Any]) -> dict[str, str]:
     """Validate explicitly configured response media for any command action."""
     response_type = item.get("response_type", "text")
@@ -308,7 +341,8 @@ def save_command_settings(db: Session, commands: list[dict[str, Any]]) -> list[d
                 raise ValueError(f"Nama parameter duplikat: {parameter}")
             normalized_params.append(parameter)
         entry["required_params"] = normalized_params
-        entry["schedule"] = normalize_command_schedule(item.get("schedule"), normalized_params)
+        entry["schedules"] = normalize_command_schedules(item, normalized_params)
+        entry["schedule"] = entry["schedules"][0] if entry["schedules"] else normalize_command_schedule(None, [])
         aliases = entry.get("aliases", [])
         if isinstance(aliases, str):
             aliases = re.split(r"[,\n]", aliases)

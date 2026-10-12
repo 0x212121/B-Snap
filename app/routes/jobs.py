@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_config
 from app.core.job_schedules import JOB_SCHEDULES, get_job_schedule
-from app.jobs.wa_command_schedule import scheduled_commands
+from app.jobs.wa_command_schedule import scheduled_command_name, scheduled_commands
 from app.utils.wa_bot_commands import command_schedule_cron
 from app.db.database import engine, get_db
 from app.models.config import Configuration
@@ -148,7 +148,7 @@ async def list_jobs(
         jobs = []
         command_jobs = scheduled_commands(db)
         configured_jobs = {**CONFIGURED_JOBS, **{
-            job_id: f"WhatsApp: {command['name']}" for job_id, command in command_jobs.items()
+            job_id: scheduled_command_name(command) for job_id, command in command_jobs.items()
         }}
         for job_id, command in command_jobs.items():
             cron_configs[job_id] = command_schedule_cron(command["schedule"])

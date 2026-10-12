@@ -14,15 +14,18 @@ import pytest
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from fastapi import FastAPI, HTTPException
+from fastapi.testclient import TestClient
 
 from app.jobs import wa_command_schedule as jobs
-from app.routes import wa_webhook
+from app.routes import jobs as job_routes, wa_webhook
 from app.utils import wa_executor, wa_gateway
 from app.utils.cron_description import description_expression
 from app.utils.wa_bot_commands import (
     command_schedule_cron,
     get_command_settings,
     normalize_command_schedule,
+    normalize_command_schedules,
     save_command_settings,
 )
 
@@ -99,11 +102,18 @@ def test_reconcile_preserves_jobs_and_removes_disabled_commands(monkeypatch):
     monkeypatch.setattr(jobs, "get_command_settings", lambda _db: commands)
     scheduler = BackgroundScheduler(timezone="Asia/Makassar")
     scheduler.add_job(lambda: None, "interval", hours=1, id="other_job")
+    scheduler.add_job(lambda: None, "interval", hours=1, id="wa_command:/report")
     jobs.sync_command_jobs(scheduler)
+    assert scheduler.get_job("wa_command:/report") is None
     job = scheduler.get_job("wa_command:custom_report")
+    assert job.args == ("custom_report",)
     reschedule = Mock(wraps=job.reschedule)
     monkeypatch.setattr(type(job), "reschedule", lambda _self, **kwargs: reschedule(**kwargs))
     jobs.sync_command_jobs(scheduler)
+    reschedule.assert_not_called()
+    commands[0]["trigger"] = "/renamed-report"
+    jobs.sync_command_jobs(scheduler)
+    assert scheduler.get_job("wa_command:custom_report") is job
     reschedule.assert_not_called()
     commands[0]["schedule"]["time"] = "09:30"
     jobs.sync_command_jobs(scheduler)
@@ -112,6 +122,24 @@ def test_reconcile_preserves_jobs_and_removes_disabled_commands(monkeypatch):
     jobs.sync_command_jobs(scheduler)
     assert scheduler.get_job(job.id) is None
     assert scheduler.get_job("other_job") is not None
+
+
+def test_scheduled_command_executes_and_logs_using_internal_id(monkeypatch):
+    db = Mock()
+    log = Mock()
+    execute = AsyncMock(return_value=1)
+    monkeypatch.setattr(jobs, "SessionLocal", lambda: nullcontext(db))
+    monkeypatch.setattr(jobs, "get_command_settings", lambda _db: [command()])
+    monkeypatch.setattr(jobs, "execute_scheduled_command", execute)
+    start = Mock(return_value=log)
+    monkeypatch.setattr(jobs.JobExecutionLog, "start_execution", start)
+
+    jobs.run_scheduled_command("custom_report")
+
+    start.assert_called_once_with(db, "wa_command:custom_report", "WhatsApp: Report")
+    execute.assert_awaited_once()
+    assert execute.await_args.args[1]["trigger"] == "/report"
+    log.complete.assert_called_once_with(db, "success", records=1)
 
 
 @pytest.mark.asyncio
@@ -170,6 +198,139 @@ def test_settings_round_trip_with_mock_database():
     loaded = get_command_settings(db)
     assert loaded[0]["schedule"] == saved[0]["schedule"]
     assert loaded[0]["schedule"]["argument"] == "CAM-01"
+
+
+def multiple_command():
+    entry = command()
+    entry["required_params"] = ["camera"]
+    entry["schedules"] = [
+        {"id": "morning", **command(argument="CAM-01")["schedule"]},
+        {
+            "id": "evening",
+            **command(argument="CAM-02", recipient="628999999999", mode="cron", cron="30 18 * * *")[
+                "schedule"
+            ],
+        },
+    ]
+    return entry
+
+
+def test_multiple_schedules_round_trip_and_legacy_identity():
+    db = Mock()
+    db.query.return_value.filter.return_value.first.return_value = None
+    saved = save_command_settings(db, [multiple_command()])
+    row = db.add.call_args.args[0]
+    db.query.return_value.filter.return_value.first.return_value = row
+    loaded = get_command_settings(db)[0]
+    assert loaded["schedules"] == saved[0]["schedules"]
+    assert [schedule["argument"] for schedule in loaded["schedules"]] == ["CAM-01", "CAM-02"]
+    legacy = normalize_command_schedules(command(), [])
+    assert legacy[0]["id"] == "legacy"
+    assert jobs.command_job_id("custom_report", legacy[0]["id"]) == "wa_command:custom_report"
+
+
+@pytest.mark.parametrize(
+    "kind", ["duplicate", "unsafe", "missing_arguments", "too_many", "too_long"]
+)
+def test_multiple_schedule_validation(kind):
+    entry = multiple_command()
+    if kind == "duplicate":
+        entry["schedules"][1]["id"] = "morning"
+    elif kind == "unsafe":
+        entry["schedules"][1]["id"] = "/report"
+    elif kind == "missing_arguments":
+        entry["schedules"][1]["argument"] = ""
+    elif kind == "too_long":
+        entry["id"] = "a" * 89
+    else:
+        entry["schedules"] *= 26
+    with pytest.raises(ValueError, match=r".+"):
+        normalize_command_schedules(entry, entry["required_params"])
+
+
+def test_multiple_schedule_reload_changes_only_target_and_removes_deleted(monkeypatch):
+    entry = multiple_command()
+    monkeypatch.setattr(jobs, "SessionLocal", lambda: nullcontext(Mock()))
+    monkeypatch.setattr(jobs, "get_command_settings", lambda _db: [entry])
+    scheduler = BackgroundScheduler(timezone="Asia/Makassar")
+    jobs.sync_command_jobs(scheduler)
+    morning = scheduler.get_job("wa_command:custom_report:morning")
+    evening = scheduler.get_job("wa_command:custom_report:evening")
+    assert morning.args == ("custom_report", "morning")
+    assert evening.args == ("custom_report", "evening")
+    evening_trigger = evening.trigger
+    morning_trigger = morning.trigger
+    entry["schedules"][0]["time"] = "09:00"
+    jobs.sync_command_jobs(scheduler)
+    assert morning.trigger is not morning_trigger
+    assert evening.trigger is evening_trigger
+    entry["schedules"][0]["argument"] = "CAM-03"
+    unchanged_trigger = morning.trigger
+    jobs.sync_command_jobs(scheduler)
+    assert morning.trigger is unchanged_trigger
+    assert "CAM-03" in morning.name
+    entry["schedules"].pop()
+    jobs.sync_command_jobs(scheduler)
+    assert scheduler.get_job(evening.id) is None
+    assert scheduler.get_job(morning.id) is morning
+
+
+@pytest.mark.parametrize("schedule_id", ["morning", "evening"])
+def test_execution_selects_schedule_arguments_recipient_and_history(monkeypatch, schedule_id):
+    entry = multiple_command()
+    db, log = Mock(), Mock()
+    execute = AsyncMock(return_value=1)
+    start = Mock(return_value=log)
+    monkeypatch.setattr(jobs, "SessionLocal", lambda: nullcontext(db))
+    monkeypatch.setattr(jobs, "get_command_settings", lambda _db: [entry])
+    monkeypatch.setattr(jobs, "execute_scheduled_command", execute)
+    monkeypatch.setattr(jobs.JobExecutionLog, "start_execution", start)
+    jobs.run_scheduled_command(entry["id"], schedule_id)
+    selected = execute.await_args.args[1]["schedule"]
+    expected = next(item for item in entry["schedules"] if item["id"] == schedule_id)
+    assert selected["argument"] == expected["argument"]
+    assert selected["recipient"] == expected["recipient"]
+    assert start.call_args.args[1] == f"wa_command:custom_report:{schedule_id}"
+    log.complete.assert_called_once_with(db, "success", records=1)
+
+
+@pytest.mark.parametrize("schedule_id", ["morning", "evening"])
+def test_schedule_history_url_reaches_its_database_filter(monkeypatch, schedule_id):
+    db = Mock()
+    recent = Mock(return_value=[])
+    monkeypatch.setattr(job_routes.JobExecutionLog, "get_recent_executions", recent)
+    monkeypatch.setattr(job_routes, "get_current_timezone", lambda _db: "Asia/Makassar")
+    app = FastAPI()
+    app.include_router(job_routes.router)
+    app.dependency_overrides[job_routes.get_db] = lambda: db
+    app.dependency_overrides[job_routes.admin_access_required] = lambda: None
+    with TestClient(app) as client:
+        response = client.get(
+            f"/admin/jobs/api/jobs/wa_command%3Acustom_report%3A{schedule_id}/history?limit=50"
+        )
+    assert response.status_code == 200
+    assert response.json()["job_id"] == f"wa_command:custom_report:{schedule_id}"
+    recent.assert_called_once_with(db, job_id=f"wa_command:custom_report:{schedule_id}", limit=50)
+
+
+@pytest.mark.asyncio
+async def test_save_checks_access_for_every_schedule(monkeypatch):
+    db = Mock()
+    db.query.return_value.filter.return_value.first.return_value = None
+    monkeypatch.setattr(
+        wa_webhook, "_whitelisted_sender", lambda _db, phone: phone == "628123456789"
+    )
+    monkeypatch.setattr(
+        wa_webhook,
+        "_command_access_error",
+        lambda allowed, _command: "" if allowed else "Recipient not allowed",
+    )
+    request = SimpleNamespace(json=AsyncMock(return_value={"commands": [multiple_command()]}))
+    with pytest.raises(HTTPException, match="Recipient not allowed") as error:
+        await wa_webhook.put_wa_bot_commands(request, db, SimpleNamespace(api_tokens=[]))
+    assert error.value.status_code == 422
+    db.rollback.assert_called_once()
+    db.commit.assert_not_called()
 
 
 @pytest.mark.asyncio

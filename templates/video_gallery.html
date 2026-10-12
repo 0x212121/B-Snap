@@ -311,7 +311,7 @@
   function deleteVideo(videoId, element) {
     const card = element.closest("[data-video-card]");
     
-    showGlobalConfirm("Delete this video?", async () => {
+    showGlobalConfirm(BSnapI18n.t("Delete this video?"), async () => {
       try {
         const res = await fetch(`/videos/${videoId}`, { method: "DELETE" });
         const data = await res.json();
@@ -324,17 +324,17 @@
             // Adjust offset
             if (VideoState.currentPage > 1) VideoState.currentPage--;
           }, 200);
-          Toast.success("Video deleted", { title: "Success" });
+          Toast.success(BSnapI18n.t("Video deleted"), { title: BSnapI18n.t("Success") });
         } else {
           throw new Error(data.detail);
         }
       } catch (err) {
-        Toast.error(err.message || "Delete failed", { title: "Error" });
+        Toast.error(BSnapI18n.t(err.message || "Delete failed"), { title: BSnapI18n.t("Error") });
         card.style.opacity = "1";
       }
     }, {
-      title: "Confirm Delete",
-      confirmText: "Delete",
+      title: BSnapI18n.t("Confirm Delete"),
+      confirmText: BSnapI18n.t("Delete"),
       confirmButtonColor: "#b91c1c"
     });
   }

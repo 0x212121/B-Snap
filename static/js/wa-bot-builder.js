@@ -38,7 +38,7 @@
   let lastStageTemplateTarget = null;
 
 
-  const t = (en, id) => document.documentElement.lang === 'id' ? id : en;
+  const t = (en, id) => id === undefined ? (window.BSnapI18n?.t(en) ?? en) : (document.documentElement.lang === 'id' ? id : en);
   let savedTokenId = '', editorBaseline = '', editorReturnFocus = null, previousBodyOverflow = '';
   let saving = false, executing = false, monitorLoading = false, lastMonitorRefresh = null;
   let messageRows = [], previewRequest = 0, loaded = false, previewTimer = null;
@@ -51,23 +51,52 @@
     result.aliases = result.aliases.map(value=>value.toLowerCase());
     result.enabled = form.elements.enabled.checked; result.quote_reply = form.elements.quote_reply.checked;
     result.processing_delay_seconds = Number(form.elements.processing_delay_seconds.value);
-    result.schedule = {enabled:form.elements.schedule_enabled.checked, mode:form.elements.schedule_mode.value,
-      time:form.elements.schedule_time.value, cron:form.elements.schedule_cron.value.trim(),
-      recipient:form.elements.schedule_recipient.value.trim(), argument:form.elements.schedule_argument.value.trim()};
+    result.schedules = Array.from(form.querySelectorAll('[data-command-schedule]')).map(row => {
+      const field = key => row.querySelector(`[name="schedule_${key}"]`);
+      return {id:row.dataset.scheduleId, enabled:field('enabled').checked, mode:field('mode').value,
+        time:field('time').value, cron:field('cron').value.trim(), recipient:field('recipient').value.trim(), argument:field('argument').value.trim()};
+    });
+    delete result.schedule;
     result.role = adminActions.includes(result.action) ? 'admin' : 'user';
     if (privateOnlyActions.includes(result.action)) result.chat_scope = 'private';
     return result;
   }
   function updateScheduleFields() {
-    const cron = form.elements.schedule_mode.value === 'cron';
-    form.querySelector('[data-schedule-time]').classList.toggle('hidden', cron);
-    form.querySelector('[data-schedule-cron]').classList.toggle('hidden', !cron);
-    form.elements.schedule_time.required = form.elements.schedule_enabled.checked && !cron;
-    form.elements.schedule_cron.required = form.elements.schedule_enabled.checked && cron;
-    form.elements.schedule_recipient.required = form.elements.schedule_enabled.checked;
+    form.querySelectorAll('[data-command-schedule]').forEach(row => {
+      const field = key => row.querySelector(`[name="schedule_${key}"]`);
+      const cron = field('mode').value === 'cron', enabled = field('enabled').checked;
+      row.querySelector('[data-schedule-time]').classList.toggle('hidden', cron);
+      row.querySelector('[data-schedule-cron]').classList.toggle('hidden', !cron);
+      field('time').required = enabled && !cron;
+      field('cron').required = enabled && cron;
+      field('recipient').required = enabled;
+    });
   }
-  form.elements.schedule_mode.addEventListener('change', updateScheduleFields);
-  form.elements.schedule_enabled.addEventListener('change', updateScheduleFields);
+  function refreshScheduleLabels() {
+    form.querySelectorAll('[data-command-schedule]').forEach((row, index) => {
+      row.querySelector('[data-schedule-label]').textContent = `${t('Schedule', 'Jadwal')} ${index + 1}`;
+    });
+  }
+  function addScheduleRow(schedule = {}) {
+    const row = document.getElementById('commandScheduleTemplate').content.firstElementChild.cloneNode(true);
+    row.dataset.scheduleId = schedule.id || newCommandId().slice(7).replaceAll('-', '').slice(0, 12);
+    const field = key => row.querySelector(`[name="schedule_${key}"]`);
+    field('enabled').checked = schedule.enabled ?? true;
+    for (const key of ['mode','time','cron','recipient','argument']) field(key).value = schedule[key] ?? ({mode:'daily',time:'08:00'}[key] || '');
+    row.querySelector('[data-remove-schedule]').addEventListener('click', () => {
+      row.remove(); refreshScheduleLabels(); updateDirtyState();
+    });
+    row.addEventListener('change', updateScheduleFields);
+    document.getElementById('commandSchedules').appendChild(row);
+    updateScheduleFields(); refreshScheduleLabels(); BSnapCron.refresh(row);
+  }
+  document.getElementById('addCommandSchedule').addEventListener('click', () => {
+    if (form.querySelectorAll('[data-command-schedule]').length >= 50) {
+      showToast('warning', t('A command can have at most 50 schedules', 'Satu command dapat memiliki maksimal 50 jadwal')); return;
+    }
+    addScheduleRow(); updateDirtyState();
+  });
+  window.addEventListener('bsnap:languagechange', refreshScheduleLabels);
   function editorDirty() { return Boolean(draft && editorBaseline && JSON.stringify(collectCommand()) !== editorBaseline); }
   function commandConflicts(command) {
     const triggers = [command.trigger, ...command.aliases].filter(Boolean);
@@ -168,7 +197,7 @@
         row.appendChild(cell);
       }
       const cell=document.createElement('td'); cell.className='p-2'; const details=document.createElement('button'); details.type='button'; details.className='ui-button ui-button-secondary'; details.textContent=t('Details','Detail');
-      details.addEventListener('click',()=>themedSwal({title:t('Message details','Detail pesan'),text:[`ID: ${item.id}`,`${t('Time','Waktu')}: ${item.timestamp}`,`${t('Phone','Nomor')}: ${item.phone_number}`,`Direction: ${item.direction}`,`Status: ${item.status}`,`Command: ${item.command||'—'}`,`${t('Message','Pesan')}: ${item.message||'—'}`,`Error: ${item.error||'—'}`].join('\n'),customClass:{htmlContainer:'wa-message-detail'},confirmButtonText:t('Close','Tutup')}));
+      details.addEventListener('click',()=>themedSwal(() => ({title:t('Message details','Detail pesan'),text:[`ID: ${item.id}`,`${t('Time','Waktu')}: ${item.timestamp}`,`${t('Phone','Nomor')}: ${item.phone_number}`,`${t('Direction')}: ${item.direction}`,`Status: ${item.status}`,`${t('Command')}: ${item.command||'—'}`,`${t('Message','Pesan')}: ${item.message||'—'}`,`${t('Error')}: ${item.error||'—'}`].join('\n'),customClass:{htmlContainer:'wa-message-detail'},confirmButtonText:t('Close','Tutup')})));
       cell.appendChild(details); row.appendChild(cell); body.appendChild(row);
     }
     if (!rows.length) { const row=body.insertRow(); const cell=row.insertCell(); cell.colSpan=7; cell.className='p-4'; cell.textContent=t('No messages match these filters.','Tidak ada pesan sesuai filter.'); }
@@ -473,10 +502,9 @@
     form.elements.chat_scope.value = draft.chat_scope || (privateOnlyActions.includes(draft.action) ? 'private' : 'all');
     form.elements.enabled.checked = Boolean(draft.enabled);
     form.elements.quote_reply.checked = draft.quote_reply !== false;
-    const schedule = draft.schedule || {};
-    form.elements.schedule_enabled.checked = Boolean(schedule.enabled);
-    for (const key of ['mode','time','cron','recipient','argument']) form.elements[`schedule_${key}`].value = schedule[key] ?? ({mode:'daily',time:'08:00'}[key] || '');
-    updateScheduleFields();
+    document.getElementById('commandSchedules').replaceChildren();
+    const schedules = draft.schedules ?? (draft.schedule ? [{id:'legacy', ...draft.schedule}] : []);
+    schedules.forEach(addScheduleRow);
     BSnapCron.refresh(form);
     setRole(draft.action); setChatScope(draft.action); setResponseTemplateVisibility(draft.action); drawFlow(); editor.classList.remove('hidden');
     selectEditorTab('settings'); resetPreviewData(); editorBaseline = JSON.stringify(collectCommand()); updateDirtyState(); form.elements.name.focus();
@@ -484,30 +512,27 @@
   async function closeEditor(force = false) {
     if (saving || executing) return;
     previewRequest++; clearTimeout(previewTimer);
-    if (!force && editorDirty() && !(await themedSwal({icon:'warning',title:t('Discard unsaved changes?', 'Buang perubahan yang belum disimpan?'),showCancelButton:true,confirmButtonText:t('Discard', 'Buang'),cancelButtonText:t('Keep editing', 'Lanjutkan edit')})).isConfirmed) return;
+    if (!force && editorDirty() && !(await themedSwal(() => ({icon:'warning',title:t('Discard unsaved changes?', 'Buang perubahan yang belum disimpan?'),showCancelButton:true,confirmButtonText:t('Discard', 'Buang'),cancelButtonText:t('Keep editing', 'Lanjutkan edit')}))).isConfirmed) return;
     editor.classList.add('hidden'); document.body.style.overflow = previousBodyOverflow;
     draft = null; originalId = null; editorBaseline = ''; (editorReturnFocus?.isConnected ? editorReturnFocus : document.getElementById('addCommand')).focus();
   }
   async function deleteCommand(command) {
     if (saving) return;
-    const isIndonesian = document.documentElement.lang === 'id';
-    const result = await themedSwal({
+    const result = await themedSwal(() => ({
       icon: 'warning',
-      title: isIndonesian ? 'Hapus command?' : 'Delete command?',
-      text: isIndonesian
-        ? `Ketik nama fungsi "${command.name}" untuk mengonfirmasi penghapusan.`
-        : `Type the function name "${command.name}" to confirm deletion.`,
+      title: t('Delete command?'),
+      text: BSnapI18n.t('Type the function name "{name}" to confirm deletion.', {name: command.name}),
       input: 'text',
       inputPlaceholder: command.name,
       inputAttributes: {autocapitalize: 'off', autocorrect: 'off'},
       inputValidator: value => value?.trim() === command.name
         ? undefined
-        : (isIndonesian ? 'Nama fungsi tidak cocok.' : 'The function name does not match.'),
+        : t('The function name does not match.'),
       showCancelButton: true,
-      confirmButtonText: isIndonesian ? 'Hapus' : 'Delete',
-      cancelButtonText: isIndonesian ? 'Batal' : 'Cancel',
+      confirmButtonText: t('Delete'),
+      cancelButtonText: t('Cancel'),
       confirmButtonColor: '#dc2626'
-    });
+    }));
     if (!result.isConfirmed || saving) return;
     const previousCommands = structuredClone(commands);
     commands = commands.filter(item => item.id !== command.id);
@@ -535,17 +560,18 @@
       const detail = document.createElement('span'); detail.className = 'block truncate font-mono text-xs text-gray-500'; detail.textContent = `${command.trigger || '(no trigger)'} · ${actionLabels[command.action] || command.action}`;
       const access = document.createElement('span'); access.className = 'block text-xs text-gray-500'; access.textContent = `${adminActions.includes(command.action) || command.role === 'admin' ? 'Admin' : 'User'} · ${command.chat_scope === 'private' ? 'Private' : 'Group / Private'}`;
       info.append(detail, access);
-      if (command.schedule?.enabled) {
+      for (const schedule of (command.schedules ?? (command.schedule ? [command.schedule] : [])).filter(item => item.enabled)) {
         const scheduleLabel = document.createElement('span');
         scheduleLabel.className = 'no-translate block text-xs text-gray-500';
-        scheduleLabel.textContent = command.schedule.mode === 'cron'
-          ? `${t('Scheduled cron', 'Cron terjadwal')}: ${command.schedule.cron}`
-          : `${t('Daily at', 'Harian pukul')} ${command.schedule.time}`;
+        scheduleLabel.textContent = schedule.mode === 'cron'
+          ? `${t('Scheduled cron', 'Cron terjadwal')}: ${schedule.cron}`
+          : `${t('Daily at', 'Harian pukul')} ${schedule.time}`;
+        scheduleLabel.textContent += ` | ${schedule.argument || '-'} | ${schedule.recipient}`;
         info.appendChild(scheduleLabel);
-        if (command.schedule.mode === 'cron') {
+        if (schedule.mode === 'cron') {
           const description = document.createElement('span');
           description.className = 'no-translate block text-xs text-gray-500 dark:text-gray-400';
-          description.dataset.cronExpression = command.schedule.cron;
+          description.dataset.cronExpression = schedule.cron;
           info.appendChild(description);
         }
       }
@@ -772,8 +798,8 @@
     const sender = form.querySelector('[data-test-sender]').value.trim();
     if (!sender) { showToast('warning',t('Enter a whitelisted sender before executing','Isi nomor pengirim whitelist sebelum menjalankan aksi')); form.querySelector('[data-test-sender]').focus(); return; }
     const flow = testDraft.action === 'api_flow' ? testDraft.flow : testDraft.image_flow;
-    const summary = `${actionLabels[testDraft.action] || testDraft.action}\n${t('Sender','Pengirim')}: ${sender}\n${t('Argument','Argumen')}: ${form.querySelector('[data-test-argument]').value}\n${(flow || []).map(step=>`${step.method || 'GET'} ${step.path}`).join('\n')}\n${t('This executes the action using sender permissions. WhatsApp messages are not sent.','Aksi akan dijalankan dengan izin pengirim. Pesan WhatsApp tidak dikirim.')}`;
-    if (!(await themedSwal({icon:'warning',title:t('Execute this action?','Jalankan aksi ini?'),text:summary,showCancelButton:true,confirmButtonText:t('Execute action','Jalankan aksi'),cancelButtonText:t('Cancel','Batal'),confirmButtonColor:testDraft.action==='whitelist_remove' ? '#b91c1c' : '#2563eb'})).isConfirmed || !draft) return;
+    const summary = () => `${t(actionLabels[testDraft.action] || testDraft.action)}\n${t('Sender','Pengirim')}: ${sender}\n${t('Argument','Argumen')}: ${form.querySelector('[data-test-argument]').value}\n${(flow || []).map(step=>`${step.method || 'GET'} ${step.path}`).join('\n')}\n${t('This executes the action using sender permissions. WhatsApp messages are not sent.','Aksi akan dijalankan dengan izin pengirim. Pesan WhatsApp tidak dikirim.')}`;
+    if (!(await themedSwal(() => ({icon:'warning',title:t('Execute this action?','Jalankan aksi ini?'),text:summary(),showCancelButton:true,confirmButtonText:t('Execute action','Jalankan aksi'),cancelButtonText:t('Cancel','Batal'),confirmButtonColor:testDraft.action==='whitelist_remove' ? '#b91c1c' : '#2563eb'}))).isConfirmed || !draft) return;
     clearTimeout(previewTimer); previewRequest++;
     executing = true; form.inert = true; document.getElementById('saveCommandButton').disabled = true; updateDirtyState();
     const resultPanel = form.querySelector('[data-test-result]');
@@ -841,7 +867,8 @@
     draft.response_video_source = form.elements.response_video_source.value.trim();
     draft.response_image_source = form.elements.response_image_source.value.trim();
     draft.processing_delay_seconds = Number(form.elements.processing_delay_seconds.value);
-    draft.schedule = collectCommand().schedule;
+    draft.schedules = collectCommand().schedules;
+    delete draft.schedule;
     if (draft.action === 'api_flow') {
       if (!draft.flow?.length) { showToast('warning','Add at least one API node.'); return; }
       for (const step of draft.flow) {

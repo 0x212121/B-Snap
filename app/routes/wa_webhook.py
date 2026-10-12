@@ -171,11 +171,11 @@ async def put_wa_bot_commands(request: Request, db: Session = Depends(get_db), c
         payload = await request.json()
         commands = save_command_settings(db, payload.get("commands", []))
         for command in commands:
-            schedule = command.get("schedule") or {}
-            if schedule.get("enabled"):
-                error = _command_access_error(_whitelisted_sender(db, schedule["recipient"]), command)
-                if error:
-                    raise ValueError(error)
+            for schedule in command.get("schedules", []):
+                if schedule.get("enabled"):
+                    error = _command_access_error(_whitelisted_sender(db, schedule["recipient"]), command)
+                    if error:
+                        raise ValueError(error)
         token_id = str(payload.get("api_token_id") or "").strip()
         if token_id and not any(
             isinstance(item, dict) and str(item.get("id")) == token_id
