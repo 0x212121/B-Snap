@@ -1,5 +1,5 @@
 {% import "_icons.html" as ui_icons %}
-{% from "macros/ui.html" import kpi_card %}
+{% from "macros/ui.html" import toggle_switch, kpi_card %}
 {% extends "base.html" %}
 {% from "_icons.html" import icon_save %}
 {% block title %}B-SNAP - Record Checks{% endblock %}
@@ -119,14 +119,18 @@
 
 <div id="source-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
   <div class="ui-card flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-xl dark:bg-gray-800">
-    <div class="flex items-start justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
-      <div>
+    <div class="flex flex-wrap items-start justify-between gap-3 border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+      <div class="min-w-0 flex-1 basis-56">
         <h3 id="source-modal-title" class="text-lg font-bold text-gray-900 dark:text-white">Add Source</h3>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Native SMB/NFS mounts are read-only and restricted to deployment-approved storage servers.</p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Changes apply after saving.</p>
       </div>
-      <button type="button" onclick="closeSourceModal()" class="ui-button ui-button-secondary ui-button-icon" title="Close" aria-label="Close">
-        {{ ui_icons.icon_x_mark("w-5 h-5") }}
-      </button>
+      <div class="flex shrink-0 flex-wrap items-center gap-3">
+        {{ toggle_switch("Enabled", id="source-enabled", checked=true, form="source-form") }}
+        <button type="button" onclick="closeSourceModal()" class="ui-button ui-button-secondary ui-button-icon" title="Close" aria-label="Close">
+          {{ ui_icons.icon_x_mark("w-5 h-5") }}
+        </button>
+      </div>
     </div>
     <form id="source-form" class="flex min-h-0 flex-1 flex-col">
       <div class="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
@@ -205,10 +209,6 @@
             <label class="ui-label mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Long-dead days</label>
             <input id="source-long-dead" type="number" min="1" value="7" class="ui-control w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
           </div>
-          <label class="flex h-[42px] items-center gap-3 self-end rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900/30 dark:text-gray-300">
-            <input id="source-enabled" type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-            Enabled
-          </label>
         </div>
       </div>
       <div class="flex flex-col-reverse gap-2 border-t border-gray-200 bg-gray-50 px-5 py-4 dark:border-gray-700 dark:bg-gray-900/30 sm:flex-row sm:items-center sm:justify-end">

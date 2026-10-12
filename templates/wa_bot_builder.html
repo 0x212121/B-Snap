@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon_whatsapp, icon_plus, icon_check_circle, icon_server, icon_x_mark, icon_pencil, icon_trash, icon_play, icon_clip_check, icon_lock, icon_save %}
-{% from "macros/ui.html" import page_header, empty_state %}
+{% from "macros/ui.html" import toggle_switch, page_header, empty_state %}
 {% block title %}B-SNAP – WhatsApp Bot Builder{% endblock %}
 
 {% block content %}
@@ -66,9 +66,12 @@
 
 <div id="commandEditor" class="fixed inset-0 z-50 hidden bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
   <div class="ui-card wa-editor-card mx-auto flex max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-xl dark:bg-gray-800" style="max-height: 94vh;">
-    <div class="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
-      <div><h2 id="editorTitle" class="ui-section-title inline-flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">{{ icon_pencil("h-4 w-4 text-blue-500") }}<span id="editorTitleText">Edit command</span></h2><p id="editorSubtitle" class="text-xs text-gray-500"></p></div>
-      <button id="closeEditor" type="button" class="ui-button ui-button-ghost ui-button-icon" aria-label="Close">✕</button>
+    <div class="flex items-center justify-between gap-3 border-b border-gray-200 p-4 dark:border-gray-700">
+      <div class="min-w-0"><h2 id="editorTitle" class="ui-section-title inline-flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">{{ icon_pencil("h-4 w-4 text-blue-500") }}<span id="editorTitleText">Edit command</span></h2><p id="editorSubtitle" class="break-words text-xs text-gray-500"></p></div>
+      <div class="flex shrink-0 items-center gap-3">
+        {{ toggle_switch("Enabled", id="commandEnabled", name="enabled", form="commandForm", classes="whitespace-nowrap") }}
+        <button id="closeEditor" type="button" class="ui-button ui-button-ghost ui-button-icon" aria-label="Close">✕</button>
+      </div>
     </div>
     <div id="editorTabs" class="ui-tabs --prevent-on-load-init wa-editor-tabs px-4" role="tablist" aria-label="Command editor sections">
       <button id="editorTab-settings" type="button" class="ui-tab" role="tab" aria-controls="editorPanel-settings" aria-selected="true" data-editor-tab="settings">Command settings</button>
@@ -99,8 +102,10 @@
           </select>
           <span data-chat-scope-note class="mt-1 block text-xs text-gray-500">Choose where this command can run.</span>
         </label>
-        <label class="flex items-center gap-2 self-end pb-2 text-sm text-gray-700 dark:text-gray-200"><input name="enabled" type="checkbox" class="rounded border-gray-300 text-blue-600"> Enabled</label>
-        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 md:col-span-2"><input name="quote_reply" type="checkbox" checked class="rounded border-gray-300 text-blue-600"> Quote reply to triggering message</label>
+        <div class="md:col-span-2">
+          {{ toggle_switch("Quote reply to triggering message", name="quote_reply", checked=true) }}
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Changes apply after saving.</p>
+        </div>
         <label class="text-sm text-gray-700 dark:text-gray-200 md:col-span-2">Aliases, comma-separated
           <input name="aliases" placeholder="/camera, /kamera" class="ui-control mt-1 w-full rounded-lg border-gray-300 font-mono dark:border-gray-600 dark:bg-gray-900">
         </label>
@@ -114,12 +119,18 @@
       </div>
 
       <fieldset id="editorPanel-schedules" role="tabpanel" aria-labelledby="editorTab-schedules" data-editor-section="schedules" hidden class="space-y-3 rounded-lg">
+        <p class="text-xs text-gray-500 dark:text-gray-400">Changes apply after saving.</p>
         <div id="commandSchedules" class="space-y-3"></div>
         <button type="button" id="addCommandSchedule" class="ui-button ui-button-secondary">Add schedule</button>
         <template id="commandScheduleTemplate">
           <div data-command-schedule class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-            <div class="flex items-center justify-between gap-3"><span data-schedule-label class="no-translate text-sm font-medium text-gray-700 dark:text-gray-200"></span><button type="button" data-remove-schedule class="ui-button ui-button-secondary">Remove schedule</button></div>
-        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200"><input name="schedule_enabled" type="checkbox" class="rounded border-gray-300 text-blue-600"> Enable schedule</label>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <span data-schedule-label class="no-translate text-sm font-medium text-gray-700 dark:text-gray-200"></span>
+              <div class="flex flex-wrap items-center gap-3">
+                {{ toggle_switch("Enable schedule", name="schedule_enabled") }}
+                <button type="button" data-remove-schedule class="ui-button ui-button-secondary">Remove schedule</button>
+              </div>
+            </div>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <label class="text-sm text-gray-700 dark:text-gray-200">Schedule
             <select name="schedule_mode" class="ui-control mt-1 w-full rounded-lg dark:bg-gray-900"><option value="daily">Daily time</option><option value="cron">Cron (5 fields)</option></select>
@@ -142,7 +153,7 @@
         <p class="text-xs text-gray-500"><span>Timezone:</span> <span id="scheduleTimezone"></span>. <span>Recipient whitelist permissions apply.</span> <span>Manage schedules in Bot Builder; view jobs and execution history in Job Management. Changes take effect within 60 seconds.</span> <a href="/admin/jobs/" class="text-blue-600 dark:text-blue-300">Job Management</a></p>
       </fieldset>
 
-      <div id="editorPanel-action" role="tabpanel" aria-labelledby="editorTab-action" data-editor-section="action" data-flow-panel class="hidden rounded-lg border border-gray-200 p-4 dark:border-gray-200">
+      <div id="editorPanel-action" role="tabpanel" aria-labelledby="editorTab-action" data-editor-section="action" data-flow-panel class="hidden rounded-lg border border-gray-200 p-4 dark:border-gray-700">
         <div data-flow-editor class="mb-3">
         <div class="wa-section-toolbar mt-3 mb-3">
           <div><h3 data-flow-title class="inline-flex items-center gap-2 font-medium text-gray-900 dark:text-white">{{ icon_server("h-4 w-4 text-blue-500") }}API flow (GET / POST)</h3><p data-flow-subtitle class="text-xs text-gray-500">Internal B-Snap nodes run in order, up to 8 nodes.</p></div>

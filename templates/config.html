@@ -2,7 +2,7 @@
 {% block title %}B-SNAP – Config{% endblock %}
 {% from "_icons.html" import icon_config, icon_globe, icon_camera, icon_bug, icon_paint, icon_folder, icon_download, icon_trash, icon_play, icon_email, icon_airplane, icon_save %}
 
-{% from "macros/ui.html" import page_header %}
+{% from "macros/ui.html" import toggle_switch, page_header %}
 
 {% block content %}
 <style>
@@ -508,12 +508,8 @@
     </div>
     
     <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-      <label class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-        <input type="checkbox" name="gowa_monitor_enabled" value="1"
-          {% if configs.get('gowa_monitor_enabled', '0') == '1' %}checked{% endif %}
-          class="rounded border-gray-300 text-green-600 focus:ring-green-500">
-        <span>Email alerts for WhatsApp device outages</span>
-      </label>
+      {{ toggle_switch("Email alerts for WhatsApp device outages", id="gowa_monitor_enabled", name="gowa_monitor_enabled", value="1", checked=configs.get('gowa_monitor_enabled', '0') == '1') }}
+      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Changes apply after saving.</p>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
         <div>
           <label for="gowa_monitor_recipients" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">GoWA Alert Email Recipients</label>

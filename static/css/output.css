@@ -1353,10 +1353,6 @@ select {
   height: 2.25rem;
 }
 
-.h-\[42px\] {
-  height: 42px;
-}
-
 .h-\[960px\] {
   height: 960px;
 }
@@ -1698,6 +1694,10 @@ select {
   flex-grow: 1;
 }
 
+.basis-56 {
+  flex-basis: 14rem;
+}
+
 .table-auto {
   table-layout: auto;
 }
@@ -2024,10 +2024,6 @@ select {
 
 .self-start {
   align-self: flex-start;
-}
-
-.self-end {
-  align-self: flex-end;
 }
 
 .overflow-auto {
@@ -4332,6 +4328,10 @@ select {
   --tw-ring-color: rgb(99 102 241 / var(--tw-ring-opacity));
 }
 
+.peer:disabled ~ .peer-disabled\:opacity-50 {
+  opacity: 0.5;
+}
+
 :is(.dark .dark\:divide-gray-700) > :not([hidden]) ~ :not([hidden]) {
   --tw-divide-opacity: 1;
   border-color: rgb(55 65 81 / var(--tw-divide-opacity));
@@ -4360,11 +4360,6 @@ select {
 :is(.dark .dark\:border-blue-800) {
   --tw-border-opacity: 1;
   border-color: rgb(30 64 175 / var(--tw-border-opacity));
-}
-
-:is(.dark .dark\:border-gray-200) {
-  --tw-border-opacity: 1;
-  border-color: rgb(229 231 235 / var(--tw-border-opacity));
 }
 
 :is(.dark .dark\:border-gray-500) {
@@ -4887,6 +4882,12 @@ select {
 :is(.dark .dark\:file\:text-green-400)::file-selector-button {
   --tw-text-opacity: 1;
   color: rgb(74 222 128 / var(--tw-text-opacity));
+}
+
+:is(.dark .dark\:after\:border-gray-500)::after {
+  content: var(--tw-content);
+  --tw-border-opacity: 1;
+  border-color: rgb(107 114 128 / var(--tw-border-opacity));
 }
 
 :is(.dark .dark\:hover\:border-blue-700:hover) {

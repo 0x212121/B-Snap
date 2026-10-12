@@ -1,4 +1,14 @@
 {# Shared presentation components. Caller blocks retain existing actions and bindings. #}
+{% macro toggle_switch(label, id='', name='', value='on', checked=false, form='', classes='') %}
+  <label{% if id %} for="{{ id }}"{% endif %} class="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700 dark:text-gray-200 {{ classes }}">
+    <span>{{ label }}</span>
+    <span class="relative inline-flex shrink-0 items-center">
+      <input type="checkbox" role="switch" class="peer sr-only" value="{{ value }}"{% if id %} id="{{ id }}"{% endif %}{% if name %} name="{{ name }}"{% endif %}{% if form %} form="{{ form }}"{% endif %}{% if checked %} checked{% endif %}>
+      <span aria-hidden="true" class="h-6 w-11 rounded-full bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:bg-gray-600 dark:peer-focus:ring-green-800 peer-checked:bg-green-600 peer-disabled:opacity-50 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white dark:after:border-gray-500"></span>
+    </span>
+  </label>
+{% endmacro %}
+
 {% macro page_heading(title, description='') %}
   <div class="ui-page-heading">
     <h1 class="ui-page-title">{{ title }}</h1>

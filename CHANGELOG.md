@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Standardized six additional on/off controls as accessible toggles: command schedules, quoted replies, recording sources, GoWA outage alerts, log auto-refresh, and camera image rotation; form settings retain save-to-apply behavior.
+
+- Moved the Bot Builder command Enabled control to a toggle beside Close in the editor header, with draft tracking and locking during save/execution.
 - Moved WhatsApp command schedules into a dedicated Schedules editor tab.
 - GoWA device outage alert emails are marked as high importance.
 - Job Management now returns jobs sorted alphabetically by name from the backend, including scheduled WhatsApp commands, with case-insensitive ordering.

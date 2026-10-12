@@ -907,6 +907,8 @@
     "Archive audit logs older than 6 months? This exports them to an encrypted file, copies them to the legacy table, then removes them from the current table. This operation cannot be undone.": "Arsipkan log audit yang lebih lama dari 6 bulan? Log akan diekspor ke file terenkripsi, disalin ke tabel lama, lalu dihapus dari tabel saat ini. Operasi ini tidak dapat dibatalkan."
 });
 
+  Object.assign(translations, {"Changes apply after saving.": "Perubahan berlaku setelah disimpan."});
+
   const originalText = new WeakMap();
   const originalAttributes = new WeakMap();
   const relevantAttributes = ['placeholder', 'title', 'aria-label', 'alt'];

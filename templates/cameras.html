@@ -3,7 +3,7 @@
 {% block title %}B-SNAP – Camera Management{% endblock %}
 {% from "_icons.html" import icon_clip_check, icon_search, icon_pencil, icon_trash, icon_camera, icon_video_camera, icon_upload, icon_download, icon_plus, icon_filter, icon_x_mark, icon_map_pin, icon_funnel, icon_eye, icon_eye_slash, icon_save, icon_arrow_path, icon_warning, icon_no_symbol, icon_check_circle, icon_config %}
 
-{% from "macros/ui.html" import kpi_card, page_header, more_filters, loading_skeleton %}
+{% from "macros/ui.html" import toggle_switch, kpi_card, page_header, more_filters, loading_skeleton %}
 
 {% block content %}
 <!-- Header Section -->
@@ -337,13 +337,10 @@
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Optional notes about this camera</p>
         </div>
 
-        <div class="ui-card flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-          <input type="checkbox" id="is_flipped" name="is_flipped" value="true"
-            class="h-4 w-4 text-blue-600 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 focus:ring-blue-500">
-          <label for="is_flipped" class="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Flip Image 180°
-          </label>
-          <span class="text-xs text-gray-500 dark:text-gray-400 ml-auto">Use if camera image appears upside down</span>
+        <div class="ui-card space-y-1 rounded-lg bg-gray-50 p-3 dark:bg-gray-700/50">
+          {{ toggle_switch("Flip Image 180°", id="is_flipped", name="is_flipped", value="true") }}
+          <p class="text-xs text-gray-500 dark:text-gray-400">Use if camera image appears upside down</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Changes apply after saving.</p>
         </div>
       </div>
       

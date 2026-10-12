@@ -109,6 +109,7 @@
     document.getElementById('editorSaveState').textContent = executing ? t('Executing action…','Menjalankan aksi…') : saving ? t('Saving…','Menyimpan…') : editorDirty() ? t('Unsaved command changes','Perubahan command belum disimpan') : t('No unsaved changes','Tidak ada perubahan');
     document.getElementById('cancelEditor').disabled = saving || executing;
     document.getElementById('closeEditor').disabled = saving || executing;
+    form.elements.enabled.disabled = saving || executing;
   }
   function filteredCommands() {
     const query = document.getElementById('commandSearch').value.trim().toLowerCase();
@@ -213,6 +214,7 @@
   for (const id of ['messagePhone','messageCommand','messageStatus','messageFrom','messageTo']) document.getElementById(id).addEventListener('input',renderMessages);
   document.getElementById('clearMessageFilters').addEventListener('click',()=>{for(const id of ['messagePhone','messageCommand','messageStatus','messageFrom','messageTo']) document.getElementById(id).value=''; renderMessages();});
   tokenSelect.addEventListener('change',updateDirtyState);
+  form.elements.enabled.addEventListener('change',updateDirtyState);
   for(const event of ['input','change','click']) form.addEventListener(event,()=>queueMicrotask(updateDirtyState));
   form.addEventListener('invalid',event=>{const section=event.target.closest('[data-editor-section]'); if(section) selectEditorTab(section.dataset.editorSection);},true);
   document.getElementById('cancelEditor').addEventListener('click',()=>closeEditor());
@@ -618,6 +620,7 @@
     if (saving) throw new Error(t('A save is already in progress','Penyimpanan sedang berlangsung'));
     const tokenToSave = saveToken ? tokenSelect.value : savedTokenId;
     saving = true; tokenSelect.disabled = true; document.getElementById('saveCommandButton').disabled = true; document.getElementById('saveCommands').disabled = true;
+    updateDirtyState();
     try {
       const response = await fetch('/api/admin/wa-bot/commands', {method:'PUT',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({commands,api_token_id:tokenToSave})});
       const data = await readApiJson(response, 'Save changes'); if (!response.ok) throw new Error(data.detail || 'Failed to save changes');
