@@ -740,6 +740,30 @@
     "Sample API results": "Contoh hasil API"
   });
 
+  Object.assign(translations, {
+    "Scheduled delivery": "Pengiriman terjadwal",
+    "Enable schedule": "Aktifkan jadwal",
+    "Daily time": "Jam harian",
+    "Cron (5 fields)": "Cron (5 kolom)",
+    "Time (24-hour clock)": "Jam (format 24 jam)",
+    "Recipient (whitelist)": "Penerima (whitelist)",
+    "Command arguments": "Parameter command",
+    "Recipient whitelist permissions apply.": "Hak akses whitelist penerima berlaku.",
+    "Manage schedules in Bot Builder; view jobs and execution history in Job Management. Changes take effect within 60 seconds.": "Atur jadwal di Bot Builder; lihat job dan riwayat eksekusi di Manajemen Job. Perubahan berlaku dalam 60 detik.",
+    "Executes a WhatsApp command. Edit schedule in Bot Builder.": "Menjalankan command WhatsApp. Ubah jadwal di Bot Builder.",
+    "Configured, waiting for scheduler reload": "Sudah dikonfigurasi, menunggu scheduler memuat ulang",
+    "Schedule must have a boolean enabled flag": "Status aktif jadwal harus berupa boolean",
+    "Choose cron or daily time for the schedule": "Pilih cron atau jam harian untuk jadwal",
+    "Schedule argument or cron expression is too long": "Parameter jadwal atau ekspresi cron terlalu panjang",
+    "Schedule recipient must be a WhatsApp phone number": "Penerima jadwal harus berupa nomor WhatsApp",
+    "Daily schedule time must use HH:mm (24-hour clock)": "Jam harian harus menggunakan HH:mm (format 24 jam)",
+    "Enter a valid five-field cron expression": "Masukkan ekspresi cron yang valid dengan lima kolom",
+    "Scheduled command arguments must include all required parameters": "Parameter command terjadwal harus mencakup semua parameter wajib",
+    "Scheduled WhatsApp command failed; check application logs.": "Command WhatsApp terjadwal gagal; periksa log aplikasi.",
+    "Sender phone number is required and must be on the WhatsApp whitelist.": "Nomor pengirim wajib diisi dan harus terdaftar di whitelist WhatsApp.",
+    "This command is available to WhatsApp whitelist admins only.": "Command ini hanya tersedia untuk admin whitelist WhatsApp."
+  });
+
   const originalText = new WeakMap();
   const originalAttributes = new WeakMap();
   const relevantAttributes = ['placeholder', 'title', 'aria-label', 'alt'];

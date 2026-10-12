@@ -51,10 +51,23 @@
     result.aliases = result.aliases.map(value=>value.toLowerCase());
     result.enabled = form.elements.enabled.checked; result.quote_reply = form.elements.quote_reply.checked;
     result.processing_delay_seconds = Number(form.elements.processing_delay_seconds.value);
+    result.schedule = {enabled:form.elements.schedule_enabled.checked, mode:form.elements.schedule_mode.value,
+      time:form.elements.schedule_time.value, cron:form.elements.schedule_cron.value.trim(),
+      recipient:form.elements.schedule_recipient.value.trim(), argument:form.elements.schedule_argument.value.trim()};
     result.role = adminActions.includes(result.action) ? 'admin' : 'user';
     if (privateOnlyActions.includes(result.action)) result.chat_scope = 'private';
     return result;
   }
+  function updateScheduleFields() {
+    const cron = form.elements.schedule_mode.value === 'cron';
+    form.querySelector('[data-schedule-time]').classList.toggle('hidden', cron);
+    form.querySelector('[data-schedule-cron]').classList.toggle('hidden', !cron);
+    form.elements.schedule_time.required = form.elements.schedule_enabled.checked && !cron;
+    form.elements.schedule_cron.required = form.elements.schedule_enabled.checked && cron;
+    form.elements.schedule_recipient.required = form.elements.schedule_enabled.checked;
+  }
+  form.elements.schedule_mode.addEventListener('change', updateScheduleFields);
+  form.elements.schedule_enabled.addEventListener('change', updateScheduleFields);
   function editorDirty() { return Boolean(draft && editorBaseline && JSON.stringify(collectCommand()) !== editorBaseline); }
   function commandConflicts(command) {
     const triggers = [command.trigger, ...command.aliases].filter(Boolean);
@@ -460,6 +473,11 @@
     form.elements.chat_scope.value = draft.chat_scope || (privateOnlyActions.includes(draft.action) ? 'private' : 'all');
     form.elements.enabled.checked = Boolean(draft.enabled);
     form.elements.quote_reply.checked = draft.quote_reply !== false;
+    const schedule = draft.schedule || {};
+    form.elements.schedule_enabled.checked = Boolean(schedule.enabled);
+    for (const key of ['mode','time','cron','recipient','argument']) form.elements[`schedule_${key}`].value = schedule[key] ?? ({mode:'daily',time:'08:00'}[key] || '');
+    updateScheduleFields();
+    BSnapCron.refresh(form);
     setRole(draft.action); setChatScope(draft.action); setResponseTemplateVisibility(draft.action); drawFlow(); editor.classList.remove('hidden');
     selectEditorTab('settings'); resetPreviewData(); editorBaseline = JSON.stringify(collectCommand()); updateDirtyState(); form.elements.name.focus();
   }
@@ -517,6 +535,20 @@
       const detail = document.createElement('span'); detail.className = 'block truncate font-mono text-xs text-gray-500'; detail.textContent = `${command.trigger || '(no trigger)'} · ${actionLabels[command.action] || command.action}`;
       const access = document.createElement('span'); access.className = 'block text-xs text-gray-500'; access.textContent = `${adminActions.includes(command.action) || command.role === 'admin' ? 'Admin' : 'User'} · ${command.chat_scope === 'private' ? 'Private' : 'Group / Private'}`;
       info.append(detail, access);
+      if (command.schedule?.enabled) {
+        const scheduleLabel = document.createElement('span');
+        scheduleLabel.className = 'no-translate block text-xs text-gray-500';
+        scheduleLabel.textContent = command.schedule.mode === 'cron'
+          ? `${t('Scheduled cron', 'Cron terjadwal')}: ${command.schedule.cron}`
+          : `${t('Daily at', 'Harian pukul')} ${command.schedule.time}`;
+        info.appendChild(scheduleLabel);
+        if (command.schedule.mode === 'cron') {
+          const description = document.createElement('span');
+          description.className = 'no-translate block text-xs text-gray-500 dark:text-gray-400';
+          description.dataset.cronExpression = command.schedule.cron;
+          info.appendChild(description);
+        }
+      }
       const state = document.createElement('span'); state.className = `ui-badge shrink-0 ${command.enabled ? 'ui-badge-success' : 'ui-badge-neutral'}`; state.textContent = command.enabled ? 'Active' : 'Inactive';
       const heading = document.createElement('div'); heading.className = 'wa-command-heading'; heading.append(title,state);
       open.appendChild(document.createTextNode(t('Edit','Edit'))); open.addEventListener('click', () => openEditor(command));
@@ -529,6 +561,7 @@
   async function load() {
     const response = await fetch('/api/admin/wa-bot/commands', {headers:{'Accept':'application/json'}});
     const data = await readApiJson(response, 'Load commands'); if (!response.ok) throw new Error(data.detail || 'Failed to load commands');
+    document.getElementById('scheduleTimezone').textContent = data.timezone || '';
     commands = data.commands || []; loaded = true; document.getElementById('addCommand').disabled = false;
     tokenSelect.replaceChildren(new Option('No token (public APIs only)', ''));
     (data.api_tokens || []).forEach(token => tokenSelect.add(new Option(`${token.name} (${token.prefix || 'token'})`, token.id)));
@@ -808,6 +841,7 @@
     draft.response_video_source = form.elements.response_video_source.value.trim();
     draft.response_image_source = form.elements.response_image_source.value.trim();
     draft.processing_delay_seconds = Number(form.elements.processing_delay_seconds.value);
+    draft.schedule = collectCommand().schedule;
     if (draft.action === 'api_flow') {
       if (!draft.flow?.length) { showToast('warning','Add at least one API node.'); return; }
       for (const step of draft.flow) {

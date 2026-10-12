@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon_whatsapp, icon_plus, icon_check_circle, icon_server, icon_x_mark, icon_pencil, icon_trash, icon_play, icon_clip_check, icon_lock, icon_save %}
 {% from "macros/ui.html" import page_header, empty_state %}
+{% block title %}B-SNAP – WhatsApp Bot Builder{% endblock %}
 
 {% block content %}
 <div class="wa-builder">
@@ -110,6 +111,29 @@
           <textarea name="description" rows="2" maxlength="300" class="ui-control mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900"></textarea>
         </label>
       </div>
+
+      <fieldset data-editor-section="settings" class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+        <legend class="text-sm font-medium text-gray-900 dark:text-white">Scheduled delivery</legend>
+        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200"><input name="schedule_enabled" type="checkbox" class="rounded border-gray-300 text-blue-600"> Enable schedule</label>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <label class="text-sm text-gray-700 dark:text-gray-200">Schedule
+            <select name="schedule_mode" class="ui-control mt-1 w-full rounded-lg dark:bg-gray-900"><option value="daily">Daily time</option><option value="cron">Cron (5 fields)</option></select>
+          </label>
+          <label data-schedule-time class="text-sm text-gray-700 dark:text-gray-200">Time (24-hour clock)
+            <input name="schedule_time" type="time" value="08:00" class="ui-control mt-1 w-full rounded-lg dark:bg-gray-900">
+          </label>
+          <label data-schedule-cron class="hidden text-sm text-gray-700 dark:text-gray-200">Cron
+            <input name="schedule_cron" data-cron-input data-cron-empty="required" maxlength="100" placeholder="0 8 * * *" class="ui-control mt-1 w-full rounded-lg font-mono dark:bg-gray-900">
+          </label>
+          <label class="text-sm text-gray-700 dark:text-gray-200">Recipient (whitelist)
+            <input name="schedule_recipient" maxlength="16" placeholder="628123456789" class="ui-control mt-1 w-full rounded-lg dark:bg-gray-900">
+          </label>
+          <label class="text-sm text-gray-700 dark:text-gray-200">Command arguments
+            <input name="schedule_argument" maxlength="500" placeholder="CAM-01" class="ui-control mt-1 w-full rounded-lg dark:bg-gray-900">
+          </label>
+        </div>
+        <p class="text-xs text-gray-500"><span>Timezone:</span> <span id="scheduleTimezone"></span>. <span>Recipient whitelist permissions apply.</span> <span>Manage schedules in Bot Builder; view jobs and execution history in Job Management. Changes take effect within 60 seconds.</span> <a href="/admin/jobs/" class="text-blue-600 dark:text-blue-300">Job Management</a></p>
+      </fieldset>
 
       <div id="editorPanel-action" role="tabpanel" aria-labelledby="editorTab-action" data-editor-section="action" data-flow-panel class="hidden rounded-lg border border-blue-200 p-4 dark:border-blue-900">
         <div data-flow-editor class="mb-3">

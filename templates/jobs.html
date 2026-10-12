@@ -127,7 +127,7 @@
         <label for="cron-input" class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Cron Expression <span class="text-gray-500 font-normal">(5 parts: minute hour day month weekday)</span>
         </label>
-        <input type="text" id="cron-input" 
+        <input type="text" id="cron-input" data-cron-input
           class="ui-control w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
           placeholder="e.g., 0 8 * * *">
         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -298,6 +298,8 @@
         </span>
       ` : '';
       
+      const cronDescription = job.cron_expression
+        ? `<p data-cron-expression="${escapeAttr(job.cron_expression)}" class="no-translate mt-1 text-xs text-gray-500 dark:text-gray-400"></p>` : '';
       const canEditSchedule = job.schedule_editable === true;
       
       // Escape values for JavaScript
@@ -314,9 +316,11 @@
           </button>
         </div>
         ${cronBadge}
+        ${cronDescription}
       ` : `
         <span class="text-gray-600 dark:text-gray-400 text-sm">${job.trigger}</span>
         ${cronBadge}
+        ${cronDescription}
       `;
       
       return `
@@ -330,14 +334,14 @@
               </div>
               <div>
                 <div class="flex items-center gap-1.5 font-medium text-gray-900 dark:text-white">
-                  <span>${job.name}</span>
+                  <span>${escapeAttr(job.name)}</span>
                   <span title="${escapeAttr(job.description || 'Background scheduler job.')}" class="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 18.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13Z"></path>
                     </svg>
                   </span>
                 </div>
-                <div class="text-xs text-gray-500 font-mono">${job.id}</div>
+                <div class="text-xs text-gray-500 font-mono">${escapeAttr(job.id)}</div>
                 ${job.registered === false ? '<div class="mt-1 text-xs text-amber-600 dark:text-amber-400">Configured, waiting for scheduler reload</div>' : ''}
               </div>
             </div>
@@ -369,7 +373,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
               </button>
-              <button onclick="showHistory('${job.id}', '${job.name}')" class="ui-button ui-button-secondary ui-button-icon" title="View history">
+              <button onclick="showHistory(${escapeAttr(JSON.stringify(job.id))}, ${escapeAttr(JSON.stringify(job.name))})" class="ui-button ui-button-secondary ui-button-icon" title="View history">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
@@ -389,6 +393,7 @@
     
     // Set current value
     document.getElementById('cron-input').value = currentCron || '';
+    BSnapCron.refresh(document.getElementById('cron-input'));
     
     // Show modal
     document.getElementById('schedule-modal').classList.remove('hidden');

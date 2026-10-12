@@ -6,7 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Show live EN/ID descriptions of cron schedules in Configuration, Job Management, and WhatsApp Bot Builder, with scheduler-compatible validation and timezone labels.
+
+- Schedule WhatsApp Bot Builder commands by five-field cron or daily time in the application timezone, with recipient whitelist checks, command arguments, delivery logs, and per-command Job Management history.
+
 ### Changed
+
+- Standardize Email Templates and User Management page titles with the B-Snap prefix.
 
 - Consolidate daily NVR record-check reports into one WhatsApp summary and PDF per recipient for the full previous local day, with historical status counts, isolated source failures, and file-upload retries.
 
@@ -15,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove the WhatsApp daily camera-status report job and its schedule controls; retain the NVR record-check daily report.
 
 ### Fixed
+
+- Localize WhatsApp command schedule controls, validation messages, and Job Management descriptions for EN/ID, including immediate language switching without changing schedule values or timezone.
 
 - Normalize job timestamps with explicit UTC offsets and refresh Last Run, Next Run, and history displays using the configured timezone, independently of browser timezone and language.
 

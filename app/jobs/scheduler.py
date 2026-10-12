@@ -24,6 +24,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.config import get_config
 from app.core.job_schedules import JOB_SCHEDULES, build_job_trigger, get_job_schedule
+from app.jobs.wa_command_schedule import sync_command_jobs
 from app.core.logging_config import setup_logging
 from app.db.database import SessionLocal, engine
 from app.models.audit_log import AuditLog
@@ -803,6 +804,7 @@ def start_scheduler():
         replace_existing=True
     )
 
+    sync_command_jobs(scheduler)
     scheduler.start()
     logger.info("[Scheduler] Started with %d jobs", len(scheduler.get_jobs()))
     return scheduler
@@ -812,6 +814,7 @@ def update_scheduler_config() -> bool:
     """Reload each job's schedule independently from database configuration."""
     try:
         update_scheduler_timezone()
+        sync_command_jobs(scheduler)
         previous_schedules = last_config.get("job_schedules", {})
         schedules = {}
         for job_id in JOB_SCHEDULES:

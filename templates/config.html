@@ -231,7 +231,7 @@
         <!-- Snapshot Cron -->
         <div>
           <label for="snapshot_cron" class="ui-label block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Snapshot Schedule (Cron)</label>
-          <input type="text" id="snapshot_cron" name="snapshot_cron" 
+          <input type="text" id="snapshot_cron" name="snapshot_cron" data-cron-input
             value="{{ configs.get('snapshot_cron', '') }}" 
             placeholder="e.g., 0 8,13,23 * * *"
             class="ui-control w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
@@ -246,7 +246,7 @@
         <!-- Healthcheck Cron -->
         <div>
           <label for="healthcheck_cron" class="ui-label block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Healthcheck Schedule (Cron)</label>
-          <input type="text" id="healthcheck_cron" name="healthcheck_cron" 
+          <input type="text" id="healthcheck_cron" name="healthcheck_cron" data-cron-input
             value="{{ configs.get('healthcheck_cron', '') }}" 
             placeholder="e.g., */15 * * * *"
             class="ui-control w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
@@ -259,7 +259,7 @@
         <!-- Cleanup Cron -->
         <div>
           <label for="cleanup_cron" class="ui-label block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Cleanup Schedule (Cron)</label>
-          <input type="text" id="cleanup_cron" name="cleanup_cron" 
+          <input type="text" id="cleanup_cron" name="cleanup_cron" data-cron-input
             value="{{ configs.get('cleanup_cron', '0 2 * * *') }}" 
             placeholder="e.g., 0 2 * * *"
             class="ui-control w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">
@@ -271,7 +271,7 @@
         <!-- Email Retry Cron -->
         <div>
           <label for="email_retry_cron" class="ui-label block mb-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">Email Retry Schedule (Cron)</label>
-          <input type="text" id="email_retry_cron" name="email_retry_cron" 
+          <input type="text" id="email_retry_cron" name="email_retry_cron" data-cron-input
             value="{{ configs.get('email_retry_cron', '') }}" 
             placeholder="e.g., */5 * * * *"
             class="ui-control w-full p-2 bg-white border border-indigo-300 rounded-md dark:bg-gray-800 dark:border-indigo-600 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm">

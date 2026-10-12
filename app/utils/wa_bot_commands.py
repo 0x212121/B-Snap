@@ -5,12 +5,62 @@ import json
 import re
 from typing import Any
 
+from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy.orm import Session
 
 from app.models.config import Configuration
-from app.utils.wa_bot_workflow import normalize_flow
+from app.utils.wa_bot_workflow import bind_command_arguments, normalize_flow
+from app.utils.wa_gateway import format_phone_number
 
 CONFIG_KEY = "wa_bot_command_settings"
+
+
+def command_schedule_cron(schedule: dict[str, Any]) -> str:
+    """Return a five-field cron expression for a recurring command."""
+    if schedule["mode"] == "cron":
+        return schedule["cron"]
+    hour, minute = schedule["time"].split(":")
+    return f"{int(minute)} {int(hour)} * * *"
+
+
+def normalize_command_schedule(value: Any, required_params: list[str]) -> dict[str, Any]:
+    """Validate schedule settings stored with the command configuration."""
+    value = {} if value is None else value
+    if not isinstance(value, dict) or not isinstance(value.get("enabled", False), bool):
+        raise ValueError("Schedule must have a boolean enabled flag")
+    enabled = value.get("enabled", False)
+    mode = value.get("mode", "daily")
+    if mode not in {"cron", "daily"}:
+        raise ValueError("Choose cron or daily time for the schedule")
+    cron = str(value.get("cron", "")).strip()
+    daily_time = str(value.get("time", "08:00")).strip()
+    recipient = str(value.get("recipient", "")).strip()
+    argument = str(value.get("argument", "")).strip()
+    if len(argument) > 500 or len(cron) > 100:
+        raise ValueError("Schedule argument or cron expression is too long")
+    schedule = {
+        "enabled": enabled,
+        "mode": mode,
+        "cron": cron,
+        "time": daily_time,
+        "recipient": recipient,
+        "argument": argument,
+    }
+    if enabled:
+        if not re.fullmatch(r"\+?[0-9]{8,15}", recipient):
+            raise ValueError("Schedule recipient must be a WhatsApp phone number")
+        schedule["recipient"] = format_phone_number(recipient)
+        if mode == "daily" and not re.fullmatch(r"(?:[01][0-9]|2[0-3]):[0-5][0-9]", daily_time):
+            raise ValueError("Daily schedule time must use HH:mm (24-hour clock)")
+        try:
+            CronTrigger.from_crontab(command_schedule_cron(schedule), timezone="UTC")
+        except ValueError as exc:
+            raise ValueError("Enter a valid five-field cron expression") from exc
+        try:
+            bind_command_arguments(required_params, argument)
+        except ValueError as exc:
+            raise ValueError("Scheduled command arguments must include all required parameters") from exc
+    return schedule
 
 
 def normalize_response_media(item: dict[str, Any]) -> dict[str, str]:
@@ -179,10 +229,14 @@ def save_command_settings(db: Session, commands: list[dict[str, Any]]) -> list[d
     defaults = {item["id"]: item for item in BUILTIN_COMMANDS}
     normalized: list[dict[str, Any]] = []
     seen: set[str] = set()
+    seen_ids: set[str] = set()
     for item in commands:
         if not isinstance(item, dict):
             raise ValueError("Setiap perintah harus berupa objek")
         command_id = str(item.get("id", ""))
+        if not re.fullmatch(r"[a-zA-Z0-9_-]{1,89}", command_id) or command_id in seen_ids:
+            raise ValueError("Command IDs must be unique and at most 89 safe characters")
+        seen_ids.add(command_id)
         default = defaults.get(command_id)
         custom = command_id.startswith("custom_")
         if not default and not custom:
@@ -254,6 +308,7 @@ def save_command_settings(db: Session, commands: list[dict[str, Any]]) -> list[d
                 raise ValueError(f"Nama parameter duplikat: {parameter}")
             normalized_params.append(parameter)
         entry["required_params"] = normalized_params
+        entry["schedule"] = normalize_command_schedule(item.get("schedule"), normalized_params)
         aliases = entry.get("aliases", [])
         if isinstance(aliases, str):
             aliases = re.split(r"[,\n]", aliases)

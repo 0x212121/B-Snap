@@ -17,16 +17,33 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_config
 from app.core.job_schedules import JOB_SCHEDULES, get_job_schedule
+from app.jobs.wa_command_schedule import scheduled_commands
+from app.utils.wa_bot_commands import command_schedule_cron
 from app.db.database import engine, get_db
 from app.models.config import Configuration
 from app.models.job_execution_log import JobExecutionLog
 from app.models.user import User
 from app.routes.auth import admin_access_required
 from app.utils.record_check_report import send_record_check_daily_reports
+from app.utils.cron_description import description_expression
 from app.utils.template_helper import templates
 from app.utils.timezone_helper import format_datetime_iso, get_current_timezone
 
 router = APIRouter(prefix="/admin/jobs", tags=["Job Management"])
+
+
+@router.get("/api/cron-preview")
+def cron_preview(
+    expression: str = Query(..., max_length=1000),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(admin_access_required),
+) -> dict:
+    """Validate cron using the scheduler parser before describing it in the UI."""
+    try:
+        normalized = description_expression(expression.strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Enter a valid five-field cron expression") from exc
+    return {"expression": normalized, "timezone": get_current_timezone(db)}
 
 # Direct database access for reading jobs (no scheduler needed)
 from sqlalchemy import text
@@ -127,7 +144,13 @@ async def list_jobs(
         db_jobs_by_id = {job['id']: job for job in get_jobs_from_db()}
         
         jobs = []
-        for job_id, job_name in CONFIGURED_JOBS.items():
+        command_jobs = scheduled_commands(db)
+        configured_jobs = {**CONFIGURED_JOBS, **{
+            job_id: f"WhatsApp: {command['name']}" for job_id, command in command_jobs.items()
+        }}
+        for job_id, command in command_jobs.items():
+            cron_configs[job_id] = command_schedule_cron(command["schedule"])
+        for job_id, job_name in configured_jobs.items():
             db_job = db_jobs_by_id.get(job_id, {'id': job_id, 'next_run_time': None})
             
             # Get last execution
@@ -152,7 +175,7 @@ async def list_jobs(
             jobs.append({
                 "id": job_id,
                 "name": job_name,
-                "description": JOB_DESCRIPTIONS.get(job_id, "Background scheduler job."),
+                "description": JOB_DESCRIPTIONS.get(job_id, "Executes a WhatsApp command. Edit schedule in Bot Builder."),
                 "trigger": "Cron" if cron_expr else (
                     f"Every {schedules[job_id]['interval']} {schedules[job_id]['interval_unit']}"
                 ),

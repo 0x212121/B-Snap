@@ -155,6 +155,7 @@ def get_wa_bot_commands(db: Session = Depends(get_db), current_admin: User = Dep
     selected_token = token_id if token_owner_id == str(current_admin.id) else ""
     return {
         "commands": get_command_settings(db),
+        "timezone": get_current_timezone(db),
         "api_tokens": [
             {"id": item.get("id"), "name": item.get("name", "API token"), "prefix": item.get("prefix", "")}
             for item in (current_admin.api_tokens or [])
@@ -169,6 +170,12 @@ async def put_wa_bot_commands(request: Request, db: Session = Depends(get_db), c
     try:
         payload = await request.json()
         commands = save_command_settings(db, payload.get("commands", []))
+        for command in commands:
+            schedule = command.get("schedule") or {}
+            if schedule.get("enabled"):
+                error = _command_access_error(_whitelisted_sender(db, schedule["recipient"]), command)
+                if error:
+                    raise ValueError(error)
         token_id = str(payload.get("api_token_id") or "").strip()
         if token_id and not any(
             isinstance(item, dict) and str(item.get("id")) == token_id
