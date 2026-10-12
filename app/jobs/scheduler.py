@@ -31,7 +31,6 @@ from app.models.camera import Camera
 from app.models.camera_daily_stats import CameraDailyStats
 from app.models.camera_email_notification_log import CameraEmailNotificationLog
 from app.models.email_retry_queue import EmailRetryQueue
-from app.models.health import CameraHealth
 from app.models.job_execution_log import JobExecutionLog
 from app.models.log import CommandLog
 from app.models.snapshot_log import SnapshotLog
@@ -55,7 +54,6 @@ from app.utils.snapshot_process import run_camera_process
 from app.utils.snapshot_service import take_snapshot
 from app.utils.snapshot_utils import check_orphaned_snapshots, record_snapshot_metadata
 from app.utils.timezone_helper import get_current_timezone, to_current_timezone
-from app.utils.wa_gateway import WAGatewayService, format_phone_number
 
 # --- Scheduler Init with Database Job Store ---
 # Use SQLAlchemyJobStore so jobs are persisted and accessible from web app
@@ -191,12 +189,17 @@ def logged_job(job_id: str, job_name: str):
                 records = result.get("records_processed", 0) if isinstance(result, dict) else 0
                 metadata = (
                     result
-                    if job_id in {"scheduled_snapshot", "email_retry"} and isinstance(result, dict)
+                    if job_id in {"scheduled_snapshot", "email_retry", "record_check_daily_report"}
+                    and isinstance(result, dict)
                     else None
                 )
                 status = metadata.get("status", "success") if metadata else "success"
                 completion = {"status": status, "records": records, "metadata": metadata}
-                if job_id == "email_retry" and metadata and metadata.get("error_message"):
+                if (
+                    job_id in {"email_retry", "record_check_daily_report"}
+                    and metadata
+                    and metadata.get("error_message")
+                ):
                     completion["error"] = metadata["error_message"]
                 log.complete(db, **completion)
                 return result
@@ -591,18 +594,6 @@ def handle_cleanup_interval(scheduler, new_value):
     logger.info("[Scheduler] Cleanup jobs interval updated to %d days", new_value)
 
 
-def handle_wa_daily_report_time(scheduler, hour, minute):
-    for job_id in ("wa_daily_report", "record_check_daily_report"):
-        try:
-            scheduler.reschedule_job(
-                job_id,
-                trigger=CronTrigger(hour=hour, minute=minute, timezone=scheduler.timezone),
-            )
-        except JobLookupError:
-            logger.warning("[Scheduler] Job '%s' not found.", job_id)
-    logger.info("[Scheduler] Daily report time updated to %02d:%02d", hour, minute)
-
-
 CONFIG_HANDLERS = {
     "snapshot_interval_minutes": handle_snapshot_interval,
     "healthcheck_interval_minutes": handle_healthcheck_interval,
@@ -780,17 +771,6 @@ def start_scheduler():
         replace_existing=True
     )
 
-    # WhatsApp daily report with configurable time
-    scheduler.add_job(
-        wa_daily_report_job,
-        trigger=build_job_trigger(job_schedules['wa_daily_report'], scheduler.timezone),
-        id="wa_daily_report",
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=300,
-        replace_existing=True,
-    )
-
     scheduler.add_job(
         record_check_daily_report_job,
         trigger=build_job_trigger(job_schedules['record_check_daily_report'], scheduler.timezone),
@@ -924,12 +904,6 @@ def cleanup_record_checks_job():
 def record_check_daily_report_job():
     """Wrapper for daily record-check WhatsApp reports with trend PDF."""
     return send_record_check_daily_report()
-
-
-@logged_job("wa_daily_report", "WhatsApp Daily Report")
-def wa_daily_report_job():
-    """Wrapper for WhatsApp daily report job with logging."""
-    return send_wa_camera_no_snapshot_report()
 
 
 @logged_job("orphaned_snapshots_check", "Orphaned Snapshots Check")
@@ -1177,7 +1151,7 @@ def delete_old_record_checks():
 
 
 def send_record_check_daily_report():
-    """Send daily WhatsApp record-check report and optional trend PDF."""
+    """Send yesterday's consolidated record-check summary and trend PDF."""
     db: Session = SessionLocal()
     try:
         result = send_record_check_daily_reports(db)
@@ -1414,77 +1388,6 @@ def cleanup_email_retry_queue() -> dict:
         return {"records_processed": (deleted_success or 0) + (deleted_fail or 0)}
     except Exception:
         db.rollback()
-        raise
-    finally:
-        db.close()
-
-
-# ----------------------------
-# WhatsApp Report Jobs
-# ----------------------------
-def send_wa_camera_no_snapshot_report():
-    """Send WhatsApp report for cameras without recent snapshots."""
-    db: Session = SessionLocal()
-    try:
-        wa_service = WAGatewayService(db)
-        
-        if not wa_service.config.is_configured():
-            return {"records_processed": 0}
-        
-        receiver = wa_service.config.default_receiver
-        if not receiver:
-            return {"records_processed": 0}
-        
-        now = datetime.now(timezone.utc)
-        local_now = to_current_timezone(now, db)
-        snapshot_cutoff = now - timedelta(days=7)
-        cameras = db.query(Camera).filter(Camera.status.in_(["Active", "Restricted", "Maintenance"])).all()
-        
-        no_snapshot_cameras = []
-        for cam in cameras:
-            recent_snapshot = (
-                db.query(SnapshotLog)
-                .filter(SnapshotLog.camera_id == cam.id)
-                .filter(SnapshotLog.timestamp >= snapshot_cutoff)
-                .first()
-            )
-            if not recent_snapshot:
-                no_snapshot_cameras.append(cam)
-        
-        unhealthy = (
-            db.query(CameraHealth)
-            .filter(CameraHealth.status != "healthy")
-            .all()
-        )
-        
-        if not no_snapshot_cameras and not unhealthy:
-            return {"records_processed": 0}
-        
-        lines = ["📊 *B-SNAP Daily Camera Status Report*\n"]
-        lines.append(f"Date: {local_now:%Y-%m-%d %H:%M %Z}\n")
-        
-        if no_snapshot_cameras:
-            lines.append(f"⚠️ *Cameras without snapshots in the last 7 days:* {len(no_snapshot_cameras)}")
-            for cam in no_snapshot_cameras[:50]:
-                camera_label = cam.hostname or cam.ip or str(cam.id)
-                if cam.ip and cam.hostname:
-                    camera_label = f"{cam.hostname} ({cam.ip})"
-                lines.append(f"• {camera_label}")
-            lines.append("")
-        
-        message = "\n".join(lines)
-        
-        receivers = [r.strip() for r in receiver.split(",") if r.strip()]
-        sent_count = 0
-        for phone in receivers:
-            phone = phone if "@" in phone else format_phone_number(phone)
-            result = wa_service.send_text(phone, message)
-            if result["success"]:
-                sent_count += 1
-        
-        return {"records_processed": sent_count}
-    except Exception as e:
-        logger.error("[WA Report] Error: %s", e, exc_info=True)
         raise
     finally:
         db.close()

@@ -768,6 +768,7 @@ assert(!context.formatRetryDetails(malicious).includes('<img>'));
 assert(context.escapeAttr(JSON.stringify(malicious)).includes('&lt;img&gt;'));
 assert(source.includes("headers: { Accept: 'application/json' }"));
 assert(source.includes('dark:text-gray-400'));
+context.configuredTimezone = "Asia/Makassar";
 context.BSnapDates = {locale: () => doc.documentElement.lang === 'id' ? 'id-ID' : 'en-US'};
 vm.runInContext(source.slice(source.indexOf('function getDateLocale('), source.indexOf('function escapeAttr(')).replace('{{ timezone | tojson }}', '"Asia/Makassar"'), context);
 assert(source.includes('data-job-datetime="${escapeAttr(h.started_at)}"'));
@@ -776,10 +777,28 @@ assert(context.formatDateTime('2026-10-07T16:30:00Z').includes('Oct 08, 2026'));
 assert(context.formatDateTime('2026-10-07T16:30:00Z').includes('00:30:00'));
 doc.documentElement.lang = 'id';
 assert(context.formatDateTime('2026-10-07T16:30:00Z').includes('08 Okt 2026'));
+const header = {textContent: ''};
+const lastCell = {dataset: {jobDatetime: '2026-10-07T16:30:00Z'}};
+const nextCell = {dataset: {jobDatetime: '2026-10-07T16:30:00+00:00'}};
+doc.querySelectorAll = selector => selector === '[data-job-timezone]' ? [header]
+  : selector === '[data-job-datetime]' ? [lastCell, nextCell] : [];
+for (const [zone, clock] of [['Asia/Jakarta', '23:30:00'], ['Asia/Makassar', '00:30:00'], ['Asia/Jayapura', '01:30:00'], ['UTC', '16:30:00'], ['America/New_York', '12:30:00']]) {
+  context.updateJobTimezone(zone);
+  assert.strictEqual(header.textContent, zone);
+  for (const language of ['en', 'id', 'en']) {
+    doc.documentElement.lang = language; onLanguage();
+    assert(lastCell.textContent.replace(/\./g, ':').includes(clock));
+    assert.strictEqual(lastCell.textContent, nextCell.textContent);
+    assert(lastCell.textContent.includes(['Asia/Makassar', 'Asia/Jayapura'].includes(zone) ? '08' : '07'));
+    assert(context.formatTime(lastCell.dataset.jobDatetime).replace(/\./g, ':').includes(clock));
+  }
+}
+
 
 """
         result = subprocess.run(
             ["node", "-e", script],
+            env={**os.environ, "TZ": "America/Los_Angeles"},
             cwd=APP_ROOT.parent,
             capture_output=True,
             text=True,

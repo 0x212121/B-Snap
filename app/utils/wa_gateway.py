@@ -338,7 +338,7 @@ class WAGatewayService:
                 data["caption"] = caption
             with path.open("rb") as file_obj:
                 files = {"file": (path.name, file_obj, "application/pdf")}
-                response = self.session.post(self._make_url("/send/file"), data=data, files=files, timeout=60)
+                response = self._post_with_retry(self._make_url("/send/file"), data=data, files=files)
             response.raise_for_status()
             return {"success": True, "data": response.json()}
         except Exception as e:

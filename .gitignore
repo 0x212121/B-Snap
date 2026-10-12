@@ -25,3 +25,4 @@ ffplay.exe
 *.pdf
 backup.sql
 /archives/audit_logs/
+/tmp

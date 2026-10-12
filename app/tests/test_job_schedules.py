@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import json
+
+from datetime import UTC, datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 import pytest
+
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from app.core import job_schedules as schedules
@@ -34,7 +37,7 @@ def config(monkeypatch) -> dict:
 @pytest.mark.asyncio
 async def test_every_listed_job_has_an_independent_schedule(job_id: str) -> None:
     assert set(routes.CONFIGURED_JOBS) == set(schedules.JOB_SCHEDULES)
-    assert len({definition[0] for definition in schedules.JOB_SCHEDULES.values()}) == 14
+    assert len({definition[0] for definition in schedules.JOB_SCHEDULES.values()}) == 13
     db = MagicMock()
     db.query.return_value.filter.return_value.first.return_value = None
     response = await routes.update_job_schedule(
@@ -52,7 +55,7 @@ async def test_every_listed_job_has_an_independent_schedule(job_id: str) -> None
 async def test_invalid_cron_is_rejected_before_save(cron: str) -> None:
     db = MagicMock()
     response = await routes.update_job_schedule(
-        "wa_daily_report", cron_expression=cron, db=db, current_admin=MagicMock()
+        "record_check_daily_report", cron_expression=cron, db=db, current_admin=MagicMock()
     )
     assert response.status_code == 400
     db.commit.assert_not_called()
@@ -60,10 +63,11 @@ async def test_invalid_cron_is_rejected_before_save(cron: str) -> None:
 
 
 @pytest.mark.asyncio
-async def test_unknown_job_is_rejected() -> None:
+@pytest.mark.parametrize("job_id", ["unknown", "wa_daily_report"])
+async def test_unknown_job_is_rejected(job_id: str) -> None:
     db = MagicMock()
     response = await routes.update_job_schedule(
-        "unknown", cron_expression="0 8 * * *", db=db, current_admin=MagicMock()
+        job_id, cron_expression="0 8 * * *", db=db, current_admin=MagicMock()
     )
     assert response.status_code == 400
     db.commit.assert_not_called()
@@ -144,6 +148,56 @@ async def test_job_list_exposes_editing_for_all_jobs(monkeypatch, config) -> Non
     monkeypatch.setattr(routes.JobExecutionLog, "get_job_stats", lambda *args, **kwargs: {})
     response = await routes.list_jobs(db=db, current_admin=MagicMock())
     result = json.loads(response.body)
-    assert len(result["jobs"]) == 14
+    assert len(result["jobs"]) == 13
     assert all(job["schedule_editable"] for job in result["jobs"])
-    assert len(result["cron_configs"]) == 14
+    assert len(result["cron_configs"]) == 13
+
+
+@pytest.mark.parametrize("zone", ["Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura"])
+@pytest.mark.parametrize("naive", [True, False])
+@pytest.mark.asyncio
+async def test_job_run_timestamps_have_offsets_and_configured_timezone(
+    monkeypatch, config, zone, naive
+):
+    instant = datetime(2026, 10, 7, 16, 30, tzinfo=UTC)
+    timestamp = (
+        instant.replace(tzinfo=None) if naive else instant.astimezone(timezone(timedelta(hours=7)))
+    )
+    db = MagicMock()
+    log = MagicMock(
+        started_at=timestamp,
+        ended_at=timestamp,
+        status="success",
+        duration_ms=100,
+        records_processed=1,
+        error_message=None,
+        metadata_json=None,
+    )
+    log.id = 1
+    db.query.return_value.filter.return_value.order_by.return_value.first.return_value = log
+    monkeypatch.setattr(routes, "CONFIGURED_JOBS", {"health_check": "Health Check"})
+    monkeypatch.setattr(
+        routes,
+        "get_jobs_from_db",
+        lambda: [{"id": "health_check", "next_run_time": instant.timestamp()}],
+    )
+    monkeypatch.setattr(routes, "get_current_timezone", lambda _db: zone)
+    monkeypatch.setattr(routes.JobExecutionLog, "get_job_stats", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(
+        routes.JobExecutionLog, "get_recent_executions", lambda *_args, **_kwargs: [log]
+    )
+    result = json.loads((await routes.list_jobs(db=db, current_admin=MagicMock())).body)
+    assert result["timezone"] == zone
+    job = result["jobs"][0]
+    for value in [job["last_run"]["started_at"], job["next_run_time"]]:
+        parsed = datetime.fromisoformat(value)
+        assert parsed.tzinfo is not None
+        assert parsed.astimezone(UTC) == instant
+    history = json.loads(
+        (await routes.job_history("health_check", db=db, current_admin=MagicMock())).body
+    )
+    assert history["timezone"] == zone
+    for field in ["started_at", "ended_at"]:
+        parsed = datetime.fromisoformat(history["history"][0][field])
+        assert parsed.tzinfo is not None
+        assert parsed.astimezone(UTC) == instant

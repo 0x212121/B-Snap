@@ -26,7 +26,6 @@ JOB_SCHEDULES = {
         "days",
         1,
     ),
-    "wa_daily_report": ("wa_daily_report_cron", None, None, None),
     "record_check_daily_report": ("record_check_daily_report_cron", None, None, None),
     "orphaned_snapshots_check": ("orphaned_snapshots_check_cron", None, "hours", 1),
     "retention_policy": ("retention_policy_cron", None, None, None),
@@ -45,7 +44,7 @@ def get_job_schedule(job_id: str) -> dict:
             "cleanup_record_checks",
         }:
             cron = str(get_config("cleanup_cron", "0 2 * * *") or "").strip()
-        elif job_id in {"wa_daily_report", "record_check_daily_report"}:
+        elif job_id == "record_check_daily_report":
             hour = int(get_config("wa_daily_report_hour", 8))
             minute = int(get_config("wa_daily_report_minute", 0))
             cron = f"{minute} {hour} * * *"

@@ -71,7 +71,6 @@ DEFAULT_CONFIG = {
     "cleanup_command_logs_cron": "",
     "cleanup_record_checks_cron": "",
     "cleanup_email_retry_cron": "",
-    "wa_daily_report_cron": "",
     "record_check_daily_report_cron": "",
     "orphaned_snapshots_check_cron": "",
     "retention_policy_cron": "",
@@ -83,8 +82,8 @@ DEFAULT_CONFIG = {
     "gowa_api_key": "admin:admin",
     "gowa_device_id": "bsnap",
     "gowa_default_receiver": "",
-    "wa_daily_report_hour": "8",  # New: WA daily report hour (0-23)
-    "wa_daily_report_minute": "0",  # New: WA daily report minute (0-59)
+    "wa_daily_report_hour": "8",  # Legacy record-check report hour (0-23)
+    "wa_daily_report_minute": "0",  # Legacy record-check report minute (0-59)
 }
 
 

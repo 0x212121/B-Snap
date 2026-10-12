@@ -6,7 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Consolidate daily NVR record-check reports into one WhatsApp summary and PDF per recipient for the full previous local day, with historical status counts, isolated source failures, and file-upload retries.
+
+### Removed
+
+- Remove the WhatsApp daily camera-status report job and its schedule controls; retain the NVR record-check daily report.
+
 ### Fixed
+
+- Normalize job timestamps with explicit UTC offsets and refresh Last Run, Next Run, and history displays using the configured timezone, independently of browser timezone and language.
 
 - Deliver all WhatsApp API-flow responses (text, image, and video), including processing messages, to the originating chat with the command quote when enabled.
 

@@ -6,7 +6,7 @@ Dashboard and API endpoints for managing background jobs.
 import json
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Literal, Optional
 
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -24,6 +24,7 @@ from app.models.user import User
 from app.routes.auth import admin_access_required
 from app.utils.record_check_report import send_record_check_daily_reports
 from app.utils.template_helper import templates
+from app.utils.timezone_helper import format_datetime_iso, get_current_timezone
 
 router = APIRouter(prefix="/admin/jobs", tags=["Job Management"])
 
@@ -41,7 +42,6 @@ CONFIGURED_JOBS = {
     'cleanup_record_checks': 'Cleanup Record Checks',
     'email_retry': 'Email Retry',
     'cleanup_email_retry': 'Cleanup Email Retry',
-    'wa_daily_report': 'Whatsapp Daily Report',
     'record_check_daily_report': 'Record Check Daily Report',
     'orphaned_snapshots_check': 'Orphaned Snapshots Check',
     'retention_policy': 'Retention Policy',
@@ -58,7 +58,6 @@ JOB_DESCRIPTIONS = {
     'cleanup_record_checks': 'Hard-deletes old record-check run, folder-check, and event history. Sources, mappings, and current statuses are kept.',
     'email_retry': 'Processes queued email notifications that previously failed and are ready to retry.',
     'cleanup_email_retry': 'Deletes old completed or exhausted email retry queue rows.',
-    'wa_daily_report': 'Sends a WhatsApp daily summary for cameras without recent snapshots and unhealthy cameras.',
     'record_check_daily_report': 'Sends a WhatsApp daily NVR record-check downtime report and optional 14-day trend PDF.',
     'orphaned_snapshots_check': 'Checks snapshot files and database metadata for orphaned or missing snapshot records.',
     'retention_policy': 'Soft-deletes old snapshots and videos according to retention settings. Items on retention hold are skipped.',
@@ -162,7 +161,7 @@ async def list_jobs(
                 "next_run_time": next_run_iso,
                 "registered": job_id in db_jobs_by_id,
                 "last_run": {
-                    "started_at": last_run.started_at.isoformat() if last_run else None,
+                    "started_at": format_datetime_iso(last_run.started_at) if last_run else None,
                     "status": last_run.status if last_run else None,
                     "duration_ms": last_run.duration_ms if last_run else None,
                 } if last_run else None,
@@ -171,6 +170,7 @@ async def list_jobs(
         
         return JSONResponse({
             "jobs": jobs,
+            "timezone": get_current_timezone(db),
             "registered_job_ids": list(db_jobs_by_id.keys()),
             "cron_configs": cron_configs,
         })
@@ -205,15 +205,12 @@ async def job_history(
     return JSONResponse(
         {
             "job_id": job_id,
+            "timezone": get_current_timezone(db),
             "history": [
                 {
                     "id": log.id,
-                    "started_at": (
-                        log.started_at.replace(tzinfo=timezone.utc).isoformat()
-                        if log.started_at and log.started_at.tzinfo is None
-                        else log.started_at.isoformat() if log.started_at else None
-                    ),
-                    "ended_at": log.ended_at.isoformat() if log.ended_at else None,
+                    "started_at": format_datetime_iso(log.started_at),
+                    "ended_at": format_datetime_iso(log.ended_at),
                     "duration_ms": log.duration_ms,
                     "status": log.status,
                     "error_message": log.error_message,
@@ -230,7 +227,8 @@ async def job_history(
 async def run_job_now(
     job_id: str,
     db: Session = Depends(get_db),
-    current_admin: User = Depends(admin_access_required)
+    current_admin: User = Depends(admin_access_required),
+    language: Literal["en", "id"] = "en",
 ):
     """Manually trigger a job to run immediately."""
     # Check if job exists
@@ -244,9 +242,12 @@ async def run_job_now(
     if job_id == "record_check_daily_report":
         log = JobExecutionLog.start_execution(db, job_id, CONFIGURED_JOBS.get(job_id, job_id))
         try:
-            result = send_record_check_daily_reports(db)
+            result = send_record_check_daily_reports(db, language=language)
             records_processed = int(result.get("records_processed", 0))
-            log.complete(db, "success", records=records_processed, metadata=result)
+            log.complete(
+                db, result.get("status", "success"), records=records_processed,
+                error=result.get("error_message"), metadata=result,
+            )
             return JSONResponse({
                 "status": "success",
                 "message": f"Job '{job_id}' completed. Sent {records_processed} message(s).",

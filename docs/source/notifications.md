@@ -9,7 +9,7 @@ The notification system sends alerts for:
 - **Tamper alerts** - Camera tampering detected (blur, etc.)
 - **Recovery alerts** - Camera comes back online
 - **Record-check alerts** - Mounted SMB/NVR record folders become stale or missing
-- **WhatsApp reports** - Daily camera reports through GoWA
+- **WhatsApp reports** - Consolidated daily NVR recording reports through GoWA
 
 ## WhatsApp Gateway (GoWA)
 
@@ -33,6 +33,20 @@ Default receivers can be personal numbers or WhatsApp group JIDs:
 Multiple receivers are comma-separated. The Config UI can query GoWA groups from `GET /user/my/groups` and append the selected group JID automatically.
 
 ### Record-Check Notifications
+
+The `record_check_daily_report` job sends one WhatsApp summary and one combined
+PDF per unique GoWA default recipient, covering all enabled Record Sources.
+The report covers the full previous day, from 00:00 to the next 00:00 in the
+configured timezone (exclusive end). For example, a run on October 9 reports
+October 8 even when the job runs at 08:00. Multiple sources linked to the same
+NVR retain separate sections so their recording paths remain identifiable.
+
+Channel counts use the last stored check before the report period ends. Sources
+without historical checks are labeled as having no history. The PDF includes
+daily downtime details and per-source trends for the 14 days ending on the
+report date. Failed sources are listed without stopping other sources; delivery
+errors and partial results are stored in job history. Transient GoWA upload
+failures retry only the affected request, without replaying successful text.
 
 Record-check alerts are sent when:
 
