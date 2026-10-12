@@ -764,6 +764,11 @@
     "This command is available to WhatsApp whitelist admins only.": "Command ini hanya tersedia untuk admin whitelist WhatsApp."
   });
 
+  Object.assign(translations, {
+    "Email Retry Maximum Pending Age (hours)": "Batas Umur Pending Email Retry (jam)",
+    "Pending email notifications expire from their original queue creation time. Expired notifications are cancelled and retained for 7 days. Default: 24 hours.": "Notifikasi email pending kedaluwarsa sejak pertama kali masuk antrean. Notifikasi kedaluwarsa dibatalkan dan disimpan selama 7 hari. Default: 24 jam."
+  });
+
   const originalText = new WeakMap();
   const originalAttributes = new WeakMap();
   const relevantAttributes = ['placeholder', 'title', 'aria-label', 'alt'];

@@ -321,6 +321,7 @@
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">How long to keep job execution logs. Default: 30 days</p>
       </div>
       {% for key, label, fallback, upper in [
+        ('email_retry_max_pending_hours', 'Email Retry Maximum Pending Age (hours)', 24, 720),
         ('email_retry_batch_size', 'Email Retry Batch Size', 50, 500),
         ('email_retry_max_run_seconds', 'Email Retry Run Budget (seconds)', 120, 3600),
         ('email_retry_smtp_timeout_seconds', 'Email Retry SMTP Timeout (seconds)', 30, 30)
@@ -333,6 +334,7 @@
       </div>
       {% endfor %}
     </div>
+    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Pending email notifications expire from their original queue creation time. Expired notifications are cancelled and retained for 7 days. Default: 24 hours.</p>
     <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">The run budget is checked between tasks. An in-progress delivery may finish after the budget.</p>
     <div class="mt-4 flex gap-2">
       <a href="/admin/jobs/" class="ui-button ui-button-primary">

@@ -36,11 +36,18 @@ class EmailRetryQueue(Base):
     incident_time = Column(DateTime(timezone=True), nullable=False)
     offline_duration_seconds = Column(Integer, nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
+    cancellation_reason = Column(String(64), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     camera = relationship("Camera")
 
     __table_args__ = (
+        Index(
+            "ix_email_retry_pending_age",
+            "created_at",
+            postgresql_where=text("status = 'pending'"),
+            sqlite_where=text("status = 'pending'"),
+        ),
         Index(
             "ix_email_retry_due",
             "next_retry_at",

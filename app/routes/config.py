@@ -128,6 +128,7 @@ async def config_save(
     smtp_security: str = Form("starttls"),
     email_from: str = Form(""),
     email_cc: str = Form(""),
+    email_retry_max_pending_hours: Annotated[int | None, Form(ge=1, le=720)] = None,
     email_retry_batch_size: Annotated[int | None, Form(ge=1, le=500)] = None,
     email_retry_max_run_seconds: Annotated[int | None, Form(ge=1, le=3600)] = None,
     email_retry_smtp_timeout_seconds: Annotated[int | None, Form(ge=1, le=30)] = None,
@@ -287,6 +288,7 @@ async def config_save(
         {
             key: value
             for key, value in {
+                "email_retry_max_pending_hours": email_retry_max_pending_hours,
                 "email_retry_batch_size": email_retry_batch_size,
                 "email_retry_max_run_seconds": email_retry_max_run_seconds,
                 "email_retry_smtp_timeout_seconds": email_retry_smtp_timeout_seconds,

@@ -23,6 +23,7 @@ class EmailRetrySummary:
     blocked: int = 0
     exhausted: int = 0
     cancelled: int = 0
+    expired: int = 0
     processing_errors: int = 0
     deferral_reasons: dict[str, int] = field(default_factory=dict)
 
@@ -52,7 +53,13 @@ class EmailRetrySummary:
     ) -> dict:
         """Distinguish unsuccessful delivery, policy deferral and a successful empty run."""
         completed = self.sent + self.already_sent
-        errors = self.smtp_failed + self.processing_errors + self.exhausted + self.cancelled
+        errors = (
+            self.smtp_failed
+            + self.processing_errors
+            + self.exhausted
+            + self.cancelled
+            - self.expired
+        )
         incomplete = self.deferred + self.blocked + remaining_due
         if errors:
             status = "partial" if completed else "fail"

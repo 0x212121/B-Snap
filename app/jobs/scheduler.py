@@ -1250,10 +1250,44 @@ def _send_queued_email(db: Session, task: EmailRetryQueue, camera: Camera) -> Em
     )
 
 
+def _expire_pending_email_retries(db: Session, max_age_hours: int) -> int:
+    """Cancel aged pending tasks, including those whose next retry is not due yet."""
+    now = datetime.now(UTC)
+    expired = (
+        db.query(EmailRetryQueue)
+        .filter(
+            EmailRetryQueue.status == "pending",
+            EmailRetryQueue.created_at <= now - timedelta(hours=max_age_hours),
+        )
+        .update(
+            {
+                "status": "cancelled",
+                "cancellation_reason": "pending_expired",
+                "completed_at": now,
+                "next_retry_at": None,
+            },
+            synchronize_session=False,
+        )
+    )
+    db.commit()
+    return expired
+
+
 def _process_email_retry_task(
-    db: Session, task: EmailRetryQueue, summary: EmailRetrySummary
+    db: Session, task: EmailRetryQueue, summary: EmailRetrySummary, max_age_hours: int = 24
 ) -> None:
     """Persist each result before progressing so interrupted batches resume safely."""
+    now = datetime.now(UTC)
+    if task.created_at and incident_utc(task.created_at) <= now - timedelta(hours=max_age_hours):
+        task.status = "cancelled"
+        task.cancellation_reason = "pending_expired"
+        task.completed_at = now
+        task.next_retry_at = None
+        db.commit()
+        summary.processed += 1
+        summary.cancelled += 1
+        summary.expired += 1
+        return
     camera = task.camera
     if not camera or task.type not in {"tamper", "recovery", "offline"}:
         task.status = "cancelled"
@@ -1330,6 +1364,9 @@ def process_email_retry_queue() -> dict:
         max_run_seconds = _email_retry_limit("email_retry_max_run_seconds", 120, 3600)
         smtp_timeout = _email_retry_limit("email_retry_smtp_timeout_seconds", 30, 30)
         summary = EmailRetrySummary(batch_size, max_run_seconds)
+        max_age_hours = _email_retry_limit("email_retry_max_pending_hours", 24, 720)
+        summary.expired = _expire_pending_email_retries(db, max_age_hours)
+        summary.cancelled = summary.expired
         pending = (
             db.query(EmailRetryQueue)
             .options(joinedload(EmailRetryQueue.camera))
@@ -1354,7 +1391,7 @@ def process_email_retry_queue() -> dict:
                 if monotonic() >= deadline:
                     stopped_reason = "time_budget"
                     break
-                _process_email_retry_task(db, task, summary)
+                _process_email_retry_task(db, task, summary, max_age_hours)
         return _complete_email_retry_summary(db, summary, started, stopped_reason)
     except Exception:
         db.rollback()

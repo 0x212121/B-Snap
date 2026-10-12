@@ -154,6 +154,7 @@ class EmailRetryLifecycleTests(EmailRetryQueueTests):
                 "_apply_email_retry_result",
                 "_email_retry_limit",
                 "_send_queued_email",
+                "_expire_pending_email_retries",
                 "_process_email_retry_task",
                 "_complete_email_retry_summary",
                 "process_email_retry_queue",
@@ -463,6 +464,79 @@ class EmailRetryLifecycleTests(EmailRetryQueueTests):
         log = self.db.query(self.namespace["CameraEmailNotificationLog"]).one()
         self.assertEqual(incident_utc(log.incident_started_at), self.incident)
 
+    def test_pending_expiry_includes_future_retry_and_exact_boundary(self) -> None:
+        """Expire by creation time regardless of attempts or next due time."""
+        now = datetime.now(UTC)
+        expired = self.enqueue_due("tamper", reason="Original evidence reason")
+        recent = self.enqueue_due("offline")
+        expired.created_at = now - timedelta(hours=24)
+        expired.next_retry_at = now + timedelta(days=1)
+        expired.attempts = 2
+        recent.created_at = now - timedelta(hours=24) + timedelta(seconds=1)
+        recent.next_retry_at = now + timedelta(hours=1)
+        self.db.commit()
+        original_incident = incident_utc(expired.incident_time)
+        frozen = Mock()
+        frozen.now.return_value = now
+        with patch.dict(self.namespace, {"datetime": frozen}):
+            result = self.namespace["process_email_retry_queue"]()
+        self.db.expire_all()
+        self.assertEqual(expired.status, "cancelled")
+        self.assertEqual(expired.cancellation_reason, "pending_expired")
+        self.assertEqual(incident_utc(expired.completed_at), now)
+        self.assertIsNone(expired.next_retry_at)
+        self.assertEqual(expired.reason, "Original evidence reason")
+        self.assertEqual(expired.attempts, 2)
+        self.assertEqual(incident_utc(expired.incident_time), original_incident)
+        self.assertEqual(recent.status, "pending")
+        self.assertEqual(result["expired"], 1)
+        self.assertEqual(result["cancelled"], 1)
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["pending_total"], 1)
+        self.transport.assert_not_called()
+
+    def test_configured_pending_age_applies_and_retry_does_not_reset_creation(self) -> None:
+        """A changed age limit applies to existing pending tasks on the next run."""
+        task = self.enqueue_due("recovery")
+        task.created_at = datetime.now(UTC) - timedelta(hours=7)
+        self.db.commit()
+        created = incident_utc(task.created_at)
+        self.config.side_effect = lambda key, default: (
+            6 if key == "email_retry_max_pending_hours" else default
+        )
+        result = self.namespace["process_email_retry_queue"]()
+        self.db.expire_all()
+        self.assertEqual(result["expired"], 1)
+        self.assertEqual(incident_utc(task.created_at), created)
+        self.transport.assert_not_called()
+        same = self.enqueue_due("recovery")
+        self.assertEqual(same.id, task.id)
+        self.assertEqual(same.status, "cancelled")
+
+    def test_pending_age_is_rechecked_before_smtp(self) -> None:
+        """A task crossing the boundary after selection must not reach SMTP."""
+        task = self.enqueue_due("offline")
+        task.created_at = datetime.now(UTC) - timedelta(hours=25)
+        self.db.commit()
+        summary = EmailRetrySummary(50, 120)
+        self.namespace["_process_email_retry_task"](self.db, task, summary, 24)
+        self.assertEqual(summary.expired, 1)
+        self.assertEqual(summary.processed, 1)
+        self.assertEqual(task.cancellation_reason, "pending_expired")
+        self.assertEqual(task.attempts, 0)
+        self.transport.assert_not_called()
+
+    def test_old_incident_with_recent_queue_creation_is_not_expired(self) -> None:
+        """Queue lifetime starts at creation rather than the incident timestamp."""
+        task = self.enqueue_due("offline")
+        task.incident_time = datetime.now(UTC) - timedelta(days=10)
+        self.db.commit()
+        result = self.namespace["process_email_retry_queue"]()
+        self.db.expire_all()
+        self.assertEqual(result["expired"], 0)
+        self.assertEqual(task.status, "sent")
+        self.transport.assert_called_once()
+
     def test_cleanup_uses_completion_and_preserves_pending_tasks(self) -> None:
         """First-retry successes and legacy null completion dates can be purged."""
         now = datetime.now(UTC)
@@ -564,7 +638,7 @@ class EmailRetryLifecycleTests(EmailRetryQueueTests):
         self.namespace["SessionLocal"] = lambda: session
         result = self.namespace["process_email_retry_queue"]()
         self.assertEqual(result["sent"], 1)
-        self.assertEqual(session.commit.call_count, 2)
+        self.assertEqual(session.commit.call_count, 3)
         camera_selects = [sql for sql in statements if "FROM cameras" in sql]
         self.assertEqual(camera_selects, [])
         self.assertTrue(any("LEFT OUTER JOIN cameras" in sql for sql in statements))
@@ -712,7 +786,7 @@ payload = dict(snapshot_interval_minutes=10, healthcheck_interval_minutes=15,
                snapshot_concurrent_workers=2, max_screenshot_per_camera=20,
                snapshot_batch_size=10, snapshot_batch_delay_seconds=0,
                watermark_text='Test', map_title='Test', timezone='Asia/Makassar')
-keys = {'email_retry_batch_size': 7, 'email_retry_max_run_seconds': 45,
+keys = {'email_retry_max_pending_hours': 24, 'email_retry_batch_size': 7, 'email_retry_max_run_seconds': 45,
         'email_retry_smtp_timeout_seconds': 4}
 with TestClient(app) as client:
     assert client.post('/config/save', data={**payload, **keys}).status_code == 200
@@ -722,7 +796,7 @@ with TestClient(app) as client:
     assert client.post('/config/save', data=payload).status_code == 200
     touched = {call.args[0].key for call in db.add.call_args_list}
     assert not set(keys).intersection(touched)
-    for key, value in [('email_retry_batch_size', 0), ('email_retry_max_run_seconds', 3601),
+    for key, value in [('email_retry_max_pending_hours', 0), ('email_retry_max_pending_hours', 721), ('email_retry_batch_size', 0), ('email_retry_max_run_seconds', 3601),
                        ('email_retry_smtp_timeout_seconds', 31)]:
         db.reset_mock()
         response = client.post('/config/save', data={**payload, key: value})
@@ -758,8 +832,10 @@ for (const [start, end] of [
 const start = source.indexOf("window.addEventListener('bsnap:languagechange'");
 vm.runInContext(source.slice(start, source.indexOf('  // Initialize', start)), context);
 assert(context.formatRetryDetails({batch_size: 50, sent: 2}).includes('Sent: 2'));
+assert(context.formatRetryDetails({batch_size: 50, expired: 9}).includes('Pending expired: 9'));
 doc.documentElement.lang = 'id'; onLanguage();
 assert(cell.textContent.includes('Terkirim: 2'));
+assert(context.formatRetryDetails({batch_size: 50, expired: 9}).includes('Pending kedaluwarsa: 9'));
 doc.documentElement.lang = 'en'; onLanguage();
 assert(cell.textContent.includes('Sent: 2'));
 assert(context.getStatusBadge('<img src=x onerror=unsafe()>').includes('&lt;img'));
@@ -818,7 +894,7 @@ class EmailRetryMigrationTests(unittest.TestCase):
         config = Config(str(root / "alembic.ini"))
         config.set_main_option("script_location", str(root / "alembic"))
         self.assertEqual(
-            ScriptDirectory.from_config(config).get_heads(), ["20261007_email_retry_resources"]
+            ScriptDirectory.from_config(config).get_heads(), ["20261012_email_retry_expiry"]
         )
         path = root / "alembic/versions/20261007_email_retry_lifecycle.py"
         spec = importlib.util.spec_from_file_location("isolated_email_retry_migration", path)
@@ -891,6 +967,24 @@ class EmailRetryMigrationTests(unittest.TestCase):
         self.assertIn("(next_retry_at, created_at) WHERE status = 'pending'", output.getvalue())
         module.downgrade()
         self.assertIn("DROP INDEX ix_email_retry_due", output.getvalue())
+
+    def test_pending_age_migration(self) -> None:
+        """Compile expiry upgrade/downgrade against the PostgreSQL dialect."""
+        path = APP_ROOT.parent / "alembic/versions/20261012_email_retry_expiry.py"
+        spec = importlib.util.spec_from_file_location("isolated_retry_expiry_migration", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.assertEqual(module.down_revision, "20261007_email_retry_resources")
+        output = io.StringIO()
+        context = MigrationContext.configure(
+            dialect_name="postgresql", opts={"as_sql": True, "output_buffer": output}
+        )
+        module.op = Operations(context)
+        module.upgrade()
+        self.assertIn("ADD COLUMN cancellation_reason VARCHAR(64)", output.getvalue())
+        self.assertIn("(created_at) WHERE status = 'pending'", output.getvalue())
+        module.downgrade()
+        self.assertIn("DROP COLUMN cancellation_reason", output.getvalue())
 
 
 class EmailRetryRuntimeTests(unittest.TestCase):

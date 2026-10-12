@@ -6,62 +6,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- Show live EN/ID descriptions of cron schedules in Configuration, Job Management, and WhatsApp Bot Builder, with scheduler-compatible validation and timezone labels.
-
-- Schedule WhatsApp Bot Builder commands by five-field cron or daily time in the application timezone, with recipient whitelist checks, command arguments, delivery logs, and per-command Job Management history.
-
-### Changed
-
-- Standardize Email Templates and User Management page titles with the B-Snap prefix.
-
-- Consolidate daily NVR record-check reports into one WhatsApp summary and PDF per recipient for the full previous local day, with historical status counts, isolated source failures, and file-upload retries.
-
-### Removed
-
-- Remove the WhatsApp daily camera-status report job and its schedule controls; retain the NVR record-check daily report.
-
-### Fixed
-
-- Localize WhatsApp command schedule controls, validation messages, and Job Management descriptions for EN/ID, including immediate language switching without changing schedule values or timezone.
-
-- Normalize job timestamps with explicit UTC offsets and refresh Last Run, Next Run, and history displays using the configured timezone, independently of browser timezone and language.
-
-- Deliver all WhatsApp API-flow responses (text, image, and video), including processing messages, to the originating chat with the command quote when enabled.
-
-- Fix WhatsApp Bot Builder Add Command on HTTP origins without `crypto.randomUUID`, and prevent Preline from initializing custom tabs in the builder, Configuration, and Record Checks.
-
-- Allow web startup without generated documentation, include built documentation HTML when available, resolve static mounts from the application root, and smoke-check the web application import during Docker builds.
-
-- Include HTTPX in runtime dependencies so Docker web workers can import WhatsApp workflows; reject image builds with missing top-level application import modules.
-
-## [2.4.0] 2026-10-07
+## [2.4.0] - 2026-10-07
 
 ### Added
 
+- WhatsApp Bot Builder with custom commands/API flows, cron or daily scheduled delivery, media replies, previews, testing, delivery monitoring, and draft protection; video recording via API/WhatsApp.
+- Live EN/ID cron descriptions, scheduler-compatible validation, and timezone labels across Configuration, Job Management, and Bot Builder.
 - Persistent daily API-call totals for Analytics after log cleanup.
 - Read-only SMB/NFS recording mounts with admin controls, encrypted credentials, and server allowlists on Linux.
-- WhatsApp Bot Builder with custom commands/API flows, media replies, previews, testing, delivery monitoring, and draft protection; video recording via API/WhatsApp.
 - JSON/ORJSON log-handler benchmarks with response-equivalence checks.
 
 ### Changed
 
-- Independent cron schedules for all 14 jobs, reload within 60 seconds, and EN/ID confirmation for manual runs.
-- Bounded email retry batches/runtime, cached SMTP settings, fewer database operations, and delivery/backlog summaries in job history.
-- Standardized UI components, dialogs, feedback, and pagination; compact Record Checks tabs and immediate EN/ID date updates.
+- Independent cron schedules with reload within 60 seconds, per-command WhatsApp job history, and EN/ID confirmation for manual runs.
+- Bounded email retry batches/runtime, cached SMTP settings, and delivery/backlog summaries; pending notifications expire after a configurable 24 hours with recorded cancellation reasons and seven-day terminal cleanup.
+- Consolidated daily NVR record-check reports into one previous-day summary and PDF per WhatsApp recipient, with historical status counts, isolated source failures, and upload retries.
+- Standardized UI components, page titles, dialogs, feedback, and pagination; compact Record Checks tabs and immediate EN/ID date and schedule updates.
 - Faster JSON responses with ORJSON across logs, analytics, cameras, and galleries.
-- Streamlined Docker builds and improved service readiness, shutdown, resource limits, database pools, and log rotation.
-- Hardened Compose credentials/privileges and localhost ports, optional pgAdmin, persistent audit/pgAdmin data, storage monitoring, and stable archive keys.
-- Run migrations/configuration initialization before services; support empty PostgreSQL databases and stop startup on migration failure.
+- Improved Docker builds, readiness, shutdown, resource limits, database pools, and log rotation; hardened Compose credentials/privileges and localhost ports, optional pgAdmin, persistent audit/pgAdmin data, and storage monitoring.
+- Run migrations/configuration initialization before services, support empty PostgreSQL databases, and stop startup on migration failure.
+
+### Removed
+
+- WhatsApp daily camera-status report job and schedule controls; retained the NVR record-check daily report.
 
 ### Fixed
 
 - Corrected email retry migrations, queue fields/IDs, tamper/recovery parameters, and attempt limits; preserved incident times, distinguished SMTP failures from deferrals, reused logs, and cleaned up terminal tasks.
-- Removed duplicate Devices Status refreshes while retaining refresh after active checks.
-- Corrected heatmap, scheduler, and WhatsApp report timezones, including WIB/WITA/WIT labels.
-- Improved WhatsApp capture/delivery retries and deduplication; enforced whitelist, role, and camera-group access.
+- Corrected heatmap, scheduler, job-history, and WhatsApp report timezone handling, including WIB/WITA/WIT labels and explicit UTC offsets independent of browser timezone or language.
+- Improved WhatsApp capture/delivery retries and deduplication; enforced whitelist, role, and camera-group access; sent API-flow text/media/processing replies to the originating chat with configured quotes.
+- Fixed Bot Builder command creation on HTTP origins without `crypto.randomUUID` and custom tab initialization; removed duplicate Devices Status refreshes while retaining refresh after active checks.
 - Improved API errors and moved camera-IP lookup to `/api/cctv/resolve-ip`.
+- Fixed web startup without generated documentation, bundled built documentation and runtime HTTPX, resolved static mounts from the application root, and added Docker application-import checks.
 
 ## [2.3.0] - 2026-09-29
 

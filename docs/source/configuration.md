@@ -143,9 +143,18 @@ read at the start of each retry run. Initialization seeds missing values only.
 
 | Key | Default | Accepted range | Purpose |
 | --- | --- | --- | --- |
+| `email_retry_max_pending_hours` | `24` | 1?720 | Maximum pending age in hours, measured from original queue creation. |
 | `email_retry_batch_size` | `50` | 1–500 | Maximum due tasks loaded in one run. |
 | `email_retry_max_run_seconds` | `120` | 1–3600 | Cooperative run budget, checked before each task. |
 | `email_retry_smtp_timeout_seconds` | `30` | 1–30 | Socket timeout, capped by the remaining run budget. |
+
+Pending notifications reaching the configured age limit are cancelled with
+`cancellation_reason=pending_expired`, including tasks whose next retry is not yet due.
+Expiry is checked again before processing each selected task. Changing the limit applies
+on the next retry run; retries do not reset queue creation time or incident time.
+Job Management reports an expired count, and the existing cleanup retains cancelled
+entries for seven days after completion. Apply `alembic upgrade head` before restarting
+the web application and scheduler worker for this setting.
 
 Tasks left by a batch or time limit keep their original incident, attempt count,
 and retry timestamp for the next execution. An in-progress delivery can finish
