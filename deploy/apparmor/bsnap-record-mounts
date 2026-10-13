@@ -10,6 +10,7 @@ profile bsnap-record-mounts flags=(attach_disconnected,mediate_deleted) {
   network unix,
   capability chown,
   capability dac_override,
+  capability dac_read_search,
   capability fowner,
   capability fsetid,
   capability kill,

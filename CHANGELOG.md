@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prevented Audit Logs advanced filters from squeezing or shifting the main controls when expanded, with responsive wrapping.
 - Fixed Audit Logs CSV export returning 404 by generating the download URL from the registered backend route.
 
+- Added the CIFS helper's required `DAC_READ_SEARCH` capability to the native recording mount overlay and AppArmor profile, preventing capability setup failures before SMB mounts.
 
 ## [2.4.0] - 2026-10-12
 
