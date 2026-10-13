@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import re
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy.orm import Query as SQLQuery
+from sqlalchemy.orm import Query as SQLQuery, Session, joinedload
 
 from app.db.database import get_db
 from app.models.camera import Camera
@@ -22,11 +23,18 @@ router = APIRouter()
 @router.get("/api/cctv/resolve-ip", response_class=JSONResponse)
 def resolve_ip_by_name(
     keyword: str = Query(..., description="Part of group name or camera name to search"),
-    phone_number: str | None = Query(None, description="Required whitelisted sender phone number; its camera group restrictions apply"),
+    phone_number: str | None = Query(
+        None,
+        description="Required whitelisted sender phone number; its camera group restrictions apply",
+    ),
     sort_by: str = Query("hostname", description="Result field to sort by: hostname, ip, or id"),
     sort_order: str = Query("asc", description="Sort direction: asc or desc"),
     current_admin: User = Depends(admin_access_required),
     db: Session = Depends(get_db),
+    *,
+    include_without_ip: Annotated[
+        bool, Query(description="Include matching cameras whose IP address is null or empty")
+    ] = False,
 ) -> dict:
     keyword_clean = keyword.strip()
     if not keyword_clean:
@@ -41,35 +49,41 @@ def resolve_ip_by_name(
     sort_key = sort_by.strip().lower()
     direction = sort_order.strip().lower()
     if sort_key not in sort_columns:
-        raise HTTPException(status_code=400, detail="sort_by must be one of: hostname, name, ip, id")
+        raise HTTPException(
+            status_code=400, detail="sort_by must be one of: hostname, name, ip, id"
+        )
     if direction not in {"asc", "desc"}:
         raise HTTPException(status_code=400, detail="sort_order must be asc or desc")
 
     phone = format_phone_number(re.split(r"[@:]", str(phone_number or "").strip(), maxsplit=1)[0])
     if not phone:
-        raise HTTPException(status_code=403, detail="phone_number is required and must be on the WhatsApp whitelist.")
+        raise HTTPException(
+            status_code=403,
+            detail="phone_number is required and must be on the WhatsApp whitelist.",
+        )
     entry = db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == phone).first()
     if not entry:
-        raise HTTPException(status_code=403, detail="Phone number is not on the WhatsApp whitelist.")
+        raise HTTPException(
+            status_code=403, detail="Phone number is not on the WhatsApp whitelist."
+        )
     # A whitelist admin still follows its assigned group, just like native commands.
-    group_ids = {group_id for group_id in (entry.group_id, current_admin.group_id) if group_id is not None}
+    group_ids = {
+        group_id for group_id in (entry.group_id, current_admin.group_id) if group_id is not None
+    }
 
     # --- Base query kamera ---
-    base_query = (
-        db.query(Camera)
-        .options(joinedload(Camera.groups))
-        .filter(
-            Camera.ip.isnot(None),
-            Camera.ip != "",
-        )
-    )
+    base_query = db.query(Camera).options(joinedload(Camera.groups))
+    if not include_without_ip:
+        base_query = base_query.filter(Camera.ip.isnot(None), Camera.ip != "")
 
     sort_column = sort_columns[sort_key]
     order_column = sort_column.asc() if direction == "asc" else sort_column.desc()
 
     def restrict(query: SQLQuery) -> SQLQuery:
         for group_id in group_ids:
-            query = query.filter((Camera.group_id == group_id) | Camera.groups.any(CameraGroup.id == group_id))
+            query = query.filter(
+                (Camera.group_id == group_id) | Camera.groups.any(CameraGroup.id == group_id)
+            )
         return query
 
     # Prefer matching groups, then hostnames, while filtering every returned row.
@@ -80,8 +94,16 @@ def resolve_ip_by_name(
         cameras = restrict(host_match).order_by(order_column, Camera.id.asc()).all()
     if not cameras:
         if group_match.first() or host_match.first():
-            raise HTTPException(status_code=403, detail="You do not have permission to access the matching cameras or their groups.")
-        raise HTTPException(status_code=404, detail="No camera with an IP address matches the provided keyword.")
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to access the matching cameras or their groups.",
+            )
+        detail = (
+            "No camera matches the provided keyword."
+            if include_without_ip
+            else "No camera with an IP address matches the provided keyword."
+        )
+        raise HTTPException(status_code=404, detail=detail)
 
     results = [
         {

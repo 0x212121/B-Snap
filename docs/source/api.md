@@ -831,3 +831,9 @@ Numbers beginning with `0`, `+62`, and device-qualified GoWA JIDs are normalized
 Success retains `count` and `results`; JSON errors return 403 for missing/unlisted
 phones or denied camera/group access and 404 for no matching camera with an IP.
 In Bot Builder API-node query parameters, set `phone_number` to `{{sender}}`.
+
+Set `include_without_ip=true` to also return matching cameras whose `ip` is
+`null` or an empty string. The default is `false` (only cameras with an IP).
+This option applies to both group-name and hostname searches, retains the
+stored `ip` value in each result, and follows the same access restrictions.
+For example: `/api/cctv/resolve-ip?keyword=gate&phone_number=628123456789&include_without_ip=true`.

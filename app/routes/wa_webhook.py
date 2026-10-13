@@ -647,6 +647,7 @@ class WABotHandler:
                     and (c.get("role") != "admin" or is_admin)
                     and (not is_group or c.get("chat_scope") != "private")
                 ]
+                enabled.sort(key=lambda c: c["trigger"].casefold())
                 help_rows = [{
                     "trigger": c["trigger"],
                     "description": c.get("description") or c["name"],

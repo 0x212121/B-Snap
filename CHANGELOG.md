@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+
+### Changed
+
+- Added optional `include_without_ip=true` to `/api/cctv/resolve-ip` to include matching cameras with null or empty IP addresses while preserving access restrictions.
+- Sorted WhatsApp Show help command lists alphabetically by trigger, including custom response templates.
+
 ## [2.4.1] - 2026-10-13
 
 ### Changed
