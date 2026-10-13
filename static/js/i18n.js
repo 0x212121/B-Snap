@@ -1,5 +1,12 @@
 (function () {
   const translations = {
+    "Schedule recipient must be a WhatsApp phone number or group JID": "Penerima jadwal harus berupa nomor WhatsApp atau JID grup",
+    "Group schedules require a whitelist execution phone number": "Jadwal grup memerlukan nomor whitelist untuk eksekusi",
+    "Private-only commands cannot be scheduled to a WhatsApp group": "Command khusus chat pribadi tidak dapat dijadwalkan ke grup WhatsApp",
+    "Recipient (phone or group)": "Penerima (nomor atau grup)",
+    "Choose WhatsApp group": "Pilih grup WhatsApp",
+    "Execute as (whitelist)": "Jalankan sebagai (whitelist)",
+    "For groups, command and camera permissions use this whitelist number.": "Untuk grup, izin command dan kamera menggunakan nomor whitelist ini.",
     "Schedules": "Jadwal",
     "Add schedule": "Tambah jadwal",
     "Remove schedule": "Hapus jadwal",

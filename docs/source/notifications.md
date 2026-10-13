@@ -49,6 +49,13 @@ schedule for the same command. Each entry has its own enabled flag, command
 arguments, whitelist recipient, and daily time or five-field cron expression.
 A command supports up to 50 entries. All schedules use the configured timezone.
 
+Recipients can be individual phone numbers or WhatsApp group JIDs. **Load Groups
+from GoWA** retrieves groups using the saved gateway settings; selecting a group
+fills that schedule's recipient. For a group, **Execute as (whitelist)** is required:
+command and camera access are checked against that number at save and execution
+time, while the result is delivered to the group. Private-only commands cannot
+be scheduled to groups. Group membership itself does not grant camera access.
+
 Saving validates arguments and recipient permissions for every enabled entry.
 Execution checks recipient permissions again, so revoked access takes effect
 without editing the schedule. Job Management shows each enabled entry separately,

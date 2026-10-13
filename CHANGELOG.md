@@ -6,32 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-10-13
+
 ### Added
 
-- Multiple independent schedules per WhatsApp command, each with its own arguments, recipient, daily/cron timing, stable job identity, and execution history; existing single schedules remain compatible.
-
-- Configurable administrator email alerts for the selected GoWA device when disconnected, logged off, or unreachable, with consecutive-check confirmation, persistent incident deduplication, SMTP retry on subsequent checks, and an independently configurable scheduler job.
-
-### Fixed
-
-- Localized the Video Gallery deletion dialog title and success/error feedback.
-
-- Localized the single-snapshot deletion confirmation and its success/error feedback in Snapshot Gallery.
-
-- Localized shared SweetAlert dialogs across the frontend, including gallery integrity results, dynamic camera/NVR/job names, reports, recipient imports, retention holds, and record-source validation.
-
-- Completed EN/ID translations for Bot Builder SweetAlert dialogs, including action summaries and message-detail labels, with live language updates while a popup is open.
-
-- Restored stable internal IDs for scheduled WhatsApp jobs so slash-prefixed triggers do not break history URLs or prevent command execution; renaming a trigger preserves job history.
+- Multiple WhatsApp schedules per command with independent arguments, recipients, and history; group selection from GoWA with whitelist-based execution permissions.
+- Configurable high-importance email alerts for GoWA device outages, with persistent deduplication and SMTP retries.
 
 ### Changed
 
-- Standardized six additional on/off controls as accessible toggles: command schedules, quoted replies, recording sources, GoWA outage alerts, log auto-refresh, and camera image rotation; form settings retain save-to-apply behavior.
+- Dedicated Schedules tab, aligned recipient/group controls, accessible toggles, and alphabetical job ordering.
 
-- Moved the Bot Builder command Enabled control to a toggle beside Close in the editor header, with draft tracking and locking during save/execution.
-- Moved WhatsApp command schedules into a dedicated Schedules editor tab.
-- GoWA device outage alert emails are marked as high importance.
-- Job Management now returns jobs sorted alphabetically by name from the backend, including scheduled WhatsApp commands, with case-insensitive ordering.
+### Fixed
+
+- Preserved scheduled job IDs and history when triggers change; corrected slash-trigger history URLs and command execution.
+- Completed EN/ID gallery feedback and shared dialogs, including Bot Builder details and live language updates.
 
 ## [2.4.0] - 2026-10-12
 

@@ -36,6 +36,7 @@ def normalize_command_schedule(value: Any, required_params: list[str]) -> dict[s
     daily_time = str(value.get("time", "08:00")).strip()
     recipient = str(value.get("recipient", "")).strip()
     argument = str(value.get("argument", "")).strip()
+    execution_phone = str(value.get("execution_phone", "")).strip()
     if len(argument) > 500 or len(cron) > 100:
         raise ValueError("Schedule argument or cron expression is too long")
     schedule = {
@@ -45,11 +46,19 @@ def normalize_command_schedule(value: Any, required_params: list[str]) -> dict[s
         "time": daily_time,
         "recipient": recipient,
         "argument": argument,
+        "execution_phone": execution_phone,
     }
     if enabled:
-        if not re.fullmatch(r"\+?[0-9]{8,15}", recipient):
-            raise ValueError("Schedule recipient must be a WhatsApp phone number")
-        schedule["recipient"] = format_phone_number(recipient)
+        is_group = bool(re.fullmatch(r"[0-9]{8,30}(?:-[0-9]{1,20})?@g[.]us", recipient))
+        if not is_group and not re.fullmatch(r"[+]?[0-9]{8,15}", recipient):
+            raise ValueError("Schedule recipient must be a WhatsApp phone number or group JID")
+        if is_group:
+            if not re.fullmatch(r"[+]?[0-9]{8,15}", execution_phone):
+                raise ValueError("Group schedules require a whitelist execution phone number")
+            schedule["execution_phone"] = format_phone_number(execution_phone)
+        else:
+            schedule["recipient"] = format_phone_number(recipient)
+            schedule["execution_phone"] = ""
         if mode == "daily" and not re.fullmatch(r"(?:[01][0-9]|2[0-3]):[0-5][0-9]", daily_time):
             raise ValueError("Daily schedule time must use HH:mm (24-hour clock)")
         try:
@@ -59,8 +68,22 @@ def normalize_command_schedule(value: Any, required_params: list[str]) -> dict[s
         try:
             bind_command_arguments(required_params, argument)
         except ValueError as exc:
-            raise ValueError("Scheduled command arguments must include all required parameters") from exc
+            raise ValueError(
+                "Scheduled command arguments must include all required parameters"
+            ) from exc
     return schedule
+
+
+def schedule_execution_sender(command: dict, schedule: dict) -> str:
+    """Separate the authorized execution identity from a group delivery target."""
+    if schedule["recipient"].endswith("@g.us"):
+        if (
+            normalize_chat_scope(command.get("action", "text"), command.get("chat_scope"))
+            == "private"
+        ):
+            raise ValueError("Private-only commands cannot be scheduled to a WhatsApp group")
+        return schedule["execution_phone"]
+    return schedule["recipient"]
 
 
 def normalize_command_schedules(

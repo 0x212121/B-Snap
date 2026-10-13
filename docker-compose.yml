@@ -1,5 +1,5 @@
 # All application services consume the exact same image reference.
-x-bsnap-image: &bsnap-image ${BSNAP_IMAGE:-kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.4.0}
+x-bsnap-image: &bsnap-image ${BSNAP_IMAGE:-kpcsgt-registry.kpc.co.id/kpc-private/b-snap:v2.4.1}
 
 x-container-logging: &container-logging
   driver: local

@@ -33,6 +33,7 @@ from app.utils.wa_bot_commands import (
     normalize_snap_stage_messages,
     render_response,
     save_command_settings,
+    schedule_execution_sender,
 )
 from app.models.camera_group import CameraGroup
 from app.models.snapshot import Snapshot
@@ -173,7 +174,7 @@ async def put_wa_bot_commands(request: Request, db: Session = Depends(get_db), c
         for command in commands:
             for schedule in command.get("schedules", []):
                 if schedule.get("enabled"):
-                    error = _command_access_error(_whitelisted_sender(db, schedule["recipient"]), command)
+                    error = _command_access_error(_whitelisted_sender(db, schedule_execution_sender(command, schedule)), command)
                     if error:
                         raise ValueError(error)
         token_id = str(payload.get("api_token_id") or "").strip()

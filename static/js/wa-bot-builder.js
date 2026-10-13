@@ -54,7 +54,7 @@
     result.schedules = Array.from(form.querySelectorAll('[data-command-schedule]')).map(row => {
       const field = key => row.querySelector(`[name="schedule_${key}"]`);
       return {id:row.dataset.scheduleId, enabled:field('enabled').checked, mode:field('mode').value,
-        time:field('time').value, cron:field('cron').value.trim(), recipient:field('recipient').value.trim(), argument:field('argument').value.trim()};
+        time:field('time').value, cron:field('cron').value.trim(), recipient:field('recipient').value.trim(), argument:field('argument').value.trim(), execution_phone:field('execution_phone').value.trim()};
     });
     delete result.schedule;
     result.role = adminActions.includes(result.action) ? 'admin' : 'user';
@@ -70,6 +70,9 @@
       field('time').required = enabled && !cron;
       field('cron').required = enabled && cron;
       field('recipient').required = enabled;
+      const group = field('recipient').value.trim().endsWith('@g.us');
+      row.querySelector('[data-schedule-execution]').classList.toggle('hidden', !group);
+      field('execution_phone').required = enabled && group;
     });
   }
   function refreshScheduleLabels() {
@@ -82,10 +85,36 @@
     row.dataset.scheduleId = schedule.id || newCommandId().slice(7).replaceAll('-', '').slice(0, 12);
     const field = key => row.querySelector(`[name="schedule_${key}"]`);
     field('enabled').checked = schedule.enabled ?? true;
-    for (const key of ['mode','time','cron','recipient','argument']) field(key).value = schedule[key] ?? ({mode:'daily',time:'08:00'}[key] || '');
+    for (const key of ['mode','time','cron','recipient','argument','execution_phone']) field(key).value = schedule[key] ?? ({mode:'daily',time:'08:00'}[key] || '');
     row.querySelector('[data-remove-schedule]').addEventListener('click', () => {
       row.remove(); refreshScheduleLabels(); updateDirtyState();
     });
+    const groupSelect = row.querySelector('[data-schedule-group]');
+    const loadGroups = row.querySelector('[data-load-schedule-groups]');
+    loadGroups.addEventListener('click', async () => {
+      loadGroups.disabled = true;
+      try {
+        const response = await fetch('/api/wa/groups', {headers:{Accept:'application/json'}});
+        const result = await response.json();
+        if (!response.ok || result.status !== 'success') throw new Error(result.message || result.detail || result.error || t('Failed to load GoWA groups','Gagal mengambil grup GoWA'));
+        groupSelect.replaceChildren();
+        const placeholder = document.createElement('option');
+        placeholder.value = ''; placeholder.textContent = t('Choose WhatsApp group','Pilih grup WhatsApp'); groupSelect.appendChild(placeholder);
+        const groups = result.data?.groups || [];
+        for (const group of groups) {
+          const option = document.createElement('option'); option.value = group.jid;
+          option.textContent = `${group.name || group.jid} (${group.jid})`; groupSelect.appendChild(option);
+        }
+        groupSelect.classList.toggle('hidden', groups.length === 0);
+        if (!groups.length) showToast('info', t('No WhatsApp groups returned by GoWA','GoWA tidak mengembalikan grup WhatsApp'));
+      } catch (error) { showToast('error', error.message || t('Failed to load GoWA groups','Gagal mengambil grup GoWA')); }
+      finally { loadGroups.disabled = false; }
+    });
+    groupSelect.addEventListener('change', () => {
+      if (!groupSelect.value) return;
+      field('recipient').value = groupSelect.value; updateScheduleFields(); updateDirtyState();
+    });
+    row.addEventListener('input', updateScheduleFields);
     row.addEventListener('change', updateScheduleFields);
     document.getElementById('commandSchedules').appendChild(row);
     updateScheduleFields(); refreshScheduleLabels(); BSnapCron.refresh(row);

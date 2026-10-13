@@ -27,6 +27,7 @@ from app.utils.wa_bot_commands import (
     normalize_command_schedule,
     normalize_command_schedules,
     save_command_settings,
+    schedule_execution_sender,
 )
 
 
@@ -84,6 +85,59 @@ def test_required_arguments_and_legacy_defaults():
         command(argument="CAM-01 30")["schedule"], ["camera", "duration"]
     )
     assert valid["argument"] == "CAM-01 30"
+
+
+def test_group_schedule_requires_execution_identity_and_rejects_private_commands():
+    group = "120363123456789@g.us"
+    with pytest.raises(ValueError, match="execution phone"):
+        normalize_command_schedule(command(recipient=group)["schedule"], [])
+    schedule = normalize_command_schedule(
+        command(recipient=group, execution_phone="+628123456789")["schedule"], []
+    )
+    assert schedule["recipient"] == group
+    assert schedule_execution_sender(command(), schedule) == "628123456789"
+    with pytest.raises(ValueError, match="Private-only"):
+        schedule_execution_sender({"action": "text", "chat_scope": "private"}, schedule)
+
+
+@pytest.mark.asyncio
+async def test_group_execution_uses_whitelist_identity_but_delivers_to_group(monkeypatch):
+    group = "120363123456789@g.us"
+    entry = command(recipient=group, execution_phone="628111111111")
+    bot = SimpleNamespace(
+        handle=AsyncMock(return_value="Result"),
+        outbound_items=[],
+        media_items=[],
+        media_path=None,
+        action_failed=False,
+    )
+    whitelist = Mock(return_value=object())
+    monkeypatch.setattr(wa_webhook, "WABotHandler", lambda _db: bot)
+    monkeypatch.setattr(wa_webhook, "_whitelisted_sender", whitelist)
+    monkeypatch.setattr(wa_webhook, "_command_access_error", lambda _entry, _cmd: "")
+    monkeypatch.setattr(wa_webhook, "_record_wa_message", Mock())
+    monkeypatch.setattr(
+        wa_gateway,
+        "WAGatewayService",
+        lambda _db: SimpleNamespace(config=SimpleNamespace(enabled=True)),
+    )
+    send = AsyncMock(return_value={"success": True})
+    monkeypatch.setattr(wa_executor, "run_gateway_blocking", send)
+    db = Mock()
+    assert await jobs.execute_scheduled_command(db, entry) == 1
+    whitelist.assert_called_once_with(db, "628111111111")
+    bot.handle.assert_awaited_once_with("628111111111", "/report")
+    assert send.await_args.args[2] == group
+    whitelist.return_value = None
+    monkeypatch.setattr(
+        wa_webhook,
+        "_command_access_error",
+        lambda allowed, _cmd: "" if allowed else "Access revoked",
+    )
+    with pytest.raises(ValueError, match="Access revoked"):
+        await jobs.execute_scheduled_command(db, entry)
+    send.assert_awaited_once()
+    bot.handle.assert_awaited_once()
 
 
 @pytest.mark.parametrize("zone", ["Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura"])

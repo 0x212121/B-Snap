@@ -15,6 +15,7 @@ from app.utils.wa_bot_commands import (
     command_schedule_cron,
     get_command_settings,
     normalize_command_schedules,
+    schedule_execution_sender,
 )
 
 JOB_PREFIX = "wa_command:"
@@ -98,20 +99,21 @@ async def execute_scheduled_command(db: Any, command: dict) -> int:
 
     schedule = command["schedule"]
     recipient = schedule["recipient"]
-    error = _command_access_error(_whitelisted_sender(db, recipient), command)
+    sender = schedule_execution_sender(command, schedule)
+    error = _command_access_error(_whitelisted_sender(db, sender), command)
     if error:
         raise ValueError(error)
     service = WAGatewayService(db)
     if not service.config.enabled:
         raise ValueError("WhatsApp gateway is disabled")
     message = f"{command['trigger']} {schedule['argument']}".strip()
-    db.add(CommandLog(user_id=recipient, command=command["trigger"], source="whatsapp_schedule"))
+    db.add(CommandLog(user_id=sender, command=command["trigger"], source="whatsapp_schedule"))
     db.commit()
     bot = WABotHandler(db)
     # Pin the saved command by ID: overlapping triggers must not select another action.
     bot._test_command = command
     bot._test_argument = schedule["argument"]
-    response = await bot.handle(recipient, message)
+    response = await bot.handle(sender, message)
     items = list(bot.outbound_items)
     if not items and (bot.media_items or bot.media_path):
         media = bot.media_items or [

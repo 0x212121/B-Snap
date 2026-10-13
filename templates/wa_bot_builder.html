@@ -141,8 +141,18 @@
           <label data-schedule-cron class="hidden text-sm text-gray-700 dark:text-gray-200">Cron
             <input name="schedule_cron" data-cron-input data-cron-empty="required" maxlength="100" placeholder="0 8 * * *" class="ui-control mt-1 w-full rounded-lg font-mono dark:bg-gray-900">
           </label>
-          <label class="text-sm text-gray-700 dark:text-gray-200">Recipient (whitelist)
-            <input name="schedule_recipient" maxlength="16" placeholder="628123456789" class="ui-control mt-1 w-full rounded-lg dark:bg-gray-900">
+          <div class="space-y-2 md:col-span-2">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
+              <label class="min-w-0 flex-1 text-sm text-gray-700 dark:text-gray-200">Recipient (phone or group)
+                <input name="schedule_recipient" maxlength="64" placeholder="628123456789 or 120363xxxxxxxx@g.us" class="ui-control mt-1 w-full rounded-lg dark:bg-gray-900">
+              </label>
+              <button type="button" data-load-schedule-groups class="ui-button ui-button-secondary shrink-0">Load Groups from GoWA</button>
+            </div>
+            <select data-schedule-group class="ui-control hidden w-full rounded-lg dark:bg-gray-900" aria-label="Choose WhatsApp group"></select>
+          </div>
+          <label data-schedule-execution class="hidden text-sm text-gray-700 dark:text-gray-200">Execute as (whitelist)
+            <input name="schedule_execution_phone" maxlength="16" placeholder="628123456789" class="ui-control mt-1 w-full rounded-lg dark:bg-gray-900">
+            <span class="block mt-1 text-xs text-gray-500">For groups, command and camera permissions use this whitelist number.</span>
           </label>
           <label class="text-sm text-gray-700 dark:text-gray-200">Command arguments
             <input name="schedule_argument" maxlength="500" placeholder="CAM-01" class="ui-control mt-1 w-full rounded-lg dark:bg-gray-900">

@@ -39,14 +39,14 @@ elements.trigger.value = '/snap'; elements.action.value = 'snap';
 elements.enabled = {checked:true}; elements.quote_reply = {checked:true};
 function makeRow(id,mode,argument,recipient) {
   const fields = {};
-  for (const [key,value] of Object.entries({mode,argument,recipient,time:'08:00',cron:'30 18 * * *'})) fields[key] = {value};
+  for (const [key,value] of Object.entries({mode,argument,recipient,execution_phone:'',time:'08:00',cron:'30 18 * * *'})) fields[key] = {value};
   fields.enabled = {checked:true};
   const label = {textContent:''};
-  const containers = {time:{classList:{toggle() {}}},cron:{classList:{toggle() {}}}};
+  const containers = {time:{classList:{toggle() {}}},cron:{classList:{toggle() {}}},execution:{classList:{toggle() {}}}};
   return {dataset:{scheduleId:id},fields,label,querySelector(selector) {
     if (selector === '[data-schedule-label]') return label;
-    if (selector.includes('data-schedule-')) return containers[selector.includes('time') ? 'time':'cron'];
-    return fields[selector.match(/schedule_([a-z]+)/)[1]];
+    if (selector.includes('data-schedule-')) return containers[selector.includes('time') ? 'time':selector.includes('execution') ? 'execution':'cron'];
+    return fields[selector.match(/schedule_([a-z_]+)/)[1]];
   }};
 }
 const rows = [makeRow('morning','daily','CAM-01','628111111111'),makeRow('evening','cron','CAM-02','628222222222')];
@@ -63,9 +63,14 @@ let collected = collectCommand();
 assert.deepEqual(collected.schedules.map(s=>[s.id,s.argument,s.recipient]),[
   ['morning','CAM-01','628111111111'],['evening','CAM-02','628222222222']]);
 assert.equal('schedule' in collected,false);
+rows[1].fields.recipient.value = '120363123456789@g.us';
+rows[1].fields.execution_phone.value = '628333333333'; updateScheduleFields();
+assert.equal(rows[1].fields.execution_phone.required,true);
+assert.equal(collectCommand().schedules[1].execution_phone,'628333333333');
 rows[1].fields.enabled.checked = false; updateScheduleFields();
 assert.equal(rows[1].fields.recipient.required,false);
 assert.equal(rows[1].fields.cron.required,false);
+assert.equal(rows[1].fields.execution_phone.required,false);
 rows.reverse();
 assert.equal(collectCommand().schedules[0].id,'evening');
 refreshScheduleLabels(); assert.equal(rows[0].label.textContent,'Schedule 1');
