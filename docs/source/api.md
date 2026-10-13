@@ -837,3 +837,10 @@ Set `include_without_ip=true` to also return matching cameras whose `ip` is
 This option applies to both group-name and hostname searches, retains the
 stored `ip` value in each result, and follows the same access restrictions.
 For example: `/api/cctv/resolve-ip?keyword=gate&phone_number=628123456789&include_without_ip=true`.
+
+WhatsApp command response templates support conditional blocks, including inside
+`each` loops. Use `{{#if this.ip}} ({{this.ip}}){{/if}}` after the camera name to
+hide both the address and parentheses when IP is null, empty, or whitespace.
+An optional `{{else}}` provides fallback text. Missing values, `false`, numeric
+zero, and empty lists/objects also select the fallback. Conditions accept the
+same variable paths as response placeholders, without arbitrary expressions.

@@ -26,6 +26,11 @@ FLOW_EACH_PATTERN = re.compile(
     r"(.*?)\{\{/each\}\}",
     re.DOTALL,
 )
+FLOW_IF_PATTERN = re.compile(
+    r"\{\{#if\s+(?P<expression>[^{}\s]+)\s*\}\}"
+    r"(?P<body>(?:(?!\{\{#if\s|\{\{/if\}\}).)*?)\{\{/if\}\}",
+    re.DOTALL,
+)
 FLOW_LOCAL_VARIABLE_PATTERN = re.compile(
     r"\{\{(?P<name>[a-zA-Z][a-zA-Z0-9_-]*)(?P<datetime>\|datetime)?\}\}"
 )
@@ -273,6 +278,23 @@ async def run_api_flow(
     return context
 
 
+def _render_template_conditions(template: str, context: dict[str, Any]) -> str:
+    """Render nested if/else blocks using supported variable paths, without eval."""
+
+    def replace(match: re.Match[str]) -> str:
+        expression = match.group("expression")
+        if not FLOW_VARIABLE_PATTERN.fullmatch("{{" + expression + "}}"):
+            return ""
+        value = _resolve_expression_value(expression, context)
+        truthy = bool(value.strip()) if isinstance(value, str) else bool(value)
+        positive, separator, negative = match.group("body").partition("{{else}}")
+        return positive if truthy else negative if separator else ""
+
+    while FLOW_IF_PATTERN.search(template):
+        template = FLOW_IF_PATTERN.sub(replace, template)
+    return template
+
+
 def render_flow_template(
     template: str,
     context: dict[str, Any],
@@ -293,7 +315,7 @@ def render_flow_template(
                 )
                 if isinstance(item, dict) and variable.group("name") in item
                 else variable.group(0),
-                match.group(2),
+                _render_template_conditions(match.group(2), item_context),
             )
             rendered_items.append(_render_template_variables(item_template, item_context, timezone_name))
         return "".join(rendered_items)
@@ -302,5 +324,7 @@ def render_flow_template(
     # Treat a common malformed trailing close as syntax rather than displaying
     # the template marker to the recipient (for example, `{{/each)` at EOF).
     rendered = re.sub(r"\{\{/each\)(?=\s*$)", "", rendered)
-    rendered = _render_template_variables(rendered, context, timezone_name)
+    rendered = _render_template_variables(
+        _render_template_conditions(rendered, context), context, timezone_name
+    )
     return rendered[:MAX_RENDERED_RESPONSE_CHARS]

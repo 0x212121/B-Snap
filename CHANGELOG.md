@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Added EN/ID examples of conditional `if`/`else` response formatting to the WhatsApp Bot Builder frontend.
+- Added `{{#if variable}}...{{else}}...{{/if}}` support to WhatsApp command response templates, including conditions inside `each` loops.
 - Added optional `include_without_ip=true` to `/api/cctv/resolve-ip` to include matching cameras with null or empty IP addresses while preserving access restrictions.
 - Sorted WhatsApp Show help command lists alphabetically by trigger, including custom response templates.
 
