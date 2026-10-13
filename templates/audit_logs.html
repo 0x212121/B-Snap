@@ -1297,8 +1297,8 @@
       Toast.info("Downloading CSV...", { duration: 2000 });
     }
     
-    // PERBAIKAN: URL export yang benar sesuai router prefix
-    window.location.href = `/audit-logs/api/export?${params.toString()}`;
+    const exportUrl = {{ request.url_for('export_audit_logs_csv').path | tojson }};
+    window.location.href = `${exportUrl}?${params.toString()}`;
   }
 
   // ==========================================

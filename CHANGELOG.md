@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserved scheduled job IDs and history when triggers change; corrected slash-trigger history URLs and command execution.
 - Completed EN/ID gallery feedback and shared dialogs, including Bot Builder details and live language updates.
 - Prevented Audit Logs advanced filters from squeezing or shifting the main controls when expanded, with responsive wrapping.
+- Fixed Audit Logs CSV export returning 404 by generating the download URL from the registered backend route.
+
 
 ## [2.4.0] - 2026-10-12
 
