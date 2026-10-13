@@ -21,9 +21,9 @@
 <meta content="#ffffff" media="(prefers-color-scheme: light)" name="theme-color"/>
 <meta content="#030711" media="(prefers-color-scheme: dark)" name="theme-color"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Email Notifications | B-SNAP v2.4.0 documentation</title>
-<meta content="Email Notifications | B-SNAP v2.4.0 documentation" property="og:title"/>
-<meta content="Email Notifications | B-SNAP v2.4.0 documentation" name="twitter:title"/>
+<title>Email Notifications | B-SNAP v2.4.1 documentation</title>
+<meta content="Email Notifications | B-SNAP v2.4.1 documentation" property="og:title"/>
+<meta content="Email Notifications | B-SNAP v2.4.1 documentation" name="twitter:title"/>
 <link href="_static/pygments.css?v=e72c8e07" rel="stylesheet" type="text/css"/>
 <link href="_static/theme.css?v=73505e79" rel="stylesheet" type="text/css"/>
 <link href="search.html" rel="search" title="Search"/>
@@ -36,7 +36,7 @@
       Skip to content
     </a><header class="sticky top-0 z-40 w-full border-b shadow-xs border-border bg-background/90 backdrop-blur"><div class="container flex items-center h-14">
 <div class="hidden mr-4 md:flex">
-<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.4.0 documentation</span>
+<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.4.1 documentation</span>
 </a></div><button @click="showSidebar = true" class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden" type="button">
 <svg aria-hidden="true" fill="currentColor" height="24" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
 <path d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z"></path>
@@ -66,7 +66,7 @@
 </div>
 </header>
 <div class="flex-1"><div class="container md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }" class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky" id="left-sidebar">
-<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.4.0 documentation</span>
+<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.4.1 documentation</span>
 </a>
 <div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
 <div class="overflow-y-auto h-full w-full relative pr-6"><nav class="table w-full min-w-full my-6 lg:my-8">
@@ -97,7 +97,7 @@
 <div class="w-full min-w-0 mx-auto">
 <nav aria-label="breadcrumbs" class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
 <a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground" href="index.html">
-<span class="hidden md:inline">B-SNAP v2.4.0 documentation</span>
+<span class="hidden md:inline">B-SNAP v2.4.1 documentation</span>
 <svg aria-label="Home" class="md:hidden" fill="currentColor" height="18" stroke="none" viewbox="0 96 960 960" width="18" xmlns="http://www.w3.org/2000/svg">
 <path d="M240 856h120V616h240v240h120V496L480 316 240 496v360Zm-80 80V456l320-240 320 240v480H520V696h-80v240H160Zm320-350Z"></path>
 </svg>
@@ -116,12 +116,60 @@
 <li><p><strong>Tamper alerts</strong> - Camera tampering detected (blur, etc.)</p></li>
 <li><p><strong>Recovery alerts</strong> - Camera comes back online</p></li>
 <li><p><strong>Record-check alerts</strong> - Mounted SMB/NVR record folders become stale or missing</p></li>
-<li><p><strong>WhatsApp reports</strong> - Daily camera reports through GoWA</p></li>
+<li><p><strong>WhatsApp reports</strong> - Consolidated daily NVR recording reports through GoWA</p></li>
 </ul>
 </section>
 <section id="whatsapp-gateway-gowa">
 <h2>WhatsApp Gateway (GoWA)<a class="headerlink" href="#whatsapp-gateway-gowa" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#whatsapp-gateway-gowa'"><span>#</span></a></h2>
 <p>B-SNAP can send WhatsApp notifications directly through GoWA.</p>
+<section id="device-outage-email-alerts">
+<h3>Device outage email alerts<a class="headerlink" href="#device-outage-email-alerts" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#device-outage-email-alerts'"><span>#</span></a></h3>
+<p>In <strong>Configuration → GoWA</strong>, enable <strong>Email alerts for WhatsApp device outages</strong>,
+enter the administrator email addresses (comma separated), and select the device
+check interval. Configure and test SMTP in the Email tab first. Monitoring is off
+by default and uses the configured GoWA Device ID; it does not monitor every device
+in the gateway.</p>
+<p>The scheduler checks the device’s connection and login status independently of
+incoming webhooks. After consecutive failed checks, it sends one email for a
+disconnected device, a logged-off device, or an unreachable gateway. The confirmation
+threshold is defined by <code class="docutils literal notranslate"><span class="pre">CONFIRMATIONS</span></code> in <code class="docutils literal notranslate"><span class="pre">app/utils/wa_monitor.py</span></code>. A single healthy
+check clears the incident and enables alerts for a subsequent outage. Changing the
+GoWA endpoint, credentials, or Device ID starts a new confirmation sequence.</p>
+<p>Incident state is persisted in the existing Configuration table, so worker restarts
+do not repeat successful alerts. Device outage emails are marked as high importance.
+If SMTP fails, the next check retries with the
+original incident time, displayed in the configured timezone. This monitor does not
+use the camera email retry queue. SMTP acceptance is the delivery confirmation;
+like other SMTP notifications, it does not guarantee arrival in the recipient’s inbox.</p>
+<p>The scheduler worker must be running. <strong>Job Management → WhatsApp Device Check</strong>
+supports an independent cron override; clearing it restores the configured interval.
+Schedule changes are picked up by the scheduler’s configuration reload. This checks
+device availability, not webhook delivery from GoWA to B-Snap.</p>
+</section>
+<section id="scheduled-bot-commands">
+<h3>Scheduled bot commands<a class="headerlink" href="#scheduled-bot-commands" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#scheduled-bot-commands'"><span>#</span></a></h3>
+<p>In Bot Builder, <strong>Schedules → Add schedule</strong> creates an independent
+schedule for the same command. Each entry has its own enabled flag, command
+arguments, whitelist recipient, and daily time or five-field cron expression.
+A command supports up to 50 entries. All schedules use the configured timezone.</p>
+<p>Recipients can be individual phone numbers or WhatsApp group JIDs. <strong>Load Groups
+from GoWA</strong> retrieves groups using the saved gateway settings; selecting a group
+fills that schedule’s recipient. For a group, <strong>Execute as (whitelist)</strong> is required:
+command and camera access are checked against that number at save and execution
+time, while the result is delivered to the group. Private-only commands cannot
+be scheduled to groups. Group membership itself does not grant camera access.</p>
+<p>Saving validates arguments and recipient permissions for every enabled entry.
+Execution checks recipient permissions again, so revoked access takes effect
+without editing the schedule. Job Management shows each enabled entry separately,
+including its arguments and recipient, with independent execution history.</p>
+<p>Schedules are stored in the command’s existing Configuration JSON. No database
+schema migration is required. Existing single schedules are read as one entry
+with the legacy job ID, preserving their history. Additional entries have stable
+schedule IDs; editing arguments, recipients, or timing preserves their history.
+Disabling or removing an entry removes its scheduled job on the next scheduler
+reload, while retaining its execution logs. Removing an entry and adding a new
+one creates a new identity and history. A job already running may finish.</p>
+</section>
 <section id="authentication">
 <h3>Authentication<a class="headerlink" href="#authentication" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#authentication'"><span>#</span></a></h3>
 <ul class="simple">
@@ -141,6 +189,18 @@
 </section>
 <section id="record-check-notifications">
 <h3>Record-Check Notifications<a class="headerlink" href="#record-check-notifications" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#record-check-notifications'"><span>#</span></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">record_check_daily_report</span></code> job sends one WhatsApp summary and one combined
+PDF per unique GoWA default recipient, covering all enabled Record Sources.
+The report covers the full previous day, from 00:00 to the next 00:00 in the
+configured timezone (exclusive end). For example, a run on October 9 reports
+October 8 even when the job runs at 08:00. Multiple sources linked to the same
+NVR retain separate sections so their recording paths remain identifiable.</p>
+<p>Channel counts use the last stored check before the report period ends. Sources
+without historical checks are labeled as having no history. The PDF includes
+daily downtime details and per-source trends for the 14 days ending on the
+report date. Failed sources are listed without stopping other sources; delivery
+errors and partial results are stored in job history. Transient GoWA upload
+failures retry only the affected request, without replaying successful text.</p>
 <p>Record-check alerts are sent when:</p>
 <ul class="simple">
 <li><p>a folder enters <code class="docutils literal notranslate"><span class="pre">stale</span></code></p></li>
@@ -894,6 +954,8 @@
 <ul>
 <li><a :data-current="activeSection === '#overview'" class="reference internal" href="#overview">Overview</a></li>
 <li><a :data-current="activeSection === '#whatsapp-gateway-gowa'" class="reference internal" href="#whatsapp-gateway-gowa">WhatsApp Gateway (GoWA)</a><ul>
+<li><a :data-current="activeSection === '#device-outage-email-alerts'" class="reference internal" href="#device-outage-email-alerts">Device outage email alerts</a></li>
+<li><a :data-current="activeSection === '#scheduled-bot-commands'" class="reference internal" href="#scheduled-bot-commands">Scheduled bot commands</a></li>
 <li><a :data-current="activeSection === '#authentication'" class="reference internal" href="#authentication">Authentication</a></li>
 <li><a :data-current="activeSection === '#receivers'" class="reference internal" href="#receivers">Receivers</a></li>
 <li><a :data-current="activeSection === '#record-check-notifications'" class="reference internal" href="#record-check-notifications">Record-Check Notifications</a></li>
@@ -971,7 +1033,7 @@
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=b627b0b9"></script>
+<script src="_static/documentation_options.js?v=125f34a0"></script>
 <script src="_static/doctools.js?v=fd6eb6e6"></script>
 <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script defer="defer" src="_static/theme.js?v=582b20c5"></script>

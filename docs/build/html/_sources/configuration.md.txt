@@ -136,6 +136,40 @@ nano .env
 - **Description**: Default sender and CC email addresses
 - **Used In**: `app/utils/smtp_config.py`
 
+### Email retry resource limits
+
+These are database settings, editable in App Config under job settings. They are
+read at the start of each retry run. Initialization seeds missing values only.
+
+| Key | Default | Accepted range | Purpose |
+| --- | --- | --- | --- |
+| `email_retry_max_pending_hours` | `24` | 1?720 | Maximum pending age in hours, measured from original queue creation. |
+| `email_retry_batch_size` | `50` | 1–500 | Maximum due tasks loaded in one run. |
+| `email_retry_max_run_seconds` | `120` | 1–3600 | Cooperative run budget, checked before each task. |
+| `email_retry_smtp_timeout_seconds` | `30` | 1–30 | Socket timeout, capped by the remaining run budget. |
+
+Pending notifications reaching the configured age limit are cancelled with
+`cancellation_reason=pending_expired`, including tasks whose next retry is not yet due.
+Expiry is checked again before processing each selected task. Changing the limit applies
+on the next retry run; retries do not reset queue creation time or incident time.
+Job Management reports an expired count, and the existing cleanup retains cancelled
+entries for seven days after completion. Apply `alembic upgrade head` before restarting
+the web application and scheduler worker for this setting.
+
+Tasks left by a batch or time limit keep their original incident, attempt count,
+and retry timestamp for the next execution. An in-progress delivery can finish
+after the run budget; this is not a hard process deadline. SMTP configuration is
+cached only during one run, so subsequent runs pick up saved changes. Successful
+delivery/failure log updates are committed before the worker moves to another task.
+
+Job history shows actual sends, already-delivered incidents, SMTP failures,
+policy/configuration deferrals and their reasons, exhausted/cancelled tasks,
+processing errors, due backlog, oldest pending age, and duration. Status is `fail`
+when errors occur without a completed delivery, `partial` when completed deliveries
+coexist with errors or unfinished work, and `deferred` for runs containing only
+deferrals or unfinished work. An empty run is `success`. `exhausted` can overlap
+with `smtp_failed`, and a successful batch may still have future pending retries.
+
 ---
 
 ## Storage & Paths
@@ -191,6 +225,26 @@ nano .env
 - **Description**: Hard-deletes old record-check run, folder-check, and status-event history older than this many days
 - **Note**: Record sources, folder mappings, and current folder statuses are preserved
 - **Used In**: `app/jobs/scheduler.py`, `app/utils/record_check.py`
+
+### retention_api_logs_days
+
+- **Default**: `90`; configurable through **Log Retention → API Logs (days)**.
+- **Cleanup**: `cleanup_api_logs` follows its own cron override or the shared
+  cleanup schedule. Before deleting detailed logs, it archives expired complete
+  local days into `api_daily_stats` in the same transaction. The incomplete
+  cutoff day stays in detailed logs until the next eligible cleanup.
+- **Analytics**: daily charts, totals, comparisons, and reports combine retained
+  detailed logs with the archived daily totals. These totals have no automatic
+  expiry. A cleanup retry cannot count the same log twice, and late logs are
+  added when they expire. No per-request counter update is needed.
+- **Timezone**: each archived bucket stores its original local date and timezone.
+  Changing the configured timezone does not shift archived dates; counts sharing
+  a date are combined. Retained logs follow the current timezone. Archived data
+  has day-level precision, so historical sub-day ranges include the full bucket.
+- **Upgrade**: apply Alembic migration `20261007_api_daily_stats` before starting
+  the updated web application and scheduler. Existing detailed logs remain
+  available and are archived by subsequent cleanups; already-deleted logs cannot
+  be reconstructed. Downgrading removes the aggregate history.
 
 ---
 

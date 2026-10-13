@@ -12,7 +12,7 @@ Linux prerequisite error. Docker Desktop is not a supported mount deployment.
 
 Set these variables in `.env` for both the web and scheduler services:
 
-```dotenv
+```ini
 BSNAP_RECORD_MOUNTS_ENABLED=true
 BSNAP_RECORD_MOUNT_ALLOWED_NETWORKS=192.168.10.20/32,192.168.10.21/32
 BSNAP_RECORD_NFS_ALLOW_SYS=false
@@ -33,7 +33,7 @@ sudo apparmor_parser -r deploy/apparmor/bsnap-record-mounts
 docker compose -f docker-compose.yml -f docker-compose.record-mounts.yml up -d --build
 ```
 
-The overlay replaces the base web service's `privileged: true` with
+The base services run without privileged mode. The overlay keeps
 `privileged: false`, adds `SYS_ADMIN` only to web/scheduler, and restricts mount
 operations to CIFS/NFS with `ro,nosuid,nodev,noexec` at generated record paths.
 It keeps Docker's seccomp filtering. Do not use `privileged: true`, unconfined

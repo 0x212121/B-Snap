@@ -9,11 +9,65 @@ The notification system sends alerts for:
 - **Tamper alerts** - Camera tampering detected (blur, etc.)
 - **Recovery alerts** - Camera comes back online
 - **Record-check alerts** - Mounted SMB/NVR record folders become stale or missing
-- **WhatsApp reports** - Daily camera reports through GoWA
+- **WhatsApp reports** - Consolidated daily NVR recording reports through GoWA
 
 ## WhatsApp Gateway (GoWA)
 
 B-SNAP can send WhatsApp notifications directly through GoWA.
+
+### Device outage email alerts
+
+In **Configuration → GoWA**, enable **Email alerts for WhatsApp device outages**,
+enter the administrator email addresses (comma separated), and select the device
+check interval. Configure and test SMTP in the Email tab first. Monitoring is off
+by default and uses the configured GoWA Device ID; it does not monitor every device
+in the gateway.
+
+The scheduler checks the device's connection and login status independently of
+incoming webhooks. After consecutive failed checks, it sends one email for a
+disconnected device, a logged-off device, or an unreachable gateway. The confirmation
+threshold is defined by `CONFIRMATIONS` in `app/utils/wa_monitor.py`. A single healthy
+check clears the incident and enables alerts for a subsequent outage. Changing the
+GoWA endpoint, credentials, or Device ID starts a new confirmation sequence.
+
+Incident state is persisted in the existing Configuration table, so worker restarts
+do not repeat successful alerts. Device outage emails are marked as high importance.
+If SMTP fails, the next check retries with the
+original incident time, displayed in the configured timezone. This monitor does not
+use the camera email retry queue. SMTP acceptance is the delivery confirmation;
+like other SMTP notifications, it does not guarantee arrival in the recipient's inbox.
+
+The scheduler worker must be running. **Job Management → WhatsApp Device Check**
+supports an independent cron override; clearing it restores the configured interval.
+Schedule changes are picked up by the scheduler's configuration reload. This checks
+device availability, not webhook delivery from GoWA to B-Snap.
+
+### Scheduled bot commands
+
+In Bot Builder, **Schedules → Add schedule** creates an independent
+schedule for the same command. Each entry has its own enabled flag, command
+arguments, whitelist recipient, and daily time or five-field cron expression.
+A command supports up to 50 entries. All schedules use the configured timezone.
+
+Recipients can be individual phone numbers or WhatsApp group JIDs. **Load Groups
+from GoWA** retrieves groups using the saved gateway settings; selecting a group
+fills that schedule's recipient. For a group, **Execute as (whitelist)** is required:
+command and camera access are checked against that number at save and execution
+time, while the result is delivered to the group. Private-only commands cannot
+be scheduled to groups. Group membership itself does not grant camera access.
+
+Saving validates arguments and recipient permissions for every enabled entry.
+Execution checks recipient permissions again, so revoked access takes effect
+without editing the schedule. Job Management shows each enabled entry separately,
+including its arguments and recipient, with independent execution history.
+
+Schedules are stored in the command's existing Configuration JSON. No database
+schema migration is required. Existing single schedules are read as one entry
+with the legacy job ID, preserving their history. Additional entries have stable
+schedule IDs; editing arguments, recipients, or timing preserves their history.
+Disabling or removing an entry removes its scheduled job on the next scheduler
+reload, while retaining its execution logs. Removing an entry and adding a new
+one creates a new identity and history. A job already running may finish.
 
 ### Authentication
 
@@ -33,6 +87,20 @@ Default receivers can be personal numbers or WhatsApp group JIDs:
 Multiple receivers are comma-separated. The Config UI can query GoWA groups from `GET /user/my/groups` and append the selected group JID automatically.
 
 ### Record-Check Notifications
+
+The `record_check_daily_report` job sends one WhatsApp summary and one combined
+PDF per unique GoWA default recipient, covering all enabled Record Sources.
+The report covers the full previous day, from 00:00 to the next 00:00 in the
+configured timezone (exclusive end). For example, a run on October 9 reports
+October 8 even when the job runs at 08:00. Multiple sources linked to the same
+NVR retain separate sections so their recording paths remain identifiable.
+
+Channel counts use the last stored check before the report period ends. Sources
+without historical checks are labeled as having no history. The PDF includes
+daily downtime details and per-source trends for the 14 days ending on the
+report date. Failed sources are listed without stopping other sources; delivery
+errors and partial results are stored in job history. Transient GoWA upload
+failures retry only the affected request, without replaying successful text.
 
 Record-check alerts are sent when:
 

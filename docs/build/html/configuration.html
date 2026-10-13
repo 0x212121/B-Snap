@@ -21,9 +21,9 @@
 <meta content="#ffffff" media="(prefers-color-scheme: light)" name="theme-color"/>
 <meta content="#030711" media="(prefers-color-scheme: dark)" name="theme-color"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Configuration Guide | B-SNAP v2.4.0 documentation</title>
-<meta content="Configuration Guide | B-SNAP v2.4.0 documentation" property="og:title"/>
-<meta content="Configuration Guide | B-SNAP v2.4.0 documentation" name="twitter:title"/>
+<title>Configuration Guide | B-SNAP v2.4.1 documentation</title>
+<meta content="Configuration Guide | B-SNAP v2.4.1 documentation" property="og:title"/>
+<meta content="Configuration Guide | B-SNAP v2.4.1 documentation" name="twitter:title"/>
 <link href="_static/pygments.css?v=e72c8e07" rel="stylesheet" type="text/css"/>
 <link href="_static/theme.css?v=73505e79" rel="stylesheet" type="text/css"/>
 <link href="search.html" rel="search" title="Search"/>
@@ -36,7 +36,7 @@
       Skip to content
     </a><header class="sticky top-0 z-40 w-full border-b shadow-xs border-border bg-background/90 backdrop-blur"><div class="container flex items-center h-14">
 <div class="hidden mr-4 md:flex">
-<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.4.0 documentation</span>
+<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.4.1 documentation</span>
 </a></div><button @click="showSidebar = true" class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden" type="button">
 <svg aria-hidden="true" fill="currentColor" height="24" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
 <path d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z"></path>
@@ -66,7 +66,7 @@
 </div>
 </header>
 <div class="flex-1"><div class="container md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }" class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky" id="left-sidebar">
-<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.4.0 documentation</span>
+<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.4.1 documentation</span>
 </a>
 <div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
 <div class="overflow-y-auto h-full w-full relative pr-6"><nav class="table w-full min-w-full my-6 lg:my-8">
@@ -97,7 +97,7 @@
 <div class="w-full min-w-0 mx-auto">
 <nav aria-label="breadcrumbs" class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
 <a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground" href="index.html">
-<span class="hidden md:inline">B-SNAP v2.4.0 documentation</span>
+<span class="hidden md:inline">B-SNAP v2.4.1 documentation</span>
 <svg aria-label="Home" class="md:hidden" fill="currentColor" height="18" stroke="none" viewbox="0 96 960 960" width="18" xmlns="http://www.w3.org/2000/svg">
 <path d="M240 856h120V616h240v240h120V496L480 316 240 496v360Zm-80 80V456l320-240 320 240v480H520V696h-80v240H160Zm320-350Z"></path>
 </svg>
@@ -277,6 +277,61 @@
 <li><p><strong>Used In</strong>: <code class="docutils literal notranslate"><span class="pre">app/utils/smtp_config.py</span></code></p></li>
 </ul>
 </section>
+<section id="email-retry-resource-limits">
+<h3>Email retry resource limits<a class="headerlink" href="#email-retry-resource-limits" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#email-retry-resource-limits'"><span>#</span></a></h3>
+<p>These are database settings, editable in App Config under job settings. They are
+read at the start of each retry run. Initialization seeds missing values only.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Accepted range</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">email_retry_max_pending_hours</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">24</span></code></p></td>
+<td><p>1?720</p></td>
+<td><p>Maximum pending age in hours, measured from original queue creation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">email_retry_batch_size</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">50</span></code></p></td>
+<td><p>1–500</p></td>
+<td><p>Maximum due tasks loaded in one run.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">email_retry_max_run_seconds</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">120</span></code></p></td>
+<td><p>1–3600</p></td>
+<td><p>Cooperative run budget, checked before each task.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">email_retry_smtp_timeout_seconds</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">30</span></code></p></td>
+<td><p>1–30</p></td>
+<td><p>Socket timeout, capped by the remaining run budget.</p></td>
+</tr>
+</tbody>
+</table>
+<p>Pending notifications reaching the configured age limit are cancelled with
+<code class="docutils literal notranslate"><span class="pre">cancellation_reason=pending_expired</span></code>, including tasks whose next retry is not yet due.
+Expiry is checked again before processing each selected task. Changing the limit applies
+on the next retry run; retries do not reset queue creation time or incident time.
+Job Management reports an expired count, and the existing cleanup retains cancelled
+entries for seven days after completion. Apply <code class="docutils literal notranslate"><span class="pre">alembic</span> <span class="pre">upgrade</span> <span class="pre">head</span></code> before restarting
+the web application and scheduler worker for this setting.</p>
+<p>Tasks left by a batch or time limit keep their original incident, attempt count,
+and retry timestamp for the next execution. An in-progress delivery can finish
+after the run budget; this is not a hard process deadline. SMTP configuration is
+cached only during one run, so subsequent runs pick up saved changes. Successful
+delivery/failure log updates are committed before the worker moves to another task.</p>
+<p>Job history shows actual sends, already-delivered incidents, SMTP failures,
+policy/configuration deferrals and their reasons, exhausted/cancelled tasks,
+processing errors, due backlog, oldest pending age, and duration. Status is <code class="docutils literal notranslate"><span class="pre">fail</span></code>
+when errors occur without a completed delivery, <code class="docutils literal notranslate"><span class="pre">partial</span></code> when completed deliveries
+coexist with errors or unfinished work, and <code class="docutils literal notranslate"><span class="pre">deferred</span></code> for runs containing only
+deferrals or unfinished work. An empty run is <code class="docutils literal notranslate"><span class="pre">success</span></code>. <code class="docutils literal notranslate"><span class="pre">exhausted</span></code> can overlap
+with <code class="docutils literal notranslate"><span class="pre">smtp_failed</span></code>, and a successful batch may still have future pending retries.</p>
+</section>
 </section>
 <hr class="docutils"/>
 <section id="storage-paths">
@@ -355,6 +410,28 @@
 <li><p><strong>Description</strong>: Hard-deletes old record-check run, folder-check, and status-event history older than this many days</p></li>
 <li><p><strong>Note</strong>: Record sources, folder mappings, and current folder statuses are preserved</p></li>
 <li><p><strong>Used In</strong>: <code class="docutils literal notranslate"><span class="pre">app/jobs/scheduler.py</span></code>, <code class="docutils literal notranslate"><span class="pre">app/utils/record_check.py</span></code></p></li>
+</ul>
+</section>
+<section id="retention-api-logs-days">
+<h3>retention_api_logs_days<a class="headerlink" href="#retention-api-logs-days" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#retention-api-logs-days'"><span>#</span></a></h3>
+<ul class="simple">
+<li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">90</span></code>; configurable through <strong>Log Retention → API Logs (days)</strong>.</p></li>
+<li><p><strong>Cleanup</strong>: <code class="docutils literal notranslate"><span class="pre">cleanup_api_logs</span></code> follows its own cron override or the shared
+cleanup schedule. Before deleting detailed logs, it archives expired complete
+local days into <code class="docutils literal notranslate"><span class="pre">api_daily_stats</span></code> in the same transaction. The incomplete
+cutoff day stays in detailed logs until the next eligible cleanup.</p></li>
+<li><p><strong>Analytics</strong>: daily charts, totals, comparisons, and reports combine retained
+detailed logs with the archived daily totals. These totals have no automatic
+expiry. A cleanup retry cannot count the same log twice, and late logs are
+added when they expire. No per-request counter update is needed.</p></li>
+<li><p><strong>Timezone</strong>: each archived bucket stores its original local date and timezone.
+Changing the configured timezone does not shift archived dates; counts sharing
+a date are combined. Retained logs follow the current timezone. Archived data
+has day-level precision, so historical sub-day ranges include the full bucket.</p></li>
+<li><p><strong>Upgrade</strong>: apply Alembic migration <code class="docutils literal notranslate"><span class="pre">20261007_api_daily_stats</span></code> before starting
+the updated web application and scheduler. Existing detailed logs remain
+available and are archived by subsequent cleanups; already-deleted logs cannot
+be reconstructed. Downgrading removes the aggregate history.</p></li>
 </ul>
 </section>
 </section>
@@ -767,6 +844,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 <li><a :data-current="activeSection === '#smtp-port'" class="reference internal" href="#smtp-port">SMTP_PORT</a></li>
 <li><a :data-current="activeSection === '#smtp-user-smtp-password'" class="reference internal" href="#smtp-user-smtp-password">SMTP_USER / SMTP_PASSWORD</a></li>
 <li><a :data-current="activeSection === '#email-from-email-cc'" class="reference internal" href="#email-from-email-cc">EMAIL_FROM / EMAIL_CC</a></li>
+<li><a :data-current="activeSection === '#email-retry-resource-limits'" class="reference internal" href="#email-retry-resource-limits">Email retry resource limits</a></li>
 </ul>
 </li>
 <li><a :data-current="activeSection === '#storage-paths'" class="reference internal" href="#storage-paths">Storage &amp; Paths</a><ul>
@@ -781,6 +859,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 <li><a :data-current="activeSection === '#retention-snapshot-days'" class="reference internal" href="#retention-snapshot-days">RETENTION_SNAPSHOT_DAYS</a></li>
 <li><a :data-current="activeSection === '#retention-video-days'" class="reference internal" href="#retention-video-days">RETENTION_VIDEO_DAYS</a></li>
 <li><a :data-current="activeSection === '#retention-record-check-days'" class="reference internal" href="#retention-record-check-days">retention_record_check_days</a></li>
+<li><a :data-current="activeSection === '#retention-api-logs-days'" class="reference internal" href="#retention-api-logs-days">retention_api_logs_days</a></li>
 </ul>
 </li>
 <li><a :data-current="activeSection === '#job-scheduling'" class="reference internal" href="#job-scheduling">Job Scheduling</a><ul>
@@ -859,7 +938,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=b627b0b9"></script>
+<script src="_static/documentation_options.js?v=125f34a0"></script>
 <script src="_static/doctools.js?v=fd6eb6e6"></script>
 <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script defer="defer" src="_static/theme.js?v=582b20c5"></script>

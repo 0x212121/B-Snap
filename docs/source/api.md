@@ -472,7 +472,7 @@ Use `/api/powerbi/record-checks/downtime` to calculate how long a channel was no
 
 Power Query example:
 
-```powerquery
+```text
 let
     BaseUrl = "http://bsnap.local:8080",
     Token = "YOUR_API_TOKEN",

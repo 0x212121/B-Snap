@@ -12,7 +12,7 @@ Linux prerequisite error. Docker Desktop is not a supported mount deployment.
 
 Set these variables in `.env` for both the web and scheduler services:
 
-```dotenv
+```ini
 BSNAP_RECORD_MOUNTS_ENABLED=true
 BSNAP_RECORD_MOUNT_ALLOWED_NETWORKS=192.168.10.20/32,192.168.10.21/32
 BSNAP_RECORD_NFS_ALLOW_SYS=false
