@@ -5166,6 +5166,10 @@ select {
     display: none;
   }
 
+  .lg\:basis-96 {
+    flex-basis: 24rem;
+  }
+
   .lg\:grid-cols-1 {
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
@@ -5188,6 +5192,10 @@ select {
 
   .lg\:flex-row {
     flex-direction: row;
+  }
+
+  .lg\:flex-wrap {
+    flex-wrap: wrap;
   }
 
   .lg\:px-8 {

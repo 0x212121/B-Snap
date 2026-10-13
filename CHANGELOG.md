@@ -4,23 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
 ## [2.4.1] - 2026-10-13
-
-### Added
-
-- Multiple WhatsApp schedules per command with independent arguments, recipients, and history; group selection from GoWA with whitelist-based execution permissions.
-- Configurable high-importance email alerts for GoWA device outages, with persistent deduplication and SMTP retries.
-
-### Changed
-
-- Dedicated Schedules tab, aligned recipient/group controls, accessible toggles, and alphabetical job ordering.
 
 ### Fixed
 
 - Preserved scheduled job IDs and history when triggers change; corrected slash-trigger history URLs and command execution.
 - Completed EN/ID gallery feedback and shared dialogs, including Bot Builder details and live language updates.
+- Prevented Audit Logs advanced filters from squeezing or shifting the main controls when expanded, with responsive wrapping.
 
 ## [2.4.0] - 2026-10-12
 
