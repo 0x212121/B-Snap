@@ -1,0 +1,10 @@
+{# Input is bytes; use the same threshold and precision as BSnapSizes.format(). #}
+{% macro format_file_size(bytes) -%}
+  {%- set size = (bytes or 0) | float -%}
+  {%- if size < 0 -%}{%- set size = 0 -%}{%- endif -%}
+  {%- if size < 1024 * 1024 -%}
+    {{- '%.2f' | format(size / 1024) }} KB
+  {%- else -%}
+    {{- '%.2f' | format(size / 1024 / 1024) }} MB
+  {%- endif -%}
+{%- endmacro %}

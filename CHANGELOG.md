@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added optional `include_without_ip=true` to `/api/cctv/resolve-ip` to include matching cameras with null or empty IP addresses while preserving access restrictions.
 - Sorted WhatsApp Show help command lists alphabetically by trigger, including custom response templates.
 
+### Fixed
+
+- Dynamically display snapshot/video sizes and the Trash Management total in KB below 1024 KB and MB from 1024 KB onwards; convert raw byte values correctly and preserve numeric size sorting.
+- Preserve authentication cookies and session data on temporary database/endpoint failures; return 503 without replaying requests, and rotate Remember Me tokens atomically.
+
 ## [2.4.1] - 2026-10-13
 
 ### Changed

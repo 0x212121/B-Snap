@@ -918,7 +918,7 @@ async def get_trash_stats(
     """Get statistics for trash management (deleted snapshots and videos).
     
     Returns:
-        JSON with snapshot_count, video_count, total_snapshot_size_mb, total_video_size_mb
+        JSON with counts, exact total_size_bytes, and legacy rounded MB totals.
     """
     # Count deleted snapshots
     snapshot_count = db.query(Snapshot).filter(Snapshot.deleted_at.isnot(None)).count()
@@ -930,21 +930,24 @@ async def get_trash_stats(
     snapshot_size_result = db.query(Snapshot.file_size).filter(
         Snapshot.deleted_at.isnot(None)
     ).all()
-    total_snapshot_size_mb = sum(
+    total_snapshot_size_bytes = sum(
         (size[0] or 0) for size in snapshot_size_result
-    ) / (1024 * 1024)
+    )
+    total_snapshot_size_mb = total_snapshot_size_bytes / (1024 * 1024)
     
     # Calculate total video size (in bytes, convert to MB)
     video_size_result = db.query(Video.file_size).filter(
         Video.deleted_at.isnot(None)
     ).all()
-    total_video_size_mb = sum(
+    total_video_size_bytes = sum(
         (size[0] or 0) for size in video_size_result
-    ) / (1024 * 1024)
+    )
+    total_video_size_mb = total_video_size_bytes / (1024 * 1024)
     
     return JSONResponse({
         "snapshot_count": snapshot_count,
         "video_count": video_count,
+        "total_size_bytes": total_snapshot_size_bytes + total_video_size_bytes,
         "total_snapshot_size_mb": round(total_snapshot_size_mb, 2),
         "total_video_size_mb": round(total_video_size_mb, 2),
         "total_size_mb": round(total_snapshot_size_mb + total_video_size_mb, 2),

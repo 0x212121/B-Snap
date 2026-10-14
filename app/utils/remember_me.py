@@ -2,12 +2,15 @@
 Remember Me functionality - Persistent login tokens.
 Tokens do not expire until manually revoked (logout).
 """
+
 import hashlib
+import logging
 import os
 import secrets
-import logging
-from typing import Optional, Tuple, List
+
 from datetime import datetime, timezone
+from typing import List, Optional
+
 from sqlalchemy.orm import Session
 
 from app.models.remember_token import RememberToken
@@ -39,37 +42,47 @@ def create_remember_token(
     user_id: int,
     device_name: Optional[str] = None,
     ip_address: Optional[str] = None,
-    user_agent: Optional[str] = None
+    user_agent: Optional[str] = None,
+    *,
+    commit: bool = True,
 ) -> str:
     """
     Create a new remember me token for user.
     Returns the plain token (to be set in cookie).
+    Set commit=False to include creation in the caller's transaction.
     """
     # Generate token
     plain_token = generate_token()
     token_hash = hash_token(plain_token)
-    
+
     # Revoke existing tokens for this device (optional - prevents duplicate entries)
     if device_name:
-        existing = db.query(RememberToken).filter(
-            RememberToken.user_id == user_id,
-            RememberToken.device_name == device_name
-        ).first()
+        existing = (
+            db.query(RememberToken)
+            .filter(RememberToken.user_id == user_id, RememberToken.device_name == device_name)
+            .first()
+        )
         if existing:
             db.delete(existing)
-            db.commit()
-    
+            if commit:
+                db.commit()
+            else:
+                db.flush()
+
     # Create new token
     token_record = RememberToken(
         user_id=user_id,
         token_hash=token_hash,
         device_name=device_name or "Unknown Device",
         ip_address=ip_address,
-        user_agent=user_agent
+        user_agent=user_agent,
     )
     db.add(token_record)
-    db.commit()
-    
+    if commit:
+        db.commit()
+    else:
+        db.flush()
+
     logger.info(f"Created remember token for user_id={user_id}, device={device_name}")
     return plain_token
 
@@ -81,15 +94,13 @@ def validate_remember_token(db: Session, plain_token: str) -> Optional[User]:
     """
     if not plain_token:
         return None
-    
+
     token_hash = hash_token(plain_token)
-    token_record = db.query(RememberToken).filter(
-        RememberToken.token_hash == token_hash
-    ).first()
-    
+    token_record = db.query(RememberToken).filter(RememberToken.token_hash == token_hash).first()
+
     if not token_record:
         return None
-    
+
     # Get user
     user = db.query(User).filter(User.id == token_record.user_id).first()
     if not user:
@@ -97,28 +108,29 @@ def validate_remember_token(db: Session, plain_token: str) -> Optional[User]:
         db.delete(token_record)
         db.commit()
         return None
-    
+
     # Update last used
     token_record.last_used_at = datetime.now(timezone.utc)
     db.commit()
-    
+
     logger.info(f"Remember token used for user_id={user.id}, device={token_record.device_name}")
     return user
 
 
-def revoke_token(db: Session, plain_token: str) -> bool:
-    """Revoke a specific remember me token."""
+def revoke_token(db: Session, plain_token: str, *, commit: bool = True) -> bool:
+    """Revoke a token, optionally within the caller's transaction."""
     if not plain_token:
         return False
-    
+
     token_hash = hash_token(plain_token)
-    token_record = db.query(RememberToken).filter(
-        RememberToken.token_hash == token_hash
-    ).first()
-    
+    token_record = db.query(RememberToken).filter(RememberToken.token_hash == token_hash).first()
+
     if token_record:
         db.delete(token_record)
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
         logger.info(f"Revoked remember token for user_id={token_record.user_id}")
         return True
     return False
@@ -130,38 +142,43 @@ def revoke_all_user_tokens(db: Session, user_id: int, except_token: Optional[str
     Use except_token to keep current device logged in.
     """
     query = db.query(RememberToken).filter(RememberToken.user_id == user_id)
-    
+
     if except_token:
         except_hash = hash_token(except_token)
         query = query.filter(RememberToken.token_hash != except_hash)
-    
+
     count = query.count()
     query.delete(synchronize_session=False)
     db.commit()
-    
+
     logger.info(f"Revoked {count} remember tokens for user_id={user_id}")
     return count
 
 
 def get_user_tokens(db: Session, user_id: int) -> List[RememberToken]:
     """Get all remember tokens for a user (for device management)."""
-    return db.query(RememberToken).filter(
-        RememberToken.user_id == user_id
-    ).order_by(RememberToken.last_used_at.desc()).all()
+    return (
+        db.query(RememberToken)
+        .filter(RememberToken.user_id == user_id)
+        .order_by(RememberToken.last_used_at.desc())
+        .all()
+    )
 
 
 def get_cookie_settings() -> dict:
     """Get standard cookie settings for remember me token."""
     # FIX: Baca dari env vars sama seperti main.py
     is_https_proxy = os.getenv("BEHIND_HTTPS_PROXY", "false").lower() in ("true", "1", "yes")
-    cookie_secure = os.getenv("COOKIE_SECURE", "true").lower() == "true" if is_https_proxy else False
+    cookie_secure = (
+        os.getenv("COOKIE_SECURE", "true").lower() == "true" if is_https_proxy else False
+    )
     cookie_samesite = os.getenv("COOKIE_SAMESITE", "lax")
-    
+
     return {
         "key": REMEMBER_COOKIE_NAME,
         "max_age": REMEMBER_COOKIE_MAX_AGE,
         "httponly": True,
-        "secure": cookie_secure,      # FIX: Konsisten dengan env vars
+        "secure": cookie_secure,  # FIX: Konsisten dengan env vars
         "samesite": cookie_samesite,  # FIX: Konsisten dengan env vars
-        "path": "/"
+        "path": "/",
     }

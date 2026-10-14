@@ -28,7 +28,7 @@
   {{ ui_icons.icon_video_camera("w-5 h-5") }}
 {% endcall %}
   
-  {% call kpi_card("Total Size", "0 MB", value_id="stat-size", tone="neutral") %}
+  {% call kpi_card("Total Size", "0.00 KB", value_id="stat-size", tone="neutral") %}
   {{ ui_icons.icon_server("w-5 h-5") }}
 {% endcall %}
 </div>
@@ -321,21 +321,16 @@ async function loadStats() {
     document.getElementById('stat-snapshots').textContent = data.snapshot_count || 0;
     document.getElementById('stat-videos').textContent = data.video_count || 0;
     
-    // Format total size
-    const totalSizeMB = data.total_size_mb || 0;
-    let sizeText;
-    if (totalSizeMB >= 1024) {
-      sizeText = (totalSizeMB / 1024).toFixed(2) + ' GB';
-    } else {
-      sizeText = totalSizeMB.toFixed(2) + ' MB';
-    }
-    document.getElementById('stat-size').textContent = sizeText;
+    // Prefer exact bytes; rounded legacy MB totals can lose small file sizes.
+    document.getElementById('stat-size').textContent = BSnapSizes.format(
+      data.total_size_bytes ?? (data.total_size_mb || 0) * 1024 * 1024
+    );
     
   } catch (err) {
     console.error('Failed to load stats:', err);
     document.getElementById('stat-snapshots').textContent = '0';
     document.getElementById('stat-videos').textContent = '0';
-    document.getElementById('stat-size').textContent = '0 MB';
+    document.getElementById('stat-size').textContent = BSnapSizes.format(0);
   }
 }
 
@@ -392,7 +387,7 @@ function renderSnapshots(snapshots, total, page) {
       </td>
       <td class="px-4 py-3 text-gray-700 dark:text-gray-300">${s.camera}</td>
       <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs">${s.deleted_at}</td>
-      <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs">${s.file_size} KB</td>
+      <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs" data-sort-value="${(Number(s.file_size) || 0) * 1024}">${BSnapSizes.format((s.file_size || 0) * 1024)}</td>
       <td class="px-4 py-3 text-center">
         ${s.file_hash ? 
           `<button onclick="verifyTrashIntegrity('${s.id}', this)" 
@@ -492,7 +487,7 @@ function renderVideos(videos, total, page) {
       <td class="px-4 py-3 text-gray-700 dark:text-gray-300">${v.camera}</td>
       <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs">${v.deleted_at}</td>
       <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs">${v.duration ? v.duration + 's' : '-'}</td>
-      <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs">${v.file_size} MB</td>
+      <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs" data-sort-value="${Number(v.file_size) || 0}">${BSnapSizes.format(v.file_size)}</td>
       <td class="px-4 py-3 text-center">
         <div class="flex items-center justify-center gap-1">
           ${v.retention_hold ? 
