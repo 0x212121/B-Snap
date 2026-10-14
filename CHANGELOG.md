@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Deliver recording completion popups once through the database notification queue, only to the user who started recording from the browser; suppress web popups for bot/API recordings and validate recipient sessions before delivery.
 
+### Removed
+
+- Removed Snapshot Interval from Configuration; snapshot scheduling is managed through Job Management, and saving configuration preserves the legacy interval fallback.
+
 ## [2.5.0] - 2026-10-14
 
 ### Added

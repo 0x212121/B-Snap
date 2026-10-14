@@ -102,7 +102,6 @@ async def config_save(
     request: Request,
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required),
-    snapshot_interval_minutes: int = Form(...),
     healthcheck_interval_minutes: int = Form(...),
     snapshot_concurrent_workers: int = Form(...),
     max_screenshot_per_camera: int = Form(...),
@@ -261,7 +260,6 @@ async def config_save(
         return JSONResponse(status_code=400, content={"message": str(exc)})
 
     keys = {
-        "snapshot_interval_minutes": snapshot_interval_minutes,
         "healthcheck_interval_minutes": healthcheck_interval_minutes,
         "snapshot_concurrent_workers": snapshot_concurrent_workers,
         "max_screenshot_per_camera": max_screenshot_per_camera,
