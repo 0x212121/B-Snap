@@ -676,6 +676,8 @@
     "GET API flow": "Alur API GET", "Internal B-Snap nodes run in order, up to 8 nodes.": "Node internal B-Snap berjalan berurutan, maksimal 8 node.",
     "Add node": "Tambah node", "Example path": "Contoh path", "params": "params", "Output:": "Output:",
     "WhatsApp response template": "Template respons WhatsApp", "Cancel": "Batal", "Save command": "Simpan command", "Delete": "Hapus",
+    "Send images in HD quality": "Kirim gambar dengan kualitas HD",
+    "Applies to captured and latest snapshots, including fallback images. Requires GoWA with HD support.": "Berlaku untuk snapshot baru dan terakhir, termasuk gambar fallback. Memerlukan GoWA yang mendukung HD.",
     "Use the array mapper after testing an API to format repeating items as clean rows.": "Gunakan pemetaan array setelah menguji API untuk merapikan daftar berulang.",
     "Normalize a database timestamp with": "Normalisasi timestamp database dengan", "; it uses the B-Snap timezone.": "; menggunakan zona waktu B-Snap.",
     "Hide an empty IP and its parentheses inside an each loop:": "Sembunyikan IP kosong beserta tanda kurungnya di dalam perulangan each:",

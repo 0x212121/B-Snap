@@ -119,7 +119,8 @@ async def execute_scheduled_command(db: Any, command: dict) -> int:
         media = bot.media_items or [
             {"path": bot.media_path, "caption": bot.media_caption or response}
         ]
-        items = [{"image_path": item["path"], "text": item.get("caption", "")} for item in media]
+        items = [{"image_path": item["path"], "text": item.get("caption", ""),
+                  **({"image_hd": True} if bot.image_hd else {})} for item in media]
     elif not items and response:
         items = [{"text": response}]
     db.commit()

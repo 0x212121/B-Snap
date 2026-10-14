@@ -139,6 +139,13 @@ def normalize_response_media(item: dict[str, Any]) -> dict[str, str]:
             "response_image_source": image_source}
 
 
+def normalize_image_hd(action: str, value: Any = False) -> bool:
+    """Validate HD image delivery for snapshot system actions."""
+    if not isinstance(value, bool):
+        raise ValueError("Image HD quality must be a boolean")
+    return value if action in {"snap", "cctv"} else False
+
+
 def normalize_processing_delay(value: Any = 0) -> int:
     """Validate the configurable processing-message delay in seconds."""
     if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 60:
@@ -225,6 +232,7 @@ def get_command_settings(db: Session) -> list[dict[str, Any]]:
                     item = {**default, **by_id.get(default["id"], {})}
                     # Built-in action and privilege requirements are server-owned.
                     item["action"] = default["action"]
+                    item["image_hd"] = normalize_image_hd(item["action"], item.get("image_hd", False))
                     item["role"] = default["role"]
                     item["chat_scope"] = normalize_chat_scope(item["action"], item.get("chat_scope"))
                     item["processing_delay_seconds"] = normalize_processing_delay(item.get("processing_delay_seconds", 0))
@@ -253,6 +261,7 @@ def get_command_settings(db: Session) -> list[dict[str, Any]]:
                     try:
                         flow = normalize_flow(item.get("flow")) if action == "api_flow" else []
                         response_media = normalize_response_media({**item, "flow": flow})
+                        image_hd = normalize_image_hd(action, item.get("image_hd", False))
                         processing_delay = normalize_processing_delay(item.get("processing_delay_seconds", 0))
                         image_flow = item.get("image_flow") or []
                         image_flow = normalize_flow(image_flow) if action == "snap" and image_flow else []
@@ -267,7 +276,7 @@ def get_command_settings(db: Session) -> list[dict[str, Any]]:
                         ) if action == "snap" else normalize_snap_stage_messages(item.get("failure_messages"), allow_empty=True)
                     except ValueError:
                         continue
-                    result.append({**item, **response_media, "processing_delay_seconds": processing_delay,
+                    result.append({**item, **response_media, "image_hd": image_hd, "processing_delay_seconds": processing_delay,
                                    "action": action, "role": CUSTOM_ACTION_ROLES[action],
                                    "chat_scope": normalize_chat_scope(action, item.get("chat_scope")), "flow": flow,
                                    "image_flow": image_flow, "processing_messages": processing_messages,
@@ -313,6 +322,7 @@ def save_command_settings(db: Session, commands: list[dict[str, Any]]) -> list[d
         entry["description"] = str(entry.get("description", ""))[:300].strip()
         entry["response"] = str(entry.get("response", ""))[:2000]
         entry["processing_delay_seconds"] = normalize_processing_delay(item.get("processing_delay_seconds", 0))
+        entry["image_hd"] = normalize_image_hd(entry["action"], item.get("image_hd", False))
         entry.update(normalize_response_media({**entry,
             "response_type": item.get("response_type", "text"),
             "response_video_source": item.get("response_video_source", ""),

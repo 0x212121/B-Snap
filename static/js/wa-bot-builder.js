@@ -50,6 +50,7 @@
     for (const key of ['aliases','required_params']) result[key] = form.elements[key].value.split(',').map(value=>value.trim()).filter(Boolean);
     result.aliases = result.aliases.map(value=>value.toLowerCase());
     result.enabled = form.elements.enabled.checked; result.quote_reply = form.elements.quote_reply.checked;
+    result.image_hd = ['snap', 'cctv'].includes(result.action) && form.elements.image_hd.checked;
     result.processing_delay_seconds = Number(form.elements.processing_delay_seconds.value);
     result.schedules = Array.from(form.querySelectorAll('[data-command-schedule]')).map(row => {
       const field = key => row.querySelector(`[name="schedule_${key}"]`);
@@ -334,6 +335,7 @@
   function setResponseTemplateVisibility(action) {
     const usesTemplate = true;
     const isSnap = action === 'snap';
+    form.querySelector('[data-image-hd-option]').classList.toggle('hidden', !['snap', 'cctv'].includes(action));
     const isIndonesian = document.documentElement.lang === 'id';
     const isVideo = form.elements.response_type.value === 'video';
     const isImage = form.elements.response_type.value === 'image';
@@ -524,6 +526,7 @@
     document.getElementById('editorSubtitle').textContent = command?.trigger || 'Enter a trigger, action, and response.';
     for (const key of ['name','trigger','description','response']) form.elements[key].value = draft[key] || '';
     form.elements.response_type.value = draft.response_type || 'text';
+    form.elements.image_hd.checked = draft.image_hd === true;
     form.elements.response_video_source.value = draft.response_video_source || '';
     form.elements.response_image_source.value = draft.response_image_source || '';
     form.elements.processing_delay_seconds.value = draft.processing_delay_seconds ?? (command ? 0 : 3);
@@ -896,6 +899,7 @@
     draft.required_params = form.elements.required_params.value.split(',').map(value => value.trim()).filter(Boolean);
     draft.action = form.elements.action.value; draft.role = adminActions.includes(draft.action) ? 'admin' : 'user'; draft.chat_scope = privateOnlyActions.includes(draft.action) ? 'private' : form.elements.chat_scope.value; draft.enabled = form.elements.enabled.checked; draft.quote_reply = form.elements.quote_reply.checked;
     draft.response_type = form.elements.response_type.value;
+    draft.image_hd = ['snap', 'cctv'].includes(draft.action) && form.elements.image_hd.checked;
     draft.response_video_source = form.elements.response_video_source.value.trim();
     draft.response_image_source = form.elements.response_image_source.value.trim();
     draft.processing_delay_seconds = Number(form.elements.processing_delay_seconds.value);

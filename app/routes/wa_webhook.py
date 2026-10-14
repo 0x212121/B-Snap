@@ -94,12 +94,17 @@ def _record_wa_message(db: Session, phone: str, direction: str, status: str, mes
 
 def _send_wa_message_item(service: WAGatewayService, recipient: str, item: dict, reply_to: str | None = None) -> dict:
     caption = str(item.get("text") or "")
+    image_options = {"hd": True} if item.get("image_hd") is True else {}
     if item.get("video_path"):
         return service.send_video_file(recipient, item["video_path"], caption or None, reply_to=reply_to)
     if item.get("image_path"):
-        return service.send_image_file(recipient, item["image_path"], caption or None, reply_to=reply_to)
+        return service.send_image_file(
+            recipient, item["image_path"], caption or None, reply_to=reply_to, **image_options
+        )
     if item.get("image_url"):
-        return service.send_image(recipient, item["image_url"], caption or None, reply_to=reply_to)
+        return service.send_image(
+            recipient, item["image_url"], caption or None, reply_to=reply_to, **image_options
+        )
     if caption:
         return service.send_text(recipient, caption, reply_to=reply_to)
     return {"success": False, "error": "Message item has no text or media"}
@@ -403,6 +408,7 @@ class WABotHandler:
         self.outbound_items: list[dict[str, str]] = []
         self.private_response = False
         self.quote_reply = True
+        self.image_hd = False
         self.progress_sender: Optional[Callable[[dict[str, str]], Awaitable[dict]]] = None
         self.action_failed = False
         self.action_api_context: dict = {"steps": {}}
@@ -456,6 +462,8 @@ class WABotHandler:
                 if snapshot:
                     rendered["image_path"] = os.path.join("static", "snapshots", snapshot.file_path)
             if rendered.get("text") or rendered.get("image_url") or rendered.get("image_path"):
+                if self.image_hd and (rendered.get("image_url") or rendered.get("image_path")):
+                    rendered["image_hd"] = True
                 result.append(rendered)
         return result
 
@@ -594,6 +602,9 @@ class WABotHandler:
                 logger.info("Ignoring private-only WhatsApp command in group: %s", command.get("trigger"))
                 return ""
             self.quote_reply = bool(command.get("quote_reply", True))
+            self.image_hd = (
+                command.get("action") in {"snap", "cctv"} and command.get("image_hd") is True
+            )
             entry = _whitelisted_sender(self.db, sender)
             is_admin = bool(entry and entry.role == RoleEnum.admin)
             access_error = _command_access_error(entry, command)
@@ -932,6 +943,8 @@ class WABotHandler:
             elif image_type == "last_snapshot" and last_snapshot:
                 outbound_item["image_path"] = os.path.join("static", "snapshots", last_snapshot.file_path)
             if outbound_item.get("text") or outbound_item.get("image_url") or outbound_item.get("image_path"):
+                if self.image_hd and (outbound_item.get("image_url") or outbound_item.get("image_path")):
+                    outbound_item["image_hd"] = True
                 rendered.append(outbound_item)
         return rendered
 
@@ -1093,7 +1106,10 @@ class WABotHandler:
             )
             self.action_api_context = context
             if action == "snap":
-                self.outbound_items.append({"text": self.media_caption or "", "image_path": local_path})
+                self.outbound_items.append({
+                    "text": self.media_caption or "", "image_path": local_path,
+                    **({"image_hd": True} if self.image_hd else {}),
+                })
             return ""
         if action == "ping":
             if not argument:
@@ -1548,7 +1564,8 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
                     _send_wa_message_item,
                     wa_service,
                     recipient,
-                    {"image_path": media_item["path"], "text": media_item.get("caption") or ""},
+                    {"image_path": media_item["path"], "text": media_item.get("caption") or "",
+                     **({"image_hd": True} if bot.image_hd else {})},
                     reply_to if index == 0 else None,
                 )
                 if not send_result.get("success"):

@@ -844,3 +844,8 @@ hide both the address and parentheses when IP is null, empty, or whitespace.
 An optional `{{else}}` provides fallback text. Missing values, `false`, numeric
 zero, and empty lists/objects also select the fallback. Conditions accept the
 same variable paths as response placeholders, without arbitrary expressions.
+
+Capture New Snapshot and Send Latest Snapshot commands offer a **Send images in
+HD quality** toggle in the Bot Builder response editor. It defaults to off and
+applies to fallback images and scheduled delivery as well. This sends GoWA's
+`hd=true` image option and requires a gateway that supports HD sending.

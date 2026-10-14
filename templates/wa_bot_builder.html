@@ -238,6 +238,10 @@
         <p class="mt-1 text-xs text-gray-500"><span>System action variables are ready immediately; use the mapper to format array results. Only API Flow fields require a test. Variables work in response and processing/fallback messages.</span> <span>Normalize a timestamp with</span> <code>{% raw %}{{steps.data.body.updated_at|datetime}}{% endraw %}</code><span>; it uses the B-Snap timezone.</span></p>
         <p class="mt-1 text-xs text-gray-500"><span>Hide an empty IP and its parentheses inside an each loop:</span> <code>{% raw %}{{this.camera}}{{#if this.ip}} ({{this.ip}}){{/if}}{% endraw %}</code></p>
         <p class="mt-1 text-xs text-gray-500"><span>Use else for fallback text:</span> <code>{% raw %}{{#if this.ip}}{{this.ip}}{{else}}-{{/if}}{% endraw %}</code> <span>Replace this.ip with the variable to check. Null, empty or whitespace values are hidden.</span></p>
+        <div data-image-hd-option class="mt-3 hidden">
+          {{ toggle_switch("Send images in HD quality", name="image_hd", checked=false) }}
+          <span class="mt-1 block text-xs text-gray-500">Applies to captured and latest snapshots, including fallback images. Requires GoWA with HD support.</span>
+        </div>
       </div>
       <div data-editor-section="response" data-snap-stage-panel class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
         <div>

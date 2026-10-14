@@ -220,6 +220,8 @@ class WAGatewayService:
         image_url: str,
         caption: Optional[str] = None,
         reply_to: Optional[str] = None,
+        *,
+        hd: bool = False,
     ) -> Dict[str, Any]:
         """
         Send image message via GoWA.
@@ -228,6 +230,8 @@ class WAGatewayService:
             phone: Phone number with country code
             image_url: URL to image
             caption: Image caption (optional)
+            reply_to: Message ID to quote (optional).
+            hd: Request GoWA HD image quality.
         """
         if not self.config.is_configured():
             return {"success": False, "error": "GoWA not configured"}
@@ -236,6 +240,8 @@ class WAGatewayService:
             if "@" not in phone:
                 phone = f"{phone}@s.whatsapp.net"
             payload = {"phone": phone, "image_url": image_url}
+            if hd:
+                payload["hd"] = "true"
             if caption:
                 payload["caption"] = caption
             if reply_to:
@@ -250,6 +256,8 @@ class WAGatewayService:
             response = self._post_with_retry(self._make_url("/send/image"), files=multipart_fields)
             if response.status_code == 404:
                 legacy_payload = {"phone": phone, "image": image_url}
+                if hd:
+                    legacy_payload["hd"] = True
                 if caption:
                     legacy_payload["caption"] = caption
                 if reply_to:
@@ -271,6 +279,8 @@ class WAGatewayService:
         image_path: str,
         caption: Optional[str] = None,
         reply_to: Optional[str] = None,
+        *,
+        hd: bool = False,
     ) -> Dict[str, Any]:
         """Send local image file via GoWA multipart upload."""
         if not self.config.is_configured():
@@ -284,6 +294,8 @@ class WAGatewayService:
             if "@" not in phone:
                 phone = f"{phone}@s.whatsapp.net"
             data = {"phone": phone}
+            if hd:
+                data["hd"] = "true"
             if caption:
                 data["caption"] = caption
             if reply_to:
