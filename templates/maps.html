@@ -106,6 +106,17 @@
   .dark .leaflet-control-layers { background-color: #1f2937; color: #f3f4f6; border-color: #4b5563; }
   .dark .leaflet-control-layers-toggle { background-color: #d1d5db; border-radius: 4px; }
 
+  .map-focus-control { display: flex; flex-direction: column; gap: 4px; padding: 5px; background: #fff; border-radius: 5px; box-shadow: 0 1px 5px rgba(0,0,0,0.2); }
+  .map-focus-control button { padding: 5px 8px; border: 1px solid #d1d5db; border-radius: 4px; background: #fff; color: #374151; font-size: 12px; cursor: pointer; }
+  .map-focus-control button:hover { background: #f3f4f6; }
+  .map-focus-control button:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+  .map-focus-control button[aria-pressed="true"] { background: #eff6ff; border-color: #3b82f6; color: #1d4ed8; }
+  .map-focus-control button:disabled { opacity: 0.5; cursor: wait; }
+  .dark .map-focus-control { background: #1f2937; }
+  .dark .map-focus-control button { background: #374151; border-color: #4b5563; color: #f3f4f6; }
+  .dark .map-focus-control button:hover { background: #4b5563; }
+  .dark .map-focus-control button[aria-pressed="true"] { background: #1e3a8a; border-color: #60a5fa; color: #dbeafe; }
+
   /* Dark mode for results container */
   .dark #search-results {
     background-color: #1f2937; /* gray-800 */
@@ -302,7 +313,64 @@
     
     let masterCameraData = []; // Stores all data from the server
     let allMarkers = [];       // Stores currently rendered marker objects for search
-    let statusFilter = new Set(["Online", "High Latency", "Standalone", "Offline", "Maintenance"]);
+    const allStatuses = ["Online", "High Latency", "Standalone", "Offline", "Maintenance"];
+    const incidentStatuses = ["Offline", "High Latency"];
+    let statusFilter = new Set(allStatuses);
+    let focusMode = 'all';
+    let initialMapView = true;
+    const focusText = (en, id) => document.documentElement.lang === 'id' ? id : en;
+    const focusControl = L.control({ position: 'topright' });
+    focusControl.onAdd = function() {
+      const container = L.DomUtil.create('div', 'map-focus-control');
+      ['incidents', 'all'].forEach(mode => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.dataset.mapFocus = mode;
+        button.disabled = true;
+        button.addEventListener('click', () => focusCameras(mode));
+        container.appendChild(button);
+      });
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.disableScrollPropagation(container);
+      return container;
+    };
+    focusControl.addTo(map);
+
+    function updateFocusLabels() {
+      const container = focusControl.getContainer();
+      const incidents = container.querySelector('[data-map-focus="incidents"]');
+      incidents.textContent = focusText('Focus issues', 'Fokus gangguan');
+      incidents.title = focusText('Show Offline and High Latency cameras', 'Tampilkan kamera Offline dan High Latency');
+      container.querySelector('[data-map-focus="all"]').textContent = focusText('All cameras', 'Semua kamera');
+      container.querySelectorAll('button').forEach(button => {
+        button.setAttribute('aria-pressed', String(button.dataset.mapFocus === focusMode));
+      });
+    }
+    updateFocusLabels();
+    window.addEventListener('bsnap:languagechange', updateFocusLabels);
+
+    function fitVisibleCameras() {
+      const bounds = markerClusterGroup.getBounds();
+      if (!bounds.isValid()) return false;
+      map.fitBounds(bounds, { padding: [48, 48], maxZoom: 16 });
+      return true;
+    }
+
+    function focusCameras(mode) {
+      focusMode = mode;
+      statusFilter = new Set(mode === 'incidents' ? incidentStatuses : allStatuses);
+      document.querySelectorAll('.status-checkbox').forEach(checkbox => {
+        checkbox.checked = statusFilter.has(checkbox.value);
+      });
+      searchInput.value = '';
+      renderMarkers();
+      updateFocusLabels();
+      if (!fitVisibleCameras()) {
+        Toast.info(mode === 'incidents'
+          ? focusText('No Offline or High Latency cameras with map coordinates.', 'Tidak ada kamera Offline atau High Latency dengan koordinat peta.')
+          : focusText('No cameras with map coordinates.', 'Tidak ada kamera dengan koordinat peta.'));
+      }
+    }
     const searchInput = document.getElementById('map-search-input');
     const searchResultsContainer = document.getElementById('search-results');
     
@@ -350,6 +418,9 @@
       if (e.target && e.target.classList.contains("status-checkbox")) {
         const v = e.target.value; 
         e.target.checked ? statusFilter.add(v) : statusFilter.delete(v);
+        focusMode = allStatuses.every(status => statusFilter.has(status)) ? 'all' :
+          (statusFilter.size === incidentStatuses.length && incidentStatuses.every(status => statusFilter.has(status)) ? 'incidents' : 'custom');
+        updateFocusLabels();
         // Re-render markers from local data, no new fetch
         renderMarkers(); 
       }
@@ -546,6 +617,11 @@
             masterCameraData = uniqueData; // Update the master data source
             
             renderMarkers(); // Call the render function to display the new data
+            focusControl.getContainer().querySelectorAll('button').forEach(button => { button.disabled = false; });
+            if (initialMapView) {
+              fitVisibleCameras();
+              initialMapView = false;
+            }
             updateLastRefreshTime(); // Update the timestamp
         })
         .catch(err => { 
