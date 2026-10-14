@@ -105,7 +105,10 @@ def test_snapshot_fallback_quality(monkeypatch, hd: bool) -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("action", ["snap", "cctv"])
 @pytest.mark.parametrize("hd", [False, True])
-async def test_snapshot_action_quality(monkeypatch, action: str, hd: bool) -> None:
+@pytest.mark.parametrize("response_type", ["text", "image"])
+async def test_snapshot_action_quality(
+    monkeypatch, action: str, hd: bool, response_type: str
+) -> None:
     monkeypatch.setattr(
         wa_webhook, "_whitelisted_sender", lambda *_args: SimpleNamespace(role="user")
     )
@@ -135,15 +138,51 @@ async def test_snapshot_action_quality(monkeypatch, action: str, hd: bool) -> No
         "trigger": "/camera",
         "response": "{{camera}}",
         "image_hd": hd,
+        "response_type": response_type,
+        "response_image_source": "https://example.test/gate.jpg",
     }
     bot._test_argument = "Gate"
     await bot.handle("628123456789", "/camera Gate")
     assert not bot.action_failed
     assert bot.image_hd is hd
-    if action == "snap":
+    if action == "snap" or response_type == "image":
         assert bot.outbound_items[-1].get("image_hd", False) is hd
+        gateway = Mock()
+        wa_webhook._send_wa_message_item(gateway, "628123456789", bot.outbound_items[-1])
+        method = gateway.send_image if response_type == "image" else gateway.send_image_file
+        assert method.call_args.kwargs.get("hd", False) is hd
     else:
         assert bot.media_items[0]["path"].endswith("gate.jpg")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("hd", [False, True])
+async def test_protected_response_image_preserves_quality(monkeypatch, hd: bool) -> None:
+    monkeypatch.setattr(wa_webhook, "get_current_timezone", lambda _db: "Asia/Makassar")
+    monkeypatch.setattr(wa_webhook.Path, "is_file", lambda _path: True)
+    monkeypatch.setattr(wa_webhook, "log_audit", Mock())
+    bot = wa_webhook.WABotHandler(Mock())
+    bot.image_hd = hd
+    bot._sender = "628123456789"
+    bot._command_argument = "Gate"
+    snapshot = SimpleNamespace(
+        file_path="gate.jpg", camera_id="cam", camera_name="Gate", id="snapshot"
+    )
+    bot.db.query.return_value.filter.return_value.first.side_effect = [
+        snapshot,
+        SimpleNamespace(group_id=None),
+        SimpleNamespace(id="cam"),
+    ]
+    monkeypatch.setattr(bot, "_selected_api_token", lambda: None)
+    await bot._attach_response_image(
+        {"action": "cctv", "response_image_source": "/snapshot/file/gate.jpg"}, "Gate"
+    )
+    item = bot.outbound_items[-1]
+    assert item["image_path"].endswith("gate.jpg")
+    assert item.get("image_hd", False) is hd
+    gateway = Mock()
+    wa_webhook._send_wa_message_item(gateway, "628123456789", item)
+    assert gateway.send_image_file.call_args.kwargs.get("hd", False) is hd
 
 
 @pytest.mark.asyncio

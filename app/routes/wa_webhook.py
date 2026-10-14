@@ -732,7 +732,13 @@ class WABotHandler:
         ).strip()
         parsed = urlsplit(source)
         if parsed.scheme.lower() in {"http", "https"} and parsed.netloc:
-            self.outbound_items.append({"image_url": source, "text": caption})
+            self.outbound_items.append(
+                {
+                    "image_url": source,
+                    "text": caption,
+                    **({"image_hd": True} if self.image_hd else {}),
+                }
+            )
             return
         if parsed.scheme or parsed.netloc or not source:
             raise ValueError("The image source must be an HTTP(S) URL or protected snapshot")
@@ -774,7 +780,13 @@ class WABotHandler:
             raise ValueError("The selected snapshot file is unavailable")
         log_audit(db=self.db, user=self._sender, action="prepare_snapshot_whatsapp",
                   target=f"{snapshot.camera_name}/{snapshot.id}")
-        self.outbound_items.append({"image_path": str(local_path), "text": caption})
+        self.outbound_items.append(
+            {
+                "image_path": str(local_path),
+                "text": caption,
+                **({"image_hd": True} if self.image_hd else {}),
+            }
+        )
 
     async def _attach_response_video(self, command: dict, caption: str | None = None) -> None:
         """Attach the explicitly selected response video after checking token access."""
