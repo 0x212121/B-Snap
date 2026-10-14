@@ -15,6 +15,8 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="/static/js/map-heatmap.js"></script>
 
 <style>
   /* Base map and popup styles */
@@ -116,6 +118,17 @@
   .dark .map-focus-control button { background: #374151; border-color: #4b5563; color: #f3f4f6; }
   .dark .map-focus-control button:hover { background: #4b5563; }
   .dark .map-focus-control button[aria-pressed="true"] { background: #1e3a8a; border-color: #60a5fa; color: #dbeafe; }
+
+  .leaflet-heatmap-layer { pointer-events: none; }
+  .map-heatmap-control { width: 220px; max-width: calc(100vw - 40px); padding: 8px; background: #fff; color: #374151; border-radius: 5px; box-shadow: 0 1px 5px rgba(0,0,0,0.2); font-size: 12px; }
+  .map-heatmap-toggle { display: flex; align-items: center; gap: 6px; font-weight: 600; margin-bottom: 5px; cursor: pointer; }
+  .map-heatmap-control select { width: 100%; margin: 3px 0; padding: 4px 24px 4px 6px; border: 1px solid #d1d5db; border-radius: 4px; background-color: #fff; color: inherit; font-size: 12px; }
+  .map-heatmap-gradient { height: 8px; margin-top: 6px; border-radius: 4px; background: linear-gradient(to right, #2563eb, #06b6d4, #facc15, #ef4444); }
+  .map-heatmap-scale { display: flex; justify-content: space-between; }
+  .map-heatmap-control p { margin-top: 5px; font-size: 11px; line-height: 1.35; }
+  .map-heatmap-camera { margin-top: 8px !important; padding-top: 6px !important; border-top: 1px solid #d1d5db; }
+  .dark .map-heatmap-control { background: #1f2937; color: #f3f4f6; }
+  .dark .map-heatmap-control select { background-color: #374151; border-color: #4b5563; }
 
   /* Dark mode for results container */
   .dark #search-results {
@@ -348,6 +361,7 @@
     }
     updateFocusLabels();
     window.addEventListener('bsnap:languagechange', updateFocusLabels);
+    const heatmap = BSnapMapHeatmap.create(map);
 
     function fitVisibleCameras() {
       const bounds = markerClusterGroup.getBounds();
@@ -514,6 +528,7 @@
                 marker.bindPopup(popupContent, { maxWidth: 1500 });
                 
                 marker.on('popupopen', async () => {
+                    heatmap.attachDetails(popupContent, cam.id);
                     const resCell = document.getElementById(`res-${cam.id}`);
                     const timeCell = document.getElementById(`time-${cam.id}`);
                     const tamperedRow = document.getElementById(`tampered-row-${cam.id}`);
@@ -623,6 +638,7 @@
               initialMapView = false;
             }
             updateLastRefreshTime(); // Update the timestamp
+            heatmap.refresh();
         })
         .catch(err => { 
             console.error("Map data fetch error:", err);

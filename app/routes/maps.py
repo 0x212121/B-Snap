@@ -14,6 +14,7 @@ from app.models.camera_group import CameraGroup
 from app.models.snapshot import Snapshot
 from app.models.user import User
 from app.routes.auth import get_current_user
+from app.routes.map_heatmap import router as heatmap_router
 from app.models.camera_status_change_log import CameraStatusChangeLog
 from app.utils.timezone_helper import (
     format_time_with_tz_abbr,
@@ -24,6 +25,7 @@ from app.utils.timezone_helper import (
 from app.utils.template_helper import templates
 
 router = APIRouter(tags=["Maps"])
+router.include_router(heatmap_router)
 
 
 def format_uptime(start_time: datetime, end_time: datetime) -> str:
