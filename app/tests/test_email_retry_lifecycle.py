@@ -756,6 +756,7 @@ class EmailRetryObservabilityTests(unittest.TestCase):
         """HTTP form validation rejects unsafe budgets and old clients preserve saved values."""
         script = r"""
 import ast
+import re
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Annotated, Optional
@@ -775,7 +776,8 @@ db = Mock()
 db.query.return_value.filter_by.return_value.first.return_value = None
 scope = dict(Annotated=Annotated, Optional=Optional, Form=Form, File=File, Depends=Depends, Request=Request,
              UploadFile=UploadFile, Session=object, User=object, JSONResponse=JSONResponse,
-             Configuration=SimpleNamespace, pytz=pytz, clear_timezone_cache=Mock(),
+             Configuration=SimpleNamespace, pytz=pytz, re=re, clear_timezone_cache=Mock(),
+             parse_monitor_recipients=Mock(return_value=[]),
              set_debug_mode=Mock(), sanitize_loggers=Mock(), get_db=lambda: db,
              admin_access_required=lambda: SimpleNamespace(role='admin'))
 exec(compile(ast.fix_missing_locations(ast.Module(body=[node], type_ignores=[])),

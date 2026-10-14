@@ -4,17 +4,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
-## [Unreleased]
-
-### Fixed
-
-- Deliver recording completion popups once through the database notification queue, only to the user who started recording from the browser; suppress web popups for bot/API recordings and validate recipient sessions before delivery.
-
-### Removed
-
-- Removed Snapshot Interval from Configuration; snapshot scheduling is managed through Job Management, and saving configuration preserves the legacy interval fallback.
-
 ## [2.5.0] - 2026-10-14
 
 ### Added
@@ -33,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Dynamically display snapshot/video sizes and the Trash Management total in KB below 1024 KB and MB from 1024 KB onwards; convert raw byte values correctly and preserve numeric size sorting.
 - Preserve authentication cookies and session data on temporary database/endpoint failures; return 503 without replaying requests, and rotate Remember Me tokens atomically.
+- Cleaned up Configuration route formatting, annotations, and unused imports while preserving admin authorization, validation, uploads, SMTP tests, and manual cleanup behavior.
+- Deliver recording completion popups once through the database notification queue, only to the user who started recording from the browser; suppress web popups for bot/API recordings and validate recipient sessions before delivery.
+
+### Removed
+
+- Removed Snapshot Interval from Configuration; snapshot scheduling is managed through Job Management, and saving configuration preserves the legacy interval fallback.
 
 ## [2.4.1] - 2026-10-13
 
