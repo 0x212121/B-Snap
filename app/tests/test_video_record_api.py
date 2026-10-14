@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import unittest
 import asyncio
 import sys
 import tempfile
+import unittest
+
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
@@ -16,18 +17,17 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.requests import Request
 
 from app.db.database import Base, get_db
 from app.models.camera import Camera, camera_camera_groups
 from app.models.camera_group import CameraGroup
 from app.models.video import Video
-from app.models.whitelist import WhatsappWhitelist, RoleEnum
-from app.routes import videos
-from app.routes import wa_webhook
+from app.models.whitelist import RoleEnum, WhatsappWhitelist
+from app.routes import videos, wa_webhook
 from app.routes.auth import get_current_user
-from app.utils.wa_bot_workflow import normalize_flow
 from app.utils import video as video_utils
-from starlette.requests import Request
+from app.utils.wa_bot_workflow import normalize_flow
 
 
 class VideoRecordAPITests(unittest.TestCase):
@@ -41,17 +41,18 @@ class VideoRecordAPITests(unittest.TestCase):
         Base.metadata.create_all(
             self.engine,
             tables=[
-                CameraGroup.__table__, Camera.__table__, camera_camera_groups,
-                Video.__table__, WhatsappWhitelist.__table__,
+                CameraGroup.__table__,
+                Camera.__table__,
+                camera_camera_groups,
+                Video.__table__,
+                WhatsappWhitelist.__table__,
             ],
         )
         self.db = Session(self.engine)
         self.addCleanup(self.db.close)
         self.group = CameraGroup(name="Recording test group")
         self.other_group = CameraGroup(name="Other recording group")
-        self.camera = Camera(
-            hostname="CCTV-GATE-01", ip="192.168.1.100", groups=[self.group]
-        )
+        self.camera = Camera(hostname="CCTV-GATE-01", ip="192.168.1.100", groups=[self.group])
         self.db.add_all([self.camera, self.other_group])
         self.db.commit()
         self.user = SimpleNamespace(
@@ -155,7 +156,9 @@ class VideoRecordAPITests(unittest.TestCase):
 
     def test_wait_endpoint_returns_completed_video(self) -> None:
         self.recorder.return_value = {
-            "status": "success", "video_id": "recorded-video", "media_type": "video",
+            "status": "success",
+            "video_id": "recorded-video",
+            "media_type": "video",
         }
         response = self.client.post(
             "/api/videos/record-and-wait", json={"hostname": self.camera.hostname, "duration": 30}
@@ -166,38 +169,65 @@ class VideoRecordAPITests(unittest.TestCase):
         self.recorder.assert_awaited_once()
 
     def test_recording_pipeline_saves_video_and_returns_metadata_on_sqlite(self) -> None:
+        self._check_recording_pipeline()
+
+    def test_hls_pipeline_records_without_ip_ping_or_onvif(self) -> None:
+        self.camera.snapshot_url = "https://camera.example/live.M3U8?profile=main&quality=hd"
+        self.camera.ip = None
+        self._check_recording_pipeline(hls=True)
+
+    def _check_recording_pipeline(self, *, hls: bool = False) -> None:
         self.camera.group = self.group
         self.db.commit()
         request = Request({"type": "http", "session": {}, "client": ("127.0.0.1", 1)})
         with tempfile.TemporaryDirectory() as folder:
             target = []
 
-            def build_command(url: str, path: Path, duration: int, name: str) -> str:
+            def build_command(url: str, path: Path, duration: int, name: str) -> list[str]:
+                assert url == (self.camera.snapshot_url if hls else "rtsp://camera/test")
                 target.append(path)
-                return "record test"
+                return ["ffmpeg", *video_utils._stream_input_args(url)]
 
-            def record_command(command: str) -> tuple:
+            def record_command(command: list[str]) -> tuple:
+                assert ("-rtsp_transport" in command) == (not hls)
                 target[0].write_bytes(b"video fixture")
                 return 0, "", ""
 
             with (
                 patch.object(video_utils, "STATIC_VIDEO_DIR", Path(folder)),
                 patch.object(video_utils, "SessionLocal", side_effect=lambda: Session(self.engine)),
-                patch.object(video_utils, "is_reachable", return_value=True),
-                patch.object(video_utils, "get_rtsp_url", return_value="rtsp://camera/test"),
+                patch.object(video_utils, "is_reachable", return_value=not hls) as ping,
+                patch.object(
+                    video_utils, "get_rtsp_url", return_value="rtsp://camera/test"
+                ) as resolve,
                 patch.object(video_utils, "detect_codec", return_value="h264"),
                 patch.object(video_utils, "build_ffmpeg_watermark_cmd", side_effect=build_command),
                 patch.object(video_utils, "_run_ffmpeg_sync", side_effect=record_command),
-                patch.object(video_utils, "get_video_metadata", return_value={
-                    "duration": 10, "size": 13, "width": 640, "height": 480,
-                }),
+                patch.object(
+                    video_utils,
+                    "get_video_metadata",
+                    return_value={
+                        "duration": 10,
+                        "size": 13,
+                        "width": 640,
+                        "height": 480,
+                    },
+                ),
                 patch.object(video_utils, "generate_thumbnail", return_value=True),
                 patch.object(video_utils, "get_ws_connections", return_value=[]),
                 patch.object(video_utils, "log_audit") as audit,
             ):
-                result = asyncio.run(video_utils.record_video_and_save_db(
-                    request, self.camera.id, actor_username="api-operator"
-                ))
+                result = asyncio.run(
+                    video_utils.record_video_and_save_db(
+                        request, self.camera.id, actor_username="api-operator"
+                    )
+                )
+            if hls:
+                ping.assert_not_called()
+                resolve.assert_not_called()
+            else:
+                ping.assert_called_once_with(self.camera.ip)
+                resolve.assert_called_once()
             self.assertEqual(result["status"], "success")
             self.assertEqual(result["media_type"], "video")
             saved = self.db.get(Video, result["video_id"])
@@ -214,18 +244,32 @@ class VideoRecordAPITests(unittest.TestCase):
             bot = wa_webhook.WABotHandler(self.db)
             command = {"response_video_source": "{{steps.data.body.video_id}}", "response": "Video"}
             for index, file_path in enumerate(("missing.mp4", "../outside.mp4")):
-                video = Video(id=f"unsafe-{index}", camera_id=self.camera.id,
-                              camera_name=self.camera.hostname, file_path=file_path)
+                video = Video(
+                    id=f"unsafe-{index}",
+                    camera_id=self.camera.id,
+                    camera_name=self.camera.hostname,
+                    file_path=file_path,
+                )
                 self.db.add(video)
                 self.db.commit()
-                bot.action_api_context = {"steps": {"data": {"body": {
-                    "status": "success", "video_id": video.id, "camera_id": self.camera.id,
-                }}}}
+                bot.action_api_context = {
+                    "steps": {
+                        "data": {
+                            "body": {
+                                "status": "success",
+                                "video_id": video.id,
+                                "camera_id": self.camera.id,
+                            }
+                        }
+                    }
+                }
                 with (
                     patch.object(wa_webhook, "STATIC_VIDEO_DIR", root),
                     patch.object(wa_webhook, "get_current_timezone", return_value="UTC"),
                     patch.object(bot, "_selected_api_token", return_value="test-token"),
-                    patch.object(wa_webhook, "get_current_user", new=AsyncMock(return_value=self.user)),
+                    patch.object(
+                        wa_webhook, "get_current_user", new=AsyncMock(return_value=self.user)
+                    ),
                     self.assertRaises(ValueError),
                 ):
                     asyncio.run(bot._attach_response_video(command))
@@ -241,14 +285,26 @@ class VideoRecordAPITests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             (root / "video.mp4").write_bytes(b"video")
-            self.db.add(Video(id="protected-video", camera_id=self.camera.id,
-                              camera_name=self.camera.hostname, file_path="video.mp4"))
+            self.db.add(
+                Video(
+                    id="protected-video",
+                    camera_id=self.camera.id,
+                    camera_name=self.camera.hostname,
+                    file_path="video.mp4",
+                )
+            )
             self.db.commit()
             self.user.group_id = self.other_group.id
             bot = wa_webhook.WABotHandler(self.db)
-            bot.action_api_context = {"steps": {"data": {"body": {
-                "video_url": "/api/videos/secure/protected-video",
-            }}}}
+            bot.action_api_context = {
+                "steps": {
+                    "data": {
+                        "body": {
+                            "video_url": "/api/videos/secure/protected-video",
+                        }
+                    }
+                }
+            }
             with (
                 patch.object(wa_webhook, "STATIC_VIDEO_DIR", root),
                 patch.object(wa_webhook, "get_current_timezone", return_value="UTC"),
@@ -256,9 +312,13 @@ class VideoRecordAPITests(unittest.TestCase):
                 patch.object(wa_webhook, "get_current_user", new=AsyncMock(return_value=self.user)),
                 self.assertRaisesRegex(ValueError, "Access denied"),
             ):
-                asyncio.run(bot._attach_response_video({
-                    "response_video_source": "{{steps.data.body.video_url}}",
-                }))
+                asyncio.run(
+                    bot._attach_response_video(
+                        {
+                            "response_video_source": "{{steps.data.body.video_url}}",
+                        }
+                    )
+                )
             self.assertEqual(bot.outbound_items, [])
 
     def test_wait_endpoint_rejects_duplicate_ip_and_wrong_group(self) -> None:
@@ -278,25 +338,43 @@ class VideoRecordAPITests(unittest.TestCase):
             root = Path(folder)
             video_path = root / "recorded.mp4"
             video_path.write_bytes(b"test video")
-            self.db.add_all([
-                Video(id="recorded-video", camera_id=self.camera.id,
-                      camera_name=self.camera.hostname, file_path="recorded.mp4"),
-                WhatsappWhitelist(phone_number="628123456789", role=RoleEnum.admin),
-            ])
+            self.db.add_all(
+                [
+                    Video(
+                        id="recorded-video",
+                        camera_id=self.camera.id,
+                        camera_name=self.camera.hostname,
+                        file_path="recorded.mp4",
+                    ),
+                    WhatsappWhitelist(phone_number="628123456789", role=RoleEnum.admin),
+                ]
+            )
             self.db.commit()
             self.recorder.return_value = {
-                "status": "success", "video_id": "recorded-video", "media_type": "video",
-                "camera_id": self.camera.id, "hostname": self.camera.hostname, "duration": 30,
+                "status": "success",
+                "video_id": "recorded-video",
+                "media_type": "video",
+                "camera_id": self.camera.id,
+                "hostname": self.camera.hostname,
+                "duration": 30,
             }
             command = {
-                "trigger": "/record", "action": "api_flow", "role": "admin",
+                "trigger": "/record",
+                "action": "api_flow",
+                "role": "admin",
                 "response": "Video {{steps.data.body.hostname}}",
                 "response_type": "video",
                 "response_video_source": "{{steps.data.body.video_id}}",
-                "flow": normalize_flow([{
-                    "name": "data", "path": "/api/videos/record-and-wait", "method": "POST",
-                    "body": {"hostname": "{{argument}}", "duration": 30},
-                }]),
+                "flow": normalize_flow(
+                    [
+                        {
+                            "name": "data",
+                            "path": "/api/videos/record-and-wait",
+                            "method": "POST",
+                            "body": {"hostname": "{{argument}}", "duration": 30},
+                        }
+                    ]
+                ),
                 "processing_messages": [{"text": "Recording {{argument}}"}],
             }
             bot = wa_webhook.WABotHandler(self.db)
@@ -305,7 +383,9 @@ class VideoRecordAPITests(unittest.TestCase):
             with (
                 patch.dict(sys.modules, {"app.main": SimpleNamespace(app=self.app)}),
                 patch.object(wa_webhook, "get_command_settings", return_value=[command]),
-                patch.object(wa_webhook, "match_command", return_value=(command, self.camera.hostname)),
+                patch.object(
+                    wa_webhook, "match_command", return_value=(command, self.camera.hostname)
+                ),
                 patch.object(wa_webhook, "get_current_timezone", return_value="Asia/Makassar"),
                 patch.object(wa_webhook, "STATIC_VIDEO_DIR", root),
                 patch.object(wa_webhook, "log_audit"),
@@ -317,15 +397,21 @@ class VideoRecordAPITests(unittest.TestCase):
                 text_bot = wa_webhook.WABotHandler(self.db)
                 text_bot.progress_sender = AsyncMock()
                 with patch.object(text_bot, "_selected_api_token", return_value="test-token"):
-                    asyncio.run(text_bot.handle("628123456789", "/record CCTV-GATE-01", is_group=True))
+                    asyncio.run(
+                        text_bot.handle("628123456789", "/record CCTV-GATE-01", is_group=True)
+                    )
                 self.assertEqual(text_bot.outbound_items, [])
                 assert not text_bot.private_response
             self.assertFalse(bot.private_response)
             self.assertFalse(bot.action_failed)
             progress.assert_awaited_once()
-            self.assertEqual(bot.outbound_items, [{"video_path": str(video_path), "text": "Video CCTV-GATE-01"}])
+            self.assertEqual(
+                bot.outbound_items, [{"video_path": str(video_path), "text": "Video CCTV-GATE-01"}]
+            )
             gateway = Mock()
-            wa_webhook._send_wa_message_item(gateway, "record-group@g.us", bot.outbound_items[0], "command-id")
+            wa_webhook._send_wa_message_item(
+                gateway, "record-group@g.us", bot.outbound_items[0], "command-id"
+            )
             gateway.send_video_file.assert_called_once_with(
                 "record-group@g.us", str(video_path), "Video CCTV-GATE-01", reply_to="command-id"
             )

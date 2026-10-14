@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.5.0] - 2026-10-14
 
+### Added
+
+- Record HTTP(S) HLS `.m3u8` streams from the camera's Snapshot URL, including authentication and query strings, without requiring camera ping/ONVIF; preserve RTSP recording and watermarking.
+
 ### Changed
 
 - Added a per-command HD image-quality toggle for Capture New Snapshot and Send Latest Snapshot, including fallback images and scheduled delivery through GoWA.

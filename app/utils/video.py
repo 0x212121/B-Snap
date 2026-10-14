@@ -1,26 +1,30 @@
-import os
-import logging
 import asyncio
-import subprocess
-import uuid
-import shutil
+import json
+import logging
+import os
 import re
+import shutil
+import subprocess
+import tempfile
+import uuid
+
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, Tuple
+from urllib.parse import quote, urlparse, urlunparse
+
 from fastapi import Request
+from PIL import Image, ImageStat
 from sqlalchemy import text
+
 from app.core.logging_config import setup_logging
+from app.db.database import SessionLocal
 from app.models.camera import Camera
 from app.models.video import Video
+from app.utils.audit_logger import log_audit
 from app.utils.camera_onvif import get_rtsp_url
 from app.utils.network_utils import is_reachable
-from typing import Tuple, Dict, Any
-import json
-from app.db.database import SessionLocal
-from pathlib import Path
-from app.utils.audit_logger import log_audit
 from app.ws.manager import get_ws_connections
-import tempfile
-from PIL import Image, ImageStat
 
 # --- Basic Configuration ---
 STATIC_VIDEO_DIR = Path("static/videos")
@@ -41,22 +45,48 @@ def _ffprobe_executable() -> str | None:
     local = Path("ffprobe.exe").resolve()
     return shutil.which("ffprobe") or (str(local) if local.exists() else None)
 
-def _run_ffmpeg_sync(cmd: str, timeout: int = 150) -> Tuple[int, str, str]:
-    logger.info("Running FFMPEG command: %s", cmd)
+
+def _stream_input_args(url: str) -> list[str]:
+    """Apply TCP transport only to RTSP inputs, never HTTP/HLS."""
+    transport = ["-rtsp_transport", "tcp"] if urlparse(url).scheme.lower() == "rtsp" else []
+    return [*transport, "-i", url]
+
+
+def _hls_recording_url(camera: Camera) -> str | None:
+    """Reuse an HTTP(S) M3U8 snapshot source for recording, including query strings."""
+    url = (camera.snapshot_url or "").strip()
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return None
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.path.lower().endswith(".m3u8"):
+        return None
+    if not parsed.hostname:
+        return None
+    if camera.username and "@" not in parsed.netloc:
+        auth = f"{quote(camera.username, safe='')}:{quote(camera.password or '', safe='')}"
+        parsed = parsed._replace(netloc=f"{auth}@{parsed.netloc}")
+    return urlunparse(parsed)
+
+
+def _run_ffmpeg_sync(cmd: list[str], timeout: int = 150) -> Tuple[int, str, str]:
+    logger.info("Running FFMPEG recording")
     try:
         proc = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True,
-            encoding="utf-8", errors="ignore", timeout=timeout,
+            cmd,
+            shell=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+            timeout=timeout,
         )
     except subprocess.TimeoutExpired:
         return 1, "", "Video recording timed out"
     if proc.returncode != 0:
-        logger.error("FFMPEG Error (return code %d):\nSTDERR: %s", proc.returncode, proc.stderr)
+        logger.error("FFMPEG recording failed (return code %d)", proc.returncode)
     return proc.returncode, proc.stdout, proc.stderr
 
-
-import tempfile
-from PIL import Image, ImageStat
 
 def get_frame_brightness(rtsp_url: str) -> float:
     """Ambil satu frame dari RTSP untuk hitung kecerahan rata-rata (0–255)."""
@@ -66,12 +96,23 @@ def get_frame_brightness(rtsp_url: str) -> float:
             tmp_path = tmp.name
 
         # Ambil 1 frame di 0.5 detik pertama
-        subprocess.run([
-            "ffmpeg", "-rtsp_transport", "tcp",
-            "-y", "-i", rtsp_url,
-            "-frames:v", "1", "-ss", "0.5",
-            "-q:v", "5", tmp_path
-        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+        subprocess.run(
+            [
+                _ffmpeg_executable(),
+                "-y",
+                *_stream_input_args(rtsp_url),
+                "-frames:v",
+                "1",
+                "-ss",
+                "0.5",
+                "-q:v",
+                "5",
+                tmp_path,
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+        )
 
         if not os.path.exists(tmp_path) or os.path.getsize(tmp_path) < 10_000:
             raise RuntimeError("Frame capture failed or file too small")
@@ -82,7 +123,7 @@ def get_frame_brightness(rtsp_url: str) -> float:
         img.close()
         return brightness
     except Exception as e:
-        logger.warning(f"[Watermark] Gagal ambil frame brightness dari RTSP: {e}")
+        logger.warning("[Watermark] Frame brightness probe failed (%s)", type(e).__name__)
         return 128.0  # fallback netral
     finally:
         if tmp_path and os.path.exists(tmp_path):
@@ -92,7 +133,9 @@ def get_frame_brightness(rtsp_url: str) -> float:
                 pass
 
 
-def build_ffmpeg_watermark_cmd(rtsp_url: str, output_path: Path, duration: int, camera_name: str) -> str:
+def build_ffmpeg_watermark_cmd(
+    rtsp_url: str, output_path: Path, duration: int, camera_name: str
+) -> list[str]:
     """Buat command ffmpeg dengan watermark Liberation Sans, posisi tengah, warna adaptif & fallback aman."""
     # --- Ambil teks watermark dari config ---
     watermark_text = get_config_value("watermark_text", "Property of B-SNAP")
@@ -102,17 +145,23 @@ def build_ffmpeg_watermark_cmd(rtsp_url: str, output_path: Path, duration: int, 
     width, height = 1920, 1080  # default fallback
     try:
         meta_cmd = [
-            _ffprobe_executable() or "ffprobe", "-v", "error",
-            "-select_streams", "v:0",
-            "-show_entries", "stream=width,height",
-            "-of", "csv=p=0", rtsp_url
+            _ffprobe_executable() or "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height",
+            "-of",
+            "csv=p=0",
+            rtsp_url,
         ]
         meta_proc = subprocess.run(meta_cmd, capture_output=True, text=True, timeout=5)
         parts = meta_proc.stdout.strip().split(",")
         if len(parts) == 2:
             width, height = [int(x) for x in parts]
     except Exception as e:
-        logger.warning(f"[Watermark] Gagal ambil resolusi kamera: {e}")
+        logger.warning("[Watermark] Resolution probe failed (%s)", type(e).__name__)
 
     # --- Hitung font size agar lebar teks ~70% dari frame width ---
     char_estimate = max(len(text_combined) * 0.6, 1)
@@ -141,7 +190,9 @@ def build_ffmpeg_watermark_cmd(rtsp_url: str, output_path: Path, duration: int, 
     font_path = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
     if not os.path.exists(font_path):
         # fallback kalau font belum terinstall
-        logger.warning("[Watermark] LiberationSans-Regular.ttf tidak ditemukan, fallback ke DejaVuSans.")
+        logger.warning(
+            "[Watermark] LiberationSans-Regular.ttf tidak ditemukan, fallback ke DejaVuSans."
+        )
         font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
     # --- drawtext di tengah frame ---
@@ -154,11 +205,23 @@ def build_ffmpeg_watermark_cmd(rtsp_url: str, output_path: Path, duration: int, 
     )
 
     # --- Command ffmpeg final ---
-    return (
-        f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} '
-        f'-vf "{drawtext}" '
-        f'-c:v libx264 -preset veryfast -crf 23 -an "{output_path}"'
-    )
+    return [
+        _ffmpeg_executable(),
+        "-y",
+        *_stream_input_args(rtsp_url),
+        "-t",
+        str(duration),
+        "-vf",
+        drawtext,
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "23",
+        "-an",
+        str(output_path),
+    ]
 
 
 def get_video_metadata(file_path: str) -> Dict[str, Any]:
@@ -172,7 +235,16 @@ def get_video_metadata(file_path: str) -> Dict[str, Any]:
         if not ffprobe:
             raise FileNotFoundError("ffprobe executable not found")
         result = subprocess.run(
-            [ffprobe, "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", file_path],
+            [
+                ffprobe,
+                "-v",
+                "quiet",
+                "-print_format",
+                "json",
+                "-show_format",
+                "-show_streams",
+                file_path,
+            ],
             capture_output=True,
             text=True,
             check=True,
@@ -180,34 +252,30 @@ def get_video_metadata(file_path: str) -> Dict[str, Any]:
         )
         data = json.loads(result.stdout)
 
-        duration = float(data.get('format', {}).get('duration', 0))
+        duration = float(data.get("format", {}).get("duration", 0))
 
         width = height = 0
-        for stream in data.get('streams', []):
+        for stream in data.get("streams", []):
             if stream.get("codec_type") == "video":
                 width = stream.get("width", 0)
                 height = stream.get("height", 0)
                 break
 
-        return {
-            "duration": int(duration),
-            "size": size,
-            "width": width,
-            "height": height
-        }
+        return {"duration": int(duration), "size": size, "width": width, "height": height}
 
-    except (subprocess.SubprocessError, FileNotFoundError, json.JSONDecodeError, KeyError, ValueError) as e:
+    except (
+        subprocess.SubprocessError,
+        FileNotFoundError,
+        json.JSONDecodeError,
+        KeyError,
+        ValueError,
+    ) as e:
         logger.warning("ffprobe metadata failed for %s: %s; falling back to ffmpeg", file_path, e)
         fallback = _get_video_metadata_from_ffmpeg(file_path, size)
         if fallback:
             return fallback
         logger.error("Failed to get metadata for %s", file_path)
-        return {
-            "duration": 0,
-            "size": size,
-            "width": 0,
-            "height": 0
-        }
+        return {"duration": 0, "size": size, "width": 0, "height": 0}
 
 
 def _get_video_metadata_from_ffmpeg(file_path: str, size: int) -> Dict[str, Any] | None:
@@ -245,24 +313,38 @@ def _get_video_metadata_from_ffmpeg(file_path: str, size: int) -> Dict[str, Any]
         logger.warning("ffmpeg metadata fallback failed for %s: %s", file_path, e)
     return None
 
+
 def generate_thumbnail(video_path: str, output_thumb_path: str):
     """
     Generate thumbnail dengan retry & fallback time
     """
     for t in ["0.3", "0"]:
         try:
-            result = subprocess.run([
-                _ffmpeg_executable(),
-                "-y",
-                "-ss", t,
-                "-i", video_path,
-                "-frames:v", "1",
-                "-q:v", "2",
-                "-vf", "scale=320:-1",
-                output_thumb_path,
-            ], capture_output=True, text=True)
+            result = subprocess.run(
+                [
+                    _ffmpeg_executable(),
+                    "-y",
+                    "-ss",
+                    t,
+                    "-i",
+                    video_path,
+                    "-frames:v",
+                    "1",
+                    "-q:v",
+                    "2",
+                    "-vf",
+                    "scale=320:-1",
+                    output_thumb_path,
+                ],
+                capture_output=True,
+                text=True,
+            )
 
-            if result.returncode == 0 and os.path.exists(output_thumb_path) and os.path.getsize(output_thumb_path) > 0:
+            if (
+                result.returncode == 0
+                and os.path.exists(output_thumb_path)
+                and os.path.getsize(output_thumb_path) > 0
+            ):
                 logger.info(f"🖼️ Thumbnail generated ({t}s): {output_thumb_path}")
                 return True
             else:
@@ -278,6 +360,7 @@ def get_config_value(key: str, default: str = "") -> str:
     db = SessionLocal()
     try:
         from app.models.config import Configuration
+
         item = db.query(Configuration).filter_by(key=key).first()
         return item.value if item else default
     except Exception as e:
@@ -286,31 +369,37 @@ def get_config_value(key: str, default: str = "") -> str:
     finally:
         db.close()
 
+
 def detect_codec(rtsp_url: str) -> str:
     try:
         result = subprocess.run(
             [
                 _ffprobe_executable() or "ffprobe",
-                "-v", "error",
-                "-select_streams", "v:0",
-                "-show_entries", "stream=codec_name",
-                "-of", "default=noprint_wrappers=1:nokey=1",
-                rtsp_url
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=codec_name",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
+                rtsp_url,
             ],
             capture_output=True,
             text=True,
-            timeout=5
+            timeout=5,
         )
         return result.stdout.strip()
     except Exception as e:
-        logger.warning("Failed to detect codec for %s: %s", rtsp_url, e)
+        logger.warning("Failed to detect stream codec (%s)", type(e).__name__)
         return "unknown"
 
+
 async def record_video_and_save_db(
-        request: Request,
-        camera_id: str,
-        duration: int = 10,
-        actor_username: str | None = None,
+    request: Request,
+    camera_id: str,
+    duration: int = 10,
+    actor_username: str | None = None,
 ) -> Dict[str, Any]:
     def get_camera_sync() -> Camera:
         db = SessionLocal()
@@ -332,10 +421,14 @@ async def record_video_and_save_db(
     client_ip = request.client.host if request.client else "unknown"
 
     if not camera.group or not camera.group.name:
-        logger.error("Camera '%s' does not have a group. Cannot determine storage folder.", camera.hostname)
+        logger.error(
+            "Camera '%s' does not have a group. Cannot determine storage folder.", camera.hostname
+        )
         return {"status": "error", "message": "Camera has no group"}
 
-    reachable = await asyncio.to_thread(is_reachable, camera.ip)
+    hls_url = _hls_recording_url(camera)
+    # HTTP stream availability is determined by FFmpeg, not camera ICMP reachability.
+    reachable = bool(hls_url) or await asyncio.to_thread(is_reachable, camera.ip)
     if not reachable:
         msg = f"⚠️ [{camera.hostname}] unreachable (ping failed), skipping"
         logger.warning("%s", msg)
@@ -356,7 +449,7 @@ async def record_video_and_save_db(
         logger.warning("Deleting leftover file before recording: %s", output_path)
         output_path.unlink()
 
-    rtsp_url = await asyncio.to_thread(get_rtsp_url, camera)
+    rtsp_url = hls_url or await asyncio.to_thread(get_rtsp_url, camera)
     if not rtsp_url:
         logger.error("Failed to get RTSP URL for camera %s", camera.hostname)
         return {"status": "error", "message": "Failed to get RTSP URL"}
@@ -373,21 +466,44 @@ async def record_video_and_save_db(
         cmd = await asyncio.to_thread(
             build_ffmpeg_watermark_cmd, rtsp_url, output_path, duration, camera_name
         )
-        logger.info(f"Running watermark ffmpeg: {cmd}")
+        logger.info("Recording video with watermark for %s", camera_name)
     else:
-        if codec == "h264":
-            cmd = f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} -c:v copy -an "{temp_output}"'
-        elif codec in ["hevc", "h265"]:
-            cmd = f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} -c:v copy -an "{temp_output}"'
-        else:
-            cmd = f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} -c:v libx264 -preset veryfast -crf 23 -an "{temp_output}"'
+        encoding = (
+            ["-c:v", "copy"]
+            if codec in ["h264", "hevc", "h265"]
+            else ["-c:v", "libx264", "-preset", "veryfast", "-crf", "23"]
+        )
+        cmd = [
+            _ffmpeg_executable(),
+            "-y",
+            *_stream_input_args(rtsp_url),
+            "-t",
+            str(duration),
+            *encoding,
+            "-an",
+            str(temp_output),
+        ]
 
-    code, _, err = await asyncio.to_thread(_run_ffmpeg_sync, cmd)
+    code, _, _ = await asyncio.to_thread(_run_ffmpeg_sync, cmd)
 
     if code != 0 and codec in ["hevc", "h265"]:
         logger.warning("Remux failed for %s, falling back to re-encode...", camera.hostname)
-        cmd_fallback = f'ffmpeg -y -rtsp_transport tcp -i "{rtsp_url}" -t {duration} -c:v libx265 -preset ultrafast -crf 28 -an "{output_path}"'
-        code, _, err = await asyncio.to_thread(_run_ffmpeg_sync, cmd_fallback)
+        cmd_fallback = [
+            _ffmpeg_executable(),
+            "-y",
+            *_stream_input_args(rtsp_url),
+            "-t",
+            str(duration),
+            "-c:v",
+            "libx265",
+            "-preset",
+            "ultrafast",
+            "-crf",
+            "28",
+            "-an",
+            str(output_path),
+        ]
+        code, _, _ = await asyncio.to_thread(_run_ffmpeg_sync, cmd_fallback)
 
         # Clean up failed MKV if exists
         if temp_output.exists():
@@ -400,7 +516,7 @@ async def record_video_and_save_db(
             logger.info("Renamed %s to %s", temp_output.name, output_path.name)
 
     if code != 0:
-        logger.error("%s - FFMPEG Failed: %s", camera.hostname, err)
+        logger.error("%s - FFMPEG recording failed", camera.hostname)
         output_path.unlink(missing_ok=True)
         temp_output.unlink(missing_ok=True)
         return {"status": "error", "message": "FFMPEG process failed"}
@@ -415,11 +531,7 @@ async def record_video_and_save_db(
 
     thumb_path = output_path.with_suffix(".jpg")
 
-    success_thumb = await asyncio.to_thread(
-        generate_thumbnail,
-        str(output_path),
-        str(thumb_path)
-    )
+    success_thumb = await asyncio.to_thread(generate_thumbnail, str(output_path), str(thumb_path))
 
     if not success_thumb:
         logger.warning("⚠️ Thumbnail generation failed for %s", output_path)
@@ -428,6 +540,7 @@ async def record_video_and_save_db(
     file_hash = None
     try:
         import hashlib
+
         sha256_hash = hashlib.sha256()
         with open(output_path, "rb") as f:
             for byte_block in iter(lambda: f.read(4096), b""):
@@ -460,18 +573,20 @@ async def record_video_and_save_db(
             new_video_record = Video(**data)
             db.add(new_video_record)
 
-            payload = json.dumps({
-                "type": "record_complete",
-                "video_id": data["id"],
-                "camera_name": data["camera_name"],
-                "group": data["camera_group"],
-                "duration": data["duration"],
-                "file_size": data["file_size"],
-                "file_path": data["file_path"],
-                "video_url": f"/api/videos/secure/{data['id']}",
-                "thumb_url": f"/api/videos/secure/{data['id']}?thumb=true",
-                "source": "db_trigger"
-            })
+            payload = json.dumps(
+                {
+                    "type": "record_complete",
+                    "video_id": data["id"],
+                    "camera_name": data["camera_name"],
+                    "group": data["camera_group"],
+                    "duration": data["duration"],
+                    "file_size": data["file_size"],
+                    "file_path": data["file_path"],
+                    "video_url": f"/api/videos/secure/{data['id']}",
+                    "thumb_url": f"/api/videos/secure/{data['id']}?thumb=true",
+                    "source": "db_trigger",
+                }
+            )
             if db.get_bind().dialect.name == "postgresql":
                 db.execute(text("NOTIFY camera_notifications, :payload"), {"payload": payload})
             db.commit()
@@ -480,16 +595,16 @@ async def record_video_and_save_db(
                 db=db,
                 user=user_name,
                 action="create_video_record",
-                target=data['camera_name'],
+                target=data["camera_name"],
                 ip=ip,
-                extra="via cameras menu"
+                extra="via cameras menu",
             )
 
             logger.info("Video metadata saved: %s", data["id"])
             return True
         except Exception as e:
             db.rollback()
-            logger.error("Failed to save video metadata to DB for %s: %s", data['camera_name'], e)
+            logger.error("Failed to save video metadata to DB for %s: %s", data["camera_name"], e)
             return False
         finally:
             db.close()
@@ -510,9 +625,10 @@ async def record_video_and_save_db(
             "thumb_url": f"/api/videos/secure/{video_data['id']}?thumb=true",
         }
 
-        await asyncio.gather(*[
-            ws.send_text(json.dumps(message)) for ws in connections.copy()
-        ], return_exceptions=True)
+        await asyncio.gather(
+            *[ws.send_text(json.dumps(message)) for ws in connections.copy()],
+            return_exceptions=True,
+        )
 
         return {
             "status": "success",
