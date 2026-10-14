@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [2.5.0] - 2026-10-14
 
 ### Added
@@ -24,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserve authentication cookies and session data on temporary database/endpoint failures; return 503 without replaying requests, and rotate Remember Me tokens atomically.
 - Cleaned up Configuration route formatting, annotations, and unused imports while preserving admin authorization, validation, uploads, SMTP tests, and manual cleanup behavior.
 - Deliver recording completion popups once through the database notification queue, only to the user who started recording from the browser; suppress web popups for bot/API recordings and validate recipient sessions before delivery.
+- Stack toast notifications using their actual heights and consistent spacing; preserve center alignment, recalculate after resizing, and evict the oldest active toast correctly during bursts.
 
 ### Removed
 

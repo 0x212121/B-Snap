@@ -24,6 +24,7 @@
         defaultDuration: 5000,
         maxToasts: 5,
         animationDuration: 300,
+        gap: 16,
         positions: ['top-right', 'top-left', 'top-center', 'bottom-right', 'bottom-left', 'bottom-center']
     };
 
@@ -89,14 +90,15 @@
         toast.id = `toast-${id}`;
         toast.className = `
             toast-item fixed z-50 max-w-sm w-full shadow-lg rounded-lg pointer-events-auto 
-            transform transition-all duration-${CONFIG.animationDuration} 
+            transform
             border-l-4 ${typeConfig.borderClass} ${typeConfig.bgClass}
             dark:bg-gray-800 dark:text-white
         `;
         
         // Set initial position for animation
-        const isBottom = position.startsWith('bottom');
-        toast.style.transform = isBottom ? 'translateY(100%)' : 'translateY(-100%)';
+        toast.style.width = 'calc(100vw - 40px)';
+        toast.style.transition = `opacity ${CONFIG.animationDuration}ms, transform ${CONFIG.animationDuration}ms`;
+        toast.style.transform = toastTransform(position, true);
         toast.style.opacity = '0';
 
         // Build content
@@ -148,17 +150,21 @@
     /**
      * Position a toast element
      */
-    function positionToast(toast, position, index) {
-        const offset = index * 10; // Gap between toasts
-        const height = toast.offsetHeight + 16; // Height + margin
+    function toastTransform(position, hidden = false) {
+        if (position.endsWith('center')) return 'translateX(-50%)';
+        if (!hidden) return 'translateX(0)';
+        return position.endsWith('left') ? 'translateX(-100%)' : 'translateX(100%)';
+    }
+
+    function positionToast(toast, position, offset) {
         
         const positions = {
             'top-right': { top: `${20 + offset}px`, right: '20px', left: 'auto', bottom: 'auto' },
             'top-left': { top: `${20 + offset}px`, left: '20px', right: 'auto', bottom: 'auto' },
-            'top-center': { top: `${20 + offset}px`, left: '50%', transform: 'translateX(-50%)', right: 'auto', bottom: 'auto' },
+            'top-center': { top: `${20 + offset}px`, left: '50%', right: 'auto', bottom: 'auto' },
             'bottom-right': { bottom: `${20 + offset}px`, right: '20px', left: 'auto', top: 'auto' },
             'bottom-left': { bottom: `${20 + offset}px`, left: '20px', right: 'auto', top: 'auto' },
-            'bottom-center': { bottom: `${20 + offset}px`, left: '50%', transform: 'translateX(-50%)', right: 'auto', top: 'auto' }
+            'bottom-center': { bottom: `${20 + offset}px`, left: '50%', right: 'auto', top: 'auto' }
         };
 
         const pos = positions[position] || positions['top-right'];
@@ -170,10 +176,19 @@
      */
     function updatePositions(position) {
         const toasts = document.querySelectorAll(`.toast-item[data-position="${position}"]`);
-        toasts.forEach((toast, index) => {
-            positionToast(toast, position, index);
+        let offset = 0;
+        toasts.forEach(toast => {
+            positionToast(toast, position, offset);
+            offset += toast.offsetHeight + CONFIG.gap;
         });
     }
+
+    // Text wrapping and language changes can alter the height of existing toasts.
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => CONFIG.positions.forEach(updatePositions))
+        : null;
+    window.addEventListener('resize', () => CONFIG.positions.forEach(updatePositions));
+    window.addEventListener('bsnap:languagechange', () => CONFIG.positions.forEach(updatePositions));
 
     /**
      * Escape HTML to prevent XSS
@@ -204,7 +219,7 @@
         }
 
         const id = options.id || generateId();
-        const position = options.position || 'top-right';
+        const position = CONFIG.positions.includes(options.position) ? options.position : 'top-right';
         
         const toast = createToastElement({ ...options, id, position });
         toast.setAttribute('data-position', position);
@@ -220,11 +235,13 @@
         });
 
         // Position toast
-        positionToast(toast, position, document.querySelectorAll(`.toast-item[data-position="${position}"]`).length - 1);
+        updatePositions(position);
+        if (resizeObserver) resizeObserver.observe(toast);
 
         // Animate in
         requestAnimationFrame(() => {
-            toast.style.transform = position.startsWith('bottom') ? 'translateY(0)' : 'translateY(0)';
+            if (!activeToasts.has(id)) return;
+            toast.style.transform = toastTransform(position);
             toast.style.opacity = '1';
         });
 
@@ -260,20 +277,20 @@
         if (!toastData) return;
 
         const { element, timeout } = toastData;
+        activeToasts.delete(id);
         
         // Clear timeout
         if (timeout) clearTimeout(timeout);
 
         // Animate out
         const position = element.getAttribute('data-position');
-        const isBottom = position.startsWith('bottom');
-        element.style.transform = isBottom ? 'translateY(100%)' : 'translateY(-100%)';
+        element.style.transform = toastTransform(position, true);
         element.style.opacity = '0';
 
         // Remove after animation
         setTimeout(() => {
+            if (resizeObserver) resizeObserver.unobserve(element);
             element.remove();
-            activeToasts.delete(id);
             // Update positions for remaining toasts
             updatePositions(position);
         }, CONFIG.animationDuration);
