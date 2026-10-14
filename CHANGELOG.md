@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+
+### Added
+
+- Maps base-layer selector for OpenStreetMap streets, Esri satellite imagery, and dark-styled OpenStreetMap tiles, with saved browser preference, live EN/ID labels, and dark-mode controls.
+
+### Removed
+
+- Removed the Maps zone/site dropdown and client-side camera-group filtering.
+
 ## [2.5.0] - 2026-10-14
 
 ### Added

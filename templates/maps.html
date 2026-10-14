@@ -96,6 +96,16 @@
     z-index: 1;
   }
 
+  /* Only recolor base tiles; camera status colors and snapshots stay intact. */
+  .map-dark-tiles { filter: invert(1) hue-rotate(180deg) brightness(0.85) saturate(0.6); }
+  #map .leaflet-control-layers { font-family: inherit; font-size: 11px; }
+  #map .leaflet-control-layers-toggle { width: 30px; height: 30px; background-size: 20px 20px; }
+  #map .leaflet-control-layers-expanded { padding: 5px 7px; }
+  #map .leaflet-control-layers label { cursor: pointer; line-height: 20px; }
+  #map .leaflet-control-layers-selector { margin-top: 0; vertical-align: middle; }
+  .dark .leaflet-control-layers { background-color: #1f2937; color: #f3f4f6; border-color: #4b5563; }
+  .dark .leaflet-control-layers-toggle { background-color: #d1d5db; border-radius: 4px; }
+
   /* Dark mode for results container */
   .dark #search-results {
     background-color: #1f2937; /* gray-800 */
@@ -131,7 +141,55 @@
   document.addEventListener('DOMContentLoaded', function() {
     const map = L.map('map', { zoomDelta: 0.25, zoomSnap: 0, zoomControl: false, fullscreenControl: false }).setView([0.544447, 117.510262], 12);
     map.attributionControl.setPrefix('');
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
+    const osmAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+    const osmTileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+    const baseLayers = {
+      street: L.tileLayer(osmTileUrl, { attribution: osmAttribution, maxNativeZoom: 19, maxZoom: 20 }),
+      satellite: L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community',
+        maxNativeZoom: 19,
+        maxZoom: 18
+      }),
+      dark: L.tileLayer(osmTileUrl, {
+        attribution: osmAttribution,
+        className: 'map-dark-tiles',
+        maxNativeZoom: 19,
+        maxZoom: 20
+      })
+    };
+    let selectedBaseLayer = 'street';
+    try {
+      const saved = localStorage.getItem('bsnap.map.baseLayer');
+      if (Object.prototype.hasOwnProperty.call(baseLayers, saved)) selectedBaseLayer = saved;
+    } catch (_) { /* Map selection still works when storage is unavailable. */ }
+    baseLayers[selectedBaseLayer].addTo(map);
+
+    const baseLayerLabels = {
+      street: { en: 'Street (OpenStreetMap)', id: 'Jalan (OpenStreetMap)' },
+      satellite: { en: 'Satellite (Esri)', id: 'Satelit (Esri)' },
+      dark: { en: 'Dark (OpenStreetMap)', id: 'Gelap (OpenStreetMap)' }
+    };
+    const layerControl = L.control.layers({}, null, { position: 'topright' });
+    Object.entries(baseLayers).forEach(([key, layer]) => {
+      layerControl.addBaseLayer(layer, `<span data-map-base-label="${key}"></span>`);
+    });
+    // Add after the search and zoom controls below to keep their positions.
+    function updateBaseLayerLabels() {
+      const language = document.documentElement.lang === 'id' ? 'id' : 'en';
+      layerControl.getContainer().querySelectorAll('[data-map-base-label]').forEach(label => {
+        label.textContent = baseLayerLabels[label.dataset.mapBaseLabel][language];
+      });
+      const toggle = layerControl.getContainer().querySelector('.leaflet-control-layers-toggle');
+      const title = language === 'id' ? 'Pilih peta dasar' : 'Choose base map';
+      toggle.title = title;
+      toggle.setAttribute('aria-label', title);
+    }
+    map.on('baselayerchange', event => {
+      selectedBaseLayer = Object.keys(baseLayers).find(key => baseLayers[key] === event.layer);
+      try { localStorage.setItem('bsnap.map.baseLayer', selectedBaseLayer); } catch (_) { /* Optional preference. */ }
+      updateBaseLayerLabels();
+    });
+    window.addEventListener('bsnap:languagechange', updateBaseLayerLabels);
     
     // Search control
     L.Control.Search = L.Control.extend({
@@ -149,6 +207,8 @@
     
     L.control.zoom({ position: 'topright' }).addTo(map);
     L.control.fullscreen({ position: 'topright' }).addTo(map);
+    layerControl.addTo(map);
+    updateBaseLayerLabels();
     
     // Title, filter, stats controls
     L.Control.MapTitle = L.Control.extend({ onAdd: function () { const div = L.DomUtil.create('div', 'leaflet-control-map-title'); div.innerHTML = `<div class="custom-title-bar"><img src="/static/icons/logo.png" alt="Logo KPC" class="title-logo"><span class="title-text">${MAP_TITLE}</span></div>`; L.DomEvent.disableClickPropagation(div); return div; }, });
@@ -243,7 +303,6 @@
     let masterCameraData = []; // Stores all data from the server
     let allMarkers = [];       // Stores currently rendered marker objects for search
     let statusFilter = new Set(["Online", "High Latency", "Standalone", "Offline", "Maintenance"]);
-    
     const searchInput = document.getElementById('map-search-input');
     const searchResultsContainer = document.getElementById('search-results');
     
@@ -254,8 +313,9 @@
           searchResultsContainer.classList.add('hidden'); 
           return; 
       }
-      // Search from the master data source
-      const filtered = masterCameraData.filter(cam => cam.hostname.toLowerCase().includes(query) || cam.ip.toLowerCase().includes(query));
+      // Search only cameras represented by the current status filter.
+      const filtered = allMarkers.map(marker => marker.cameraData).filter(cam =>
+        cam.hostname.toLowerCase().includes(query) || (cam.ip || '').toLowerCase().includes(query));
       searchResultsContainer.innerHTML = '';
       if (filtered.length > 0) {
         filtered.slice(0, 10).forEach(cam => {
@@ -312,13 +372,15 @@
      * This function does NOT fetch data from the server.
      */
     function renderMarkers() {
+        searchResultsContainer.replaceChildren();
+        searchResultsContainer.classList.add('hidden');
         markerClusterGroup.clearLayers();
         allMarkers = [];
 
         if (!masterCameraData) return;
 
         let onlineCount = 0, offlineCount = 0, highLatencyCount = 0, maintenanceCount = 0, standaloneCount = 0;
-        let user_group = (masterCameraData.length > 0) ? masterCameraData[0].user_group : '';
+        const userGroup = masterCameraData[0]?.user_group || '';
 
         // First, calculate stats from the entire dataset
         masterCameraData.forEach(cam => {
@@ -335,7 +397,7 @@
             const normalized = normalizeStatus(cam.status);
             if (!statusFilter.has(normalized)) return; // Skip if not in filter
 
-            if (cam.lat && cam.lng && cam.restricted !== "Restricted") {
+            if (Number.isFinite(cam.lat) && Number.isFinite(cam.lng) && cam.restricted !== "Restricted") {
                 const color = normalized === "Online" ? "green"
                     : normalized === "High Latency" ? "orange"
                     : normalized === "Maintenance" ? "gray"
@@ -429,7 +491,7 @@
         });
 
         // Update stats panel
-        document.getElementById("user-group").textContent = user_group;
+        document.getElementById("user-group").textContent = userGroup;
         document.getElementById("stat-total").textContent = masterCameraData.length;
         document.getElementById("stat-online").textContent = onlineCount;
         document.getElementById("stat-offline").textContent = offlineCount;
@@ -465,7 +527,7 @@
      * Replaces the old refreshMapData function.
      */
     function fetchAndUpdateMap() {
-        fetch("/camera-locations")
+        fetch("/camera-locations", { headers: { Accept: 'application/json' } })
         .then(res => {
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             return res.json();
