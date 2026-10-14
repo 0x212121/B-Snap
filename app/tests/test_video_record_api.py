@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import sys
 import tempfile
 import unittest
@@ -24,7 +25,7 @@ from app.models.camera import Camera, camera_camera_groups
 from app.models.camera_group import CameraGroup
 from app.models.video import Video
 from app.models.whitelist import RoleEnum, WhatsappWhitelist
-from app.routes import videos, wa_webhook
+from app.routes import cameras, videos, wa_webhook
 from app.routes.auth import get_current_user
 from app.utils import video as video_utils
 from app.utils.wa_bot_workflow import normalize_flow
@@ -56,12 +57,19 @@ class VideoRecordAPITests(unittest.TestCase):
         self.db.add_all([self.camera, self.other_group])
         self.db.commit()
         self.user = SimpleNamespace(
-            username="api-operator", role="operator", group_id=self.group.id
+            id=7, username="api-operator", role="admin", group_id=self.group.id
         )
 
         app = FastAPI()
         app.add_middleware(SessionMiddleware, secret_key="video-record-test")
         app.include_router(videos.router)
+        app.include_router(cameras.router)
+
+        @app.get("/test-browser-session")
+        def browser_session(request: Request):
+            request.session["user_id"] = self.user.id
+            return {"status": "ok"}
+
         app.dependency_overrides[get_db] = lambda: self.db
         app.dependency_overrides[get_current_user] = lambda: self.user
         self.app = app
@@ -81,7 +89,13 @@ class VideoRecordAPITests(unittest.TestCase):
         self.assertEqual(response.json()["duration"], 30)
         self.recorder.assert_awaited_once()
         self.assertEqual(
-            self.recorder.call_args.kwargs, {"camera_id": self.camera.id, "duration": 30}
+            self.recorder.call_args.kwargs,
+            {
+                "camera_id": self.camera.id,
+                "duration": 30,
+                "actor_username": self.user.username,
+                "notification_user_id": None,
+            },
         )
         self.assertEqual(self.audit.call_args.kwargs["user"], "api-operator")
 
@@ -90,6 +104,53 @@ class VideoRecordAPITests(unittest.TestCase):
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.json()["duration"], 10)
         self.recorder.assert_awaited_once()
+
+    def test_browser_endpoint_targets_authenticated_user(self) -> None:
+        self.client.get("/test-browser-session")
+        self.client.cookies.set("session_token", "browser-token")
+        response = self.client.post(f"/videos/record/{self.camera.id}")
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(self.recorder.call_args.kwargs["notification_user_id"], self.user.id)
+
+    def test_api_recording_suppresses_popup_even_with_browser_cookies(self) -> None:
+        self.client.get("/test-browser-session")
+        self.client.cookies.set("session_token", "browser-token")
+        self.client.post("/api/videos/record", json={"ip": self.camera.ip})
+        self.assertIsNone(self.recorder.call_args.kwargs["notification_user_id"])
+
+    def test_bearer_recording_on_browser_endpoint_suppresses_popup(self) -> None:
+        self.client.get("/test-browser-session")
+        self.client.cookies.set("session_token", "browser-token")
+        self.client.post(
+            f"/videos/record/{self.camera.id}", headers={"Authorization": "Bearer test-token"}
+        )
+        self.assertIsNone(self.recorder.call_args.kwargs["notification_user_id"])
+
+    def test_camera_button_targets_browser_user_and_enforces_group(self) -> None:
+        other_group_id = self.other_group.id
+        camera_id = self.camera.id
+        self.client.get("/test-browser-session")
+        self.client.cookies.set("session_token", "browser-token")
+        request = Request(
+            {
+                "type": "http",
+                "session": {"user_id": self.user.id},
+                "headers": [(b"cookie", b"session_token=browser-token")],
+            }
+        )
+        with patch.object(cameras, "record_video_and_save_db", new_callable=AsyncMock) as record:
+
+            async def run_capture():
+                result = await cameras.capture_video(request, self.camera.id, self.db, self.user)
+                await asyncio.sleep(0)
+                return result
+
+            result = asyncio.run(run_capture())
+            self.assertEqual(result["status"], "success")
+            self.assertEqual(record.call_args.kwargs["notification_user_id"], self.user.id)
+        self.user.group_id = other_group_id
+        response = self.client.post(f"/capture_video/{camera_id}")
+        self.assertEqual(response.status_code, 403)
 
     def test_duplicate_ip_in_another_group_never_records(self) -> None:
         self.db.add(Camera(hostname="CCTV-OTHER", ip=self.camera.ip, groups=[self.other_group]))
@@ -176,10 +237,27 @@ class VideoRecordAPITests(unittest.TestCase):
         self.camera.ip = None
         self._check_recording_pipeline(hls=True)
 
-    def _check_recording_pipeline(self, *, hls: bool = False) -> None:
+    def test_browser_pipeline_publishes_one_targeted_database_event(self) -> None:
+        self._check_recording_pipeline(mock_postgres=True, notification_user_id=self.user.id)
+
+    def test_bot_pipeline_does_not_publish_database_event(self) -> None:
+        self._check_recording_pipeline(mock_postgres=True)
+
+    def _check_recording_pipeline(
+        self,
+        *,
+        hls: bool = False,
+        mock_postgres: bool = False,
+        notification_user_id: int | None = None,
+    ) -> None:
         self.camera.group = self.group
         self.db.commit()
         request = Request({"type": "http", "session": {}, "client": ("127.0.0.1", 1)})
+        save_db = Mock()
+        save_db.get_bind.return_value.dialect.name = "postgresql"
+        sessions = (
+            [Session(self.engine), save_db] if mock_postgres else lambda: Session(self.engine)
+        )
         with tempfile.TemporaryDirectory() as folder:
             target = []
 
@@ -195,7 +273,7 @@ class VideoRecordAPITests(unittest.TestCase):
 
             with (
                 patch.object(video_utils, "STATIC_VIDEO_DIR", Path(folder)),
-                patch.object(video_utils, "SessionLocal", side_effect=lambda: Session(self.engine)),
+                patch.object(video_utils, "SessionLocal", side_effect=sessions),
                 patch.object(video_utils, "is_reachable", return_value=not hls) as ping,
                 patch.object(
                     video_utils, "get_rtsp_url", return_value="rtsp://camera/test"
@@ -214,12 +292,14 @@ class VideoRecordAPITests(unittest.TestCase):
                     },
                 ),
                 patch.object(video_utils, "generate_thumbnail", return_value=True),
-                patch.object(video_utils, "get_ws_connections", return_value=[]),
                 patch.object(video_utils, "log_audit") as audit,
             ):
                 result = asyncio.run(
                     video_utils.record_video_and_save_db(
-                        request, self.camera.id, actor_username="api-operator"
+                        request,
+                        self.camera.id,
+                        actor_username="api-operator",
+                        notification_user_id=notification_user_id,
                     )
                 )
             if hls:
@@ -230,6 +310,19 @@ class VideoRecordAPITests(unittest.TestCase):
                 resolve.assert_called_once()
             self.assertEqual(result["status"], "success")
             self.assertEqual(result["media_type"], "video")
+            if mock_postgres:
+                save_db.commit.assert_called_once()
+                if notification_user_id is None:
+                    save_db.execute.assert_not_called()
+                else:
+                    save_db.execute.assert_called_once()
+                    sql, parameters = save_db.execute.call_args.args
+                    self.assertIn("pg_notify", str(sql))
+                    payload = json.loads(parameters["payload"])
+                    self.assertEqual(payload["recipient_user_id"], self.user.id)
+                    self.assertEqual(payload["source"], "browser")
+                    self.assertEqual(payload["video_id"], result["video_id"])
+                return
             saved = self.db.get(Video, result["video_id"])
             self.assertIsNotNone(saved)
             self.assertEqual(saved.camera_id, self.camera.id)

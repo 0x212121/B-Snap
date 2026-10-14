@@ -937,8 +937,14 @@
     };
     
     window.captureVideo = (cameraId) => {
-      fetch(`/capture_video/${encodeURIComponent(cameraId)}`, { method: 'POST' })
-      .then(res => res.json())
+      fetch(`/capture_video/${encodeURIComponent(cameraId)}`, {
+        method: 'POST', headers: { 'Accept': 'application/json' }
+      })
+      .then(async res => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.message || 'Failed to start video capture.');
+        return data;
+      })
       .then(data => {
         if (data.status === 'success') {
           if (typeof Toast !== 'undefined') Toast.success(data.message, { title: 'Success' });
@@ -1036,6 +1042,7 @@
       document.getElementById('snapshotModal').classList.add('hidden');
     };
     
+    const completedVideoIds = new Set();
     function setupWebSocket() {
       const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
       const socket = new WebSocket(`${protocol}://${location.host}/ws`);
@@ -1048,6 +1055,11 @@
         try {
           const data = JSON.parse(event.data);
           if (data.type === "record_complete") {
+            if (!data.video_id || completedVideoIds.has(data.video_id)) return;
+            completedVideoIds.add(data.video_id);
+            if (completedVideoIds.size > 500) {
+              completedVideoIds.delete(completedVideoIds.values().next().value);
+            }
             const fileSizeMB = (data.file_size / (1024 * 1024)).toFixed(2);
             const fileUrl = data.video_url || (data.video_id ? `/api/videos/secure/${encodeURIComponent(data.video_id)}` : '/videos');
             if (typeof Toast !== 'undefined') {

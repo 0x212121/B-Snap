@@ -386,11 +386,25 @@ def _queue_video_recording(
     background_tasks: BackgroundTasks,
     db: Session,
     current_operator: User,
+    *,
+    notify_browser: bool = False,
 ) -> JSONResponse:
     """Authorize and schedule a background recording."""
     _authorize_video_recording(request, camera, duration, db, current_operator)
     background_tasks.add_task(
-        record_video_and_save_db, request, camera_id=camera.id, duration=duration
+        record_video_and_save_db,
+        request,
+        camera_id=camera.id,
+        duration=duration,
+        actor_username=current_operator.username,
+        notification_user_id=(
+            current_operator.id
+            if notify_browser
+            and request.session.get("user_id") == current_operator.id
+            and request.cookies.get("session_token")
+            and not request.headers.get("authorization")
+            else None
+        ),
     )
     return JSONResponse(
         status_code=202,
@@ -470,14 +484,20 @@ async def start_recording_video(
     background_tasks: BackgroundTasks,
     duration: int = Query(10, ge=5, le=60),
     db: Session = Depends(get_db),
-    current_operator: User = Depends(operator_access_required)
+    current_operator: User = Depends(operator_access_required),
 ) -> JSONResponse:
     camera = db.query(Camera).filter(Camera.id == camera_id).first()
     if not camera:
         raise HTTPException(status_code=404, detail="Camera not found")
 
     return _queue_video_recording(
-        request, camera, duration, background_tasks, db, current_operator
+        request,
+        camera,
+        duration,
+        background_tasks,
+        db,
+        current_operator,
+        notify_browser=True,
     )
 
 

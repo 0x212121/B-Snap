@@ -242,16 +242,39 @@ async def add_camera_submit(
 
 
 @router.post("/capture_video/{camera_id}")
-async def capture_video(request: Request, camera_id: str, db: Session = Depends(get_db)):
+async def capture_video(
+    request: Request,
+    camera_id: str,
+    db: Session = Depends(get_db),
+    current_operator: User = Depends(operator_access_required),
+) -> dict[str, str]:
     """Triggers an async video recording from a specific camera."""
     try:
         camera = db.query(DBCamera).filter(DBCamera.id == camera_id).first()
         if not camera:
             logger.warning("Attempted to capture video from non-existent camera ID: %s", camera_id)
             return {"status": "error", "message": "Camera not found"}
-        
+
         logger.info("Triggering 5s video capture for camera '%s' (%s).", camera.hostname, camera_id)
-        asyncio.create_task(record_video_and_save_db(request, camera_id, 5))
+        if current_operator.group_id is not None and not any(
+            group.id == current_operator.group_id for group in camera.groups
+        ):
+            raise HTTPException(status_code=403, detail="Access denied to this camera")
+        asyncio.create_task(
+            record_video_and_save_db(
+                request,
+                camera_id,
+                5,
+                actor_username=current_operator.username,
+                notification_user_id=(
+                    current_operator.id
+                    if request.session.get("user_id") == current_operator.id
+                    and request.cookies.get("session_token")
+                    and not request.headers.get("authorization")
+                    else None
+                ),
+            )
+        )
         return {"status": "success", "message": f"🎥 Recording 5s video from {camera.hostname}..."}
     finally:
         db.close()

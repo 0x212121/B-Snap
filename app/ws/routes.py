@@ -1,5 +1,6 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.ws.manager import websocket_connections
+from app.ws.record_notifications import deliver_notification
 import asyncpg
 import asyncio
 import json
@@ -59,7 +60,7 @@ async def notification_listener(websockets: set):
 
                     for ws in list(websockets):
                         try:
-                            await ws.send_text(final_payload_str)
+                            await deliver_notification(ws, payload_data, final_payload_str)
                         except Exception:
                             pass
                 

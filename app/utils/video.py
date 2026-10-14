@@ -24,7 +24,6 @@ from app.models.video import Video
 from app.utils.audit_logger import log_audit
 from app.utils.camera_onvif import get_rtsp_url
 from app.utils.network_utils import is_reachable
-from app.ws.manager import get_ws_connections
 
 # --- Basic Configuration ---
 STATIC_VIDEO_DIR = Path("static/videos")
@@ -400,6 +399,8 @@ async def record_video_and_save_db(
     camera_id: str,
     duration: int = 10,
     actor_username: str | None = None,
+    *,
+    notification_user_id: int | None = None,
 ) -> Dict[str, Any]:
     def get_camera_sync() -> Camera:
         db = SessionLocal()
@@ -584,11 +585,15 @@ async def record_video_and_save_db(
                     "file_path": data["file_path"],
                     "video_url": f"/api/videos/secure/{data['id']}",
                     "thumb_url": f"/api/videos/secure/{data['id']}?thumb=true",
-                    "source": "db_trigger",
+                    "recipient_user_id": notification_user_id,
+                    "source": "browser",
                 }
             )
-            if db.get_bind().dialect.name == "postgresql":
-                db.execute(text("NOTIFY camera_notifications, :payload"), {"payload": payload})
+            if notification_user_id is not None and db.get_bind().dialect.name == "postgresql":
+                db.execute(
+                    text("SELECT pg_notify('camera_notifications', :payload)"),
+                    {"payload": payload},
+                )
             db.commit()
 
             log_audit(
@@ -612,24 +617,6 @@ async def record_video_and_save_db(
     success = await asyncio.to_thread(save_video_record_sync, video_data, user_name, client_ip)
 
     if success:
-        connections = get_ws_connections()
-        message = {
-            "type": "record_complete",
-            "camera_name": camera.hostname,
-            "group": group_name,
-            "duration": metadata.get("duration"),
-            "file_size": metadata.get("size"),
-            "file_path": db_file_path,
-            "video_id": video_data["id"],
-            "video_url": f"/api/videos/secure/{video_data['id']}",
-            "thumb_url": f"/api/videos/secure/{video_data['id']}?thumb=true",
-        }
-
-        await asyncio.gather(
-            *[ws.send_text(json.dumps(message)) for ws in connections.copy()],
-            return_exceptions=True,
-        )
-
         return {
             "status": "success",
             "message": "Video from %s was recorded and saved successfully." % camera.hostname,
