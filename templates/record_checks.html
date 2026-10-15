@@ -515,6 +515,28 @@ async function loadStatuses() {
   `).join('') : '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No folder status found.</td></tr>';
 }
 
+function renderRunSummary(run) {
+  if (run.status === 'fail' && !run.total_folders && !run.unknown_count) {
+    return '<span class="text-gray-500 dark:text-gray-400">No folder results available</span>';
+  }
+  const categories = [
+    ['healthy_count', 'Recent updates', 'success', 'Recording folders updated within the configured threshold.'],
+    ['stale_count', 'Updates overdue', 'warning', 'Recording folders not updated within the configured stale threshold.'],
+    ['long_dead_count', 'No updates for a long time', 'critical', 'Recording folders that reached the configured long-dead threshold.'],
+    ['unknown_count', 'Unknown / missing folders', 'warning', 'Includes folders with no known update time and newly missing folders. Missing folders may not be included in the folders found total.'],
+  ];
+  return `
+    <div class="max-w-sm space-y-2">
+      <div class="font-medium"><span>Folders found</span>: ${escapeHtml(run.total_folders ?? 0)}</div>
+      <div class="flex flex-wrap gap-1">
+        ${categories.map(([key, label, tone, explanation]) => `
+          <span class="ui-badge ui-badge-${run[key] > 0 ? tone : 'neutral'}" title="${escapeHtml(explanation)}">
+            <span>${escapeHtml(label)}</span>: <span>${escapeHtml(run[key] ?? 0)}</span>
+          </span>`).join('')}
+      </div>
+    </div>`;
+}
+
 async function loadRuns() {
   const params = new URLSearchParams();
   if (selectedSourceId) params.set('source_id', selectedSourceId);
@@ -530,10 +552,11 @@ async function loadRuns() {
       <td class="px-4 py-3 text-gray-600 dark:text-gray-300">${formatDate(run.started_at)}</td>
       <td class="px-4 py-3 text-gray-600 dark:text-gray-300">${escapeHtml(run.source)}</td>
       <td class="px-4 py-3">${statusBadge(run.status)}</td>
-      <td class="px-4 py-3 text-gray-600 dark:text-gray-300">H ${run.healthy_count} | S ${run.stale_count} | D ${run.long_dead_count} | U ${run.unknown_count} | T ${run.total_folders}</td>
+      <td class="px-4 py-3 text-gray-600 dark:text-gray-300">${renderRunSummary(run)}</td>
       <td class="px-4 py-3 text-red-600">${escapeHtml(run.error_message || '')}</td>
     </tr>
   `).join('') : '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No runs yet.</td></tr>';
+  window.BSnapI18n?.localize(document.getElementById('runs-body'));
   renderRunsPagination(pagination);
 }
 

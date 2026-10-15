@@ -5,61 +5,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased]
+## [2.5.0] - 2026-10-15
 
 ### Added
 
-- Maps snapshot click-to-live MJPEG previews with fullscreen, RTSP/ONVIF and configured HLS sources, authenticated group access, access audit, and FFmpeg cleanup on disconnect or timeout.
-
-- Maps historical Offline heatmap with 24-hour/7-day/30-day periods, group-restricted history, clipped ongoing incidents, incomplete-history feedback, localized timezone headers, and per-camera downtime details.
-- Maps Focus issues and All cameras buttons with automatic camera bounds, Offline/High Latency filtering, synchronized status checkboxes, live EN/ID labels, and feedback when no cameras can be located.
-- Maps base-layer selector for OpenStreetMap streets, Esri satellite imagery, and dark-styled OpenStreetMap tiles, with saved browser preference, live EN/ID labels, and dark-mode controls.
-
-### Fixed
-
-- Translate the complete audit-log retention notice in App Configuration when switching between English and Indonesian.
-
-- Show Maps live-view actions only for Online/High Latency cameras, keeping offline camera snapshots non-clickable.
-
-- Preserve WhatsApp group and personal JIDs in record-folder stale/missing/recovery notifications instead of stripping them into phone numbers, including checks across multiple sources.
-
-- Preserve live-preview failure HTTP status codes instead of converting 502/503 to 500; use the RTSP port independently of HTTP/ONVIF ports and apply RTSP-specific socket timeouts.
-- Add ACTi RTSP access-name fallbacks, an ONVIF camera-clock authentication retry, and explicit RTSP Snapshot URL support during live preview.
+- Maps live MJPEG previews from RTSP/ONVIF or configured HLS sources, with fullscreen, reconnect controls, admin/configuration gating, group access checks, access auditing, and FFmpeg cleanup.
+- Maps Offline heatmap for 24 hours, 7 days, or 30 days, with group-restricted history, ongoing-incident clipping, incomplete-history feedback, localized timezone headers, and camera downtime details.
+- Maps Focus issues/All cameras controls with automatic bounds and synchronized Offline/High Latency filters; saved street, satellite, and dark base layers with live EN/ID controls.
+- HLS `.m3u8` recording from Snapshot URLs with authentication/query support, without ping/ONVIF requirements; retained RTSP recording and watermarking.
 
 ### Changed
 
-- Add a Configuration → Appearance toggle for Maps Live View, restrict viewing to administrators, and recheck ongoing streams after configuration or role changes.
-- Simplify the Maps live viewer with a compact camera header, unobstructed video, icon controls, resolution footer, and inline reconnect state, including responsive light/dark and fullscreen layouts.
-
-### Removed
-
-- Removed the Maps zone/site dropdown and client-side camera-group filtering.
-
-## [2.5.0] - 2026-10-14
-
-### Added
-
-- Record HTTP(S) HLS `.m3u8` streams from the camera's Snapshot URL, including authentication and query strings, without requiring camera ping/ONVIF; preserve RTSP recording and watermarking.
-
-### Changed
-
-- Added a per-command HD image-quality toggle for Capture New Snapshot and Send Latest Snapshot, including fallback images and scheduled delivery through GoWA.
-- Added EN/ID examples of conditional `if`/`else` response formatting to the WhatsApp Bot Builder frontend.
-- Added `{{#if variable}}...{{else}}...{{/if}}` support to WhatsApp command response templates, including conditions inside `each` loops.
-- Added optional `include_without_ip=true` to `/api/cctv/resolve-ip` to include matching cameras with null or empty IP addresses while preserving access restrictions.
-- Sorted WhatsApp Show help command lists alphabetically by trigger, including custom response templates.
+- Added per-command HD snapshot delivery, including fallback images and GoWA schedules; conditional `if`/`else` templates inside `each` loops with EN/ID examples; alphabetically sorted help commands.
+- Added `include_without_ip=true` to `/api/cctv/resolve-ip` for cameras with missing IPs while preserving access restrictions.
+- Streamlined the Maps live viewer for responsive light/dark and fullscreen layouts, with a compact header, icon controls, and resolution footer.
+- Cleaned up Configuration routes while preserving authorization, validation, uploads, SMTP tests, and manual cleanup behavior.
+- Clarified Record Checks Recent Runs summaries with folder totals, labeled status badges, threshold explanations, and live EN/ID translations.
 
 ### Fixed
 
-- Dynamically display snapshot/video sizes and the Trash Management total in KB below 1024 KB and MB from 1024 KB onwards; convert raw byte values correctly and preserve numeric size sorting.
-- Preserve authentication cookies and session data on temporary database/endpoint failures; return 503 without replaying requests, and rotate Remember Me tokens atomically.
-- Cleaned up Configuration route formatting, annotations, and unused imports while preserving admin authorization, validation, uploads, SMTP tests, and manual cleanup behavior.
-- Deliver recording completion popups once through the database notification queue, only to the user who started recording from the browser; suppress web popups for bot/API recordings and validate recipient sessions before delivery.
-- Stack toast notifications using their actual heights and consistent spacing; preserve center alignment, recalculate after resizing, and evict the oldest active toast correctly during bursts.
+- Restricted Maps live-view actions to Online/High Latency cameras and rechecked active streams after configuration or role changes.
+- Preserved live-preview HTTP errors, separated RTSP/HTTP ports and timeouts, and added ACTi access-name fallbacks, ONVIF clock-authentication retry, and explicit RTSP Snapshot URL support.
+- Preserved WhatsApp group/personal JIDs in record-folder stale, missing, and recovery alerts across multiple sources.
+- Completed EN/ID translation of the App Configuration audit-log retention notice.
+- Corrected KB/MB sizes and numeric sorting in snapshot/video galleries and Trash Management.
+- Preserved sessions during temporary database/endpoint failures, returned 503 without replaying requests, and rotated Remember Me tokens atomically.
+- Delivered recording-completion popups once to the initiating browser user through the notification queue, with session validation and no bot/API web popups.
+- Corrected toast stacking, spacing, centering, resizing, and oldest-toast eviction during bursts.
 
 ### Removed
 
-- Removed Snapshot Interval from Configuration; snapshot scheduling is managed through Job Management, and saving configuration preserves the legacy interval fallback.
+- Removed Maps zone/site and client-side camera-group filters.
+- Removed Snapshot Interval from Configuration; Job Management controls scheduling while preserving the legacy interval fallback.
 
 ## [2.4.1] - 2026-10-13
 

@@ -1,5 +1,15 @@
 (function () {
   const translations = {
+    "Folders found": "Folder ditemukan",
+    "Recent updates": "Pembaruan terkini",
+    "Updates overdue": "Terlambat diperbarui",
+    "No updates for a long time": "Lama tidak diperbarui",
+    "Unknown / missing folders": "Folder tidak diketahui / hilang",
+    "No folder results available": "Hasil pemeriksaan folder belum tersedia",
+    "Recording folders updated within the configured threshold.": "Folder rekaman diperbarui dalam batas waktu yang dikonfigurasi.",
+    "Recording folders not updated within the configured stale threshold.": "Folder rekaman belum diperbarui dalam batas waktu keterlambatan yang dikonfigurasi.",
+    "Recording folders that reached the configured long-dead threshold.": "Folder rekaman yang mencapai batas waktu lama tidak diperbarui sesuai konfigurasi.",
+    "Includes folders with no known update time and newly missing folders. Missing folders may not be included in the folders found total.": "Mencakup folder dengan waktu pembaruan yang tidak diketahui dan folder yang baru hilang. Folder yang hilang mungkin tidak termasuk dalam jumlah folder ditemukan.",
     "Schedule recipient must be a WhatsApp phone number or group JID": "Penerima jadwal harus berupa nomor WhatsApp atau JID grup",
     "Group schedules require a whitelist execution phone number": "Jadwal grup memerlukan nomor whitelist untuk eksekusi",
     "Private-only commands cannot be scheduled to a WhatsApp group": "Command khusus chat pribadi tidak dapat dijadwalkan ke grup WhatsApp",
