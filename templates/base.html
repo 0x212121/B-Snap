@@ -407,7 +407,7 @@ class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 s
     
     <!-- Footer -->
     <div class="px-4 py-2 bg-gray-50 dark:bg-gray-700/30 border-t border-gray-200 dark:border-gray-700 text-center">
-      <span class="text-xs text-gray-500 dark:text-gray-400">Auto-refresh every 30s</span>
+      <span class="text-xs text-gray-500 dark:text-gray-400">Auto-refresh every 60s</span>
     </div>
   </div>
 </div>
@@ -424,10 +424,10 @@ function onlineUsersPopup() {
     
     init() {
       this.fetchData();
-      // Auto-refresh every 30 seconds
+      // Auto-refresh every 60 seconds
       this.refreshInterval = setInterval(() => {
         this.fetchData();
-      }, 30000);
+      }, 60000);
     },
     
     toggle() {

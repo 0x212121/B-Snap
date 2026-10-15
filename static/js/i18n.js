@@ -236,7 +236,7 @@
     "All Statuses": "Semua Status", "Active Jobs": "Tugas Aktif", "Recent Runs": "Eksekusi Terbaru",
     "Recent executions": "Eksekusi terbaru", "Job History": "Riwayat Tugas", "Job Logs Retention (days)": "Retensi Log Tugas (hari)",
     "Job Name": "Nama Tugas", "Next Run": "Eksekusi Berikutnya", "Last Test": "Uji Terakhir",
-    "Auto-refresh (5s)": "Muat ulang otomatis (5 dtk)", "Auto-refresh every 30s": "Muat ulang otomatis setiap 30 dtk",
+    "Auto-refresh (5s)": "Muat ulang otomatis (5 dtk)", "Auto-refresh every 60s": "Muat ulang otomatis setiap 60 dtk",
     "Connection Status": "Status Koneksi", "Health check is running...": "Pemeriksaan kesehatan sedang berjalan...",
     "Loading NVRs...": "Memuat NVR...", "Loading changelog...": "Memuat catatan perubahan...",
     "Loading dataset...": "Memuat dataset...", "Loading more snapshots...": "Memuat snapshot lainnya...",
