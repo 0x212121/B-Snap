@@ -281,6 +281,7 @@
     "Enter at least 8 characters": "Masukkan minimal 8 karakter", "Required": "Wajib", "Optional": "Opsional",
     "Please select both start and end dates": "Pilih tanggal mulai dan tanggal akhir",
     "Archived audit logs are retained and remain available in Archive History.": "Log audit yang diarsipkan tetap disimpan dan tersedia di Riwayat Arsip.",
+    "Archived audit logs are retained and remain available in Archive History. Scheduled and manual cleanup do not delete audit logs.": "Log audit yang diarsipkan tetap disimpan dan tersedia di Riwayat Arsip. Pembersihan terjadwal dan manual tidak menghapus log audit.",
     "Daily camera reports are sent at 08:00 AM.": "Laporan kamera harian dikirim pukul 08.00.",
     "Send alerts and status reports via WhatsApp using GoWA gateway": "Kirim peringatan dan laporan status melalui WhatsApp dengan gateway GoWA",
     "GoWA API endpoint (e.g., http://localhost:3000)": "Endpoint API GoWA (misalnya http://localhost:3000)",

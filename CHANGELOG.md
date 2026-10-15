@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Translate the complete audit-log retention notice in App Configuration when switching between English and Indonesian.
+
 - Show Maps live-view actions only for Online/High Latency cameras, keeping offline camera snapshots non-clickable.
 
 - Preserve WhatsApp group and personal JIDs in record-folder stale/missing/recovery notifications instead of stripping them into phone numbers, including checks across multiple sources.
