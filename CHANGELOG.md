@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Preserve WhatsApp group and personal JIDs in record-folder stale/missing/recovery notifications instead of stripping them into phone numbers, including checks across multiple sources.
+
 - Preserve live-preview failure HTTP status codes instead of converting 502/503 to 500; use the RTSP port independently of HTTP/ONVIF ports and apply RTSP-specific socket timeouts.
 - Add ACTi RTSP access-name fallbacks, an ONVIF camera-clock authentication retry, and explicit RTSP Snapshot URL support during live preview.
 

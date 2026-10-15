@@ -222,7 +222,8 @@ def _send_record_notification(
     errors = []
     sent = 0
     for phone in [p.strip() for p in receiver.split(",") if p.strip()]:
-        result = service.send_text(format_phone_number(phone), message)
+        recipient = phone if "@" in phone else format_phone_number(phone)
+        result = service.send_text(recipient, message)
         if result.get("success"):
             sent += 1
         else:
