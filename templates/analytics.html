@@ -351,6 +351,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', path='js/report-charts.js') }}"></script>
 <script>
 // Server timezone from backend
 const SERVER_TIMEZONE = "{{ server_timezone }}";
@@ -364,6 +365,8 @@ window.setAnalyticsTab = (tab) => {
 document.addEventListener("DOMContentLoaded", () => {
   // ==================== INSIGHTS/OVERVIEW TAB ====================
   let chart1, chart2, chartAvailability, chartIncidents;
+  const localizeReportCharts = () => [chart1, chart2, chartAvailability, chartIncidents].forEach(BSnapReportCharts.localize);
+  window.addEventListener('bsnap:languagechange', localizeReportCharts);
   
   // Initial date range using server timezone
   const now = new Date();
@@ -619,6 +622,7 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         downtimeBody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-500">No monitored downtime data</td></tr>';
       }
+      localizeReportCharts();
       setOverviewStatus('');
     } catch (err) {
       console.error('Error loading insights:', err);
@@ -640,6 +644,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById('downloadReport')) {
     document.getElementById('downloadReport').addEventListener('click', async () => {
       try {
+        localizeReportCharts();
         const s = document.getElementById('startDate').value;
         const e = document.getElementById('endDate').value;
         const apiChartEl = document.getElementById('chartApiCommand');
@@ -657,6 +662,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const availabilityImg = availabilityChartEl.toDataURL("image/png");
         const incidentsImg = incidentsChartEl.toDataURL("image/png");
         const fd = new FormData();
+        fd.append("language", document.documentElement.lang === "id" ? "id" : "en");
         fd.append("start_date", s);
         fd.append("end_date", e);
         fd.append("api_chart", apiImg);

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.log import ApiLog, CommandLog
 from app.utils.api_daily_stats import api_daily_counts
+from app.utils.insights_report_locale import InsightsReportLocale
 from app.models.camera_email_notification_log import CameraEmailNotificationLog
 from app.models.camera_group import CameraGroup
 from app.utils.template_helper import templates
@@ -26,7 +27,6 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Image as RLImage
-from reportlab.lib.utils import ImageReader
 import os
 
 # Get project root directory for resolving static files
@@ -384,6 +384,8 @@ async def get_executive_report_pro(
     Generate professional PDF report with embedded charts and formal executive narration.
     """
     form = await request.form()
+    locale = InsightsReportLocale(form.get("language", "en"))
+    t, number = locale.text, locale.number
     api_chart = form.get("api_chart")
     email_chart = form.get("email_chart")
     topcmd_chart = form.get("topcmd_chart")
@@ -405,7 +407,10 @@ async def get_executive_report_pro(
     # --- Data Retrieval ---
     start_dt, end_dt, prev_start, prev_end = _parse_range(start_date, end_date, db)
     report_timezone = _local_tz(db)
-    operations_start_date = start_dt.astimezone(report_timezone).date()
+    local_start = start_dt.astimezone(report_timezone)
+    local_end = end_dt.astimezone(report_timezone)
+    period = f"{locale.date(local_start)} - {locale.date(local_end)} ({local_start:%Z})"
+    operations_start_date = local_start.date()
     operations_end_date = end_dt.astimezone(report_timezone).date()
     operations = await get_camera_operations_data(
         request,
@@ -453,40 +458,37 @@ async def get_executive_report_pro(
     top_cam = get_top_cameras_by_email(db, start_date, end_date, limit=5)
 
     def pct_phrase(value: float) -> str:
-        """Convert delta% to readable text like 'meningkat 12.3%' or 'menurun 5.6%'."""
         if value > 0.2:
-            return f"meningkat {value:.1f}%"
-        elif value < -0.2:
-            return f"menurun {abs(value):.1f}%"
-        return "stabil"
+            return t("increased by {value}%", value=number(value, 1))
+        if value < -0.2:
+            return t("decreased by {value}%", value=number(abs(value), 1))
+        return t("remained stable")
 
-    # --- Executive Summary (formal style) ---
-    summary_text = (
-        f"Selama periode {start_dt.strftime('%d %B %Y')} hingga {end_dt.strftime('%d %B %Y')}, "
-        f"sistem B-SNAP mencatat total {totals['api']:,} panggilan API, "
-        f"{totals['command']:,} eksekusi perintah, dan "
-        f"{totals['email']:,} email notifikasi terkirim. "
-        f"Dibandingkan periode sebelumnya, aktivitas API {pct_phrase(deltas['api'])}, "
-        f"eksekusi perintah {pct_phrase(deltas['command'])}, dan "
-        f"notifikasi email {pct_phrase(deltas['email'])}. "
-        f"Indeks tren aktivitas berada pada nilai {hi['value']}/100 dengan tren {hi['label'].lower()}."
+    summary_text = t(
+        "During {start} to {end}, B-SNAP recorded {api} API calls, {commands} command executions, "
+        "and {emails} email notifications. Compared with the previous period, API activity {api_change}, "
+        "command executions {command_change}, and email notifications {email_change}. "
+        "The activity trend index is {index}/100 ({trend}).",
+        start=locale.date(local_start), end=locale.date(local_end),
+        api=number(api_now), commands=number(cmd_now), emails=number(email_now),
+        api_change=pct_phrase(api_delta), command_change=pct_phrase(cmd_delta),
+        email_change=pct_phrase(email_delta), index=number(idx), trend=t(label).lower(),
     )
-
     highlights = [
-        f"API Calls: {pct_phrase(deltas['api']).capitalize()} dibanding periode sebelumnya.",
-        f"Commands Executed: {pct_phrase(deltas['command']).capitalize()} dibanding periode sebelumnya.",
-        f"Email Notifications: {pct_phrase(deltas['email']).capitalize()} dibanding periode sebelumnya.",
+        t("{metric}: {change} compared with the previous period.",
+          metric=t(metric), change=pct_phrase(value).capitalize())
+        for metric, value in [("API Calls", api_delta), ("Commands Executed", cmd_delta),
+                              ("Email Notifications", email_delta)]
     ]
-
     top_command_txt = (
-        f"Perintah yang paling sering dieksekusi adalah “{top_cmd[0]['command']}” "
-        f"dengan total {top_cmd[0]['count']} kali eksekusi."
-        if top_cmd else "Tidak terdapat data perintah untuk periode ini."
+        t("Most executed command: {name}, with {count} executions.",
+          name=escape(top_cmd[0]["command"]), count=number(top_cmd[0]["count"]))
+        if top_cmd else t("No command data for this period.")
     )
     top_camera_txt = (
-        f"Kamera dengan notifikasi email terbanyak adalah “{top_cam[0]['camera_name']}” "
-        f"dengan {top_cam[0]['count']} pengiriman."
-        if top_cam else "Tidak terdapat data kamera untuk periode ini."
+        t("Camera with the most email notifications: {name}, with {count} deliveries.",
+          name=escape(top_cam[0]["camera_name"]), count=number(top_cam[0]["count"]))
+        if top_cam else t("No camera data for this period.")
     )
 
     # --- Build PDF ---
@@ -500,9 +502,9 @@ async def get_executive_report_pro(
         rightMargin=2 * cm,
     )
 
-    doc.title = f"B-SNAP Executive Report – {start_dt.date()} to {end_dt.date()}"
-    doc.author = "B-SNAP Automated Observability System"
-    doc.subject = "Executive Summary and Key Metrics Report"
+    doc.title = f"{t('B-SNAP Executive Report')} - {period}"
+    doc.author = t("B-SNAP Automated Observability System")
+    doc.subject = t("Executive Summary and Key Metrics Report")
     styles = getSampleStyleSheet()
     elems = []
 
@@ -513,39 +515,39 @@ async def get_executive_report_pro(
             elems.append(RLImage(logo_path, width=3 * cm, height=3 * cm))
     except Exception:
         pass
-    report_title = f"B-SNAP Executive Report"
+    report_title = t("B-SNAP Executive Report")
     elems.append(Paragraph(report_title, styles["Title"]))
-    elems.append(Paragraph(f"Periode: {start_dt.date()} – {end_dt.date()}", styles["Normal"]))
-    group_label = escape(camera_group.name) if camera_group else "Semua grup"
+    elems.append(Paragraph(f"{t('Period')}: {period}", styles["Normal"]))
+    group_label = escape(camera_group.name) if camera_group else t("All groups")
     elems.append(Paragraph(
-        f"Cakupan metrik kamera: {group_label}. Metrik aktivitas sistem dihitung secara global.",
+        t("Camera metrics scope: {group}. System activity metrics are global.", group=group_label),
         styles["Normal"],
     ))
     elems.append(Spacer(1, 0.5 * cm))
 
     # --- Executive Summary Section ---
-    elems.append(Paragraph("<b>Executive Summary</b>", styles["Heading2"]))
+    elems.append(Paragraph(f"<b>{t('Executive Summary')}</b>", styles["Heading2"]))
     elems.append(Paragraph(summary_text, styles["Normal"]))
     elems.append(Spacer(1, 0.3 * cm))
 
     # --- Key Highlights Section ---
-    elems.append(Paragraph("<b>Key Highlights</b>", styles["Heading3"]))
+    elems.append(Paragraph(f"<b>{t('Key Highlights')}</b>", styles["Heading3"]))
     for h in highlights:
         elems.append(Paragraph(f"• {h}", styles["Normal"]))
     elems.append(Spacer(1, 0.3 * cm))
 
     # --- Top Performers Section ---
-    elems.append(Paragraph("<b>Top Performers</b>", styles["Heading3"]))
+    elems.append(Paragraph(f"<b>{t('Top Performers')}</b>", styles["Heading3"]))
     elems.append(Paragraph(top_command_txt, styles["Normal"]))
     elems.append(Paragraph(top_camera_txt, styles["Normal"]))
     elems.append(Spacer(1, 0.6 * cm))
 
     # --- KPI Table ---
     kpi_data = [
-        ["Metric", "Current", "Previous", "Δ %"],
-        ["API Calls", f"{totals['api']:,}", f"{previous['api']:,}", f"{deltas['api']:.1f}%"],
-        ["Commands", f"{totals['command']:,}", f"{previous['command']:,}", f"{deltas['command']:.1f}%"],
-        ["Emails", f"{totals['email']:,}", f"{previous['email']:,}", f"{deltas['email']:.1f}%"],
+        [t("Metric"), t("Current"), t("Previous"), t("Change %")],
+        [t("API Calls"), number(totals["api"]), number(previous["api"]), f"{number(deltas['api'], 1)}%"],
+        [t("Commands"), number(totals["command"]), number(previous["command"]), f"{number(deltas['command'], 1)}%"],
+        [t("Emails"), number(totals["email"]), number(previous["email"]), f"{number(deltas['email'], 1)}%"],
     ]
     kpi_tbl = Table(kpi_data, colWidths=[5 * cm, 3 * cm, 3 * cm, 3 * cm])
     kpi_tbl.setStyle(TableStyle([
@@ -558,14 +560,14 @@ async def get_executive_report_pro(
     ]))
     elems.append(kpi_tbl)
     elems.append(Spacer(1, 0.2 * cm))
-    elems.append(Paragraph("<i>Note: Δ% calculated per-day average basis</i>", styles["Normal"]))
+    elems.append(Paragraph(f"<i>{t('Note: Change % is calculated using daily averages')}</i>", styles["Normal"]))
     elems.append(Spacer(1, 0.5 * cm))
 
     # --- Activity Trend Index ---
     color_map = {"blue": colors.blue, "amber": colors.orange, "gray": colors.grey}
     color = color_map.get(hi["color"], colors.grey)
     hi_tbl = Table(
-        [["Activity Trend Index", f"{hi['value']}/100 – {hi['label']}"]],
+        [[t("Activity Trend Index"), f"{number(hi['value'])}/100 - {t(hi['label'])}"]],
         colWidths=[6 * cm, 8 * cm],
         style=[
             ("BACKGROUND", (0, 0), (0, 0), color),
@@ -586,10 +588,10 @@ async def get_executive_report_pro(
         total_uptime_seconds / monitored_seconds * 100 if monitored_seconds else None
     )
     operations_data = [
-        ["Camera Operations", "Selected period"],
-        ["Availability", f"{availability_value:.2f}%" if availability_value is not None else "No monitoring data"],
-        ["Monitored downtime", f"{total_downtime_seconds / 3600:.2f} hours" if monitored_seconds else "No monitoring data"],
-        ["Offline transitions", f"{operations['total_offline_incidents']:,}"],
+        [t("Camera Operations"), t("Selected period")],
+        [t("Availability"), f"{number(availability_value, 2)}%" if availability_value is not None else t("No monitoring data")],
+        [t("Monitored downtime"), f"{number(total_downtime_seconds / 3600, 2)} {t('hours')}" if monitored_seconds else t("No monitoring data")],
+        [t("Offline transitions"), number(operations["total_offline_incidents"])],
     ]
     operations_table = Table(operations_data, colWidths=[7 * cm, 7 * cm])
     operations_table.setStyle(TableStyle([
@@ -599,7 +601,7 @@ async def get_executive_report_pro(
         ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
         ("BOX", (0, 0), (-1, -1), 0.5, colors.grey),
     ]))
-    elems.append(Paragraph("<b>Camera Operations Summary</b>", styles["Heading2"]))
+    elems.append(Paragraph(f"<b>{t('Camera Operations Summary')}</b>", styles["Heading2"]))
     elems.append(operations_table)
     elems.append(Spacer(1, 0.5 * cm))
 
@@ -610,26 +612,25 @@ async def get_executive_report_pro(
         try:
             import base64
             imgdata = base64.b64decode(b64_str.split(",")[1])
-            reader = ImageReader(BytesIO(imgdata))
-            elems.append(RLImage(reader, width=14 * cm, height=7 * cm))
+            elems.append(RLImage(BytesIO(imgdata), width=14 * cm, height=7 * cm))
             elems.append(Paragraph(caption, styles["Normal"]))
             elems.append(Spacer(1, 0.4 * cm))
         except Exception:
             logger.exception("Chart embedding failed")
 
-    add_chart(api_chart, "API vs Command Logs (Daily Trend)")
-    add_chart(email_chart, "Email Notifications (Daily Count)")
-    add_chart(topcmd_chart, "Top 10 Most Executed Commands")
-    add_chart(availability_chart, f"Camera Availability and Downtime ({group_label})")
-    add_chart(incidents_chart, f"Offline Transitions ({group_label})")
+    add_chart(api_chart, t("API vs Command Logs (Daily Trend)"))
+    add_chart(email_chart, t("Email Notifications (Daily Count)"))
+    add_chart(topcmd_chart, t("Top 10 Most Executed Commands"))
+    add_chart(availability_chart, f"{t('Camera Availability and Downtime')} ({group_label})")
+    add_chart(incidents_chart, f"{t('Offline Transitions')} ({group_label})")
 
-    elems.append(Paragraph("<b>Top Cameras by Downtime</b>", styles["Heading3"]))
-    downtime_data = [["Camera", "Downtime (hours)", "Availability"]]
+    elems.append(Paragraph(f"<b>{t('Top Cameras by Downtime')}</b>", styles["Heading3"]))
+    downtime_data = [[t("Camera"), t("Downtime (hours)"), t("Availability")]]
     downtime_data.extend([
         [
             row["camera_name"],
-            f'{row["downtime_hours"]:.2f}',
-            f'{row["availability"]:.2f}%' if row["availability"] is not None else "No data",
+            number(row["downtime_hours"], 2),
+            number(row["availability"], 2) + "%" if row["availability"] is not None else t("No data"),
         ]
         for row in operations["top_downtime_cameras"]
     ])
@@ -645,8 +646,8 @@ async def get_executive_report_pro(
     elems.append(Spacer(1, 0.5 * cm))
 
     # --- Top Tables ---
-    elems.append(Paragraph("<b>Top 5 Cameras by Email (Global)</b>", styles["Heading3"]))
-    cam_data = [["Camera", "Emails"]] + [[r["camera_name"], f'{r["count"]:,}'] for r in top_cam]
+    elems.append(Paragraph(f"<b>{t('Top 5 Cameras by Email (Global)')}</b>", styles["Heading3"]))
+    cam_data = [[t("Camera"), t("Emails")]] + [[r["camera_name"], number(r["count"])] for r in top_cam]
     cam_tbl = Table(cam_data, colWidths=[9 * cm, 5 * cm])
     cam_tbl.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
@@ -658,8 +659,8 @@ async def get_executive_report_pro(
     elems.append(cam_tbl)
     elems.append(Spacer(1, 0.4 * cm))
 
-    elems.append(Paragraph("<b>Top 10 Commands</b>", styles["Heading3"]))
-    cmd_data = [["Command", "Count"]] + [[r["command"], f'{r["count"]:,}'] for r in top_cmd]
+    elems.append(Paragraph(f"<b>{t('Top 10 Commands')}</b>", styles["Heading3"]))
+    cmd_data = [[t("Command"), t("Count")]] + [[r["command"], number(r["count"])] for r in top_cmd]
     cmd_tbl = Table(cmd_data, colWidths=[9 * cm, 5 * cm])
     cmd_tbl.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
@@ -672,13 +673,13 @@ async def get_executive_report_pro(
     elems.append(Spacer(1, 0.5 * cm))
 
     elems.append(Paragraph(
-        "Generated automatically by B-SNAP Insights Module • Confidential",
+        t("Generated automatically by B-SNAP Insights Module - Confidential"),
         styles["Normal"]
     ))
 
     doc.build(elems)
     buf.seek(0)
-    filename = f"b-snap-report-pro_{start_dt.date()}_{end_dt.date()}.pdf"
+    filename = f"b-snap-report-pro_{local_start.date()}_{local_end.date()}.pdf"
     return StreamingResponse(
         buf,
         media_type="application/pdf",

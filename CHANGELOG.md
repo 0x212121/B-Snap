@@ -33,10 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Delivered recording-completion popups once to the initiating browser user through the notification queue, with session validation and no bot/API web popups.
 - Corrected toast stacking, spacing, centering, resizing, and oldest-toast eviction during bursts.
 - Recover interrupted job and recording-check executions as failed before scheduler startup, and reset stale health-check progress after service/container restarts while preserving partial results.
+- Localized downloaded Insights PDF reports and embedded chart labels for the selected EN/ID language, with localized numbers and configured-timezone period headers.
+- Fixed chart embedding in downloaded Insights PDF reports by passing image streams directly to ReportLab.
 
 ### Removed
 
-- Removed Maps zone/site and client-side camera-group filters.
 - Removed Snapshot Interval from Configuration; Job Management controls scheduling while preserving the legacy interval fallback.
 
 ## [2.4.1] - 2026-10-13
@@ -51,7 +52,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Completed EN/ID gallery feedback and shared dialogs, including Bot Builder details and live language updates.
 - Prevented Audit Logs advanced filters from squeezing or shifting the main controls when expanded, with responsive wrapping.
 - Fixed Audit Logs CSV export returning 404 by generating the download URL from the registered backend route.
-
 - Added the CIFS helper's required `DAC_READ_SEARCH` capability to the native recording mount overlay and AppArmor profile, preventing capability setup failures before SMB mounts.
 
 ## [2.4.0] - 2026-10-12

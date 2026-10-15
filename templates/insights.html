@@ -172,9 +172,12 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', path='js/report-charts.js') }}"></script>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
     let chart1, chart2;
+    const localizeReportCharts = () => [chart1, chart2].forEach(BSnapReportCharts.localize);
+    window.addEventListener('bsnap:languagechange', localizeReportCharts);
     
     // === INITIAL DATE RANGE ===
     const today = new Date();
@@ -257,6 +260,7 @@
         options: { scales: { y: { beginAtZero: true } } }
       });
       
+      localizeReportCharts();
       // === TOP COMMANDS ===
       renderTopCommandsChartAndList(topCmd);
       
@@ -286,10 +290,12 @@
         applyFilter.addEventListener("click", renderAll);
         downloadReport.addEventListener("click", async () => {
           try {
+            localizeReportCharts();
             const s = startDate.value, e = endDate.value;
             const apiImg = chartApiCommand.toDataURL("image/png");
             const emailImg = chartEmail.toDataURL("image/png");
             const fd = new FormData();
+            fd.append("language", document.documentElement.lang === "id" ? "id" : "en");
             fd.append("start_date", s);
             fd.append("end_date", e);
             fd.append("api_chart", apiImg);
@@ -320,4 +326,3 @@
       });
     </script>
     {% endblock %}
-    
