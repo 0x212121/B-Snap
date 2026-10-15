@@ -209,7 +209,8 @@
   document.addEventListener('DOMContentLoaded', function() {
     const liveViewEnabled = document.getElementById('map').dataset.liveViewEnabled === 'true';
     function showCameraPreview(container, url, camera) {
-      if (liveViewEnabled) {
+      const status = normalizeStatus(camera.status);
+      if (liveViewEnabled && (status === 'Online' || status === 'High Latency')) {
         BSnapMapLive.preview(container, url, camera);
         return;
       }
