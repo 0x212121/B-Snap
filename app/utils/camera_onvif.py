@@ -37,11 +37,11 @@ def _mask_password_in_url(url: str) -> str:
     return url
 
 
-def get_rtsp_url(camera: Camera):
-    """Ambil RTSP URL kamera Hikvision, fallback ke ONVIF jika perlu."""
+def get_rtsp_url(camera: Camera, *, rtsp_port: int | None = None, try_acti: bool = False):
+    """Resolve Hikvision/ONVIF streams, optionally trying ACTi live access names."""
     encoded_user = quote(camera.username or "", safe="")
     encoded_pass = quote(camera.password or "", safe="")
-    base = f"rtsp://{encoded_user}:{encoded_pass}@{camera.ip}:{camera.port or 554}"
+    base = f"rtsp://{encoded_user}:{encoded_pass}@{camera.ip}:{rtsp_port or camera.port or 554}"
 
     # --- 1. Coba template default Hikvision ---
     hikvision_candidates = [
@@ -60,27 +60,45 @@ def get_rtsp_url(camera: Camera):
             return url
 
     # --- 2. Fallback ke ONVIF ---
-    try:
-        cam = ONVIFCamera(camera.ip, camera.port, camera.username, camera.password)
-        media_service = cam.create_media_service()
-        profile = media_service.GetProfiles()[0]
+    # Retry using the camera clock for WSSE timestamps; never change its clock.
+    for adjust_time in ((False, True) if try_acti else (False,)):
+        try:
+            cam = ONVIFCamera(camera.ip, camera.port, camera.username, camera.password, adjust_time=adjust_time)
+            media_service = cam.create_media_service()
+            profile = media_service.GetProfiles()[0]
 
-        uri = media_service.GetStreamUri({
-            "StreamSetup": {"Stream": "RTP-Unicast", "Transport": {"Protocol": "RTSP"}},
-            "ProfileToken": profile.token
-        }).Uri
+            uri = media_service.GetStreamUri({
+                "StreamSetup": {"Stream": "RTP-Unicast", "Transport": {"Protocol": "RTSP"}},
+                "ProfileToken": profile.token
+            }).Uri
 
-        parsed = urlparse(uri)
-        if not parsed.username and camera.username:
-            netloc = f"{encoded_user}:{encoded_pass}@{parsed.hostname}"
-            if parsed.port:
-                netloc += f":{parsed.port}"
-            parsed = parsed._replace(netloc=netloc)
+            parsed = urlparse(uri)
+            if not parsed.username and camera.username:
+                netloc = f"{encoded_user}:{encoded_pass}@{parsed.hostname}"
+                if parsed.port:
+                    netloc += f":{parsed.port}"
+                parsed = parsed._replace(netloc=netloc)
 
-        final_uri = urlunparse(parsed)
-        logger.info("✅ RTSP URL resolved via ONVIF: %s", _mask_password_in_url(final_uri))
-        return final_uri
+            final_uri = urlunparse(parsed)
+            logger.info("✅ RTSP URL resolved via ONVIF: %s", _mask_password_in_url(final_uri))
+            return final_uri
 
-    except Exception as e:
-        logger.error("❌ Failed to get RTSP URL via ONVIF for camera %s: %s", camera.id, e)
-        return None
+        except Exception as e:
+            logger.error("❌ Failed to get RTSP URL via ONVIF for camera %s: %s", camera.id, e)
+
+    # ACTi access names differ by firmware. Live preview can try documented
+    # stream names after ONVIF fails, preserving existing capture/record behavior.
+    if try_acti:
+        ports = dict.fromkeys([rtsp_port or 554, 7070])
+        for port in ports:
+            for path in ("stream1", "stream2", "liveview.1"):
+                url = f"rtsp://{encoded_user}:{encoded_pass}@{camera.ip}:{port}/{path}"
+                cap = open_capture(url)
+                try:
+                    opened = cap.isOpened()
+                finally:
+                    cap.release()
+                if opened:
+                    logger.info("ACTi live source resolved for camera %s on port %s", camera.id, port)
+                    return url
+    return None

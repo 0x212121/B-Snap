@@ -581,6 +581,10 @@
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Title shown on the map view.</p>
       </div>
       <div class="md:col-span-1">
+        {{ toggle_switch("Maps Live View", id="map_live_enabled", name="map_live_enabled", value="1", checked=configs.get('map_live_enabled', '1') == '1') }}
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Allow administrators to open live streams from camera images on Maps.</p>
+      </div>
+      <div class="md:col-span-1">
         <label class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Application Logo</label>
         
         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">

@@ -209,6 +209,8 @@ async def error_wrapper_middleware(request: Request, call_next):
             # Keep API error bodies machine-readable for AJAX clients.
             if "application/json" in request.headers.get("accept", "").lower():
                 return response
+            if request.url.path.startswith("/maps/cameras/") and request.url.path.endswith("/live"):
+                return response
             return templates.TemplateResponse("500.html", {"request": request}, status_code=500)
         return response
     except Exception as exc:

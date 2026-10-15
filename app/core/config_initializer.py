@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from app.models.config import Configuration
+from app.utils.map_live_access import DEFAULT_MAP_LIVE_ENABLED
 
 DEFAULT_CONFIG = {
     # Snapshot settings
@@ -17,6 +18,7 @@ DEFAULT_CONFIG = {
     
     # Map settings
     "map_title": "CCTV Maps",
+    "map_live_enabled": DEFAULT_MAP_LIVE_ENABLED,
     "watermark_text": "Property of ...",
     
     # Log retention settings

@@ -9,9 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Maps snapshot click-to-live MJPEG previews with fullscreen, RTSP/ONVIF and configured HLS sources, authenticated group access, access audit, and FFmpeg cleanup on disconnect or timeout.
+
 - Maps historical Offline heatmap with 24-hour/7-day/30-day periods, group-restricted history, clipped ongoing incidents, incomplete-history feedback, localized timezone headers, and per-camera downtime details.
 - Maps Focus issues and All cameras buttons with automatic camera bounds, Offline/High Latency filtering, synchronized status checkboxes, live EN/ID labels, and feedback when no cameras can be located.
 - Maps base-layer selector for OpenStreetMap streets, Esri satellite imagery, and dark-styled OpenStreetMap tiles, with saved browser preference, live EN/ID labels, and dark-mode controls.
+
+### Fixed
+
+- Preserve live-preview failure HTTP status codes instead of converting 502/503 to 500; use the RTSP port independently of HTTP/ONVIF ports and apply RTSP-specific socket timeouts.
+- Add ACTi RTSP access-name fallbacks, an ONVIF camera-clock authentication retry, and explicit RTSP Snapshot URL support during live preview.
+
+### Changed
+
+- Add a Configuration → Appearance toggle for Maps Live View, restrict viewing to administrators, and recheck ongoing streams after configuration or role changes.
+- Simplify the Maps live viewer with a compact camera header, unobstructed video, icon controls, resolution footer, and inline reconnect state, including responsive light/dark and fullscreen layouts.
 
 ### Removed
 

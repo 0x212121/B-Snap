@@ -506,6 +506,8 @@
     "Upload a PNG or ICO file. Displayed on the maps view.": "Unggah file PNG atau ICO. Logo akan ditampilkan pada halaman peta.",
     "Text to overlay on each snapshot. Leave blank for no watermark.": "Teks yang ditampilkan pada setiap snapshot. Kosongkan jika tidak ingin memakai tanda air.",
     "Title shown on the map view.": "Judul yang ditampilkan pada halaman peta.",
+    "Maps Live View": "Live View Peta",
+    "Allow administrators to open live streams from camera images on Maps.": "Izinkan admin membuka live stream dari gambar kamera di Peta.",
     "Use if camera image appears upside down": "Gunakan jika gambar kamera tampak terbalik",
     "Use this if snapshot using automatic method fails": "Gunakan ini jika pengambilan snapshot otomatis gagal",
     "Used across all timestamps in the app.": "Digunakan untuk semua penanda waktu di aplikasi.",

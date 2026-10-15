@@ -5,7 +5,7 @@
 {% block content %}
 {{ page_header("Maps") }}
 
-<div id="map" class="h-[960px] mb-6 rounded shadow" data-timezone="{{ timezone }}" data-refresh-time="{{ refresh_time }}"></div>
+<div id="map" class="h-[960px] mb-6 rounded shadow" data-timezone="{{ timezone }}" data-refresh-time="{{ refresh_time }}" data-live-view-enabled="{{ 'true' if live_view_enabled else 'false' }}"></div>
 
 <!-- External Libraries -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
@@ -17,6 +17,7 @@
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script src="/static/js/map-heatmap.js"></script>
+{% if live_view_enabled %}<script src="/static/js/map-live.js"></script>{% endif %}
 
 <style>
   /* Base map and popup styles */
@@ -130,6 +131,49 @@
   .dark .map-heatmap-control { background: #1f2937; color: #f3f4f6; }
   .dark .map-heatmap-control select { background-color: #374151; border-color: #4b5563; }
 
+  .map-live-preview { display: block; width: 100%; margin-top: 4px; padding: 0; border: 0; border-radius: 6px; overflow: hidden; background: #111827; cursor: pointer; }
+  .map-live-preview img { width: 100%; height: auto; display: block; }
+  .map-snapshot-image { display: block; width: 100%; height: auto; margin-top: 4px; border-radius: 6px; }
+  .map-live-preview-label { display: block; padding: 5px; color: #fff; font-size: 12px; }
+  .map-live-preview:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+  .swal2-popup.map-live-dialog { padding: 0; border-radius: 8px; overflow: hidden; }
+  .map-live-dialog .swal2-html-container { margin: 0; padding: 0; text-align: left; font-size: inherit; overflow: visible; }
+  .map-live-player { background: #fff; color: #1f2937; }
+  .map-live-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; }
+  .map-live-identity { flex: 1; min-width: 0; }
+  .map-live-identity h2 { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .map-live-address { display: block; margin-top: 2px; font: 11px ui-monospace, monospace; color: #6b7280; }
+  .map-live-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 600; letter-spacing: .06em; }
+  .map-live-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #dc2626; }
+  .map-live-badge[hidden] { display: none; }
+  .map-live-actions { display: flex; gap: 4px; }
+  .map-live-icon-button { display: grid; place-items: center; width: 32px; height: 32px; padding: 6px; border: 0; border-radius: 4px; background: transparent; color: inherit; cursor: pointer; }
+  .map-live-icon-button:hover { background: #f3f4f6; }
+  .map-live-icon-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .map-live-icon-button:focus-visible, .map-live-retry:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+  .map-live-screen { position: relative; width: 100%; aspect-ratio: 16 / 9; max-height: calc(88dvh - 104px); background: #090b0e; color: #d1d5db; overflow: hidden; }
+  .map-live-screen img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
+  .map-live-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; text-align: center; }
+  .map-live-overlay[hidden] { display: none; }
+  .map-live-overlay p { margin: 0; font-size: 14px; }
+  .map-live-retry { padding: 7px 14px; border: 1px solid #6b7280; border-radius: 4px; background: transparent; color: #f3f4f6; font-size: 12px; cursor: pointer; }
+  .map-live-retry:hover { background: #1f2937; }
+  .map-live-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; border-top: 1px solid #e5e7eb; color: #6b7280; }
+  .map-live-status { margin: 0; font-size: 11px; }
+  .map-live-resolution { white-space: nowrap; font: 11px ui-monospace, monospace; }
+  .map-live-player:fullscreen { display: flex; flex-direction: column; width: 100%; height: 100dvh; }
+  .map-live-player:fullscreen .map-live-header, .map-live-player:fullscreen .map-live-footer { flex-shrink: 0; }
+  .map-live-player:fullscreen .map-live-screen { flex: 1; min-height: 0; max-height: none; aspect-ratio: auto; }
+  .dark .map-live-player { background: #111827; color: #e5e7eb; }
+  .dark .map-live-header, .dark .map-live-footer { border-color: #293241; }
+  .dark .map-live-address, .dark .map-live-footer { color: #9ca3af; }
+  .dark .map-live-icon-button:hover { background: #1f2937; }
+  @media (max-width: 480px) {
+    .map-live-header { gap: 8px; padding: 10px 12px; }
+    .map-live-identity h2 { font-size: 13px; }
+    .map-live-footer { padding: 9px 12px; }
+  }
+
   /* Dark mode for results container */
   .dark #search-results {
     background-color: #1f2937; /* gray-800 */
@@ -163,6 +207,19 @@
 <script>
   const MAP_TITLE = "{{ map_title }}";
   document.addEventListener('DOMContentLoaded', function() {
+    const liveViewEnabled = document.getElementById('map').dataset.liveViewEnabled === 'true';
+    function showCameraPreview(container, url, camera) {
+      if (liveViewEnabled) {
+        BSnapMapLive.preview(container, url, camera);
+        return;
+      }
+      const image = document.createElement('img');
+      image.className = 'map-snapshot-image';
+      image.alt = camera.hostname || '';
+      image.src = typeof url === 'string' && url.trim() ? url : '/static/placeholder.svg';
+      image.onerror = () => { image.onerror = null; image.src = '/static/placeholder.svg'; };
+      container.replaceChildren(image);
+    }
     const map = L.map('map', { zoomDelta: 0.25, zoomSnap: 0, zoomControl: false, fullscreenControl: false }).setView([0.544447, 117.510262], 12);
     map.attributionControl.setPrefix('');
     const osmAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
@@ -538,7 +595,7 @@
                     if (!resCell || !timeCell || !tamperedRow || !tamperedCell || !imgContainer) return;
                     
                     try {
-                        const info = await fetch(`/snapshot/latest/${encodeURIComponent(cam.hostname)}/info`);
+                        const info = await fetch(`/snapshot/latest/${encodeURIComponent(cam.hostname)}/info`, { headers: { Accept: 'application/json' } });
                         if (!info.ok) throw new Error("Snapshot not available");
                         const snapshot = await info.json();
                         
@@ -558,16 +615,16 @@
                         }
                         
                         if (snapshot.url && typeof snapshot.url === 'string' && snapshot.url.trim() !== '') {
-                            imgContainer.innerHTML = `<img src="${escapeHTML(snapshot.url)}" class="w-full h-auto rounded-md shadow-md mt-1" alt="Camera Snapshot" onerror="this.onerror=null;this.src='/static/placeholder.svg';">`;
+                            showCameraPreview(imgContainer, snapshot.url, cam);
                         } else {
-                            imgContainer.innerHTML = `<img src="/static/placeholder.svg" class="w-full h-auto rounded-md shadow-md mt-1" alt="No Snapshot Available">`;
+                            showCameraPreview(imgContainer, null, cam);
                         }
                     } catch (err) {
                         resCell.textContent = 'N/A';
                         timeCell.textContent = 'N/A';
                         tamperedCell.textContent = "";
                         tamperedRow.style.display = "none";
-                        imgContainer.innerHTML = `<img src="/static/placeholder.svg" class="w-full h-auto rounded-md shadow-md mt-1" alt="No Snapshot Available">`;
+                        showCameraPreview(imgContainer, null, cam);
                     }
                 });
                 
