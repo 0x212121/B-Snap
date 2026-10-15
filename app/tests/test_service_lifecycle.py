@@ -22,7 +22,7 @@ from starlette.requests import Request
 from app.api import readiness
 from app.core import logging_config, service_health
 from app.db import database
-from app.jobs import scheduler as worker, scheduler_main
+from app.jobs import execution_recovery, scheduler as worker, scheduler_main
 from app.middleware import auth_and_setup, observability
 from app.ws import notifier
 
@@ -103,6 +103,14 @@ def test_scheduler_finishes_active_jobs_and_removes_health(monkeypatch, failure)
     monkeypatch.setattr(worker, "scheduler", scheduler)
     monkeypatch.setattr(worker, "start_scheduler", start)
     monkeypatch.setattr(worker, "update_scheduler_config", update)
+    recovery = MagicMock(return_value={"jobs": 1, "record_checks": 0, "health_checks": 0})
+    monkeypatch.setattr(execution_recovery, "recover_interrupted_executions", recovery)
+    monkeypatch.setattr(database, "SessionLocal", MagicMock())
+
+    def start_after_recovery():
+        recovery.assert_called_once()
+
+    start.side_effect = start_after_recovery
     connect = MagicMock(return_value=nullcontext(MagicMock()))
     if failure == "database":
         connect.side_effect = RuntimeError("DB unavailable")
@@ -122,6 +130,25 @@ def test_scheduler_finishes_active_jobs_and_removes_health(monkeypatch, failure)
     start.assert_called_once()
     scheduler.pause.assert_called_once()
     scheduler.shutdown.assert_called_once_with(wait=True)
+    assert not service_health.is_healthy("scheduler")
+
+
+def test_scheduler_does_not_start_if_execution_recovery_fails(monkeypatch):
+    start = MagicMock()
+    scheduler = MagicMock(running=False)
+    monkeypatch.setattr(worker, "start_scheduler", start)
+    monkeypatch.setattr(worker, "scheduler", scheduler)
+    monkeypatch.setattr(database, "SessionLocal", MagicMock())
+    monkeypatch.setattr(
+        execution_recovery,
+        "recover_interrupted_executions",
+        MagicMock(side_effect=RuntimeError("Recovery failed")),
+    )
+    service_health.write_heartbeat("scheduler")
+    with pytest.raises(RuntimeError, match="Recovery failed"):
+        scheduler_main.run_scheduler(threading.Event())
+    start.assert_not_called()
+    scheduler.shutdown.assert_not_called()
     assert not service_health.is_healthy("scheduler")
 
 

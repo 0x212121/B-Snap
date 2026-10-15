@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserved sessions during temporary database/endpoint failures, returned 503 without replaying requests, and rotated Remember Me tokens atomically.
 - Delivered recording-completion popups once to the initiating browser user through the notification queue, with session validation and no bot/API web popups.
 - Corrected toast stacking, spacing, centering, resizing, and oldest-toast eviction during bursts.
+- Recover interrupted job and recording-check executions as failed before scheduler startup, and reset stale health-check progress after service/container restarts while preserving partial results.
 
 ### Removed
 

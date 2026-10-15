@@ -8,6 +8,7 @@ import logging
 import signal
 import threading
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 from app.core.logging_config import setup_logging
@@ -19,12 +20,20 @@ def run_scheduler(stop: threading.Event) -> None:
     # Importing the entrypoint must not start jobs or open database connections.
     from sqlalchemy import text
 
-    from app.db.database import engine
+    from app.db.database import SessionLocal, engine
+    from app.jobs.execution_recovery import recover_interrupted_executions
     from app.jobs.scheduler import scheduler, start_scheduler, update_scheduler_config
 
     logger = logging.getLogger("scheduler")
     clear_heartbeat("scheduler")
     try:
+        startup_at = datetime.now(UTC)
+        with SessionLocal() as db:
+            recovered = recover_interrupted_executions(db, startup_at)
+        if any(recovered.values()):
+            logger.warning(
+                "Recovered executions interrupted before scheduler startup: %s", recovered
+            )
         start_scheduler()
         logger.info("Scheduler started in the background.")
         while not stop.is_set():
