@@ -34,8 +34,12 @@ docker compose -f docker-compose.yml -f docker-compose.record-mounts.yml up -d -
 ```
 
 The base services run without privileged mode. The overlay keeps
-`privileged: false`, adds `SYS_ADMIN` only to web/scheduler, and restricts mount
+`privileged: false`, adds `SYS_ADMIN` and `DAC_READ_SEARCH` only to web/scheduler,
+and restricts mount
 operations to CIFS/NFS with `ro,nosuid,nodev,noexec` at generated record paths.
+`DAC_READ_SEARCH` is required by the CIFS helper's capability setup and credential
+reads; without it, the helper can fail with `Unable to apply new capability set`
+before contacting storage. The AppArmor profile also permits this capability.
 It keeps Docker's seccomp filtering. Do not use `privileged: true`, unconfined
 AppArmor, host mount propagation, host filesystem mounts, or expose the Docker
 socket to enable this feature. Hosts without AppArmor need an equivalent reviewed

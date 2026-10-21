@@ -1,0 +1,26 @@
+[
+  {
+    "package": "leaflet",
+    "version": "1.9.4",
+    "source": "https://registry.npmjs.org/leaflet/-/leaflet-1.9.4.tgz",
+    "archive_sha256": "84c65a256e50657896f54c33bd857b6849ebe94c817803be818bf32a3dde0b77"
+  },
+  {
+    "package": "leaflet.markercluster",
+    "version": "1.5.3",
+    "source": "https://registry.npmjs.org/leaflet.markercluster/-/leaflet.markercluster-1.5.3.tgz",
+    "archive_sha256": "fc6b0b1d00b6c708ae54e43ee4a11ac345e41660e19f0a570190bb35babb1a1c"
+  },
+  {
+    "package": "leaflet.heat",
+    "version": "0.2.0",
+    "source": "https://registry.npmjs.org/leaflet.heat/-/leaflet.heat-0.2.0.tgz",
+    "archive_sha256": "6d980bce16b6bbe8e3b124d200dfd12964ff8f6bfff44eb3a47344f97dfc5c7f"
+  },
+  {
+    "package": "leaflet-fullscreen",
+    "version": "1.0.1",
+    "source": "https://registry.npmjs.org/leaflet-fullscreen/-/leaflet-fullscreen-1.0.1.tgz",
+    "archive_sha256": "3faf45c7943a55ec6f1ea6a0580a04c6b7cb5b00354d01a5df321a577a0dbb5e"
+  }
+]

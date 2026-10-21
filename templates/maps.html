@@ -5,17 +5,19 @@
 {% block content %}
 {{ page_header("Maps") }}
 
+<div id="map-data-status" role="status" aria-live="polite" class="mb-3 flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+  <span id="map-data-message">Loading camera locations...</span>
+  <button id="map-data-retry" type="button" class="ui-button ui-button-secondary hidden">Retry</button>
+</div>
 <div id="map" class="h-[960px] mb-6 rounded shadow" data-timezone="{{ timezone }}" data-refresh-time="{{ refresh_time }}" data-live-view-enabled="{{ 'true' if live_view_enabled else 'false' }}"></div>
 
-<!-- External Libraries -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js'></script>
-<link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css' rel='stylesheet' />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<!-- Pinned local libraries: basic markers remain available if an optional plugin fails. -->
+<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css" />
+<link rel="stylesheet" href="/static/vendor/leaflet-fullscreen/leaflet.fullscreen.css" />
+<link rel="stylesheet" href="/static/vendor/leaflet.markercluster/MarkerCluster.css" />
+<link rel="stylesheet" href="/static/vendor/leaflet.markercluster/MarkerCluster.Default.css" />
+<script src="/static/js/map-libraries.js"></script>
+<script src="/static/js/map-data-loader.js"></script>
 <script src="/static/js/map-heatmap.js"></script>
 {% if live_view_enabled %}<script src="/static/js/map-live.js"></script>{% endif %}
 
@@ -205,12 +207,45 @@
 </style>
 
 <script>
-  const MAP_TITLE = "{{ map_title }}";
-  document.addEventListener('DOMContentLoaded', function() {
+  const MAP_TITLE = {{ map_title | tojson }};
+  document.addEventListener('DOMContentLoaded', async function initializeMap() {
+    const statusPanel = document.getElementById('map-data-status');
+    const retryButton = document.getElementById('map-data-retry');
+    let lastState = 'libraries';
+    function displayDataState(state) {
+      lastState = state;
+      const id = document.documentElement.lang === 'id';
+      const messages = {
+        libraries: id ? 'Memuat komponen peta...' : 'Loading map components...',
+        loading: id ? 'Memuat lokasi kamera...' : 'Loading camera locations...',
+        retrying: id ? 'Koneksi terganggu. Mencoba kembali...' : 'Connection interrupted. Retrying...',
+        error: id ? 'Lokasi kamera belum dapat diperbarui. Silakan coba lagi.' : 'Camera locations could not be updated. Please retry.'
+      };
+      statusPanel.classList.toggle('hidden', state === 'ready');
+      statusPanel.classList.toggle('flex', state !== 'ready');
+      document.getElementById('map-data-message').textContent = messages[state] || '';
+      retryButton.textContent = id ? 'Coba Lagi' : 'Retry';
+      retryButton.classList.toggle('hidden', state !== 'error');
+      document.getElementById('map').setAttribute('aria-busy', String(state === 'loading' || state === 'libraries'));
+    }
+    const localizeStatus = () => displayDataState(lastState);
+    window.addEventListener('bsnap:languagechange', localizeStatus);
+    retryButton.onclick = () => {
+      window.removeEventListener('bsnap:languagechange', localizeStatus);
+      initializeMap();
+    };
+    displayDataState('libraries');
+    try {
+      await BSnapMapLibraries.load();
+    } catch (_) {
+      displayDataState('error');
+      return;
+    }
+
     const liveViewEnabled = document.getElementById('map').dataset.liveViewEnabled === 'true';
     function showCameraPreview(container, url, camera) {
       const status = normalizeStatus(camera.status);
-      if (liveViewEnabled && (status === 'Online' || status === 'High Latency')) {
+      if (liveViewEnabled && typeof window.BSnapMapLive?.preview === 'function' && (status === 'Online' || status === 'High Latency')) {
         BSnapMapLive.preview(container, url, camera);
         return;
       }
@@ -288,12 +323,12 @@
     new L.Control.Search({ position: 'topright' }).addTo(map);
     
     L.control.zoom({ position: 'topright' }).addTo(map);
-    L.control.fullscreen({ position: 'topright' }).addTo(map);
+    if (typeof L.control.fullscreen === 'function') L.control.fullscreen({ position: 'topright' }).addTo(map);
     layerControl.addTo(map);
     updateBaseLayerLabels();
     
     // Title, filter, stats controls
-    L.Control.MapTitle = L.Control.extend({ onAdd: function () { const div = L.DomUtil.create('div', 'leaflet-control-map-title'); div.innerHTML = `<div class="custom-title-bar"><img src="/static/icons/logo.png" alt="Logo KPC" class="title-logo"><span class="title-text">${MAP_TITLE}</span></div>`; L.DomEvent.disableClickPropagation(div); return div; }, });
+    L.Control.MapTitle = L.Control.extend({ onAdd: function () { const div = L.DomUtil.create('div', 'leaflet-control-map-title'); div.innerHTML = `<div class="custom-title-bar"><img src="/static/icons/logo.png" alt="Logo KPC" class="title-logo"><span class="title-text"></span></div>`; div.querySelector('.title-text').textContent = MAP_TITLE; L.DomEvent.disableClickPropagation(div); return div; }, });
     L.control.mapTitle = function (opts) { return new L.Control.MapTitle(opts); };
     L.control.mapTitle({ position: "topleft" }).addTo(map);
     
@@ -349,7 +384,7 @@
     L.control.lastRefresh = function(opts) { return new L.Control.LastRefresh(opts); };
     L.control.lastRefresh({ position: "bottomleft" }).addTo(map);
       
-    const markerClusterGroup = L.markerClusterGroup({
+    const markerClusterGroup = typeof L.markerClusterGroup === 'function' ? L.markerClusterGroup({
       iconCreateFunction: function (cluster) {
         const children = cluster.getAllChildMarkers();
         const count = children.length;
@@ -379,7 +414,7 @@
         return L.divIcon({ html: `<div style="background: ${gradient};"><span>${count}</span></div>`, className: 'marker-cluster-pie', iconSize: [size, size] });
       },
       spiderfyOnMaxZoom: true, showCoverageOnHover: false, zoomToBoundsOnClick: true
-    });
+    }) : L.featureGroup();
     map.addLayer(markerClusterGroup);
     
     let masterCameraData = []; // Stores all data from the server
@@ -419,7 +454,11 @@
     }
     updateFocusLabels();
     window.addEventListener('bsnap:languagechange', updateFocusLabels);
-    const heatmap = BSnapMapHeatmap.create(map);
+    let heatmap = { refresh() {}, attachDetails() {} };
+    if (typeof L.heatLayer === 'function' && window.BSnapMapHeatmap) {
+      try { heatmap = BSnapMapHeatmap.create(map); }
+      catch (error) { console.warn('Map heatmap unavailable:', error); }
+    }
 
     function fitVisibleCameras() {
       const bounds = markerClusterGroup.getBounds();
@@ -478,7 +517,12 @@
       // Find the marker from the currently rendered markers
       const mk = allMarkers.find(m => String(m.cameraData.id) === String(camId));
       if (mk) {
-          markerClusterGroup.zoomToShowLayer(mk, () => mk.openPopup());
+          if (typeof markerClusterGroup.zoomToShowLayer === 'function') {
+            markerClusterGroup.zoomToShowLayer(mk, () => mk.openPopup());
+          } else {
+            map.setView(mk.getLatLng(), 16);
+            mk.openPopup();
+          }
       }
       searchInput.value = ''; 
       searchResultsContainer.classList.add('hidden');
@@ -666,51 +710,33 @@
       timeElement.textContent = `Updated: ${timeString}`;
     }
     
-    /**
-     * Fetches data from the server and updates the map.
-     * Replaces the old refreshMapData function.
-     */
-    function fetchAndUpdateMap() {
-        fetch("/camera-locations", { headers: { Accept: 'application/json' } })
-        .then(res => {
-            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-            return res.json();
-        })
-        .then(data => {
-            // Filter out duplicates from the server response.
-            const uniqueCameraIds = new Set();
-            const uniqueData = data.filter(cam => {
-                if (uniqueCameraIds.has(cam.id)) {
-                    return false;
-                }
-                uniqueCameraIds.add(cam.id);
-                return true;
-            });
-            
-            masterCameraData = uniqueData; // Update the master data source
-            
-            renderMarkers(); // Call the render function to display the new data
-            focusControl.getContainer().querySelectorAll('button').forEach(button => { button.disabled = false; });
-            if (initialMapView) {
-              fitVisibleCameras();
-              initialMapView = false;
-            }
-            updateLastRefreshTime(); // Update the timestamp
-            heatmap.refresh();
-        })
-        .catch(err => { 
-            console.error("Map data fetch error:", err);
-            const timeElement = document.getElementById('last-refresh-time');
-            if (timeElement) {
-              timeElement.textContent = 'Update failed';
-            }
+    const dataLoader = BSnapMapData.create({
+      onState: displayDataState,
+      onData(data) {
+        const uniqueCameraIds = new Set();
+        masterCameraData = data.filter(cam => {
+          if (uniqueCameraIds.has(cam.id)) return false;
+          uniqueCameraIds.add(cam.id);
+          return true;
         });
-    }
-    
-    // Initial data load and periodic refresh
-    fetchAndUpdateMap();
-    setInterval(fetchAndUpdateMap, 60000); // 10 minutes
-    // setInterval(fetchAndUpdateMap, 600000); // 10 minutes
+        renderMarkers();
+        focusControl.getContainer().querySelectorAll('button').forEach(button => { button.disabled = false; });
+        if (initialMapView) {
+          fitVisibleCameras();
+          initialMapView = false;
+        }
+        map.invalidateSize();
+        updateLastRefreshTime();
+        heatmap.refresh();
+      }
+    });
+    retryButton.onclick = () => dataLoader.retry();
+    window.addEventListener('pagehide', () => {
+      dataLoader.stop();
+      window.removeEventListener('bsnap:languagechange', localizeStatus);
+    }, { once: true });
+    dataLoader.refresh();
+
   });
 </script>
 

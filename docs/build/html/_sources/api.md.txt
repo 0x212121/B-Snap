@@ -831,3 +831,21 @@ Numbers beginning with `0`, `+62`, and device-qualified GoWA JIDs are normalized
 Success retains `count` and `results`; JSON errors return 403 for missing/unlisted
 phones or denied camera/group access and 404 for no matching camera with an IP.
 In Bot Builder API-node query parameters, set `phone_number` to `{{sender}}`.
+
+Set `include_without_ip=true` to also return matching cameras whose `ip` is
+`null` or an empty string. The default is `false` (only cameras with an IP).
+This option applies to both group-name and hostname searches, retains the
+stored `ip` value in each result, and follows the same access restrictions.
+For example: `/api/cctv/resolve-ip?keyword=gate&phone_number=628123456789&include_without_ip=true`.
+
+WhatsApp command response templates support conditional blocks, including inside
+`each` loops. Use `{{#if this.ip}} ({{this.ip}}){{/if}}` after the camera name to
+hide both the address and parentheses when IP is null, empty, or whitespace.
+An optional `{{else}}` provides fallback text. Missing values, `false`, numeric
+zero, and empty lists/objects also select the fallback. Conditions accept the
+same variable paths as response placeholders, without arbitrary expressions.
+
+Capture New Snapshot and Send Latest Snapshot commands offer a **Send images in
+HD quality** toggle in the Bot Builder response editor. It defaults to off and
+applies to fallback images and scheduled delivery as well. This sends GoWA's
+`hd=true` image option and requires a gateway that supports HD sending.

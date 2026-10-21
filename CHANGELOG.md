@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+
+### Fixed
+
+- Made Maps camera loading recover from transient failures with request timeouts, bounded retry/backoff, manual retry, and single-flight refresh while preserving existing markers; bundled pinned Leaflet libraries locally and allowed basic markers when optional map plugins fail.
+
 ## [2.5.1] - 2026-10-21
 
 ### Fixed
