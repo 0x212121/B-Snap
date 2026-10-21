@@ -10,8 +10,8 @@
       src="{{ image.url }}" 
       alt="{{ image.camera }}" 
       class="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-105"
-      loading="lazy"
-      onclick="showModal('{{ image.detail_url }}', '{{ image.camera }}', '{{ image.time }}')"
+      loading="lazy" decoding="async"
+      onclick='showModal({{ image.detail_url | tojson }}, {{ image.camera | tojson }}, {{ image.time | tojson }})'
     >
   </div>
 

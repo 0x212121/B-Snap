@@ -149,15 +149,18 @@
 {% block scripts %}
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script src="/static/js/gallery-loader.js"></script>
 <script>
   // State Management (sama seperti sebelumnya)
+  let galleryLoader;
   const GalleryState = {
     tomSelect: null,
     isLoading: false,
     hasMore: true,
     offset: 0,
     limit: 15,
-    currentFilter: { camera: "", q: "", tampered: false },
+    currentPage: 0,
+    currentFilter: { camera: {{ selected_camera | tojson }}, q: "", tampered: false },
     observer: null,
     lastRequestId: 0
   };
@@ -198,7 +201,7 @@
     document.getElementById("clearFilterBtn").addEventListener("click", () => {
       document.getElementById("searchInput").value = "";
       document.getElementById("filterTampered").checked = false;
-      GalleryState.tomSelect.clear();
+      GalleryState.tomSelect.clear(true);
       GalleryState.currentFilter = { camera: "", q: "", tampered: false };
       resetAndLoad();
     });
@@ -207,104 +210,42 @@
   }
 
   function setupInfiniteScroll() {
-    const sentinel = document.getElementById("scrollSentinel");
-    GalleryState.observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && !GalleryState.isLoading && GalleryState.hasMore && GalleryState.offset > 0) {
-        loadMore();
+    galleryLoader = BSnapGallery.create({
+      state: GalleryState,
+      grid: document.getElementById('snapshotGrid'),
+      sentinel: document.getElementById('scrollSentinel'),
+      selector: '[data-card]',
+      pageSize: 15,
+      pagination: 'offset',
+      url: '/gallery-data',
+      errorMessage: 'Failed to load snapshots',
+      placeholder: '/static/placeholder.svg',
+      validate: data => typeof data.buttons_html === 'string',
+      onReplace: data => { document.getElementById('actionButtonsContainer').innerHTML = data.buttons_html; },
+      onLoaded: (count, append) => {
+        if (append || !count) return;
+        fetch('/api/snapshots/gallery-view', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            camera_filter: GalleryState.currentFilter.camera || null,
+            snapshot_count: count,
+            search_query: GalleryState.currentFilter.q || null
+          })
+        }).catch(() => {});
+      },
+      params: () => {
+        const params = new URLSearchParams();
+        if (GalleryState.currentFilter.camera) params.set('camera', GalleryState.currentFilter.camera);
+        if (GalleryState.currentFilter.q) params.set('q', GalleryState.currentFilter.q);
+        if (GalleryState.currentFilter.tampered) params.set('tampered', 'true');
+        return params;
       }
-    }, { rootMargin: "100px", threshold: 0.1 });
-    GalleryState.observer.observe(sentinel);
+    });
   }
 
   function resetAndLoad() {
-    GalleryState.offset = 0;
-    GalleryState.hasMore = true;
-    GalleryState.lastRequestId++;
-    document.getElementById("snapshotGrid").innerHTML = "";
-    const sentinel = document.getElementById("scrollSentinel");
-    sentinel.classList.add("hidden");
-    fetchGallery(false);
-  }
-
-  function loadMore() {
-    if (GalleryState.isLoading || !GalleryState.hasMore) return;
-    fetchGallery(true);
-  }
-
-  async function fetchGallery(append = false) {
-    GalleryState.isLoading = true;
-    const requestId = ++GalleryState.lastRequestId;
-    
-    const grid = document.getElementById("snapshotGrid");
-    const sentinel = document.getElementById("scrollSentinel");
-    const actionContainer = document.getElementById("actionButtonsContainer");
-    
-    if (!append) grid.style.opacity = "0.5";
-    sentinel.classList.remove("hidden");
-    sentinel.classList.add("flex");
-
-    const params = new URLSearchParams();
-    if (GalleryState.currentFilter.camera) params.set("camera", GalleryState.currentFilter.camera);
-    if (GalleryState.currentFilter.q) params.set("q", GalleryState.currentFilter.q);
-    if (GalleryState.currentFilter.tampered) params.set("tampered", "true");
-    params.set("offset", GalleryState.offset);
-    params.set("limit", GalleryState.limit);
-
-    try {
-      const res = await fetch(`/gallery-data?${params}`);
-      const data = await res.json();
-      
-      if (requestId !== GalleryState.lastRequestId) return;
-
-      if (!append) {
-        grid.innerHTML = data.html;
-        actionContainer.innerHTML = data.buttons_html;
-      } else {
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = data.html;
-        const newItems = Array.from(tempDiv.querySelectorAll("[data-card]"));
-        
-        if (newItems.length === 0) {
-          GalleryState.hasMore = false;
-        } else {
-          const fragment = document.createDocumentFragment();
-          newItems.forEach(item => fragment.appendChild(item));
-          grid.appendChild(fragment);
-          
-          GalleryState.offset += newItems.length;
-          if (newItems.length < GalleryState.limit) GalleryState.hasMore = false;
-        }
-      }
-
-      if (!append) {
-        const count = (data.html.match(/data-card/g) || []).length;
-        if (count < GalleryState.limit) GalleryState.hasMore = false;
-        else GalleryState.offset = count;
-        
-        // P2-004: Log gallery batch view untuk compliance (hindari flooding per gambar)
-        if (count > 0) {
-          fetch("/api/snapshots/gallery-view", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              camera_filter: GalleryState.currentFilter.camera || null,
-              snapshot_count: count,
-              search_query: GalleryState.currentFilter.q || null
-            })
-          }).catch(() => {}); // Silent fail - don't block UI
-        }
-      }
-
-    } catch (err) {
-      console.error("Fetch error:", err);
-      Toast.error("Failed to load snapshots", { title: "Error" });
-    } finally {
-      if (requestId === GalleryState.lastRequestId) {
-        GalleryState.isLoading = false;
-        grid.style.opacity = "1";
-        if (!GalleryState.hasMore) sentinel.classList.add("hidden");
-      }
-    }
+    return galleryLoader?.reset();
   }
 
   function deleteSnapshot(id, element) {
@@ -316,8 +257,7 @@
         if (res.ok && data.status === "success") {
           card.style.transform = "scale(0.95)";
           card.style.opacity = "0";
-          setTimeout(() => card.remove(), 200);
-          GalleryState.offset = Math.max(0, GalleryState.offset - 1);
+          setTimeout(() => { card.remove(); resetAndLoad(); }, 200);
           Toast.success(BSnapI18n.t("Deleted"), { title: BSnapI18n.t("Success") });
         } else {
           throw new Error(data.detail);

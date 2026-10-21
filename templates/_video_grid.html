@@ -10,10 +10,9 @@
         <img src="{{ video.thumb_url }}"
              alt="Video thumbnail"
              class="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-105"
-             loading="lazy"
+             loading="lazy" decoding="async"
              data-video-url="{{ video.detail_url }}"
              onclick='showModal({{ video.detail_url | tojson }}, {{ video.camera | tojson }}, {{ video.time | tojson }})'
-             onerror="this.onerror=null; this.src='/static/video-placeholder.jpg';"
         >
 
         <!-- Play Icon (TETAP SAMA) -->

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed snapshot/video infinite-scroll stalls, skipped video pages after failed requests, stale filter responses, and thumbnail recovery; added compatible authenticated snapshot previews and private thumbnail caching with group access checks.
+
 - Reduced Analytics database queries by reusing daily aggregates for KPI totals and loading timezone once per dashboard request; deferred Snapshot Stats and storage requests until its tab opens, removed per-log timezone queries, and rendered overview sections independently with stale-response protection.
 
 ## [2.5.0] - 2026-10-15

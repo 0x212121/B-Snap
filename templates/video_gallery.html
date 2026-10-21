@@ -105,16 +105,19 @@
 {% block scripts %}
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script src="/static/js/gallery-loader.js"></script>
 <script>
   /**
    * STATE MANAGEMENT - Anti duplikat & Race condition
    */
+  let galleryLoader;
   const VideoState = {
     tomSelect: null,
     isLoading: false,
     hasMore: true,
     currentPage: 1,
-    currentFilter: { camera: "", q: "" },
+    offset: 0,
+    currentFilter: { camera: {{ selected_camera | tojson }}, q: "" },
     observer: null,
     lastRequestId: 0,
     // CRIT-001: Store current video info for download
@@ -126,23 +129,11 @@
   document.addEventListener("DOMContentLoaded", () => {
     initTomSelect();
     setupEventListeners();
-    setupInfiniteScroll();
-    
-    // CRIT-001: Log gallery view akan dipanggil setelah videos loaded
-    
-    // Check initial content count
     const initialCount = document.querySelectorAll("[data-video-card]").length;
-    const sentinel = document.getElementById("scrollSentinel");
-    if (initialCount < 12) {
-      VideoState.hasMore = false;
-      sentinel.classList.add("hidden");
-      sentinel.classList.remove("flex");
-    } else {
-      // Show sentinel if we have 12 items (might have more)
-      sentinel.classList.remove("hidden");
-      sentinel.classList.add("flex");
-    }
-    console.log("Initial count:", initialCount, "hasMore:", VideoState.hasMore);
+    VideoState.offset = initialCount;
+    VideoState.hasMore = initialCount === 12;
+    setupInfiniteScroll();
+    logGalleryView();
   });
   
   // CRIT-001: Log gallery view for audit compliance (batch logging)
@@ -151,7 +142,7 @@
       const videoCount = document.querySelectorAll("[data-video-card]").length;
       await fetch("/api/videos/gallery-view", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
           camera_filter: VideoState.currentFilter.camera || null,
           video_count: videoCount,
@@ -189,7 +180,7 @@
     // Clear filters
     document.getElementById("clearFilterBtn").addEventListener("click", () => {
       document.getElementById("searchInput").value = "";
-      VideoState.tomSelect.clear();
+      VideoState.tomSelect.clear(true);
       VideoState.currentFilter = { camera: "", q: "" };
       resetAndLoad();
     });
@@ -199,110 +190,28 @@
    * INFINITE SCROLL - Fix duplikat
    */
   function setupInfiniteScroll() {
-    const sentinel = document.getElementById("scrollSentinel");
-    console.log("Setting up infinite scroll, sentinel:", sentinel);
-    
-    VideoState.observer = new IntersectionObserver((entries) => {
-      console.log("Intersection observed:", entries[0].isIntersecting, "isLoading:", VideoState.isLoading, "hasMore:", VideoState.hasMore);
-      if (entries[0].isIntersecting && !VideoState.isLoading && VideoState.hasMore) {
-        loadMore();
+    galleryLoader = BSnapGallery.create({
+      state: VideoState,
+      grid: document.getElementById('videoGrid'),
+      sentinel: document.getElementById('scrollSentinel'),
+      selector: '[data-video-card]',
+      pageSize: 12,
+      pagination: 'page',
+      url: '/video-gallery-data',
+      errorMessage: 'Failed to load videos',
+      placeholder: '/static/video-placeholder.jpg',
+      onLoaded: (_count, append) => { if (!append) logGalleryView(); },
+      params: () => {
+        const params = new URLSearchParams();
+        if (VideoState.currentFilter.camera) params.set('camera', VideoState.currentFilter.camera);
+        if (VideoState.currentFilter.q) params.set('q', VideoState.currentFilter.q);
+        return params;
       }
-    }, { rootMargin: "200px", threshold: 0.1 });
-
-    VideoState.observer.observe(sentinel);
-    console.log("Observer attached to sentinel");
+    });
   }
 
   function resetAndLoad() {
-    VideoState.currentPage = 1;
-    VideoState.hasMore = true;
-    VideoState.lastRequestId++;
-    document.getElementById("videoGrid").innerHTML = "";
-    const sentinel = document.getElementById("scrollSentinel");
-    sentinel.classList.remove("hidden");
-    sentinel.classList.add("flex");
-    fetchVideos(false);
-  }
-
-  function loadMore() {
-    console.log("loadMore called, page:", VideoState.currentPage + 1, "hasMore:", VideoState.hasMore, "isLoading:", VideoState.isLoading);
-    if (VideoState.isLoading || !VideoState.hasMore) {
-      console.log("loadMore skipped - isLoading:", VideoState.isLoading, "hasMore:", VideoState.hasMore);
-      return;
-    }
-    VideoState.currentPage++;
-    console.log("Loading page:", VideoState.currentPage);
-    fetchVideos(true);
-  }
-
-  /**
-   * FETCH LOGIC - Proteksi ketat
-   */
-  async function fetchVideos(append = false) {
-    VideoState.isLoading = true;
-    const requestId = ++VideoState.lastRequestId;
-    
-    const grid = document.getElementById("videoGrid");
-    const sentinel = document.getElementById("scrollSentinel");
-    
-    if (!append) grid.style.opacity = "0.5";
-    sentinel.classList.remove("hidden");
-    sentinel.classList.add("flex");
-
-    const params = new URLSearchParams();
-    params.set("page", VideoState.currentPage);
-    if (VideoState.currentFilter.camera) params.set("camera", VideoState.currentFilter.camera);
-    if (VideoState.currentFilter.q) params.set("q", VideoState.currentFilter.q);
-    
-    console.log("Fetching videos, page:", VideoState.currentPage, "params:", params.toString());
-
-    try {
-      const res = await fetch(`/video-gallery-data?${params}`);
-      const data = await res.json();
-      
-      console.log("Fetch response, newItems count:", (data.html.match(/data-video-card/g) || []).length);
-      
-      // Cancel check - new request started
-      if (requestId !== VideoState.lastRequestId) return;
-
-      // Parse new items
-      const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = data.html;
-      const newItems = Array.from(tempDiv.querySelectorAll("[data-video-card]"));
-      
-      if (!append) {
-        grid.innerHTML = data.html;
-      } else if (newItems.length > 0) {
-        const fragment = document.createDocumentFragment();
-        newItems.forEach(item => fragment.appendChild(item));
-        grid.appendChild(fragment);
-      }
-      
-      // Determine if there are more pages (limit is 12)
-      if (newItems.length < 12) {
-        VideoState.hasMore = false;
-        console.log("No more videos (got", newItems.length, ")");
-      } else {
-        console.log("More videos available");
-      }
-
-    } catch (err) {
-      console.error("Fetch error:", err);
-      Toast.error("Failed to load videos", { title: "Error" });
-    } finally {
-      if (requestId === VideoState.lastRequestId) {
-        VideoState.isLoading = false;
-        grid.style.opacity = "1";
-        if (!VideoState.hasMore) {
-          sentinel.classList.add("hidden");
-          sentinel.classList.remove("flex");
-        }
-        // CRIT-001: Log gallery view setelah videos loaded (hanya untuk initial load)
-        if (!append && VideoState.currentPage === 1) {
-          logGalleryView();
-        }
-      }
-    }
+    return galleryLoader?.reset();
   }
 
   /**
@@ -321,8 +230,8 @@
           card.style.opacity = "0";
           setTimeout(() => {
             card.remove();
-            // Adjust offset
-            if (VideoState.currentPage > 1) VideoState.currentPage--;
+            // Reload after deletion to keep page boundaries aligned.
+            resetAndLoad();
           }, 200);
           Toast.success(BSnapI18n.t("Video deleted"), { title: BSnapI18n.t("Success") });
         } else {

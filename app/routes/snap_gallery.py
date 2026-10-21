@@ -1,28 +1,33 @@
-import os
 import logging
+import os
 import re
-from typing import Optional, List, Dict, Any
+
+from datetime import datetime, timedelta, timezone
+from typing import Annotated, Any, Dict, List, Optional
 from uuid import uuid4
-from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Request, Query
-from fastapi.responses import JSONResponse, ORJSONResponse, RedirectResponse
-from sqlalchemy.orm import Session
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import JSONResponse, ORJSONResponse, RedirectResponse, Response
 from sqlalchemy import func
-from app.utils.template_helper import templates
+from sqlalchemy.orm import Session
+
 from app.db.database import get_db
-from app.models.camera_group import CameraGroup
 from app.models.camera import Camera
+from app.models.camera_group import CameraGroup
 from app.models.snapshot import Snapshot
 from app.models.snapshot_log import SnapshotLog
-from app.models.video import Video
 from app.models.user import User
+from app.models.video import Video
 from app.models.whitelist import WhatsappWhitelist
 from app.routes.auth import admin_access_required, operator_access_required
 from app.utils.audit_logger import log_audit
+from app.utils.gallery_preview import snapshot_preview_response
+from app.utils.media_access import require_camera_group_access
+from app.utils.notification_service import NotificationService
 from app.utils.snapshot_service import SnapshotService
 from app.utils.snapshot_utils import record_snapshot_metadata
-from app.utils.notification_service import NotificationService
-from app.utils.timezone_helper import to_current_timezone, format_datetime_standard
+from app.utils.template_helper import templates
+from app.utils.timezone_helper import format_datetime_standard, to_current_timezone
 
 router = APIRouter(tags=["Snapshots"])
 
@@ -70,7 +75,7 @@ def _get_filtered_snapshots(db: Session, group_id: Optional[int], camera_filter:
         snapshot_query = snapshot_query.filter(Snapshot.is_tampered == True)
 
     # Lazy load snapshots
-    snapshots = snapshot_query.order_by(Snapshot.timestamp.desc()).offset(offset).limit(limit).all()
+    snapshots = snapshot_query.order_by(Snapshot.timestamp.desc(), Snapshot.id.desc()).offset(offset).limit(limit).all()
 
     # Format data for the template
     # Note: s.file_path contains path like "<camera_id>/<date>/<filename>"
@@ -84,7 +89,7 @@ def _get_filtered_snapshots(db: Session, group_id: Optional[int], camera_filter:
         result.append({
             # P2-004: Use authenticated API endpoint instead of direct static URL
             # thumb=true untuk gallery view (minimal logging)
-            "url": f"/api/snapshots/secure/{s.id}?thumb=true",
+            "url": f"/api/snapshots/secure/{s.id}?thumb=true&preview=true",
             "detail_url": f"/api/snapshots/secure/{s.id}",  # For modal view (full logging)
             "file_path": s.file_path,  # Keep for reference
             "camera": s.camera_name,
@@ -392,6 +397,8 @@ async def get_gallery_data(
     })
 
 from app.schemas.snapshot_schema import SnapshotOut
+
+
 @router.get("/snapshots/tampered", response_model=List[SnapshotOut])
 def get_tampered_snapshots(request: Request, db: Session = Depends(get_db), current_operator: User = Depends(operator_access_required),):
     return db.query(Snapshot).filter(Snapshot.is_tampered == True).all()
@@ -732,6 +739,7 @@ async def serve_snapshot_file(
     and audit logging for all snapshot access.
     """
     import mimetypes
+
     from fastapi.responses import FileResponse, StreamingResponse
     
     # Security: Prevent directory traversal
@@ -786,37 +794,48 @@ async def serve_snapshot_by_id(
     download: bool = Query(False, description="Set Content-Disposition to attachment for download"),
     thumb: bool = Query(False, description="Gallery thumbnail view - minimal logging"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(operator_access_required)
-):
+    current_user: User = Depends(operator_access_required),
+    preview: Annotated[
+        bool, Query(description="Small gallery preview with thumb=true; original remains unchanged")
+    ] = False,
+) -> Response:
     """Serve snapshot file by snapshot ID with authentication (P2-004).
-    
+
     Preferred method: Uses snapshot ID instead of file path for better security.
-    
+
     Args:
         download: If True, sets Content-Disposition to attachment for file download
         thumb: If True, this is a gallery thumbnail view (minimal logging to prevent flooding)
+        preview: Return a small JPEG without modifying the evidence file.
     """
     import mimetypes
+
     from fastapi.responses import FileResponse
-    
+
     # Find snapshot in database
     snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
     if not snapshot:
         raise HTTPException(status_code=404, detail="Snapshot not found")
-    
+
     # Check if snapshot is soft-deleted (only admin can view deleted)
     if snapshot.deleted_at and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Access denied to deleted snapshot")
-    
+
+    require_camera_group_access(db, snapshot.camera_id, current_user.group_id)
+
     if not snapshot.file_path:
         raise HTTPException(status_code=404, detail="Snapshot file path not found")
-    
+
     # Build full path
     full_path = os.path.join(SNAPSHOT_BASE_DIR, snapshot.file_path)
-    
+
     if not os.path.exists(full_path):
         raise HTTPException(status_code=404, detail="Snapshot file not found on disk")
-    
+
+    if thumb and preview and not download:
+        # Gallery browsing is audited by the existing batch gallery-view endpoint.
+        return await snapshot_preview_response(full_path)
+
     # Log access (P2-004 compliance)
     # thumb=true: Gallery browsing - log sebagai gallery_view (batch context)
     # thumb=false atau download: Individual view - log sebagai view_snapshot
@@ -826,7 +845,7 @@ async def serve_snapshot_by_id(
         action = "gallery_thumbnail"  # Minimal logging untuk gallery browsing
     else:
         action = "view_snapshot"  # Full detail view
-    
+
     log_audit(
         db=db,
         user=request.session.get("user_name", "unknown"),
@@ -838,28 +857,34 @@ async def serve_snapshot_by_id(
         request_method=request.method,
         response_status=200,
     )
-    
+
     # Build filename for download
     filename = os.path.basename(snapshot.file_path)
     if download and snapshot.camera_name:
         # Create meaningful filename: CameraName_YYYYMMDD_HHMMSS.jpg
         from datetime import datetime, timezone
-        timestamp_str = snapshot.timestamp.strftime("%Y%m%d_%H%M%S") if snapshot.timestamp else datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+
+        timestamp_str = (
+            snapshot.timestamp.strftime("%Y%m%d_%H%M%S")
+            if snapshot.timestamp
+            else datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        )
         ext = os.path.splitext(filename)[1]
-        safe_camera_name = "".join(c if c.isalnum() or c in ('-', '_') else '_' for c in snapshot.camera_name)
+        safe_camera_name = "".join(
+            c if c.isalnum() or c in ("-", "_") else "_" for c in snapshot.camera_name
+        )
         filename = f"{safe_camera_name}_{timestamp_str}{ext}"
-    
+
     # Determine content type
     content_type, _ = mimetypes.guess_type(full_path)
     if not content_type:
         content_type = "image/jpeg"
-    
+
     return FileResponse(
         path=full_path,
         media_type=content_type,
         filename=filename if download else None,
     )
-
 
 
 @router.post("/api/snapshots/gallery-view", response_class=JSONResponse)

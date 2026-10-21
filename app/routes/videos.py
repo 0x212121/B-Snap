@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
 import logging
 import os
-from pathlib import Path
-from typing import Optional, List, Dict, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, ORJSONResponse, RedirectResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -20,10 +21,10 @@ from app.models.video import Video
 from app.routes.auth import admin_access_required, operator_access_required
 from app.schemas.video import VideoRecordRequest
 from app.utils.audit_logger import log_audit
-from app.utils.timezone_helper import to_current_timezone, format_datetime_standard
-from app.utils.video import record_video_and_save_db
+from app.utils.media_access import require_camera_group_access
 from app.utils.timezone import format_wita
-
+from app.utils.timezone_helper import format_datetime_standard, to_current_timezone
+from app.utils.video import record_video_and_save_db
 
 router = APIRouter(tags=["Videos"])
 from app.utils.template_helper import templates
@@ -74,7 +75,7 @@ def _get_filtered_videos(
     if search_query:
         video_query = video_query.filter(Video.camera_name.ilike(f"%{search_query}%"))
 
-    videos = video_query.order_by(Video.timestamp.desc()).offset(offset).limit(limit).all()
+    videos = video_query.order_by(Video.timestamp.desc(), Video.id.desc()).offset(offset).limit(limit).all()
 
     formatted_videos = []
     for v in videos:
@@ -275,7 +276,7 @@ def purge_deleted_videos(
     
     P2-001: Items with retention_hold=True are skipped by default.
     """
-    from datetime import datetime, timezone, timedelta
+    from datetime import datetime, timedelta, timezone
     
     cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_old)
     
@@ -645,6 +646,7 @@ async def serve_video_file(
     and audit logging for all video access.
     """
     import mimetypes
+
     from fastapi.responses import FileResponse, StreamingResponse
     
     # Security: Prevent directory traversal
@@ -699,56 +701,57 @@ async def serve_video_by_id(
     download: bool = Query(False, description="Set Content-Disposition to attachment for download"),
     thumb: bool = Query(False, description="Thumbnail view - minimal logging"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(operator_access_required)
+    current_user: User = Depends(operator_access_required),
 ):
     """Serve video file by video ID with authentication (CRIT-001).
-    
+
     Preferred method: Uses video ID instead of file path for better security.
-    
+
     Args:
         download: If True, sets Content-Disposition to attachment for file download
         thumb: If True, this is a thumbnail view (minimal logging)
     """
     import mimetypes
+
     from fastapi.responses import FileResponse
-    
+
     # Find video in database
     video = db.query(Video).filter(Video.id == video_id).first()
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
-    
+
     # Check if video is soft-deleted (only admin can view deleted)
     if video.deleted_at and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Access denied to deleted video")
-    
+
+    require_camera_group_access(db, video.camera_id, current_user.group_id)
+
     if not video.file_path:
         raise HTTPException(status_code=404, detail="Video file path not found")
-    
-    
+
     # Build full path
     full_path = os.path.join(VIDEO_FILESYSTEM_BASE, video.file_path)
-    
+
     if not os.path.exists(full_path):
         raise HTTPException(status_code=404, detail="Video file not found on disk")
-    
+
     if thumb:
         thumb_path = str(Path(full_path).with_suffix(".jpg"))
         if os.path.exists(thumb_path):
             response = FileResponse(thumb_path, media_type="image/jpeg")
-            response.headers["Cache-Control"] = "public, max-age=86400"
+            response.headers["Cache-Control"] = "private, no-cache"
             return response
         else:
             response = FileResponse("static/video-placeholder.jpg", media_type="image/jpeg")
-            response.headers["Cache-Control"] = "public, max-age=3600"
+            response.headers["Cache-Control"] = "private, no-cache"
             return response
-    
-    
+
     # Log access (CRIT-001 compliance)
     if download:
         action = "download_video"
     else:
         action = "view_video"
-    
+
     log_audit(
         db=db,
         user=request.session.get("user_name", "unknown"),
@@ -760,22 +763,29 @@ async def serve_video_by_id(
         request_method=request.method,
         response_status=200,
     )
-    
+
     # Build filename for download
     filename = os.path.basename(video.file_path)
     if download and video.camera_name:
         # Create meaningful filename: CameraName_YYYYMMDD_HHMMSS.mp4
         from datetime import datetime, timezone
-        timestamp_str = video.timestamp.strftime("%Y%m%d_%H%M%S") if video.timestamp else datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+
+        timestamp_str = (
+            video.timestamp.strftime("%Y%m%d_%H%M%S")
+            if video.timestamp
+            else datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        )
         ext = os.path.splitext(filename)[1]
-        safe_camera_name = "".join(c if c.isalnum() or c in ('-', '_') else '_' for c in video.camera_name)
+        safe_camera_name = "".join(
+            c if c.isalnum() or c in ("-", "_") else "_" for c in video.camera_name
+        )
         filename = f"{safe_camera_name}_{timestamp_str}{ext}"
-    
+
     # Determine content type
     content_type, _ = mimetypes.guess_type(full_path)
     if not content_type:
         content_type = "video/mp4"
-    
+
     return FileResponse(
         path=full_path,
         media_type=content_type,
