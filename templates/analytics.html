@@ -13,7 +13,7 @@
     activeTab = tabFromUrl;
   }
 ">
-  
+
   <!-- HEADER -->
   {{ page_header("Analytics Dashboard") }}
 
@@ -48,7 +48,7 @@
 
   <!-- TAB: SYSTEM OVERVIEW (Insights) -->
   <div x-show="activeTab === 'overview'" x-cloak class="space-y-6" id="overviewTabContent">
-    
+
     <!-- FILTER BAR -->
     <div class="ui-filter-bar ui-card ui-card-body bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 flex flex-wrap items-end gap-4">
       <div>
@@ -66,7 +66,7 @@
           class="ui-button ui-button-primary">
           {{ icon_arrow_path("w-5 h-5 text-white") }} Apply Filter
         </button>
-        <button id="downloadReport"
+        <button id="downloadReport" disabled
           class="ui-button ui-button-secondary">
           {{ icon_download("w-5 h-5 text-white") }} Download Report
         </button>
@@ -183,16 +183,17 @@
 
   <!-- TAB: SNAPSHOT STATS -->
   <div x-show="activeTab === 'snapshots'" x-cloak class="space-y-6" id="snapshotsTabContent">
-    
+
+    <p id="snapshotDetailsStatus" class="hidden text-sm text-red-700 dark:text-red-300" role="status" aria-live="polite"></p>
     <!-- FILTERS -->
     <div class="ui-filter-bar ui-card ui-card-body bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 flex flex-wrap items-start gap-4">
       <div>
         <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300">Camera</label>
         <select id="cameraDropdown" class="ui-control h-10 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100 min-w-[200px]">
           <option value="">All Cameras</option>
-          {% for name in camera_names %}
-          <option value="{{ name }}" {% if selected_camera == name %}selected{% endif %}>{{ name }}</option>
-          {% endfor %}
+          {% if selected_camera %}
+          <option value="{{ selected_camera }}" selected>{{ selected_camera }}</option>
+          {% endif %}
         </select>
       </div>
       <div>
@@ -229,11 +230,11 @@
           Refresh
         </button>
       </div>
-      
+
       <div id="storageLoading" class="text-center py-4">
 {{ loading_skeleton("Loading storage health", 4) }}
 </div>
-      
+
       <div id="storageContent" class="hidden">
         <div class="mb-6">
           <div class="flex justify-between mb-2">
@@ -245,7 +246,7 @@
           </div>
           <p id="storageDetailText" class="mt-1 text-xs text-gray-500 dark:text-gray-400"></p>
         </div>
-        
+
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded">
             <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
@@ -264,7 +265,7 @@
             <p id="storageGrowth" class="text-lg font-semibold">-</p>
           </div>
         </div>
-        
+
         <div class="mb-4">
           <h3 class="text-sm font-medium mb-2 text-gray-600 dark:text-gray-400">Usage Breakdown</h3>
           <div class="space-y-2">
@@ -291,10 +292,10 @@
             </div>
           </div>
         </div>
-        
+
         <div id="storagePrediction" class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded text-sm hidden">
           <p class="text-blue-800 dark:text-blue-200">
-            <span class="font-medium">📈 Prediction:</span> 
+            <span class="font-medium">📈 Prediction:</span>
             Storage will be full in approximately <span id="daysUntilFull" class="font-bold">-</span> days at current growth rate.
           </p>
         </div>
@@ -317,24 +318,7 @@
               <th class="px-4 py-2 text-left">Status</th>
             </tr>
           </thead>
-          <tbody>
-            {% for log in timing_logs %}
-            <tr class="border-t dark:border-gray-600">
-              <td class="px-4 py-2">{{ log.started_at_local }}</td>
-              <td class="px-4 py-2">{{ log.ended_at_local }}</td>
-              <td class="px-4 py-2">{{ log.duration_formatted }}</td>
-              <td class="px-4 py-2">
-                {% if log.status == "success" %}
-                  <span class="text-green-600 dark:text-green-400 font-semibold">{{ icon_check_circle() }} Success</span>
-                {% elif log.status == "partial" %}
-                  <span class="text-yellow-600 dark:text-yellow-400 font-semibold">{{ icon_circle_stack() }} Partial</span>
-                {% else %}
-                  <span class="text-red-600 dark:text-red-400 font-semibold">{{ icon_x_circle() }} Failed</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
+          <tbody id="snapshotTimingBody"></tbody>
         </table>
       </div>
     </div>
@@ -354,12 +338,13 @@
 <script src="{{ url_for('static', path='js/report-charts.js') }}"></script>
 <script>
 // Server timezone from backend
-const SERVER_TIMEZONE = "{{ server_timezone }}";
+const SERVER_TIMEZONE = {{ server_timezone | tojson }};
 
 window.setAnalyticsTab = (tab) => {
   const url = new URL(window.location.href);
   url.searchParams.set('tab', tab);
   window.history.replaceState(null, '', url);
+  window.dispatchEvent(new CustomEvent('bsnap:analyticstab', { detail: tab }));
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -367,7 +352,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let chart1, chart2, chartAvailability, chartIncidents;
   const localizeReportCharts = () => [chart1, chart2, chartAvailability, chartIncidents].forEach(BSnapReportCharts.localize);
   window.addEventListener('bsnap:languagechange', localizeReportCharts);
-  
+
   // Initial date range using server timezone
   const now = new Date();
   // Use Intl.DateTimeFormat to format date in server timezone.
@@ -379,25 +364,237 @@ document.addEventListener("DOMContentLoaded", () => {
       day: '2-digit'
     }).format(d);
   };
-  
+
   const today = new Date();
   const prior = new Date();
   prior.setDate(today.getDate() - 29);
-  
+
   if (document.getElementById('startDate')) {
     const pageParams = new URLSearchParams(window.location.search);
     document.getElementById('startDate').value = pageParams.get('start_date') || fmtServerTZ(prior);
     document.getElementById('endDate').value = pageParams.get('end_date') || fmtServerTZ(today);
   }
-  
-  async function getJSON(url) {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(url + " failed");
-    return r.json();
+
+  async function getJSON(url, signal) {
+    const response = await fetch(url, { headers: { Accept: 'application/json' }, signal });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || `${url} failed (${response.status})`);
+    }
+    return response.json();
   }
-  
+
+  function renderActivity(dashboard) {
+    const { summary, daily, top_commands: topCmd, top_cameras: topCam } = dashboard;
+
+    // KPI
+    document.getElementById('kpiApi').textContent = summary.totals.api.toLocaleString();
+    document.getElementById('kpiCmd').textContent = summary.totals.command.toLocaleString();
+    document.getElementById('kpiEmail').textContent = summary.totals.email.toLocaleString();
+
+    const setDelta = (el, val) => {
+      const arrow = val > 0 ? "↑" : val < 0 ? "↓" : "→";
+      const color = val > 0 ? "text-green-600" : val < 0 ? "text-red-600" : "text-gray-500";
+      el.className = `text-sm ${color}`;
+      el.textContent = `${arrow} ${val.toFixed(1)}% vs prev`;
+    };
+    setDelta(document.getElementById('kpiApiDelta'), summary.delta_pct.api);
+    setDelta(document.getElementById('kpiCmdDelta'), summary.delta_pct.command);
+    setDelta(document.getElementById('kpiEmailDelta'), summary.delta_pct.email);
+
+    const activity = summary.activity_index;
+    document.getElementById('activityValue').textContent = activity.value;
+    document.getElementById('activityBadge').textContent = activity.label;
+    document.getElementById('activityBadge').className = `text-xs font-semibold px-2 py-0.5 rounded ${
+      activity.color === "blue" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
+      : activity.color === "amber" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+      : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+    }`;
+
+    // API & CMD CHART
+    const allDates = Array.from(new Set([...daily.api.map(x => x.date), ...daily.command.map(x => x.date)])).sort();
+    const apiMap = Object.fromEntries(daily.api.map(x => [x.date, x.count]));
+    const cmdMap = Object.fromEntries(daily.command.map(x => [x.date, x.count]));
+    const apiCounts = allDates.map(d => apiMap[d] || 0);
+    const cmdCounts = allDates.map(d => cmdMap[d] || 0);
+
+    if (chart1) chart1.destroy();
+    chart1 = new Chart(document.getElementById('chartApiCommand'), {
+      type: "line",
+      data: {
+        labels: allDates,
+        datasets: [
+          { label: "API Calls", data: apiCounts, borderColor: "rgba(54,162,235,1)", backgroundColor: "rgba(54,162,235,0.2)", borderWidth: 2, fill: true, tension: 0.25 },
+          { label: "Commands Executed", data: cmdCounts, borderColor: "rgba(75,192,192,1)", backgroundColor: "rgba(75,192,192,0.2)", borderWidth: 2, fill: true, tension: 0.25 }
+        ]
+      },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    // EMAIL CHART
+    if (chart2) chart2.destroy();
+    chart2 = new Chart(document.getElementById('chartEmail'), {
+      type: "bar",
+      data: {
+        labels: daily.email.map(x => x.date),
+        datasets: [{ label: "Emails Sent", data: daily.email.map(x => x.count), backgroundColor: "rgba(255,206,86,0.6)", borderColor: "rgba(255,206,86,1)" }]
+      },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    // TOP COMMANDS
+    const rows = (Array.isArray(topCmd) ? topCmd : []).slice(0, 10);
+    const tbody = document.getElementById("topCommandsBodyTable");
+    tbody.replaceChildren();
+    if (rows.length) {
+      rows.forEach((row, index) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-800/60';
+        [index + 1, row.command, row.count].forEach((value, cellIndex) => {
+          const td = document.createElement('td');
+          td.className = cellIndex === 0 ? 'p-3 text-center text-gray-400'
+            : cellIndex === 1 ? 'p-3 text-gray-800 dark:text-gray-100 truncate' : 'p-3 text-right';
+          td.textContent = String(value ?? '');
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    } else {
+      tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-500">No data</td></tr>`;
+    }
+
+    // TOP CAMERAS
+    const topCamerasBody = document.getElementById('topCamerasBody');
+    topCamerasBody.replaceChildren();
+    if (topCam.length) {
+      topCam.forEach(camera => {
+        const tr = document.createElement('tr');
+        const nameCell = document.createElement('td');
+        nameCell.className = 'p-3 font-medium';
+        nameCell.textContent = String(camera.camera_name ?? '');
+        const countCell = document.createElement('td');
+        countCell.className = 'p-3 text-right';
+        countCell.textContent = String(camera.count ?? '');
+        tr.append(nameCell, countCell);
+        topCamerasBody.appendChild(tr);
+      });
+    } else {
+      topCamerasBody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-gray-500">No data</td></tr>`;
+    }
+
+    localizeReportCharts();
+  }
+
+  function renderOperations(operations) {
+    if (chartAvailability) chartAvailability.destroy();
+    chartAvailability = new Chart(document.getElementById('chartCameraAvailability'), {
+      type: 'bar',
+      data: {
+        labels: operations.dates,
+        datasets: [
+          {
+            type: 'line',
+            label: 'Availability (%)',
+            data: operations.availability,
+            borderColor: 'rgba(34,197,94,1)',
+            backgroundColor: 'rgba(34,197,94,0.15)',
+            yAxisID: 'yAvailability',
+            spanGaps: false,
+            tension: 0.25
+          },
+          {
+            type: 'bar',
+            label: 'Downtime (hours)',
+            data: operations.downtime_hours,
+            backgroundColor: 'rgba(239,68,68,0.55)',
+            yAxisID: 'yDowntime',
+            spanGaps: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              afterBody: (items) => {
+                const index = items[0]?.dataIndex;
+                const hours = operations.coverage_hours[index];
+                return hours > 0 ? `Monitored coverage: ${hours} hours` : 'No monitoring data for this day';
+              }
+            }
+          }
+        },
+        scales: {
+          yAvailability: {
+            type: 'linear', position: 'left', min: 0, max: 100,
+            title: { display: true, text: 'Availability (%)' }
+          },
+          yDowntime: {
+            type: 'linear', position: 'right', beginAtZero: true,
+            grid: { drawOnChartArea: false },
+            title: { display: true, text: 'Downtime (hours)' }
+          }
+        }
+      }
+    });
+
+    if (chartIncidents) chartIncidents.destroy();
+    chartIncidents = new Chart(document.getElementById('chartOfflineIncidents'), {
+      type: 'bar',
+      data: {
+        labels: operations.dates,
+        datasets: [{
+          label: 'Offline transitions',
+          data: operations.offline_incidents,
+          backgroundColor: 'rgba(245,158,11,0.65)',
+          borderColor: 'rgba(245,158,11,1)',
+          borderWidth: 1
+        }]
+      },
+      options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+
+    const downtimeBody = document.getElementById('topDowntimeCamerasBody');
+    downtimeBody.replaceChildren();
+    if (operations.top_downtime_cameras.length) {
+      operations.top_downtime_cameras.forEach(camera => {
+        const tr = document.createElement('tr');
+        const nameCell = document.createElement('td');
+        nameCell.className = 'p-3 font-medium';
+        if (camera.camera_name && camera.camera_name !== '(unknown)') {
+          const historyLink = document.createElement('a');
+          const historyParams = new URLSearchParams({ q: camera.camera_name });
+          historyLink.href = `/health/history?${historyParams}`;
+          historyLink.textContent = camera.camera_name;
+          historyLink.className = 'text-blue-600 hover:underline dark:text-blue-400';
+          nameCell.appendChild(historyLink);
+        } else {
+          nameCell.textContent = camera.camera_name;
+        }
+        const downtimeCell = document.createElement('td');
+        downtimeCell.className = 'p-3 text-right';
+        downtimeCell.textContent = camera.downtime_hours.toLocaleString();
+        const availabilityCell = document.createElement('td');
+        availabilityCell.className = 'p-3 text-right';
+        availabilityCell.textContent = camera.availability === null ? 'No data' : `${camera.availability}%`;
+        tr.append(nameCell, downtimeCell, availabilityCell);
+        downtimeBody.appendChild(tr);
+      });
+    } else {
+      downtimeBody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-500">No monitored downtime data</td></tr>';
+    }
+    localizeReportCharts();
+  }
+
+  let overviewController;
+  let refreshOverviewStatus = () => {};
+  window.addEventListener('bsnap:languagechange', () => refreshOverviewStatus());
   async function renderInsights() {
     if (!document.getElementById('kpiApi')) return;
+    overviewController?.abort();
+    const reportButton = document.getElementById('downloadReport');
+    reportButton.disabled = true;
 
     const overviewStatus = document.getElementById('overviewStatus');
     const setOverviewStatus = (message, isError = false) => {
@@ -408,7 +605,7 @@ document.addEventListener("DOMContentLoaded", () => {
       overviewStatus.classList.toggle('text-blue-700', !isError);
       overviewStatus.classList.toggle('dark:text-blue-300', !isError);
     };
-    
+
     const s = document.getElementById('startDate').value;
     const e = document.getElementById('endDate').value;
     const inclusiveDays = s && e ? (Date.parse(`${e}T00:00:00Z`) - Date.parse(`${s}T00:00:00Z`)) / 86400000 + 1 : 0;
@@ -421,215 +618,41 @@ document.addEventListener("DOMContentLoaded", () => {
     if (selectedGroup) params.set('group_id', selectedGroup);
     const q = `?${params}`;
     setOverviewStatus('Loading analytics…');
-    
-    try {
-      const [dashboard, operations] = await Promise.all([
-        getJSON(`/log/stats/dashboard${q}`),
-        getJSON(`/stats/operations${q}`),
-      ]);
-      const { summary, daily, top_commands: topCmd, top_cameras: topCam } = dashboard;
-      
-      // KPI
-      document.getElementById('kpiApi').textContent = summary.totals.api.toLocaleString();
-      document.getElementById('kpiCmd').textContent = summary.totals.command.toLocaleString();
-      document.getElementById('kpiEmail').textContent = summary.totals.email.toLocaleString();
-      
-      const setDelta = (el, val) => {
-        const arrow = val > 0 ? "↑" : val < 0 ? "↓" : "→";
-        const color = val > 0 ? "text-green-600" : val < 0 ? "text-red-600" : "text-gray-500";
-        el.className = `text-sm ${color}`;
-        el.textContent = `${arrow} ${val.toFixed(1)}% vs prev`;
-      };
-      setDelta(document.getElementById('kpiApiDelta'), summary.delta_pct.api);
-      setDelta(document.getElementById('kpiCmdDelta'), summary.delta_pct.command);
-      setDelta(document.getElementById('kpiEmailDelta'), summary.delta_pct.email);
-      
-      const activity = summary.activity_index;
-      document.getElementById('activityValue').textContent = activity.value;
-      document.getElementById('activityBadge').textContent = activity.label;
-      document.getElementById('activityBadge').className = `text-xs font-semibold px-2 py-0.5 rounded ${
-        activity.color === "blue" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
-        : activity.color === "amber" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
-        : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-      }`;
-      
-      // API & CMD CHART
-      const allDates = Array.from(new Set([...daily.api.map(x => x.date), ...daily.command.map(x => x.date)])).sort();
-      const apiMap = Object.fromEntries(daily.api.map(x => [x.date, x.count]));
-      const cmdMap = Object.fromEntries(daily.command.map(x => [x.date, x.count]));
-      const apiCounts = allDates.map(d => apiMap[d] || 0);
-      const cmdCounts = allDates.map(d => cmdMap[d] || 0);
-      
-      if (chart1) chart1.destroy();
-      chart1 = new Chart(document.getElementById('chartApiCommand'), {
-        type: "line",
-        data: {
-          labels: allDates,
-          datasets: [
-            { label: "API Calls", data: apiCounts, borderColor: "rgba(54,162,235,1)", backgroundColor: "rgba(54,162,235,0.2)", borderWidth: 2, fill: true, tension: 0.25 },
-            { label: "Commands Executed", data: cmdCounts, borderColor: "rgba(75,192,192,1)", backgroundColor: "rgba(75,192,192,0.2)", borderWidth: 2, fill: true, tension: 0.25 }
-          ]
-        },
-        options: { scales: { y: { beginAtZero: true } } }
-      });
-      
-      // EMAIL CHART
-      if (chart2) chart2.destroy();
-      chart2 = new Chart(document.getElementById('chartEmail'), {
-        type: "bar",
-        data: {
-          labels: daily.email.map(x => x.date),
-          datasets: [{ label: "Emails Sent", data: daily.email.map(x => x.count), backgroundColor: "rgba(255,206,86,0.6)", borderColor: "rgba(255,206,86,1)" }]
-        },
-        options: { scales: { y: { beginAtZero: true } } }
-      });
 
-      if (chartAvailability) chartAvailability.destroy();
-      chartAvailability = new Chart(document.getElementById('chartCameraAvailability'), {
-        type: 'bar',
-        data: {
-          labels: operations.dates,
-          datasets: [
-            {
-              type: 'line',
-              label: 'Availability (%)',
-              data: operations.availability,
-              borderColor: 'rgba(34,197,94,1)',
-              backgroundColor: 'rgba(34,197,94,0.15)',
-              yAxisID: 'yAvailability',
-              spanGaps: false,
-              tension: 0.25
-            },
-            {
-              type: 'bar',
-              label: 'Downtime (hours)',
-              data: operations.downtime_hours,
-              backgroundColor: 'rgba(239,68,68,0.55)',
-              yAxisID: 'yDowntime',
-              spanGaps: false
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            tooltip: {
-              callbacks: {
-                afterBody: (items) => {
-                  const index = items[0]?.dataIndex;
-                  const hours = operations.coverage_hours[index];
-                  return hours > 0 ? `Monitored coverage: ${hours} hours` : 'No monitoring data for this day';
-                }
-              }
-            }
-          },
-          scales: {
-            yAvailability: {
-              type: 'linear', position: 'left', min: 0, max: 100,
-              title: { display: true, text: 'Availability (%)' }
-            },
-            yDowntime: {
-              type: 'linear', position: 'right', beginAtZero: true,
-              grid: { drawOnChartArea: false },
-              title: { display: true, text: 'Downtime (hours)' }
-            }
-          }
-        }
-      });
-
-      if (chartIncidents) chartIncidents.destroy();
-      chartIncidents = new Chart(document.getElementById('chartOfflineIncidents'), {
-        type: 'bar',
-        data: {
-          labels: operations.dates,
-          datasets: [{
-            label: 'Offline transitions',
-            data: operations.offline_incidents,
-            backgroundColor: 'rgba(245,158,11,0.65)',
-            borderColor: 'rgba(245,158,11,1)',
-            borderWidth: 1
-          }]
-        },
-        options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
-      });
-      
-      // TOP COMMANDS
-      const rows = (Array.isArray(topCmd) ? topCmd : []).slice(0, 10);
-      const tbody = document.getElementById("topCommandsBodyTable");
-      tbody.replaceChildren();
-      if (rows.length) {
-        rows.forEach((row, index) => {
-          const tr = document.createElement('tr');
-          tr.className = 'hover:bg-gray-800/60';
-          [index + 1, row.command, row.count].forEach((value, cellIndex) => {
-            const td = document.createElement('td');
-            td.className = cellIndex === 0 ? 'p-3 text-center text-gray-400'
-              : cellIndex === 1 ? 'p-3 text-gray-100 truncate' : 'p-3 text-right';
-            td.textContent = String(value ?? '');
-            tr.appendChild(td);
-          });
-          tbody.appendChild(tr);
-        });
-      } else {
-        tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-500">No data</td></tr>`;
+    const controller = new AbortController();
+    overviewController = controller;
+    const states = { activity: 'loading', operations: 'loading' };
+    const updateStatus = () => {
+      if (controller.signal.aborted) return;
+      const messages = [];
+      if (states.activity === 'loading') messages.push('Loading system activity...');
+      if (states.operations === 'loading') messages.push('Loading camera operations...');
+      if (states.activity === 'error') messages.push('Unable to refresh system activity.');
+      if (states.operations === 'error') messages.push('Unable to refresh camera operations.');
+      setOverviewStatus(messages.map(message => window.BSnapI18n?.t(message) || message).join(' '), Object.values(states).includes('error'));
+      reportButton.disabled = !Object.values(states).every(state => state === 'ready');
+    };
+    const loadSection = async (key, url, render) => {
+      try {
+        const data = await getJSON(url, controller.signal);
+        if (controller.signal.aborted) return;
+        render(data);
+        states[key] = 'ready';
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.error(`Error loading ${key}:`, error);
+        states[key] = 'error';
       }
-      
-      // TOP CAMERAS
-      const topCamerasBody = document.getElementById('topCamerasBody');
-      topCamerasBody.replaceChildren();
-      if (topCam.length) {
-        topCam.forEach(camera => {
-          const tr = document.createElement('tr');
-          const nameCell = document.createElement('td');
-          nameCell.className = 'p-3 font-medium';
-          nameCell.textContent = String(camera.camera_name ?? '');
-          const countCell = document.createElement('td');
-          countCell.className = 'p-3 text-right';
-          countCell.textContent = String(camera.count ?? '');
-          tr.append(nameCell, countCell);
-          topCamerasBody.appendChild(tr);
-        });
-      } else {
-        topCamerasBody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-gray-500">No data</td></tr>`;
-      }
-
-      const downtimeBody = document.getElementById('topDowntimeCamerasBody');
-      downtimeBody.replaceChildren();
-      if (operations.top_downtime_cameras.length) {
-        operations.top_downtime_cameras.forEach(camera => {
-          const tr = document.createElement('tr');
-          const nameCell = document.createElement('td');
-          nameCell.className = 'p-3 font-medium';
-          if (camera.camera_name && camera.camera_name !== '(unknown)') {
-            const historyLink = document.createElement('a');
-            const historyParams = new URLSearchParams({ q: camera.camera_name });
-            historyLink.href = `/health/history?${historyParams}`;
-            historyLink.textContent = camera.camera_name;
-            historyLink.className = 'text-blue-600 hover:underline dark:text-blue-400';
-            nameCell.appendChild(historyLink);
-          } else {
-            nameCell.textContent = camera.camera_name;
-          }
-          const downtimeCell = document.createElement('td');
-          downtimeCell.className = 'p-3 text-right';
-          downtimeCell.textContent = camera.downtime_hours.toLocaleString();
-          const availabilityCell = document.createElement('td');
-          availabilityCell.className = 'p-3 text-right';
-          availabilityCell.textContent = camera.availability === null ? 'No data' : `${camera.availability}%`;
-          tr.append(nameCell, downtimeCell, availabilityCell);
-          downtimeBody.appendChild(tr);
-        });
-      } else {
-        downtimeBody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-500">No monitored downtime data</td></tr>';
-      }
-      localizeReportCharts();
-      setOverviewStatus('');
-    } catch (err) {
-      console.error('Error loading insights:', err);
-      setOverviewStatus('Unable to refresh analytics. Displayed values may be from the previous successful date range.', true);
-    }
+      updateStatus();
+    };
+    refreshOverviewStatus = updateStatus;
+    updateStatus();
+    await Promise.allSettled([
+      loadSection('activity', `/log/stats/dashboard${q}`, renderActivity),
+      loadSection('operations', `/stats/operations${q}`, renderOperations),
+    ]);
   }
-  
+
   if (document.getElementById('applyFilter')) {
     document.getElementById('applyFilter').addEventListener('click', () => {
       const url = new URL(window.location.href);
@@ -640,7 +663,14 @@ document.addEventListener("DOMContentLoaded", () => {
       renderInsights();
     });
   }
-  
+
+  ['startDate', 'endDate'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      overviewController?.abort();
+      document.getElementById('downloadReport').disabled = true;
+    });
+  });
+
   if (document.getElementById('downloadReport')) {
     document.getElementById('downloadReport').addEventListener('click', async () => {
       try {
@@ -651,12 +681,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const emailChartEl = document.getElementById('chartEmail');
         const availabilityChartEl = document.getElementById('chartCameraAvailability');
         const incidentsChartEl = document.getElementById('chartOfflineIncidents');
-        
+
         if (!apiChartEl || !emailChartEl || !availabilityChartEl || !incidentsChartEl) {
           themedSwal({icon: 'error', title: 'Error', text: 'Charts not ready. Please wait for charts to load.'});
           return;
         }
-        
+
         const apiImg = apiChartEl.toDataURL("image/png");
         const emailImg = emailChartEl.toDataURL("image/png");
         const availabilityImg = availabilityChartEl.toDataURL("image/png");
@@ -671,11 +701,11 @@ document.addEventListener("DOMContentLoaded", () => {
         fd.append("incidents_chart", incidentsImg);
         const groupId = document.getElementById('analyticsGroupFilter')?.value;
         if (groupId) fd.append("group_id", groupId);
-        
+
         console.log('Sending POST request to /log/stats/report-pro');
         const r = await fetch("/log/stats/report-pro", { method: "POST", body: fd, credentials: 'same-origin' });
         console.log('Response status:', r.status, r.statusText);
-        
+
         if (!r.ok) {
           const errorText = await r.text();
           console.error('Error response:', errorText);
@@ -696,25 +726,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ==================== SNAPSHOT STATS TAB ====================
   let snapshotChartInstance;
-  
-  const initialChartLabels = {{ chart_labels | tojson }};
-  const initialChartData = {{ chart_data | tojson }};
-  
+  let snapshotStatsController;
+  let snapshotCamerasController;
+
+
   async function fetchStats(camera = "", days = 7) {
-    if (!document.getElementById('snapshotChart')) return;
+    if (!document.getElementById('snapshotChart')) return false;
+    snapshotStatsController?.abort();
+    const controller = new AbortController();
+    snapshotStatsController = controller;
     const status = document.getElementById('snapshotStatsStatus');
     status.textContent = 'Loading snapshot statistics…';
     status.classList.remove('hidden', 'text-red-700', 'dark:text-red-300');
     status.classList.add('text-blue-700', 'dark:text-blue-300');
-    
+
     try {
       const params = new URLSearchParams({ camera, days: String(days) });
       const selectedGroup = document.getElementById('analyticsGroupFilter')?.value;
       if (selectedGroup) params.set('group_id', selectedGroup);
-      const res = await fetch(`/stats/data?${params}`);
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data = await res.json();
-      
+      const data = await getJSON(`/stats/data?${params}`, controller.signal);
+      if (controller.signal.aborted) return false;
+
       if (data.chart_labels && data.chart_labels.length > 0) {
         updateSnapshotChart(data.chart_labels, data.chart_data);
       } else {
@@ -722,33 +754,41 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       status.textContent = '';
       status.classList.add('hidden');
+      return true;
     } catch (error) {
+      if (controller.signal.aborted) return false;
       console.error('Error fetching stats:', error);
       status.textContent = 'Unable to load snapshot statistics. The chart may show the previous successful result.';
       status.classList.remove('hidden', 'text-blue-700', 'dark:text-blue-300');
       status.classList.add('text-red-700', 'dark:text-red-300');
+      return false;
     }
   }
-  
+
   async function fetchNoDataCameras(days = 7, selectedCamera = "") {
+    snapshotCamerasController?.abort();
+    const controller = new AbortController();
+    snapshotCamerasController = controller;
     try {
       const params = new URLSearchParams({ days: String(days) });
       const selectedGroup = document.getElementById('analyticsGroupFilter')?.value;
       if (selectedGroup) params.set('group_id', selectedGroup);
-      const res = await fetch(`/stats/no-data-cameras?${params}`);
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data = await res.json();
+      const data = await getJSON(`/stats/no-data-cameras?${params}`, controller.signal);
+      if (controller.signal.aborted) return false;
       updateNoDataCameras(data.cameras, selectedCamera);
+      return true;
     } catch (error) {
+      if (controller.signal.aborted) return false;
       console.error('Error fetching no-data cameras:', error);
+      return false;
     }
   }
-  
+
   function showNoDataMessage() {
     if (!document.getElementById('snapshotChart')) return;
     const ctx = document.getElementById('snapshotChart').getContext('2d');
     if (snapshotChartInstance) snapshotChartInstance.destroy();
-    
+
     snapshotChartInstance = new Chart(ctx, {
       type: 'bar',
       data: {
@@ -770,17 +810,17 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-  
+
   function updateSnapshotChart(labels, values) {
     if (!document.getElementById('snapshotChart')) return;
     const ctx = document.getElementById('snapshotChart').getContext('2d');
     if (snapshotChartInstance) snapshotChartInstance.destroy();
-    
+
     if (!labels || labels.length === 0) {
       showNoDataMessage();
       return;
     }
-    
+
     snapshotChartInstance = new Chart(ctx, {
       type: 'bar',
       data: {
@@ -803,14 +843,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-  
+
   function updateNoDataCameras(cameras, selectedCamera) {
     const ul = document.getElementById('noDataCamerasList');
     const totalCountSpan = document.getElementById('totalNoDataCamerasCount');
     const noDataSection = document.getElementById('noDataCamerasSection');
-    
+
     if (!ul || !noDataSection) return;
-    
+
     if (selectedCamera === "" && cameras.length > 0) {
       totalCountSpan.textContent = cameras.length;
       noDataSection.classList.remove('hidden');
@@ -834,7 +874,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ul.innerHTML = "";
     }
   }
-  
+
   if (document.getElementById('cameraDropdown')) {
     document.getElementById('cameraDropdown').addEventListener('change', (e) => {
       const selectedCamera = e.target.value;
@@ -860,7 +900,7 @@ document.addEventListener("DOMContentLoaded", () => {
       window.location.assign(url);
     });
   }
-  
+
   if (document.getElementById('periodDropdown')) {
     document.getElementById('periodDropdown').addEventListener('change', (e) => {
       const selectedCamera = document.getElementById('cameraDropdown').value;
@@ -872,50 +912,97 @@ document.addEventListener("DOMContentLoaded", () => {
       window.history.replaceState(null, '', url);
       fetchStats(selectedCamera, e.target.value);
       fetchNoDataCameras(e.target.value, selectedCamera);
+      loadSnapshotDetails();
     });
   }
-  
-  // Initial load for snapshot chart (only if tab is active or will be shown)
-  function initSnapshotTab() {
-    if (initialChartLabels && initialChartLabels.length > 0) {
-      updateSnapshotChart(initialChartLabels, initialChartData);
-    } else {
-      showNoDataMessage();
-    }
-    fetchNoDataCameras(7, "");
-  }
-  
-  // Delay snapshot chart init if not on snapshots tab initially
-  const initialTab = new URLSearchParams(window.location.search).get('tab') || 'overview';
-  if (initialTab === 'snapshots') {
-    initSnapshotTab();
-  } else {
-    // Wait for tab switch
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-          const el = mutation.target;
-          if (el.id === 'snapshotsTabContent' && el.style.display !== 'none') {
-            initSnapshotTab();
-            observer.disconnect();
-          }
-        }
+
+  let snapshotDetailsController;
+  async function loadSnapshotDetails() {
+    snapshotDetailsController?.abort();
+    const controller = new AbortController();
+    snapshotDetailsController = controller;
+    const status = document.getElementById('snapshotDetailsStatus');
+    status.classList.add('hidden');
+    const params = new URLSearchParams({ days: document.getElementById('periodDropdown').value });
+    const group = document.getElementById('analyticsGroupFilter').value;
+    if (group) params.set('group_id', group);
+    try {
+      const data = await getJSON(`/stats/snapshot-details?${params}`, controller.signal);
+      if (controller.signal.aborted) return;
+      const dropdown = document.getElementById('cameraDropdown');
+      const selected = dropdown.value;
+      dropdown.replaceChildren(new Option('All Cameras', ''));
+      const names = new Set(data.camera_names);
+      if (selected) names.add(selected);
+      [...names].sort().forEach(name => dropdown.add(new Option(name, name, false, name === selected)));
+      const body = document.getElementById('snapshotTimingBody');
+      body.replaceChildren();
+      data.timing_logs.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-t dark:border-gray-600';
+        [log.started_at, log.ended_at, log.duration].forEach((value, index) => {
+          const td = document.createElement('td');
+          td.className = 'px-4 py-2';
+          if (index < 2) {
+            const span = document.createElement('span');
+            span.dataset.localizedDate = value;
+            span.textContent = BSnapDates.format(value);
+            td.appendChild(span);
+          } else td.textContent = value;
+          tr.appendChild(td);
+        });
+        const state = document.createElement('td');
+        state.className = 'px-4 py-2';
+        const badge = document.createElement('span');
+        badge.className = log.status === 'success' ? 'text-green-600 dark:text-green-400 font-semibold'
+          : log.status === 'partial' ? 'text-yellow-600 dark:text-yellow-400 font-semibold'
+          : 'text-red-600 dark:text-red-400 font-semibold';
+        const label = log.status === 'success' ? 'Success' : log.status === 'partial' ? 'Partial' : 'Failed';
+        badge.textContent = label;
+        state.appendChild(badge);
+        tr.appendChild(state);
+        body.appendChild(tr);
       });
-    });
-    const snapshotsContent = document.getElementById('snapshotsTabContent');
-    if (snapshotsContent) {
-      observer.observe(snapshotsContent, { attributes: true });
+      window.BSnapI18n?.localize(body);
+      return true;
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      console.error('Error loading snapshot details:', error);
+      status.textContent = 'Unable to load snapshot filters and scheduler history.';
+      status.classList.remove('hidden');
+      return false;
     }
   }
+
+  let snapshotInitialized = false;
+  let snapshotInitializing = false;
+  async function initSnapshotTab() {
+    if (snapshotInitialized || snapshotInitializing) return;
+    snapshotInitializing = true;
+    try {
+      const camera = document.getElementById('cameraDropdown').value;
+      const days = document.getElementById('periodDropdown').value;
+      const results = await Promise.allSettled([
+        loadSnapshotDetails(), fetchStats(camera, days), fetchNoDataCameras(days, camera), fetchStorageStatus(),
+      ]);
+      snapshotInitialized = results.slice(0, 3).every(result => result.status === 'fulfilled' && result.value === true);
+    } finally {
+      snapshotInitializing = false;
+    }
+  }
+  const requestedTab = new URLSearchParams(window.location.search).get('tab');
+  const initialTab = requestedTab === 'snapshots' ? 'snapshots' : 'overview';
+  window.addEventListener('bsnap:analyticstab', event => {
+    if (event.detail === 'snapshots') initSnapshotTab();
+  });
+  if (initialTab === 'snapshots') initSnapshotTab();
 
   // ==================== STORAGE MONITOR ====================
   async function fetchStorageStatus() {
     if (!document.getElementById('storageContent')) return;
-    
+
     try {
-      const res = await fetch('/storage/status');
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data = await res.json();
+      const data = await getJSON('/storage/status');
       updateStorageWidget(data);
     } catch (error) {
       console.error('Error fetching storage status:', error);
@@ -925,7 +1012,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('storageStatusText').className = 'text-sm font-medium text-red-600';
     }
   }
-  
+
   function updateStorageWidget(data) {
     if (data.alert_level === 'unknown' || data.usage_percent === 0) {
       document.getElementById('storageLoading').classList.add('hidden');
@@ -935,30 +1022,30 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('storagePercentText').textContent = '-';
       return;
     }
-    
+
     document.getElementById('storageLoading').classList.add('hidden');
     document.getElementById('storageContent').classList.remove('hidden');
-    
+
     const percent = data.usage_percent || 0;
     const progressBar = document.getElementById('storageProgressBar');
     progressBar.style.width = `${percent}%`;
-    
+
     let statusColor = 'text-green-600', barColor = 'bg-green-600';
     if (data.alert_level === 'critical') { statusColor = 'text-red-600'; barColor = 'bg-red-600'; }
     else if (data.alert_level === 'warning') { statusColor = 'text-yellow-600'; barColor = 'bg-yellow-600'; }
     else if (data.alert_level === 'info') { statusColor = 'text-blue-600'; barColor = 'bg-blue-600'; }
-    
+
     progressBar.className = `${barColor} h-2.5 rounded-full transition-all duration-500`;
     document.getElementById('storageStatusText').textContent = data.alert_level.charAt(0).toUpperCase() + data.alert_level.slice(1);
     document.getElementById('storageStatusText').className = `text-sm font-medium ${statusColor}`;
     document.getElementById('storagePercentText').textContent = `${percent}%`;
     document.getElementById('storageDetailText').textContent = data.last_updated ? `Last updated: ${new Date(data.last_updated).toLocaleString(BSnapDates.locale())}` : '';
-    
+
     document.getElementById('storageTotal').textContent = data.total;
     document.getElementById('storageUsed').textContent = data.used;
     document.getElementById('storageFree').textContent = data.free;
     document.getElementById('storageGrowth').textContent = data.growth_rate > 0 ? `+${data.growth_rate} GB/day` : `${data.growth_rate} GB/day`;
-    
+
     if (data.breakdown) {
       document.getElementById('barSnapshots').style.width = `${data.breakdown.snapshots_percent || 0}%`;
       document.getElementById('textSnapshots').textContent = data.breakdown.snapshots;
@@ -967,21 +1054,21 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('barLogs').style.width = `${data.breakdown.logs_percent || 0}%`;
       document.getElementById('textLogs').textContent = data.breakdown.logs;
     }
-    
+
     if (data.days_until_full > 0 && data.growth_rate > 0) {
       document.getElementById('storagePrediction').classList.remove('hidden');
       document.getElementById('daysUntilFull').textContent = data.days_until_full;
     } else {
       document.getElementById('storagePrediction').classList.add('hidden');
     }
-    
+
   }
-  
+
   if (document.getElementById('refreshStorageBtn')) {
     document.getElementById('refreshStorageBtn').addEventListener('click', async () => {
       document.getElementById('storageLoading').classList.remove('hidden');
       document.getElementById('storageContent').classList.add('hidden');
-      
+
       try {
         await fetch('/storage/check-now', { method: 'POST' });
         await new Promise(r => setTimeout(r, 1000));
@@ -991,30 +1078,15 @@ document.addEventListener("DOMContentLoaded", () => {
       await fetchStorageStatus();
     });
   }
-  
-  fetchStorageStatus();
-  
-  // Render insights if on overview tab, otherwise wait
-  if (initialTab === 'overview') {
-    renderInsights();
-  } else {
-    // Wait for tab switch to overview
-    const insightsObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-          const el = mutation.target;
-          if (el.id === 'overviewTabContent' && el.style.display !== 'none') {
-            renderInsights();
-            insightsObserver.disconnect();
-          }
-        }
-      });
-    });
-    const overviewContent = document.getElementById('overviewTabContent');
-    if (overviewContent) {
-      insightsObserver.observe(overviewContent, { attributes: true });
+
+  let overviewInitialized = initialTab === 'overview';
+  if (overviewInitialized) renderInsights();
+  window.addEventListener('bsnap:analyticstab', event => {
+    if (event.detail === 'overview' && !overviewInitialized) {
+      overviewInitialized = true;
+      renderInsights();
     }
-  }
+  });
 });
 </script>
 {% endblock %}

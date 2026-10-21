@@ -79,14 +79,16 @@ def archive_expired_api_logs(db: Session, cutoff: datetime) -> int:
     return len(timestamps)
 
 
-def api_daily_counts(db: Session, start: datetime, end: datetime) -> list[dict]:
+def api_daily_counts(
+    db: Session, start: datetime, end: datetime, *, tz_name: str | None = None
+) -> list[dict]:
     """Read retained logs and archived day labels, preserving archival timezone.
 
     Archived statistics have daily precision. Their stored date does not shift
     when the configured timezone changes; buckets with the same date are summed.
     Only retained detailed logs can be filtered at sub-day precision.
     """
-    tz_name = get_current_timezone(db)
+    tz_name = tz_name or get_current_timezone(db)
     tz = ZoneInfo(tz_name)
     start, end = _utc(start), _utc(end)
     archived = (

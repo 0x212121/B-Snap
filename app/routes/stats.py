@@ -1,5 +1,6 @@
 from collections import defaultdict
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta, timezone
+from typing import Annotated
 from fastapi import APIRouter, Query, Request, Depends, HTTPException
 import pytz
 from fastapi.responses import HTMLResponse, JSONResponse, ORJSONResponse
@@ -35,82 +36,62 @@ def _camera_group_camera_ids(group_id: int):
 
 
 @router.get("/analytics", response_class=HTMLResponse)
-async def get_analytics(
+def get_analytics(
     request: Request,
     camera: str = Query(None),
     group_id: int | None = Query(None, ge=1),
     days: int = Query(7, ge=1, le=365),
     db: Session = Depends(get_db),
-    current_admin: User = Depends(admin_access_required) 
-):
-    """Unified Analytics Dashboard - combines Statistics and Insights."""
-    # Calculate date range using user's configured timezone
-    tz_name = get_current_timezone(db)
-    tz = pytz.timezone(tz_name)
-    now = datetime.now(tz)
-    end_date = now.date()
+    current_admin: User = Depends(admin_access_required),
+) -> HTMLResponse:
+    """Render the dashboard shell; fetch snapshot data only when its tab opens."""
+    if group_id is not None and db.get(CameraGroup, group_id) is None:
+        raise HTTPException(status_code=404, detail="Camera group not found")
+    return templates.TemplateResponse(
+        "analytics.html",
+        {
+            "request": request,
+            "selected_camera": camera,
+            "selected_days": days,
+            "camera_groups": db.query(CameraGroup).order_by(CameraGroup.name).all(),
+            "selected_group_id": group_id,
+            "server_timezone": get_current_timezone(db),
+        },
+    )
+
+
+@router.get(
+    "/stats/snapshot-details",
+    response_class=ORJSONResponse,
+    dependencies=[Depends(admin_access_required)],
+)
+def get_snapshot_details(
+    db: Annotated[Session, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 7,
+    group_id: Annotated[int | None, Query(ge=1)] = None,
+) -> dict[str, object]:
+    """Load snapshot filters and scheduler history with one timezone lookup."""
+    if group_id is not None and db.get(CameraGroup, group_id) is None:
+        raise HTTPException(status_code=404, detail="Camera group not found")
+    tz = pytz.timezone(get_current_timezone(db))
+    end_date = datetime.now(tz).date()
     start_date = end_date - timedelta(days=days - 1)
-    
-    # Query with date range and snapshot count filter
-    query = db.query(CameraDailyStats).filter(
+    query = db.query(CameraDailyStats.camera_name).filter(
         CameraDailyStats.snapshot_count > 0,
         CameraDailyStats.date >= start_date,
-        CameraDailyStats.date <= end_date
-    )
-
-    if group_id is not None:
-        group = db.get(CameraGroup, group_id)
-        if group is None:
-            raise HTTPException(status_code=404, detail="Camera group not found")
-        group_camera_ids = _camera_group_camera_ids(group_id)
-        group_camera_names = select(DBCamera.hostname).where(
-            DBCamera.id.in_(group_camera_ids)
-        )
-        query = query.filter(or_(
-            CameraDailyStats.camera_id.in_(group_camera_ids),
-            CameraDailyStats.camera_name.in_(group_camera_names),
-        ))
-
-    if camera:
-        query = query.filter(CameraDailyStats.camera_name == camera)
-
-    chart_rows = (
-        query.with_entities(
-            CameraDailyStats.date,
-            func.coalesce(func.sum(CameraDailyStats.snapshot_count), 0).label("snapshot_count"),
-        )
-        .group_by(CameraDailyStats.date)
-        .order_by(CameraDailyStats.date)
-        .all()
-    )
-    chart_data = [
-        {"date": row.date.isoformat(), "snapshot_count": int(row.snapshot_count or 0)}
-        for row in chart_rows
-    ]
-
-    all_cameras_query = (
-        db.query(DBCamera.hostname)
-        .join(CameraHealth, DBCamera.id == CameraHealth.camera_id)
-        .filter(and_(
-            not_(CameraHealth.status.ilike("standalone")),
-            DBCamera.ip.isnot(None),
-            DBCamera.ip != ""
-        ))
+        CameraDailyStats.date <= end_date,
     )
     if group_id is not None:
-        all_cameras_query = all_cameras_query.filter(
-            DBCamera.id.in_(_camera_group_camera_ids(group_id))
+        camera_ids = _camera_group_camera_ids(group_id)
+        camera_names = select(DBCamera.hostname).where(DBCamera.id.in_(camera_ids))
+        query = query.filter(
+            or_(
+                CameraDailyStats.camera_id.in_(camera_ids),
+                CameraDailyStats.camera_name.in_(camera_names),
+            )
         )
-    all_cameras = all_cameras_query.all()
-    all_cameras = [c[0].strip() for c in all_cameras]
-    cameras_with_data = {
-        name.strip()
-        for (name,) in query.with_entities(CameraDailyStats.camera_name).distinct().all()
-        if name
-    }
-    cameras_without_data = [c for c in all_cameras if c not in cameras_with_data]
-
-    timing_logs = (
+    names = sorted({name.strip() for (name,) in query.distinct().all() if name})
+    logs = (
         db.query(TaskTiming)
         .filter(TaskTiming.task_name == "scheduled_snapshot")
         .order_by(TaskTiming.started_at.desc())
@@ -118,40 +99,25 @@ async def get_analytics(
         .all()
     )
 
-    for log in timing_logs:
-        log.started_at_local = format_datetime_with_tz(to_current_timezone(log.started_at, db))
-        log.ended_at_local = format_datetime_with_tz(to_current_timezone(log.ended_at, db))
+    def local_timestamp(value: datetime | None) -> str:
+        if value is None:
+            return "N/A"
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
+        return format_datetime_with_tz(value.astimezone(tz))
 
-        # Format duration jadi hh:mm:ss
+    history = []
+    for log in logs:
         seconds = int((log.duration_ms or 0) / 1000)
-        hours = seconds // 3600
-        minutes = (seconds % 3600) // 60
-        secs = seconds % 60
-        log.duration_formatted = f"{hours:02}:{minutes:02}:{secs:02}"
-
-    context = {
-        "request": request,
-        "camera_names": sorted({
-            name.strip()
-            for (name,) in query.with_entities(CameraDailyStats.camera_name)
-            .filter(CameraDailyStats.snapshot_count > 0)
-            .distinct()
-            .all()
-            if name
-        }),
-        "selected_camera": camera,
-        "selected_days": days,
-        "camera_groups": db.query(CameraGroup).order_by(CameraGroup.name).all(),
-        "selected_group_id": group_id,
-        "chart_labels": [d["date"] for d in chart_data],
-        "chart_data": [d["snapshot_count"] for d in chart_data],
-        "no_data_cameras": cameras_without_data,
-        "total_cameras_without_data": len(cameras_without_data),
-        "timing_logs": timing_logs,
-        "server_timezone": get_current_timezone(db),
-    }
-
-    return templates.TemplateResponse("analytics.html", context)
+        history.append(
+            {
+                "started_at": local_timestamp(log.started_at),
+                "ended_at": local_timestamp(log.ended_at),
+                "duration": f"{seconds // 3600:02}:{seconds % 3600 // 60:02}:{seconds % 60:02}",
+                "status": log.status,
+            }
+        )
+    return {"camera_names": names, "timing_logs": history}
 
 
 @router.get("/stats", response_class=HTMLResponse)

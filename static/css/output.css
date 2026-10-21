@@ -4940,6 +4940,10 @@ select {
   background-color: rgb(55 65 81 / 0.5);
 }
 
+:is(.dark .dark\:hover\:bg-gray-800\/60:hover) {
+  background-color: rgb(31 41 55 / 0.6);
+}
+
 :is(.dark .dark\:hover\:bg-red-900\/20:hover) {
   background-color: rgb(127 29 29 / 0.2);
 }

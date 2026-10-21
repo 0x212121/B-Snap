@@ -48,8 +48,10 @@ def _local_tz(db: Session = None):
     return datetime.now().astimezone().tzinfo
 
 
-def _parse_range(start_date: str | None, end_date: str | None, db: Session = None):
-    tz = _local_tz(db)
+def _parse_range(
+    start_date: str | None, end_date: str | None, db: Session = None, *, tz_name: str | None = None
+):
+    tz = pytz.timezone(tz_name) if tz_name else _local_tz(db)
     now = datetime.now(tz)
 
     if not start_date or not end_date:
@@ -80,10 +82,19 @@ def _parse_range(start_date: str | None, end_date: str | None, db: Session = Non
     return start_dt_utc, end_dt_utc, prev_start, prev_end
 
 
-def _daily_counts(db: Session, model, ts_field, start_dt, end_dt, success_only=False):
+def _daily_counts(
+    db: Session,
+    model,
+    ts_field,
+    start_dt,
+    end_dt,
+    success_only=False,
+    *,
+    tz_name: str | None = None,
+):
     if model is ApiLog:
-        return api_daily_counts(db, start_dt, end_dt)
-    tz_name = get_current_timezone(db)
+        return api_daily_counts(db, start_dt, end_dt, tz_name=tz_name)
+    tz_name = tz_name or get_current_timezone(db)
 
     if db.get_bind().dialect.name == "sqlite":
         tz = pytz.timezone(tz_name)
@@ -106,34 +117,36 @@ def _daily_counts(db: Session, model, ts_field, start_dt, end_dt, success_only=F
         return [{"date": day, "count": counts[day]} for day in sorted(counts)]
 
     # convert ke local timezone sebelum DATE()
-    date_expr = func.date(
-        func.timezone(tz_name, getattr(model, ts_field))
+    date_expr = func.date(func.timezone(tz_name, getattr(model, ts_field)))
+
+    query = db.query(date_expr.label("date"), func.count("*").label("count")).filter(
+        getattr(model, ts_field) >= start_dt, getattr(model, ts_field) <= end_dt
     )
 
-    query = (
-        db.query(date_expr.label("date"), func.count("*").label("count"))
-        .filter(
-            getattr(model, ts_field) >= start_dt,
-            getattr(model, ts_field) <= end_dt
-        )
-    )
-
-    if success_only and hasattr(model, 'success'):
+    if success_only and hasattr(model, "success"):
         query = query.filter(model.success == True)
 
     rows = query.group_by(date_expr).order_by(date_expr).all()
     return [{"date": str(r.date), "count": r.count} for r in rows]
 
 
-def _total_count(db: Session, model, ts_field, start_dt, end_dt, success_only=False):
+def _total_count(
+    db: Session,
+    model,
+    ts_field,
+    start_dt,
+    end_dt,
+    success_only=False,
+    *,
+    tz_name: str | None = None,
+):
     if model is ApiLog:
-        return sum(row["count"] for row in api_daily_counts(db, start_dt, end_dt))
+        return sum(row["count"] for row in api_daily_counts(db, start_dt, end_dt, tz_name=tz_name))
     query = db.query(func.count("*")).filter(
-        getattr(model, ts_field) >= start_dt,
-        getattr(model, ts_field) <= end_dt
+        getattr(model, ts_field) >= start_dt, getattr(model, ts_field) <= end_dt
     )
     # Filter success=True untuk email logs jika diminta
-    if success_only and hasattr(model, 'success'):
+    if success_only and hasattr(model, "success"):
         query = query.filter(model.success == True)
     return query.scalar() or 0
 
@@ -209,14 +222,29 @@ def get_daily_stats(
     current_admin: User = Depends(admin_access_required),
 ):
     """Daily aggregated counts for API, Command, and Email (date-range aware)."""
-    start_dt, end_dt, _, _ = _parse_range(start_date, end_date, db)
+    tz_name = get_current_timezone(db)
+    start_dt, end_dt, _, _ = _parse_range(start_date, end_date, db, tz_name=tz_name)
 
-    api = _daily_counts(db, ApiLog, "timestamp", start_dt, end_dt)
-    cmd = _daily_counts(db, CommandLog, "timestamp", start_dt, end_dt)
-    email = _daily_counts(db, CameraEmailNotificationLog, "sent_at", start_dt, end_dt, success_only=True)
+    api = _daily_counts(db, ApiLog, "timestamp", start_dt, end_dt, tz_name=tz_name)
+    cmd = _daily_counts(db, CommandLog, "timestamp", start_dt, end_dt, tz_name=tz_name)
+    email = _daily_counts(
+        db,
+        CameraEmailNotificationLog,
+        "sent_at",
+        start_dt,
+        end_dt,
+        success_only=True,
+        tz_name=tz_name,
+    )
 
-    logger.debug("get_daily_stats: start=%s end=%s api_days=%d cmd_days=%d email_days=%d",
-                 start_dt.isoformat(), end_dt.isoformat(), len(api), len(cmd), len(email))
+    logger.debug(
+        "get_daily_stats: start=%s end=%s api_days=%d cmd_days=%d email_days=%d",
+        start_dt.isoformat(),
+        end_dt.isoformat(),
+        len(api),
+        len(cmd),
+        len(email),
+    )
 
     return {"api": api, "command": cmd, "email": email}
 
@@ -232,11 +260,13 @@ def get_top_commands(
     """Top-N most executed commands (date-range aware)."""
     start_dt, end_dt, _, _ = _parse_range(start_date, end_date, db)
 
+    return _top_commands(db, start_dt, end_dt, limit)
+
+
+def _top_commands(db: Session, start_dt: datetime, end_dt: datetime, limit: int) -> list[dict]:
+    """Query ranked activity for an already resolved UTC range."""
     results = (
-        db.query(
-            CommandLog.command,
-            func.count(CommandLog.id).label("count")
-        )
+        db.query(CommandLog.command, func.count(CommandLog.id).label("count"))
         .filter(
             CommandLog.timestamp >= start_dt,
             CommandLog.timestamp <= end_dt,
@@ -248,8 +278,13 @@ def get_top_commands(
         .limit(limit)
         .all()
     )
-    logger.debug("get_top_commands: start=%s end=%s limit=%d results=%d",
-                 start_dt.isoformat(), end_dt.isoformat(), limit, len(results))
+    logger.debug(
+        "get_top_commands: start=%s end=%s limit=%d results=%d",
+        start_dt.isoformat(),
+        end_dt.isoformat(),
+        limit,
+        len(results),
+    )
     return [{"command": r.command, "count": r.count} for r in results]
 
 
@@ -264,24 +299,107 @@ def get_top_cameras_by_email(
     """Top-N cameras by email notifications sent (date-range aware)."""
     start_dt, end_dt, _, _ = _parse_range(start_date, end_date, db)
 
+    return _top_cameras_by_email(db, start_dt, end_dt, limit)
+
+
+def _top_cameras_by_email(
+    db: Session, start_dt: datetime, end_dt: datetime, limit: int
+) -> list[dict]:
+    """Query ranked activity for an already resolved UTC range."""
     rows = (
         db.query(
             CameraEmailNotificationLog.camera_name,
-            func.count(CameraEmailNotificationLog.id).label("count")
+            func.count(CameraEmailNotificationLog.id).label("count"),
         )
         .filter(
             CameraEmailNotificationLog.sent_at >= start_dt,
             CameraEmailNotificationLog.sent_at <= end_dt,
-            CameraEmailNotificationLog.success == True  # Only count successful emails
+            CameraEmailNotificationLog.success == True,  # Only count successful emails
         )
         .group_by(CameraEmailNotificationLog.camera_name)
         .order_by(func.count(CameraEmailNotificationLog.id).desc())
         .limit(limit)
         .all()
     )
-    logger.debug("get_top_cameras_by_email: start=%s end=%s limit=%d results=%d",
-                 start_dt.isoformat(), end_dt.isoformat(), limit, len(rows))
+    logger.debug(
+        "get_top_cameras_by_email: start=%s end=%s limit=%d results=%d",
+        start_dt.isoformat(),
+        end_dt.isoformat(),
+        limit,
+        len(rows),
+    )
     return [{"camera_name": r.camera_name or "(unknown)", "count": r.count} for r in rows]
+
+
+def _summary_from_counts(
+    date_range: tuple[datetime, datetime, datetime, datetime],
+    totals: dict[str, int],
+    previous: dict[str, int],
+) -> dict:
+    """Build the shared KPI response from precomputed counts."""
+    start_dt, end_dt, prev_start, prev_end = date_range
+    api_now, cmd_now, email_now = (totals[key] for key in ("api", "command", "email"))
+    api_prev, cmd_prev, email_prev = (previous[key] for key in ("api", "command", "email"))
+    logger.info(
+        "Totals - now: api=%d cmd=%d email=%d | prev: api=%d cmd=%d email=%d",
+        api_now,
+        cmd_now,
+        email_now,
+        api_prev,
+        cmd_prev,
+        email_prev,
+    )
+
+    # Hitung jumlah hari pada masing-masing periode
+    days_now = (end_dt - start_dt).days + 1
+    days_prev = (prev_end - prev_start).days + 1
+    logger.debug("Days - now=%d prev=%d", days_now, days_prev)
+
+    # Delta % berdasarkan rata-rata per hari
+    api_delta = _pct_change(api_now, api_prev, days_now, days_prev)
+    cmd_delta = _pct_change(cmd_now, cmd_prev, days_now, days_prev)
+    email_delta = _pct_change(email_now, email_prev, days_now, days_prev)
+    logger.info("Deltas (%%) - api=%.2f cmd=%.2f email=%.2f", api_delta, cmd_delta, email_delta)
+
+    # Activity trend index (normalized by period length).
+    idx, label, color = _activity_trend_index(
+        api_now,
+        api_prev,
+        cmd_now,
+        cmd_prev,
+        email_now,
+        email_prev,
+        days_now=days_now,
+        days_prev=days_prev,
+    )
+    logger.info("ActivityTrendIndex - value=%d label=%s color=%s", idx, label, color)
+
+    # Insight naratif sederhana (tetap disediakan untuk PDF; FE bisa abaikan)
+    insights = []
+
+    def trend_txt(name, now, prev, delta):
+        arrow = "↑" if delta > 0 else ("↓" if delta < 0 else "→")
+        return f"{name}: {now:,} ({arrow} {delta:.1f}% vs prev {prev:,})."
+
+    insights.append(trend_txt("API calls", api_now, api_prev, api_delta))
+    insights.append(trend_txt("Commands", cmd_now, cmd_prev, cmd_delta))
+    insights.append(trend_txt("Emails", email_now, email_prev, email_delta))
+
+    return {
+        "range": {
+            "start": start_dt.isoformat(),
+            "end": end_dt.isoformat(),
+            "prev_start": prev_start.isoformat(),
+            "prev_end": prev_end.isoformat(),
+        },
+        "totals": {"api": api_now, "command": cmd_now, "email": email_now},
+        "previous": {"api": api_prev, "command": cmd_prev, "email": email_prev},
+        "delta_pct": {"api": api_delta, "command": cmd_delta, "email": email_delta},
+        "activity_index": {"value": idx, "label": label, "color": color},
+        # Keep the old key for clients that consumed the original summary shape.
+        "health_index": {"value": idx, "label": label, "color": color},
+        "insights": insights,
+    }
 
 
 @router.get("/log/stats/summary")
@@ -294,63 +412,37 @@ def get_summary(
     """KPI summary, change vs previous period, and activity trend index."""
     try:
         logger.info("get_summary called: start_date=%s end_date=%s", start_date, end_date)
-        start_dt, end_dt, prev_start, prev_end = _parse_range(start_date, end_date, db)
-        logger.debug("Parsed ranges: start=%s end=%s prev_start=%s prev_end=%s",
-                     start_dt.isoformat(), end_dt.isoformat(), prev_start.isoformat(), prev_end.isoformat())
+        tz_name = get_current_timezone(db)
+        start_dt, end_dt, prev_start, prev_end = _parse_range(
+            start_date, end_date, db, tz_name=tz_name
+        )
+        logger.debug(
+            "Parsed ranges: start=%s end=%s prev_start=%s prev_end=%s",
+            start_dt.isoformat(),
+            end_dt.isoformat(),
+            prev_start.isoformat(),
+            prev_end.isoformat(),
+        )
 
         # Totals current
-        api_now = _total_count(db, ApiLog, "timestamp", start_dt, end_dt)
-        cmd_now = _total_count(db, CommandLog, "timestamp", start_dt, end_dt)
-        email_now = _total_count(db, CameraEmailNotificationLog, "sent_at", start_dt, end_dt, success_only=True)
+        api_now = _total_count(db, ApiLog, "timestamp", start_dt, end_dt, tz_name=tz_name)
+        cmd_now = _total_count(db, CommandLog, "timestamp", start_dt, end_dt, tz_name=tz_name)
+        email_now = _total_count(
+            db, CameraEmailNotificationLog, "sent_at", start_dt, end_dt, success_only=True
+        )
 
         # Totals previous
-        api_prev = _total_count(db, ApiLog, "timestamp", prev_start, prev_end)
-        cmd_prev = _total_count(db, CommandLog, "timestamp", prev_start, prev_end)
-        email_prev = _total_count(db, CameraEmailNotificationLog, "sent_at", prev_start, prev_end, success_only=True)
-
-        logger.info("Totals - now: api=%d cmd=%d email=%d | prev: api=%d cmd=%d email=%d",
-                    api_now, cmd_now, email_now, api_prev, cmd_prev, email_prev)
-
-        # Hitung jumlah hari pada masing-masing periode
-        days_now = (end_dt - start_dt).days + 1
-        days_prev = (prev_end - prev_start).days + 1
-        logger.debug("Days - now=%d prev=%d", days_now, days_prev)
-
-        # Delta % berdasarkan rata-rata per hari
-        api_delta = _pct_change(api_now, api_prev, days_now, days_prev)
-        cmd_delta = _pct_change(cmd_now, cmd_prev, days_now, days_prev)
-        email_delta = _pct_change(email_now, email_prev, days_now, days_prev)
-        logger.info("Deltas (%%) - api=%.2f cmd=%.2f email=%.2f", api_delta, cmd_delta, email_delta)
-
-        # Activity trend index (normalized by period length).
-        idx, label, color = _activity_trend_index(
-            api_now, api_prev, cmd_now, cmd_prev, email_now, email_prev,
-            days_now=days_now, days_prev=days_prev
+        api_prev = _total_count(db, ApiLog, "timestamp", prev_start, prev_end, tz_name=tz_name)
+        cmd_prev = _total_count(db, CommandLog, "timestamp", prev_start, prev_end, tz_name=tz_name)
+        email_prev = _total_count(
+            db, CameraEmailNotificationLog, "sent_at", prev_start, prev_end, success_only=True
         )
-        logger.info("ActivityTrendIndex - value=%d label=%s color=%s", idx, label, color)
 
-        # Insight naratif sederhana (tetap disediakan untuk PDF; FE bisa abaikan)
-        insights = []
-
-        def trend_txt(name, now, prev, delta):
-            arrow = "↑" if delta > 0 else ("↓" if delta < 0 else "→")
-            return f"{name}: {now:,} ({arrow} {delta:.1f}% vs prev {prev:,})."
-
-        insights.append(trend_txt("API calls", api_now, api_prev, api_delta))
-        insights.append(trend_txt("Commands", cmd_now, cmd_prev, cmd_delta))
-        insights.append(trend_txt("Emails", email_now, email_prev, email_delta))
-
-        return {
-            "range": {"start": start_dt.isoformat(), "end": end_dt.isoformat(),
-                      "prev_start": prev_start.isoformat(), "prev_end": prev_end.isoformat()},
-            "totals": {"api": api_now, "command": cmd_now, "email": email_now},
-            "previous": {"api": api_prev, "command": cmd_prev, "email": email_prev},
-            "delta_pct": {"api": api_delta, "command": cmd_delta, "email": email_delta},
-            "activity_index": {"value": idx, "label": label, "color": color},
-            # Keep the old key for clients that consumed the original summary shape.
-            "health_index": {"value": idx, "label": label, "color": color},
-            "insights": insights,
-        }
+        return _summary_from_counts(
+            (start_dt, end_dt, prev_start, prev_end),
+            {"api": api_now, "command": cmd_now, "email": email_now},
+            {"api": api_prev, "command": cmd_prev, "email": email_prev},
+        )
     except Exception:
         logger.exception("Unhandled error in get_summary")
         raise
@@ -361,14 +453,35 @@ def get_dashboard_stats(
     db: Session = Depends(get_db),
     start_date: str | None = Query(None),
     end_date: str | None = Query(None),
-    current_admin: User = Depends(admin_access_required),
+    current_admin: User = Depends(admin_access_required),  # noqa: ARG001 - admin access dependency
 ):
     """Bundle the overview's summary, trends, and top lists into one response."""
+    tz_name = get_current_timezone(db)
+    start_dt, end_dt, prev_start, prev_end = _parse_range(start_date, end_date, db, tz_name=tz_name)
+    sources = (
+        ("api", ApiLog, "timestamp", False),
+        ("command", CommandLog, "timestamp", False),
+        ("email", CameraEmailNotificationLog, "sent_at", True),
+    )
+    daily = {}
+    previous = {}
+    for key, model, field, success_only in sources:
+        daily[key] = _daily_counts(
+            db, model, field, start_dt, end_dt, success_only, tz_name=tz_name
+        )
+        previous[key] = _total_count(
+            db, model, field, prev_start, prev_end, success_only, tz_name=tz_name
+        )
+    totals = {key: sum(row["count"] for row in rows) for key, rows in daily.items()}
     return {
-        "summary": get_summary(db, start_date, end_date, current_admin),
-        "daily": get_daily_stats(db, start_date, end_date, current_admin),
-        "top_commands": get_top_commands(db, start_date, end_date, 10, current_admin),
-        "top_cameras": get_top_cameras_by_email(db, start_date, end_date, 5, current_admin),
+        "summary": _summary_from_counts(
+            (start_dt, end_dt, prev_start, prev_end),
+            totals,
+            previous,
+        ),
+        "daily": daily,
+        "top_commands": _top_commands(db, start_dt, end_dt, 10),
+        "top_cameras": _top_cameras_by_email(db, start_dt, end_dt, 5),
     }
 
 
@@ -685,4 +798,3 @@ async def get_executive_report_pro(
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
-

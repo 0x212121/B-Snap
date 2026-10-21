@@ -200,6 +200,12 @@ def test_pages_keep_workflow_controls_and_a_single_page_heading(
             "router": Router(
                 routes=[
                     Route("/health/history", lambda _request: None, name="health_history"),
+                    Route("/static/{path:path}", lambda _request: None, name="static"),
+                    Route(
+                        "/admin/audit-logs/export/csv",
+                        lambda _request: None,
+                        name="export_audit_logs_csv",
+                    ),
                 ]
             ),
         }
@@ -220,6 +226,7 @@ def test_pages_keep_workflow_controls_and_a_single_page_heading(
         "chart_data": [],
         "chart_labels": [],
         "selected_days": 7,
+        "server_timezone": "Asia/Makassar",
         "timing_logs": [],
         "selected_camera": "",
         "selected_group_id": None,
