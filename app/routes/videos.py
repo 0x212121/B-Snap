@@ -736,6 +736,9 @@ async def serve_video_by_id(
         raise HTTPException(status_code=404, detail="Video file not found on disk")
 
     if thumb:
+        # All authorization/path checks are complete. File transfer must not
+        # reserve a route DB connection while the proxy/browser reads it.
+        db.close()
         thumb_path = str(Path(full_path).with_suffix(".jpg"))
         if os.path.exists(thumb_path):
             response = FileResponse(thumb_path, media_type="image/jpeg")
@@ -786,6 +789,7 @@ async def serve_video_by_id(
     if not content_type:
         content_type = "video/mp4"
 
+    db.close()
     return FileResponse(
         path=full_path,
         media_type=content_type,

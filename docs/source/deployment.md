@@ -1,5 +1,43 @@
 # Deployment
 
+## Gallery media behind Nginx Proxy Manager
+
+Keep the Proxy Host pointed at the web service and preserve the original host,
+cookies, and query string. The default NPM proxy include forwards these paths
+with `$request_uri`; custom locations must also preserve `thumb=true` and
+`preview=true`. Snapshot/video media must continue through the authenticated
+`/api/snapshots/secure/` and `/api/videos/secure/` endpoints.
+
+For image-based deployments, confirm `BSNAP_IMAGE` selects the intended release
+tag/digest and inspect `/version` in an authenticated browser after upgrading.
+Changing source version files alone does not replace an already published or
+running image. See the image upgrade workflow below.
+
+If only some images fail, inspect the failed request in the browser Network tab
+and correlate its timestamp with `docker compose logs b-snap` and the NPM host's
+`/data/logs/proxy-host-<id>_error.log` inside the NPM container:
+
+- `503` with the application's temporary-service JSON: check authentication/DB
+  failures, especially pool timeouts. Authentication and media routes now release
+  their DB connections before awaiting downstream work, rendering previews, or
+  transferring media. Deploy the updated web image before repeating a fast-scroll test.
+- `502`/`504`: inspect NPM's upstream error alongside web-worker logs to distinguish
+  connection failures, worker restarts, and upstream timeouts.
+- `401`/`403`, a redirect to login, or HTML instead of an image: check browser
+  session cookies, domain/protocol consistency, and the user's camera group access.
+- `404`: confirm the requested media exists in the mounted snapshot/video directory.
+- A truncated `200` response: check both logs for interrupted transfers or proxy
+  temporary-file errors and verify that its response body is an intact image.
+
+HTTP/2 can carry concurrent requests on a single connection, making a pool-lifetime
+bug more visible. Increasing proxy timeouts or DB pool limits alone does not fix
+connections held across slow work. Retest scrolling after deployment with an
+authenticated session; check failed media requests rather than page HTML alone.
+
+References: [NPM Proxy Host template](https://github.com/NginxProxyManager/nginx-proxy-manager/blob/develop/backend/templates/proxy_host.conf),
+[NPM proxy forwarding](https://github.com/NginxProxyManager/nginx-proxy-manager/blob/develop/docker/rootfs/etc/nginx/conf.d/include/proxy.conf),
+[NGINX HTTP/2 concurrency](https://nginx.org/en/docs/http/ngx_http_v2_module.html#http2_max_concurrent_streams).
+
 ## Development
 ```bash
 python -m app.db.migrate

@@ -834,6 +834,9 @@ async def serve_snapshot_by_id(
 
     if thumb and preview and not download:
         # Gallery browsing is audited by the existing batch gallery-view endpoint.
+        # Route authentication has its own checkout; do not hold it while Pillow
+        # runs or while a slow proxy/browser receives the image.
+        db.close()
         return await snapshot_preview_response(full_path)
 
     # Log access (P2-004 compliance)
@@ -880,6 +883,7 @@ async def serve_snapshot_by_id(
     if not content_type:
         content_type = "image/jpeg"
 
+    db.close()
     return FileResponse(
         path=full_path,
         media_type=content_type,

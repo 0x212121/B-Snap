@@ -52,7 +52,15 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
         db = None
         try:
             db = SessionLocal()
-            return await self._do_dispatch(request, call_next, db)
+
+            async def call_without_auth_connection(endpoint_request: Request) -> Response:
+                # Authentication owns a separate session from route dependencies.
+                # Release its checkout before awaiting routes, previews or streams;
+                # parallel media requests must not reserve the entire DB pool here.
+                db.close()
+                return await call_next(endpoint_request)
+
+            return await self._do_dispatch(request, call_without_auth_connection, db)
         except Exception as e:
             # A failed lookup or endpoint does not prove that credentials are invalid.
             # Restore any tentative session changes so SessionMiddleware cannot expire
@@ -222,6 +230,9 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                 user.web_tokens = tokens
                 db.commit()
 
+                # Session.close() before call_next detaches ORM instances. Keep a
+                # scalar for the post-response rotation, which reuses the session.
+                remember_user_id = session["user_id"]
                 response = await call_next(request)
 
                 # Rotate only after the endpoint returns, in one transaction.
@@ -231,7 +242,7 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
                 )
                 new_remember_token = create_remember_token(
                     db=db,
-                    user_id=user.id,
+                    user_id=remember_user_id,
                     device_name=device_name,
                     ip_address=request.client.host if request.client else None,
                     user_agent=request.headers.get("user-agent"),

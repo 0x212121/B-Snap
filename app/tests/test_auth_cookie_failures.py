@@ -11,6 +11,7 @@ This avoids the full-schema autouse pytest fixture and PostgreSQL JSONB models.
 from __future__ import annotations
 
 import ast
+import asyncio
 import unittest
 
 from datetime import UTC, datetime, timedelta
@@ -23,6 +24,7 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.testclient import TestClient
 from sqlalchemy import Column, Integer, create_engine
 from sqlalchemy.orm import Session, declarative_base
+from sqlalchemy.pool import QueuePool
 from starlette.middleware.sessions import SessionMiddleware
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,6 +42,94 @@ def load_module(path: Path, namespace: dict) -> dict:
     tree = RemoveAppImports().visit(ast.parse(path.read_text(encoding="utf-8")))
     exec(compile(ast.fix_missing_locations(tree), str(path), "exec"), namespace)
     return namespace
+
+
+class AuthPoolBurstTests(unittest.IsolatedAsyncioTestCase):
+    async def test_parallel_media_requests_do_not_hold_auth_connections(self) -> None:
+        """Model a proxy request burst with a real, isolated, two-connection pool."""
+        engine = create_engine(
+            "sqlite://",
+            poolclass=QueuePool,
+            pool_size=2,
+            max_overflow=0,
+            pool_timeout=0.01,
+            connect_args={"check_same_thread": False},
+        )
+        self.addCleanup(engine.dispose)
+        user = SimpleNamespace(
+            id=1,
+            role="operator",
+            username="test",
+            group_id=None,
+            web_tokens=[
+                {
+                    "token": "test-session",
+                    "expires_at": (datetime.now(UTC) + timedelta(hours=12)).isoformat(),
+                }
+            ],
+        )
+
+        def session_factory() -> Mock:
+            db = Mock()
+            lease = None
+
+            def query(*_args: object) -> Mock:
+                nonlocal lease
+                if lease is None:
+                    lease = engine.connect()
+                return db.query.return_value
+
+            def close() -> None:
+                nonlocal lease
+                if lease is not None:
+                    lease.close()
+                    lease = None
+
+            db.query.side_effect = query
+            db.query.return_value.first.return_value = user
+            db.query.return_value.filter.return_value.first.return_value = user
+            db.close.side_effect = close
+            db.rollback.side_effect = close
+            return db
+
+        namespace = load_module(ROOT / "utils/auth_token.py", {})
+        namespace.update(
+            SessionLocal=session_factory,
+            User=Mock(),
+            Configuration=Mock(),
+            get_online_tracker=Mock(return_value=Mock()),
+            get_cookie_settings=lambda: {"key": "remember_me"},
+        )
+        load_module(ROOT / "middleware/auth_and_setup.py", namespace)
+        namespace["logger"] = Mock()
+        middleware = namespace["AuthAndSetupMiddleware"](FastAPI())
+
+        async def endpoint(_request: Request) -> Response:
+            await asyncio.sleep(0)  # Other requests authenticate while this one is in flight.
+            with engine.connect() as connection:
+                connection.exec_driver_sql("SELECT 1")
+            return Response(b"image", media_type="image/jpeg")
+
+        def request() -> Request:
+            return Request(
+                {
+                    "type": "http",
+                    "method": "GET",
+                    "path": "/api/snapshots/secure/test",
+                    "scheme": "https",
+                    "query_string": b"thumb=true&preview=true",
+                    "headers": [(b"cookie", b"session_token=test-session")],
+                    "session": {"user_id": 1},
+                    "client": ("127.0.0.1", 1234),
+                    "server": ("test", 443),
+                }
+            )
+
+        responses = await asyncio.gather(
+            *(middleware.dispatch(request(), endpoint) for _ in range(8))
+        )
+        self.assertEqual([response.status_code for response in responses], [200] * 8)
+        self.assertEqual(engine.pool.checkedout(), 0)
 
 
 class AuthCookieFailureTests(unittest.TestCase):
@@ -119,6 +209,7 @@ class AuthCookieFailureTests(unittest.TestCase):
         self.db.reset_mock()
 
     def assert_temporary_error(self, path: str = "/protected", method: str = "GET") -> None:
+        previous_calls = self.calls
         response = self.client.request(method, path, follow_redirects=False)
         self.assertEqual(response.status_code, 503)
         self.assertNotIn("location", response.headers)
@@ -128,7 +219,8 @@ class AuthCookieFailureTests(unittest.TestCase):
         )
         self.assertFalse(any("Max-Age=0" in h for h in response.headers.get_list("set-cookie")))
         self.db.rollback.assert_called_once()
-        self.db.close.assert_called_once()
+        # Close before downstream work, then again after any post-response DB work.
+        self.assertEqual(self.db.close.call_count, 2 if self.calls > previous_calls else 1)
 
     def test_valid_session_still_reaches_endpoint(self) -> None:
         self.seed()
@@ -225,6 +317,15 @@ class AuthCookieFailureTests(unittest.TestCase):
         self.assertEqual(self.client.cookies["remember_me"], "new-remember")
         self.assertEqual(self.db.commit.call_count, 2)
         self.db.rollback.assert_not_called()
+
+    def test_remember_rotation_uses_saved_identity_after_auth_session_closes(self) -> None:
+        self.seed("remember")
+        # A committed ORM user can no longer load expired attributes once detached.
+        # Removing its ID here catches any post-close reliance on that instance.
+        self.db.close.side_effect = lambda: self.user.__dict__.pop("id", None)
+        response = self.client.get("/protected")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.ns["create_remember_token"].call_args.kwargs["user_id"], 1)
 
     def test_session_refresh_database_failure_preserves_both_cookies(self) -> None:
         self.seed()

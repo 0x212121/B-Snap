@@ -11,7 +11,7 @@ import unittest
 from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -121,12 +121,26 @@ class GalleryMediaTests(unittest.IsolatedAsyncioTestCase):
         response = await self.snapshot(preview=True)
         assert response.status_code == 200
 
+    async def test_route_connection_released_before_preview_rendering(self) -> None:
+        async def render(_path: str) -> object:
+            self.db.close.assert_called_once()
+            return object()
+
+        with patch.object(snap_gallery, "snapshot_preview_response", AsyncMock(side_effect=render)):
+            await self.snapshot(preview=True)
+
+    async def test_original_snapshot_releases_connection_before_transfer(self) -> None:
+        with patch.object(snap_gallery, "log_audit"):
+            await self.snapshot()
+        self.db.close.assert_called_once()
+
     async def test_video_thumb_private_and_group_restricted(self) -> None:
         with patch.object(videos, "VIDEO_FILESYSTEM_BASE", str(self.root)):
             response = await videos.serve_video_by_id(
                 self.request, "one", download=False, thumb=True, db=self.db, current_user=self.user
             )
             assert response.headers["cache-control"] == "private, no-cache"
+            self.db.close.assert_called_once()
             self.user.group_id = 3
             self.db.query.return_value.filter.return_value.first.side_effect = [self.record, None]
             with pytest.raises(HTTPException) as caught:

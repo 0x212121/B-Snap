@@ -27,7 +27,7 @@ COPY static/js/ ./static/js/
 RUN mkdir -p static/css && npm run build -- --minify
 
 FROM ${PYTHON_IMAGE} AS runtime
-ARG APP_VERSION=2.5.0
+ARG APP_VERSION=2.5.1
 LABEL maintainer="Indra W. <wijaya.indra2196@gmail.com>"
 LABEL org.opencontainers.image.version="${APP_VERSION}"
 LABEL org.opencontainers.image.authors="Indra W. <wijaya.indra2196@gmail.com>"
