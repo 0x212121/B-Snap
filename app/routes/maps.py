@@ -1,30 +1,36 @@
-from datetime import datetime, timezone, timedelta
-from typing import List, Optional, cast
-from collections import defaultdict
+"""Map presentation and group-scoped camera state summaries."""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime, timedelta
+from typing import Annotated
+
+import pytz
 
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy.orm import joinedload, Session
-from sqlalchemy import func, and_
+from fastapi.responses import Response
 from pydantic import BaseModel
+from sqlalchemy import and_, case, func
+from sqlalchemy.orm import Session
 
 from app.core.config import get_config
 from app.db.database import get_db
 from app.models.camera import Camera as DBCamera
 from app.models.camera_group import CameraGroup
+from app.models.camera_status_change_log import CameraStatusChangeLog
 from app.models.snapshot import Snapshot
 from app.models.user import User
 from app.routes.auth import get_current_user
 from app.routes.map_heatmap import router as heatmap_router
 from app.routes.map_live import router as live_router
-from app.models.camera_status_change_log import CameraStatusChangeLog
+from app.utils.map_heatmap import as_utc
+from app.utils.map_live_access import map_live_enabled
+from app.utils.template_helper import templates
 from app.utils.timezone_helper import (
+    format_datetime_with_tz,
     format_time_with_tz_abbr,
     get_current_timezone,
-    to_current_timezone,
-    format_datetime_with_tz
 )
-from app.utils.template_helper import templates
-from app.utils.map_live_access import map_live_enabled
 
 router = APIRouter(tags=["Maps"])
 router.include_router(heatmap_router)
@@ -32,6 +38,7 @@ router.include_router(live_router)
 
 
 def format_uptime(start_time: datetime, end_time: datetime) -> str:
+    """Format elapsed camera state duration without locale-dependent values."""
     if not start_time or not end_time:
         return "N/A"
     td = end_time - start_time
@@ -46,215 +53,172 @@ def format_uptime(start_time: datetime, end_time: datetime) -> str:
 
 
 class CameraLocation(BaseModel):
+    """Existing public map payload, including localized event time text."""
+
     id: str
     hostname: str
-    ip: Optional[str] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
-    asset_no: Optional[str] = None
+    ip: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    asset_no: str | None = None
     status: str
     last_online: str
     uptime: str
-    restricted: Optional[str] = None
-    cam_group: Optional[int] = None
-    user_group: Optional[str] = "N/A"
-    user_group_id: Optional[int] = None
-    coordinate: Optional[str] = None
-    note: Optional[str] = ""
+    restricted: str | None = None
+    cam_group: int | None = None
+    user_group: str | None = "N/A"
+    user_group_id: int | None = None
+    coordinate: str | None = None
+    note: str | None = ""
 
     class Config:
+        """Allow response validation from ORM-backed attributes."""
+
         from_attributes = True
 
 
 @router.get("/maps")
-async def maps_page(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def maps_page(
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> Response:
+    """Render the map shell using one configured-timezone lookup."""
     map_title = get_config("map_title", default="CCTV Maps")
     tz_name = get_current_timezone(db)
 
-    now_utc = datetime.now(timezone.utc)
-    current_time_local = to_current_timezone(now_utc, db)
-    refresh_time = format_time_with_tz_abbr(current_time_local, db)
+    now_utc = datetime.now(UTC)
+    current_time_local = now_utc.astimezone(pytz.timezone(tz_name))
+    refresh_time = format_time_with_tz_abbr(current_time_local)
 
-    return templates.TemplateResponse("maps.html", {
-        "request": request,
-        "map_title": map_title,
-        "timezone": tz_name,
-        "refresh_time": refresh_time,
-        "live_view_enabled": current_user.role == "admin" and map_live_enabled(db),
-    })
+    return templates.TemplateResponse(
+        "maps.html",
+        {
+            "request": request,
+            "map_title": map_title,
+            "timezone": tz_name,
+            "refresh_time": refresh_time,
+            "live_view_enabled": current_user.role == "admin" and map_live_enabled(db),
+        },
+    )
 
 
-@router.get("/camera-locations", response_model=List[CameraLocation])
-async def get_camera_locations(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+ONLINE_STATUSES = ("Online", "High Latency", "Optimal Latency")
+
+
+@router.get("/camera-locations", response_model=list[CameraLocation])
+def get_camera_locations(
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> list[CameraLocation]:
+    """Return bounded map summaries in four data queries, excluding authentication."""
     group_id = current_user.group_id
     group_name = current_user.group.name if current_user.group else "All Groups"
-
-    # =========================
-    # GET CAMERAS
-    # =========================
-    query = (
-        db.query(DBCamera)
-        .filter(DBCamera.status.in_(["Active", "Maintenance", "Standalone"]))
-        .options(joinedload(DBCamera.health))
-    )
+    query = db.query(DBCamera).filter(DBCamera.status.in_(["Active", "Maintenance", "Standalone"]))
     if group_id is not None:
         query = query.filter(DBCamera.groups.any(CameraGroup.id == group_id))
-
     cameras = query.all()
     if not cameras:
         return []
 
-    camera_ids = [cam.id for cam in cameras]
-
-    # =========================
-    # SNAPSHOT (LATEST)
-    # =========================
-    snapshot_sub = (
-        db.query(
-            Snapshot.camera_id,
-            func.max(Snapshot.timestamp).label("last_ts")
-        )
+    # Embed the authorized camera set in each history query rather than loading
+    # unrelated history or expanding a potentially huge Python IN parameter list.
+    permitted_ids = query.with_entities(DBCamera.id)
+    snapshot_times = dict(
+        db.query(Snapshot.camera_id, func.max(Snapshot.timestamp))
+        .filter(Snapshot.camera_id.in_(permitted_ids))
         .group_by(Snapshot.camera_id)
+        .all()
+    )
+    ranked = (
+        db.query(
+            CameraStatusChangeLog.camera_id,
+            CameraStatusChangeLog.new_status,
+            CameraStatusChangeLog.previous_status,
+            CameraStatusChangeLog.changed_at,
+            func.row_number()
+            .over(
+                partition_by=CameraStatusChangeLog.camera_id,
+                order_by=(CameraStatusChangeLog.changed_at.desc(), CameraStatusChangeLog.id.desc()),
+            )
+            .label("rank"),
+        )
+        .filter(CameraStatusChangeLog.camera_id.in_(permitted_ids))
         .subquery()
     )
-
-    last_snapshots = (
-        db.query(Snapshot)
-        .join(snapshot_sub,
-              and_(
-                  Snapshot.camera_id == snapshot_sub.c.camera_id,
-                  Snapshot.timestamp == snapshot_sub.c.last_ts
-              ))
+    online = ranked.c.new_status.in_(ONLINE_STATUSES)
+    summaries = (
+        db.query(
+            ranked.c.camera_id,
+            func.max(case((ranked.c.rank == 1, ranked.c.new_status))).label("status"),
+            func.max(case((online, ranked.c.changed_at))).label("last_online"),
+            func.max(
+                case(
+                    (
+                        and_(online, ranked.c.previous_status.notin_(ONLINE_STATUSES)),
+                        ranked.c.changed_at,
+                    )
+                )
+            ).label("online_since"),
+            func.max(
+                case((ranked.c.new_status.notin_(ONLINE_STATUSES), ranked.c.changed_at))
+            ).label("offline_since"),
+        )
+        .group_by(ranked.c.camera_id)
         .all()
     )
-
-    snapshot_map = {s.camera_id: s for s in last_snapshots}
-
-    # =========================
-    # 🚀 FIX N+1 HERE
-    # =========================
-    all_logs = (
-        db.query(CameraStatusChangeLog)
-        .filter(CameraStatusChangeLog.camera_id.in_(camera_ids))
-        .order_by(CameraStatusChangeLog.changed_at.desc())
-        .all()
-    )
-
-    logs_by_camera = defaultdict(list)
-    for log in all_logs:
-        logs_by_camera[log.camera_id].append(log)
-
-    # =========================
-    # LAST STATUS & ONLINE
-    # =========================
-    online_statuses = ["Online", "High Latency", "Optimal Latency"]
-
-    last_status_map = {}
-    last_online_map = {}
-
-    for cam_id, logs in logs_by_camera.items():
-        if logs:
-            last_status_map[cam_id] = logs[0]
-
-        for log in logs:
-            if log.new_status in online_statuses:
-                last_online_map[cam_id] = log
-                break
-
-    # =========================
-    # MAIN PROCESS
-    # =========================
-    now_utc = datetime.now(timezone.utc)
-    current_time_local = to_current_timezone(now_utc, db)
+    history = {row.camera_id: row for row in summaries}
+    # Resolve the configured zone once; all comparisons/durations stay in UTC.
+    zone = pytz.timezone(get_current_timezone(db))
+    now = datetime.now(UTC)
     tolerance = timedelta(minutes=5)
-
     result = []
-
     for cam in cameras:
-        status_str = str(cam.status or "Unknown")
-        uptime_str = "N/A"
-        formatted_last_online = "Unknown"
+        summary = history.get(cam.id)
+        status = summary.status if summary else str(cam.status or "Unknown")
+        if cam.status in ("Maintenance", "Standalone"):
+            status = cam.status
+        uptime = "N/A"
+        last_online = summary.last_online if summary else None
+        start = None
+        if summary:
+            start = summary.online_since if status in ONLINE_STATUSES else summary.offline_since
+        if start is not None:
+            uptime = format_uptime(as_utc(start), now)
 
-        # snapshot
-        last_snapshot = snapshot_map.get(cam.id)
-        last_snapshot_time = None
-        if last_snapshot:
-            ts = cast(datetime, last_snapshot.timestamp)
-            last_snapshot_time = to_current_timezone(ts, db)
-
-        # last status
-        if cam.id in last_status_map:
-            status_str = last_status_map[cam.id].new_status
-
-        if cam.status == "Maintenance":
-            status_str = "Maintenance"
-        if cam.status == "Standalone":
-            status_str = "Standalone"
-
-        # uptime (NO QUERY)
-        logs = logs_by_camera.get(cam.id, [])
-        start_time_for_calc = None
-
-        if status_str in online_statuses:
-            for log in logs:
-                if (
-                    log.new_status in online_statuses and
-                    log.previous_status not in online_statuses
-                ):
-                    start_time_for_calc = log.changed_at
-                    break
-        else:
-            for log in logs:
-                if log.new_status not in online_statuses:
-                    start_time_for_calc = log.changed_at
-                    break
-
-        if start_time_for_calc:
-            start_local = to_current_timezone(start_time_for_calc, db)
-            uptime_str = format_uptime(start_local, current_time_local)
-
-        # last online
-        last_online_time = None
-        if cam.id in last_online_map:
-            last_online_time = to_current_timezone(
-                last_online_map[cam.id].changed_at, db
-            )
-
-        # fallback snapshot
+        latest_snapshot = snapshot_times.get(cam.id)
         if (
-            status_str not in online_statuses
-            and last_snapshot_time
-            and status_str != "Maintenance"
+            status not in ONLINE_STATUSES
+            and status != "Maintenance"
+            and latest_snapshot is not None
+            and now - as_utc(latest_snapshot) <= tolerance
         ):
-            if (current_time_local - last_snapshot_time) <= tolerance:
-                status_str = "Online"
-                uptime_str = format_uptime(last_snapshot_time, current_time_local)
-                last_online_time = last_snapshot_time
-
-        if last_online_time:
-            formatted_last_online = format_datetime_with_tz(last_online_time)
-
-        coordinate = f"{cam.latitude},{cam.longitude}"
-
-        result.append({
-            "id": cam.id,
-            "hostname": cam.hostname or "",
-            "ip": cam.ip or "",
-            "lat": cam.latitude,
-            "lng": cam.longitude,
-            "asset_no": cam.asset_no,
-            "status": status_str,
-            "last_online": formatted_last_online,
-            "uptime": uptime_str,
-            "restricted": getattr(cam, "restriction_status", None),
-            "cam_group": cam.group_id,
-            "user_group": group_name,
-            "user_group_id": group_id,
-            "coordinate": coordinate if cam.latitude and cam.longitude else None,
-            "note": cam.note or "",
-        })
-
+            status = "Online"
+            uptime = format_uptime(as_utc(latest_snapshot), now)
+            last_online = latest_snapshot
+        formatted_last_online = (
+            format_datetime_with_tz(as_utc(last_online).astimezone(zone))
+            if last_online is not None
+            else "Unknown"
+        )
+        coordinate = f"{cam.latitude},{cam.longitude}" if cam.latitude and cam.longitude else None
+        result.append(
+            CameraLocation(
+                id=cam.id,
+                hostname=cam.hostname or "",
+                ip=cam.ip or "",
+                lat=cam.latitude,
+                lng=cam.longitude,
+                asset_no=cam.asset_no,
+                status=status,
+                last_online=formatted_last_online,
+                uptime=uptime,
+                restricted=getattr(cam, "restriction_status", None),
+                cam_group=cam.group_id,
+                user_group=group_name,
+                user_group_id=group_id,
+                coordinate=coordinate,
+                note=cam.note or "",
+            )
+        )
     return result

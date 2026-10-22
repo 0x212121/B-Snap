@@ -5,10 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased]
+## [2.5.2] - 2026-10-22
 
 ### Fixed
 
+- Reduced Maps location loading to four data queries by resolving timezone once, aggregating authorized-camera snapshot/status timestamps in the database, and running synchronous map handlers in the thread pool; preserved status, uptime, response fields, and group restrictions.
 - Made Maps camera loading recover from transient failures with request timeouts, bounded retry/backoff, manual retry, and single-flight refresh while preserving existing markers; bundled pinned Leaflet libraries locally and allowed basic markers when optional map plugins fail.
 
 ## [2.5.1] - 2026-10-21
@@ -16,7 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed snapshot/video infinite-scroll stalls, skipped video pages after failed requests, stale filter responses, and thumbnail recovery; added compatible authenticated snapshot previews and private thumbnail caching with group access checks.
-
 - Reduced Analytics database queries by reusing daily aggregates for KPI totals and loading timezone once per dashboard request; deferred Snapshot Stats and storage requests until its tab opens, removed per-log timezone queries, and rendered overview sections independently with stale-response protection.
 
 ## [2.5.0] - 2026-10-15
