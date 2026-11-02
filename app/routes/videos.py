@@ -21,7 +21,7 @@ from app.models.video import Video
 from app.routes.auth import admin_access_required, operator_access_required
 from app.schemas.video import VideoRecordRequest
 from app.utils.audit_logger import log_audit
-from app.utils.media_access import require_camera_group_access
+from app.utils.media_access import require_camera_group_access, restrict_media_query
 from app.utils.timezone import format_wita
 from app.utils.timezone_helper import format_datetime_standard, to_current_timezone
 from app.utils.video import record_video_and_save_db
@@ -171,21 +171,26 @@ def delete_video(
 ):
     """Delete a video (soft delete by default, hard delete for admin)."""
     from datetime import datetime, timezone
-    
+
     video = db.query(Video).filter(Video.id == video_id).first()
     if not video:
         logger.warning("Video not found in DB: %s", video_id)
         raise HTTPException(status_code=404, detail="Video not found")
 
-    # P0-002: Check if user is admin for hard delete
-    user_role = request.session.get("user_role", "")
+    require_camera_group_access(db, video.camera_id, current_operator.group_id)
+    # P0-002: Check the current database role, including for API callers.
+    user_role = current_operator.role
     if hard_delete and user_role != "admin":
         raise HTTPException(status_code=403, detail="Hard delete requires admin privileges")
+    if hard_delete and (video.retention_hold or not video.is_deleted):
+        raise HTTPException(
+            status_code=409, detail="Purge requires deleted footage without retention hold"
+        )
 
     try:
         camera_name = video.camera_name
         v_timestamp = video.timestamp
-        
+
         if hard_delete:
             # P0-002: Hard delete - permanently remove file and record
             path_parts = video.file_path.replace('\\', '/').split('/')
@@ -206,7 +211,7 @@ def delete_video(
             video.soft_delete()
             action = "soft_delete_video"
             message = "Video moved to trash (soft deleted)"
-        
+
         db.commit()
         logger.info("Video %s: %s", action, video_id)
 
@@ -240,14 +245,15 @@ def restore_video(
     video = db.query(Video).filter(Video.id == video_id).first()
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
-    
+    require_camera_group_access(db, video.camera_id, current_operator.group_id)
+
     if not video.is_deleted:
         return JSONResponse(status_code=400, content={"status": "error", "message": "Video is not deleted"})
-    
+
     try:
         video.restore()
         db.commit()
-        
+
         log_audit(
             db=db,
             user=request.session.get("user_name", "Unknown"),
@@ -256,7 +262,7 @@ def restore_video(
             ip=request.client.host,
             extra=f"Video ID: {video_id}"
         )
-        
+
         return JSONResponse(status_code=200, content={"status": "success", "message": "Video restored successfully"})
     except Exception as e:
         logger.error("Failed to restore video %s: %s", video_id, e)
@@ -267,7 +273,7 @@ def restore_video(
 @router.post("/admin/videos/purge", response_class=JSONResponse)
 def purge_deleted_videos(
     request: Request,
-    days_old: int = Query(30, description="Purge videos soft-deleted more than N days ago"),
+    days_old: int = Query(30, ge=0, description="Purge videos soft-deleted more than N days ago"),
     skip_retention_hold: bool = Query(True, description="Skip items with retention hold"),
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required),
@@ -277,30 +283,39 @@ def purge_deleted_videos(
     P2-001: Items with retention_hold=True are skipped by default.
     """
     from datetime import datetime, timedelta, timezone
-    
+
+    if not skip_retention_hold:
+        raise HTTPException(
+            status_code=409, detail="Release retention holds explicitly before purging"
+        )
     cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_old)
-    
+
     # Build query
-    query = db.query(Video).filter(
-        Video.deleted_at.isnot(None),
-        Video.deleted_at < cutoff_date
+    query = restrict_media_query(
+        db.query(Video).filter(Video.deleted_at.isnot(None), Video.deleted_at < cutoff_date),
+        Video,
+        current_admin.group_id,
     )
-    
+
     # P2-001: Skip retention hold items
     if skip_retention_hold:
         query = query.filter(Video.retention_hold == False)
-    
+
     videos_to_purge = query.all()
-    
+
     # Count retention hold items for info
     retention_hold_count = 0
     if skip_retention_hold:
-        retention_hold_count = db.query(Video).filter(
-            Video.deleted_at.isnot(None),
-            Video.deleted_at < cutoff_date,
-            Video.retention_hold == True
+        retention_hold_count = restrict_media_query(
+            db.query(Video).filter(
+                Video.deleted_at.isnot(None),
+                Video.deleted_at < cutoff_date,
+                Video.retention_hold == True,
+            ),
+            Video,
+            current_admin.group_id,
         ).count()
-    
+
     purged_count = 0
     failed_count = 0
     for video in videos_to_purge:
@@ -317,13 +332,13 @@ def purge_deleted_videos(
                         logger.warning("[PURGE] Could not delete video file %s: %s", full_file_path, file_err)
                 else:
                     logger.info("[PURGE] Video file not found (dummy data): %s", full_file_path)
-            
+
             db.delete(video)
             purged_count += 1
         except Exception as e:
             failed_count += 1
             logger.error("[PURGE] Failed to purge video %s: %s", video.id, e)
-    
+
     if purged_count > 0:
         try:
             db.commit()
@@ -333,7 +348,7 @@ def purge_deleted_videos(
             raise HTTPException(status_code=500, detail=f"Failed to commit purge: {str(commit_err)}")
         logger.info("Purged %d soft-deleted videos older than %d days by %s", 
                     purged_count, days_old, request.session.get("user_name"))
-    
+
     # Log audit (non-critical)
     try:
         log_audit(
@@ -346,7 +361,7 @@ def purge_deleted_videos(
         )
     except Exception as audit_err:
         logger.warning("[PURGE] Audit log failed (non-critical): %s", audit_err)
-    
+
     return JSONResponse(status_code=200, content={
         "status": "success", 
         "message": f"Purged {purged_count} videos" + (f" ({retention_hold_count} skipped due to retention hold)" if retention_hold_count > 0 else ""),
@@ -502,7 +517,6 @@ async def start_recording_video(
     )
 
 
-
 # ========== P0-002: Soft Delete Management Routes for Videos ==========
 
 @router.get("/admin/videos/deleted", response_class=JSONResponse)
@@ -517,23 +531,25 @@ async def get_deleted_videos(
 ):
     """Admin only: Get list of soft-deleted videos."""
     offset = (page - 1) * limit
-    
+
     # Build base query
-    query = db.query(Video).filter(Video.deleted_at.isnot(None))
-    
+    query = restrict_media_query(
+        db.query(Video).filter(Video.deleted_at.isnot(None)), Video, current_admin.group_id
+    )
+
     # Apply camera name filter
     if search:
         query = query.filter(Video.camera_name.ilike(f"%{search}%"))
-    
+
     # Apply days filter
     if days and days > 0:
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         query = query.filter(Video.deleted_at < cutoff)
-    
+
     total = query.count()
-    
+
     videos = query.order_by(Video.deleted_at.desc()).offset(offset).limit(limit).all()
-    
+
     result = []
     for v in videos:
         result.append({
@@ -551,7 +567,7 @@ async def get_deleted_videos(
             "retention_hold_by": v.retention_hold_by,
             "retention_hold_at": format_datetime_standard(v.retention_hold_at, db=db) if v.retention_hold_at else None,
         })
-    
+
     return JSONResponse({
         "videos": result,
         "total": total,
@@ -628,7 +644,6 @@ async def purge_video(
             status_code=500,
             detail=f"Internal server error: {str(e)}"
         )
-
 
 
 # CRIT-001: Secure Video Serving - Authenticated access only
@@ -859,9 +874,10 @@ async def toggle_video_retention_hold(
     video = db.query(Video).filter(Video.id == video_id).first()
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
-    
+    require_camera_group_access(db, video.camera_id, current_admin.group_id)
+
     user_name = request.session.get("user_name", "Unknown")
-    
+
     if enable:
         video.retention_hold = True
         video.retention_hold_reason = reason or "Legal/Evidence hold"
@@ -876,9 +892,9 @@ async def toggle_video_retention_hold(
         video.retention_hold_at = None
         action = "retention_hold_disabled"
         message = "Retention hold removed - this video can now be purged"
-    
+
     db.commit()
-    
+
     log_audit(
         db=db,
         user=user_name,
@@ -887,7 +903,7 @@ async def toggle_video_retention_hold(
         ip=request.client.host,
         extra=f"Video {video_id} - Reason: {reason}" if enable else f"Video {video_id}"
     )
-    
+
     return JSONResponse({
         "status": "success",
         "message": message,

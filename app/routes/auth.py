@@ -20,6 +20,7 @@ from app.utils.auth import get_password_hash, verify_password
 from app.utils.audit_logger import log_audit
 from app.utils.remember_me import create_remember_token, get_cookie_settings
 from app.utils.online_users import get_online_tracker
+from app.utils.auth_token import is_valid_web_token
 import logging
 
 logger = logging.getLogger(__name__)
@@ -158,11 +159,11 @@ def mfa_setup_form(request: Request, token: str = None, db: Session = Depends(ge
     user_id = verify_2fa_token(token) if token else None
     if not user_id:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
-    
+
     user = db.query(User).filter(User.id == user_id).first()
-    if not user:
+    if not user or user.is_2fa_enabled:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
-    
+
     if not user.otp_secret:
         user.otp_secret = pyotp.random_base32()
         db.commit()
@@ -193,7 +194,7 @@ def mfa_setup_post(
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
 
     user = db.query(User).options(joinedload(User.group)).filter(User.id == user_id).first()
-    if not user or not user.otp_secret:
+    if not user or user.is_2fa_enabled or not user.otp_secret:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
 
     totp = pyotp.TOTP(user.otp_secret)
@@ -204,7 +205,7 @@ def mfa_setup_post(
         buf = io.BytesIO()
         img.save(buf, "PNG")
         qr_code_data = base64.b64encode(buf.getvalue()).decode("utf-8")
-        
+
         return templates.TemplateResponse(
             "force_mfa_setup.html",
             {
@@ -219,7 +220,7 @@ def mfa_setup_post(
     # Enable 2FA
     user.is_2fa_enabled = True
     db.commit()
-    
+
     # SUKSES - Buat session
     return _create_authenticated_session(request, user, db)
 
@@ -370,26 +371,13 @@ async def get_current_user(
 
     if user_id_session and session_token:
         user = db.query(User).options(joinedload(User.group)).filter(User.id == user_id_session).first()
-        is_token_valid = False
-        if user and user.web_tokens:
-            for t in user.web_tokens:
-                if t.get("token") == session_token:
-                    expires_at = datetime.fromisoformat(t.get("expires_at"))
-                    if expires_at > datetime.now(timezone.utc):
-                        is_token_valid = True
-                        return user # ✅ Authentication successful
-
-            # --- FIX STARTS HERE ---
-            # If the token is not valid (is_token_valid is still False), it means this session
-            # has been evicted or is invalid.
-            if not is_token_valid:
-                # Remove any remaining invalid session on the server.
-                request.session.clear()
-                # Raise exception with special detail as a signal.
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="SESSION_INVALIDATED" # This is our signal
-                )
+        if user and is_valid_web_token(session_token, user.web_tokens):
+            return user
+        request.session.clear()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="SESSION_INVALIDATED",
+        )
 
     # === 2. Authentication via Bearer token (API) ===
     if authorization:
@@ -500,7 +488,7 @@ async def change_password(
 ):
     """Legacy endpoint - redirects to profile page with error/success message."""
     from urllib.parse import urlencode
-    
+
     if not verify_password(current_password, current_user.password):
         params = urlencode({"error": "Incorrect current password", "tab": "password"})
         return RedirectResponse(url=f"/profile?{params}", status_code=status.HTTP_302_FOUND)
@@ -515,7 +503,7 @@ async def change_password(
 
     current_user.password = get_password_hash(new_password)
     db.commit()
-    
+
     # Log the action
     log_audit(
         db=db,
@@ -530,28 +518,13 @@ async def change_password(
     return RedirectResponse(url=f"/profile?{params}", status_code=status.HTTP_302_FOUND)
 
 
-def user_access_required_optional(
-    request: Request,
-    db: Session = Depends(get_db)
+async def user_access_required_optional(
+    request: Request, db: Session = Depends(get_db)
 ) -> Optional[User]:
-    token = request.headers.get("Authorization")
-
-    # Try authentication via Bearer Token
-    if token:
-        token = token.replace("Bearer ", "")
-        user = db.query(User).filter(
-            User.token == token,
-            User.token_expires_at > datetime.now(timezone.utc)
-        ).first()
-        if user:
-            return user
-
-    # Try authentication via session login
-    user_id = request.session.get("user_id")
-    if user_id:
-        user = db.query(User).filter(User.id == user_id).first()
-        if user:
-            return user
-
-    # No valid user → None
-    return None
+    """Use the same token validation as required authentication for signed links."""
+    try:
+        return await get_current_user(request, db, request.headers.get("authorization"))
+    except HTTPException as exc:
+        if exc.status_code != status.HTTP_401_UNAUTHORIZED:
+            raise
+        return None

@@ -227,6 +227,7 @@ def test_pages_keep_workflow_controls_and_a_single_page_heading(
         "chart_labels": [],
         "selected_days": 7,
         "server_timezone": "Asia/Makassar",
+        "map_title": "CCTV Maps",
         "timing_logs": [],
         "selected_camera": "",
         "selected_group_id": None,
@@ -311,11 +312,8 @@ def test_shared_components_escape_content_and_reject_unknown_status_tones() -> N
     assert any(attrs.get("class") == "ui-badge ui-badge-neutral" for _, attrs in parsed.elements)
 
 
-def test_active_templates_compile() -> None:
+def test_all_templates_compile() -> None:
     for path in Path("templates").rglob("*.html"):
-        # Unrouted legacy view already contains malformed Jinja and duplicate scripts blocks.
-        if path.name == "user_management2.html":
-            continue
         templates.env.get_template(path.relative_to("templates").as_posix())
 
 

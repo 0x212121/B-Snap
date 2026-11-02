@@ -1,13 +1,18 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import PlainTextResponse
 import logging
 from ping3 import ping
+
+from app.routes.auth import operator_access_required
 
 router = APIRouter(tags=["Ping"])
 
 logger = logging.getLogger("ping")
 
-@router.get("/ping", response_class=PlainTextResponse)
+
+@router.get(
+    "/ping", response_class=PlainTextResponse, dependencies=[Depends(operator_access_required)]
+)
 def ping_ip(ip: str = Query(..., description="Target IP address to ping")) -> str:
     try:
         responses = []

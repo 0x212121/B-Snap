@@ -89,9 +89,9 @@ def test_tamper_threshold_logic():
     print("\n" + "=" * 60)
     print("TEST 2: Tamper Threshold Logic (Threshold = 3)")
     print("=" * 60)
-    
+
     print(f"TAMPER_CONFIRM_THRESHOLD = {TAMPER_CONFIRM_THRESHOLD}")
-    
+
     # Test cases
     test_cases = [
         (0, "normal", "normal", "Should stay normal"),
@@ -101,21 +101,23 @@ def test_tamper_threshold_logic():
         (4, "normal", "tampered", "Should become tampered"),
         (3, "tampered", "tampered", "Already tampered, stay tampered"),
     ]
-    
+
     all_passed = True
     for consecutive, prev_status, expected_new, description in test_cases:
         if consecutive >= TAMPER_CONFIRM_THRESHOLD:
             calculated_new = "tampered"
         else:
             calculated_new = prev_status
-        
+
         passed = calculated_new == expected_new
         status = "[PASS]" if passed else "[FAIL]"
-        print(f"{status} consecutive={consecutive}, prev={prev_status} -> {calculated_new} ({description})"
-        
+        print(
+            f"{status} consecutive={consecutive}, prev={prev_status} -> {calculated_new} ({description})"
+        )
+
         if not passed:
             all_passed = False
-    
+
     return all_passed
 
 def test_should_send_tamper_alert():

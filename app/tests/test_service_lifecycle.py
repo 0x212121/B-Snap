@@ -87,9 +87,11 @@ async def test_readiness_bypass_does_not_apply_to_other_paths(monkeypatch):
     db = MagicMock(side_effect=RuntimeError("DB access attempted"))
     monkeypatch.setattr(auth_and_setup, "SessionLocal", db)
     for path, method in (("/readyz-extra", "GET"), ("/readyz", "POST")):
-        request = Request({"type": "http", "method": method, "path": path, "headers": []})
-        with pytest.raises(RuntimeError, match="DB access attempted"):
-            await middleware.dispatch(request, AsyncMock())
+        request = Request(
+            {"type": "http", "method": method, "path": path, "headers": [], "session": {}}
+        )
+        response = await middleware.dispatch(request, AsyncMock())
+        assert response.status_code == 503
     assert db.call_count == 2
 
 

@@ -16,6 +16,7 @@ from typing import Any, Optional
 from sqlalchemy.orm import Session
 
 from app.ws.manager import websocket_connections
+from app.ws.record_notifications import deliver_notification
 from app.models.notification import Notification
 
 logger = logging.getLogger("notifications")
@@ -94,7 +95,7 @@ class ToastNotification:
 
 class NotificationService:
     """Service for sending notifications to users."""
-    
+
     @staticmethod
     async def send_toast(
         message: str,
@@ -136,7 +137,7 @@ class NotificationService:
             camera_id=camera_id,
             actions=actions,
         )
-        
+
         # Save to database if persistent
         if db and toast.persistent:
             notification = Notification(
@@ -153,36 +154,36 @@ class NotificationService:
             except Exception as e:
                 db.rollback()
                 logger.error(f"Failed to save notification to database: {e}")
-        
+
         # Send via WebSocket
         await NotificationService._broadcast(toast)
-        
+
         logger.info(f"Toast sent: [{toast_type.value}] {message[:50]}...")
         return toast
-    
+
     @staticmethod
     async def _broadcast(toast: ToastNotification) -> None:
         """Broadcast toast to WebSocket connections."""
         if not websocket_connections:
             logger.debug("No WebSocket connections available")
             return
-        
+
         disconnected = set()
         message = toast.to_json()
-        
-        for ws in websocket_connections:
+
+        for ws in list(websocket_connections):
             try:
-                await ws.send_text(message)
+                await deliver_notification(ws, toast.to_dict(), message)
             except Exception as e:
                 logger.warning(f"Failed to send to WebSocket: {e}")
                 disconnected.add(ws)
-        
+
         # Clean up disconnected websockets
         for ws in disconnected:
             websocket_connections.discard(ws)
-    
+
     # ==================== Convenience Methods ====================
-    
+
     @staticmethod
     async def success(
         message: str,
@@ -198,7 +199,7 @@ class NotificationService:
             duration=duration,
             **kwargs
         )
-    
+
     @staticmethod
     async def error(
         message: str,
@@ -214,7 +215,7 @@ class NotificationService:
             duration=duration,
             **kwargs
         )
-    
+
     @staticmethod
     async def warning(
         message: str,
@@ -230,7 +231,7 @@ class NotificationService:
             duration=duration,
             **kwargs
         )
-    
+
     @staticmethod
     async def info(
         message: str,
@@ -246,9 +247,9 @@ class NotificationService:
             duration=duration,
             **kwargs
         )
-    
+
     # ==================== System Notifications ====================
-    
+
     @staticmethod
     async def camera_offline(camera_name: str, camera_id: int, **kwargs) -> ToastNotification:
         """Notify when a camera goes offline."""
@@ -259,7 +260,7 @@ class NotificationService:
             actions=[{"label": "Check Status", "url": f"/health"}],
             **kwargs
         )
-    
+
     @staticmethod
     async def camera_online(camera_name: str, camera_id: int, **kwargs) -> ToastNotification:
         """Notify when a camera comes online."""
@@ -270,7 +271,7 @@ class NotificationService:
             duration=4000,
             **kwargs
         )
-    
+
     @staticmethod
     async def snapshot_saved(camera_name: str, camera_id: int, snapshot_id: int, **kwargs) -> ToastNotification:
         """Notify when snapshot is saved."""
@@ -282,7 +283,7 @@ class NotificationService:
             duration=4000,
             **kwargs
         )
-    
+
 # ==================== HTTP Context Helper ====================
 
 def get_notification_service() -> NotificationService:

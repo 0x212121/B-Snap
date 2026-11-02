@@ -2,9 +2,10 @@ import logging
 import os
 import re
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Annotated, Any, Dict, List, Optional
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, ORJSONResponse, RedirectResponse, Response
@@ -22,12 +23,16 @@ from app.models.whitelist import WhatsappWhitelist
 from app.routes.auth import admin_access_required, operator_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.gallery_preview import snapshot_preview_response
-from app.utils.media_access import require_camera_group_access
+from app.utils.media_access import require_camera_group_access, restrict_media_query
 from app.utils.notification_service import NotificationService
 from app.utils.snapshot_service import SnapshotService
 from app.utils.snapshot_utils import record_snapshot_metadata
 from app.utils.template_helper import templates
-from app.utils.timezone_helper import format_datetime_standard, to_current_timezone
+from app.utils.timezone_helper import (
+    format_datetime_standard,
+    get_current_timezone,
+    to_current_timezone,
+)
 
 router = APIRouter(tags=["Snapshots"])
 
@@ -400,39 +405,37 @@ from app.schemas.snapshot_schema import SnapshotOut
 
 
 @router.get("/snapshots/tampered", response_model=List[SnapshotOut])
-def get_tampered_snapshots(request: Request, db: Session = Depends(get_db), current_operator: User = Depends(operator_access_required),):
-    return db.query(Snapshot).filter(Snapshot.is_tampered == True).all()
-
-
-@router.get("/snapshots/tampered", response_class=JSONResponse)
-def get_tampered_snapshots_range(
-    start: str = Query(..., description="Start date in YYYY-MM-DD"),
-    end: str = Query(..., description="End date in YYYY-MM-DD"),
+def get_tampered_snapshots(
+    start: str | None = Query(None, description="Start date in YYYY-MM-DD"),
+    end: str | None = Query(None, description="End date in YYYY-MM-DD"),
     db: Session = Depends(get_db),
     current_operator: User = Depends(operator_access_required),
 ):
-    try:
-        start_date = datetime.strptime(start, "%Y-%m-%d")
-        end_date = datetime.strptime(end, "%Y-%m-%d")
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
-
-    snapshots = db.query(Snapshot).filter(
-        Snapshot.is_tampered == True,
-        Snapshot.timestamp >= start_date,
-        Snapshot.timestamp <= end_date
-    ).order_by(Snapshot.timestamp.desc()).all()
-
-    result = [{
-        "id": s.id,
-        "camera": s.camera_name,
-        "timestamp": s.timestamp.isoformat(),
-        "tamper_reason": s.tamper_reason,
-        "blur_score": s.blur_score,
-        "entropy_score": getattr(s, 'entropy_score', None),
-    } for s in snapshots]
-
-    return JSONResponse(content=result)
+    """List active authorized tamper events, optionally within local calendar days."""
+    query = restrict_media_query(
+        db.query(Snapshot).filter(Snapshot.is_tampered.is_(True), Snapshot.deleted_at.is_(None)),
+        Snapshot,
+        current_operator.group_id,
+    )
+    if (start is None) != (end is None):
+        raise HTTPException(status_code=400, detail="Provide both start and end dates")
+    if start is not None:
+        try:
+            start_date = datetime.strptime(start, "%Y-%m-%d")
+            end_date = datetime.strptime(end, "%Y-%m-%d")
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=400, detail="Invalid date format. Use YYYY-MM-DD."
+            ) from exc
+        if end_date < start_date:
+            raise HTTPException(status_code=400, detail="End date must not precede start date")
+        zone = ZoneInfo(get_current_timezone(db))
+        query = query.filter(
+            Snapshot.timestamp >= start_date.replace(tzinfo=zone).astimezone(UTC),
+            Snapshot.timestamp
+            < (end_date + timedelta(days=1)).replace(tzinfo=zone).astimezone(UTC),
+        )
+    return query.order_by(Snapshot.timestamp.desc()).all()
 
 
 # ========== P0-002: Soft Delete Management Routes ==========
@@ -449,23 +452,25 @@ async def get_deleted_snapshots(
 ):
     """Admin only: Get list of soft-deleted snapshots."""
     offset = (page - 1) * limit
-    
+
     # Build base query
-    query = db.query(Snapshot).filter(Snapshot.deleted_at.isnot(None))
-    
+    query = restrict_media_query(
+        db.query(Snapshot).filter(Snapshot.deleted_at.isnot(None)), Snapshot, current_admin.group_id
+    )
+
     # Apply camera name filter
     if search:
         query = query.filter(Snapshot.camera_name.ilike(f"%{search}%"))
-    
+
     # Apply days filter
     if days and days > 0:
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         query = query.filter(Snapshot.deleted_at < cutoff)
-    
+
     total = query.count()
-    
+
     snapshots = query.order_by(Snapshot.deleted_at.desc()).offset(offset).limit(limit).all()
-    
+
     result = []
     for s in snapshots:
         result.append({
@@ -484,7 +489,7 @@ async def get_deleted_snapshots(
             "retention_hold_by": s.retention_hold_by,
             "retention_hold_at": format_datetime_standard(s.retention_hold_at, db=db) if s.retention_hold_at else None,
         })
-    
+
     return JSONResponse({
         "snapshots": result,
         "total": total,
@@ -502,15 +507,26 @@ async def restore_snapshot(
 ):
     """Restore a soft-deleted snapshot."""
     from app.utils.snapshot_service import SnapshotService
-    
+
+    snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
+    if not snapshot:
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+    require_camera_group_access(db, snapshot.camera_id, current_operator.group_id)
     user_name = request.session.get("user_name", "Unknown")
     success = await SnapshotService.restore_snapshot(
         snapshot_id=snapshot_id,
         db=db,
         user_name=user_name
     )
-    
+
     if success:
+        log_audit(
+            db=db,
+            user=current_operator.username,
+            action="restore_snapshot",
+            target=snapshot_id,
+            ip=request.client.host if request.client else None,
+        )
         return JSONResponse(
             status_code=200,
             content={"status": "success", "message": "Snapshot restored successfully"}
@@ -531,7 +547,15 @@ async def purge_snapshot(
 ):
     """Admin only: Permanently delete a soft-deleted snapshot."""
     from app.utils.snapshot_service import SnapshotService
-    
+
+    snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
+    if not snapshot:
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+    require_camera_group_access(db, snapshot.camera_id, current_admin.group_id)
+    if snapshot.retention_hold or not snapshot.is_deleted:
+        raise HTTPException(
+            status_code=409, detail="Purge requires deleted footage without retention hold"
+        )
     user_name = request.session.get("user_name", "Unknown")
     success = await SnapshotService.delete_snapshot(
         snapshot_id=snapshot_id,
@@ -539,8 +563,15 @@ async def purge_snapshot(
         user_name=user_name,
         hard_delete=True
     )
-    
+
     if success:
+        log_audit(
+            db=db,
+            user=current_admin.username,
+            action="purge_snapshot",
+            target=snapshot_id,
+            ip=request.client.host if request.client else None,
+        )
         return JSONResponse(
             status_code=200,
             content={"status": "success", "message": "Snapshot permanently deleted"}
@@ -555,38 +586,49 @@ async def purge_snapshot(
 @router.post("/admin/snapshots/purge", response_class=JSONResponse)
 async def purge_old_deleted_snapshots(
     request: Request,
-    days_old: int = Query(30, description="Purge snapshots soft-deleted more than N days ago"),
+    days_old: int = Query(
+        30, ge=0, description="Purge snapshots soft-deleted more than N days ago"
+    ),
     skip_retention_hold: bool = Query(True, description="Skip items with retention hold"),
     db: Session = Depends(get_db),
-    current_admin: User = Depends(admin_access_required)
+    current_admin: User = Depends(admin_access_required),
 ):
     """Admin only: Permanently delete snapshots that have been soft-deleted for specified days.
     
     P2-001: Items with retention_hold=True are skipped by default.
     """
     from app.utils.snapshot_service import SnapshotService
-    
+
     user_name = request.session.get("user_name", "Unknown")
-    
+
+    if not skip_retention_hold:
+        raise HTTPException(
+            status_code=409, detail="Release retention holds explicitly before purging"
+        )
     # P2-001: Check for retention hold items
     if skip_retention_hold:
         from app.models.snapshot import Snapshot
         cutoff = datetime.now(timezone.utc) - timedelta(days=days_old)
-        retention_hold_count = db.query(Snapshot).filter(
-            Snapshot.deleted_at.isnot(None),
-            Snapshot.deleted_at < cutoff,
-            Snapshot.retention_hold == True
+        retention_hold_count = restrict_media_query(
+            db.query(Snapshot).filter(
+                Snapshot.deleted_at.isnot(None),
+                Snapshot.deleted_at < cutoff,
+                Snapshot.retention_hold == True,
+            ),
+            Snapshot,
+            current_admin.group_id,
         ).count()
     else:
         retention_hold_count = 0
-    
+
     purged_count = SnapshotService.purge_deleted_snapshots(
         db=db,
         days_old=days_old,
         user_name=user_name,
-        skip_retention_hold=skip_retention_hold
+        skip_retention_hold=skip_retention_hold,
+        group_id=current_admin.group_id,
     )
-    
+
     return JSONResponse({
         "status": "success",
         "message": f"Purged {purged_count} snapshots" + (f" ({retention_hold_count} skipped due to retention hold)" if retention_hold_count > 0 else ""),
@@ -607,9 +649,10 @@ async def verify_snapshot_integrity(
     snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
     if not snapshot:
         raise HTTPException(status_code=404, detail="Snapshot not found")
-    
+    require_camera_group_access(db, snapshot.camera_id, current_operator.group_id)
+
     user_name = request.session.get("user_name", "unknown")
-    
+
     if not snapshot.file_hash:
         log_audit(
             db=db,
@@ -628,9 +671,9 @@ async def verify_snapshot_integrity(
             "message": "No hash stored for this snapshot (legacy data)",
             "integrity_verified": None
         })
-    
+
     is_valid = snapshot.verify_integrity()
-    
+
     log_audit(
         db=db,
         user=user_name,
@@ -648,7 +691,7 @@ async def verify_snapshot_integrity(
         request_method=request.method,
         response_status=200,
     )
-    
+
     return JSONResponse({
         "status": "success" if is_valid else "failed",
         "message": "Integrity verified" if is_valid else "Integrity check FAILED - file may be corrupted or tampered",
@@ -669,7 +712,6 @@ async def admin_trash_page(
     return templates.TemplateResponse("admin_trash.html", {"request": request})
 
 
-
 # P2-001: Retention Hold Management Endpoints
 
 @router.post("/snap/{snapshot_id}/retention-hold", response_class=JSONResponse)
@@ -685,9 +727,10 @@ async def toggle_snapshot_retention_hold(
     snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
     if not snapshot:
         raise HTTPException(status_code=404, detail="Snapshot not found")
-    
+    require_camera_group_access(db, snapshot.camera_id, current_admin.group_id)
+
     user_name = request.session.get("user_name", "Unknown")
-    
+
     if enable:
         snapshot.retention_hold = True
         snapshot.retention_hold_reason = reason or "Legal/Evidence hold"
@@ -702,9 +745,9 @@ async def toggle_snapshot_retention_hold(
         snapshot.retention_hold_at = None
         action = "retention_hold_disabled"
         message = "Retention hold removed - this snapshot can now be purged"
-    
+
     db.commit()
-    
+
     log_audit(
         db=db,
         user=user_name,
@@ -713,7 +756,7 @@ async def toggle_snapshot_retention_hold(
         ip=request.client.host,
         extra=f"Snapshot {snapshot_id} - Reason: {reason}" if enable else f"Snapshot {snapshot_id}"
     )
-    
+
     return JSONResponse({
         "status": "success",
         "message": message,
@@ -721,7 +764,6 @@ async def toggle_snapshot_retention_hold(
         "retention_hold_reason": snapshot.retention_hold_reason,
         "retention_hold_by": snapshot.retention_hold_by
     })
-
 
 
 # P2-004: Secure Snapshot Serving - Authenticated access only

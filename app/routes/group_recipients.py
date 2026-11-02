@@ -26,7 +26,7 @@ from app.models.user import User
 logger = logging.getLogger("main")
 mgmt_logger = logging.getLogger("management")
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(admin_access_required)])
 
 
 # ============================================================

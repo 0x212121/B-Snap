@@ -81,9 +81,7 @@ def resolve_ip_by_name(
 
     def restrict(query: SQLQuery) -> SQLQuery:
         for group_id in group_ids:
-            query = query.filter(
-                (Camera.group_id == group_id) | Camera.groups.any(CameraGroup.id == group_id)
-            )
+            query = query.filter(Camera.groups.any(CameraGroup.id == group_id))
         return query
 
     # Prefer matching groups, then hostnames, while filtering every returned row.

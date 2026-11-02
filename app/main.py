@@ -2,6 +2,7 @@
 # 1. IMPORTS
 # ====================================================================
 import asyncio
+from html import escape
 import logging
 import os
 from pathlib import Path
@@ -10,16 +11,13 @@ import traceback
 
 from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.responses import ORJSONResponse, RedirectResponse, HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.docs import get_swagger_ui_html
 from sqlalchemy import inspect
 
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.gzip import GZipMiddleware
-from starlette.middleware.errors import ServerErrorMiddleware
 from starlette.middleware import Middleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
-from app.middleware.http_proxy_fix import HTTPSProxyFixMiddleware
 from app.middleware.observability import ObservabilityMiddleware
 
 from app.middleware.auth_and_setup import AuthAndSetupMiddleware
@@ -28,7 +26,7 @@ from app.middleware.online_user_tracker import OnlineUserTrackerMiddleware
 
 from app.db.migrate import require_current_schema
 from app.core.logging_config import setup_logging
-from app.core.static_assets import mount_documentation
+from app.core.static_assets import PublicStaticFiles, mount_documentation
 from app.db.database import engine, SessionLocal
 from app.utils.timezone_helper import clear_timezone_cache
 
@@ -65,7 +63,7 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key-for-dev")
 if SECRET_KEY == "your-default-secret-key-for-dev":
     logger.warning("Using default SECRET_KEY. This is not secure for production.")
-    
+
 
 # FIX: parse TRUSTED_HOSTS string → set
 _raw_hosts = os.getenv("TRUSTED_HOSTS", "*")
@@ -157,20 +155,16 @@ async def lifespan(app: FastAPI):
 # ====================================================================
 # 4. FASTAPI APP INSTANCE & MIDDLEWARE
 # ====================================================================
-from app.middleware.real_ip_fix import RealIPFixMiddleware
-
 middleware = [
     Middleware(ProxyHeadersMiddleware, trusted_hosts=TRUSTED_HOSTS),
-    Middleware(HTTPSProxyFixMiddleware),
-    Middleware(RealIPFixMiddleware),
     Middleware(GZipMiddleware, minimum_size=1000),
     Middleware(
-        SessionMiddleware, 
-        secret_key=SECRET_KEY, 
-        max_age=86400,  # FIX: 24 jam sama seperti SESSION_MAX_AGE_SECONDS di auth.py
-        path="/",       # FIX: Penting! Pastikan cookie berlaku di seluruh path
-        same_site="lax",
-        https_only=False  # True jika HTTPS
+        SessionMiddleware,
+        secret_key=SECRET_KEY,
+        max_age=auth.SESSION_MAX_AGE_SECONDS,
+        path="/",  # FIX: Penting! Pastikan cookie berlaku di seluruh path
+        same_site=auth.COOKIE_SAMESITE,
+        https_only=auth.COOKIE_SECURE,
     ),
     Middleware(OnlineUserTrackerMiddleware),
     Middleware(AuthAndSetupMiddleware),
@@ -194,8 +188,6 @@ app = FastAPI(
 #     log.warning(f"[MIDDLEWARE TEST] entered for {request.url}")
 #     # BUG: tidak memanggil call_next dan tidak mengembalikan Response
 
-# Tambahkan ServerErrorMiddleware lebih awal agar exceptions ditangani ke 500
-app.add_middleware(ServerErrorMiddleware, handler=None)
 app.add_middleware(ObservabilityMiddleware)
 
 # FIX: Satu middleware error wrapper yang benar-benar meneruskan request
@@ -205,18 +197,23 @@ async def error_wrapper_middleware(request: Request, call_next):
     try:
         response = await call_next(request)
         if response.status_code >= 500:
-            logger.error(f"HTTP {response.status_code} at {request.url}")
+            logger.error("HTTP %s at %s", response.status_code, request.url.path)
             # Keep API error bodies machine-readable for AJAX clients.
-            if "application/json" in request.headers.get("accept", "").lower():
+            if _wants_json_error(request):
                 return response
             if request.url.path.startswith("/maps/cameras/") and request.url.path.endswith("/live"):
                 return response
-            return templates.TemplateResponse("500.html", {"request": request}, status_code=500)
+            headers = {
+                key: value
+                for key, value in response.headers.items()
+                if key.lower() not in {"content-type", "content-length", "content-encoding", "etag"}
+            }
+            return templates.TemplateResponse(
+                "500.html", {"request": request}, status_code=response.status_code, headers=headers
+            )
         return response
     except Exception as exc:
-        error_trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
-        logger.error(f"Unhandled error at {request.url}:\n{error_trace}")
-        return templates.TemplateResponse("500.html", {"request": request}, status_code=500)
+        return await global_exception_handler(request, exc)
 
 # ====================================================================
 # 6. ROUTERS & STATIC FILES
@@ -263,7 +260,7 @@ async def block_video_access(request: Request, path: str):
     )
 
 project_root = Path(__file__).resolve().parents[1]
-app.mount("/static", StaticFiles(directory=project_root / "static"), name="static")
+app.mount("/static", PublicStaticFiles(directory=project_root / "static"), name="static")
 mount_documentation(app, project_root)
 
 # Registrasi routers
@@ -318,6 +315,7 @@ def _wants_json_error(request: Request) -> bool:
         "application/json" in request.headers.get("accept", "").lower()
         or request.url.path.startswith("/api/")
         or request.url.path.startswith("/snap/")
+        or request.url.path.startswith("/snapshot/")
     )
 
 
@@ -325,13 +323,18 @@ def _wants_json_error(request: Request) -> bool:
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
     # Check if request expects JSON (API call)
     is_json_request = _wants_json_error(request)
-    
+
     if exc.detail == "SESSION_INVALIDATED":
         # For API calls, return JSON error
         if is_json_request:
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"status": "error", "detail": "Session invalidated", "code": "SESSION_INVALIDATED"}
+                content={
+                    "status": "error",
+                    "detail": "Session invalidated",
+                    "code": "SESSION_INVALIDATED",
+                },
+                headers=exc.headers,
             )
         # For web pages, redirect to login
         response = RedirectResponse(
@@ -351,22 +354,27 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
         if is_json_request:
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                content={"status": "error", "detail": exc.detail}
+                content={"status": "error", "detail": exc.detail},
+                headers=exc.headers,
             )
         return templates.TemplateResponse(
             "unauthorized.html",
             {"request": request, "detail": exc.detail},
-            status_code=exc.status_code
+            status_code=exc.status_code,
+            headers=exc.headers,
         )
-    
+
     # Default: return JSON for API calls, plain text for others
     if is_json_request:
         return JSONResponse(
             status_code=exc.status_code,
-            content={"status": "error", "detail": exc.detail}
+            content={"status": "error", "detail": exc.detail},
+            headers=exc.headers,
         )
 
-    return Response(content=f"An error occurred: {exc.detail}", status_code=exc.status_code)
+    return Response(
+        content=f"An error occurred: {exc.detail}", status_code=exc.status_code, headers=exc.headers
+    )
 
 
 @app.get("/docs", include_in_schema=False)
@@ -416,25 +424,30 @@ async def forbidden_403(request: Request, exc):
     return templates.TemplateResponse("403.html", {"request": request}, status_code=403)
 
 
-import traceback
-
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
-    
+
+    if _wants_json_error(request):
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "detail": "Internal Server Error"},
+            headers={"Cache-Control": "no-store"},
+        )
+
     # Jika development, tampilkan detail
     if ENVIRONMENT == "development":
         return HTMLResponse(
             content=f"""
             <h1>INTERNAL SERVER ERROR - DEBUG MODE</h1>
             <h2>Error Type: {type(exc).__name__}</h2>
-            <h2>Message: {str(exc)}</h2>
+            <h2>Message: {escape(str(exc))}</h2>
             <hr>
-            <pre style="background: #f0f0f0; padding: 20px; overflow: auto;">{traceback.format_exc()}</pre>
+            <pre style="background: #f0f0f0; padding: 20px; overflow: auto;">{escape(traceback.format_exc())}</pre>
             """,
-            status_code=500
+            status_code=500,
         )
-    
+
     # Production: tampilkan pesan generic
     return HTMLResponse(
         content="<h1>Internal Server Error</h1><p>Please try again later.</p>",

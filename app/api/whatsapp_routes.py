@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends
 from app.db.database import get_db
 from app.models.whitelist import WhatsappWhitelist
 from sqlalchemy.orm import Session
+from app.routes.auth import admin_access_required
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(admin_access_required)])
 
 
 @router.get("/api/whatsapp/is-allowed")
@@ -16,6 +17,4 @@ def is_whatsapp_allowed(phone: str, db: Session = Depends(get_db)):
             "name": entry.name,
             "group": entry.group_name
         }
-    return {
-        "allowed": False
-    }
+    return {"allowed": False}

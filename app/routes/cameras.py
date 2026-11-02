@@ -494,56 +494,35 @@ async def get_camera_groups_list(request: Request, db: Session = Depends(get_db)
 
 @router.post("/cameras/delete/{camera_id}", response_class=JSONResponse)
 async def delete_camera(request: Request, camera_id: str, db: Session = Depends(get_db)):
-    """
-    Deletes a camera by its ID. Snapshot records and files are preserved
-    and marked as orphaned. Only video files are deleted from file system.
-    """
+    """Delete a camera while preserving snapshot/video evidence and retention holds."""
     logger.info("Attempting to delete camera with ID: %s", camera_id)
-    
+
     # Load the camera object along with its related videos
     cam = db.query(DBCamera).options(
         joinedload(DBCamera.videos)
     ).filter(DBCamera.id == camera_id).first()
-    
+
     if not cam:
         logger.warning("Attempted to delete non-existent camera ID: %s", camera_id)
         return JSONResponse(status_code=404, content={"status": "error", "message": "Camera not found"})
 
     try:
-        VIDEO_PATH = get_video_directory()
         hostname = cam.hostname  # Save hostname before delete
-        
+
         # 1. Mark snapshots as orphaned before camera delete
         # This is done via event listener in camera model
-        
-        # 2. Delete video files from disk
-        logger.info("Deleting %s associated video files for camera '%s'...", len(cam.videos), hostname)
-        deleted_count = 0
-        failed_count = 0
-        for video in cam.videos:
-            # Handle both old format (videos/filename.mp4) and new format (filename.mp4)
-            file_name = os.path.basename(video.file_path)
-            file_path = os.path.join(VIDEO_PATH, file_name)
-            
-            if os.path.exists(file_path):
-                try:
-                    os.remove(file_path)
-                    deleted_count += 1
-                    logger.debug("Deleted video file: %s", file_path)
-                except Exception as file_err:
-                    failed_count += 1
-                    logger.warning("Failed to delete video file '%s': %s", file_path, file_err)
-            else:
-                logger.warning("Video file not found: %s", file_path)
-        
-        logger.info("Video file cleanup complete: %s deleted, %s failed", deleted_count, failed_count)
+
+        # Video.camera_id already uses ON DELETE SET NULL. Preserve its row,
+        # hash, hold, and file just as we preserve snapshots.
 
         # --- HAPUS DATA DARI DATABASE ---
         # Snapshots are NOT deleted (passive_deletes=True).
         # They will be marked as orphaned via event listener and camera_id set to NULL.
         db.delete(cam)
         db.commit()
-        logger.info("Camera '%s' deleted successfully. Snapshots preserved as orphaned.", hostname)
+        logger.info(
+            "Camera '%s' deleted successfully. Snapshot/video evidence preserved.", hostname
+        )
 
         log_audit(
             db=db,
@@ -553,11 +532,14 @@ async def delete_camera(request: Request, camera_id: str, db: Session = Depends(
             ip=request.client.host,
             extra=f"via Camera Management\nCamera ID: {camera_id}"
         )
-        
-        return JSONResponse(status_code=200, content={
-            "status": "success", 
-            "message": f"Camera '{hostname}' deleted. Snapshots preserved as orphaned, {deleted_count} video files deleted."
-        })
+
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "success",
+                "message": f"Camera '{hostname}' deleted. Snapshot and video evidence preserved.",
+            },
+        )
 
     except Exception as e:
         db.rollback()

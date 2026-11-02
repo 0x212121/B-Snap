@@ -22,12 +22,6 @@
     background: #6b7280;
   }
   
-  /* Log level badges */
-  .badge-error { @apply bg-red-900/50 text-red-300 border-red-700; }
-  .badge-warn { @apply bg-yellow-900/50 text-yellow-300 border-yellow-700; }
-  .badge-info { @apply bg-blue-900/50 text-blue-300 border-blue-700; }
-  .badge-debug { @apply bg-gray-700/50 text-gray-300 border-gray-600; }
-  
   /* Log row hover effect */
   .log-row:hover {
     background-color: rgba(75, 85, 99, 0.3);
@@ -76,9 +70,9 @@
   </div>
 
   <!-- Main Content -->
-  <div class="flex-1 flex overflow-hidden">
+  <div class="flex-1 flex min-h-0 flex-col lg:flex-row overflow-hidden">
     <!-- Sidebar -->
-    <div class="w-72 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+    <div class="w-full lg:w-72 lg:shrink-0 max-h-72 lg:max-h-none overflow-y-auto bg-gray-50 dark:bg-gray-900 border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700 flex flex-col">
       <!-- Log Type Selector -->
       <div class="p-4 border-b border-gray-200 dark:border-gray-700">
         <label class="ui-label block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Log Type</label>
@@ -93,7 +87,7 @@
       
       <!-- Log Files List -->
       <div class="flex-1 overflow-y-auto p-4">
-        <label class="ui-label block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Log Files</label>
+        <label class="ui-label block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Log Files ({{ server_timezone }})</label>
         <div id="logFilesList" class="space-y-1">
           <div class="text-sm text-gray-500 dark:text-gray-400 italic">Loading...</div>
         </div>
@@ -115,7 +109,7 @@
     </div>
 
     <!-- Log Viewer Area -->
-    <div class="flex-1 flex flex-col bg-gray-900">
+    <div class="flex-1 min-w-0 min-h-0 flex flex-col bg-gray-900">
       <!-- Filters Bar -->
       <div class="px-4 py-3 border-b border-gray-700 bg-gray-800/50 flex items-center gap-3 flex-wrap">
         <!-- Search -->
@@ -174,6 +168,7 @@
 </div>
 
 <script>
+const serverTimezone = {{ server_timezone | default('UTC') | tojson }};
 // State
 let currentState = {
   logType: 'main',
@@ -277,8 +272,7 @@ async function loadLogFiles(logType) {
   elements.logFilesList.innerHTML = '<div class="text-sm text-gray-500 dark:text-gray-400 italic">Loading...</div>';
   
   try {
-    const res = await fetch(`/logs/files/${logType}`);
-    const data = await res.json();
+    const data = await fetchLogJSON(`/logs/files/${encodeURIComponent(logType)}`);
     
     elements.logFilesList.innerHTML = '';
     
@@ -288,7 +282,7 @@ async function loadLogFiles(logType) {
         <div class="flex items-center justify-center h-full text-gray-500">
           <div class="text-center">
             <div class="text-4xl mb-4">📭</div>
-            <p>No log files found for ${logType}</p>
+            <p>No log files found for ${escapeHtml(logType)}</p>
           </div>
         </div>
       `;
@@ -314,7 +308,7 @@ async function loadLogFiles(logType) {
       }
     });
   } catch (err) {
-    elements.logFilesList.innerHTML = `<div class="text-sm text-red-500">Error: ${err.message}</div>`;
+    elements.logFilesList.innerHTML = `<div class="text-sm text-red-500">Error: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -348,11 +342,10 @@ async function loadLogContent() {
   params.append('limit', '2000');
   
   try {
-    const res = await fetch(`/logs/content/${currentState.logType}/${currentState.filename}?${params}`);
-    const data = await res.json();
+    const data = await fetchLogJSON(`/logs/content/${encodeURIComponent(currentState.logType)}/${encodeURIComponent(currentState.filename)}?${params}`);
     
     if (data.error) {
-      elements.logViewer.innerHTML = `<div class="p-4 text-red-400">Error: ${data.error}</div>`;
+      elements.logViewer.innerHTML = `<div class="p-4 text-red-400">Error: ${escapeHtml(data.error)}</div>`;
       return;
     }
     
@@ -377,7 +370,7 @@ async function loadLogContent() {
     updateLevelStats(data.level_counts);
     
   } catch (err) {
-    elements.logViewer.innerHTML = `<div class="p-4 text-red-400">Error loading logs: ${err.message}</div>`;
+    elements.logViewer.innerHTML = `<div class="p-4 text-red-400">Error loading logs: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -404,20 +397,20 @@ function renderLogEntries(entries) {
     
     // Level badge
     const levelClass = {
-      'ERROR': 'badge-error',
-      'WARNING': 'badge-warn',
-      'WARN': 'badge-warn',
-      'INFO': 'badge-info',
-      'DEBUG': 'badge-debug'
-    }[entry.level] || 'badge-info';
+      'ERROR': 'ui-badge-danger',
+      'WARNING': 'ui-badge-warning',
+      'WARN': 'ui-badge-warning',
+      'INFO': 'ui-badge-info',
+      'DEBUG': 'ui-badge-neutral'
+    }[entry.level] || 'ui-badge-info';
     
-    const levelBadge = `<span class="ui-badge inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${levelClass} min-w-[60px] justify-center">${entry.level}</span>`;
+    const levelBadge = `<span class="ui-badge inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${levelClass} min-w-[60px] justify-center">${escapeHtml(entry.level)}</span>`;
     
     // Timestamp
-    const timestamp = entry.timestamp ? `<span class="text-gray-500 text-xs whitespace-nowrap">${entry.timestamp}</span>` : '';
+    const timestamp = entry.timestamp ? `<span class="text-gray-500 text-xs whitespace-nowrap">${formatDate(entry.timestamp)}</span>` : '';
     
     // Logger
-    const logger = `<span class="text-purple-400 text-xs whitespace-nowrap">[${entry.logger}]</span>`;
+    const logger = `<span class="text-purple-400 text-xs whitespace-nowrap">[${escapeHtml(entry.logger)}]</span>`;
     
     // Message with color
     const messageColor = {
@@ -436,7 +429,7 @@ function renderLogEntries(entries) {
         <div class="flex items-center gap-2 mb-0.5">
           ${timestamp}
           ${logger}
-          ${entry.pid ? `<span class="text-gray-600 text-xs">pid=${entry.pid}</span>` : ''}
+          ${entry.pid ? `<span class="text-gray-600 text-xs">pid=${escapeHtml(entry.pid)}</span>` : ''}
         </div>
         <div class="${messageColor} break-all leading-relaxed">${escapeHtml(entry.message)}</div>
       </div>
@@ -486,9 +479,9 @@ function updateLevelStats(counts) {
     div.innerHTML = `
       <div class="flex items-center gap-2">
         <span class="w-2 h-2 rounded-full ${colors[level] || 'bg-gray-500'}"></span>
-        <span class="text-xs text-gray-400">${level}</span>
+        <span class="text-xs text-gray-400">${escapeHtml(level)}</span>
       </div>
-      <span class="text-xs font-medium text-gray-200">${count.toLocaleString()}</span>
+      <span class="text-xs font-medium text-gray-200">${Number(count).toLocaleString(BSnapDates.locale())}</span>
     `;
     elements.levelStats.appendChild(div);
   });
@@ -499,8 +492,7 @@ async function loadStats() {
   if (!currentState.filename) return;
   
   try {
-    const res = await fetch(`/logs/stats/${currentState.logType}/${currentState.filename}`);
-    const data = await res.json();
+    const data = await fetchLogJSON(`/logs/stats/${encodeURIComponent(currentState.logType)}/${encodeURIComponent(currentState.filename)}`);
     
     if (data.error) {
       elements.statTotalLines.textContent = '-';
@@ -551,7 +543,14 @@ function debounce(fn, delay) {
 
 // Utility: Format date
 function formatDate(isoString) {
-  return BSnapDates.html(isoString);
+  return BSnapDates.html(isoString, 'datetime', { timeZone: serverTimezone });
+}
+
+async function fetchLogJSON(url) {
+  const response = await fetch(url, { headers: { Accept: 'application/json' } });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.detail || data.error || `HTTP ${response.status}`);
+  return data;
 }
 
 // Utility: Escape HTML

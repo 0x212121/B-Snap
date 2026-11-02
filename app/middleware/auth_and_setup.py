@@ -109,7 +109,9 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # Step 1: Allow public paths
-        if any(path.startswith(p) for p in ALLOWED_PUBLIC_PATHS) or token_query:
+        if any(path == p or path.startswith(p + "/") for p in ALLOWED_PUBLIC_PATHS) or (
+            token_query and path.startswith("/snapshot/file/")
+        ):
             return await call_next(request)
 
         # Step 2: Bearer token

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.ws.manager import websocket_connections
-from app.ws.record_notifications import deliver_notification
+from app.ws.record_notifications import can_receive_notification, deliver_notification
+from urllib.parse import urlsplit
 import asyncpg
 import asyncio
 import json
@@ -76,6 +77,20 @@ async def notification_listener(websockets: set):
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    origin = websocket.headers.get("origin")
+    expected_scheme = "https" if websocket.url.scheme == "wss" else "http"
+    if origin:
+        try:
+            parsed_origin = urlsplit(origin)
+        except ValueError:
+            await websocket.close(code=1008)
+            return
+        if parsed_origin.netloc != websocket.url.netloc or parsed_origin.scheme != expected_scheme:
+            await websocket.close(code=1008)
+            return
+    if not await asyncio.to_thread(can_receive_notification, websocket, {}):
+        await websocket.close(code=1008)
+        return
     await websocket.accept()
     websocket_connections.add(websocket)
     logger.info(f"Client {websocket.client} connected. Total connections in this worker: {len(websocket_connections)}")

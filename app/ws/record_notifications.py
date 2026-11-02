@@ -11,7 +11,7 @@ from fastapi import WebSocket
 from app.db.database import SessionLocal
 from app.models.user import User
 from app.utils.auth_token import is_valid_web_token
-
+from app.utils.media_access import require_camera_group_access
 
 async def deliver_notification(websocket: WebSocket, payload: dict[str, Any], message: str) -> None:
     """Filter private recording events before sending any contents to the browser."""
@@ -19,7 +19,35 @@ async def deliver_notification(websocket: WebSocket, payload: dict[str, Any], me
         can_receive_recording, websocket, payload
     ):
         return
+    if payload.get("type") != "record_complete" and not await asyncio.to_thread(
+        can_receive_notification, websocket, payload
+    ):
+        return
     await websocket.send_text(message)
+
+
+def can_receive_notification(websocket: WebSocket, payload: dict[str, Any]) -> bool:
+    """Validate live browser credentials, notification recipient, and camera group."""
+    user_id = websocket.scope.get("session", {}).get("user_id")
+    token = websocket.cookies.get("session_token")
+    if not isinstance(user_id, int) or not token:
+        return False
+    data = payload.get("data", payload)
+    if not isinstance(data, dict):
+        return False
+    recipient = data.get("user_id")
+    if recipient is not None and recipient != user_id:
+        return False
+    try:
+        with SessionLocal() as db:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user or not is_valid_web_token(token, user.web_tokens):
+                return False
+            if data.get("camera_id") is not None:
+                require_camera_group_access(db, data["camera_id"], user.group_id)
+            return True
+    except Exception:
+        return False
 
 
 def can_receive_recording(websocket: WebSocket, payload: dict[str, Any]) -> bool:

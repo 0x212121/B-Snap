@@ -1,9 +1,10 @@
 import hashlib
 import hmac
 import os
+from pathlib import Path
 from datetime import datetime, timezone
 import time
-from typing import Optional, List
+from typing import Annotated, Optional, List
 from urllib.parse import quote, unquote # Import quote for URL encoding
 from fastapi import APIRouter, Body, Query, Depends, HTTPException, Request
 from fastapi.responses import FileResponse # Import FileResponse!
@@ -16,8 +17,13 @@ from app.models.user import User
 from app.models.snapshot import Snapshot
 from app.models.health import CameraHealth
 from app.models.whitelist import RoleEnum, WhatsappWhitelist
-from app.routes.auth import admin_access_required, user_access_required_optional
+from app.routes.auth import (
+    admin_access_required,
+    user_access_required,
+    user_access_required_optional,
+)
 from app.utils.audit_logger import log_audit
+from app.utils.media_access import require_camera_group_access
 from app.utils.snapshot_utils import SNAPSHOT_BASE_DIR  # points to app/static/snapshots
 from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
 from app.utils.healthcheck import format_uptime_duration
@@ -102,7 +108,7 @@ def is_valid_signed_token(file_path: str, token: str) -> bool:
         return hmac.compare_digest(signature, expected_signature)
     except Exception:
         return False
-    
+
 
 # --- Search Latest Snapshot per Matching Camera ---
 @router.get("/snapshots/search", response_model=List[SnapshotResponse])
@@ -114,6 +120,8 @@ def search_snapshots(
 ):
     # --- BASE QUERY ---
     query = db.query(DBCamera)
+    if current_admin.group_id is not None:
+        query = query.filter(DBCamera.groups.any(CameraGroup.id == current_admin.group_id))
 
     # --- FILTER BERDASARKAN IDENTIFIER ---
     if identifier:
@@ -167,7 +175,7 @@ def search_snapshots(
     # --- SNAPSHOT QUERY ---
     snapshots = (
         db.query(Snapshot)
-        .filter(Snapshot.camera_id.in_(camera_ids))
+        .filter(Snapshot.camera_id.in_(camera_ids), Snapshot.deleted_at.is_(None))
         .order_by(Snapshot.timestamp.desc())
         .all()
     )
@@ -215,7 +223,11 @@ def search_snapshots(
 
 # --- FUNGSI INI TELAH DIMODIFIKASI ---
 @router.get("/snapshot/latest/{camera_identifier}/info", response_model=SnapshotResponse)
-def get_latest_snapshot_info(camera_identifier: str, db: Session = Depends(get_db)):
+def get_latest_snapshot_info(
+    camera_identifier: str,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(user_access_required)],
+):
     """
     Mendapatkan informasi snapshot terakhir untuk sebuah kamera berdasarkan ID, IP, atau nama.
     """
@@ -238,10 +250,12 @@ def get_latest_snapshot_info(camera_identifier: str, db: Session = Depends(get_d
     if not camera:
         raise HTTPException(status_code=404, detail=f"No camera found for identifier '{camera_identifier}'.")
 
+    require_camera_group_access(db, camera.id, current_user.group_id)
+
     # Setelah kamera ditemukan, cari snapshot terakhir berdasarkan camera.id
     snapshot = (
         db.query(Snapshot)
-        .filter(Snapshot.camera_id == camera.id)
+        .filter(Snapshot.camera_id == camera.id, Snapshot.deleted_at.is_(None))
         .order_by(Snapshot.timestamp.desc())
         .first()
     )
@@ -253,7 +267,7 @@ def get_latest_snapshot_info(camera_identifier: str, db: Session = Depends(get_d
     # Gunakan helper dinamis untuk mengonversi dan memformat waktu
     timestamp_local = to_current_timezone(snapshot.timestamp, db)
     formatted_timestamp = format_datetime_with_tz(timestamp_local)
-    
+
     latitude = str(snapshot.camera.latitude) if snapshot.camera and snapshot.camera.latitude else ""
     longitude = str(snapshot.camera.longitude) if snapshot.camera and snapshot.camera.longitude else ""
 
@@ -277,19 +291,20 @@ def get_latest_snapshot_info(camera_identifier: str, db: Session = Depends(get_d
 def get_snapshot_file_raw(
     request: Request,
     file_path: str,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[Optional[User], Depends(user_access_required_optional)],
     token: Optional[str] = Query(default=None),
     user_phone: str = Query(default=None),
     group: str = Query(default=None),
-    current_user: Optional[User] = Depends(user_access_required_optional)
 ):
-
+    # Keep legacy link parameters without treating them as authenticated identity.
+    del user_phone, group
     file_path = unquote(file_path)
 
     # Anti path traversal
     if ".." in file_path or file_path.startswith("/"):
         raise HTTPException(status_code=400, detail="Invalid file path")
-    
+
     # Cek apakah user login atau punya signed token
     if not current_user and not token:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -297,38 +312,25 @@ def get_snapshot_file_raw(
     if token and not is_valid_signed_token(file_path, token):
         raise HTTPException(status_code=403, detail="Invalid or expired token")
 
-    snapshot = db.query(Snapshot).filter(Snapshot.file_path == file_path).first()
-    if not snapshot:
-        raise HTTPException(status_code=404, detail="No snapshot found")
+    snapshot = _active_snapshot(db, file_path, current_user)
 
-    full_path = os.path.join(SNAPSHOT_BASE_DIR, snapshot.file_path)
-    if not os.path.exists(full_path):
+    root = Path(SNAPSHOT_BASE_DIR).resolve()
+    full_path = (root / snapshot.file_path).resolve()
+    if not full_path.is_relative_to(root):
+        raise HTTPException(status_code=400, detail="Invalid file path")
+    if not full_path.is_file():
         raise HTTPException(status_code=404, detail="Snapshot file not found")
 
-    # Logging
-    if user_phone:
-        user_whitelist = (
-            db.query(WhatsappWhitelist)
-            .filter(WhatsappWhitelist.phone_number == user_phone)
-            .first()
-        )
-        if user_whitelist and user_whitelist.name:
-            final_user_name = f"{user_whitelist.name} ({user_whitelist.phone_number})"
-        else:
-            final_user_name = user_phone
-        group_id = group
-        extra = f"via Whatsapp Bot [group ID: {group_id}]"
-    else:
-        final_user_name = request.session.get("user_name") or "token_user"
-        extra = "via token" if token else "via dashboard"
+    # The link is a capability, not proof of a caller-supplied WhatsApp identity.
+    final_user_name = current_user.username if current_user else "signed_link"
+    extra = "via signed link" if token else "via dashboard/API"
 
-    # P2-001: Enhanced audit logging
     log_audit(
         db=db,
         user=final_user_name,
         action="retrieve_snapshot",
         target=snapshot.camera_name,
-        ip=request.client.host,
+        ip=request.client.host if request.client else None,
         extra=extra,
         user_agent=request.headers.get("user-agent"),
         request_path=str(request.url.path),
@@ -339,25 +341,43 @@ def get_snapshot_file_raw(
     return FileResponse(path=full_path, media_type="image/jpeg")
 
 
-@router.get("/snapshot/token/{file_path:path}")
-def get_signed_token(file_path: str, expires_in: int = 600):
-    try:
-        file_path = unquote(file_path)
+def _active_snapshot(db: Session, file_path: str, user: User | None) -> Snapshot:
+    """Resolve active footage and apply the caller's current group restriction."""
+    snapshot = (
+        db.query(Snapshot)
+        .filter(Snapshot.file_path == file_path, Snapshot.deleted_at.is_(None))
+        .first()
+    )
+    if not snapshot:
+        raise HTTPException(status_code=404, detail="No snapshot found")
+    if user is not None:
+        require_camera_group_access(db, snapshot.camera_id, user.group_id)
+    return snapshot
 
-        token = generate_signed_token(file_path, expires_in=expires_in)
-        return {"token": token}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Token generation failed")
-    
+
+@router.get("/snapshot/token/{file_path:path}")
+def get_signed_token(
+    file_path: str,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(user_access_required)],
+    expires_in: Annotated[int, Query(ge=1, le=3600)] = 600,
+):
+    file_path = unquote(file_path)
+    _active_snapshot(db, file_path, current_user)
+    return {"token": generate_signed_token(file_path, expires_in=expires_in)}
+
 
 @router.post("/snapshot/token/batch")
 def generate_tokens_batch(
     request: Request,
-    files: List[str] = Body(...),
-    expires_in: int = 300
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(user_access_required)],
+    files: List[str] = Body(..., max_length=100),
+    expires_in: Annotated[int, Query(ge=1, le=3600)] = 300,
 ):
     result = {}
     for file_path in files:
+        _active_snapshot(db, file_path, current_user)
         token = generate_signed_token(file_path, expires_in)
         result[file_path] = token
     return result

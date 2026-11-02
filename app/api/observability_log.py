@@ -3,8 +3,9 @@ from app.db.database import get_db
 from app.models.log import CommandLog, ApiLog
 from sqlalchemy.orm import Session
 from app.schemas.log import CommandLogCreate, CommandLogRead, ApiLogCreate, ApiLogRead
+from app.routes.auth import admin_access_required
 
-router = APIRouter(tags=["Observability Logs"])
+router = APIRouter(tags=["Observability Logs"], dependencies=[Depends(admin_access_required)])
 
 
 @router.post("/log/command", response_model=CommandLogRead)

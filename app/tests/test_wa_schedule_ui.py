@@ -36,7 +36,7 @@ const draft = {id:'custom_test', schedule:{enabled:true}};
 const elements = {};
 for (const key of ['name','trigger','description','response','action','chat_scope','response_type','response_image_source','response_video_source','aliases','required_params','processing_delay_seconds']) elements[key] = {value:''};
 elements.trigger.value = '/snap'; elements.action.value = 'snap';
-elements.enabled = {checked:true}; elements.quote_reply = {checked:true};
+elements.enabled = {checked:true}; elements.quote_reply = {checked:true}; elements.image_hd = {checked:false};
 function makeRow(id,mode,argument,recipient) {
   const fields = {};
   for (const [key,value] of Object.entries({mode,argument,recipient,execution_phone:'',time:'08:00',cron:'30 18 * * *'})) fields[key] = {value};

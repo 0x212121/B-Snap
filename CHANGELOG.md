@@ -5,11 +5,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased]
+## [2.6.0] - 2026-11-02
 
 ### Added
 
 - Configurable snapshot/video retention by age, count per camera, or both in Configuration > Retention; preserves retention holds, soft deletion, and existing defaults. Snapshot capture now respects the selected retention mode.
+
+### Fixed
+
+- Blocked static footage aliases, including repeated/encoded separators, HEAD requests, and in-tree symlinks; retained authenticated media endpoints.
+- Prevented MFA enrollment from revealing an existing enabled MFA secret; reused web-token validation for required and optional authentication.
+- Required authentication and current camera-group access for legacy snapshot metadata, signed-link issuance, media mutations, integrity checks, and trash lists; excluded soft-deleted snapshots and bounded signed-link requests.
+- Preserved video evidence, hashes, and retention holds when deleting cameras; prevented purge from bypassing holds or the soft-delete workflow, and added audit records for individual snapshot restore/purge.
+- Applied missing administrative checks to recipient/whitelist/telemetry/demo/reload routes and operator checks to ping; removed legacy group-column authorization fallbacks from camera resolver and WhatsApp actions.
+- Authenticated WebSocket handshakes, rejected cross-origin browser connections, and checked live session validity, notification recipients, and camera groups for both direct and queued toast delivery.
+- Preserved JSON API errors, original HTTP error statuses and headers, configured session-cookie settings, and proxy trust; escaped development error HTML.
+- Unified tampered-snapshot routing with group/deletion filters and inclusive local-day filtering; corrected current/legacy log timestamps, log-viewer HTML escaping, JSON request handling, responsive controls, and badge styling. Shared date markup can now retain an explicit timezone across language changes.
+- Aligned package, application, Docker, and default Compose image versions with 2.6.0, updated compatible build dependencies, and repaired stale isolated test fixtures. Added audit regressions and the [comprehensive audit report](docs/source/comprehensive_audit_2026_11_02.md).
 
 ## [2.5.2] - 2026-10-22
 

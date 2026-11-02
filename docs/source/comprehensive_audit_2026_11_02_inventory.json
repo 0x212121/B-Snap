@@ -1,0 +1,4953 @@
+{
+  "audit_date": "2026-11-02",
+  "scope": "Source inventory and static checks; not equivalent to runtime or security coverage",
+  "counts": {
+    ".py": 276,
+    ".cjs": 5,
+    ".html": 54,
+    ".js": 15
+  },
+  "route_declarations": 265,
+  "syntax_errors": [],
+  "template_errors": [],
+  "js_errors": [],
+  "files": [
+    {
+      "path": "app/__init__.py",
+      "lines": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/api/observability_log.py",
+      "lines": 37,
+      "sha256": "130f1edfdd208120f30bbd3899acfcfaaace904dab6454eb926d2dbb61c35865",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/api/readiness.py",
+      "lines": 26,
+      "sha256": "aaa212807093b6f7fea45ed649b90857d870ddc3df92cfdd5d1f8c0eafbae900",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/api/whatsapp_routes.py",
+      "lines": 20,
+      "sha256": "05552d3ea50e7c7291d58258b93f83ef80a9f713d9926763dd485ad9ef962851",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/core/__init__.py",
+      "lines": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/core/config.py",
+      "lines": 19,
+      "sha256": "7332118beba56356cc651cfc481115ce75348d9625e9e1fe23edbc9ef98a08bb",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/core/config_initializer.py",
+      "lines": 125,
+      "sha256": "30d98c60e5ebcd0e2523c7030c5b3a48d34b9f79bb1ceff421fb8b8b845ae71d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/core/job_schedules.py",
+      "lines": 62,
+      "sha256": "38d069cc2ede63166ad19784146d4fb91864753a3c8af1630dfdb27ce039dc72",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/core/logging_config.py",
+      "lines": 315,
+      "sha256": "82768bb076d0915d3d5b39127c9881876cf1ba3e6d6189f3592cb3eced172cca",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/core/service_health.py",
+      "lines": 63,
+      "sha256": "60d15ce7e8b214514bad1a6d42d6154c9d86c3716bd598569d9d3645cdc4a51a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/core/static_assets.py",
+      "lines": 46,
+      "sha256": "21579d5488ce6ce068d09219347912e7963e0efede5db49fce4dcc4ed3e2bb9c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/db/database.py",
+      "lines": 101,
+      "sha256": "aa5bc93d817780da66d6530c25e836a36a0003b6b8e5992c9356f2ba584a9079",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/db/migrate.py",
+      "lines": 66,
+      "sha256": "ea69aab8eeadc126eccb054541d5c40299408f3b742ac9645111211a6cedbaea",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/jobs/__init__.py",
+      "lines": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/jobs/audit_archive.py",
+      "lines": 415,
+      "sha256": "d933d91064f8c2a0b117f3b3ef44f368f3a18fd33578933313419b92d6db1a16",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/jobs/execution_recovery.py",
+      "lines": 75,
+      "sha256": "d732c78b8141c95f52d9c6ac42d1108f5a0c91b33a50e97889b991b9bee08378",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/jobs/scheduled_archive.py",
+      "lines": 72,
+      "sha256": "1825c760e00eb379c20c4ce120ca8454636b792eeffd17ebe688278189b389ba",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/jobs/scheduler.py",
+      "lines": 1412,
+      "sha256": "f884d4dd91f18dca4f79f9709defd5b670be66aa1eebf12f3d89f92bc400946d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/jobs/scheduler_main.py",
+      "lines": 71,
+      "sha256": "cac4fef922bd71d6b081aedf02af447350d4656a5830475eca58095103354923",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/jobs/snapshot_worker.py",
+      "lines": 23,
+      "sha256": "27f08d1fddd097a58a2c9f83e71d3b3b0070a5e42ed721e2eacacfa447212c30",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/jobs/wa_command_schedule.py",
+      "lines": 166,
+      "sha256": "4f788c8ef00a706af6740c0908050247414456a850c10e20d2e717d1db580d4d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/main.py",
+      "lines": 455,
+      "sha256": "07746b1e183a43e5cab0d54e1e19eed5bf098f5c08bf613e1f128b2ac81fe06e",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/audit_protection.py",
+      "lines": 12,
+      "sha256": "da283499268f774f3b9884d5dec21fff27759542952be48de2ec5c510e6a4a69",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/auth_and_setup.py",
+      "lines": 407,
+      "sha256": "dfa62ebbf147b90561786891fc544697226e44c9d14926ae6019f27f66ef649c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/http_proxy_fix.py",
+      "lines": 8,
+      "sha256": "8c3f541dcc633f32ad382d4caf855b827663eca074bfd667b0383924e33c65cf",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/observability.py",
+      "lines": 89,
+      "sha256": "6e3d890af5e5be57ff1f89eba145e29a8bf265afcf598269bd04af217c329839",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/online_user_tracker.py",
+      "lines": 42,
+      "sha256": "ceb4d3e040a5439b7ce7faf5b645a333f3268bc0b54fda14f76367b49bb74558",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/real_ip_fix.py",
+      "lines": 22,
+      "sha256": "91f26b4201ab48c0e0ba20fbe1d0812fd11a834ecd8eaeae50a1829d7e718e0b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/redirect_unauthenticated.py",
+      "lines": 12,
+      "sha256": "98db8bbf08af8ec367bfcc358147afba12f874c9d2e6de973baa3e2b18b26074",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/session_restore.py",
+      "lines": 44,
+      "sha256": "b44f6872745b807c7f4bdb6fa6f37f99695d38e44c759127ea7615c65bcfda67",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/__init__.py",
+      "lines": 86,
+      "sha256": "7d8e5e1227bec1913c1ebe59b9aab9b458713e5f5a3645ca452614702f0aad7a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/api_daily_stats.py",
+      "lines": 17,
+      "sha256": "b0fc4455d45ad00c87fbefc83836329b12fc93245eb04a8d2733a5aa5d5487e0",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/audit_log.py",
+      "lines": 150,
+      "sha256": "466fc5a9d2accecabbb550bf53ef20e249b82789069970676960f984f94d5cc4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/camera.py",
+      "lines": 144,
+      "sha256": "c5b61df5ea76ad04dc9bcb24b7ccbf30fb7e7d003d1ed477ab1b4c67f4bf4b08",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/camera_daily_stats.py",
+      "lines": 18,
+      "sha256": "fa726c3623364ed5612c6cdf076bd0a3528bb5329f65f1ecf38440f5b66913ee",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/camera_email_notification_log.py",
+      "lines": 38,
+      "sha256": "2056da8ea97a3e3249b9fb2333b609ee85dbc70d2d5874eafc9859bb458a334e",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/camera_group.py",
+      "lines": 35,
+      "sha256": "f93e357296331ea60c0cf8ec65fce24fc32cb3ab388c97b72e49bb5d4e870cc3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/camera_status_change_log.py",
+      "lines": 18,
+      "sha256": "4d9be45ec27cfd454cbd5e68fc6feab65a5faf402df1ce011927e110bdf15ba3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/config.py",
+      "lines": 7,
+      "sha256": "7f2b67ad3ce0e06bbcdf838ef8381c00b3f8e6df7b71cd86360345ddcd9989c7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/email_retry_queue.py",
+      "lines": 70,
+      "sha256": "ea10a20f1f7ddc7aa3150a1dce7619b0ea8b7cd041f4dcbd4cce5991770d58d0",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/email_template.py",
+      "lines": 260,
+      "sha256": "d3d2ef35e4b4320d47a5c9c504ffd0eaa06c25a685e220cabbb204734ad7a525",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/health.py",
+      "lines": 31,
+      "sha256": "a686716a13e0f29b32fb7e4c64c77b955e896b81221aa65655330166fe3eeff7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/health_check_status.py",
+      "lines": 10,
+      "sha256": "6032a735eb49b4c1527b7b4f0a0d716fab943dec7a4866248c2da47b6cf07665",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/job_execution_log.py",
+      "lines": 183,
+      "sha256": "c068e21f825dabb6ee010d85927c7906c9aff27acafbda3c3d3fad245f484142",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/log.py",
+      "lines": 42,
+      "sha256": "1ba6fc47c30e4ae672ae0072d5eb2529c17d21f85742620ea9bd2eb3167fe684",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/notification.py",
+      "lines": 41,
+      "sha256": "e3075a5a0c186e1419a5284494db14b5e8b06feb6894bfa1309b572831b623cb",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/notification_queue.py",
+      "lines": 12,
+      "sha256": "1a7d1d08de052b1a1851e9172a1141833ef8a5cfee2da7e966f4840351c05f12",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/nvr.py",
+      "lines": 58,
+      "sha256": "6d501dbd7e34a2e7df90b8274d4a9141a9555d8b5bf20a2685803d20af001f9d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/recipient.py",
+      "lines": 20,
+      "sha256": "760b2e5cac8fc361be99429d50dc23c4d25528b2b8e596ad2ffa9f3e19ce39ce",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/record_check.py",
+      "lines": 182,
+      "sha256": "03660654c65e34ac36f792efbc8cf4b29e180c3058743c15f49ac37521478d43",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/remember_token.py",
+      "lines": 26,
+      "sha256": "94ff7f05f93c53eba513729076c8c5969a582f5baedc742270180dcde4c8c845",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/sla_report.py",
+      "lines": 88,
+      "sha256": "3da21e4b39f81599d47f230082f0d41cfccea2c7629a1081bb139c92c1673f78",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/snapshot.py",
+      "lines": 100,
+      "sha256": "8143518978e130d5e234f2c74188378c2e3ce1be9c6a2c11c221f85dffb2bf55",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/snapshot_log.py",
+      "lines": 27,
+      "sha256": "960d0d432f6b8bf5989fd1dfefede943a1c369693b2b16f2251b4a117adf81cd",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/storage_metric.py",
+      "lines": 49,
+      "sha256": "b54e8d69f45277b87dccc70ae85a99598c3664ff2ea54baa35667adb1f84bf75",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/task_timing.py",
+      "lines": 17,
+      "sha256": "09516a43a9a7cf8bcad0224947d31530dfc383036371e65a0bf2aff6f5bac90e",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/user.py",
+      "lines": 28,
+      "sha256": "df906c37f250641447d33b12ed77746e87c6550e7482c485514ab8a2e82f9593",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/video.py",
+      "lines": 94,
+      "sha256": "73686c6e893757f7a2dd911e39cb7fa485d380d541d4a2c94a545a5da41d6748",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/whitelist.py",
+      "lines": 40,
+      "sha256": "5e9a415add28e15c3282d02fa7ae41cee139a32d40871c7a415fe4505feee544",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/2fa.py",
+      "lines": 42,
+      "sha256": "92a452d8f7a029dabb6cf299c7d708466e5a118f6143790944869b92ace2d65f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/__init__.py",
+      "lines": 64,
+      "sha256": "330e62c3f6fc67241467285eb7dbaced09b78bef52f2addee62e3c7953f8148c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/admin.py",
+      "lines": 88,
+      "sha256": "9f4e58a59cc39f96654c4e566f22b90d8f63779027024754504c8ed397677df3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/audit.py",
+      "lines": 174,
+      "sha256": "1f055366aabe249ee58754ea7080e635332d8918c16d052f6a35172139835e33",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/audit_log.py",
+      "lines": 378,
+      "sha256": "50258f96af16ce4198ba638d309e8cc4750be7e408b6ee6bd1d0a187284841ba",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/auth.py",
+      "lines": 530,
+      "sha256": "1e9661654fb782b3e24b63f7ced18ca5f42f416706beaa6185e2e8a785f8ca57",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/camera_groups.py",
+      "lines": 264,
+      "sha256": "86f8d661d1c507589b9a3a1313e009b0d07cdb8d14439273dd0aa2487e8827df",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/cameras.py",
+      "lines": 1043,
+      "sha256": "cfc6dc353fb373bdf3345b55e3b4469a089cf3fad3ea181732d0cf0afdfc3635",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/config.py",
+      "lines": 516,
+      "sha256": "bde1e77642c90cc561a8db0514844dd8bf2744018a3b59f700bab10f931860fc",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/dev_docs.py",
+      "lines": 14,
+      "sha256": "eb6c315646cfc445c269bdd02caa77fa9f41f82cb4240b570c4bfedbb5c5b248",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/docs.py",
+      "lines": 399,
+      "sha256": "4b5ee447deda1be3a0f19d1fc8d9786ced76ad4b075d3ad6e5189f416af39797",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/email_logs.py",
+      "lines": 262,
+      "sha256": "645ec3be4df19d5bbfc7772cee26a24f8ab746e3ee567342273fa132078c5103",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/email_templates.py",
+      "lines": 257,
+      "sha256": "e5434eee4f81283c234e8a41af061e34f113972c517d356bc078ae30b4536515",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/group_recipients.py",
+      "lines": 791,
+      "sha256": "251d06c3c59a1a8655c2103bcc1d745cbbfbdbc1134430172d76b60e0d7066b6",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/health.py",
+      "lines": 1433,
+      "sha256": "41a1a8d57c61a8d683239aaec7072a7ef5ca788cdd796dd4b78fbdc610171052",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/insights.py",
+      "lines": 800,
+      "sha256": "461fb19bd06c84c47cc9edb8229a4051384f0487fe6c19269160584dc17d4f07",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/jobs.py",
+      "lines": 477,
+      "sha256": "ba169b7041f37c9b7fcac2f55b4374af9011cf37b9695e10b2a336e0f81e9432",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/logs.py",
+      "lines": 288,
+      "sha256": "f1582ae5c90f721b73f150ba8e19f5d6ae2ef1ad9804bc1c99235b448e76ebfb",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/map_heatmap.py",
+      "lines": 136,
+      "sha256": "63cbe8aa8451d4b06e5c391e09c1ef0a59e60625bc6ca5f4776a6865189af7e9",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/map_live.py",
+      "lines": 96,
+      "sha256": "14d1102e31200e6307dcb2f99646ef7fe49adc4593515675de8578d8d376b24d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/maps.py",
+      "lines": 224,
+      "sha256": "1b7354c6599ecd5474c6cf75ecb774cea7084fb307562cd878f5b79293f26184",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/notifications.py",
+      "lines": 170,
+      "sha256": "b0fb272fbb498aedd34d0a973313d6d6ecc9e096a880a1e9db4c53b514a76410",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/nvrs.py",
+      "lines": 598,
+      "sha256": "b6529356dce84ff7c6bfdbce13d9b7d596baf8ff4e78419d502bb4660de997fc",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/online_users.py",
+      "lines": 117,
+      "sha256": "630e2ae4f8c80e139b738d205ea53de9740abf76f66d4e2c76eb6dbe34ea1c06",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/ping.py",
+      "lines": 31,
+      "sha256": "7030ded60023f1ea22a58819ed3adfd0d124f2fd27a9d5d84e71113124b9f675",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/record_checks.py",
+      "lines": 1106,
+      "sha256": "3848ed556b36b2c0ca115e4db8482604075ba774822ae2e15bffa6c7124f33d5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/resolve_ip.py",
+      "lines": 118,
+      "sha256": "8ad06fa8fff0d5910b210117ab0e83359437c793bd1804e13731bb7f62bb18d0",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/setup.py",
+      "lines": 42,
+      "sha256": "17669ba2321680c7093836b5135ae6498e3b929fe0c3400ddb08ba1c47b0dca5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/snap_gallery.py",
+      "lines": 1025,
+      "sha256": "3f10cd8624ea3cfb4ba2bbcbb545d547e09b2febf31997a519650fe4c21a9dce",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/snapshots.py",
+      "lines": 383,
+      "sha256": "b5779a791f47046b2d7890d90dbcf5b2ec6a780604712ae19db033649d0aa684",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/stats.py",
+      "lines": 762,
+      "sha256": "a875d13922b3fc64d9e062d05905b261a8aa3a049ffefe89b68164f3b793c9ab",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/toast_demo.py",
+      "lines": 139,
+      "sha256": "e300cc781c0c8e3d1928ce3d59aeb72d66047e417cf39bea5837dd2868e5cd17",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/user_management.py",
+      "lines": 784,
+      "sha256": "2e83051b8189964b62628ed850f0ababd11834fc4ce1c276e4d5a89bcba83c25",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/user_profile.py",
+      "lines": 479,
+      "sha256": "7391d120fb7cd7c561c8f40e17ed4ebd80696556e09a0d378a42fd3bab5c6283",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/videos.py",
+      "lines": 913,
+      "sha256": "bdacb27b926eeef02053abd480676076bba01b6f202f75f33128dfb3fb33b425",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/wa_webhook.py",
+      "lines": 1687,
+      "sha256": "5ca3016d86f42a88f84b746706369dd9b75d7ab0366aed86ac2665cb75c533f7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/whitelist.py",
+      "lines": 380,
+      "sha256": "ecd5ad7a969a74231e4cded6c7d3c2bfba6de6ccf1afbcc2cc6be8ed542dd5a3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/schemas/__init__.py",
+      "lines": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/schemas/camera.py",
+      "lines": 15,
+      "sha256": "427e2ab10e3132b6a903f73f7ec4331e1fbb74bd0c3690e02a83b3e234467bdb",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/schemas/health_schema.py",
+      "lines": 25,
+      "sha256": "88ecd92f5ba7a17a89c6e92c3841bbba2f85d771623f99daba1e00193772d0df",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/schemas/log.py",
+      "lines": 36,
+      "sha256": "0d98d3e4ea32ccdf01967fd0be65259db948d1d0a54a81812cacbc4898f7bdc2",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/schemas/snapshot_schema.py",
+      "lines": 41,
+      "sha256": "79c0bea247df0e85f8ac40916aba882fb339d74cc5fa24824df5fd93bde87c9c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/schemas/video.py",
+      "lines": 22,
+      "sha256": "d424b7359ef39c8cf01386bb1d132e57d56cd85c7a7ca3ec61b10ec0b513d8bc",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/schemas/whitelist_schema.py",
+      "lines": 31,
+      "sha256": "e6c48872732acb67940edd477ed5a776115475dec29ea57e672c553d6bcd4bf9",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/snapshot.py",
+      "lines": 16,
+      "sha256": "f74feb44c9efc51109c416ff20757e40f26e602c44013a3cc925d1486698ecb1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/analytics_dashboard_harness.cjs",
+      "lines": 175,
+      "sha256": "9afdc7824fed7ff8f546d3e3dde54b4947a93cdc589aefc4fcf1379f63df15e4",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "app/tests/audit_frontend_harness.cjs",
+      "lines": 85,
+      "sha256": "d3b35aa86e5b5f233fb36445091721dc51b987bb896ce6e75b2402ac78e4f6af",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "app/tests/conftest.py",
+      "lines": 222,
+      "sha256": "393f8c8ed69718e11b5040cd19f300be336a5e00beab9d9ae174db8b34cf1329",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/gallery_loader_harness.cjs",
+      "lines": 146,
+      "sha256": "ec4b7bf87f5473db10c8f514df439bf9608bf4ac98c27a886bca8333accc13e8",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "app/tests/map_loading_harness.cjs",
+      "lines": 143,
+      "sha256": "96bfd5b38e02a97a52bb633b6224c3922b1733d2ecd82c796fcee317571ee779",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "app/tests/test_analytics_performance.py",
+      "lines": 238,
+      "sha256": "ffd0f6fe167f3dbb85b6670aa0c56a7509e20f11c0711f16f0e4e4bc5cdc9672",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_api_daily_stats.py",
+      "lines": 185,
+      "sha256": "e45d0771dd0f35d426204373102f8db6aa591d3b1dc452d420870e74fed2c0e7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_api_error_handlers.py",
+      "lines": 136,
+      "sha256": "697fd49a4046568a3cba59eee03d4a01109931585edbea84001f3503488f3b67",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_audit_frontend.py",
+      "lines": 63,
+      "sha256": "def9fb99b078964233f82e7163703d6377b320737457aa2b971f7bc4325047ef",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_audit_security.py",
+      "lines": 697,
+      "sha256": "ba6ad9f9f97f865afb4855413e5aae91773637886fe0ab90c3da3bce8506e9e6",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_auth_cookie_failures.py",
+      "lines": 455,
+      "sha256": "c60f7587cbbcbb690ba40e034c2878b920564723cc429811895049461e7e0f7b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_camera_multiple_groups.py",
+      "lines": 70,
+      "sha256": "9af0020b1ab13228a295bfff91b47680b1ea0de890c663345db940819f3de373",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_config_authorization.py",
+      "lines": 70,
+      "sha256": "629c2dd77d9fe27629607664aab7aa55da1801abe66bd0f88e94d35c460954a2",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_container_storage.py",
+      "lines": 141,
+      "sha256": "c83cdb4dc9cc35a7f097d5c28cc291e7e9dd70027cc8bf52bf91b435570788df",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_database_migration.py",
+      "lines": 181,
+      "sha256": "a2551e4c121a2356eb86dc5419a054aa302329c6b8e9c83d62f9f692b24c0f3b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_docker_import.py",
+      "lines": 47,
+      "sha256": "65d36237140f6a77be4fffb30276a3a48bf64a0ed5257a14285fedb787f92d4c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_docker_security.py",
+      "lines": 124,
+      "sha256": "48d0c52794534bb11b729466e37764f051f37498d0c62d46d46b3a6eb5bc8a48",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_email_notifier.py",
+      "lines": 79,
+      "sha256": "8c50ff7fdaf1d9193dc4666a0bb9a42a6c7392f19a42f636930aea8541adcba5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_email_retry_lifecycle.py",
+      "lines": 1125,
+      "sha256": "4b98348b8518de70cfa629b7b6f2d637455a4805de4e5383987a29d61a3c46af",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_email_retry_queue.py",
+      "lines": 176,
+      "sha256": "ade9daf85bbe051e9c552d6428b03c163c4fdeb627a2300f1bced45c849cf049",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_execution_recovery.py",
+      "lines": 146,
+      "sha256": "40e4afb9f1575779016ef8216878c1a06a1e0081eaf418bfeb4bc883ba527eb4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_gallery_media.py",
+      "lines": 183,
+      "sha256": "44838d5607fcbc7703fba180db7d9f2876ad23fbcece0e1bcad1b98eb97ab035",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_group_access.py",
+      "lines": 159,
+      "sha256": "65b22e1eacb27681adc56b33bb3912f5bc01ac4b9cffe3e3a0f701fca0c63d4f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_heads.py",
+      "lines": 12,
+      "sha256": "11d282798a9fa65f829f46ca0bd56ddbeeff76c21109bba9befddd04549e1306",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_image_version.py",
+      "lines": 37,
+      "sha256": "9d73b0fd547ad8f96cc9ca19aa22ad62920df7c99355778c85a0b18daae7f689",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_insights_report.py",
+      "lines": 112,
+      "sha256": "c588fcd3cd3b398cbde2e7fb02e8e13b4c33c28815ec96d1f7c2276881103ee7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_job_schedules.py",
+      "lines": 242,
+      "sha256": "51e47cdeef29cd42fd9a0aa34c35c6c4f0f0e6c7b7177d42eaf6ce807c3961e9",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_map_heatmap.py",
+      "lines": 221,
+      "sha256": "507f4220cfff9bc56dc8e572afdd33b9c1e3781f1f80a027cce4ad9c124bed57",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_map_live.py",
+      "lines": 419,
+      "sha256": "3fbbb6383c3937f46f8c48f407316d6fcb6a6519709e2cbd7566daf825a026a1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_map_live_config.py",
+      "lines": 142,
+      "sha256": "f3632e0a7d3e1a403c1741b5c7b7915d4ad7d96321b5f015cfe486fcfd365e4f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_map_loading.py",
+      "lines": 63,
+      "sha256": "d1b87baeb34b80d408103f4f6aa4e4f3d8718be9c68443e5a44da8746b684ef8",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_map_locations.py",
+      "lines": 327,
+      "sha256": "d9af943799cf4bfffc55492389695a535fe67539d4ba12713758a120568ecc6d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_media_retention.py",
+      "lines": 125,
+      "sha256": "99bfb7b6e57cd6a9221b66e5ef24e2634b56d7a52c6dc1a4cdef43b581f85b0a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_migration.py",
+      "lines": 17,
+      "sha256": "68f3b5adc9273ec344fe3786f2d6d7f94231476c89898f29ff5c2759c4d40faa",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_navigation.py",
+      "lines": 94,
+      "sha256": "90c3365d8690db07b554c2fb081ea8ca7af77e919b6191c9ad18926bb0283418",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_record_check.py",
+      "lines": 84,
+      "sha256": "fabf309989bd72cc3628f5c6f901ed57c105aab0fd9206df513bcf5df7089762",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_record_check_daily_report.py",
+      "lines": 336,
+      "sha256": "913cc073fecb77aafbf888221b677803bc8e6bc805ab7c2d7a65cd7206e9cd15",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_record_check_notifications.py",
+      "lines": 127,
+      "sha256": "943a4e5695aef4123382871057b57b4aacf827a3d9b34b3b4a5d35d265546269",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_record_mount.py",
+      "lines": 488,
+      "sha256": "9e922d5ebf75300e5d5ce9b37910667403a3819c45dbd32599d13257de8b224f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_record_notifications.py",
+      "lines": 116,
+      "sha256": "82b63d3b6d4433be0d980fb7a71589a82f19d961101bc818e05f17cc07f6216f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_recovery_scenario.py",
+      "lines": 135,
+      "sha256": "1499cc1b36658e733fee5f17534f77df961110732b80516c84171a796edfded7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_resolve_ip.py",
+      "lines": 110,
+      "sha256": "ed61df4f2f7ceb6ae21678efca909390bfc484331fa56ff5d7b0cf731411e132",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_runtime_dependencies.py",
+      "lines": 59,
+      "sha256": "188c61a9ce8445d045a6e981fa533b563340154d374c97e40e9156f757bc2973",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_scheduler_timezone.py",
+      "lines": 110,
+      "sha256": "b9b34056a3deeca07d51b04d522e49af08d420f5d5d15e6d96265ce39d64c21c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_service_lifecycle.py",
+      "lines": 300,
+      "sha256": "f5126db756034adcb145df0ba0d31b362516fe7645b554a9027f64ecbacd83e7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_snapshot_resilience.py",
+      "lines": 230,
+      "sha256": "62dc7019ad7f110ad585905d1de77af3e2c1b53cf3d6cc58d68d72c85b7eb819",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_static_assets.py",
+      "lines": 79,
+      "sha256": "4709b282e3f7d947619420bd64eff56577febca24b0f22ae2dccc805737b7481",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_stats_heatmap.py",
+      "lines": 63,
+      "sha256": "ffaf6d1fc93049cb8ab0f61985e45908f958f1ba4cb50b4426e4b0330b144b23",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_sweetalert_i18n.py",
+      "lines": 120,
+      "sha256": "ef6c2db690a49532ecb162ee8b1d4ec2a20c45f67f730cad203998991e13d890",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_tamper_alert.py",
+      "lines": 379,
+      "sha256": "4f1a9065cdbd380a99565be0d76fb6db5060c95df87b41694e197cc331fdae48",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_tamper_alert_v2.py",
+      "lines": 248,
+      "sha256": "8affe641eb0fac73a8970977916c36fc5df1cf3269d24820117a6fd9ca0a533c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_ui_system.py",
+      "lines": 461,
+      "sha256": "bfdfe0005b8c9129f6bb243646dc9e7273136cda5e7b3f177dc7a9369a09acce",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_video_hls.py",
+      "lines": 165,
+      "sha256": "0a6c0fe5130ae3bbec1bb6e2b813f9f5b236666c1b2e58e00c518aa3c9a424b3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_video_record_api.py",
+      "lines": 515,
+      "sha256": "e4d3ab225306587fb1c0fca61c655cd5a9c4d95d07bf6b4b5cc7e948805c3827",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_api_methods.py",
+      "lines": 143,
+      "sha256": "aaba952934673d33409738bf24bdf5b0c3bd60f7eadc6266aa40fdf766d03f08",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_bot_stages.py",
+      "lines": 750,
+      "sha256": "ba14f6f6e4fbf1d445e246b82b1a8a70cf72831f9a2b90ab668a1f9621a7cdb7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_builder_preview.py",
+      "lines": 62,
+      "sha256": "d927e0ea9482f82234f11b06c244539ac8baa319b0ba757ae22796aa32a5ee03",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_command_schedule.py",
+      "lines": 458,
+      "sha256": "fe4a15671df52ed5ee17593c7513b5ee3826141a60ade238362c51734630812e",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_image_hd.py",
+      "lines": 212,
+      "sha256": "d772b6728c802f370e27616e3ed2451f1175bc190dcfadfcadd88916139789c8",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_monitor.py",
+      "lines": 340,
+      "sha256": "88b56763513a22a47deb970947f88164b60411fcab5a64318e1bc2492c267373",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_reply_routing.py",
+      "lines": 108,
+      "sha256": "fdd63ddbb62a7ef9912c31b952c3363f286af98dc94bd2270f54e38a6ba81db0",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_schedule_ui.py",
+      "lines": 88,
+      "sha256": "9c064bd3442f676420a3e758ae70dac7edf71257f613013b9654b66bb77f1aa5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_template_conditions.py",
+      "lines": 58,
+      "sha256": "d13a25f2c0f58a317a2bd58b436182a558c3c3e7dab6649fb5464dda86591ca7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_video_upload.py",
+      "lines": 66,
+      "sha256": "93b777e599fd536ac1afb805245673acb205a14b2d3e6d34215053ce99c95efc",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/toast_layout.test.cjs",
+      "lines": 108,
+      "sha256": "40d0ba9c5194fb4fabd0d8301a89c70f282c660a94086445d458869f82eb9f9b",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "app/utils/__init__.py",
+      "lines": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/api_daily_stats.py",
+      "lines": 128,
+      "sha256": "f57ffebebd1173ba48188d40e78638e5b8a8ad7fcb476444fddeb40d6558b8e6",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/audit_logger.py",
+      "lines": 104,
+      "sha256": "991b042d93a27cf610e9090345345182861dd844258f3e2711558a146cb89f0d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/auth.py",
+      "lines": 9,
+      "sha256": "ac90e57c42c4aacc556ddcae924e3e2f635afa5eee1a684cf23cc8957cd21234",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/auth_token.py",
+      "lines": 39,
+      "sha256": "ac7e547d1c208e795f55a41eb10e3fe563e4c6fc89eca4f375f0318fdb491b7e",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/camera_capture.py",
+      "lines": 32,
+      "sha256": "91d394b0ad43dda65e7c3c147e7d68eda05322b92582454c7b6718e02023caa9",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/camera_onvif.py",
+      "lines": 104,
+      "sha256": "7a5ad880fa21bee033caad53a5ea531add5fb342d38767df05b18ec4285bb833",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/changelog_parser.py",
+      "lines": 202,
+      "sha256": "fb6ddb8f258a05dac53adb09706c8833bfb93dbbf19ed6a56162e8c3c3b1b29c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/check_stats.py",
+      "lines": 36,
+      "sha256": "0883fa02e82e4d23c2a5b6fcf7cff98b70d1eb6bf7ce2592d4943f72eeffa838",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/cron_description.py",
+      "lines": 24,
+      "sha256": "f2466c743aa3a8344c28ee5f0e65b12d5deddf3e0aff75d98e918cb0e8c09f31",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/decorators.py",
+      "lines": 23,
+      "sha256": "bcd5383ad9d8722deb1ee73514c2df4f216063857fbc7523e0346467dabbff31",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/email_delivery.py",
+      "lines": 32,
+      "sha256": "11ab2a9abb1a7b6b6159a47ee0a35abc773cd15d24ff7c267f1adc6282d0c73a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/email_helper.py",
+      "lines": 350,
+      "sha256": "005cb5f14644c9702e7907a91617f40f63bdd590b6f395a5553e28306d553a53",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/email_notifier.py",
+      "lines": 662,
+      "sha256": "b9fabd8c0a3f41ee7581b199f5ab3be3a02e74e6fd2e6d36e977e081ae4e50ef",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/email_retry_runtime.py",
+      "lines": 52,
+      "sha256": "1ef75e113f1999c2af1ca20ce7de5f71d2129411e477af104155624b5313bba7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/email_retry_summary.py",
+      "lines": 85,
+      "sha256": "6939cb2468cc8942845fc55233279f2a722d7bfb948977ae4eb8a2678e46b17f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/email_template_renderer.py",
+      "lines": 136,
+      "sha256": "513b84ba68a063c58d964e00261cc272a187bbcfc5551d120f346ec0e35f3e1e",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/encryption.py",
+      "lines": 132,
+      "sha256": "617c764cb0a34d4e39bb8dac47927192e02241b4698f132e87cf29d26d7670fc",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/gallery_preview.py",
+      "lines": 48,
+      "sha256": "e81a946ecaa3f6cb0a09fb82eefc374488746e8380bb328b55f81318c6443d42",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/healthcheck.py",
+      "lines": 422,
+      "sha256": "cab611bab7547a9450bb29ab3975ef74121bca1662d2b77e0d5d76d93e033491",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/image_check.py",
+      "lines": 83,
+      "sha256": "22905e425c8f55ab9dd041c73d3107ed2d7a502ab8117ce35ac35ac6510ea455",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/image_utils.py",
+      "lines": 64,
+      "sha256": "b61cecbbc750f669cff65a91c384299d19e304a7b4e712c09846ee2e479bbea1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/insights_report_locale.py",
+      "lines": 98,
+      "sha256": "d9957b57955797640eba6eb1816778abb3ff5e6632a7586cbb0166c41683211b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/live_stream.py",
+      "lines": 196,
+      "sha256": "4c6d968c3bc0e1c204cb3c8af4bf0e77aae7891bdad85eef400b1b05b439136d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/map_heatmap.py",
+      "lines": 46,
+      "sha256": "e498efd9b076c5543a48d28b841247a26db546b61f7b43fc24c62fcb3b5ec6d6",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/map_live_access.py",
+      "lines": 27,
+      "sha256": "971823b4b3ea334b9e4d526678e5c453ec6e005dd77967e7eb52be8d5e76dae4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/media_access.py",
+      "lines": 35,
+      "sha256": "0d32d97799ca5d851856eee92fc54ad2e67e06cce7015df98d25433004c5e8e1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/media_retention.py",
+      "lines": 76,
+      "sha256": "719f3090b3dd580cc1077596d3e6240e9666c869bcc3e6ebe4c47445b7f1f6cb",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/network_utils.py",
+      "lines": 46,
+      "sha256": "f148275cd5ea277ecb46d820058741aa7ccfc69d808fa42234cff88b2718b629",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/notification_service.py",
+      "lines": 301,
+      "sha256": "041fe4fcffb1102f0f266ba8ef47ba5f604ecb0fcd6b06d27176395a1c9fa117",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/online_users.py",
+      "lines": 258,
+      "sha256": "54b330d150cc244588cc5557eba267e90aa9c0baceccbbb11ad1f9a3174939e8",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/record_check.py",
+      "lines": 570,
+      "sha256": "535cd10de6bdbafa9ba557fc418fbf7033aa2124af5dc1d3d22ce3a69e79d940",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/record_check_report.py",
+      "lines": 964,
+      "sha256": "963ce31121335f7fd47db807d501e7ba4817281ff22a3dd46b04e0d2841ace6d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/record_mount.py",
+      "lines": 407,
+      "sha256": "71d1fa7ffacbd5b18711f2d281fba70c627d25658d4c07d4e596c51f73b2f2f8",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/remember_me.py",
+      "lines": 184,
+      "sha256": "c275dcdf81563846cc2ee3b067a50501897ba13309a5c15e1dcd449f23e7b47e",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/response_helper.py",
+      "lines": 25,
+      "sha256": "310f1fc0c183dbdec7e16728d5ad029fd139f26f551fe2d32a46fc1705b01cf2",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/smtp_config.py",
+      "lines": 113,
+      "sha256": "d6a484b8d7714ded037faf72ed3da56c6d0567b66cf46d515d90ca7d7e7c9e52",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/snapshot_locker.py",
+      "lines": 56,
+      "sha256": "e293cc36400fd8fc71f8bc2c807b900bce2a071263f67113544b5eb4a8880229",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/snapshot_process.py",
+      "lines": 68,
+      "sha256": "b112332a42070d77d74ac1d096db458b08dbfb3ff2e9e8b12de789c9742ef11a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/snapshot_service.py",
+      "lines": 593,
+      "sha256": "addb3ecbd904b7abe93ac48d65ab442dd64721817171184ef06248ce09272fc1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/snapshot_utils.py",
+      "lines": 373,
+      "sha256": "6962657bc922bd7760da9d54ea6016670888bf6c1315d863804b29a49c23cb63",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/status_utils.py",
+      "lines": 9,
+      "sha256": "ba3daf0068cf748f68d3cfacee7224b74ed7b557522e58def443157fc00bbe2f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/storage_monitor.py",
+      "lines": 296,
+      "sha256": "80d696d4ea88df0b4c0fe204b053aabcb6936260a1e6ed4edbc012b84145ea6c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/template_helper.py",
+      "lines": 323,
+      "sha256": "4596ee98d36f77e28ebc154b40cca82b6b5709bbacbb8ba161eefbb4c04a9ee1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/timezone.py",
+      "lines": 18,
+      "sha256": "5a9ef16fb7d449d31ad55c92c4adbc6f9976831161a6ec173ebe371194512b8d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/timezone_helper.py",
+      "lines": 108,
+      "sha256": "09735d56569c835286f68ddbadb8ce5667511e25701a90ab52f69d3bb00b857a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/video.py",
+      "lines": 634,
+      "sha256": "d840c4f10d56bcf7e1e5c6fa5551166f521ee6ac6a529a254109712fb6ba6bab",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/wa_bot_commands.py",
+      "lines": 424,
+      "sha256": "791c345de2c35b8ce81f3ad8cca7cc24f77cd4495077045426dab77e0749b7f5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/wa_bot_workflow.py",
+      "lines": 330,
+      "sha256": "17a48151b945fb3db88969a2d0e090f0474f12fcc10d2c27d1514f5e478c8afc",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/wa_executor.py",
+      "lines": 53,
+      "sha256": "02fbc508bd22cfcbd37bff642587981e94c9aaf0ea4ea4b9f1ae7592582fe548",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/wa_gateway.py",
+      "lines": 540,
+      "sha256": "b39b3db0a3c0b56dc55713630cc298a382ee3905f5af473260f352624cc008e5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/wa_monitor.py",
+      "lines": 120,
+      "sha256": "e5b9ac8c5df6d95eedc2454ece70f892ab9ebe83cafac7189313878611b8724f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/version.py",
+      "lines": 1,
+      "sha256": "38489beb77b4c8f106961117cab584d4ec119e5791d1c1c8eca497ee864440bb",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/ws/__init__.py",
+      "lines": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/ws/manager.py",
+      "lines": 41,
+      "sha256": "39e64b0d253fdcaeb6f184d1ff88fde0b0fc375c416fd66aefa2a1d29a389b27",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/ws/notifier.py",
+      "lines": 147,
+      "sha256": "f7e9fd7d22e2cbf7c1f1c9cdcad449eae0bd37b9380b7e7229c8215448a744c7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/ws/record_notifications.py",
+      "lines": 72,
+      "sha256": "9a5044f5a5eb17642c9dd87ac3e843ede00d8f2d49255e76e242861c9ce02100",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/ws/routes.py",
+      "lines": 103,
+      "sha256": "f68cd880ffd63f680edf5357b913f5770c434a7d7b6b8f3f5871d272ab8cb40b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/benchmark_log_response.py",
+      "lines": 216,
+      "sha256": "f29a83389b6b60a035b4beb7486ec8b39436d822edce0706c50ff6d573e10e10",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/check_image_version.py",
+      "lines": 36,
+      "sha256": "471e871aa6f60fd7a36603c0de564d727ba87f47db814b8ae24fe66fd37f6f3f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/check_runtime_imports.py",
+      "lines": 38,
+      "sha256": "ce1b57ca89420c9e8cff098ae31f15b8a47a06d31e306a398c5dd81a97038ce8",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/env.py",
+      "lines": 75,
+      "sha256": "cd48d5b16011ec1120e5beae4f23d8af28313469ab36fe33b2adc0e7f65e614a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20250306_remember_me.py",
+      "lines": 44,
+      "sha256": "e3d3980759669da8ee4f1e4a770b751bdfb5fbd4f330c1b03de3465650c26df4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260306_add_storage_monitoring.py",
+      "lines": 102,
+      "sha256": "b4be6e8a11dc95a4c3f4bf83a457d2b5619126bd1cc33c701fddd295f908a8eb",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260309_add_apscheduler_jobs.py",
+      "lines": 57,
+      "sha256": "0e8077006830828d0a1b359f6c8adf0d9e0a274fa5030e0824f8b4899c4c1f70",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260309_add_job_execution_logs.py",
+      "lines": 69,
+      "sha256": "6ff1c981677e99b8fb6b8d28b9ef79add7c701062ee1ab891dc8c1d20c65a0e5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260309_add_notifications_table.py",
+      "lines": 58,
+      "sha256": "d81dbf5dcb2939ec06c8fb8a9c78bc4e4e981199d5a0be16dc0bc8376909485a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260309_add_sla_reports.py",
+      "lines": 110,
+      "sha256": "70f7629c92285e2a34748ab24a9cdfc04dfa70a3b21e6d31eeb3ec4bf6d39266",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260310_orphaned_snapshots.py",
+      "lines": 43,
+      "sha256": "421ed533f09d6c32e6e2d6eccea9138f67e6f538d3f8409e64f4f816cef78d09",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260311_add_orphaned_files.py",
+      "lines": 66,
+      "sha256": "5b57b29d7341ff2b33dceee96c7fbef6b7773af4403e3dca65d638e5350743b3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260311_fix_snapshot_fk_cascade.py",
+      "lines": 75,
+      "sha256": "cbeaa86ebf34c01a4478f483e4efd6758a6ed7c2c7a822dfdba1b80af7fe8a0d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260326_add_file_hash_and_soft_delete.py",
+      "lines": 68,
+      "sha256": "9d3fe1824afe393245264b2e00265ed5e5942b8d4524ae659c5e7f7c1d16d932",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260326_encrypt_nvr.py",
+      "lines": 40,
+      "sha256": "9b3424c1d78f6efc774158a9a6568e773dd058c416d3725b37f685019d2b52a6",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260328_dual_table.py",
+      "lines": 324,
+      "sha256": "788da0995e90c30d4e6d6ebdc8d4e6be3b85a80bb643795df227276ac9c099d5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260330_alert_cooldown.py",
+      "lines": 49,
+      "sha256": "856732dd98046676b5009e17be4807f937612fc647c0460ab9829468780ac636",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260330_circuit_breaker.py",
+      "lines": 54,
+      "sha256": "6ee43dbc763cfc6177fafd9ed60292abfe686022fa5912ffed2f817ee0008558",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260330_remove_all_group.py",
+      "lines": 103,
+      "sha256": "7dd72e02a34cda2f0b2bb18d5f4e6338ecc25b8175d38d6206b0791e7e768cf3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260331_remove_lat_lon_from_camera_groups.py",
+      "lines": 43,
+      "sha256": "7c38cdb7a4f02cbdd8f688d70794638fed0b6c7f2c169a0a3a6c9b8272f891ad",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260716_add_record_check_tables.py",
+      "lines": 183,
+      "sha256": "1803ee67ca9d3ec89d29a9a12cfd4dfe4e92e8842213865598b38eb69da5d7f7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260924_camera_multiple_groups.py",
+      "lines": 42,
+      "sha256": "3318e24f493796178167888d002c25d20d0c86cad73880429d263426ee3ad670",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260925_add_analytics_query_indexes.py",
+      "lines": 41,
+      "sha256": "f0571c51261e251f6b50031d4b9f770728746e1bf44d745521fb712b12247e57",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260930_add_wa_provider_message_id.py",
+      "lines": 37,
+      "sha256": "309178c65705f14800bd2e71536467b8563123607274ac85089ae0739d255a2a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260930_add_whatsapp_bot_operations.py",
+      "lines": 35,
+      "sha256": "5576f66368406e0e4d423b5cff2bb4d69fee17e34b53f17e3c7c0bbfabac92d2",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20261006_record_mounts.py",
+      "lines": 41,
+      "sha256": "95a2c569fb970bb4fd099271da5fb1cd8585f89d197220c742b21a4e9ed888c4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20261007_api_daily_stats.py",
+      "lines": 30,
+      "sha256": "655dae9c60a730ec18b9df45cec2795ca40a93c7b21fdc8e693fa28e686378f4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20261007_baseline.py",
+      "lines": 289,
+      "sha256": "61aee4a806fe53ff1a56654dbb95fe2bd8de9162dcef29da7525bf71c7fd23a7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20261007_email_retry_lifecycle.py",
+      "lines": 93,
+      "sha256": "86c8a4a803bf480af428daeff5a28d736ee0e5f5499ebb70b86781db96c2c5ab",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20261007_email_retry_resources.py",
+      "lines": 31,
+      "sha256": "ab35ddec189d5ee74533bcdbef284bd98c1dd0b5a8be07d4f4bd67a067193f90",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20261012_email_retry_expiry.py",
+      "lines": 35,
+      "sha256": "101a7964d45bee1e8e84a90938df4c06023c2a75826392c05ccadf82bf36750b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/300b57036bb7_add_recipients_table_for_email_logs.py",
+      "lines": 50,
+      "sha256": "68059412de6306f58814d8b2c4235614a9271650c6b0a9a15651448cf67c2c63",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/4427f12a3ddd_add_observability_fields_to_api_logs.py",
+      "lines": 40,
+      "sha256": "33a76de5747da0db2825c8eb56a79554c28b133c2a0802cd38b606d000139881",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/5cedbb9e3357_merge_heads.py",
+      "lines": 28,
+      "sha256": "9c4e5583f76202e049eadb299dfb57c7a9a7c772aed8a6988bfcb5d966d54c5b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/5f395f7835f6_added_column_note.py",
+      "lines": 30,
+      "sha256": "2f7b5112dedf7ffef4968fefc9d019f4e5842b643ae0b12106f89e5f6138c007",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/6eaca6a658f5_add_tamper_columns_to_camera_health.py",
+      "lines": 34,
+      "sha256": "edfd74f056fb6c659d815431db32f3e1ef29c9fa7f93c271fa3344f5427871a2",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/7cd0dd6ec316_ensure_all_datetime_columns_store_utc.py",
+      "lines": 42,
+      "sha256": "2b77f14566dc5b08666046560ef2513cc0259edebd20383e22662104fef266c2",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/8048b0584a9a_remove_is_active_from_whitelist.py",
+      "lines": 192,
+      "sha256": "1408d631fbb94541306746eb318921bfc533e8ab9f0c9effce9d8430e3fbd4f5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/823ab92ff506_add_reason_column_to_email_log.py",
+      "lines": 28,
+      "sha256": "e809d83a352d082afef35c038cee7cde2980bf69dd6fd562d0e1ffb5af5a77d5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/8a53b8bab616_add_safety_classification_p2_002.py",
+      "lines": 32,
+      "sha256": "33a457c307000feac6a7ce77fe035aaf397df3b3df7137ba0d73c2fd38c38ec2",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/93cb20db9549_add_email_retry_queue_table.py",
+      "lines": 47,
+      "sha256": "23cc712336eb51a0b61f23780b9697fafe215b1916e4021cb764e043b21c7284",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/a0b22741533a_add_p2_001_append_only_audit_log.py",
+      "lines": 163,
+      "sha256": "58dc4bd24637ddaf61810301de1f4b026fda05ce072125907120eebd1d66b1bb",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/a3366d14c9a4_add_email_templates_table.py",
+      "lines": 77,
+      "sha256": "f38a26d86164bf1a3ddaca7dd625881db407f758a766a16f16797e646a80d65c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/b29ff945dac6_drop_orphaned_files_table.py",
+      "lines": 159,
+      "sha256": "3b37dfad2a26e4a286d876e62833651b100610909e4d22e4883fc648eeeddf43",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/cf721a00b9a8_add_snapshot_url.py",
+      "lines": 30,
+      "sha256": "6342dbe1f7ab0754540e9cf009a46be7a2e24eb1421ee47eefd4d6834d817ba7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/d6001ff7c550_add_whitelist_group_id.py",
+      "lines": 33,
+      "sha256": "f1be1ca6717686cfbe802705373a0e11188b78fdb0226aa7030c7b5c07696c53",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/da0483da8f95_add_is_flipped_column_to_cameras.py",
+      "lines": 31,
+      "sha256": "90dca0a9b20e63dce4c57bdb35fd3b20f6adc6dc9149770e89738c1f7471274c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/e8c96ec70560_add_email_retry_unique_active.py",
+      "lines": 30,
+      "sha256": "0a2173ed8058899314eedf12a684bc40f23b3c14c521a9535e8bea4879516f3e",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/ea697ca6b008_add_timezone_to_task_timings_datetime_.py",
+      "lines": 46,
+      "sha256": "0888cc77c0d2b9747386160a89d3012d5b18544c0d91e9dc21925645e08d7e4c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/eb9923e83d68_relate_snapshot_logs_to_camera_id.py",
+      "lines": 99,
+      "sha256": "91a9a74b071773b484255141579f3127f2fd25a315ace129f7495555e94bb9f5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/ed2356cb250c_initial_reset.py",
+      "lines": 69,
+      "sha256": "f6473934c5fdc2b43ccec595671b92f0dc3d4da1ec2e10c2160c6a520fcd7aa1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/f3170d221195_add_retention_hold_p2_001.py",
+      "lines": 112,
+      "sha256": "d05ae716afcc8797f426d1d461e93d726a718d9667f35a57d46ee93d126bd236",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/f4b4f204bb00_create_command_logs_and_api_logs_tables.py",
+      "lines": 45,
+      "sha256": "210a95c47b572021a47d4924389d1042024e52741b83d8624925315da6a338ea",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/fe1c28ede362_add_group_recipients_table.py",
+      "lines": 37,
+      "sha256": "7c5097f06cbc6ae9e8defe4792238b48b12dfd2104aa2e35b4c78047c5e69ca5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "templates/403.html",
+      "lines": 120,
+      "sha256": "ff749dcd67dac8d218b1e9c07377d5a646d2e5f3b307c001e0d8422caea91adc",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/404.html",
+      "lines": 109,
+      "sha256": "42c3ccdd22776cd42a69a2f8d03962997eabea14102ea615dfc89b346875e843",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/500.html",
+      "lines": 126,
+      "sha256": "0bcaef3de06fd511f8982194254a6a47dee4612601e87977b4ef5db347d81277",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/_action_buttons.html",
+      "lines": 15,
+      "sha256": "a9cfb6852e7271da3463703af5747c230b156996bb308ced154800c5c67b18e2",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/_gallery_grid.html",
+      "lines": 88,
+      "sha256": "45db200daf263e2f622116f9df1413a2520ec49a739fb4e1fbfdd459f3c7c660",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/_icons.html",
+      "lines": 328,
+      "sha256": "e927fbb7144eeb9beb8d21c2e38d5fd99a75651a649039bad2a5a4458dcf09d5",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/_orphaned_files_list.html",
+      "lines": 49,
+      "sha256": "9f88b6de75f3d29ced699c778c4506bc0bf906723b2ebc358787580490f3fefb",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/_video_grid.html",
+      "lines": 89,
+      "sha256": "99f801ffab98324338bebadfc0184248796e5285422173989551741dfff7d006",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/admin_trash.html",
+      "lines": 911,
+      "sha256": "87351890ba5866d71fffd4d3634ff4ef4af2793959245d1d97c4e8801b2d7454",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/analytics.html",
+      "lines": 1092,
+      "sha256": "180fc2b9d3c8489fc7f34728b188d281ff5334a41fcbd58a261c412bdde915ba",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/audit_logs.html",
+      "lines": 1368,
+      "sha256": "d54eff682bf0f8c1d1879a9945593c1654f4c13d60e9b3d3629a932a837a7f1f",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/base.html",
+      "lines": 1001,
+      "sha256": "6b8f81acef9c547685b8c9d5a28ba3eba62fe588f072f32e533290d1785f5d3b",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/camera_groups.html",
+      "lines": 578,
+      "sha256": "f8657e3c2d4a50cdea65d47dcba26ea4298ad76cf0452070aa00c99a5e6eefbb",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/cameras.html",
+      "lines": 1108,
+      "sha256": "df3da5723e4f27e090070b9daa008f91f770a57cfa71b45a35f56f62a293949a",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/change_password.html",
+      "lines": 145,
+      "sha256": "a8c0dacbcffc5dad4fe936beb2dff3564e80b83e8e390b25f3c639661436675e",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/changelog.html",
+      "lines": 468,
+      "sha256": "8b793554e7756f0a9c6737b25d715ead28760cc5f0b56c6c35fcb1581ef0fec0",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/config.html",
+      "lines": 1090,
+      "sha256": "2f9e59935d48c3f4c609d772e53cf4341c8041036f69c592eaee0e601b45414e",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/demo/toast_demo.html",
+      "lines": 182,
+      "sha256": "645550eb1e4805770a04144b838aebea26d7303d9bfdb45c17e918c44d5577c0",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/docs/api.html",
+      "lines": 71,
+      "sha256": "33ced8fb869c8acc0a67db61bcf37e65c25143624c645b4550b6e6b032253941",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/docs/environment.html",
+      "lines": 192,
+      "sha256": "ac3283f14630be3d7250fe386a8b56dc57459d3286e7d65c6df0e9bc2ded2c91",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/docs/security.html",
+      "lines": 133,
+      "sha256": "7e82259a5d1da1e424d7530170a3a38786bba90378b8ed2755d461878c39749f",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/email_logs.html",
+      "lines": 720,
+      "sha256": "68abd08d2d69af068c31b539a02d0c80dfd0c3fc67ac5154b365d270d499f570",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/email_templates.html",
+      "lines": 432,
+      "sha256": "5d750e192d8beccb8b4ff956af75f07e6f9736de79fc8d2feea3fb2cd6ae47bf",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/force_mfa_setup.html",
+      "lines": 119,
+      "sha256": "70744f98993ffdae76746d75ae169194c650cb4543568d3c4f2a980baee6d561",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/health.html",
+      "lines": 732,
+      "sha256": "9b532c72a9163b9558ea7529838d4e1da6c26c3fca89f39fe74c0ae096fb33b4",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/health_history.html",
+      "lines": 325,
+      "sha256": "6ce178e97b8bef60f159bba74ad9e242c54b904ba6ace638ea572c1e203b1acd",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/insights.html",
+      "lines": 328,
+      "sha256": "1cf88dce21695ee5477f65724d327a4473c8796fadf4175a47b033449601a554",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/jobs.html",
+      "lines": 636,
+      "sha256": "e83eadacbf437b429b8e06fa7499f50d249cc7182a5460ce06f0464161775e0d",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/login.html",
+      "lines": 135,
+      "sha256": "1595c2d32d0550a419cee7e9d386d1c13be99c591a2d06a9eec0d1fca04922ec",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/login_2fa.html",
+      "lines": 100,
+      "sha256": "f97916225fe7b6014dab0f4acb0ade011ff67938fe833ff708681df723835f97",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/logs.html",
+      "lines": 566,
+      "sha256": "3c5dffbae9ecd3d6dce9b8e7fb1f7512f52521e22f7adb4d9474ccb97fb7660e",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/macros/file_size.html",
+      "lines": 10,
+      "sha256": "283eb5ac4a53f02415dec6291410d71b5054bccef1a74a7f5a1683431589f22b",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/macros/navigation.html",
+      "lines": 76,
+      "sha256": "2d9ea0cdc40031af4746e69b0fa5026af3fc28a07d1b249ebdd0e0fdfa2a2815",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/macros/ui.html",
+      "lines": 91,
+      "sha256": "b8d4ac8ffa9b3222e55758839599de75be0001b45fff0750c749587f728dec42",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/maps.html",
+      "lines": 743,
+      "sha256": "3d089ddf5191b98988ea6a8919c2d26da02e7d8b545270d52d3c45625803a698",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/nvrs.html",
+      "lines": 925,
+      "sha256": "d67b3322aa93a985960c77a84570839990110ec6a34c7382794b8bb855db3ba9",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/partials/camera_rows.html",
+      "lines": 46,
+      "sha256": "d8e3fd5b720c2873165d378ec58b7ff2335db53130aeeb8a0ea342ccbd94216b",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/partials/nvr_rows.html",
+      "lines": 27,
+      "sha256": "dea2eba57ceba39974caafaa8db284929367d3ad5caec9c4afafcab90c17a780",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/powerbi_record_checks.html",
+      "lines": 203,
+      "sha256": "52e2fd3938f1fde7da217885b2d9722ea113cdbbb60528be3ea461ba04f41cbe",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/recipients.html",
+      "lines": 1303,
+      "sha256": "d549239309c160232763f01b72bb7ac27a2ff0a7fea2bf60efb0064df48de325",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/recipients_table.html",
+      "lines": 142,
+      "sha256": "760983313e50b59519b9b5e97611f2d1d29dda3dee85e99bedec99dc0c76e575",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/record_checks.html",
+      "lines": 868,
+      "sha256": "5772d853f26507bf12cc63dd1bd1904cecdd509591371d4e20dcda133d9b2407",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/setup.html",
+      "lines": 38,
+      "sha256": "a9274c3aa4e0bb0c68af1cb943146d10a678beeb1aadfdc5e13d0b3ca8ee4597",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/sla_report.html",
+      "lines": 192,
+      "sha256": "ccd0b8aa8f99035ec763391c1b6f5feee4bb2db3a46767e55187b66e5b6eaca8",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/snapshot_gallery.html",
+      "lines": 391,
+      "sha256": "50e5dab2b2349463173901b01b2904f821cb18eeb1de3e2d74467f659d562ccd",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/stats.html",
+      "lines": 470,
+      "sha256": "d582e3156a05a1e168f837a6ef517075ffbc0174e2df6189b5a355d4d5ae7be7",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/swagger_embed.html",
+      "lines": 23,
+      "sha256": "22ae4ea0d6899c7cdc2ab02736c80f67864d56d532c542757b31f1bc5ea301c3",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/unauthorized.html",
+      "lines": 17,
+      "sha256": "912b6b94396b777d395f075ada5c3da6568449a34f883f4cea48bd86c45a5338",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/user_management.html",
+      "lines": 847,
+      "sha256": "5a8ef0b155048a8cc8227b4b95ddd7e3a6d331160546df1754a46a0f51df8f4e",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/user_management2.html",
+      "lines": 514,
+      "sha256": "63fcaa04a71c156980db2fec5a551733d8dcdb3491b9a8175e7c1cdc0322f289",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/user_profile.html",
+      "lines": 772,
+      "sha256": "9c3ceab261c5bf0cff8a8161515b8aa6191ad69491014096e78cf8a3d8e627f8",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/video_gallery.html",
+      "lines": 363,
+      "sha256": "058ba7be486952777c69616b88ebbbe41b2b811571f89c65d0850daa7ad14a98",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/wa_bot_builder.html",
+      "lines": 278,
+      "sha256": "02503bcf0a2bd99f13160b60abce152f68354cf4f073b182e1264168d352a2a5",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "templates/whitelist.html",
+      "lines": 826,
+      "sha256": "99698f57c51aa38b93cebc9586666db0e7582654acb99270b06e5d82dbac845c",
+      "check": "Jinja compile"
+    },
+    {
+      "path": "static/js/admin-table-sort.js",
+      "lines": 134,
+      "sha256": "92f374b7b33b7eec23d5c34c519403a1f6bf34de57007d7f0b8d7889707329af",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "static/js/cron-description.js",
+      "lines": 111,
+      "sha256": "cf2eb8e97a65092e8ea29d882a55850689c4c9898bc0ae66580fb8ba56e9c3dd",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "static/js/date-format.js",
+      "lines": 56,
+      "sha256": "915cba43f6c051ee9375b596ca291f5454cf5e44addc77c88f423db7f38c4168",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "static/js/file-size.js",
+      "lines": 14,
+      "sha256": "d61d4b02560a00ef6f177cfcfb86d3ca0e2ba6e5ac076aa3892bc5948f3f32a5",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "static/js/gallery-loader.js",
+      "lines": 151,
+      "sha256": "ed2fb490623da6600b043ab8380404a8250ceb17a1aa5fe53edd32a3494b08fb",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "static/js/i18n.js",
+      "lines": 1139,
+      "sha256": "8cf04f1a0d716c13f78ab0fd3c105e4963854c7a2673f47c3a18ac00c6400b17",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "static/js/map-data-loader.js",
+      "lines": 75,
+      "sha256": "41ebf1690aa00ad1d48a0364bfd5e1b5449da24cd9e762a4a5030f4d5dcd9e9c",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "static/js/map-heatmap.js",
+      "lines": 141,
+      "sha256": "94651022e3d5a809ada9df99b2c92fa106b21f78ae9f0575b7b4d00b76d701cb",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "static/js/map-libraries.js",
+      "lines": 33,
+      "sha256": "745a7d79b831095d96dfc2876c585ed17567fcfa288f921c8b8c33607d6d9a38",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "static/js/map-live.js",
+      "lines": 229,
+      "sha256": "4d156942e183dab4adc2a9505b7c7a25dd4982cc656777856eb0343074a2aa2d",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "static/js/report-charts.js",
+      "lines": 36,
+      "sha256": "79080ba0b002c570691eb4b0a3f4ac0fc7ef50fa0296858fe57ad47da2ca26e6",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "static/js/sweetalert2.min.js",
+      "lines": 5,
+      "sha256": "a6d5c0b96d5fac7d9bda6d829e40776131a21ea1501bdf4c8e664cb21640484d",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "static/js/toast.js",
+      "lines": 434,
+      "sha256": "69581f16dbe70a950e065bd328b2104de9a516c98d7a1d965991cb89b1e25a53",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "static/js/ui.js",
+      "lines": 32,
+      "sha256": "ae6b51c85309bbba69bc787b4e3a1c3468597be8854aca1dacb692612571a600",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "static/js/wa-bot-builder.js",
+      "lines": 958,
+      "sha256": "443907121342d721d1c4575eab65264b0ee06924fbd15e815bfa1452afcff47c",
+      "check": "Node syntax check"
+    }
+  ],
+  "routes": [
+    {
+      "file": "app/api/observability_log.py",
+      "line": 12,
+      "method": "POST",
+      "path": "/log/command",
+      "function": "create_command_log",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/api/observability_log.py",
+      "line": 21,
+      "method": "GET",
+      "path": "/log/command",
+      "function": "read_command_logs",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/api/observability_log.py",
+      "line": 27,
+      "method": "POST",
+      "path": "/log/api",
+      "function": "create_api_log",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/api/observability_log.py",
+      "line": 36,
+      "method": "GET",
+      "path": "/log/api",
+      "function": "read_api_logs",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/api/readiness.py",
+      "line": 15,
+      "method": "GET",
+      "path": "/readyz",
+      "function": "readiness",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/api/whatsapp_routes.py",
+      "line": 11,
+      "method": "GET",
+      "path": "/api/whatsapp/is-allowed",
+      "function": "is_whatsapp_allowed",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/main.py",
+      "line": 224,
+      "method": "GET",
+      "path": "/static/snapshots/{path:path}",
+      "function": "block_snapshot_access",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/main.py",
+      "line": 244,
+      "method": "GET",
+      "path": "/static/videos/{path:path}",
+      "function": "block_video_access",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/main.py",
+      "line": 309,
+      "method": "GET",
+      "path": "/",
+      "function": "root_redirect",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/main.py",
+      "line": 381,
+      "method": "GET",
+      "path": "/docs",
+      "function": "custom_swagger_ui",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/main.py",
+      "line": 396,
+      "method": "GET",
+      "path": "/version",
+      "function": "version",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/main.py",
+      "line": 400,
+      "method": "GET",
+      "path": "/debug/ip",
+      "function": "debug_ip",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/main.py",
+      "line": 411,
+      "method": "GET",
+      "path": "/documentation-index",
+      "function": "html_docs_redirect",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/2fa.py",
+      "line": 14,
+      "method": "POST",
+      "path": "/2fa/enable",
+      "function": "enable_2fa_setup",
+      "declared_dependencies": [
+        "Depends(get_current_user)"
+      ]
+    },
+    {
+      "file": "app/routes/admin.py",
+      "line": 20,
+      "method": "GET",
+      "path": "/admin/wa-bot",
+      "function": "wa_bot_builder_page",
+      "declared_dependencies": [
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/admin.py",
+      "line": 32,
+      "method": "GET",
+      "path": "/admin/whitelist",
+      "function": "whitelist_admin_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/admin.py",
+      "line": 45,
+      "method": "GET",
+      "path": "/api/changelog",
+      "function": "changelog_api",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/admin.py",
+      "line": 76,
+      "method": "GET",
+      "path": "/changelog",
+      "function": "changelog_html",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/audit.py",
+      "line": 22,
+      "method": "GET",
+      "path": "/audit-logs",
+      "function": "audit_logs_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/audit.py",
+      "line": 38,
+      "method": "GET",
+      "path": "/api/audit-logs",
+      "function": "get_audit_logs_api",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/audit.py",
+      "line": 131,
+      "method": "GET",
+      "path": "/api/audit-logs/export",
+      "function": "export_audit_logs_csv",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/audit_log.py",
+      "line": 27,
+      "method": "GET",
+      "path": "/",
+      "function": "audit_logs_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/audit_log.py",
+      "line": 45,
+      "method": "GET",
+      "path": "/api",
+      "function": "get_audit_logs_api",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/audit_log.py",
+      "line": 179,
+      "method": "GET",
+      "path": "/api/stats",
+      "function": "get_audit_logs_stats",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/audit_log.py",
+      "line": 190,
+      "method": "POST",
+      "path": "/api/archive",
+      "function": "trigger_archive",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/audit_log.py",
+      "line": 224,
+      "method": "GET",
+      "path": "/api/archive/history",
+      "function": "get_archive_history",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/audit_log.py",
+      "line": 263,
+      "method": "GET",
+      "path": "/api/legacy",
+      "function": "get_legacy_logs",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/audit_log.py",
+      "line": 311,
+      "method": "GET",
+      "path": "/api/archive/history/{archive_id}/logs",
+      "function": "get_archive_history_logs",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/auth.py",
+      "line": 75,
+      "method": "GET",
+      "path": "/login",
+      "function": "login_form",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/auth.py",
+      "line": 81,
+      "method": "POST",
+      "path": "/login",
+      "function": "login_post",
+      "declared_dependencies": [
+        "Depends(get_db)"
+      ]
+    },
+    {
+      "file": "app/routes/auth.py",
+      "line": 116,
+      "method": "GET",
+      "path": "/login/otp",
+      "function": "otp_form",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/auth.py",
+      "line": 127,
+      "method": "POST",
+      "path": "/login/otp",
+      "function": "otp_post",
+      "declared_dependencies": [
+        "Depends(get_db)"
+      ]
+    },
+    {
+      "file": "app/routes/auth.py",
+      "line": 157,
+      "method": "GET",
+      "path": "/mfa/setup",
+      "function": "mfa_setup_form",
+      "declared_dependencies": [
+        "Depends(get_db)"
+      ]
+    },
+    {
+      "file": "app/routes/auth.py",
+      "line": 186,
+      "method": "POST",
+      "path": "/mfa/setup",
+      "function": "mfa_setup_post",
+      "declared_dependencies": [
+        "Depends(get_db)"
+      ]
+    },
+    {
+      "file": "app/routes/auth.py",
+      "line": 321,
+      "method": "GET",
+      "path": "/logout",
+      "function": "logout",
+      "declared_dependencies": [
+        "Depends(get_db)"
+      ]
+    },
+    {
+      "file": "app/routes/auth.py",
+      "line": 475,
+      "method": "GET",
+      "path": "/change-password",
+      "function": "change_password_page",
+      "declared_dependencies": [
+        "Depends(get_current_user)"
+      ]
+    },
+    {
+      "file": "app/routes/auth.py",
+      "line": 481,
+      "method": "POST",
+      "path": "/change-password",
+      "function": "change_password",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(get_current_user)"
+      ]
+    },
+    {
+      "file": "app/routes/camera_groups.py",
+      "line": 23,
+      "method": "GET",
+      "path": "/admin/camera-groups",
+      "function": "camera_groups_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/camera_groups.py",
+      "line": 37,
+      "method": "GET",
+      "path": "/api/camera-groups",
+      "function": "get_camera_groups",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/camera_groups.py",
+      "line": 65,
+      "method": "POST",
+      "path": "/api/camera-groups",
+      "function": "create_camera_group",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/camera_groups.py",
+      "line": 123,
+      "method": "GET",
+      "path": "/api/camera-groups/{group_id}",
+      "function": "get_camera_group",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/camera_groups.py",
+      "line": 149,
+      "method": "POST",
+      "path": "/api/camera-groups/{group_id}/update",
+      "function": "update_camera_group",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/camera_groups.py",
+      "line": 214,
+      "method": "POST",
+      "path": "/api/camera-groups/{group_id}/delete",
+      "function": "delete_camera_group",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/cameras.py",
+      "line": 39,
+      "method": "GET",
+      "path": "/cameras",
+      "function": "manage",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(get_db), Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/cameras.py",
+      "line": 65,
+      "method": "GET",
+      "path": "/cameras/data",
+      "function": "manage_data",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(get_db), Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/cameras.py",
+      "line": 162,
+      "method": "POST",
+      "path": "/cameras/add_camera",
+      "function": "add_camera_submit",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(get_db), Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/cameras.py",
+      "line": 245,
+      "method": "POST",
+      "path": "/capture_video/{camera_id}",
+      "function": "capture_video",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)",
+        "[Depends(get_db), Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/cameras.py",
+      "line": 284,
+      "method": "POST",
+      "path": "/cameras/edit_camera/{camera_id}",
+      "function": "edit_camera_submit",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(get_db), Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/cameras.py",
+      "line": 412,
+      "method": "GET",
+      "path": "/api/camera/{camera_id}",
+      "function": "get_camera_details",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)",
+        "[Depends(get_db), Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/cameras.py",
+      "line": 450,
+      "method": "GET",
+      "path": "/api/camera/{camera_id}/password",
+      "function": "get_camera_password",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)",
+        "[Depends(get_db), Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/cameras.py",
+      "line": 488,
+      "method": "GET",
+      "path": "/api/camera_groups",
+      "function": "get_camera_groups_list",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(get_db), Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/cameras.py",
+      "line": 496,
+      "method": "POST",
+      "path": "/cameras/delete/{camera_id}",
+      "function": "delete_camera",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(get_db), Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/cameras.py",
+      "line": 551,
+      "method": "POST",
+      "path": "/admin/cleanup-orphaned-files",
+      "function": "cleanup_orphaned_files",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(get_db), Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/cameras.py",
+      "line": 636,
+      "method": "POST",
+      "path": "/cameras/upload_csv",
+      "function": "upload_csv",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(get_db), Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/cameras.py",
+      "line": 853,
+      "method": "GET",
+      "path": "/cameras/export_csv",
+      "function": "export_csv",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(get_db), Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/cameras.py",
+      "line": 932,
+      "method": "POST",
+      "path": "/api/n8n/update-camera",
+      "function": "update_camera_n8n",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(get_db), Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/config.py",
+      "line": 31,
+      "method": "POST",
+      "path": "/config/test-smtp",
+      "function": "test_smtp_email",
+      "declared_dependencies": [
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/config.py",
+      "line": 69,
+      "method": "GET",
+      "path": "/admin/config",
+      "function": "config_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/config.py",
+      "line": 69,
+      "method": "GET",
+      "path": "/config",
+      "function": "config_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/config.py",
+      "line": 102,
+      "method": "POST",
+      "path": "/config/save",
+      "function": "config_save",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/config.py",
+      "line": 388,
+      "method": "POST",
+      "path": "/reload-config",
+      "function": "reload_config",
+      "declared_dependencies": [
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/config.py",
+      "line": 416,
+      "method": "POST",
+      "path": "/config/run-cleanup",
+      "function": "run_cleanup_now",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/dev_docs.py",
+      "line": 13,
+      "method": "GET",
+      "path": "/developer/docs",
+      "function": "embedded_docs",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/docs.py",
+      "line": 363,
+      "method": "GET",
+      "path": "/docs",
+      "function": "get_docs",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/docs.py",
+      "line": 369,
+      "method": "GET",
+      "path": "/docs/environment",
+      "function": "get_env_docs",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/docs.py",
+      "line": 385,
+      "method": "GET",
+      "path": "/docs/api",
+      "function": "get_api_docs",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/docs.py",
+      "line": 394,
+      "method": "GET",
+      "path": "/docs/security",
+      "function": "get_security_docs",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/email_logs.py",
+      "line": 27,
+      "method": "GET",
+      "path": "/email-logs",
+      "function": "view_email_logs",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/email_logs.py",
+      "line": 45,
+      "method": "GET",
+      "path": "/api/email-logs",
+      "function": "get_email_logs_api",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/email_logs.py",
+      "line": 166,
+      "method": "GET",
+      "path": "/api/email-logs/export",
+      "function": "export_email_logs_csv",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/email_templates.py",
+      "line": 37,
+      "method": "GET",
+      "path": "/admin/email-templates",
+      "function": "email_templates_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/email_templates.py",
+      "line": 37,
+      "method": "GET",
+      "path": "/email-templates",
+      "function": "email_templates_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/email_templates.py",
+      "line": 84,
+      "method": "GET",
+      "path": "/api/email-templates/{template_type}",
+      "function": "get_template",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/email_templates.py",
+      "line": 115,
+      "method": "POST",
+      "path": "/api/email-templates/{template_type}/save",
+      "function": "save_template",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/email_templates.py",
+      "line": 187,
+      "method": "POST",
+      "path": "/api/email-templates/{template_type}/preview",
+      "function": "preview_template_endpoint",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/email_templates.py",
+      "line": 217,
+      "method": "POST",
+      "path": "/api/email-templates/{template_type}/reset",
+      "function": "reset_template",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/email_templates.py",
+      "line": 251,
+      "method": "GET",
+      "path": "/api/email-templates/{template_type}/variables",
+      "function": "get_variables",
+      "declared_dependencies": [
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/group_recipients.py",
+      "line": 37,
+      "method": "GET",
+      "path": "/admin/recipients",
+      "function": "list_recipients_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/group_recipients.py",
+      "line": 37,
+      "method": "GET",
+      "path": "/recipients",
+      "function": "list_recipients_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/group_recipients.py",
+      "line": 51,
+      "method": "GET",
+      "path": "/api/recipients",
+      "function": "list_recipients_api",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/group_recipients.py",
+      "line": 141,
+      "method": "POST",
+      "path": "/recipients/add",
+      "function": "add_recipient",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/group_recipients.py",
+      "line": 178,
+      "method": "POST",
+      "path": "/recipients/edit/{recipient_id}",
+      "function": "edit_recipient_submit",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/group_recipients.py",
+      "line": 243,
+      "method": "POST",
+      "path": "/recipients/delete/{recipient_id}",
+      "function": "delete_recipient_submit",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/group_recipients.py",
+      "line": 277,
+      "method": "POST",
+      "path": "/api/recipients/test-send",
+      "function": "test_send_email",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/group_recipients.py",
+      "line": 398,
+      "method": "GET",
+      "path": "/api/recipients/export",
+      "function": "export_recipients_csv",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/group_recipients.py",
+      "line": 435,
+      "method": "POST",
+      "path": "/api/recipients/import",
+      "function": "import_recipients_csv",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/group_recipients.py",
+      "line": 537,
+      "method": "GET",
+      "path": "/api/recipients/locations-without-recipients",
+      "function": "get_locations_without_recipients",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/group_recipients.py",
+      "line": 620,
+      "method": "GET",
+      "path": "/api/recipients/export-locations-without-recipients",
+      "function": "export_locations_without_recipients_excel",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/health.py",
+      "line": 99,
+      "method": "GET",
+      "path": "/health",
+      "function": "health_monitor_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/health.py",
+      "line": 118,
+      "method": "GET",
+      "path": "/health/status",
+      "function": "get_health_status_api",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/health.py",
+      "line": 159,
+      "method": "GET",
+      "path": "/health/uptime",
+      "function": "get_camera_uptime_api",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/health.py",
+      "line": 177,
+      "method": "POST",
+      "path": "/health/trigger/{entity_id}",
+      "function": "trigger_healthcheck",
+      "declared_dependencies": [
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/health.py",
+      "line": 190,
+      "method": "POST",
+      "path": "/health/trigger_all",
+      "function": "trigger_healthcheck_all",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/health.py",
+      "line": 207,
+      "method": "GET",
+      "path": "/health/status/check",
+      "function": "check_healthcheck_status",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/health.py",
+      "line": 236,
+      "method": "GET",
+      "path": "/health/history",
+      "function": "health_history",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/health.py",
+      "line": 456,
+      "method": "GET",
+      "path": "/health/sla-report",
+      "function": "sla_report",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/health.py",
+      "line": 583,
+      "method": "GET",
+      "path": "/health/history/export",
+      "function": "export_health_history",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/health.py",
+      "line": 702,
+      "method": "POST",
+      "path": "/health/history/report",
+      "function": "generate_health_report",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/health.py",
+      "line": 1361,
+      "method": "GET",
+      "path": "/health/reports/scheduled",
+      "function": "list_scheduled_reports",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/health.py",
+      "line": 1385,
+      "method": "POST",
+      "path": "/health/reports/scheduled",
+      "function": "create_scheduled_report",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/health.py",
+      "line": 1420,
+      "method": "DELETE",
+      "path": "/health/reports/scheduled/{report_id}",
+      "function": "delete_scheduled_report",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/insights.py",
+      "line": 210,
+      "method": "GET",
+      "path": "/insights",
+      "function": "insights_dashboard_redirect",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/insights.py",
+      "line": 218,
+      "method": "GET",
+      "path": "/log/stats/daily",
+      "function": "get_daily_stats",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/insights.py",
+      "line": 253,
+      "method": "GET",
+      "path": "/log/stats/top-commands",
+      "function": "get_top_commands",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/insights.py",
+      "line": 292,
+      "method": "GET",
+      "path": "/log/stats/top-cameras",
+      "function": "get_top_cameras_by_email",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/insights.py",
+      "line": 406,
+      "method": "GET",
+      "path": "/log/stats/summary",
+      "function": "get_summary",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/insights.py",
+      "line": 452,
+      "method": "GET",
+      "path": "/log/stats/dashboard",
+      "function": "get_dashboard_stats",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/insights.py",
+      "line": 489,
+      "method": "POST",
+      "path": "/log/stats/report-pro",
+      "function": "get_executive_report_pro",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/jobs.py",
+      "line": 36,
+      "method": "GET",
+      "path": "/api/cron-preview",
+      "function": "cron_preview",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/jobs.py",
+      "line": 123,
+      "method": "GET",
+      "path": "/",
+      "function": "jobs_dashboard",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/jobs.py",
+      "line": 136,
+      "method": "GET",
+      "path": "/api/jobs",
+      "function": "list_jobs",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/jobs.py",
+      "line": 221,
+      "method": "GET",
+      "path": "/api/jobs/{job_id}/history",
+      "function": "job_history",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/jobs.py",
+      "line": 252,
+      "method": "POST",
+      "path": "/api/jobs/{job_id}/run",
+      "function": "run_job_now",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/jobs.py",
+      "line": 296,
+      "method": "POST",
+      "path": "/api/jobs/{job_id}/pause",
+      "function": "pause_job",
+      "declared_dependencies": [
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/jobs.py",
+      "line": 317,
+      "method": "POST",
+      "path": "/api/jobs/{job_id}/resume",
+      "function": "resume_job",
+      "declared_dependencies": [
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/jobs.py",
+      "line": 344,
+      "method": "GET",
+      "path": "/api/jobs/stats",
+      "function": "jobs_stats",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/jobs.py",
+      "line": 390,
+      "method": "POST",
+      "path": "/api/jobs/cleanup-logs",
+      "function": "cleanup_job_logs",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/jobs.py",
+      "line": 411,
+      "method": "GET",
+      "path": "/api/job-config",
+      "function": "get_job_config",
+      "declared_dependencies": [
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/jobs.py",
+      "line": 429,
+      "method": "POST",
+      "path": "/api/jobs/{job_id}/schedule",
+      "function": "update_job_schedule",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/logs.py",
+      "line": 94,
+      "method": "GET",
+      "path": "/logs",
+      "function": "view_logs",
+      "declared_dependencies": [
+        "Depends(operator_access_required)",
+        "Depends(get_db)"
+      ]
+    },
+    {
+      "file": "app/routes/logs.py",
+      "line": 112,
+      "method": "GET",
+      "path": "/logs/files/{log_type}",
+      "function": "list_log_files",
+      "declared_dependencies": [
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/logs.py",
+      "line": 147,
+      "method": "GET",
+      "path": "/logs/content/{log_type}/{filename}",
+      "function": "get_log_content",
+      "declared_dependencies": [
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/logs.py",
+      "line": 217,
+      "method": "GET",
+      "path": "/logs/download/{log_type}/{filename}",
+      "function": "download_log",
+      "declared_dependencies": [
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/logs.py",
+      "line": 236,
+      "method": "GET",
+      "path": "/logs/stats/{log_type}/{filename}",
+      "function": "get_log_stats",
+      "declared_dependencies": [
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/map_heatmap.py",
+      "line": 57,
+      "method": "GET",
+      "path": "/camera-heatmap",
+      "function": "camera_heatmap",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(get_current_user)"
+      ]
+    },
+    {
+      "file": "app/routes/map_live.py",
+      "line": 27,
+      "method": "GET",
+      "path": "/maps/live/status",
+      "function": "live_status",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/map_live.py",
+      "line": 36,
+      "method": "GET",
+      "path": "/maps/cameras/{camera_id}/live",
+      "function": "live_camera",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/maps.py",
+      "line": 81,
+      "method": "GET",
+      "path": "/maps",
+      "function": "maps_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(get_current_user)"
+      ]
+    },
+    {
+      "file": "app/routes/maps.py",
+      "line": 110,
+      "method": "GET",
+      "path": "/camera-locations",
+      "function": "get_camera_locations",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(get_current_user)"
+      ]
+    },
+    {
+      "file": "app/routes/notifications.py",
+      "line": 26,
+      "method": "GET",
+      "path": "/",
+      "function": "get_notifications",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(user_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/notifications.py",
+      "line": 59,
+      "method": "GET",
+      "path": "/unread-count",
+      "function": "get_unread_count",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(user_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/notifications.py",
+      "line": 75,
+      "method": "POST",
+      "path": "/{notification_id}/read",
+      "function": "mark_as_read",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(user_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/notifications.py",
+      "line": 103,
+      "method": "POST",
+      "path": "/mark-all-read",
+      "function": "mark_all_as_read",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(user_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/notifications.py",
+      "line": 125,
+      "method": "DELETE",
+      "path": "/{notification_id}",
+      "function": "delete_notification",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(user_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/notifications.py",
+      "line": 151,
+      "method": "DELETE",
+      "path": "/",
+      "function": "clear_all_notifications",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(user_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/nvrs.py",
+      "line": 28,
+      "method": "GET",
+      "path": "/nvrs",
+      "function": "list_nvrs",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/nvrs.py",
+      "line": 55,
+      "method": "GET",
+      "path": "/nvrs/data",
+      "function": "get_nvrs_data",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/nvrs.py",
+      "line": 112,
+      "method": "POST",
+      "path": "/nvrs/create",
+      "function": "create_nvr",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/nvrs.py",
+      "line": 188,
+      "method": "POST",
+      "path": "/nvrs/edit/{nvr_id}",
+      "function": "edit_nvr",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/nvrs.py",
+      "line": 291,
+      "method": "GET",
+      "path": "/nvrs/json",
+      "function": "get_nvrs_json",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/nvrs.py",
+      "line": 305,
+      "method": "GET",
+      "path": "/api/nvr/{nvr_id}",
+      "function": "get_nvr_details",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/nvrs.py",
+      "line": 325,
+      "method": "GET",
+      "path": "/api/nvr/{nvr_id}/password",
+      "function": "get_nvr_password",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/nvrs.py",
+      "line": 362,
+      "method": "POST",
+      "path": "/nvrs/delete/{nvr_id}",
+      "function": "delete_nvr",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/nvrs.py",
+      "line": 409,
+      "method": "GET",
+      "path": "/nvrs/export_csv",
+      "function": "export_csv",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/nvrs.py",
+      "line": 483,
+      "method": "POST",
+      "path": "/nvrs/upload_csv",
+      "function": "upload_nvr_csv",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/online_users.py",
+      "line": 20,
+      "method": "GET",
+      "path": "/api/online-users",
+      "function": "get_online_users_api",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/online_users.py",
+      "line": 45,
+      "method": "GET",
+      "path": "/api/online-users/count",
+      "function": "get_online_users_count",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/online_users.py",
+      "line": 68,
+      "method": "POST",
+      "path": "/api/online-users/{user_id}/revoke",
+      "function": "revoke_user_session",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/ping.py",
+      "line": 16,
+      "method": "GET",
+      "path": "/ping",
+      "function": "ping_ip",
+      "declared_dependencies": [
+        "[Depends(operator_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 247,
+      "method": "GET",
+      "path": "/api/powerbi/record-checks/sources",
+      "function": "powerbi_record_sources",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 278,
+      "method": "GET",
+      "path": "/api/powerbi/record-checks/current-status",
+      "function": "powerbi_record_current_status",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 337,
+      "method": "GET",
+      "path": "/api/powerbi/record-checks/runs",
+      "function": "powerbi_record_runs",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 386,
+      "method": "GET",
+      "path": "/api/powerbi/record-checks/folder-checks",
+      "function": "powerbi_record_folder_checks",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 446,
+      "method": "GET",
+      "path": "/api/powerbi/record-checks/events",
+      "function": "powerbi_record_events",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 500,
+      "method": "GET",
+      "path": "/api/powerbi/record-checks/downtime",
+      "function": "powerbi_record_downtime",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 532,
+      "method": "GET",
+      "path": "/admin/record-checks",
+      "function": "record_checks_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 542,
+      "method": "GET",
+      "path": "/admin/powerbi-record-checks",
+      "function": "powerbi_record_checks_page",
+      "declared_dependencies": [
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 550,
+      "method": "GET",
+      "path": "/api/record-checks/sources",
+      "function": "list_record_sources",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 578,
+      "method": "POST",
+      "path": "/api/record-checks/sources",
+      "function": "create_record_source",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 637,
+      "method": "PUT",
+      "path": "/api/record-checks/sources/{source_id}",
+      "function": "update_record_source",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 729,
+      "method": "DELETE",
+      "path": "/api/record-checks/sources/{source_id}",
+      "function": "delete_record_source",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 805,
+      "method": "POST",
+      "path": "/api/record-checks/sources/{source_id}/run",
+      "function": "run_record_source_now",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 840,
+      "method": "POST",
+      "path": "/api/record-checks/sources/{source_id}/mount",
+      "function": "mount_record_source",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 875,
+      "method": "POST",
+      "path": "/api/record-checks/sources/{source_id}/unmount",
+      "function": "unmount_record_source",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 915,
+      "method": "GET",
+      "path": "/api/record-checks/status",
+      "function": "get_record_status",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 979,
+      "method": "GET",
+      "path": "/api/record-checks/cameras",
+      "function": "list_record_mapping_cameras",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 1007,
+      "method": "PUT",
+      "path": "/api/record-checks/status/{status_id}/mapping",
+      "function": "update_record_folder_mapping",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/record_checks.py",
+      "line": 1065,
+      "method": "GET",
+      "path": "/api/record-checks/runs",
+      "function": "get_record_runs",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/resolve_ip.py",
+      "line": 24,
+      "method": "GET",
+      "path": "/api/cctv/resolve-ip",
+      "function": "resolve_ip_by_name",
+      "declared_dependencies": [
+        "Depends(admin_access_required)",
+        "Depends(get_db)"
+      ]
+    },
+    {
+      "file": "app/routes/setup.py",
+      "line": 13,
+      "method": "GET",
+      "path": "/setup",
+      "function": "setup_form",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/setup.py",
+      "line": 22,
+      "method": "POST",
+      "path": "/setup",
+      "function": "setup_create",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 128,
+      "method": "POST",
+      "path": "/api/snapshots/capture/{camera_identifier}",
+      "function": "snapshot_handler",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 128,
+      "method": "POST",
+      "path": "/snap/{camera_identifier}",
+      "function": "snapshot_handler",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 290,
+      "method": "DELETE",
+      "path": "/snap/{snapshot_id}",
+      "function": "delete_snapshot",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 319,
+      "method": "GET",
+      "path": "/snap_gallery",
+      "function": "show_snapshots",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 360,
+      "method": "GET",
+      "path": "/gallery-data",
+      "function": "get_gallery_data",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 408,
+      "method": "GET",
+      "path": "/snapshots/tampered",
+      "function": "get_tampered_snapshots",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 444,
+      "method": "GET",
+      "path": "/admin/snapshots/deleted",
+      "function": "get_deleted_snapshots",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 502,
+      "method": "POST",
+      "path": "/snap/{snapshot_id}/restore",
+      "function": "restore_snapshot",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 542,
+      "method": "DELETE",
+      "path": "/admin/snapshots/{snapshot_id}/purge",
+      "function": "purge_snapshot",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 587,
+      "method": "POST",
+      "path": "/admin/snapshots/purge",
+      "function": "purge_old_deleted_snapshots",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 642,
+      "method": "GET",
+      "path": "/snap/{snapshot_id}/verify",
+      "function": "verify_snapshot_integrity",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 706,
+      "method": "GET",
+      "path": "/admin/trash",
+      "function": "admin_trash_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 718,
+      "method": "POST",
+      "path": "/snap/{snapshot_id}/retention-hold",
+      "function": "toggle_snapshot_retention_hold",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 772,
+      "method": "GET",
+      "path": "/api/snapshots/file/{file_path:path}",
+      "function": "serve_snapshot_file",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 833,
+      "method": "GET",
+      "path": "/api/snapshots/secure/{snapshot_id}",
+      "function": "serve_snapshot_by_id",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 937,
+      "method": "POST",
+      "path": "/api/snapshots/gallery-view",
+      "function": "log_gallery_view",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snap_gallery.py",
+      "line": 984,
+      "method": "GET",
+      "path": "/admin/trash/stats",
+      "function": "get_trash_stats",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snapshots.py",
+      "line": 115,
+      "method": "GET",
+      "path": "/snapshots/search",
+      "function": "search_snapshots",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snapshots.py",
+      "line": 226,
+      "method": "GET",
+      "path": "/snapshot/latest/{camera_identifier}/info",
+      "function": "get_latest_snapshot_info",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(user_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snapshots.py",
+      "line": 291,
+      "method": "GET",
+      "path": "/snapshot/file/{file_path:path}",
+      "function": "get_snapshot_file_raw",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(user_access_required_optional)"
+      ]
+    },
+    {
+      "file": "app/routes/snapshots.py",
+      "line": 359,
+      "method": "GET",
+      "path": "/snapshot/token/{file_path:path}",
+      "function": "get_signed_token",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(user_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/snapshots.py",
+      "line": 371,
+      "method": "POST",
+      "path": "/snapshot/token/batch",
+      "function": "generate_tokens_batch",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(user_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/stats.py",
+      "line": 39,
+      "method": "GET",
+      "path": "/analytics",
+      "function": "get_analytics",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/stats.py",
+      "line": 68,
+      "method": "GET",
+      "path": "/stats/snapshot-details",
+      "function": "get_snapshot_details",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/stats.py",
+      "line": 124,
+      "method": "GET",
+      "path": "/stats",
+      "function": "get_camera_stats_redirect",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/stats.py",
+      "line": 231,
+      "method": "GET",
+      "path": "/stats/data",
+      "function": "get_camera_stats_data",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/stats.py",
+      "line": 322,
+      "method": "GET",
+      "path": "/stats/operations",
+      "function": "get_camera_operations_data",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/stats.py",
+      "line": 461,
+      "method": "GET",
+      "path": "/stats/no-data-cameras",
+      "function": "get_no_data_cameras",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/stats.py",
+      "line": 534,
+      "method": "GET",
+      "path": "/stats/heatmap",
+      "function": "get_snapshot_heatmap",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/stats.py",
+      "line": 592,
+      "method": "GET",
+      "path": "/storage/status",
+      "function": "get_storage_status",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/stats.py",
+      "line": 651,
+      "method": "GET",
+      "path": "/storage/trend",
+      "function": "get_storage_trend",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/stats.py",
+      "line": 684,
+      "method": "GET",
+      "path": "/storage/alerts",
+      "function": "get_storage_alerts",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/stats.py",
+      "line": 722,
+      "method": "POST",
+      "path": "/storage/check-now",
+      "function": "trigger_storage_check",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/toast_demo.py",
+      "line": 22,
+      "method": "GET",
+      "path": "/",
+      "function": "toast_demo_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/toast_demo.py",
+      "line": 32,
+      "method": "POST",
+      "path": "/test-success",
+      "function": "test_success_notification",
+      "declared_dependencies": [
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/toast_demo.py",
+      "line": 43,
+      "method": "POST",
+      "path": "/test-error",
+      "function": "test_error_notification",
+      "declared_dependencies": [
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/toast_demo.py",
+      "line": 54,
+      "method": "POST",
+      "path": "/test-warning",
+      "function": "test_warning_notification",
+      "declared_dependencies": [
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/toast_demo.py",
+      "line": 65,
+      "method": "POST",
+      "path": "/test-info",
+      "function": "test_info_notification",
+      "declared_dependencies": [
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/toast_demo.py",
+      "line": 76,
+      "method": "POST",
+      "path": "/test-with-actions",
+      "function": "test_notification_with_actions",
+      "declared_dependencies": [
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/toast_demo.py",
+      "line": 91,
+      "method": "POST",
+      "path": "/test-camera-offline",
+      "function": "test_camera_offline",
+      "declared_dependencies": [
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/toast_demo.py",
+      "line": 101,
+      "method": "POST",
+      "path": "/test-camera-online",
+      "function": "test_camera_online",
+      "declared_dependencies": [
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/toast_demo.py",
+      "line": 111,
+      "method": "POST",
+      "path": "/test-persistent",
+      "function": "test_persistent_notification",
+      "declared_dependencies": [
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/toast_demo.py",
+      "line": 123,
+      "method": "POST",
+      "path": "/test-position/{position}",
+      "function": "test_position_notification",
+      "declared_dependencies": [
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/user_management.py",
+      "line": 121,
+      "method": "GET",
+      "path": "/api/users",
+      "function": "api_list_users",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_management.py",
+      "line": 181,
+      "method": "POST",
+      "path": "/api/users",
+      "function": "api_create_user",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_management.py",
+      "line": 236,
+      "method": "PUT",
+      "path": "/api/users/{user_id}",
+      "function": "api_update_user",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_management.py",
+      "line": 305,
+      "method": "DELETE",
+      "path": "/api/users/{user_id}",
+      "function": "api_delete_user",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_management.py",
+      "line": 350,
+      "method": "POST",
+      "path": "/api/users/{user_id}/reset-mfa",
+      "function": "api_reset_mfa",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_management.py",
+      "line": 395,
+      "method": "GET",
+      "path": "/admin/users",
+      "function": "manage_users",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_management.py",
+      "line": 395,
+      "method": "GET",
+      "path": "/users",
+      "function": "manage_users",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_management.py",
+      "line": 414,
+      "method": "POST",
+      "path": "/users/create",
+      "function": "create_user",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_management.py",
+      "line": 462,
+      "method": "POST",
+      "path": "/users/delete/bulk",
+      "function": "delete_bulk_users",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_management.py",
+      "line": 506,
+      "method": "POST",
+      "path": "/users/delete/{user_id}",
+      "function": "delete_user",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_management.py",
+      "line": 541,
+      "method": "POST",
+      "path": "/users/update/{user_id}",
+      "function": "update_user",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_management.py",
+      "line": 621,
+      "method": "POST",
+      "path": "/api/users/generate-token",
+      "function": "api_generate_token",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_management.py",
+      "line": 700,
+      "method": "POST",
+      "path": "/users/reset-mfa/{user_id}",
+      "function": "reset_user_mfa",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_management.py",
+      "line": 744,
+      "method": "POST",
+      "path": "/users/{user_id}/revoke-token",
+      "function": "revoke_token",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_profile.py",
+      "line": 27,
+      "method": "GET",
+      "path": "/profile",
+      "function": "profile_page",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(user_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_profile.py",
+      "line": 217,
+      "method": "POST",
+      "path": "/profile/change-password",
+      "function": "change_password",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(user_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_profile.py",
+      "line": 294,
+      "method": "POST",
+      "path": "/api/api-keys/generate",
+      "function": "generate_api_key",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(user_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_profile.py",
+      "line": 361,
+      "method": "POST",
+      "path": "/api/api-keys/{token_id}/revoke",
+      "function": "revoke_api_key",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(user_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/user_profile.py",
+      "line": 430,
+      "method": "GET",
+      "path": "/api/api-keys",
+      "function": "list_api_keys",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(user_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/videos.py",
+      "line": 108,
+      "method": "GET",
+      "path": "/videos",
+      "function": "show_videos",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/videos.py",
+      "line": 141,
+      "method": "GET",
+      "path": "/video-gallery-data",
+      "function": "get_video_gallery_data",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/videos.py",
+      "line": 165,
+      "method": "DELETE",
+      "path": "/videos/{video_id}",
+      "function": "delete_video",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/videos.py",
+      "line": 238,
+      "method": "POST",
+      "path": "/videos/{video_id}/restore",
+      "function": "restore_video",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/videos.py",
+      "line": 274,
+      "method": "POST",
+      "path": "/admin/videos/purge",
+      "function": "purge_deleted_videos",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/videos.py",
+      "line": 459,
+      "method": "POST",
+      "path": "/api/videos/record",
+      "function": "record_video_by_camera",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/videos.py",
+      "line": 474,
+      "method": "POST",
+      "path": "/api/videos/record-and-wait",
+      "function": "record_video_and_wait",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/videos.py",
+      "line": 497,
+      "method": "POST",
+      "path": "/videos/record/{camera_id}",
+      "function": "start_recording_video",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/videos.py",
+      "line": 523,
+      "method": "GET",
+      "path": "/admin/videos/deleted",
+      "function": "get_deleted_videos",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/videos.py",
+      "line": 580,
+      "method": "DELETE",
+      "path": "/admin/videos/{video_id}/purge",
+      "function": "purge_video",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/videos.py",
+      "line": 652,
+      "method": "GET",
+      "path": "/api/videos/file/{file_path:path}",
+      "function": "serve_video_file",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/videos.py",
+      "line": 713,
+      "method": "GET",
+      "path": "/api/videos/secure/{video_id}",
+      "function": "serve_video_by_id",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/videos.py",
+      "line": 816,
+      "method": "POST",
+      "path": "/api/videos/gallery-view",
+      "function": "log_video_gallery_view",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(operator_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/videos.py",
+      "line": 865,
+      "method": "POST",
+      "path": "/videos/{video_id}/retention-hold",
+      "function": "toggle_video_retention_hold",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/wa_webhook.py",
+      "line": 158,
+      "method": "GET",
+      "path": "/api/admin/wa-bot/commands",
+      "function": "get_wa_bot_commands",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/wa_webhook.py",
+      "line": 175,
+      "method": "PUT",
+      "path": "/api/admin/wa-bot/commands",
+      "function": "put_wa_bot_commands",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/wa_webhook.py",
+      "line": 201,
+      "method": "GET",
+      "path": "/api/admin/wa-bot/messages",
+      "function": "get_wa_bot_messages",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/wa_webhook.py",
+      "line": 219,
+      "method": "POST",
+      "path": "/api/admin/wa-bot/preview",
+      "function": "preview_wa_bot_command",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/wa_webhook.py",
+      "line": 283,
+      "method": "POST",
+      "path": "/api/admin/wa-bot/test-flow",
+      "function": "test_wa_bot_flow",
+      "declared_dependencies": [
+        "Depends(admin_access_required)",
+        "Depends(get_db)"
+      ]
+    },
+    {
+      "file": "app/routes/wa_webhook.py",
+      "line": 330,
+      "method": "POST",
+      "path": "/api/admin/wa-bot/test-action",
+      "function": "test_wa_bot_action",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/wa_webhook.py",
+      "line": 1418,
+      "method": "POST",
+      "path": "/webhook/gowa",
+      "function": "gowa_webhook",
+      "declared_dependencies": [
+        "Depends(get_db)"
+      ]
+    },
+    {
+      "file": "app/routes/wa_webhook.py",
+      "line": 1620,
+      "method": "POST",
+      "path": "/api/wa/status",
+      "function": "get_wa_status",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/wa_webhook.py",
+      "line": 1646,
+      "method": "GET",
+      "path": "/api/wa/groups",
+      "function": "get_wa_groups",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/wa_webhook.py",
+      "line": 1672,
+      "method": "POST",
+      "path": "/api/wa/send-test",
+      "function": "send_test_wa",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)"
+      ]
+    },
+    {
+      "file": "app/routes/whitelist.py",
+      "line": 29,
+      "method": "GET",
+      "path": "/api/whitelist",
+      "function": "get_whitelist",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/whitelist.py",
+      "line": 93,
+      "method": "GET",
+      "path": "/api/whitelist/group/{phone_number}",
+      "function": "get_whitelist_group",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/whitelist.py",
+      "line": 108,
+      "method": "POST",
+      "path": "/api/whitelist",
+      "function": "add_whitelist",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/whitelist.py",
+      "line": 155,
+      "method": "DELETE",
+      "path": "/api/whitelist/{phone_number}",
+      "function": "delete_whitelist",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/whitelist.py",
+      "line": 187,
+      "method": "PUT",
+      "path": "/api/whitelist/{phone_number}",
+      "function": "edit_whitelist",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/whitelist.py",
+      "line": 230,
+      "method": "GET",
+      "path": "/api/whitelist/export",
+      "function": "export_whitelist_csv",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/whitelist.py",
+      "line": 267,
+      "method": "POST",
+      "path": "/api/whitelist/import",
+      "function": "import_whitelist_csv",
+      "declared_dependencies": [
+        "Depends(get_db)",
+        "Depends(admin_access_required)",
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/ws/routes.py",
+      "line": 79,
+      "method": "WEBSOCKET",
+      "path": "/ws",
+      "function": "websocket_endpoint",
+      "declared_dependencies": []
+    }
+  ],
+  "release_version": "2.6.0",
+  "hash_format": "SHA-256 of file bytes with CRLF normalized to LF"
+}

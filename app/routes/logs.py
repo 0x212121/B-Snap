@@ -6,8 +6,12 @@ from app.utils.template_helper import templates
 from pathlib import Path
 import os
 import re
-from datetime import datetime
-from typing import List, Optional
+from datetime import UTC, datetime
+from typing import Annotated, List, Optional
+from sqlalchemy.orm import Session
+
+from app.db.database import get_db
+from app.utils.timezone_helper import get_current_timezone
 
 router = APIRouter(tags=["Logs"])
 
@@ -33,29 +37,35 @@ class LogEntry:
         self.pid = None
         self.message = line.strip()
         self._parse()
-    
+
     def _parse(self):
         """Parse log line format: [2024-01-01 10:00:00,123] [LEVEL] [logger] [pid=X] message"""
         # Timestamp pattern
-        ts_match = re.match(r'\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:,\d+)?)\]', self.raw)
+        ts_match = re.match(r"\[(\d{4}-\d{2}-\d{2}[T ][^\]]+)\]", self.raw)
         if ts_match:
-            self.timestamp = ts_match.group(1)
-        
+            try:
+                parsed = datetime.fromisoformat(ts_match.group(1).replace(",", "."))
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=UTC)
+                self.timestamp = parsed.astimezone(UTC).isoformat()
+            except ValueError:
+                pass
+
         # Level pattern
         level_match = re.search(r'\[(ERROR|WARNING|WARN|INFO|DEBUG)\]', self.raw)
         if level_match:
             self.level = level_match.group(1).upper()
-        
+
         # Logger name pattern (after level)
         logger_match = re.search(r'\[(ERROR|WARNING|WARN|INFO|DEBUG)\]\s*\[([^\]]+)\]', self.raw)
         if logger_match:
             self.logger = logger_match.group(2).lower()
-        
+
         # PID pattern
         pid_match = re.search(r'\[pid=(\d+)\]', self.raw)
         if pid_match:
             self.pid = int(pid_match.group(1))
-        
+
         # Extract message (everything after the metadata)
         msg_match = re.search(r'\[pid=\d+\]\s*(.+)$', self.raw)
         if msg_match:
@@ -65,7 +75,7 @@ class LogEntry:
             msg_match = re.search(r'\[\d{4}-[^\]]+\]\s*(.+)$', self.raw)
             if msg_match:
                 self.message = msg_match.group(1)
-    
+
     def to_dict(self):
         return {
             "line_number": self.line_number,
@@ -83,13 +93,18 @@ class LogEntry:
 @router.get("/logs", response_class=HTMLResponse)
 async def view_logs(
     request: Request,
+    db: Annotated[Session, Depends(get_db)],
     log_type: str = "main",
-    current_operator: User = Depends(operator_access_required)
+    current_operator: User = Depends(operator_access_required),
 ):
-    return templates.TemplateResponse("logs.html", {
-        "request": request,
-        "log_type": log_type,
-    })
+    return templates.TemplateResponse(
+        "logs.html",
+        {
+            "request": request,
+            "log_type": log_type,
+            "server_timezone": get_current_timezone(db),
+        },
+    )
 
 
 # ─── 2. Return list of log files under that log_type ────────────────
@@ -109,19 +124,21 @@ async def list_log_files(
     files = sorted([
         f.name for f in dir_path.glob(f"{log_type}.log*") if f.is_file()
     ])
-    
+
     # Add metadata for each file
     file_info = []
     for filename in files:
         fpath = dir_path / filename
         stat = fpath.stat()
-        file_info.append({
-            "name": filename,
-            "size": stat.st_size,
-            "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-            "size_human": _format_bytes(stat.st_size)
-        })
-    
+        file_info.append(
+            {
+                "name": filename,
+                "size": stat.st_size,
+                "modified": datetime.fromtimestamp(stat.st_mtime, UTC).isoformat(),
+                "size_human": _format_bytes(stat.st_size),
+            }
+        )
+
     return JSONResponse(content={"files": file_info})
 
 

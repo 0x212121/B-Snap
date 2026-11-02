@@ -54,6 +54,8 @@ def resolver_client() -> Generator[TestClient, None, None]:
                 Camera(hostname="gate-null", ip=None, groups=[allowed]),
                 Camera(hostname="gate-empty", ip="", groups=[allowed]),
                 Camera(hostname="gate-denied", ip=None, groups=[denied]),
+                # A stale primary-group column must not authorize a camera.
+                Camera(hostname="gate-legacy", ip="192.168.1.99", group_id=allowed.id, groups=[denied]),
             ]
         )
         session.commit()

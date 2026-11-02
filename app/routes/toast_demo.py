@@ -13,7 +13,9 @@ from app.utils.notification_service import NotificationService
 from app.routes.auth import admin_access_required
 from app.models.user import User
 
-router = APIRouter(prefix="/demo/toast", tags=["Demo"])
+router = APIRouter(
+    prefix="/demo/toast", tags=["Demo"], dependencies=[Depends(admin_access_required)]
+)
 
 
 @router.get("/")

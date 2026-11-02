@@ -321,7 +321,7 @@ def take_snapshot(camera: Camera, db: Session) -> Dict[str, Any]:
 
 class SnapshotService:
     """Service for handling snapshot operations with notifications."""
-    
+
     @staticmethod
     async def capture_snapshot(
         camera_id: str,
@@ -342,12 +342,12 @@ class SnapshotService:
         if not camera:
             # Note: Error notification is handled by frontend
             return None
-        
+
         # Check if camera is active (status should be Active, Restricted, or Maintenance)
         if camera.status not in ["Active", "Restricted", "Maintenance"]:
             # Note: Warning notification is handled by frontend
             return None
-        
+
         try:
             # The capture path performs blocking OpenCV, RTSP/ONVIF, HTTP and
             # image operations. Pass only loaded scalar settings to the thread.
@@ -361,38 +361,38 @@ class SnapshotService:
                 port=camera.port,
             )
             result = await run_camera_blocking(_capture_camera_sync, camera_config)
-            
+
             if result["status"] != "success":
                 # Note: Error notification is handled by frontend
                 return None
-            
+
             # Create snapshot record
             from app.utils.snapshot_utils import record_snapshot_metadata
-            
+
             snapshot = record_snapshot_metadata(
                 db=db,
                 camera_id=camera_id,
                 file_path=result["file_path"],
                 resolution=result.get("resolution", "N/A"),
             )
-            
+
             if not snapshot:
                 # Note: Error notification is handled by frontend
                 return None
-            
+
             # Update camera daily stats
             check_stats(camera)
-            
+
             # Note: Success notification is handled by frontend
-            
+
             logger.info(f"Snapshot captured from {camera.hostname} (ID: {snapshot.id})")
             return snapshot
-            
+
         except Exception as e:
             logger.error(f"Failed to capture snapshot from {camera.hostname}: {e}")
             # Note: Error notification is handled by frontend
             return None
-    
+
     @staticmethod
     async def bulk_capture(
         camera_ids: list[int],
@@ -414,13 +414,13 @@ class SnapshotService:
             "failed": [],
             "total": len(camera_ids),
         }
-        
+
         await NotificationService.info(
             message=f"Starting bulk snapshot for {len(camera_ids)} cameras...",
             title="Bulk Snapshot Started",
             duration=3000,
         )
-        
+
         for camera_id in camera_ids:
             snapshot = await SnapshotService.capture_snapshot(
                 camera_id=camera_id,
@@ -431,11 +431,11 @@ class SnapshotService:
                 results["success"].append(camera_id)
             else:
                 results["failed"].append(camera_id)
-        
+
         # Note: Notifications are handled by caller (frontend or scheduler)
-        
+
         return results
-    
+
     @staticmethod
     async def delete_snapshot(
         snapshot_id: str,
@@ -455,12 +455,14 @@ class SnapshotService:
             True if deleted successfully
         """
         from datetime import datetime, timezone
-        
+
         snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
         if not snapshot:
             # Note: Error notification is handled by frontend
             return False
-        
+        if hard_delete and (snapshot.retention_hold or not snapshot.is_deleted):
+            return False
+
         try:
             if hard_delete:
                 # P0-002: Hard delete - permanently remove file and record (admin only)
@@ -468,7 +470,7 @@ class SnapshotService:
                     full_path = os.path.join("static", "snapshots", snapshot.file_path)
                     if os.path.exists(full_path):
                         os.remove(full_path)
-                
+
                 db.delete(snapshot)
                 db.commit()
                 logger.info(f"Snapshot {snapshot_id} HARD deleted by {user_name}")
@@ -477,15 +479,15 @@ class SnapshotService:
                 snapshot.soft_delete()
                 db.commit()
                 logger.info(f"Snapshot {snapshot_id} SOFT deleted by {user_name}")
-            
+
             # Note: Success notification is handled by frontend
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to delete snapshot {snapshot_id}: {e}")
             # Note: Error notification is handled by frontend
             return False
-    
+
     @staticmethod
     async def restore_snapshot(
         snapshot_id: str,
@@ -505,11 +507,11 @@ class SnapshotService:
         snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
         if not snapshot:
             return False
-        
+
         if not snapshot.is_deleted:
             logger.warning(f"Snapshot {snapshot_id} is not deleted, nothing to restore")
             return False
-        
+
         try:
             snapshot.restore()
             db.commit()
@@ -518,41 +520,47 @@ class SnapshotService:
         except Exception as e:
             logger.error(f"Failed to restore snapshot {snapshot_id}: {e}")
             return False
-    
+
     @staticmethod
     def purge_deleted_snapshots(
         db: Session,
         days_old: int = 30,
         user_name: str = "system",
         skip_retention_hold: bool = True,
+        group_id: int | None = None,
     ) -> int:
         """Permanently delete snapshots that have been soft-deleted for specified days.
-        
+
         Args:
             db: Database session
             days_old: Delete snapshots soft-deleted more than this many days ago
             user_name: Name of user performing the purge
-            skip_retention_hold: If True, skip snapshots with retention_hold=True
-            
+            skip_retention_hold: Legacy compatibility flag; retention holds are always preserved.
+            group_id: Restrict purge to current camera membership when set.
+
         Returns:
             Number of snapshots purged
         """
         from datetime import datetime, timezone, timedelta
-        
+
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_old)
-        
+
         # Build query
         query = db.query(Snapshot).filter(
             Snapshot.deleted_at.isnot(None),
             Snapshot.deleted_at < cutoff_date
         )
-        
-        # P2-001: Skip retention hold items if requested
-        if skip_retention_hold:
-            query = query.filter(Snapshot.retention_hold == False)
-        
+
+        from app.utils.media_access import restrict_media_query  # noqa: PLC0415
+
+        # A legacy flag cannot override an evidence hold.
+        del skip_retention_hold
+        query = restrict_media_query(
+            query.filter(Snapshot.retention_hold.is_(False)), Snapshot, group_id
+        )
+
         snapshots_to_purge = query.all()
-        
+
         purged_count = 0
         for snapshot in snapshots_to_purge:
             try:
@@ -561,16 +569,16 @@ class SnapshotService:
                     full_path = os.path.join("static", "snapshots", snapshot.file_path)
                     if os.path.exists(full_path):
                         os.remove(full_path)
-                
+
                 db.delete(snapshot)
                 purged_count += 1
             except Exception as e:
                 logger.error(f"Failed to purge snapshot {snapshot.id}: {e}")
-        
+
         if purged_count > 0:
             db.commit()
             logger.info(f"Purged {purged_count} soft-deleted snapshots older than {days_old} days by {user_name}")
-        
+
         return purged_count
 
 

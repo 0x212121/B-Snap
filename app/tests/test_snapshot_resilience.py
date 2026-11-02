@@ -61,20 +61,28 @@ class ProcessTests(unittest.TestCase):
             env = dict(os.environ, LOG_DIR=directory, SECRET_KEY="test-only", PYTHONDONTWRITEBYTECODE="1",
                        DATABASE_URL="postgresql+psycopg2://test:test@127.0.0.1:1/test?connect_timeout=1")
             result = subprocess.run(
-                [sys.executable, "-c", "import app.jobs.snapshot_worker; "
-                 "import app.jobs.scheduler as s; assert not s.scheduler.running; "
-                 "from unittest.mock import MagicMock; "
-                 "s.engine=MagicMock(); s.scheduler=MagicMock(); "
-                 "s.scheduler.get_jobs.return_value=[]; "
-                 "s.get_config=lambda key,default: default; "
-                 "s.get_scheduler_timezone=lambda: __import__('datetime').timezone.utc; "
-                 "import app.core.job_schedules as js; js.get_config=s.get_config; "
-                 "s.start_scheduler(); "
-                 "calls=[c for c in s.scheduler.add_job.call_args_list "
-                 "if c.kwargs.get('id')=='scheduled_snapshot']; "
-                 "assert len(calls)==1 and calls[0].kwargs['max_instances']==1"],
-                env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
-                text=True, timeout=30,
+                [
+                    sys.executable,
+                    "-c",
+                    "import app.jobs.snapshot_worker; "
+                    "import app.jobs.scheduler as s; assert not s.scheduler.running; "
+                    "from unittest.mock import MagicMock; "
+                    "s.engine=MagicMock(); s.scheduler=MagicMock(); "
+                    "s.scheduler.get_jobs.return_value=[]; "
+                    "s.get_config=lambda key,default: default; "
+                    "s.get_scheduler_timezone=lambda: __import__('datetime').timezone.utc; "
+                    "s.sync_command_jobs=lambda scheduler: None; "
+                    "import app.core.job_schedules as js; js.get_config=s.get_config; "
+                    "s.start_scheduler(); "
+                    "calls=[c for c in s.scheduler.add_job.call_args_list "
+                    "if c.kwargs.get('id')=='scheduled_snapshot']; "
+                    "assert len(calls)==1 and calls[0].kwargs['max_instances']==1",
+                ],
+                env=env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=30,
                 **({"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}),
             )
             self.assertEqual(result.returncode, 0, result.stderr[-2000:])

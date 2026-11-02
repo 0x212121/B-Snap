@@ -115,9 +115,10 @@ Untuk migration, jalankan `alembic upgrade head` pada database pengembangan atau
     ikut berubah saat bahasa diganti; gunakan style `'date'` atau
     `data-date-style="date"` untuk date-only.
 - Helper tidak otomatis mengambil timezone config untuk ISO mentah.
-  `BSnapDates.html()` saat ini menerima value dan style, bukan opsi timezone.
-  Gunakan timestamp backend yang sudah dikonversi, atau perluas helper bersama
-  sebelum memakainya untuk ISO mentah yang perlu timezone config.
+  `BSnapDates.html(value, style, options)` menerima `options.timeZone` dan
+  menyimpannya pada `data-date-timezone` agar pergantian bahasa mempertahankan
+  clock. Untuk ISO mentah, berikan timezone config secara eksplisit; timestamp
+  backend yang sudah dikonversi tetap boleh dipakai tanpa opsi tambahan.
 - Simpan dan bandingkan timestamp dalam UTC. API sebaiknya mengirim ISO 8601
   dengan `Z` atau offset eksplisit. Perlakukan timestamp database naive sebagai
   UTC secara eksplisit sebelum konversi.

@@ -84,4 +84,33 @@ class RecordNotificationTests(unittest.TestCase):
         self.ws.send_text = AsyncMock()
         asyncio.run(record_notifications.deliver_notification(self.ws, {"type": "toast"}, "public"))
         self.ws.send_text.assert_awaited_once_with("public")
-        self.db_factory.assert_not_called()
+        self.db_factory.assert_called_once()
+
+    def test_general_notifications_reject_anonymous_revoked_and_wrong_recipient(self) -> None:
+        self.ws.send_text = AsyncMock()
+        for payload in ({"type": "toast", "data": {"user_id": 8}},):
+            asyncio.run(record_notifications.deliver_notification(self.ws, payload, "private"))
+        self.user.web_tokens = []
+        asyncio.run(
+            record_notifications.deliver_notification(self.ws, {"type": "toast"}, "revoked")
+        )
+        self.ws.scope["session"] = {}
+        asyncio.run(
+            record_notifications.deliver_notification(self.ws, {"type": "toast"}, "anonymous")
+        )
+        self.ws.send_text.assert_not_awaited()
+
+    def test_general_camera_notifications_enforce_group_access(self) -> None:
+        from fastapi import HTTPException
+
+        self.user.group_id = 1
+        payload = {"type": "toast", "data": {"camera_id": "restricted-camera"}}
+        self.ws.send_text = AsyncMock()
+        with patch.object(
+            record_notifications,
+            "require_camera_group_access",
+            side_effect=HTTPException(status_code=403),
+        ) as access:
+            asyncio.run(record_notifications.deliver_notification(self.ws, payload, "private"))
+        access.assert_called_once_with(self.db, "restricted-camera", 1)
+        self.ws.send_text.assert_not_awaited()

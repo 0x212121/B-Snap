@@ -399,7 +399,7 @@ async def test_wa_bot_action(
 
 class WABotHandler:
     """Handler for WhatsApp bot commands."""
-    
+
     def __init__(self, db: Session):
         self.db = db
         self.media_path: Optional[str] = None
@@ -523,7 +523,7 @@ class WABotHandler:
     async def _schedule_action_processing(self, command: dict, argument: str, sender: str) -> None:
         items = self._render_action_stage_messages(command.get("processing_messages") or [], argument, sender)
         await self._schedule_processing_items(items, command.get("processing_delay_seconds", 0))
-    
+
     def parse_command(self, message: str) -> tuple[str, list]:
         """
         Parse command from message.
@@ -532,16 +532,16 @@ class WABotHandler:
         # Normalize message
         text = message.strip().lower()
         parts = text.split()
-        
+
         if not parts:
             return "", []
-        
+
         # First word is command (remove / or ! prefix)
         cmd = re.sub(r'^[/!]', '', parts[0])
         args = parts[1:] if len(parts) > 1 else []
-        
+
         return cmd, args
-    
+
     async def handle(self, sender: str, message: str, is_group: bool = False) -> str:
         self._processing_suppressed = False
         try:
@@ -1306,7 +1306,7 @@ class WABotHandler:
         entry = _whitelisted_sender(self.db, self._sender)
         if not entry:
             raise HTTPException(status_code=403, detail="Sender is not on the WhatsApp whitelist.")
-        if entry.group_id is not None and camera.group_id != entry.group_id and not any(
+        if entry.group_id is not None and not any(
             group.id == entry.group_id for group in camera.groups
         ):
             raise HTTPException(status_code=403, detail="You do not have permission to access this camera or its group.")
@@ -1315,7 +1315,7 @@ class WABotHandler:
         entry = _whitelisted_sender(self.db, self._sender)
         camera_query = self.db.query(Camera).filter(Camera.status.in_(["Active", "Restricted", "Maintenance"]))
         if entry and entry.group_id:
-            camera_query = camera_query.filter((Camera.group_id == entry.group_id) | Camera.groups.any(id=entry.group_id))
+            camera_query = camera_query.filter(Camera.groups.any(id=entry.group_id))
         selector = (Camera.hostname.ilike(f"%{query}%")) | (Camera.ip == query)
         camera = camera_query.filter(selector).order_by(Camera.hostname).first()
         if camera is None:
@@ -1334,9 +1334,7 @@ class WABotHandler:
             (Camera.hostname.ilike(escaped_hostname, escape="\\")) | (Camera.ip == lookup),
         )
         if entry and entry.group_id:
-            camera_query = camera_query.filter(
-                (Camera.group_id == entry.group_id) | Camera.groups.any(id=entry.group_id)
-            )
+            camera_query = camera_query.filter(Camera.groups.any(id=entry.group_id))
         camera = camera_query.order_by(Camera.hostname).first()
         if camera is None:
             existing = self.db.query(Camera).filter(
@@ -1372,9 +1370,7 @@ class WABotHandler:
             )
         )
         if entry and entry.group_id:
-            query = query.filter(
-                (Camera.group_id == entry.group_id) | Camera.groups.any(id=entry.group_id)
-            )
+            query = query.filter(Camera.groups.any(id=entry.group_id))
         return query.order_by(Camera.hostname).all()
 
     def _build_snapshot_caption(self, camera, snapshot, argument: str, sender: str, template: str) -> str:

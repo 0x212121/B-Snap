@@ -27,16 +27,18 @@
     for (const element of elements) {
       const options = element.dataset.dateStyle === 'date'
         ? { hour: undefined, minute: undefined, second: undefined } : {};
+      if (element.dataset.dateTimezone) options.timeZone = element.dataset.dateTimezone;
       const text = format(element.dataset.localizedDate, options);
       if (element.textContent !== text) element.textContent = text;
     }
   }
-  function html(value, style = 'datetime') {
+  function html(value, style = 'datetime', options = {}) {
     const span = document.createElement('span');
     span.dataset.localizedDate = value || '';
     span.dataset.dateStyle = style;
-    span.textContent = format(value, style === 'date'
-      ? { hour: undefined, minute: undefined, second: undefined } : {});
+    if (options.timeZone) span.dataset.dateTimezone = options.timeZone;
+    span.textContent = format(value, { ...options, ...(style === 'date'
+      ? { hour: undefined, minute: undefined, second: undefined } : {}) });
     return span.outerHTML;
   }
   window.BSnapDates = { locale, format, html, update };

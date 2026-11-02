@@ -17,7 +17,7 @@ from app.utils.audit_logger import log_audit
 from app.core.logging_config import setup_logging
 
 
-router = APIRouter(tags=["Whitelist"])
+router = APIRouter(tags=["Whitelist"], dependencies=[Depends(admin_access_required)])
 setup_logging()
 logger = logging.getLogger("management")
 

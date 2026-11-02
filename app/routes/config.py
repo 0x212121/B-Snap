@@ -384,7 +384,7 @@ async def config_save(  # noqa: C901, PLR0911, PLR0912
     return JSONResponse(status_code=200, content={"message": "Configuration saved successfully."})
 
 
-@router.post("/reload-config")
+@router.post("/reload-config", dependencies=[Depends(admin_access_required)])
 async def reload_config() -> JSONResponse:
     """Request a scheduler configuration reload through the shared flag file."""
     try:

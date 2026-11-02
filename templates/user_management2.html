@@ -163,9 +163,6 @@ document.addEventListener("DOMContentLoaded", () => {
     renderPagination(1);
 });
 </script>
-{% endblock %}
-
-{% block scripts %}
 <script>
     // --- GLOBAL STATE & UTILITIES ---
     let activeUserId = null;
@@ -487,7 +484,7 @@ document.addEventListener("DOMContentLoaded", () => {
         formTitle.innerText = 'Add New User';
         userForm.action = '/users/create';
         userForm.reset();
-        // submitBtn.innerHTML = '{{ icon_plus("w-5 h-5 text-gray-900 dark:text-gray-100 inline")  Add User';
+        // Restore the icon and label after submission.
         submitBtn.innerHTML = `{{ icon_plus("w-5 h-5 text-gray-900 dark:text-gray-100 inline") | safe }} Add User`;
         submitBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
         submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
