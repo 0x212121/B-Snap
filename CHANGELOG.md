@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.6.1] - 2026-11-02
+
+### Fixed
+
+- Closed the remaining High audit findings CA-19, CA-20, CA-27, and CA-28: require same-origin evidence for browser mutations, make logout a POST operation, and validate production session, HTTPS cookie, and explicit proxy-trust settings before startup.
+- Added atomic database-backed password/OTP attempt limits shared across web workers; enrollment and OTP login share a limit, with Retry-After on throttled requests.
+- Authenticate incoming GoWA webhooks with native HMAC-SHA256 signatures over bounded raw request bodies before parsing or processing commands; missing signing configuration fails closed while existing whitelist, roles, and message deduplication remain active.
+- Apply current camera/NVR group access to health status, uptime, history, SLA/report exports, and manual checks, including background-worker rechecks and separate per-group progress. Restrict global scheduled-report definitions to users with unrestricted group access.
+- Added migration `20261102_high_security`, PostgreSQL migration/concurrency regressions, and the [security rollout guide](docs/source/high_security_rollout.md). Deployments must migrate and configure matching B-Snap/GoWA signing secrets before enabling the updated webhook.
+
 ## [2.6.0] - 2026-11-02
 
 ### Added

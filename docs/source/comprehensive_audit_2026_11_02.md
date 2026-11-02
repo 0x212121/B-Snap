@@ -4,9 +4,13 @@ Audit mengikuti `COMPREHENSIVE_AUDIT.MD` dan `AGENTS.md`. Analisis, reproduksi,
 remediasi, dan verifikasi dilakukan pada working tree lokal; tidak ada deployment,
 migration ke database aplikasi, capture kamera, atau pengiriman notifikasi nyata.
 
+**Pembaruan 2.6.1:** seluruh temuan High yang tersisa (CA-19, CA-20, CA-27,
+CA-28) telah diperbaiki pada source dan diverifikasi secara terisolasi. Hasil
+rilis awal tetap dicatat sebagai riwayat; hasil terbaru ada di bagian 11.
+
 ## 1. Arsitektur dan cakupan
 
-- Versi paket/aplikasi **2.5.2**. Minimum Python **3.11**, default image Docker
+- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.1**. Minimum Python **3.11**, default image Docker
   **Python 3.14.7**; verifikasi lokal memakai Python **3.13** dan Node **22.16.0**.
 - FastAPI menyediakan halaman Jinja2 dan API; SQLAlchemy 2 dan Alembic memakai
   PostgreSQL. Model JSONB dan trigger audit membuat schema penuh tidak kompatibel
@@ -16,7 +20,7 @@ migration ke database aplikasi, capture kamera, atau pengiriman notifikasi nyata
   WhatsApp schedules, dan arsip audit dijalankan melalui worker/helper terkait.
 - Frontend memakai Tailwind 3, design-system CSS, JavaScript, shared date formatter,
   Toast, SweetAlert bertema, serta komponen peta lokal.
-- Jalur request: error/observability middleware → proxy headers → gzip → signed
+- Jalur request: error/observability middleware → proxy headers → gzip → CSRF → signed
   session → online tracking → auth/setup → router/dependency role → SQLAlchemy →
   JSON/template/file/stream. WebSocket memerlukan penanganan autentikasi tersendiri.
 - Kamera memakai association table `camera_camera_groups`; snapshot/video memakai
@@ -25,8 +29,8 @@ migration ke database aplikasi, capture kamera, atau pengiriman notifikasi nyata
 
 [Inventaris sumber dan endpoint](comprehensive_audit_2026_11_02_inventory.json)
 mencatat file, hash, syntax/compile check, serta dependency yang dideklarasikan.
-Inventaris mencakup **276 file Python, 54 template, 15 JavaScript, 5 harness CJS,
-dan 265 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
+Inventaris hasil 2.6.1 mencakup **287 file Python, 55 template, 15 JavaScript,
+5 harness CJS, dan 266 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
 belum tentu didaftarkan; tidak sama dengan jumlah URL unik yang aktif.
 
 Semua file pada inventaris menerima pemeriksaan statis. Penelusuran mendalam dan
@@ -45,7 +49,8 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 | 2 | CA-02–06, CA-13–14, CA-18 | High: MFA, permission, hold, proxy, notifikasi | Sedang; auth, bot, dan media saling bergantung | Diperbaiki + regresi |
 | 3 | CA-07–11, CA-17, CA-25 | Medium: kontrak error, sesi, waktu, UI | Kecil–sedang; backward compatibility dijaga | Diperbaiki |
 | 4 | CA-12, CA-15–16, CA-26 | Test/dependency/release consistency | Pembaruan kompatibel; tanpa deploy | Diperbaiki sebagian/seluruhnya sesuai rincian |
-| Berikutnya | CA-19–24, CA-27–28 dan sisa CA-15/17 | Webhook, health-group scope, CSRF, deployment, notification model, UI/debt | Memerlukan desain/validasi tambahan | Backlog eksplisit |
+| 5 | CA-19–20, CA-27–28 | High: CSRF, produksi, webhook, health group | Middleware, migration, dan kontrak integrasi | Diperbaiki pada 2.6.1; lihat bagian 11 |
+| Berikutnya | CA-21–24 dan sisa CA-12/15/17 | Notification model, UI/debt, test/dependency | Memerlukan desain/validasi tambahan | Backlog non-High |
 
 ## 3. Findings: Backend
 
@@ -191,7 +196,7 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 - **Regression Risk:** deployment yang hanya mengirim X-Real-IP harus menyediakan
   X-Forwarded-For/Proto dari proxy tepercaya.
 - **Verification:** peer trusted/untrusted dan header X-Real-IP diuji terhadap
-  konfigurasi stack; default wildcard masih dicatat terpisah pada CA-20.
+  konfigurasi stack; default wildcard selanjutnya dihapus pada perbaikan CA-20.
 
 ### CA-07 — Respons error kehilangan format/status/header
 
@@ -245,38 +250,49 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 
 ### CA-19 — Proteksi CSRF belum merata
 
-- **Layer / Severity / Status:** Middleware / High / potential risk, backlog.
-- **Location / Evidence:** guard Origin/non-simple request terdapat pada record
+- **Layer / Severity / Status:** Middleware / High / potential risk, diperbaiki pada source 2.6.1.
+- **Location / Evidence sebelum perbaikan:** guard Origin/non-simple request terdapat pada record
   mount actions, tetapi tidak ada mekanisme CSRF global untuk seluruh form; logout
   masih GET. Cookie SameSite lax merupakan mitigasi yang sudah ada.
 - **Issue / Root Cause:** perlindungan diterapkan per fitur, belum menjadi kontrak
   lintas aplikasi. Audit ini tidak mereproduksi serangan pada deployment nyata.
 - **Impact:** residual risk pada request berbasis cookie, khususnya topology
   same-site berbeda origin dan state-changing navigation.
-- **Recommended Fix:** inventaris form/GET mutating, desain CSRF token atau guard
-  Origin/Fetch Metadata yang konsisten, dengan pengecualian eksplisit untuk API
-  Bearer, webhook, dan signed media.
-- **Regression Risk:** guard global tanpa pengujian dapat memutus form, proxy, bot,
-  dan integrasi. Karena itu tidak dipasang secara menyeluruh pada change set ini.
-- **Verification:** browser cross-site/same-site, session expiry, proxy HTTPS,
-  form biasa, AJAX, dan Bearer integration pada staging.
+- **Implemented Fix:** `CSRFMiddleware` memeriksa Origin/Referer/Fetch Metadata
+  pada seluruh unsafe method sebelum autentikasi/DB. Bearer tanpa cookie browser
+  dikecualikan; POST webhook memakai HMAC tersendiri. GET logout hanya konfirmasi,
+  logout aktual dan seluruh tombol logout memakai POST. Signed media GET tetap
+  mengikuti pemeriksaan akses yang ada.
+- **Regression Risk:** klien cookie tanpa provenance ditolak 403; proxy yang
+  mengubah Host memerlukan `PUBLIC_ORIGIN` canonical. GET MFA tetap hanya menyiapkan
+  secret akun yang belum aktif dengan token tahap-login valid; tidak mengaktifkan MFA.
+- **Verification:** matriks ASGI origin invalid/duplicate, sibling-origin,
+  same-origin, proxy-host rewrite, Bearer dengan/tanpa cookie, GET/POST logout;
+  Chrome nyata menerima form/AJAX same-origin dan menolak form cross-site serta
+  same-site beda port. Penerimaan pada proxy deployment tetap perlu diverifikasi.
 
 ### CA-20 — Default development/proxy/secret perlu kebijakan deployment
 
-- **Layer / Severity / Status:** Middleware / High / potential risk, backlog.
-- **Location / Evidence:** `app/main.py` menyediakan development/default secret dan
+- **Layer / Severity / Status:** Middleware / High / potential risk, diperbaiki pada source 2.6.1.
+- **Location / Evidence sebelum perbaikan:** `app/main.py` menyediakan development/default secret dan
   proxy trust wildcard; pemakaian default hanya diperingatkan. Audit tidak membaca
   atau menyimpulkan nilai secret/policy production pengguna.
 - **Issue / Root Cause:** default pengembangan dapat dipakai deployment yang belum
   lengkap konfigurasinya; belum ada fail-fast policy produksi terpusat.
 - **Impact:** keamanan session, debug output, dan keandalan IP audit bergantung pada
   deployment; tidak membuktikan bahwa production saat ini salah konfigurasi.
-- **Recommended Fix:** fail-fast khusus production untuk secret wajib, explicit
-  trusted proxy, serta validasi HTTPS cookie. Evaluasi rate limiting login/OTP.
-- **Regression Risk:** mengubah default secara global bisa menghentikan environment
-  existing; membutuhkan matriks konfigurasi dan rollout tersendiri.
-- **Verification:** startup dengan missing/valid config, proxy topology, dan abuse
-  tests login/OTP; tidak mencatat secret pada hasil tes.
+- **Implemented Fix:** `app/core/security.py` menjadi sumber bersama session,
+  auth token, dan Remember Me. Production menolak secret pendek/default, Secure
+  cookie nonaktif, SameSite invalid, proxy wildcard `/0`/invalid, dan HTTPS proxy
+  tanpa IP/CIDR eksplisit. Default proxy trust development hanya loopback.
+  Counter password/OTP persisten memakai upsert atomik PostgreSQL dan mengembalikan
+  429 + Retry-After; kegagalan penyimpanan counter gagal tertutup dengan 503.
+- **Regression Risk:** konfigurasi production lama yang tidak aman akan gagal
+  startup; jalankan migration dan ikuti `high_security_rollout.md`. Nilai secret
+  environment deployment tidak diperiksa, ditulis ulang, atau dicatat oleh audit.
+- **Verification:** matriks konfigurasi valid/invalid, representasi tanpa secret,
+  route password/OTP/enrollment dan reset window; 20 percobaan concurrent melalui
+  session PostgreSQL terpisah menghasilkan tepat 10 diterima dan 10 ditolak.
 
 ## 5. Findings: Frontend
 
@@ -498,28 +514,32 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 
 ### CA-27 — Identitas sender webhook belum membuktikan sumber request
 
-- **Layer / Severity / Status:** Middleware / High / potential deployment risk;
-  authentication gap pada handler terkonfirmasi, exploit deployment belum diuji.
-- **Location / Evidence:** `/webhook/gowa` sengaja public; handler mengambil sender
+- **Layer / Severity / Status:** Middleware / High / authentication gap diperbaiki
+  pada source 2.6.1; exploit deployment tidak diuji.
+- **Location / Evidence sebelum perbaikan:** `/webhook/gowa` sengaja public; handler mengambil sender
   dari body, lalu memeriksa whitelist. Tidak ditemukan signature/shared-secret
   verification pada handler. Pembatasan ingress/proxy di luar aplikasi belum diverifikasi.
 - **Issue / Root Cause:** whitelist memvalidasi nilai sender yang diklaim payload,
   bukan asal HTTP request dari GoWA.
 - **Impact:** apabila endpoint dapat diakses pihak tidak tepercaya, payload yang
   mengaku berasal dari nomor whitelist dapat memicu aksi bot sesuai role nomor itu.
-- **Recommended Fix:** verifikasi kemampuan autentikasi GoWA/ingress, kemudian
-  terapkan signature/shared secret atau authenticated proxy allowlist yang sesuai;
-  whitelist tetap menjadi pemeriksaan authorization tambahan.
-- **Regression Risk:** menambahkan browser-session/admin dependency begitu saja
-  akan memutus webhook sah. Perubahan memerlukan konfigurasi kedua layanan dan
-  pengelolaan secret yang tidak dilakukan otomatis dalam audit ini.
-- **Verification:** request forged ditolak sebelum bot/DB/network side effects,
-  request GoWA sah diterima, replay dan rotasi credential diperiksa di staging.
+- **Implemented Fix:** verifikasi native GoWA `X-Hub-Signature-256` memakai
+  HMAC-SHA256/constant-time comparison terhadap raw body sebelum parsing/aksi.
+  `GOWA_WEBHOOK_SECRET` minimal 32 karakter wajib; konfigurasi kosong/pendek ->503,
+  signature invalid/missing/duplicate ->401, body >1 MiB ->413. Tidak ada fallback
+  unsigned. Whitelist, role, group, dan deduplikasi provider ID tetap berlaku.
+- **Regression Risk:** operator harus menyamakan secret B-Snap dengan
+  `WHATSAPP_WEBHOOK_SECRET`/device secret GoWA dan mengoordinasikan rotasi.
+  HMAC bukan nonce/timestamp; deduplikasi mengikuti retensi provider message ID.
+- **Verification:** raw bytes berubah, signature palsu/hilang/duplicate, body
+  oversized, JSON invalid, sender non-whitelist, dan provider ID duplikat diuji
+  tanpa transport nyata. Stack aplikasi menolak unsigned webhook sebelum query
+  autentikasi. Konfigurasi GoWA/TLS/rotasi nyata tetap pemeriksaan deployment.
 
 ### CA-28 — Health monitoring belum konsisten membatasi grup
 
-- **Layer / Severity / Status:** Backend / High / confirmed source issue, backlog.
-- **Location / Evidence:** `get_health_status_api` memanggil
+- **Layer / Severity / Status:** Backend / High / confirmed source issue, diperbaiki pada 2.6.1.
+- **Location / Evidence sebelum perbaikan:** `get_health_status_api` memanggil
   `_get_all_devices_health_data(db)` tanpa current group. Query UNION kamera/NVR
   helper tersebut tidak memiliki membership filter; route cukup memerlukan operator.
 - **Issue / Root Cause:** role monitoring dianggap sebagai cakupan seluruh device,
@@ -527,13 +547,19 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 - **Impact:** operator dengan group_id tertentu dapat memperoleh metadata/status
   device di luar grup melalui status API. Cakupan history/report/trigger sejenis
   perlu diperiksa dan diselaraskan dalam change set yang sama.
-- **Recommended Fix:** filter camera via association, NVR via group relation yang
-  berlaku, dan enforce group sebelum lookup/trigger/history/export/report; group
-  NULL mempertahankan cakupan global.
+- **Implemented Fix:** scope kamera memakai association, NVR memakai relasi grup
+  yang berlaku, pada status/uptime/history/count/dropdown/SLA/export/report dan
+  single/bulk trigger. Worker memeriksa ulang membership sebelum network work.
+  Progress per grup dipisahkan dari tracker global dan start dikunci per scope;
+  scheduled-report definitions global hanya dapat dikelola user group NULL.
+  Group NULL mempertahankan cakupan global. Restricted run tidak menjalankan
+  cleanup email-log global.
 - **Regression Risk:** perubahan memengaruhi count dashboard, SLA/report, pilihan
   filter, dan job monitoring. Hindari hanya menyaring label UI atau satu response.
-- **Verification:** PostgreSQL/compatible isolated query tests dengan dua grup,
-  admin/operator global dan restricted, serta transport ping/capture dimock.
+- **Verification:** subset SQLite terisolasi dengan dua grup, shared camera dan
+  primary-group stale, admin/operator restricted/global, semua query/report/trigger,
+  serta mock ping. PostgreSQL membuktikan 20 start concurrent menerima satu run
+  untuk scope yang sama, tanpa memakai tracker global ID 1.
 
 ## 7. Ringkasan implementasi
 
@@ -549,12 +575,14 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 | new security/frontend regressions, existing fixtures, legacy syntax | test isolation dan compile coverage | 12, 26 |
 | AGENTS.md, CHANGELOG.md, laporan/inventaris ini | kontrak helper dan traceability | lintas finding |
 
-Tidak ada dependency runtime langsung baru, perubahan credential, database schema,
-atau migration baru. File CSS hasil build ikut diperbarui.
+Rilis awal 2.6.0 tidak menambah dependency runtime, credential, schema, atau migration.
+Rilis lanjutan 2.6.1 menambah migration security; lihat bagian 11. File CSS hasil
+build ikut diperbarui.
 
 ## 8. Test dan verifikasi
 
-Hasil final dan batas cakupan dicatat di tabel berikut.
+Hasil rilis awal 2.6.0 dan batas cakupan dicatat di tabel berikut. Hasil 2.6.1
+menggantikan batas PostgreSQL yang sudah diverifikasi; lihat bagian 11.
 Log command rinci tersedia di `tmp/comprehensive-audit-*` pada workspace lokal.
 File tmp bukan bagian deployment maupun artefak yang berisi data pengguna.
 
@@ -594,15 +622,15 @@ Metode isolasi:
   CSS lokal, dan base scripts dinonaktifkan. Ini pemeriksaan Logs Viewer, bukan
   end-to-end seluruh aplikasi, login nyata, atau validasi semua kontrol base layout.
 
-Keterbatasan yang tetap material: belum ada PostgreSQL disposable/production-like
+Keterbatasan pada rilis awal: belum ada PostgreSQL disposable/production-like
 E2E, upgrade schema nyata, Docker build/pull, kamera/NVR/GoWA/SMTP nyata, full
 accessibility/contrast audit semua halaman, atau benchmark fan-out notifikasi.
 
 ## 9. Tindak lanjut
 
-1. Prioritaskan authenticated ingress webhook (CA-27), health group scope (CA-28),
-   CSRF (CA-19), deployment policy (CA-20), dan persistent notification (CA-22) pada
-   staging; semuanya memerlukan pemeriksaan security/kontrak lintas fitur.
+1. Terapkan migration/configuration 2.6.1 dan acceptance test pada staging untuk
+   CA-19/20/27/28 yang sudah diperbaiki di source. Persistent notification (CA-22)
+   tetap backlog non-High.
 2. Pisahkan manual diagnostic scripts dari pytest discovery dan siapkan database
    PostgreSQL test agar migration/trigger/schema bisa diuji rutin.
 3. Tuntaskan advisory build Moderate setelah analisis compatibility; tambahkan
@@ -626,9 +654,53 @@ Baseline dan hasil audit di atas tetap merujuk source 2.5.2 sebelum version bump
 Inventaris diperbarui terhadap source hasil rilis. Gate regresi mempunyai 820 kasus
 lulus dan 11 skip (98,7% kasus lulus, tanpa kegagalan); angka ini mengukur hasil tes
 terpilih, bukan persentase keselamatan aplikasi, coverage, atau penutupan findings.
-Backlog High, advisory Moderate, dan batas validasi PostgreSQL/Docker tetap berlaku.
+Saat rilis awal, backlog High, advisory Moderate, dan batas PostgreSQL/Docker masih
+berlaku. High dan pengujian PostgreSQL ditangani pada rilis lanjutan di bawah.
 Push repository tidak menjalankan deployment atau menerbitkan image container.
 
 Verifikasi tambahan setelah version bump: **178 tes release/runtime/UI/security
 lulus**, serta script version sync berhasil untuk 2.6.0. Hash inventaris memakai
 source dengan line ending LF agar stabil lintas Windows/Linux.
+
+## 11. Penyelesaian seluruh High — rilis 2.6.1
+
+CA-19, CA-20, CA-27, dan CA-28 merupakan empat High yang tersisa setelah 2.6.0.
+Semuanya sekarang diperbaiki pada source, disertai regresi; tidak ada High audit
+yang masih menjadi backlog implementasi. Advisory build Moderate dan backlog
+non-High tetap dicatat pada finding masing-masing.
+
+| Pemeriksaan 2.6.1 | Hasil |
+| --- | --- |
+| Pytest terpilih, 41 modul | **772 passed, 1 skipped**; bukan full-suite/coverage claim |
+| Unittest terisolasi, 11 modul berbeda | **142 tests, OK** |
+| Total kedua kelompok | **914 tes lulus**, tanpa kegagalan |
+| PostgreSQL 17 disposable | Upgrade database kosong/existing, repeat upgrade, migration security upgrade/downgrade/re-upgrade; tracker global dipertahankan |
+| Concurrency PostgreSQL | 20 percobaan login, tepat 10 diterima/10 ditolak; 20 start health scope sama, tepat satu diterima; session/koneksi terpisah |
+| Chrome headless / loopback server | Native form + AJAX same-origin 200; same-site origin beda port dan cross-site form 403; hanya dua mutasi sah dieksekusi |
+| Fixture tampilan logout | Template dan asset lokal: mobile light/dark, EN–ID–EN, form POST; tidak ada overflow atau page error. Bukan E2E base layout |
+| AST / Jinja / Node | 287 Python, 55 template, 15 JavaScript + 5 CJS: lulus |
+| Ruff / Black pada 11 file Python baru | Lulus; line length 100 |
+| Ruff seluruh app/scripts | 3.971 diagnostic legacy; tidak ada F821/invalid-syntax. Lint global belum hijau |
+| CSS build / version sync | `npm run build` dan `check_image_version.py 2.6.1` lulus |
+| npm audit | 0 Critical/High, 5 Moderate (belum ditangani pada lingkup High) |
+| Alembic | Satu head `20261102_high_security` |
+
+PostgreSQL tes dibuat khusus pada direktori tmp dan port loopback terpisah,
+dengan schema unik yang dibersihkan fixture; bukan database aplikasi pengguna.
+Skip tunggal merupakan tes DELETE RETURNING concurrency yang tidak dijalankan
+oleh fixture SQLite; pengujian PostgreSQL lainnya benar-benar dijalankan, tidak
+di-skip. Perbaikan fixture Maps memakai file SQLite sementara agar koneksi request
+concurrent terpisah; tes lifecycle migration memverifikasi satu head dan ancestry,
+tanpa mengunci nama head lama.
+
+Log lokal: `tmp/high-security-final-pytest.txt`, `tmp/high-security-final-unit.txt`,
+`tmp/high-security-browser.json`, dan `tmp/high-security-global-ruff.json`.
+Inventaris di-refresh terhadap source 2.6.1 dengan normalisasi CRLF ke LF.
+
+**Penerapan:** ikuti [security rollout](high_security_rollout.md), jalankan migration
+pada target yang dipilih, pasang signing secret sama pada B-Snap/GoWA, dan atur
+SECRET_KEY/cookie/proxy production dengan benar. Audit tidak mengubah `.env`,
+menjalankan migration pada database aplikasi, melakukan deployment/image publish,
+atau menghubungi kamera/GoWA/SMTP nyata. Validasi HTTPS proxy, integrasi nyata,
+restart worker, dan rotasi secret pada deployment masih diperlukan; hasil ini
+bukan sertifikasi bahwa seluruh aplikasi bebas kerentanan.

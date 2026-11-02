@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.models.remember_token import RememberToken
 from app.models.user import User
+from app.core.security import load_security_settings
 
 # Cookie security settings based on environment
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
@@ -167,18 +168,13 @@ def get_user_tokens(db: Session, user_id: int) -> List[RememberToken]:
 
 def get_cookie_settings() -> dict:
     """Get standard cookie settings for remember me token."""
-    # FIX: Baca dari env vars sama seperti main.py
-    is_https_proxy = os.getenv("BEHIND_HTTPS_PROXY", "false").lower() in ("true", "1", "yes")
-    cookie_secure = (
-        os.getenv("COOKIE_SECURE", "true").lower() == "true" if is_https_proxy else False
-    )
-    cookie_samesite = os.getenv("COOKIE_SAMESITE", "lax")
+    settings = load_security_settings()
 
     return {
         "key": REMEMBER_COOKIE_NAME,
         "max_age": REMEMBER_COOKIE_MAX_AGE,
         "httponly": True,
-        "secure": cookie_secure,  # FIX: Konsisten dengan env vars
-        "samesite": cookie_samesite,  # FIX: Konsisten dengan env vars
+        "secure": settings.cookie_secure,
+        "samesite": settings.cookie_samesite,
         "path": "/",
     }

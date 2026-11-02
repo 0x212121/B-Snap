@@ -1,5 +1,6 @@
 (function () {
   const translations = {
+    "Confirm logout from this browser.": "Konfirmasi keluar dari browser ini.",
     "Snapshot and Video Retention": "Retensi Snapshot dan Video",
     "By age": "Berdasarkan umur",
     "By count per camera": "Berdasarkan jumlah per kamera",

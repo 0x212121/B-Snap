@@ -27,6 +27,8 @@ from app.middleware.online_user_tracker import OnlineUserTrackerMiddleware
 from app.db.migrate import require_current_schema
 from app.core.logging_config import setup_logging
 from app.core.static_assets import PublicStaticFiles, mount_documentation
+from app.core.security import load_security_settings
+from app.middleware.csrf import CSRFMiddleware
 from app.db.database import engine, SessionLocal
 from app.utils.timezone_helper import clear_timezone_cache
 
@@ -58,19 +60,15 @@ if os.getenv("BSNAP_LOG_VIA_GUNICORN", "1") not in ("1", "true", "yes"):
 logger = logging.getLogger("main")
 
 # Environment detection
-ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
-
-SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key-for-dev")
+security_settings = load_security_settings()
+ENVIRONMENT = security_settings.environment
+SECRET_KEY = security_settings.secret_key
 if SECRET_KEY == "your-default-secret-key-for-dev":
     logger.warning("Using default SECRET_KEY. This is not secure for production.")
 
 
 # FIX: parse TRUSTED_HOSTS string → set
-_raw_hosts = os.getenv("TRUSTED_HOSTS", "*")
-if _raw_hosts.strip() == "*":
-    TRUSTED_HOSTS = {"*"}
-else:
-    TRUSTED_HOSTS = {h.strip() for h in _raw_hosts.split(",") if h.strip()}
+TRUSTED_HOSTS = set(security_settings.trusted_proxies)
 
 # B-snap version ke template globals
 templates.env.globals["version"] = __version__
@@ -158,6 +156,7 @@ async def lifespan(app: FastAPI):
 middleware = [
     Middleware(ProxyHeadersMiddleware, trusted_hosts=TRUSTED_HOSTS),
     Middleware(GZipMiddleware, minimum_size=1000),
+    Middleware(CSRFMiddleware, public_origin=security_settings.public_origin),
     Middleware(
         SessionMiddleware,
         secret_key=SECRET_KEY,
@@ -316,6 +315,7 @@ def _wants_json_error(request: Request) -> bool:
         or request.url.path.startswith("/api/")
         or request.url.path.startswith("/snap/")
         or request.url.path.startswith("/snapshot/")
+        or request.url.path == "/webhook/gowa"
     )
 
 

@@ -2,16 +2,328 @@
   "audit_date": "2026-11-02",
   "scope": "Source inventory and static checks; not equivalent to runtime or security coverage",
   "counts": {
-    ".py": 276,
+    ".py": 287,
     ".cjs": 5,
-    ".html": 54,
-    ".js": 15
+    ".js": 15,
+    ".html": 55
   },
-  "route_declarations": 265,
+  "route_declarations": 266,
   "syntax_errors": [],
   "template_errors": [],
   "js_errors": [],
   "files": [
+    {
+      "path": "alembic/env.py",
+      "lines": 75,
+      "sha256": "cd48d5b16011ec1120e5beae4f23d8af28313469ab36fe33b2adc0e7f65e614a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20250306_remember_me.py",
+      "lines": 44,
+      "sha256": "e3d3980759669da8ee4f1e4a770b751bdfb5fbd4f330c1b03de3465650c26df4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260306_add_storage_monitoring.py",
+      "lines": 102,
+      "sha256": "b4be6e8a11dc95a4c3f4bf83a457d2b5619126bd1cc33c701fddd295f908a8eb",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260309_add_apscheduler_jobs.py",
+      "lines": 57,
+      "sha256": "0e8077006830828d0a1b359f6c8adf0d9e0a274fa5030e0824f8b4899c4c1f70",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260309_add_job_execution_logs.py",
+      "lines": 69,
+      "sha256": "6ff1c981677e99b8fb6b8d28b9ef79add7c701062ee1ab891dc8c1d20c65a0e5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260309_add_notifications_table.py",
+      "lines": 58,
+      "sha256": "d81dbf5dcb2939ec06c8fb8a9c78bc4e4e981199d5a0be16dc0bc8376909485a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260309_add_sla_reports.py",
+      "lines": 110,
+      "sha256": "70f7629c92285e2a34748ab24a9cdfc04dfa70a3b21e6d31eeb3ec4bf6d39266",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260310_orphaned_snapshots.py",
+      "lines": 43,
+      "sha256": "421ed533f09d6c32e6e2d6eccea9138f67e6f538d3f8409e64f4f816cef78d09",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260311_add_orphaned_files.py",
+      "lines": 66,
+      "sha256": "5b57b29d7341ff2b33dceee96c7fbef6b7773af4403e3dca65d638e5350743b3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260311_fix_snapshot_fk_cascade.py",
+      "lines": 75,
+      "sha256": "cbeaa86ebf34c01a4478f483e4efd6758a6ed7c2c7a822dfdba1b80af7fe8a0d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260326_add_file_hash_and_soft_delete.py",
+      "lines": 68,
+      "sha256": "9d3fe1824afe393245264b2e00265ed5e5942b8d4524ae659c5e7f7c1d16d932",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260326_encrypt_nvr.py",
+      "lines": 40,
+      "sha256": "9b3424c1d78f6efc774158a9a6568e773dd058c416d3725b37f685019d2b52a6",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260328_dual_table.py",
+      "lines": 324,
+      "sha256": "788da0995e90c30d4e6d6ebdc8d4e6be3b85a80bb643795df227276ac9c099d5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260330_alert_cooldown.py",
+      "lines": 49,
+      "sha256": "856732dd98046676b5009e17be4807f937612fc647c0460ab9829468780ac636",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260330_circuit_breaker.py",
+      "lines": 54,
+      "sha256": "6ee43dbc763cfc6177fafd9ed60292abfe686022fa5912ffed2f817ee0008558",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260330_remove_all_group.py",
+      "lines": 103,
+      "sha256": "7dd72e02a34cda2f0b2bb18d5f4e6338ecc25b8175d38d6206b0791e7e768cf3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260331_remove_lat_lon_from_camera_groups.py",
+      "lines": 43,
+      "sha256": "7c38cdb7a4f02cbdd8f688d70794638fed0b6c7f2c169a0a3a6c9b8272f891ad",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260716_add_record_check_tables.py",
+      "lines": 183,
+      "sha256": "1803ee67ca9d3ec89d29a9a12cfd4dfe4e92e8842213865598b38eb69da5d7f7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260924_camera_multiple_groups.py",
+      "lines": 42,
+      "sha256": "3318e24f493796178167888d002c25d20d0c86cad73880429d263426ee3ad670",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260925_add_analytics_query_indexes.py",
+      "lines": 41,
+      "sha256": "f0571c51261e251f6b50031d4b9f770728746e1bf44d745521fb712b12247e57",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260930_add_wa_provider_message_id.py",
+      "lines": 37,
+      "sha256": "309178c65705f14800bd2e71536467b8563123607274ac85089ae0739d255a2a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20260930_add_whatsapp_bot_operations.py",
+      "lines": 35,
+      "sha256": "5576f66368406e0e4d423b5cff2bb4d69fee17e34b53f17e3c7c0bbfabac92d2",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20261006_record_mounts.py",
+      "lines": 41,
+      "sha256": "95a2c569fb970bb4fd099271da5fb1cd8585f89d197220c742b21a4e9ed888c4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20261007_api_daily_stats.py",
+      "lines": 30,
+      "sha256": "655dae9c60a730ec18b9df45cec2795ca40a93c7b21fdc8e693fa28e686378f4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20261007_baseline.py",
+      "lines": 289,
+      "sha256": "61aee4a806fe53ff1a56654dbb95fe2bd8de9162dcef29da7525bf71c7fd23a7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20261007_email_retry_lifecycle.py",
+      "lines": 93,
+      "sha256": "86c8a4a803bf480af428daeff5a28d736ee0e5f5499ebb70b86781db96c2c5ab",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20261007_email_retry_resources.py",
+      "lines": 31,
+      "sha256": "ab35ddec189d5ee74533bcdbef284bd98c1dd0b5a8be07d4f4bd67a067193f90",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20261012_email_retry_expiry.py",
+      "lines": 35,
+      "sha256": "101a7964d45bee1e8e84a90938df4c06023c2a75826392c05ccadf82bf36750b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20261102_high_security.py",
+      "lines": 47,
+      "sha256": "e5c7466afdc9e70409418dbd0108a8895a44a137c4f3da843228246cc0709cd4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/300b57036bb7_add_recipients_table_for_email_logs.py",
+      "lines": 50,
+      "sha256": "68059412de6306f58814d8b2c4235614a9271650c6b0a9a15651448cf67c2c63",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/4427f12a3ddd_add_observability_fields_to_api_logs.py",
+      "lines": 40,
+      "sha256": "33a76de5747da0db2825c8eb56a79554c28b133c2a0802cd38b606d000139881",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/5cedbb9e3357_merge_heads.py",
+      "lines": 28,
+      "sha256": "9c4e5583f76202e049eadb299dfb57c7a9a7c772aed8a6988bfcb5d966d54c5b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/5f395f7835f6_added_column_note.py",
+      "lines": 30,
+      "sha256": "2f7b5112dedf7ffef4968fefc9d019f4e5842b643ae0b12106f89e5f6138c007",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/6eaca6a658f5_add_tamper_columns_to_camera_health.py",
+      "lines": 34,
+      "sha256": "edfd74f056fb6c659d815431db32f3e1ef29c9fa7f93c271fa3344f5427871a2",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/7cd0dd6ec316_ensure_all_datetime_columns_store_utc.py",
+      "lines": 42,
+      "sha256": "2b77f14566dc5b08666046560ef2513cc0259edebd20383e22662104fef266c2",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/8048b0584a9a_remove_is_active_from_whitelist.py",
+      "lines": 192,
+      "sha256": "1408d631fbb94541306746eb318921bfc533e8ab9f0c9effce9d8430e3fbd4f5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/823ab92ff506_add_reason_column_to_email_log.py",
+      "lines": 28,
+      "sha256": "e809d83a352d082afef35c038cee7cde2980bf69dd6fd562d0e1ffb5af5a77d5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/8a53b8bab616_add_safety_classification_p2_002.py",
+      "lines": 32,
+      "sha256": "33a457c307000feac6a7ce77fe035aaf397df3b3df7137ba0d73c2fd38c38ec2",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/93cb20db9549_add_email_retry_queue_table.py",
+      "lines": 47,
+      "sha256": "23cc712336eb51a0b61f23780b9697fafe215b1916e4021cb764e043b21c7284",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/a0b22741533a_add_p2_001_append_only_audit_log.py",
+      "lines": 163,
+      "sha256": "58dc4bd24637ddaf61810301de1f4b026fda05ce072125907120eebd1d66b1bb",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/a3366d14c9a4_add_email_templates_table.py",
+      "lines": 77,
+      "sha256": "f38a26d86164bf1a3ddaca7dd625881db407f758a766a16f16797e646a80d65c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/b29ff945dac6_drop_orphaned_files_table.py",
+      "lines": 159,
+      "sha256": "3b37dfad2a26e4a286d876e62833651b100610909e4d22e4883fc648eeeddf43",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/cf721a00b9a8_add_snapshot_url.py",
+      "lines": 30,
+      "sha256": "6342dbe1f7ab0754540e9cf009a46be7a2e24eb1421ee47eefd4d6834d817ba7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/d6001ff7c550_add_whitelist_group_id.py",
+      "lines": 33,
+      "sha256": "f1be1ca6717686cfbe802705373a0e11188b78fdb0226aa7030c7b5c07696c53",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/da0483da8f95_add_is_flipped_column_to_cameras.py",
+      "lines": 31,
+      "sha256": "90dca0a9b20e63dce4c57bdb35fd3b20f6adc6dc9149770e89738c1f7471274c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/e8c96ec70560_add_email_retry_unique_active.py",
+      "lines": 30,
+      "sha256": "0a2173ed8058899314eedf12a684bc40f23b3c14c521a9535e8bea4879516f3e",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/ea697ca6b008_add_timezone_to_task_timings_datetime_.py",
+      "lines": 46,
+      "sha256": "0888cc77c0d2b9747386160a89d3012d5b18544c0d91e9dc21925645e08d7e4c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/eb9923e83d68_relate_snapshot_logs_to_camera_id.py",
+      "lines": 99,
+      "sha256": "91a9a74b071773b484255141579f3127f2fd25a315ace129f7495555e94bb9f5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/ed2356cb250c_initial_reset.py",
+      "lines": 69,
+      "sha256": "f6473934c5fdc2b43ccec595671b92f0dc3d4da1ec2e10c2160c6a520fcd7aa1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/f3170d221195_add_retention_hold_p2_001.py",
+      "lines": 112,
+      "sha256": "d05ae716afcc8797f426d1d461e93d726a718d9667f35a57d46ee93d126bd236",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/f4b4f204bb00_create_command_logs_and_api_logs_tables.py",
+      "lines": 45,
+      "sha256": "210a95c47b572021a47d4924389d1042024e52741b83d8624925315da6a338ea",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/fe1c28ede362_add_group_recipients_table.py",
+      "lines": 37,
+      "sha256": "7c5097f06cbc6ae9e8defe4792238b48b12dfd2104aa2e35b4c78047c5e69ca5",
+      "check": "AST syntax and structural scan"
+    },
     {
       "path": "app/__init__.py",
       "lines": 0,
@@ -64,6 +376,12 @@
       "path": "app/core/logging_config.py",
       "lines": 315,
       "sha256": "82768bb076d0915d3d5b39127c9881876cf1ba3e6d6189f3592cb3eced172cca",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/core/security.py",
+      "lines": 103,
+      "sha256": "584fdab243250082227d2f1a1bcfe3f2ea24c1091db5af380b9d07ce4047abd6",
       "check": "AST syntax and structural scan"
     },
     {
@@ -141,7 +459,7 @@
     {
       "path": "app/main.py",
       "lines": 455,
-      "sha256": "07746b1e183a43e5cab0d54e1e19eed5bf098f5c08bf613e1f128b2ac81fe06e",
+      "sha256": "c06d969f14d4a924facd20edd6d88e9b36d52f458a8d31ec528303003f9343e8",
       "check": "AST syntax and structural scan"
     },
     {
@@ -152,8 +470,14 @@
     },
     {
       "path": "app/middleware/auth_and_setup.py",
-      "lines": 407,
-      "sha256": "dfa62ebbf147b90561786891fc544697226e44c9d14926ae6019f27f66ef649c",
+      "lines": 410,
+      "sha256": "6912ea40e74377122a3e47b29fa070062643df0337f0709b4883afeb307f3c2b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/csrf.py",
+      "lines": 72,
+      "sha256": "f5b9c57a904a90114e65329299ad607994d44cd2564549c5d4a0d03d2fb02fe7",
       "check": "AST syntax and structural scan"
     },
     {
@@ -194,8 +518,8 @@
     },
     {
       "path": "app/models/__init__.py",
-      "lines": 86,
-      "sha256": "7d8e5e1227bec1913c1ebe59b9aab9b458713e5f5a3645ca452614702f0aad7a",
+      "lines": 88,
+      "sha256": "4d472e1e4b8a3fa3c9fe2fd7b329cc445e59d00382ebbf78c437d479f14bbaae",
       "check": "AST syntax and structural scan"
     },
     {
@@ -208,6 +532,12 @@
       "path": "app/models/audit_log.py",
       "lines": 150,
       "sha256": "466fc5a9d2accecabbb550bf53ef20e249b82789069970676960f984f94d5cc4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/auth_rate_limit.py",
+      "lines": 17,
+      "sha256": "2054b3d2d76d1ef6a18ddfd38904c80644144c571423e69864e54ef359ae7983",
       "check": "AST syntax and structural scan"
     },
     {
@@ -266,8 +596,8 @@
     },
     {
       "path": "app/models/health_check_status.py",
-      "lines": 10,
-      "sha256": "6032a735eb49b4c1527b7b4f0a0d716fab943dec7a4866248c2da47b6cf07665",
+      "lines": 13,
+      "sha256": "f9ecd6ede275c362f4a3846c4dae5de776e84a501055997e800a334ce10c6c48",
       "check": "AST syntax and structural scan"
     },
     {
@@ -398,8 +728,8 @@
     },
     {
       "path": "app/routes/auth.py",
-      "lines": 530,
-      "sha256": "1e9661654fb782b3e24b63f7ced18ca5f42f416706beaa6185e2e8a785f8ca57",
+      "lines": 543,
+      "sha256": "8a02a1376bfac432cfeab457294d872daf4ea0c9d23e5ad0475f94b5fdda0982",
       "check": "AST syntax and structural scan"
     },
     {
@@ -452,8 +782,8 @@
     },
     {
       "path": "app/routes/health.py",
-      "lines": 1433,
-      "sha256": "41a1a8d57c61a8d683239aaec7072a7ef5ca788cdd796dd4b78fbdc610171052",
+      "lines": 1480,
+      "sha256": "4d65964569a3208c61ab2d43ca809ce42e1a6323062ae1445104aa0d674896be",
       "check": "AST syntax and structural scan"
     },
     {
@@ -579,7 +909,7 @@
     {
       "path": "app/routes/wa_webhook.py",
       "lines": 1687,
-      "sha256": "5ca3016d86f42a88f84b746706369dd9b75d7ab0366aed86ac2665cb75c533f7",
+      "sha256": "f9dcfb7b2c588d222a53a28de8ed67b2927da8fd29bd67edd61cc16e1e65bfee",
       "check": "AST syntax and structural scan"
     },
     {
@@ -692,8 +1022,8 @@
     },
     {
       "path": "app/tests/test_audit_security.py",
-      "lines": 697,
-      "sha256": "ba6ad9f9f97f865afb4855413e5aae91773637886fe0ab90c3da3bce8506e9e6",
+      "lines": 700,
+      "sha256": "ca0875f02a3b93df2ab5f49b88cddbd82c44d447b5bcdd5959aa245f0f0553d9",
       "check": "AST syntax and structural scan"
     },
     {
@@ -746,8 +1076,8 @@
     },
     {
       "path": "app/tests/test_email_retry_lifecycle.py",
-      "lines": 1125,
-      "sha256": "4b98348b8518de70cfa629b7b6f2d637455a4805de4e5383987a29d61a3c46af",
+      "lines": 1128,
+      "sha256": "89b2d5171c23f24ee00457efaacd674b0425ff8777f50d4b96c4b63f86c22c59",
       "check": "AST syntax and structural scan"
     },
     {
@@ -778,6 +1108,24 @@
       "path": "app/tests/test_heads.py",
       "lines": 12,
       "sha256": "11d282798a9fa65f829f46ca0bd56ddbeeff76c21109bba9befddd04549e1306",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_health_group_security.py",
+      "lines": 300,
+      "sha256": "c287260ed2618b32cf6df31c2a24c3218f3dc62009796efdddb2acf206fbd293",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_high_security.py",
+      "lines": 432,
+      "sha256": "9e98d15ce372ef3ff3607c66f8ece5cc82ea9900d05d253ec45e9283a84f5da1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_high_security_postgres.py",
+      "lines": 127,
+      "sha256": "709859828f32dfae41757e1098acfcd626d5bcba1fa8040ea558e9050f7dce77",
       "check": "AST syntax and structural scan"
     },
     {
@@ -824,8 +1172,8 @@
     },
     {
       "path": "app/tests/test_map_locations.py",
-      "lines": 327,
-      "sha256": "d9af943799cf4bfffc55492389695a535fe67539d4ba12713758a120568ecc6d",
+      "lines": 330,
+      "sha256": "aaaa711dcce47fd15e8bb6d1de960b74924e1a6dc7fbac2ae79e4f0efa6ad9b9",
       "check": "AST syntax and structural scan"
     },
     {
@@ -998,8 +1346,8 @@
     },
     {
       "path": "app/tests/test_wa_reply_routing.py",
-      "lines": 108,
-      "sha256": "fdd63ddbb62a7ef9912c31b952c3363f286af98dc94bd2270f54e38a6ba81db0",
+      "lines": 123,
+      "sha256": "15ea32cffe1b187ff5a7abc61f0764478f912ad05661a7901584b1e4b82b4d72",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1051,6 +1399,12 @@
       "check": "AST syntax and structural scan"
     },
     {
+      "path": "app/utils/auth_rate_limit.py",
+      "lines": 70,
+      "sha256": "e3fbbdf53df688480e0699ec49e4a41c63eb4d96b794714489698e6f3c163d1f",
+      "check": "AST syntax and structural scan"
+    },
+    {
       "path": "app/utils/auth_token.py",
       "lines": 39,
       "sha256": "ac7e547d1c208e795f55a41eb10e3fe563e4c6fc89eca4f375f0318fdb491b7e",
@@ -1090,6 +1444,12 @@
       "path": "app/utils/decorators.py",
       "lines": 23,
       "sha256": "bcd5383ad9d8722deb1ee73514c2df4f216063857fbc7523e0346467dabbff31",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/device_access.py",
+      "lines": 41,
+      "sha256": "51bfdffb81541b09bf84d68c19306c7bc34b38b71e7df3ada6f67ff52ff72ebf",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1141,9 +1501,15 @@
       "check": "AST syntax and structural scan"
     },
     {
+      "path": "app/utils/health_progress.py",
+      "lines": 37,
+      "sha256": "5d8fcc25b8237233bb53feb653bb4297c28b63ba1239572a244df189cfd8a7f6",
+      "check": "AST syntax and structural scan"
+    },
+    {
       "path": "app/utils/healthcheck.py",
-      "lines": 422,
-      "sha256": "cab611bab7547a9450bb29ab3975ef74121bca1662d2b77e0d5d76d93e033491",
+      "lines": 442,
+      "sha256": "ae98199cfd935fd4a6dc16b4d790064dc32b7b02d8caeb2a9d1aefa525768556",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1232,8 +1598,8 @@
     },
     {
       "path": "app/utils/remember_me.py",
-      "lines": 184,
-      "sha256": "c275dcdf81563846cc2ee3b067a50501897ba13309a5c15e1dcd449f23e7b47e",
+      "lines": 180,
+      "sha256": "0a73cda79971ba8147e4c63b06e2837491296934604591b0890e13bc8c709fda",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1339,9 +1705,15 @@
       "check": "AST syntax and structural scan"
     },
     {
+      "path": "app/utils/webhook_auth.py",
+      "lines": 35,
+      "sha256": "5a5e4d51e38e5c15e5d5bea39f18f61fabacb8a7f730ac1b9cb1513ce3d06b9b",
+      "check": "AST syntax and structural scan"
+    },
+    {
       "path": "app/version.py",
       "lines": 1,
-      "sha256": "38489beb77b4c8f106961117cab584d4ec119e5791d1c1c8eca497ee864440bb",
+      "sha256": "cafd3026eabb75dfcf94184b37c8ae3d4615b280022ae9364771a0e5653eb479",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1393,636 +1765,6 @@
       "check": "AST syntax and structural scan"
     },
     {
-      "path": "alembic/env.py",
-      "lines": 75,
-      "sha256": "cd48d5b16011ec1120e5beae4f23d8af28313469ab36fe33b2adc0e7f65e614a",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20250306_remember_me.py",
-      "lines": 44,
-      "sha256": "e3d3980759669da8ee4f1e4a770b751bdfb5fbd4f330c1b03de3465650c26df4",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260306_add_storage_monitoring.py",
-      "lines": 102,
-      "sha256": "b4be6e8a11dc95a4c3f4bf83a457d2b5619126bd1cc33c701fddd295f908a8eb",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260309_add_apscheduler_jobs.py",
-      "lines": 57,
-      "sha256": "0e8077006830828d0a1b359f6c8adf0d9e0a274fa5030e0824f8b4899c4c1f70",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260309_add_job_execution_logs.py",
-      "lines": 69,
-      "sha256": "6ff1c981677e99b8fb6b8d28b9ef79add7c701062ee1ab891dc8c1d20c65a0e5",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260309_add_notifications_table.py",
-      "lines": 58,
-      "sha256": "d81dbf5dcb2939ec06c8fb8a9c78bc4e4e981199d5a0be16dc0bc8376909485a",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260309_add_sla_reports.py",
-      "lines": 110,
-      "sha256": "70f7629c92285e2a34748ab24a9cdfc04dfa70a3b21e6d31eeb3ec4bf6d39266",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260310_orphaned_snapshots.py",
-      "lines": 43,
-      "sha256": "421ed533f09d6c32e6e2d6eccea9138f67e6f538d3f8409e64f4f816cef78d09",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260311_add_orphaned_files.py",
-      "lines": 66,
-      "sha256": "5b57b29d7341ff2b33dceee96c7fbef6b7773af4403e3dca65d638e5350743b3",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260311_fix_snapshot_fk_cascade.py",
-      "lines": 75,
-      "sha256": "cbeaa86ebf34c01a4478f483e4efd6758a6ed7c2c7a822dfdba1b80af7fe8a0d",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260326_add_file_hash_and_soft_delete.py",
-      "lines": 68,
-      "sha256": "9d3fe1824afe393245264b2e00265ed5e5942b8d4524ae659c5e7f7c1d16d932",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260326_encrypt_nvr.py",
-      "lines": 40,
-      "sha256": "9b3424c1d78f6efc774158a9a6568e773dd058c416d3725b37f685019d2b52a6",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260328_dual_table.py",
-      "lines": 324,
-      "sha256": "788da0995e90c30d4e6d6ebdc8d4e6be3b85a80bb643795df227276ac9c099d5",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260330_alert_cooldown.py",
-      "lines": 49,
-      "sha256": "856732dd98046676b5009e17be4807f937612fc647c0460ab9829468780ac636",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260330_circuit_breaker.py",
-      "lines": 54,
-      "sha256": "6ee43dbc763cfc6177fafd9ed60292abfe686022fa5912ffed2f817ee0008558",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260330_remove_all_group.py",
-      "lines": 103,
-      "sha256": "7dd72e02a34cda2f0b2bb18d5f4e6338ecc25b8175d38d6206b0791e7e768cf3",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260331_remove_lat_lon_from_camera_groups.py",
-      "lines": 43,
-      "sha256": "7c38cdb7a4f02cbdd8f688d70794638fed0b6c7f2c169a0a3a6c9b8272f891ad",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260716_add_record_check_tables.py",
-      "lines": 183,
-      "sha256": "1803ee67ca9d3ec89d29a9a12cfd4dfe4e92e8842213865598b38eb69da5d7f7",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260924_camera_multiple_groups.py",
-      "lines": 42,
-      "sha256": "3318e24f493796178167888d002c25d20d0c86cad73880429d263426ee3ad670",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260925_add_analytics_query_indexes.py",
-      "lines": 41,
-      "sha256": "f0571c51261e251f6b50031d4b9f770728746e1bf44d745521fb712b12247e57",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260930_add_wa_provider_message_id.py",
-      "lines": 37,
-      "sha256": "309178c65705f14800bd2e71536467b8563123607274ac85089ae0739d255a2a",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20260930_add_whatsapp_bot_operations.py",
-      "lines": 35,
-      "sha256": "5576f66368406e0e4d423b5cff2bb4d69fee17e34b53f17e3c7c0bbfabac92d2",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20261006_record_mounts.py",
-      "lines": 41,
-      "sha256": "95a2c569fb970bb4fd099271da5fb1cd8585f89d197220c742b21a4e9ed888c4",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20261007_api_daily_stats.py",
-      "lines": 30,
-      "sha256": "655dae9c60a730ec18b9df45cec2795ca40a93c7b21fdc8e693fa28e686378f4",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20261007_baseline.py",
-      "lines": 289,
-      "sha256": "61aee4a806fe53ff1a56654dbb95fe2bd8de9162dcef29da7525bf71c7fd23a7",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20261007_email_retry_lifecycle.py",
-      "lines": 93,
-      "sha256": "86c8a4a803bf480af428daeff5a28d736ee0e5f5499ebb70b86781db96c2c5ab",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20261007_email_retry_resources.py",
-      "lines": 31,
-      "sha256": "ab35ddec189d5ee74533bcdbef284bd98c1dd0b5a8be07d4f4bd67a067193f90",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/20261012_email_retry_expiry.py",
-      "lines": 35,
-      "sha256": "101a7964d45bee1e8e84a90938df4c06023c2a75826392c05ccadf82bf36750b",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/300b57036bb7_add_recipients_table_for_email_logs.py",
-      "lines": 50,
-      "sha256": "68059412de6306f58814d8b2c4235614a9271650c6b0a9a15651448cf67c2c63",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/4427f12a3ddd_add_observability_fields_to_api_logs.py",
-      "lines": 40,
-      "sha256": "33a76de5747da0db2825c8eb56a79554c28b133c2a0802cd38b606d000139881",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/5cedbb9e3357_merge_heads.py",
-      "lines": 28,
-      "sha256": "9c4e5583f76202e049eadb299dfb57c7a9a7c772aed8a6988bfcb5d966d54c5b",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/5f395f7835f6_added_column_note.py",
-      "lines": 30,
-      "sha256": "2f7b5112dedf7ffef4968fefc9d019f4e5842b643ae0b12106f89e5f6138c007",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/6eaca6a658f5_add_tamper_columns_to_camera_health.py",
-      "lines": 34,
-      "sha256": "edfd74f056fb6c659d815431db32f3e1ef29c9fa7f93c271fa3344f5427871a2",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/7cd0dd6ec316_ensure_all_datetime_columns_store_utc.py",
-      "lines": 42,
-      "sha256": "2b77f14566dc5b08666046560ef2513cc0259edebd20383e22662104fef266c2",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/8048b0584a9a_remove_is_active_from_whitelist.py",
-      "lines": 192,
-      "sha256": "1408d631fbb94541306746eb318921bfc533e8ab9f0c9effce9d8430e3fbd4f5",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/823ab92ff506_add_reason_column_to_email_log.py",
-      "lines": 28,
-      "sha256": "e809d83a352d082afef35c038cee7cde2980bf69dd6fd562d0e1ffb5af5a77d5",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/8a53b8bab616_add_safety_classification_p2_002.py",
-      "lines": 32,
-      "sha256": "33a457c307000feac6a7ce77fe035aaf397df3b3df7137ba0d73c2fd38c38ec2",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/93cb20db9549_add_email_retry_queue_table.py",
-      "lines": 47,
-      "sha256": "23cc712336eb51a0b61f23780b9697fafe215b1916e4021cb764e043b21c7284",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/a0b22741533a_add_p2_001_append_only_audit_log.py",
-      "lines": 163,
-      "sha256": "58dc4bd24637ddaf61810301de1f4b026fda05ce072125907120eebd1d66b1bb",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/a3366d14c9a4_add_email_templates_table.py",
-      "lines": 77,
-      "sha256": "f38a26d86164bf1a3ddaca7dd625881db407f758a766a16f16797e646a80d65c",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/b29ff945dac6_drop_orphaned_files_table.py",
-      "lines": 159,
-      "sha256": "3b37dfad2a26e4a286d876e62833651b100610909e4d22e4883fc648eeeddf43",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/cf721a00b9a8_add_snapshot_url.py",
-      "lines": 30,
-      "sha256": "6342dbe1f7ab0754540e9cf009a46be7a2e24eb1421ee47eefd4d6834d817ba7",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/d6001ff7c550_add_whitelist_group_id.py",
-      "lines": 33,
-      "sha256": "f1be1ca6717686cfbe802705373a0e11188b78fdb0226aa7030c7b5c07696c53",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/da0483da8f95_add_is_flipped_column_to_cameras.py",
-      "lines": 31,
-      "sha256": "90dca0a9b20e63dce4c57bdb35fd3b20f6adc6dc9149770e89738c1f7471274c",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/e8c96ec70560_add_email_retry_unique_active.py",
-      "lines": 30,
-      "sha256": "0a2173ed8058899314eedf12a684bc40f23b3c14c521a9535e8bea4879516f3e",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/ea697ca6b008_add_timezone_to_task_timings_datetime_.py",
-      "lines": 46,
-      "sha256": "0888cc77c0d2b9747386160a89d3012d5b18544c0d91e9dc21925645e08d7e4c",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/eb9923e83d68_relate_snapshot_logs_to_camera_id.py",
-      "lines": 99,
-      "sha256": "91a9a74b071773b484255141579f3127f2fd25a315ace129f7495555e94bb9f5",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/ed2356cb250c_initial_reset.py",
-      "lines": 69,
-      "sha256": "f6473934c5fdc2b43ccec595671b92f0dc3d4da1ec2e10c2160c6a520fcd7aa1",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/f3170d221195_add_retention_hold_p2_001.py",
-      "lines": 112,
-      "sha256": "d05ae716afcc8797f426d1d461e93d726a718d9667f35a57d46ee93d126bd236",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/f4b4f204bb00_create_command_logs_and_api_logs_tables.py",
-      "lines": 45,
-      "sha256": "210a95c47b572021a47d4924389d1042024e52741b83d8624925315da6a338ea",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "alembic/versions/fe1c28ede362_add_group_recipients_table.py",
-      "lines": 37,
-      "sha256": "7c5097f06cbc6ae9e8defe4792238b48b12dfd2104aa2e35b4c78047c5e69ca5",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "templates/403.html",
-      "lines": 120,
-      "sha256": "ff749dcd67dac8d218b1e9c07377d5a646d2e5f3b307c001e0d8422caea91adc",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/404.html",
-      "lines": 109,
-      "sha256": "42c3ccdd22776cd42a69a2f8d03962997eabea14102ea615dfc89b346875e843",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/500.html",
-      "lines": 126,
-      "sha256": "0bcaef3de06fd511f8982194254a6a47dee4612601e87977b4ef5db347d81277",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/_action_buttons.html",
-      "lines": 15,
-      "sha256": "a9cfb6852e7271da3463703af5747c230b156996bb308ced154800c5c67b18e2",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/_gallery_grid.html",
-      "lines": 88,
-      "sha256": "45db200daf263e2f622116f9df1413a2520ec49a739fb4e1fbfdd459f3c7c660",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/_icons.html",
-      "lines": 328,
-      "sha256": "e927fbb7144eeb9beb8d21c2e38d5fd99a75651a649039bad2a5a4458dcf09d5",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/_orphaned_files_list.html",
-      "lines": 49,
-      "sha256": "9f88b6de75f3d29ced699c778c4506bc0bf906723b2ebc358787580490f3fefb",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/_video_grid.html",
-      "lines": 89,
-      "sha256": "99f801ffab98324338bebadfc0184248796e5285422173989551741dfff7d006",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/admin_trash.html",
-      "lines": 911,
-      "sha256": "87351890ba5866d71fffd4d3634ff4ef4af2793959245d1d97c4e8801b2d7454",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/analytics.html",
-      "lines": 1092,
-      "sha256": "180fc2b9d3c8489fc7f34728b188d281ff5334a41fcbd58a261c412bdde915ba",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/audit_logs.html",
-      "lines": 1368,
-      "sha256": "d54eff682bf0f8c1d1879a9945593c1654f4c13d60e9b3d3629a932a837a7f1f",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/base.html",
-      "lines": 1001,
-      "sha256": "6b8f81acef9c547685b8c9d5a28ba3eba62fe588f072f32e533290d1785f5d3b",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/camera_groups.html",
-      "lines": 578,
-      "sha256": "f8657e3c2d4a50cdea65d47dcba26ea4298ad76cf0452070aa00c99a5e6eefbb",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/cameras.html",
-      "lines": 1108,
-      "sha256": "df3da5723e4f27e090070b9daa008f91f770a57cfa71b45a35f56f62a293949a",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/change_password.html",
-      "lines": 145,
-      "sha256": "a8c0dacbcffc5dad4fe936beb2dff3564e80b83e8e390b25f3c639661436675e",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/changelog.html",
-      "lines": 468,
-      "sha256": "8b793554e7756f0a9c6737b25d715ead28760cc5f0b56c6c35fcb1581ef0fec0",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/config.html",
-      "lines": 1090,
-      "sha256": "2f9e59935d48c3f4c609d772e53cf4341c8041036f69c592eaee0e601b45414e",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/demo/toast_demo.html",
-      "lines": 182,
-      "sha256": "645550eb1e4805770a04144b838aebea26d7303d9bfdb45c17e918c44d5577c0",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/docs/api.html",
-      "lines": 71,
-      "sha256": "33ced8fb869c8acc0a67db61bcf37e65c25143624c645b4550b6e6b032253941",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/docs/environment.html",
-      "lines": 192,
-      "sha256": "ac3283f14630be3d7250fe386a8b56dc57459d3286e7d65c6df0e9bc2ded2c91",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/docs/security.html",
-      "lines": 133,
-      "sha256": "7e82259a5d1da1e424d7530170a3a38786bba90378b8ed2755d461878c39749f",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/email_logs.html",
-      "lines": 720,
-      "sha256": "68abd08d2d69af068c31b539a02d0c80dfd0c3fc67ac5154b365d270d499f570",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/email_templates.html",
-      "lines": 432,
-      "sha256": "5d750e192d8beccb8b4ff956af75f07e6f9736de79fc8d2feea3fb2cd6ae47bf",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/force_mfa_setup.html",
-      "lines": 119,
-      "sha256": "70744f98993ffdae76746d75ae169194c650cb4543568d3c4f2a980baee6d561",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/health.html",
-      "lines": 732,
-      "sha256": "9b532c72a9163b9558ea7529838d4e1da6c26c3fca89f39fe74c0ae096fb33b4",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/health_history.html",
-      "lines": 325,
-      "sha256": "6ce178e97b8bef60f159bba74ad9e242c54b904ba6ace638ea572c1e203b1acd",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/insights.html",
-      "lines": 328,
-      "sha256": "1cf88dce21695ee5477f65724d327a4473c8796fadf4175a47b033449601a554",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/jobs.html",
-      "lines": 636,
-      "sha256": "e83eadacbf437b429b8e06fa7499f50d249cc7182a5460ce06f0464161775e0d",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/login.html",
-      "lines": 135,
-      "sha256": "1595c2d32d0550a419cee7e9d386d1c13be99c591a2d06a9eec0d1fca04922ec",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/login_2fa.html",
-      "lines": 100,
-      "sha256": "f97916225fe7b6014dab0f4acb0ade011ff67938fe833ff708681df723835f97",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/logs.html",
-      "lines": 566,
-      "sha256": "3c5dffbae9ecd3d6dce9b8e7fb1f7512f52521e22f7adb4d9474ccb97fb7660e",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/macros/file_size.html",
-      "lines": 10,
-      "sha256": "283eb5ac4a53f02415dec6291410d71b5054bccef1a74a7f5a1683431589f22b",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/macros/navigation.html",
-      "lines": 76,
-      "sha256": "2d9ea0cdc40031af4746e69b0fa5026af3fc28a07d1b249ebdd0e0fdfa2a2815",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/macros/ui.html",
-      "lines": 91,
-      "sha256": "b8d4ac8ffa9b3222e55758839599de75be0001b45fff0750c749587f728dec42",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/maps.html",
-      "lines": 743,
-      "sha256": "3d089ddf5191b98988ea6a8919c2d26da02e7d8b545270d52d3c45625803a698",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/nvrs.html",
-      "lines": 925,
-      "sha256": "d67b3322aa93a985960c77a84570839990110ec6a34c7382794b8bb855db3ba9",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/partials/camera_rows.html",
-      "lines": 46,
-      "sha256": "d8e3fd5b720c2873165d378ec58b7ff2335db53130aeeb8a0ea342ccbd94216b",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/partials/nvr_rows.html",
-      "lines": 27,
-      "sha256": "dea2eba57ceba39974caafaa8db284929367d3ad5caec9c4afafcab90c17a780",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/powerbi_record_checks.html",
-      "lines": 203,
-      "sha256": "52e2fd3938f1fde7da217885b2d9722ea113cdbbb60528be3ea461ba04f41cbe",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/recipients.html",
-      "lines": 1303,
-      "sha256": "d549239309c160232763f01b72bb7ac27a2ff0a7fea2bf60efb0064df48de325",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/recipients_table.html",
-      "lines": 142,
-      "sha256": "760983313e50b59519b9b5e97611f2d1d29dda3dee85e99bedec99dc0c76e575",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/record_checks.html",
-      "lines": 868,
-      "sha256": "5772d853f26507bf12cc63dd1bd1904cecdd509591371d4e20dcda133d9b2407",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/setup.html",
-      "lines": 38,
-      "sha256": "a9274c3aa4e0bb0c68af1cb943146d10a678beeb1aadfdc5e13d0b3ca8ee4597",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/sla_report.html",
-      "lines": 192,
-      "sha256": "ccd0b8aa8f99035ec763391c1b6f5feee4bb2db3a46767e55187b66e5b6eaca8",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/snapshot_gallery.html",
-      "lines": 391,
-      "sha256": "50e5dab2b2349463173901b01b2904f821cb18eeb1de3e2d74467f659d562ccd",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/stats.html",
-      "lines": 470,
-      "sha256": "d582e3156a05a1e168f837a6ef517075ffbc0174e2df6189b5a355d4d5ae7be7",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/swagger_embed.html",
-      "lines": 23,
-      "sha256": "22ae4ea0d6899c7cdc2ab02736c80f67864d56d532c542757b31f1bc5ea301c3",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/unauthorized.html",
-      "lines": 17,
-      "sha256": "912b6b94396b777d395f075ada5c3da6568449a34f883f4cea48bd86c45a5338",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/user_management.html",
-      "lines": 847,
-      "sha256": "5a8ef0b155048a8cc8227b4b95ddd7e3a6d331160546df1754a46a0f51df8f4e",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/user_management2.html",
-      "lines": 514,
-      "sha256": "63fcaa04a71c156980db2fec5a551733d8dcdb3491b9a8175e7c1cdc0322f289",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/user_profile.html",
-      "lines": 772,
-      "sha256": "9c3ceab261c5bf0cff8a8161515b8aa6191ad69491014096e78cf8a3d8e627f8",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/video_gallery.html",
-      "lines": 363,
-      "sha256": "058ba7be486952777c69616b88ebbbe41b2b811571f89c65d0850daa7ad14a98",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/wa_bot_builder.html",
-      "lines": 278,
-      "sha256": "02503bcf0a2bd99f13160b60abce152f68354cf4f073b182e1264168d352a2a5",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/whitelist.html",
-      "lines": 826,
-      "sha256": "99698f57c51aa38b93cebc9586666db0e7582654acb99270b06e5d82dbac845c",
-      "check": "Jinja compile"
-    },
-    {
       "path": "static/js/admin-table-sort.js",
       "lines": 134,
       "sha256": "92f374b7b33b7eec23d5c34c519403a1f6bf34de57007d7f0b8d7889707329af",
@@ -2054,8 +1796,8 @@
     },
     {
       "path": "static/js/i18n.js",
-      "lines": 1139,
-      "sha256": "8cf04f1a0d716c13f78ab0fd3c105e4963854c7a2673f47c3a18ac00c6400b17",
+      "lines": 1140,
+      "sha256": "1bca70ad1027cbf48028e5bd9b3b3cdc8b8dd54075e9fc8737e9e70f480aebed",
       "check": "Node syntax check"
     },
     {
@@ -2111,6 +1853,336 @@
       "lines": 958,
       "sha256": "443907121342d721d1c4575eab65264b0ee06924fbd15e815bfa1452afcff47c",
       "check": "Node syntax check"
+    },
+    {
+      "path": "templates/403.html",
+      "lines": 120,
+      "sha256": "ff749dcd67dac8d218b1e9c07377d5a646d2e5f3b307c001e0d8422caea91adc",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/404.html",
+      "lines": 109,
+      "sha256": "42c3ccdd22776cd42a69a2f8d03962997eabea14102ea615dfc89b346875e843",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/500.html",
+      "lines": 126,
+      "sha256": "0bcaef3de06fd511f8982194254a6a47dee4612601e87977b4ef5db347d81277",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/_action_buttons.html",
+      "lines": 15,
+      "sha256": "a9cfb6852e7271da3463703af5747c230b156996bb308ced154800c5c67b18e2",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/_gallery_grid.html",
+      "lines": 88,
+      "sha256": "45db200daf263e2f622116f9df1413a2520ec49a739fb4e1fbfdd459f3c7c660",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/_icons.html",
+      "lines": 328,
+      "sha256": "e927fbb7144eeb9beb8d21c2e38d5fd99a75651a649039bad2a5a4458dcf09d5",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/_orphaned_files_list.html",
+      "lines": 49,
+      "sha256": "9f88b6de75f3d29ced699c778c4506bc0bf906723b2ebc358787580490f3fefb",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/_video_grid.html",
+      "lines": 89,
+      "sha256": "99f801ffab98324338bebadfc0184248796e5285422173989551741dfff7d006",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/admin_trash.html",
+      "lines": 911,
+      "sha256": "87351890ba5866d71fffd4d3634ff4ef4af2793959245d1d97c4e8801b2d7454",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/analytics.html",
+      "lines": 1092,
+      "sha256": "180fc2b9d3c8489fc7f34728b188d281ff5334a41fcbd58a261c412bdde915ba",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/audit_logs.html",
+      "lines": 1368,
+      "sha256": "d54eff682bf0f8c1d1879a9945593c1654f4c13d60e9b3d3629a932a837a7f1f",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/base.html",
+      "lines": 1003,
+      "sha256": "e23f0ecada9d6df94a9dd5ecf54dc00d04833f6a2f6b2efdf36f081340bbd6e2",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/camera_groups.html",
+      "lines": 578,
+      "sha256": "f8657e3c2d4a50cdea65d47dcba26ea4298ad76cf0452070aa00c99a5e6eefbb",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/cameras.html",
+      "lines": 1108,
+      "sha256": "df3da5723e4f27e090070b9daa008f91f770a57cfa71b45a35f56f62a293949a",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/change_password.html",
+      "lines": 145,
+      "sha256": "a8c0dacbcffc5dad4fe936beb2dff3564e80b83e8e390b25f3c639661436675e",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/changelog.html",
+      "lines": 468,
+      "sha256": "8b793554e7756f0a9c6737b25d715ead28760cc5f0b56c6c35fcb1581ef0fec0",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/config.html",
+      "lines": 1090,
+      "sha256": "2f9e59935d48c3f4c609d772e53cf4341c8041036f69c592eaee0e601b45414e",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/demo/toast_demo.html",
+      "lines": 182,
+      "sha256": "645550eb1e4805770a04144b838aebea26d7303d9bfdb45c17e918c44d5577c0",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/docs/api.html",
+      "lines": 71,
+      "sha256": "33ced8fb869c8acc0a67db61bcf37e65c25143624c645b4550b6e6b032253941",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/docs/environment.html",
+      "lines": 192,
+      "sha256": "ac3283f14630be3d7250fe386a8b56dc57459d3286e7d65c6df0e9bc2ded2c91",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/docs/security.html",
+      "lines": 133,
+      "sha256": "7e82259a5d1da1e424d7530170a3a38786bba90378b8ed2755d461878c39749f",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/email_logs.html",
+      "lines": 720,
+      "sha256": "68abd08d2d69af068c31b539a02d0c80dfd0c3fc67ac5154b365d270d499f570",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/email_templates.html",
+      "lines": 432,
+      "sha256": "5d750e192d8beccb8b4ff956af75f07e6f9736de79fc8d2feea3fb2cd6ae47bf",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/force_mfa_setup.html",
+      "lines": 119,
+      "sha256": "65ac61dc94549c22597c28350fbf25d6dcf5786f45795f3199d879e11f3f74bf",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/health.html",
+      "lines": 732,
+      "sha256": "9b532c72a9163b9558ea7529838d4e1da6c26c3fca89f39fe74c0ae096fb33b4",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/health_history.html",
+      "lines": 325,
+      "sha256": "6ce178e97b8bef60f159bba74ad9e242c54b904ba6ace638ea572c1e203b1acd",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/insights.html",
+      "lines": 328,
+      "sha256": "1cf88dce21695ee5477f65724d327a4473c8796fadf4175a47b033449601a554",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/jobs.html",
+      "lines": 636,
+      "sha256": "e83eadacbf437b429b8e06fa7499f50d249cc7182a5460ce06f0464161775e0d",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/login.html",
+      "lines": 135,
+      "sha256": "1595c2d32d0550a419cee7e9d386d1c13be99c591a2d06a9eec0d1fca04922ec",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/login_2fa.html",
+      "lines": 100,
+      "sha256": "f97916225fe7b6014dab0f4acb0ade011ff67938fe833ff708681df723835f97",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/logout.html",
+      "lines": 12,
+      "sha256": "47fbfc89fa8ec757fcb1eaf8ddfa55937e44d39c0e4f575fe2d75a23f59a546d",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/logs.html",
+      "lines": 566,
+      "sha256": "3c5dffbae9ecd3d6dce9b8e7fb1f7512f52521e22f7adb4d9474ccb97fb7660e",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/macros/file_size.html",
+      "lines": 10,
+      "sha256": "283eb5ac4a53f02415dec6291410d71b5054bccef1a74a7f5a1683431589f22b",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/macros/navigation.html",
+      "lines": 78,
+      "sha256": "6891f7faa7d9ecd7fcb46df9fff9d84ef87f5ca644678bf58830be05c4ad946c",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/macros/ui.html",
+      "lines": 91,
+      "sha256": "b8d4ac8ffa9b3222e55758839599de75be0001b45fff0750c749587f728dec42",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/maps.html",
+      "lines": 743,
+      "sha256": "3d089ddf5191b98988ea6a8919c2d26da02e7d8b545270d52d3c45625803a698",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/nvrs.html",
+      "lines": 925,
+      "sha256": "d67b3322aa93a985960c77a84570839990110ec6a34c7382794b8bb855db3ba9",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/partials/camera_rows.html",
+      "lines": 46,
+      "sha256": "d8e3fd5b720c2873165d378ec58b7ff2335db53130aeeb8a0ea342ccbd94216b",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/partials/nvr_rows.html",
+      "lines": 27,
+      "sha256": "dea2eba57ceba39974caafaa8db284929367d3ad5caec9c4afafcab90c17a780",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/powerbi_record_checks.html",
+      "lines": 203,
+      "sha256": "52e2fd3938f1fde7da217885b2d9722ea113cdbbb60528be3ea461ba04f41cbe",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/recipients.html",
+      "lines": 1303,
+      "sha256": "d549239309c160232763f01b72bb7ac27a2ff0a7fea2bf60efb0064df48de325",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/recipients_table.html",
+      "lines": 142,
+      "sha256": "760983313e50b59519b9b5e97611f2d1d29dda3dee85e99bedec99dc0c76e575",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/record_checks.html",
+      "lines": 868,
+      "sha256": "5772d853f26507bf12cc63dd1bd1904cecdd509591371d4e20dcda133d9b2407",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/setup.html",
+      "lines": 38,
+      "sha256": "a9274c3aa4e0bb0c68af1cb943146d10a678beeb1aadfdc5e13d0b3ca8ee4597",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/sla_report.html",
+      "lines": 192,
+      "sha256": "ccd0b8aa8f99035ec763391c1b6f5feee4bb2db3a46767e55187b66e5b6eaca8",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/snapshot_gallery.html",
+      "lines": 391,
+      "sha256": "50e5dab2b2349463173901b01b2904f821cb18eeb1de3e2d74467f659d562ccd",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/stats.html",
+      "lines": 470,
+      "sha256": "d582e3156a05a1e168f837a6ef517075ffbc0174e2df6189b5a355d4d5ae7be7",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/swagger_embed.html",
+      "lines": 23,
+      "sha256": "22ae4ea0d6899c7cdc2ab02736c80f67864d56d532c542757b31f1bc5ea301c3",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/unauthorized.html",
+      "lines": 17,
+      "sha256": "912b6b94396b777d395f075ada5c3da6568449a34f883f4cea48bd86c45a5338",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/user_management.html",
+      "lines": 847,
+      "sha256": "5a8ef0b155048a8cc8227b4b95ddd7e3a6d331160546df1754a46a0f51df8f4e",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/user_management2.html",
+      "lines": 514,
+      "sha256": "63fcaa04a71c156980db2fec5a551733d8dcdb3491b9a8175e7c1cdc0322f289",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/user_profile.html",
+      "lines": 772,
+      "sha256": "9c3ceab261c5bf0cff8a8161515b8aa6191ad69491014096e78cf8a3d8e627f8",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/video_gallery.html",
+      "lines": 363,
+      "sha256": "058ba7be486952777c69616b88ebbbe41b2b811571f89c65d0850daa7ad14a98",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/wa_bot_builder.html",
+      "lines": 278,
+      "sha256": "02503bcf0a2bd99f13160b60abce152f68354cf4f073b182e1264168d352a2a5",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/whitelist.html",
+      "lines": 826,
+      "sha256": "99698f57c51aa38b93cebc9586666db0e7582654acb99270b06e5d82dbac845c",
+      "check": "Jinja template compile"
     }
   ],
   "routes": [
@@ -2121,8 +2193,7 @@
       "path": "/log/command",
       "function": "create_command_log",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2132,8 +2203,7 @@
       "path": "/log/command",
       "function": "read_command_logs",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2143,8 +2213,7 @@
       "path": "/log/api",
       "function": "create_api_log",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2154,8 +2223,7 @@
       "path": "/log/api",
       "function": "read_api_logs",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2173,13 +2241,12 @@
       "path": "/api/whatsapp/is-allowed",
       "function": "is_whatsapp_allowed",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
       "file": "app/main.py",
-      "line": 224,
+      "line": 223,
       "method": "GET",
       "path": "/static/snapshots/{path:path}",
       "function": "block_snapshot_access",
@@ -2187,7 +2254,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 244,
+      "line": 243,
       "method": "GET",
       "path": "/static/videos/{path:path}",
       "function": "block_video_access",
@@ -2195,7 +2262,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 309,
+      "line": 308,
       "method": "GET",
       "path": "/",
       "function": "root_redirect",
@@ -2392,7 +2459,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 75,
+      "line": 78,
       "method": "GET",
       "path": "/login",
       "function": "login_form",
@@ -2400,7 +2467,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 81,
+      "line": 84,
       "method": "POST",
       "path": "/login",
       "function": "login_post",
@@ -2410,7 +2477,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 116,
+      "line": 120,
       "method": "GET",
       "path": "/login/otp",
       "function": "otp_form",
@@ -2418,7 +2485,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 127,
+      "line": 131,
       "method": "POST",
       "path": "/login/otp",
       "function": "otp_post",
@@ -2428,7 +2495,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 157,
+      "line": 162,
       "method": "GET",
       "path": "/mfa/setup",
       "function": "mfa_setup_form",
@@ -2438,7 +2505,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 186,
+      "line": 191,
       "method": "POST",
       "path": "/mfa/setup",
       "function": "mfa_setup_post",
@@ -2448,8 +2515,16 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 321,
+      "line": 328,
       "method": "GET",
+      "path": "/logout",
+      "function": "logout_confirmation",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/auth.py",
+      "line": 334,
+      "method": "POST",
       "path": "/logout",
       "function": "logout",
       "declared_dependencies": [
@@ -2458,7 +2533,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 475,
+      "line": 488,
       "method": "GET",
       "path": "/change-password",
       "function": "change_password_page",
@@ -2468,7 +2543,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 481,
+      "line": 494,
       "method": "POST",
       "path": "/change-password",
       "function": "change_password",
@@ -2550,8 +2625,7 @@
       "path": "/cameras",
       "function": "manage",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2561,8 +2635,7 @@
       "path": "/cameras/data",
       "function": "manage_data",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2572,8 +2645,7 @@
       "path": "/cameras/add_camera",
       "function": "add_camera_submit",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2584,8 +2656,7 @@
       "function": "capture_video",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(operator_access_required)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(operator_access_required)"
       ]
     },
     {
@@ -2595,8 +2666,7 @@
       "path": "/cameras/edit_camera/{camera_id}",
       "function": "edit_camera_submit",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2607,8 +2677,7 @@
       "function": "get_camera_details",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(operator_access_required)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(operator_access_required)"
       ]
     },
     {
@@ -2619,8 +2688,7 @@
       "function": "get_camera_password",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -2630,8 +2698,7 @@
       "path": "/api/camera_groups",
       "function": "get_camera_groups_list",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2641,8 +2708,7 @@
       "path": "/cameras/delete/{camera_id}",
       "function": "delete_camera",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2652,8 +2718,7 @@
       "path": "/admin/cleanup-orphaned-files",
       "function": "cleanup_orphaned_files",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2663,8 +2728,7 @@
       "path": "/cameras/upload_csv",
       "function": "upload_csv",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2674,8 +2738,7 @@
       "path": "/cameras/export_csv",
       "function": "export_csv",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2685,8 +2748,7 @@
       "path": "/api/n8n/update-camera",
       "function": "update_camera_n8n",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2695,9 +2757,7 @@
       "method": "POST",
       "path": "/config/test-smtp",
       "function": "test_smtp_email",
-      "declared_dependencies": [
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/config.py",
@@ -2705,10 +2765,7 @@
       "method": "GET",
       "path": "/admin/config",
       "function": "config_page",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/config.py",
@@ -2716,10 +2773,7 @@
       "method": "GET",
       "path": "/config",
       "function": "config_page",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/config.py",
@@ -2727,10 +2781,7 @@
       "method": "POST",
       "path": "/config/save",
       "function": "config_save",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/config.py",
@@ -2748,10 +2799,7 @@
       "method": "POST",
       "path": "/config/run-cleanup",
       "function": "run_cleanup_now",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/dev_docs.py",
@@ -2909,8 +2957,7 @@
       "path": "/admin/recipients",
       "function": "list_recipients_page",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2920,8 +2967,7 @@
       "path": "/recipients",
       "function": "list_recipients_page",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2931,8 +2977,7 @@
       "path": "/api/recipients",
       "function": "list_recipients_api",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2942,8 +2987,7 @@
       "path": "/recipients/add",
       "function": "add_recipient",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2953,8 +2997,7 @@
       "path": "/recipients/edit/{recipient_id}",
       "function": "edit_recipient_submit",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2964,8 +3007,7 @@
       "path": "/recipients/delete/{recipient_id}",
       "function": "delete_recipient_submit",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2975,8 +3017,7 @@
       "path": "/api/recipients/test-send",
       "function": "test_send_email",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2987,8 +3028,7 @@
       "function": "export_recipients_csv",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -2999,8 +3039,7 @@
       "function": "import_recipients_csv",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -3010,8 +3049,7 @@
       "path": "/api/recipients/locations-without-recipients",
       "function": "get_locations_without_recipients",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -3022,13 +3060,12 @@
       "function": "export_locations_without_recipients_excel",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
       "file": "app/routes/health.py",
-      "line": 99,
+      "line": 120,
       "method": "GET",
       "path": "/health",
       "function": "health_monitor_page",
@@ -3039,7 +3076,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 118,
+      "line": 139,
       "method": "GET",
       "path": "/health/status",
       "function": "get_health_status_api",
@@ -3050,7 +3087,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 159,
+      "line": 180,
       "method": "GET",
       "path": "/health/uptime",
       "function": "get_camera_uptime_api",
@@ -3061,17 +3098,18 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 177,
+      "line": 200,
       "method": "POST",
       "path": "/health/trigger/{entity_id}",
       "function": "trigger_healthcheck",
       "declared_dependencies": [
+        "Depends(get_db)",
         "Depends(operator_access_required)"
       ]
     },
     {
       "file": "app/routes/health.py",
-      "line": 190,
+      "line": 216,
       "method": "POST",
       "path": "/health/trigger_all",
       "function": "trigger_healthcheck_all",
@@ -3082,7 +3120,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 207,
+      "line": 237,
       "method": "GET",
       "path": "/health/status/check",
       "function": "check_healthcheck_status",
@@ -3093,7 +3131,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 236,
+      "line": 266,
       "method": "GET",
       "path": "/health/history",
       "function": "health_history",
@@ -3104,7 +3142,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 456,
+      "line": 495,
       "method": "GET",
       "path": "/health/sla-report",
       "function": "sla_report",
@@ -3115,7 +3153,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 583,
+      "line": 624,
       "method": "GET",
       "path": "/health/history/export",
       "function": "export_health_history",
@@ -3126,7 +3164,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 702,
+      "line": 745,
       "method": "POST",
       "path": "/health/history/report",
       "function": "generate_health_report",
@@ -3137,7 +3175,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 1361,
+      "line": 1405,
       "method": "GET",
       "path": "/health/reports/scheduled",
       "function": "list_scheduled_reports",
@@ -3148,7 +3186,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 1385,
+      "line": 1430,
       "method": "POST",
       "path": "/health/reports/scheduled",
       "function": "create_scheduled_report",
@@ -3159,7 +3197,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 1420,
+      "line": 1466,
       "method": "DELETE",
       "path": "/health/reports/scheduled/{report_id}",
       "function": "delete_scheduled_report",
@@ -3367,8 +3405,7 @@
       "path": "/logs",
       "function": "view_logs",
       "declared_dependencies": [
-        "Depends(operator_access_required)",
-        "Depends(get_db)"
+        "Depends(operator_access_required)"
       ]
     },
     {
@@ -3417,10 +3454,7 @@
       "method": "GET",
       "path": "/camera-heatmap",
       "function": "camera_heatmap",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(get_current_user)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/map_live.py",
@@ -3428,10 +3462,7 @@
       "method": "GET",
       "path": "/maps/live/status",
       "function": "live_status",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/map_live.py",
@@ -3439,10 +3470,7 @@
       "method": "GET",
       "path": "/maps/cameras/{camera_id}/live",
       "function": "live_camera",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/maps.py",
@@ -3450,10 +3478,7 @@
       "method": "GET",
       "path": "/maps",
       "function": "maps_page",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(get_current_user)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/maps.py",
@@ -3461,10 +3486,7 @@
       "method": "GET",
       "path": "/camera-locations",
       "function": "get_camera_locations",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(get_current_user)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/notifications.py",
@@ -3833,10 +3855,7 @@
       "method": "POST",
       "path": "/api/record-checks/sources/{source_id}/mount",
       "function": "mount_record_source",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/record_checks.py",
@@ -3844,10 +3863,7 @@
       "method": "POST",
       "path": "/api/record-checks/sources/{source_id}/unmount",
       "function": "unmount_record_source",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/record_checks.py",
@@ -4124,10 +4140,7 @@
       "method": "GET",
       "path": "/snapshot/latest/{camera_identifier}/info",
       "function": "get_latest_snapshot_info",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/snapshots.py",
@@ -4135,10 +4148,7 @@
       "method": "GET",
       "path": "/snapshot/file/{file_path:path}",
       "function": "get_snapshot_file_raw",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required_optional)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/snapshots.py",
@@ -4146,10 +4156,7 @@
       "method": "GET",
       "path": "/snapshot/token/{file_path:path}",
       "function": "get_signed_token",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/snapshots.py",
@@ -4157,10 +4164,7 @@
       "method": "POST",
       "path": "/snapshot/token/batch",
       "function": "generate_tokens_batch",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/stats.py",
@@ -4180,7 +4184,6 @@
       "path": "/stats/snapshot-details",
       "function": "get_snapshot_details",
       "declared_dependencies": [
-        "Depends(get_db)",
         "[Depends(admin_access_required)]"
       ]
     },
@@ -4291,8 +4294,7 @@
       "function": "toast_demo_page",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -4301,9 +4303,7 @@
       "method": "POST",
       "path": "/test-success",
       "function": "test_success_notification",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4311,9 +4311,7 @@
       "method": "POST",
       "path": "/test-error",
       "function": "test_error_notification",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4321,9 +4319,7 @@
       "method": "POST",
       "path": "/test-warning",
       "function": "test_warning_notification",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4331,9 +4327,7 @@
       "method": "POST",
       "path": "/test-info",
       "function": "test_info_notification",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4341,9 +4335,7 @@
       "method": "POST",
       "path": "/test-with-actions",
       "function": "test_notification_with_actions",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4351,9 +4343,7 @@
       "method": "POST",
       "path": "/test-camera-offline",
       "function": "test_camera_offline",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4361,9 +4351,7 @@
       "method": "POST",
       "path": "/test-camera-online",
       "function": "test_camera_online",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4371,9 +4359,7 @@
       "method": "POST",
       "path": "/test-persistent",
       "function": "test_persistent_notification",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4381,9 +4367,7 @@
       "method": "POST",
       "path": "/test-position/{position}",
       "function": "test_position_notification",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/user_management.py",
@@ -4864,8 +4848,7 @@
       "path": "/api/whitelist",
       "function": "get_whitelist",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -4875,8 +4858,7 @@
       "path": "/api/whitelist/group/{phone_number}",
       "function": "get_whitelist_group",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -4887,8 +4869,7 @@
       "function": "add_whitelist",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -4899,8 +4880,7 @@
       "function": "delete_whitelist",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -4911,8 +4891,7 @@
       "function": "edit_whitelist",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -4923,8 +4902,7 @@
       "function": "export_whitelist_csv",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -4935,8 +4913,7 @@
       "function": "import_whitelist_csv",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -4948,6 +4925,6 @@
       "declared_dependencies": []
     }
   ],
-  "release_version": "2.6.0",
+  "release_version": "2.6.1",
   "hash_format": "SHA-256 of file bytes with CRLF normalized to LF"
 }

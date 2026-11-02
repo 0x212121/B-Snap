@@ -4,6 +4,7 @@
 from .camera import Camera
 from .camera_group import CameraGroup
 from .user import User
+from .auth_rate_limit import AuthRateLimit
 from .nvr import NVR
 from .snapshot import Snapshot
 from .snapshot_log import SnapshotLog
@@ -46,6 +47,7 @@ __all__ = [
     "Camera",
     "CameraGroup",
     "User",
+    "AuthRateLimit",
     "NVR",
     "Snapshot",
     "SnapshotLog",

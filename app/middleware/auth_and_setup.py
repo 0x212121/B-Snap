@@ -48,6 +48,9 @@ class AuthAndSetupMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         if request.url.path == "/readyz" and request.method == "GET":
             return await call_next(request)
+        if request.url.path == "/webhook/gowa" and request.method == "POST":
+            # The route authenticates raw bytes with GoWA HMAC before any lookup.
+            return await call_next(request)
         original_session = request.session.copy()
         db = None
         try:

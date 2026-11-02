@@ -895,8 +895,11 @@ class EmailRetryMigrationTests(unittest.TestCase):
         root = APP_ROOT.parent
         config = Config(str(root / "alembic.ini"))
         config.set_main_option("script_location", str(root / "alembic"))
-        self.assertEqual(
-            ScriptDirectory.from_config(config).get_heads(), ["20261012_email_retry_expiry"]
+        revisions = ScriptDirectory.from_config(config)
+        self.assertEqual(len(revisions.get_heads()), 1)
+        self.assertIn(
+            "20261012_email_retry_expiry",
+            {revision.revision for revision in revisions.walk_revisions()},
         )
         path = root / "alembic/versions/20261007_email_retry_lifecycle.py"
         spec = importlib.util.spec_from_file_location("isolated_email_retry_migration", path)

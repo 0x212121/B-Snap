@@ -86,6 +86,8 @@ def test_static_symlink_cannot_alias_private_footage(tmp_path):
 
 @pytest.mark.parametrize("method", ["GET", "POST"])
 def test_enabled_mfa_never_exposes_or_reenrolls_secret(monkeypatch, method):
+    # Auth-rate persistence has its own real-DB tests; this test isolates enrollment.
+    monkeypatch.setattr(auth, "enforce_auth_rate_limit", Mock())
     user = SimpleNamespace(id=7, is_2fa_enabled=True, otp_secret=pyotp.random_base32())
     db = Mock()
     db.query.return_value.filter.return_value.first.return_value = user
@@ -119,6 +121,7 @@ def test_enabled_mfa_never_exposes_or_reenrolls_secret(monkeypatch, method):
 
 
 def test_initial_mfa_enrollment_still_works(monkeypatch):
+    monkeypatch.setattr(auth, "enforce_auth_rate_limit", Mock())
     user = SimpleNamespace(
         id=7, username="enrollment", is_2fa_enabled=False, otp_secret=pyotp.random_base32()
     )

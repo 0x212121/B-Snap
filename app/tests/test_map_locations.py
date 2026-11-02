@@ -16,7 +16,6 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event, insert
 from sqlalchemy.orm import Session
-from sqlalchemy.pool import StaticPool
 
 from app.db.database import Base
 from app.models.camera import Camera, camera_camera_groups
@@ -35,10 +34,14 @@ def setup_test_database() -> None:
 
 
 @pytest.fixture
-def map_db(monkeypatch: pytest.MonkeyPatch) -> Generator[tuple[Session, list[str]], None, None]:
+def map_db(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> Generator[tuple[Session, list[str]], None, None]:
     """Keep map writes isolated from application PostgreSQL and freeze the UTC clock."""
+    # Concurrent requests need independent connections, not StaticPool's single
+    # shared sqlite3 connection. Keep each test's database in its temporary folder.
     engine = create_engine(
-        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+        f"sqlite:///{tmp_path / 'maps.sqlite'}", connect_args={"check_same_thread": False}
     )
     Base.metadata.create_all(
         engine,

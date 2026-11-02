@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
+import json
+import os
 import unittest
 
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
+from starlette.requests import Request
 
 from app.routes import wa_webhook
 
@@ -57,21 +61,32 @@ class ReplyRoutingTests(unittest.TestCase):
             return "Recorded"
 
         bot.handle = AsyncMock(side_effect=handle)
-        request = SimpleNamespace(
-            json=AsyncMock(
-                return_value={
-                    "from": sender,
-                    "body": "/record camera",
-                    "id": message_id,
-                    "chat_id": chat_id,
-                }
-            )
+        payload = {
+            "from": sender,
+            "body": "/record camera",
+            "id": message_id,
+            "chat_id": chat_id,
+        }
+        raw = json.dumps(payload).encode()
+        secret = "reply-routing-test-secret-at-least-32"
+        signature = "sha256=" + hmac.new(secret.encode(), raw, hashlib.sha256).hexdigest()
+        request = Request(
+            {
+                "type": "http",
+                "method": "POST",
+                "path": "/webhook/gowa",
+                "headers": [(b"x-hub-signature-256", signature.encode())],
+            },
+            receive=AsyncMock(
+                return_value={"type": "http.request", "body": raw, "more_body": False}
+            ),
         )
         gateway = Mock()
         gateway.send_video_file.return_value = {"success": True}
         gateway.send_image_file.return_value = {"success": True}
         gateway.send_text.return_value = {"success": True}
         with (
+            patch.dict(os.environ, {"GOWA_WEBHOOK_SECRET": secret}),
             patch.object(wa_webhook, "WABotHandler", return_value=bot),
             patch.object(wa_webhook, "_whitelisted_sender", return_value=Mock()),
             patch.object(wa_webhook, "get_command_settings", return_value=[]),

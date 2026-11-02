@@ -7,7 +7,8 @@ B-Snap implements defense-in-depth security for CCTV environments, addressing bo
 ### Session-Based Authentication
 - FastAPI session middleware with secure cookie settings
 - Passwords hashed with bcrypt (adaptive hashing)
-- Session timeout after 30 minutes of inactivity
+- Session/token expiry follows `SESSION_MAX_AGE_SECONDS` (default 24 hours);
+  Remember Me uses the separately revocable persistent-login mechanism.
 - Role-based access control (Admin, Operator, Viewer)
 
 ### One-Time Password (OTP)
@@ -16,6 +17,13 @@ B-Snap implements defense-in-depth security for CCTV environments, addressing bo
 - Backup codes for account recovery
 
 ## Data Protection
+
+### High-priority hardening in 2.6.1
+
+Webhook HMAC authentication, browser-origin CSRF protection, shared authentication
+attempt limits, fail-fast production settings, and group-scoped health checks are
+documented in [Security rollout](high_security_rollout.md). This release requires
+an Alembic upgrade and coordinated GoWA/proxy environment configuration before use.
 
 ### Password Encryption (P1-001)
 Camera and NVR passwords are encrypted at rest using **AES-256-GCM**:

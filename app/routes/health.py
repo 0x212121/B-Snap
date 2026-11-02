@@ -25,12 +25,18 @@ from app.models.camera_daily_stats import CameraDailyStats
 from app.models.health import CameraHealth as Health
 from app.models.camera import Camera as DBCamera
 from app.models.camera_group import CameraGroup
-from app.models.health_check_status import HealthCheckStatus
 from app.models.camera_status_change_log import CameraStatusChangeLog
 from app.models.user import User
 from app.models.sla_report import SLAReport, ScheduledReport
 from app.utils.template_helper import templates
 from app.utils.timezone_helper import get_current_timezone, to_current_timezone
+from app.utils.device_access import (
+    camera_scope,
+    nvr_scope,
+    require_device_access,
+    require_global_health_scope,
+)
+from app.utils.health_progress import health_progress
 
 # --- ReportLab for PDF Generation ---
 from reportlab.lib.pagesizes import A4, landscape
@@ -69,31 +75,46 @@ class HealthStatusResponse(BaseModel):
     camera_offline_count: int
     nvr_offline_count: int
 
-def _get_all_devices_health_data(db: Session) -> list:
-    camera_q = select(
-        DBCamera.id, DBCamera.hostname, DBCamera.ip,
-        DBCamera.status.label("dev_status"),
-        literal_column("'Camera'").label("type"),
-        Health.status, Health.latency, Health.checked,
-        Health.last_online, Health.status_changed_at
-    ).join(Health, DBCamera.id == Health.camera_id).where(
-        and_(
-            DBCamera.ip.isnot(None),
-            DBCamera.ip != ''
+
+def _get_all_devices_health_data(db: Session, group_id: int | None = None) -> list:
+    camera_q = (
+        select(
+            DBCamera.id,
+            DBCamera.hostname,
+            DBCamera.ip,
+            DBCamera.status.label("dev_status"),
+            literal_column("'Camera'").label("type"),
+            Health.status,
+            Health.latency,
+            Health.checked,
+            Health.last_online,
+            Health.status_changed_at,
         )
+        .join(Health, DBCamera.id == Health.camera_id)
+        .where(and_(DBCamera.ip.isnot(None), DBCamera.ip != ""), camera_scope(group_id))
     )
 
-    nvr_q = select(
-        NVR.id, NVR.hostname, NVR.ip,
-        NVR.status.label("dev_status"),
-        literal_column("'NVR'").label("type"),
-        Health.status, Health.latency, Health.checked,
-        Health.last_online, Health.status_changed_at
-    ).join(Health, NVR.id == Health.nvr_id)
+    nvr_q = (
+        select(
+            NVR.id,
+            NVR.hostname,
+            NVR.ip,
+            NVR.status.label("dev_status"),
+            literal_column("'NVR'").label("type"),
+            Health.status,
+            Health.latency,
+            Health.checked,
+            Health.last_online,
+            Health.status_changed_at,
+        )
+        .join(Health, NVR.id == Health.nvr_id)
+        .where(nvr_scope(group_id))
+    )
 
     unified_construct = union_all(camera_q, nvr_q).alias("unified_health")
     final_query = select(unified_construct).order_by(asc(unified_construct.c.hostname))
     return db.execute(final_query).all()
+
 
 @router.get("/health", response_class=HTMLResponse)
 async def health_monitor_page(
@@ -117,7 +138,7 @@ async def health_monitor_page(
 @router.get("/health/status", response_model=HealthStatusResponse)
 async def get_health_status_api(db: Session = Depends(get_db), current_operator: User = Depends(operator_access_required)):
     try:
-        all_devices = _get_all_devices_health_data(db)
+        all_devices = _get_all_devices_health_data(db, current_operator.group_id)
         counts = Counter((dev.type, dev.status) for dev in all_devices)
 
         # Count online/offline
@@ -162,7 +183,9 @@ async def get_camera_uptime_api(
     current_operator: User = Depends(operator_access_required),
 ):
     """Return current continuous uptime for each online camera."""
-    uptime_rows = get_camera_uptime(db, camera_id)
+    if camera_id:
+        require_device_access(db, camera_id, "camera", current_operator.group_id)
+    uptime_rows = get_camera_uptime(db, camera_id, group_id=current_operator.group_id)
     if camera_id and not uptime_rows:
         raise HTTPException(status_code=404, detail="Camera not found")
 
@@ -175,37 +198,44 @@ async def get_camera_uptime_api(
 
 @router.post("/health/trigger/{entity_id}")
 async def trigger_healthcheck(
-    entity_id: str, background_tasks: BackgroundTasks,
-    type: str = Query(..., enum=["camera", "nvr"]),
-    current_operator: User = Depends(operator_access_required)
+    entity_id: str,
+    background_tasks: BackgroundTasks,
+    type: Literal["camera", "nvr"] = Query(...),
+    db: Session = Depends(get_db),
+    current_operator: User = Depends(operator_access_required),
 ):
+    require_device_access(db, entity_id, type, current_operator.group_id)
     if type == "camera":
-        background_tasks.add_task(run_healthcheck_for_camera, entity_id)
+        background_tasks.add_task(run_healthcheck_for_camera, entity_id, current_operator.group_id)
     elif type == "nvr":
-        background_tasks.add_task(run_healthcheck_for_nvr, entity_id)
+        background_tasks.add_task(run_healthcheck_for_nvr, entity_id, current_operator.group_id)
     return {"status": f"Healthcheck triggered for {type.upper()} ID {entity_id}"}
 
 
 @router.post("/health/trigger_all")
 async def trigger_healthcheck_all(background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_operator: User = Depends(operator_access_required)):
-    status = db.query(HealthCheckStatus).get(1)
-    if not status:
-        status = HealthCheckStatus(id=1)
-        db.add(status)
+    status = health_progress(db, current_operator.group_id, create=True)
+    if status.is_running:
+        raise HTTPException(
+            status_code=409, detail="A health check is already running for this scope"
+        )
 
-    total_devices = db.query(DBCamera).count() + db.query(NVR).count()
+    total_devices = (
+        db.query(DBCamera).filter(camera_scope(current_operator.group_id)).count()
+        + db.query(NVR).filter(nvr_scope(current_operator.group_id)).count()
+    )
     status.is_running = True
     status.start_time = datetime.now(timezone.utc)
     status.total_cameras = total_devices
     status.completed_cameras = 0
     db.commit()
 
-    background_tasks.add_task(run_healthcheck_for_all)
+    background_tasks.add_task(run_healthcheck_for_all, current_operator.group_id)
     return {"status": "Healthcheck triggered for all devices"}
 
 @router.get("/health/status/check")
 async def check_healthcheck_status(db: Session = Depends(get_db), current_operator: User = Depends(operator_access_required)):
-    status = db.query(HealthCheckStatus).get(1)
+    status = health_progress(db, current_operator.group_id)
     if not status or not status.is_running or status.completed_cameras >= status.total_cameras:
         if status and status.is_running:
             status.is_running = False
@@ -230,7 +260,7 @@ def format_duration(seconds: int) -> str:
         return f"{seconds // 60}m"
     else:
         return f"{seconds}s"
-    
+
 
 @router.get("/health/history", response_class=HTMLResponse, name="health_history")
 async def health_history(
@@ -259,12 +289,14 @@ async def health_history(
     )
 
     # Query utama menggunakan subquery (lebih efisien)
-    base_query = db.query(
-        DBCamera.id,
-        DBCamera.hostname,
-        func.coalesce(stats_subq.c.average_uptime, 0).label("average_uptime")
-    ).outerjoin(
-        stats_subq, DBCamera.id == stats_subq.c.camera_id
+    base_query = (
+        db.query(
+            DBCamera.id,
+            DBCamera.hostname,
+            func.coalesce(stats_subq.c.average_uptime, 0).label("average_uptime"),
+        )
+        .outerjoin(stats_subq, DBCamera.id == stats_subq.c.camera_id)
+        .filter(camera_scope(current_operator.group_id))
     )
 
     if q:
@@ -272,7 +304,7 @@ async def health_history(
 
     # Sorting yang benar - gunakan label, bukan string
     avg_uptime_col = func.coalesce(stats_subq.c.average_uptime, 0)
-    
+
     if sort == "name_asc":
         base_query = base_query.order_by(asc(DBCamera.hostname))
     elif sort == "name_desc":
@@ -285,21 +317,25 @@ async def health_history(
         base_query = base_query.order_by(asc(DBCamera.hostname))
 
     # Pagination - count dengan subquery untuk akurasi
-    count_query = db.query(func.count(DBCamera.id)).select_from(DBCamera)
+    count_query = (
+        db.query(func.count(DBCamera.id))
+        .select_from(DBCamera)
+        .filter(camera_scope(current_operator.group_id))
+    )
     if q:
         count_query = count_query.filter(DBCamera.hostname.ilike(f"%{q}%"))
-    
+
     total_items = count_query.scalar()
     total_pages = max(1, math.ceil(total_items / ITEMS_PER_PAGE))
-    
+
     # Clamp page ke valid range
     page = min(page, total_pages) if total_pages > 0 else 1
-    
+
     offset = (page - 1) * ITEMS_PER_PAGE
-    
+
     # Ambil data dengan limit/offset
     paginated_results = base_query.limit(ITEMS_PER_PAGE).offset(offset).all()
-    
+
     if not paginated_results:
         camera_ids_on_page = []
         full_camera_details = {}
@@ -385,8 +421,11 @@ async def health_history(
     }
 
     # Get all camera groups for the export modal
-    camera_groups = db.query(CameraGroup).order_by(CameraGroup.name).all()
-    
+    group_query = db.query(CameraGroup)
+    if current_operator.group_id is not None:
+        group_query = group_query.filter(CameraGroup.id == current_operator.group_id)
+    camera_groups = group_query.order_by(CameraGroup.name).all()
+
     return templates.TemplateResponse("health_history.html", {
         "request": request,
         "historical_data": historical_data,
@@ -469,37 +508,39 @@ async def sla_report(
     """
     # Ensure end_date includes the full day
     end_datetime = datetime.combine(end_date, datetime.max.time())
-    
+
     # Get all cameras with daily stats in the period
-    cameras = db.query(DBCamera).options(
-        joinedload(DBCamera.daily_stats),
-        joinedload(DBCamera.groups)
-    ).all()
-    
+    cameras = (
+        db.query(DBCamera)
+        .filter(camera_scope(current_operator.group_id))
+        .options(joinedload(DBCamera.daily_stats), joinedload(DBCamera.groups))
+        .all()
+    )
+
     sla_data = []
     total_incidents = {"critical": 0, "major": 0, "minor": 0}
     compliance_summary = {"pass": 0, "fail": 0, "warning": 0}
-    
+
     for camera in cameras:
         # Filter daily stats within period
         period_stats = [
             stat for stat in camera.daily_stats
             if stat.date and start_date <= stat.date <= end_date
         ]
-        
+
         if not period_stats:
             continue
-        
+
         # Calculate aggregate metrics
         total_uptime = sum(s.total_uptime_seconds or 0 for s in period_stats)
         total_downtime = sum(s.total_downtime_seconds or 0 for s in period_stats)
         total_time = total_uptime + total_downtime
-        
+
         uptime_percentage = (total_uptime / total_time * 100) if total_time > 0 else 100.0
-        
+
         # Calculate MTTR and MTBF
         mttr, mtbf = _calculate_mttr_mtbf(db, camera.id, start_date, end_date)
-        
+
         # Get incident logs for severity classification
         incident_logs = db.query(CameraStatusChangeLog).filter(
             CameraStatusChangeLog.camera_id == camera.id,
@@ -507,18 +548,18 @@ async def sla_report(
             CameraStatusChangeLog.changed_at >= start_date,
             CameraStatusChangeLog.changed_at <= end_datetime
         ).all()
-        
+
         severity_counts = {"critical": 0, "major": 0, "minor": 0}
         for log in incident_logs:
             if log.duration_since_last_change:
                 severity = _classify_incident_severity(log.duration_since_last_change)
                 severity_counts[severity] += 1
                 total_incidents[severity] += 1
-        
+
         # Determine compliance status
         compliance_status = _get_sla_compliance_status(uptime_percentage, sla_threshold)
         compliance_summary[compliance_status.lower()] += 1
-        
+
         sla_data.append({
             "camera_id": camera.id,
             "camera_name": camera.hostname,
@@ -538,10 +579,10 @@ async def sla_report(
             "compliance_status": compliance_status,
             "sla_threshold": sla_threshold
         })
-    
+
     # Sort by uptime percentage (worst first)
     sla_data.sort(key=lambda x: x["uptime_percentage"])
-    
+
     # Calculate summary statistics
     if sla_data:
         avg_uptime = sum(d["uptime_percentage"] for d in sla_data) / len(sla_data)
@@ -551,7 +592,7 @@ async def sla_report(
         avg_uptime = 100.0
         worst_performer = None
         best_performer = None
-    
+
     summary = {
         "total_cameras": len(sla_data),
         "average_uptime": round(avg_uptime, 2),
@@ -563,11 +604,11 @@ async def sla_report(
         "period_start": start_date.isoformat(),
         "period_end": end_date.isoformat()
     }
-    
+
     # Check if JSON response requested
     if request.headers.get("accept") == "application/json":
         return {"summary": summary, "cameras": sla_data}
-    
+
     # Render HTML template
     return templates.TemplateResponse("sla_report.html", {
         "request": request,
@@ -597,14 +638,16 @@ async def export_health_history(
         end_date = date.today()
     if not start_date:
         start_date = end_date - timedelta(days=30)
-    
+
     try:
         # Query camera stats with group relationship loaded
-        cameras = db.query(DBCamera).options(
-            joinedload(DBCamera.daily_stats),
-            joinedload(DBCamera.groups)
-        ).all()
-        
+        cameras = (
+            db.query(DBCamera)
+            .filter(camera_scope(current_operator.group_id))
+            .options(joinedload(DBCamera.daily_stats), joinedload(DBCamera.groups))
+            .all()
+        )
+
         # Prepare data
         rows = []
         for camera in cameras:
@@ -612,15 +655,15 @@ async def export_health_history(
                 stat for stat in camera.daily_stats
                 if stat.date and start_date <= stat.date <= end_date
             ]
-            
+
             if not period_stats:
                 continue
-            
+
             total_uptime = sum(s.total_uptime_seconds or 0 for s in period_stats)
             total_downtime = sum(s.total_downtime_seconds or 0 for s in period_stats)
             total_time = total_uptime + total_downtime
             uptime_percentage = (total_uptime / total_time * 100) if total_time > 0 else 100.0
-            
+
             rows.append({
                 "Camera Name": camera.hostname,
                 "Location": camera.location or "",
@@ -632,16 +675,16 @@ async def export_health_history(
                 "Total Downtime (hours)": round(total_downtime / 3600, 2),
                 "Days with Data": len(period_stats)
             })
-        
+
         # Sort by uptime percentage
         rows.sort(key=lambda x: x["Uptime %"])
-        
+
         # Define headers explicitly
         headers = [
             "Camera Name", "Location", "Group", "Period Start", "Period End",
             "Uptime %", "Total Uptime (hours)", "Total Downtime (hours)", "Days with Data"
         ]
-        
+
         if format == "csv":
             import csv
             from io import StringIO
@@ -651,14 +694,14 @@ async def export_health_history(
             writer.writerows(rows)
             csv_content = output.getvalue()
             output.close()
-            
+
             filename = f"health-history_{start_date}_{end_date}.csv"
             return StreamingResponse(
                 BytesIO(csv_content.encode('utf-8')),
                 media_type="text/csv; charset=utf-8",
                 headers={"Content-Disposition": f'attachment; filename="{filename}"'}
             )
-        
+
         else:  # excel
             try:
                 import pandas as pd
@@ -669,7 +712,7 @@ async def export_health_history(
                 output = BytesIO()
                 df.to_excel(output, index=False, sheet_name="Health History")
                 output.seek(0)
-                
+
                 filename = f"health-history_{start_date}_{end_date}.xlsx"
                 return StreamingResponse(
                     output,
@@ -686,7 +729,7 @@ async def export_health_history(
                 writer.writerows(rows)
                 csv_content = output.getvalue()
                 output.close()
-                
+
                 filename = f"health-history_{start_date}_{end_date}.csv"
                 return StreamingResponse(
                     BytesIO(csv_content.encode('utf-8')),
@@ -726,43 +769,44 @@ async def generate_health_report(
     form_data = await request.form()
     uptime_chart = form_data.get("uptime_chart")
     heatmap_chart = form_data.get("heatmap_chart")
-    
+
     # Ensure end_date includes the full day
     end_datetime = datetime.combine(end_date, datetime.max.time())
-    
+
     # Get cameras with optional group filter
-    cameras_query = db.query(DBCamera).options(
-        joinedload(DBCamera.daily_stats),
-        joinedload(DBCamera.groups)
+    cameras_query = (
+        db.query(DBCamera)
+        .filter(camera_scope(current_operator.group_id))
+        .options(joinedload(DBCamera.daily_stats), joinedload(DBCamera.groups))
     )
-    
+
     # Filter by groups if specified
     if groups and len(groups) > 0:
         cameras_query = cameras_query.join(DBCamera.groups).filter(
             CameraGroup.name.in_(groups)
         )
-    
+
     cameras = cameras_query.distinct().all()
-    
+
     # Calculate metrics for each camera
     report_data = []
     total_incidents = {"critical": 0, "major": 0, "minor": 0}
     compliance_summary = {"pass": 0, "fail": 0, "warning": 0}
-    
+
     for camera in cameras:
         period_stats = [
             stat for stat in camera.daily_stats
             if stat.date and start_date <= stat.date <= end_date
         ]
-        
+
         if not period_stats:
             continue
-        
+
         total_uptime = sum(s.total_uptime_seconds or 0 for s in period_stats)
         total_downtime = sum(s.total_downtime_seconds or 0 for s in period_stats)
         total_time = total_uptime + total_downtime
         uptime_percentage = (total_uptime / total_time * 100) if total_time > 0 else 100.0
-        
+
         # Get incident count
         incident_count = db.query(func.count(CameraStatusChangeLog.id)).filter(
             CameraStatusChangeLog.camera_id == camera.id,
@@ -770,14 +814,14 @@ async def generate_health_report(
             CameraStatusChangeLog.changed_at >= start_date,
             CameraStatusChangeLog.changed_at <= end_datetime
         ).scalar() or 0
-        
+
         # Calculate MTTR
         mttr, _ = _calculate_mttr_mtbf(db, camera.id, start_date, end_date)
-        
+
         # Compliance status
         compliance_status = _get_sla_compliance_status(uptime_percentage, sla_threshold)
         compliance_summary[compliance_status.lower()] += 1
-        
+
         report_data.append({
             "camera_name": camera.hostname,
             "location": camera.location or "-",
@@ -789,10 +833,10 @@ async def generate_health_report(
             "mttr_seconds": mttr,
             "compliance_status": compliance_status
         })
-    
+
     # Sort by uptime (worst first)
     report_data.sort(key=lambda x: x["uptime_percentage"])
-    
+
     # Calculate summary
     if report_data:
         avg_uptime = sum(d["uptime_percentage"] for d in report_data) / len(report_data)
@@ -804,7 +848,7 @@ async def generate_health_report(
         worst_performer = None
         best_performer = None
         total_cameras = 0
-    
+
     # Generate report based on format
     if format == "pdf":
         return _generate_pdf_report(
@@ -1363,6 +1407,7 @@ async def list_scheduled_reports(
     current_operator: User = Depends(operator_access_required)
 ):
     """List all scheduled reports."""
+    require_global_health_scope(current_operator.group_id)
     reports = db.query(ScheduledReport).order_by(ScheduledReport.created_at.desc()).all()
     return {
         "reports": [
@@ -1396,6 +1441,7 @@ async def create_scheduled_report(
     current_operator: User = Depends(operator_access_required)
 ):
     """Create a new scheduled report."""
+    require_global_health_scope(current_operator.group_id)
     report = ScheduledReport(
         name=name,
         report_type=report_type,
@@ -1408,11 +1454,11 @@ async def create_scheduled_report(
         is_active=is_active,
         created_by=current_operator.id
     )
-    
+
     db.add(report)
     db.commit()
     db.refresh(report)
-    
+
     return {"status": "success", "report_id": report.id}
 
 
@@ -1423,11 +1469,12 @@ async def delete_scheduled_report(
     current_operator: User = Depends(operator_access_required)
 ):
     """Delete a scheduled report."""
+    require_global_health_scope(current_operator.group_id)
     report = db.query(ScheduledReport).filter(ScheduledReport.id == report_id).first()
     if not report:
         return JSONResponse(status_code=404, content={"message": "Report not found"})
-    
+
     db.delete(report)
     db.commit()
-    
+
     return {"status": "success", "message": "Report deleted"}

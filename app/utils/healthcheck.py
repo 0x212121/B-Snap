@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from app.models.health import CameraHealth
 from app.models.nvr import NVR
 from app.models.camera import Camera as DBCamera
-from app.models.health_check_status import HealthCheckStatus
 from app.models.camera_daily_stats import CameraDailyStats
 from app.models.camera_status_change_log import CameraStatusChangeLog
 from app.models.config import Configuration
@@ -15,6 +14,8 @@ from ping3 import ping, errors
 from app.core.logging_config import setup_logging
 import logging
 from app.models.task_timing import TaskTiming
+from app.utils.device_access import camera_scope, nvr_scope
+from app.utils.health_progress import health_progress
 from app.utils.email_notifier import cleanup_old_email_logs
 from app.utils.email_notifier import send_offline_incident_email_once
 import os
@@ -67,6 +68,8 @@ def format_uptime_duration(seconds: int) -> str:
 def get_camera_uptime(
     db: Session,
     camera_id: str | None = None,
+    *,
+    group_id: int | None = None,
 ) -> list[dict[str, str | int | bool | None]]:
     """Return each camera's current continuous uptime, when it is online.
 
@@ -74,13 +77,17 @@ def get_camera_uptime(
     so changes between Online and High Latency do not reset the uptime timer.
     """
     now = datetime.now(timezone.utc)
-    query = db.query(
-        DBCamera.id.label("camera_id"),
-        DBCamera.hostname.label("camera_name"),
-        CameraHealth.status.label("status"),
-        CameraHealth.last_online.label("last_online"),
-        CameraHealth.checked.label("checked_at"),
-    ).outerjoin(CameraHealth, CameraHealth.camera_id == DBCamera.id)
+    query = (
+        db.query(
+            DBCamera.id.label("camera_id"),
+            DBCamera.hostname.label("camera_name"),
+            CameraHealth.status.label("status"),
+            CameraHealth.last_online.label("last_online"),
+            CameraHealth.checked.label("checked_at"),
+        )
+        .outerjoin(CameraHealth, CameraHealth.camera_id == DBCamera.id)
+        .filter(camera_scope(group_id))
+    )
 
     if camera_id:
         query = query.filter(DBCamera.id == camera_id)
@@ -152,7 +159,7 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
 
     is_online, latency_ms = ping_device(device_ip)
     now = datetime.now(timezone.utc)
-    
+
     # Get configured timezone for date calculations
     tz_name = _get_configured_timezone(db)
     tz = pytz.timezone(tz_name)
@@ -285,21 +292,24 @@ def _perform_and_update_health_check(db: Session, device_info: dict) -> tuple[st
     return entry.status, entry.latency
 
 
-def ping_all_devices():
+def ping_all_devices(group_id: int | None = None):
     time_start = time.monotonic()
     started_at = datetime.now(timezone.utc)
 
     db = SessionLocal()
     status_tracker = None
     try:
-        status_tracker = db.query(HealthCheckStatus).get(1)
-        if not status_tracker:
-            status_tracker = HealthCheckStatus(id=1)
-            db.add(status_tracker)
-            db.commit()
+        status_tracker = health_progress(db, group_id, create=True)
 
-        cameras = db.query(DBCamera).filter(and_(DBCamera.status != "Deactivated", DBCamera.status != "Standalone")).all()
-        nvrs = db.query(NVR).filter(NVR.status != "Deactivated").all()
+        cameras = (
+            db.query(DBCamera)
+            .filter(
+                camera_scope(group_id),
+                and_(DBCamera.status != "Deactivated", DBCamera.status != "Standalone"),
+            )
+            .all()
+        )
+        nvrs = db.query(NVR).filter(nvr_scope(group_id), NVR.status != "Deactivated").all()
         devices = [{"id": cam.id, "name": cam.hostname, "ip": cam.ip, "type": "Camera"} for cam in cameras] + \
                   [{"id": nvr.id, "name": nvr.hostname, "ip": nvr.ip, "type": "NVR"} for nvr in nvrs]
 
@@ -312,9 +322,19 @@ def ping_all_devices():
         logger.info("🔍 Starting health check for %d devices...", len(devices))
 
         for i, device_info in enumerate(devices, 1):
-            _perform_and_update_health_check(db, device_info)
+            model, clause = (
+                (DBCamera, camera_scope(group_id))
+                if device_info["type"] == "Camera"
+                else (NVR, nvr_scope(group_id))
+            )
+            if (
+                group_id is None
+                or db.query(model.id).filter(model.id == device_info["id"], clause).first()
+                is not None
+            ):
+                _perform_and_update_health_check(db, device_info)
 
-            status_tracker = db.query(HealthCheckStatus).get(1)
+            status_tracker = health_progress(db, group_id)
             if status_tracker:
                 status_tracker.completed_cameras = i
 
@@ -326,7 +346,7 @@ def ping_all_devices():
         db.commit()
 
         logger.info("✅ Health check for all devices completed.")
-        status_tracker = db.query(HealthCheckStatus).get(1)
+        status_tracker = health_progress(db, group_id)
         if status_tracker:
             status_tracker.is_running = False
             status_tracker.start_time = None
@@ -334,7 +354,7 @@ def ping_all_devices():
 
         status = "success"
         try:
-            deleted = cleanup_old_email_logs(db)
+            deleted = cleanup_old_email_logs(db) if group_id is None else 0
             if deleted:
                 logger.info("🧹 Cleaned up %d email notification logs.", deleted)
         except Exception as e:
@@ -365,10 +385,10 @@ def ping_all_devices():
     logger.info("⏱️ Finished in %.2f seconds.", duration_ms / 1000)
 
 
-def ping_camera_by_id(camera_id: str):
+def ping_camera_by_id(camera_id: str, group_id: int | None = None):
     db = SessionLocal()
     try:
-        camera = db.query(DBCamera).filter(DBCamera.id == camera_id).first()
+        camera = db.query(DBCamera).filter(DBCamera.id == camera_id, camera_scope(group_id)).first()
         if not camera:
             logger.warning("Camera with ID %s not found.", camera_id)
             return "Not Found", None
@@ -387,10 +407,10 @@ def ping_camera_by_id(camera_id: str):
         db.close()
 
 
-def ping_nvr_by_id(nvr_id: str):
+def ping_nvr_by_id(nvr_id: str, group_id: int | None = None):
     db = SessionLocal()
     try:
-        nvr = db.query(NVR).filter(NVR.id == nvr_id).first()
+        nvr = db.query(NVR).filter(NVR.id == nvr_id, nvr_scope(group_id)).first()
         if not nvr:
             logger.warning("NVR with ID %s not found.", nvr_id)
             return "Not Found", None
@@ -410,13 +430,13 @@ def ping_nvr_by_id(nvr_id: str):
 
 
 # Background task wrappers
-def run_healthcheck_for_all():
-    ping_all_devices()
+def run_healthcheck_for_all(group_id: int | None = None):
+    ping_all_devices(group_id)
 
 
-def run_healthcheck_for_camera(camera_id):
-    ping_camera_by_id(camera_id)
+def run_healthcheck_for_camera(camera_id, group_id: int | None = None):
+    ping_camera_by_id(camera_id, group_id)
 
 
-def run_healthcheck_for_nvr(nvr_id):
-    ping_nvr_by_id(nvr_id)
+def run_healthcheck_for_nvr(nvr_id, group_id: int | None = None):
+    ping_nvr_by_id(nvr_id, group_id)

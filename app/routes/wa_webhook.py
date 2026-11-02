@@ -4,7 +4,6 @@ Handles incoming messages from GoWA webhook and responds to commands.
 """
 import logging
 import asyncio
-import json
 import re
 from pathlib import Path
 from datetime import datetime, timezone
@@ -48,6 +47,7 @@ from app.utils.wa_bot_workflow import render_flow_template, run_api_flow
 from app.utils.wa_bot_workflow import APIFlowError, bind_command_arguments, normalize_flow
 from app.utils.healthcheck import format_uptime_duration
 from app.utils.timezone_helper import get_current_timezone
+from app.utils.webhook_auth import verified_gowa_payload
 import os
 
 logger = logging.getLogger("main")
@@ -1422,8 +1422,8 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
     GoWA payloads may be direct or nested under `payload`, for example
     {"payload": {"from": "6281234567890", "body": "/help", "chat_id": "..."}}.
     """
+    payload = await verified_gowa_payload(request)
     try:
-        payload = await request.json()
         if not isinstance(payload, dict):
             logger.warning("GoWA webhook received a non-object JSON payload")
             return json_success_response("Webhook payload ignored")
@@ -1439,7 +1439,7 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
         if payload.get("event") not in (None, "message"):
             logger.info("Ignoring non-message GoWA event: %s", payload.get("event"))
             return json_success_response("Webhook event ignored")
-        
+
         # GoWA payloads can arrive directly or nested under `payload`.
         event = payload.get("payload") if isinstance(payload.get("payload"), dict) else payload
         if event.get("is_from_me") is True:
@@ -1448,7 +1448,7 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
         sender = event.get("from", "")
         message = event.get("body") or event.get("message") or ""
         message_id = str(event.get("id") or event.get("message_id") or "").strip()
-        
+
         if not sender or not message:
             logger.warning(
                 "GoWA message missing sender or text: has_sender=%s has_body=%s",
@@ -1456,7 +1456,7 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
                 bool(message),
             )
             return json_success_response("Webhook received (empty)")
-        
+
         # GoWA may provide a device-qualified JID such as
         # `628123456789:12@s.whatsapp.net`. Keep only the phone portion
         # before normalizing, matching the existing n8n workflow's ^\d+.
@@ -1535,7 +1535,7 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
         # Replies, including API-flow results, follow the invoking conversation.
         recipient = sender if bot.private_response else chat_id
         reply_to = (message_id or None) if bot.quote_reply and not bot.private_response else None
-        
+
         # Send response back
         if bot.outbound_items:
             failed_sends = []
@@ -1608,9 +1608,9 @@ async def gowa_webhook(request: Request, db: Session = Depends(get_db)):
                 )
             _record_wa_message(db, sender, "outbound", "accepted" if send_result.get("success") else "failed", response, command, send_result.get("error", ""))
         db.commit()
-        
+
         return json_success_response("Message processed")
-        
+
     except Exception as e:
         logger.error(f"Error processing GoWA webhook: {e}")
         raise HTTPException(status_code=500, detail=str(e))

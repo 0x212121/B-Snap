@@ -21,6 +21,8 @@ from app.utils.audit_logger import log_audit
 from app.utils.remember_me import create_remember_token, get_cookie_settings
 from app.utils.online_users import get_online_tracker
 from app.utils.auth_token import is_valid_web_token
+from app.core.security import load_security_settings
+from app.utils.auth_rate_limit import enforce_auth_rate_limit
 import logging
 
 logger = logging.getLogger(__name__)
@@ -28,8 +30,9 @@ router = APIRouter(tags=["Authentication"])
 
 # Konfigurasi Cookie
 IS_HTTPS_PROXY = os.getenv("BEHIND_HTTPS_PROXY", "false").lower() in ("true", "1", "yes")
-COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() == "true" if IS_HTTPS_PROXY else False
-COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")
+_security = load_security_settings()
+COOKIE_SECURE = _security.cookie_secure
+COOKIE_SAMESITE = _security.cookie_samesite
 SESSION_MAX_AGE_SECONDS = int(os.getenv("SESSION_MAX_AGE_SECONDS", 86400))
 MAX_WEB_SESSIONS = int(os.getenv("MAX_WEB_SESSIONS", 1))
 
@@ -50,22 +53,22 @@ def verify_2fa_token(token: str) -> Optional[int]:
         if len(parts) != 3:
             return None
         user_id, expiry, sig = int(parts[0]), int(parts[1]), parts[2]
-        
+
         # Check expiry
         if time.time() > expiry:
             return None
-            
+
         # Verify signature
         payload = f"{user_id}:{expiry}"
         expected_sig = hmac.new(SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()[:16]
         if not hmac.compare_digest(sig, expected_sig):
             return None
-            
+
         return user_id
     except Exception:
         return None
 
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
+SECRET_KEY = _security.secret_key
 
 # ==============================================================================
 # 1. LOGIN FLOW DENGAN SIGNED TOKEN (TANPA SESSION PENDING)
@@ -85,8 +88,9 @@ def login_post(
     remember_me: bool = Form(False),
     db: Session = Depends(get_db),
 ):
+    enforce_auth_rate_limit(db, request, "password", username)
     user = db.query(User).filter(User.username == username).first()
-    
+
     if not user or not verify_password(password, user.password):
         return templates.TemplateResponse(
             "login.html",
@@ -132,11 +136,12 @@ def otp_post(
 ):
     # Verify signed token
     user_id = verify_2fa_token(token_2fa)
+    enforce_auth_rate_limit(db, request, "otp", user_id)
     if not user_id:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
 
     user = db.query(User).options(joinedload(User.group)).filter(User.id == user_id).first()
-    
+
     if not user or not user.is_2fa_enabled or not user.otp_secret:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -190,6 +195,7 @@ def mfa_setup_post(
     db: Session = Depends(get_db)
 ):
     user_id = verify_2fa_token(token_mfa)
+    enforce_auth_rate_limit(db, request, "otp", user_id)
     if not user_id:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -230,7 +236,7 @@ def mfa_setup_post(
 
 def _create_authenticated_session(request: Request, user: User, db: Session):
     """Centralized function untuk membuat session yang konsisten"""
-    
+
     # 1. Set Session Data
     request.session["user_id"] = user.id
     request.session["user_name"] = user.username
@@ -238,7 +244,7 @@ def _create_authenticated_session(request: Request, user: User, db: Session):
     if user.group:
         request.session["user_group"] = user.group.name
         request.session["user_groupid"] = user.group_id
-    
+
     # 2. Handle Web Tokens dengan aman
     try:
         web_tokens = user.web_tokens
@@ -248,37 +254,37 @@ def _create_authenticated_session(request: Request, user: User, db: Session):
             web_tokens = []
         elif not isinstance(web_tokens, list):
             web_tokens = []
-        
+
         # Generate token
         token = secrets.token_urlsafe(32)
         expires_at = datetime.now(timezone.utc) + timedelta(seconds=SESSION_MAX_AGE_SECONDS)
-        
+
         web_tokens.append({
             "token": token,
             "created_at": datetime.now(timezone.utc).isoformat(),
             "expires_at": expires_at.isoformat()
         })
-        
+
         # Sort dan limit
         user.web_tokens = sorted(web_tokens, key=lambda x: x.get('expires_at', ''), reverse=True)[:MAX_WEB_SESSIONS]
         user.last_login = datetime.now(timezone.utc)
         db.commit()
-        
+
     except Exception as e:
         logger.error(f"Failed to update web_tokens: {e}")
         db.rollback()
         # Tetap lanjutkan login meski logging token gagal
-    
+
     # 3. Audit Log
     try:
         log_audit(db=db, user=user.username, action="login", target="", 
                  ip=request.client.host if request.client else "unknown", extra="")
     except Exception as e:
         logger.warning(f"Audit log failed: {e}")
-    
+
     # 4. Create Response
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    
+
     # Set session_token cookie
     response.set_cookie(
         key="session_token",
@@ -289,7 +295,7 @@ def _create_authenticated_session(request: Request, user: User, db: Session):
         secure=COOKIE_SECURE,
         path="/"
     )
-    
+
     # Handle Remember Me
     if request.session.pop("_remember_me", False):
         try:
@@ -313,11 +319,18 @@ def _create_authenticated_session(request: Request, user: User, db: Session):
             )
         except Exception as e:
             logger.error(f"Remember me failed: {e}")
-    
+
     logger.info(f"Login successful: {user.username}")
     return response
 
-@router.get("/logout", name="logout")
+
+@router.get("/logout", name="logout_confirmation")
+def logout_confirmation(request: Request):
+    """GET navigation must never invalidate an authenticated browser session."""
+    return templates.TemplateResponse("logout.html", {"request": request})
+
+
+@router.post("/logout", name="logout")
 def logout(request: Request, db: Session = Depends(get_db), session_token: Optional[str] = Cookie(default=None)):
     """Logout dengan proper cleanup"""
     user_id = request.session.get("user_id")
