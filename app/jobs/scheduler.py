@@ -48,6 +48,7 @@ from app.utils.email_notifier import (
 from app.utils.email_retry_runtime import email_retry_runtime
 from app.utils.email_retry_summary import EmailRetrySummary
 from app.utils.healthcheck import ping_all_devices
+from app.utils.media_retention import enforce_media_retention
 from app.utils.record_check import cleanup_old_record_checks, run_all_record_checks
 from app.utils.record_check_report import send_record_check_daily_reports
 from app.utils.snapshot_locker import get_camera_lock
@@ -1028,7 +1029,7 @@ def delete_old_command_logs():
 # MED-003: Retention Policy Enforcement for Snapshots and Videos
 def enforce_retention_policy():
     """MED-003: Automated retention policy enforcement for snapshots and videos.
-    
+
     Soft-deletes snapshots and videos older than retention period.
     Items with retention_hold=True are skipped.
     """
@@ -1036,57 +1037,18 @@ def enforce_retention_policy():
     try:
         from app.models.snapshot import Snapshot
         from app.models.video import Video
-        
-        # Get retention settings from config
-        snapshot_retention_days = int(get_config("retention_snapshot_days", 30))
-        video_retention_days = int(get_config("retention_video_days", 7))
-        
-        now = datetime.now(timezone.utc)
+
+        snapshots = enforce_media_retention(db, Snapshot)
+        videos = enforce_media_retention(db, Video)
         results = {
-            "snapshots_soft_deleted": 0,
-            "videos_soft_deleted": 0,
-            "snapshots_skipped_retention_hold": 0,
-            "videos_skipped_retention_hold": 0
+            "snapshots_soft_deleted": snapshots["soft_deleted"],
+            "videos_soft_deleted": videos["soft_deleted"],
+            "snapshots_skipped_retention_hold": snapshots["skipped_retention_hold"],
+            "videos_skipped_retention_hold": videos["skipped_retention_hold"],
         }
-        
-        # Process snapshots
-        snapshot_cutoff = now - timedelta(days=snapshot_retention_days)
-        old_snapshots = db.query(Snapshot).filter(
-            Snapshot.timestamp < snapshot_cutoff,
-            Snapshot.deleted_at.is_(None)  # Not already soft-deleted
-        ).all()
-        
-        for snapshot in old_snapshots:
-            # MED-003: Skip items with retention hold
-            if getattr(snapshot, 'retention_hold', False):
-                results["snapshots_skipped_retention_hold"] += 1
-                logger.info("[Retention Policy] Snapshot %s skipped due to retention hold", snapshot.id)
-                continue
-            
-            # Soft delete
-            snapshot.soft_delete()
-            results["snapshots_soft_deleted"] += 1
-        
-        # Process videos
-        video_cutoff = now - timedelta(days=video_retention_days)
-        old_videos = db.query(Video).filter(
-            Video.timestamp < video_cutoff,
-            Video.deleted_at.is_(None)  # Not already soft-deleted
-        ).all()
-        
-        for video in old_videos:
-            # MED-003: Skip items with retention hold
-            if getattr(video, 'retention_hold', False):
-                results["videos_skipped_retention_hold"] += 1
-                logger.info("[Retention Policy] Video %s skipped due to retention hold", video.id)
-                continue
-            
-            # Soft delete
-            video.soft_delete()
-            results["videos_soft_deleted"] += 1
-        
+
         db.commit()
-        
+
         total_processed = results["snapshots_soft_deleted"] + results["videos_soft_deleted"]
         logger.info(
             "[Retention Policy] Enforced: %d snapshots, %d videos soft-deleted. "
@@ -1094,11 +1056,11 @@ def enforce_retention_policy():
             results["snapshots_soft_deleted"],
             results["videos_soft_deleted"],
             results["snapshots_skipped_retention_hold"],
-            results["videos_skipped_retention_hold"]
+            results["videos_skipped_retention_hold"],
         )
-        
+
         return {"records_processed": total_processed, "details": results}
-        
+
     except Exception as e:
         db.rollback()
         logger.error("[Retention Policy] Error: %s", e, exc_info=True)
@@ -1110,7 +1072,7 @@ def enforce_retention_policy():
 def check_storage_job():
     """Monitor storage usage."""
     from app.utils.storage_monitor import record_storage_metric
-    
+
     db: Session = SessionLocal()
     try:
         metric = record_storage_metric(db)
@@ -1118,7 +1080,7 @@ def check_storage_job():
             "[Storage Check] Level: %s, Usage: %.1f%%, Growth: %.2f GB/day",
             metric.alert_level,
             metric.usage_percent,
-            metric.daily_growth_rate
+            metric.daily_growth_rate,
         )
         return {"records_processed": 1, "alert_level": metric.alert_level}
     except Exception as e:

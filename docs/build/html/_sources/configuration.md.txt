@@ -205,19 +205,38 @@ with `smtp_failed`, and a successful batch may still have future pending retries
 
 ## Retention Policy (MED-003)
 
-### RETENTION_SNAPSHOT_DAYS
-- **Type**: Integer
-- **Default**: `30`
-- **Description**: Snapshots older than this are soft-deleted
-- **Note**: Items with `retention_hold=True` are preserved
-- **Used In**: `app/jobs/scheduler.py`
+Configure captured media under **Configuration > Retention**. These are database
+configuration keys read by `get_config()`, rather than uppercase environment settings.
 
-### RETENTION_VIDEO_DAYS
-- **Type**: Integer
-- **Default**: `7`
-- **Description**: Videos older than this are soft-deleted
-- **Note**: Items with `retention_hold=True` are preserved
-- **Used In**: `app/jobs/scheduler.py`
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `retention_snapshot_mode` | `both` | Snapshot policy: `age`, `count`, or `both` |
+| `retention_snapshot_days` | `30` | Maximum snapshot age in days (1-3650) |
+| `max_screenshot_per_camera` | `20` | Maximum active snapshots per camera (1-1000000) |
+| `retention_video_mode` | `age` | Video policy: `age`, `count`, or `both` |
+| `retention_video_days` | `7` | Maximum video age in days (1-3650) |
+| `max_video_per_camera` | `20` | Maximum active videos per camera (1-1000000) |
+
+`age` ignores the count limit; `count` ignores the age limit. `both` removes media
+exceeding either limit, processing age first and then keeping the newest remaining
+items within each camera's count limit. Age uses the capture timestamp in UTC.
+Deleted items are excluded. Media whose camera was deleted (`camera_id` is NULL)
+share one count bucket. Equal capture timestamps are ordered by ID.
+
+Retention holds always preserve items. Held items count toward a camera's limit,
+so the active count may remain above the limit if held items alone exceed it.
+All retention actions are soft deletes: physical files remain until an administrator
+purges them. Changing a policy does not restore previously deleted media.
+
+Settings are read on each run without restarting the worker. The **Retention Policy**
+job applies both policies; its default schedule is daily at 03:00 in the configured
+timezone and can be changed in **Jobs** (`retention_policy_cron`). The scheduler
+worker must be running. Snapshot capture additionally applies its count policy
+immediately when the mode is `count` or `both`; video count limits run through the
+scheduled job. Existing saved settings are preserved when new keys are seeded.
+
+Implementation: `app/utils/media_retention.py`, `app/jobs/scheduler.py`, and
+`app/utils/snapshot_utils.py`.
 
 ### retention_record_check_days
 - **Type**: Integer

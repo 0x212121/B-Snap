@@ -1,5 +1,19 @@
 (function () {
   const translations = {
+    "Snapshot and Video Retention": "Retensi Snapshot dan Video",
+    "By age": "Berdasarkan umur",
+    "By count per camera": "Berdasarkan jumlah per kamera",
+    "By age and count": "Berdasarkan umur dan jumlah",
+    "Snapshots retention mode": "Mode retensi snapshot",
+    "Videos retention mode": "Mode retensi video",
+    "Snapshots maximum age (days)": "Umur maksimum snapshot (hari)",
+    "Videos maximum age (days)": "Umur maksimum video (hari)",
+    "Snapshots maximum count per camera": "Jumlah maksimum snapshot per kamera",
+    "Videos maximum count per camera": "Jumlah maksimum video per kamera",
+    "Limits apply per camera to active media. Oldest items are soft-deleted; files remain on disk until purged. Retention hold is always respected.": "Batas berlaku per kamera untuk media aktif. Item terlama ditandai terhapus; file tetap di disk sampai purge. Retention hold selalu dihormati.",
+    "Changes apply at the next Retention Policy job run. Snapshot count limits also apply after capture. Configure the job schedule in Jobs.": "Perubahan berlaku saat job Retention Policy berikutnya. Batas jumlah snapshot juga berlaku setelah capture. Atur jadwal job di Jobs.",
+    "By age uses only the age limit. By count uses only the count limit. By age and count removes items exceeding either limit. Held items count toward the limit and can keep a camera above it.": "Mode umur hanya memakai batas umur. Mode jumlah hanya memakai batas jumlah. Mode umur dan jumlah menghapus item yang melewati salah satu batas. Item dengan hold ikut dihitung dan dapat menyebabkan jumlah melebihi batas.",
+
     "Folders found": "Folder ditemukan",
     "Recent updates": "Pembaruan terkini",
     "Updates overdue": "Terlambat diperbarui",

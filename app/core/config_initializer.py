@@ -21,6 +21,13 @@ DEFAULT_CONFIG = {
     "map_live_enabled": DEFAULT_MAP_LIVE_ENABLED,
     "watermark_text": "Property of ...",
     
+    # Captured media retention (preserve existing snapshot count + age behavior).
+    "retention_snapshot_mode": "both",
+    "retention_snapshot_days": "30",
+    "retention_video_mode": "age",
+    "retention_video_days": "7",
+    "max_video_per_camera": "20",
+
     # Log retention settings
     "retention_api_logs_days": "90",
     "retention_command_logs_days": "90",

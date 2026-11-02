@@ -106,7 +106,7 @@ async def config_save(  # noqa: C901, PLR0911, PLR0912
     _current_admin: Annotated[User, Depends(admin_access_required)],
     healthcheck_interval_minutes: Annotated[int, Form()],
     snapshot_concurrent_workers: Annotated[int, Form()],
-    max_screenshot_per_camera: Annotated[int, Form()],
+    max_screenshot_per_camera: Annotated[int, Form(ge=1, le=1000000)],
     snapshot_batch_size: Annotated[int, Form()],
     snapshot_batch_delay_seconds: Annotated[int, Form()],
     snapshot_ping_check_enabled: Annotated[bool | None, Form()] = False,
@@ -116,6 +116,11 @@ async def config_save(  # noqa: C901, PLR0911, PLR0912
     map_live_enabled: Annotated[bool, Form()] = False,
     timezone: Annotated[str, Form()],
     debug_mode: Annotated[bool | None, Form()] = False,
+    retention_snapshot_mode: Annotated[str | None, Form(pattern="^(age|count|both)$")] = None,
+    retention_snapshot_days: Annotated[int | None, Form(ge=1, le=3650)] = None,
+    retention_video_mode: Annotated[str | None, Form(pattern="^(age|count|both)$")] = None,
+    retention_video_days: Annotated[int | None, Form(ge=1, le=3650)] = None,
+    max_video_per_camera: Annotated[int | None, Form(ge=1, le=1000000)] = None,
     retention_api_logs_days: Annotated[int, Form()] = 90,
     retention_command_logs_days: Annotated[int, Form()] = 90,
     retention_camera_stats_days: Annotated[int, Form()] = 90,
@@ -303,6 +308,11 @@ async def config_save(  # noqa: C901, PLR0911, PLR0912
         {
             key: value
             for key, value in {
+                "retention_snapshot_mode": retention_snapshot_mode,
+                "retention_snapshot_days": retention_snapshot_days,
+                "retention_video_mode": retention_video_mode,
+                "retention_video_days": retention_video_days,
+                "max_video_per_camera": max_video_per_camera,
                 "email_retry_max_pending_hours": email_retry_max_pending_hours,
                 "email_retry_batch_size": email_retry_batch_size,
                 "email_retry_max_run_seconds": email_retry_max_run_seconds,

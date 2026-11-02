@@ -95,3 +95,48 @@ def test_maps_only_exposes_live_controls_to_enabled_admins(
     app.dependency_overrides[auth.get_current_user] = lambda: SimpleNamespace(role=role)
     with TestClient(app) as client:
         assert client.get("/maps").json() == {"enabled": expected}
+
+
+@pytest.mark.parametrize("mode", ["age", "count", "both"])
+def test_media_retention_settings_save_and_preserve_omitted(settings_db, monkeypatch, mode):
+    monkeypatch.setattr(config, "set_debug_mode", lambda _enabled: None)
+    app = FastAPI()
+    app.include_router(config.router)
+    app.dependency_overrides[config.get_db] = lambda: settings_db
+    app.dependency_overrides[auth.get_current_user] = lambda: SimpleNamespace(role="admin")
+    data = {
+        "healthcheck_interval_minutes": "15",
+        "snapshot_concurrent_workers": "1",
+        "max_screenshot_per_camera": "20",
+        "snapshot_batch_size": "50",
+        "snapshot_batch_delay_seconds": "5",
+        "watermark_text": "QA",
+        "map_title": "QA",
+        "timezone": "Asia/Makassar",
+    }
+    retention = {
+        "retention_snapshot_mode": mode,
+        "retention_video_mode": mode,
+        "retention_snapshot_days": "60",
+        "retention_video_days": "14",
+        "max_video_per_camera": "50",
+    }
+    with TestClient(app) as client:
+        assert client.post("/config/save", data={**data, **retention}).status_code == 200
+        assert client.post("/config/save", data=data).status_code == 200
+        for key, value in retention.items():
+            assert settings_db.get(Configuration, key).value == value
+        for key, value in {
+            "retention_snapshot_mode": "invalid",
+            "retention_video_mode": "invalid",
+            "retention_snapshot_days": "0",
+            "retention_video_days": "3651",
+            "max_video_per_camera": "0",
+            "max_screenshot_per_camera": "0",
+        }.items():
+            assert (
+                client.post("/config/save", data={**data, **retention, key: value}).status_code
+                == 422
+            )
+        for key, value in retention.items():
+            assert settings_db.get(Configuration, key).value == value
