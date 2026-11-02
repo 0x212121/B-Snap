@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.6.2] - 2026-11-02
+
+### Fixed
+
+- Fixed authenticated WebSocket/toast connections behind Cloudflare Tunnel and other HTTPS proxies that rewrite the backend host or scheme: `/ws` now validates browser origins against `PUBLIC_ORIGIN`, consistent with browser mutation protection. Without an explicit public origin, trusted proxy headers and the request host remain authoritative; default ports are normalized. Cross-origin connections and invalid/revoked sessions remain blocked.
+- Added safe handshake-rejection diagnostics and proxy/session/toast regression tests. See the [Cloudflare Tunnel setup](docs/source/high_security_rollout.md#cloudflare-tunnel-websocket-and-toast-262).
+
 ## [2.6.1] - 2026-11-02
 
 ### Fixed

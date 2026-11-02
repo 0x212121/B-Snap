@@ -90,6 +90,7 @@ according to the deployment topology.
 `PUBLIC_ORIGIN` is optional when request Host/scheme already match the browser.
 Use it if the proxy changes the host/port. It must be an HTTP(S) origin without
 credentials, a path, or query; production requires HTTPS. Use one canonical origin.
+Starting with 2.6.2 this same canonical origin also applies to the `/ws` handshake.
 
 ## Browser mutations / CSRF
 
@@ -148,3 +149,53 @@ No production schema/configuration is modified by the test run. Test real HTTPS
 proxy headers, native browser forms, GoWA signatures/retries, operator group
 changes, and worker restart during deployment acceptance. Docker/image and live
 external integrations still require the operator's deployment environment.
+
+## Cloudflare Tunnel: WebSocket and toast (2.6.2)
+
+Versions 2.6.0/2.6.1 check WebSocket Origin against the backend URL, even when
+`PUBLIC_ORIGIN` is configured for HTTP. This can reject a valid browser when
+`cloudflared` forwards HTTPS to HTTP or overrides Host. In 2.6.2 `/ws` uses the
+explicit public origin and normalizes default ports while retaining live session,
+token revocation, recipient, and group checks. It never trusts X-Forwarded-Host as
+an origin allowlist. Server logs distinguish origin-policy and session rejection
+without logging cookies/tokens or notification content.
+
+For a public URL of `https://camera.example.com`, set on every web worker:
+
+```dotenv
+PUBLIC_ORIGIN=https://camera.example.com
+BEHIND_HTTPS_PROXY=true
+COOKIE_SECURE=true
+COOKIE_SAMESITE=lax
+```
+
+Replace the example domain with the exact browser origin, without `/ws` or a path.
+Set `TRUSTED_PROXY_HOSTS` to the actual connector peer IP/CIDR seen by B-Snap.
+For a native connector reaching a native local app this may be loopback; Docker
+can instead present a connector/container/gateway address. Do not blindly trust
+all Cloudflare edge ranges or `*`: the directly connected peer here is cloudflared.
+Keep the existing private SECRET_KEY unchanged and shared across all web workers.
+
+The tunnel service can remain `http://<reachable-b-snap-host>:8080`; public HTTPS
+does not require a second TLS endpoint on an isolated local hop. An optional
+cloudflared `httpHostHeader` overrides the backend Host; `PUBLIC_ORIGIN` handles
+that rewrite. See [Cloudflare origin parameters](https://developers.cloudflare.com/tunnel/reference/origin-parameters/).
+
+Use the updated application code/image. Changing environment alone on 2.6.1 will
+not fix the WebSocket origin comparison. For a source-built Compose deployment:
+
+```bash
+docker compose up -d --build b-snap
+```
+
+If BSNAP_IMAGE is pinned, ensure it names the updated image you built/published;
+a Git push does not publish an image to the registry. A plain container restart
+does not reload changed env_file settings; recreate the web containers. Then log
+in through the public HTTPS URL (direct HTTP cannot use Secure login cookies),
+reload the page, and inspect `/ws`: successful handshake is 101 Switching Protocols.
+
+If rejection remains, compare the application log: `origin mismatch` indicates
+canonical origin/proxy headers; `browser session invalid or unavailable` indicates
+cookies, expired/revoked session, inconsistent worker SECRET_KEY, or DB availability.
+No request reaching the app indicates tunnel routing/Access/WAF/upgrade issues.
+Share status/log reason only; do not share cookies, tunnel tokens, or session keys.

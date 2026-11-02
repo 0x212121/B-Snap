@@ -10,7 +10,7 @@ rilis awal tetap dicatat sebagai riwayat; hasil terbaru ada di bagian 11.
 
 ## 1. Arsitektur dan cakupan
 
-- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.1**. Minimum Python **3.11**, default image Docker
+- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.2**. Minimum Python **3.11**, default image Docker
   **Python 3.14.7**; verifikasi lokal memakai Python **3.13** dan Node **22.16.0**.
 - FastAPI menyediakan halaman Jinja2 dan API; SQLAlchemy 2 dan Alembic memakai
   PostgreSQL. Model JSONB dan trigger audit membuat schema penuh tidak kompatibel
@@ -29,7 +29,7 @@ rilis awal tetap dicatat sebagai riwayat; hasil terbaru ada di bagian 11.
 
 [Inventaris sumber dan endpoint](comprehensive_audit_2026_11_02_inventory.json)
 mencatat file, hash, syntax/compile check, serta dependency yang dideklarasikan.
-Inventaris hasil 2.6.1 mencakup **287 file Python, 55 template, 15 JavaScript,
+Inventaris hasil 2.6.2 mencakup **288 file Python, 55 template, 15 JavaScript,
 5 harness CJS, dan 266 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
 belum tentu didaftarkan; tidak sama dengan jumlah URL unik yang aktif.
 
@@ -704,3 +704,37 @@ menjalankan migration pada database aplikasi, melakukan deployment/image publish
 atau menghubungi kamera/GoWA/SMTP nyata. Validasi HTTPS proxy, integrasi nyata,
 restart worker, dan rotasi secret pada deployment masih diperlukan; hasil ini
 bukan sertifikasi bahwa seluruh aplikasi bebas kerentanan.
+
+## 12. Regresi WebSocket Cloudflare Tunnel — rilis 2.6.2
+
+Setelah pengujian deployment pengguna, ditemukan `/ws` masih membandingkan Origin
+browser dengan URL backend walaupun `PUBLIC_ORIGIN` telah dipasang untuk CSRF HTTP.
+Hal ini dapat menolak koneksi cloudflared yang mengubah Host/port/protokol. Saran
+konfigurasi saja pada 2.6.1 belum menyelesaikan jalur tersebut.
+
+Perbaikan menggunakan public origin yang sama untuk handshake WebSocket, dengan
+normalisasi host/default port. Tanpa public origin eksplisit, URL request setelah
+trusted proxy headers tetap menjadi acuan; X-Forwarded-Host tidak dipercaya sebagai
+allowlist. Autentikasi session/token, revocation, recipient, dan group checks pada
+setiap delivery tetap aktif. Penolakan handshake mencatat alasan origin/session
+tanpa cookie/token/payload. Tidak ada perubahan schema atau dependency baru.
+
+Verifikasi 2.6.2:
+
+- Sebelum perbaikan, enam kasus positif origin/proxy/toast ditolak oleh kode lama;
+  setelah perbaikan, **206 pytest terarah lulus**, termasuk **17 kasus proxy**,
+  serta **33 unittest sesi/notifikasi** dan **8 Node toast layout tests** lulus.
+- Chrome headless membuka HTTPS melalui reverse proxy TLS lokal ke backend HTTP
+  dengan Host internal berbeda, cookie Secure/HttpOnly dan session nyata; WebSocket
+  terbuka dan toast dari fungsi delivery produksi tampil, tanpa page error.
+  Database dan publisher dimock; ini bukan koneksi ke jaringan Cloudflare nyata.
+- Invalid/duplicate/cross-origin, port berbeda, revoked/missing session, penerima
+  berbeda, dan revocation setelah handshake tetap ditolak/tidak menerima payload.
+- Syntax inventory diperbarui terhadap 2.6.2: 288 Python, 55 template, 15 JS dan
+  5 CJS. Script version sync, Ruff test baru, serta whitespace check lulus.
+
+Artefak browser lokal: `tmp/tunnel-toast-browser.json`. Hasil 2.6.1 sebelumnya
+tetap merupakan catatan historis; tidak menjalankan ulang migrasi PostgreSQL pada
+patch tanpa schema ini. Deployment perlu build/pakai image 2.6.2, mengatur origin
+HTTPS publik yang tepat, dan recreate web agar environment berubah. Petunjuk ada
+di [Cloudflare Tunnel setup](high_security_rollout.md#cloudflare-tunnel-websocket-and-toast-262).

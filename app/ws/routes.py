@@ -1,7 +1,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.ws.manager import websocket_connections
 from app.ws.record_notifications import can_receive_notification, deliver_notification
-from urllib.parse import urlsplit
+from app.core.security import load_security_settings, origin_key
 import asyncpg
 import asyncio
 import json
@@ -64,7 +64,7 @@ async def notification_listener(websockets: set):
                             await deliver_notification(ws, payload_data, final_payload_str)
                         except Exception:
                             pass
-                
+
                 last_processed_id = new_messages[-1]['id']
                 logger.info(f"Broadcast complete. New last_processed_id is: {last_processed_id}")
 
@@ -75,25 +75,41 @@ async def notification_listener(websockets: set):
                 await conn.close()
 
 
+def _websocket_origin_allowed(websocket: WebSocket) -> bool:
+    """Match browser origin to the configured public URL across TLS/Host rewriting."""
+    origins = websocket.headers.getlist("origin")
+    # Non-browser clients still need a live signed session and web token below.
+    if not origins:
+        return True
+    if len(origins) != 1:
+        return False
+    try:
+        expected = load_security_settings().public_origin
+        if expected is None:
+            scheme = "https" if websocket.url.scheme == "wss" else "http"
+            expected = f"{scheme}://{websocket.url.netloc}"
+        return origin_key(origins[0]) == origin_key(expected)
+    except ValueError:
+        return False
+
+
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    origin = websocket.headers.get("origin")
-    expected_scheme = "https" if websocket.url.scheme == "wss" else "http"
-    if origin:
-        try:
-            parsed_origin = urlsplit(origin)
-        except ValueError:
-            await websocket.close(code=1008)
-            return
-        if parsed_origin.netloc != websocket.url.netloc or parsed_origin.scheme != expected_scheme:
-            await websocket.close(code=1008)
-            return
+    if not _websocket_origin_allowed(websocket):
+        logger.warning(
+            "WebSocket handshake rejected: origin mismatch; check PUBLIC_ORIGIN and proxy headers"
+        )
+        await websocket.close(code=1008)
+        return
     if not await asyncio.to_thread(can_receive_notification, websocket, {}):
+        logger.warning("WebSocket handshake rejected: browser session invalid or unavailable")
         await websocket.close(code=1008)
         return
     await websocket.accept()
     websocket_connections.add(websocket)
-    logger.info(f"Client {websocket.client} connected. Total connections in this worker: {len(websocket_connections)}")
+    logger.info(
+        f"Client {websocket.client} connected. Total connections in this worker: {len(websocket_connections)}"
+    )
     try:
         while True:
             await websocket.receive_text()

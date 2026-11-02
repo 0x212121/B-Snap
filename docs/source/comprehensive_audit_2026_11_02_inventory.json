@@ -2,7 +2,7 @@
   "audit_date": "2026-11-02",
   "scope": "Source inventory and static checks; not equivalent to runtime or security coverage",
   "counts": {
-    ".py": 287,
+    ".py": 288,
     ".cjs": 5,
     ".js": 15,
     ".html": 55
@@ -1369,6 +1369,12 @@
       "check": "AST syntax and structural scan"
     },
     {
+      "path": "app/tests/test_websocket_proxy.py",
+      "lines": 198,
+      "sha256": "230798eee91cd70429010c52dfdd23e829e03d5bebbd72d5fa160515013dcf9d",
+      "check": "AST syntax and structural scan"
+    },
+    {
       "path": "app/tests/toast_layout.test.cjs",
       "lines": 108,
       "sha256": "40d0ba9c5194fb4fabd0d8301a89c70f282c660a94086445d458869f82eb9f9b",
@@ -1713,7 +1719,7 @@
     {
       "path": "app/version.py",
       "lines": 1,
-      "sha256": "cafd3026eabb75dfcf94184b37c8ae3d4615b280022ae9364771a0e5653eb479",
+      "sha256": "e774a28b8c3a0485a7fb5461693caa50ee3a8037b89c309140301ca6c5851f6e",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1742,8 +1748,8 @@
     },
     {
       "path": "app/ws/routes.py",
-      "lines": 103,
-      "sha256": "f68cd880ffd63f680edf5357b913f5770c434a7d7b6b8f3f5871d272ab8cb40b",
+      "lines": 119,
+      "sha256": "1ea53124336421aff42df5178263e5d4c57e88f99da31bf80ffecdfa11ee7dd9",
       "check": "AST syntax and structural scan"
     },
     {
@@ -4918,13 +4924,13 @@
     },
     {
       "file": "app/ws/routes.py",
-      "line": 79,
+      "line": 97,
       "method": "WEBSOCKET",
       "path": "/ws",
       "function": "websocket_endpoint",
       "declared_dependencies": []
     }
   ],
-  "release_version": "2.6.1",
+  "release_version": "2.6.2",
   "hash_format": "SHA-256 of file bytes with CRLF normalized to LF"
 }
