@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import unittest
 
+from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
@@ -18,6 +19,8 @@ import pytest
 from fastapi import HTTPException
 from PIL import Image
 
+from app.models.config import Configuration
+from app.models.video import Video
 from app.routes import snap_gallery, videos
 from app.utils.gallery_preview import _render_preview, snapshot_preview
 
@@ -39,6 +42,70 @@ def test_gallery_loader_regressions() -> None:
         text=True,
         timeout=20,
     )
+
+
+@pytest.mark.parametrize("hard_delete", [False, True])
+@pytest.mark.parametrize("aware", [False, True])
+@pytest.mark.parametrize(
+    ("zone", "expected"),
+    [
+        ("Asia/Jakarta", "02/11/2026 - 23:30:00 WIB"),
+        ("Asia/Makassar", "03/11/2026 - 00:30:00 WITA"),
+        ("Asia/Jayapura", "03/11/2026 - 01:30:00 WIT"),
+    ],
+)
+def test_video_delete_audit_uses_configured_timezone(
+    monkeypatch: pytest.MonkeyPatch, hard_delete: bool, aware: bool, zone: str, expected: str
+) -> None:
+    """Deletion audit timestamps follow DB timezone, including midnight rollover."""
+    timestamp = datetime(2026, 11, 2, 16, 30, tzinfo=UTC if aware else None)
+    video = SimpleNamespace(
+        camera_id=7,
+        camera_name="Synthetic camera",
+        timestamp=timestamp,
+        file_path="synthetic.mp4",
+        retention_hold=False,
+        is_deleted=hard_delete,
+        soft_delete=Mock(),
+    )
+    db = Mock()
+    video_query = Mock()
+    video_query.filter.return_value.first.return_value = video
+    config_query = Mock()
+    config_query.filter_by.return_value.first.return_value = SimpleNamespace(value=zone)
+    db.query.side_effect = lambda model: {Video: video_query, Configuration: config_query}[model]
+    audit = Mock()
+    access = Mock()
+    monkeypatch.setattr(videos, "log_audit", audit)
+    monkeypatch.setattr(videos, "require_camera_group_access", access)
+    monkeypatch.setattr(videos.os.path, "isfile", lambda _path: False)
+
+    response = videos.delete_video(
+        SimpleNamespace(session={"user_name": "test"}, client=SimpleNamespace(host="127.0.0.1")),
+        "synthetic-video",
+        hard_delete=hard_delete,
+        db=db,
+        current_operator=SimpleNamespace(role="admin", group_id=None),
+    )
+
+    assert response.status_code == 200
+    access.assert_called_once_with(db, 7, None)
+    db.commit.assert_called_once()
+    db.rollback.assert_not_called()
+    config_query.filter_by.assert_called_once_with(key="timezone")
+    assert audit.call_args.kwargs["extra"] == (
+        f"Video timestamp: {expected} | Hard delete: {hard_delete}"
+    )
+    assert audit.call_args.kwargs["action"] == (
+        "hard_delete_video" if hard_delete else "soft_delete_video"
+    )
+    assert video.timestamp == timestamp
+    if hard_delete:
+        db.delete.assert_called_once_with(video)
+        video.soft_delete.assert_not_called()
+    else:
+        video.soft_delete.assert_called_once()
+        db.delete.assert_not_called()
 
 
 class GalleryMediaTests(unittest.IsolatedAsyncioTestCase):

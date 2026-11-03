@@ -21,9 +21,9 @@
 <meta content="#ffffff" media="(prefers-color-scheme: light)" name="theme-color"/>
 <meta content="#030711" media="(prefers-color-scheme: dark)" name="theme-color"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Comprehensive audit B-Snap — 2 November 2026 | B-SNAP v2.6.7 documentation</title>
-<meta content="Comprehensive audit B-Snap — 2 November 2026 | B-SNAP v2.6.7 documentation" property="og:title"/>
-<meta content="Comprehensive audit B-Snap — 2 November 2026 | B-SNAP v2.6.7 documentation" name="twitter:title"/>
+<title>Comprehensive audit B-Snap — 2 November 2026 | B-SNAP v2.6.8 documentation</title>
+<meta content="Comprehensive audit B-Snap — 2 November 2026 | B-SNAP v2.6.8 documentation" property="og:title"/>
+<meta content="Comprehensive audit B-Snap — 2 November 2026 | B-SNAP v2.6.8 documentation" name="twitter:title"/>
 <link href="_static/pygments.css?v=e72c8e07" rel="stylesheet" type="text/css"/>
 <link href="_static/theme.css?v=73505e79" rel="stylesheet" type="text/css"/>
 <link href="search.html" rel="search" title="Search"/>
@@ -36,7 +36,7 @@
       Skip to content
     </a><header class="sticky top-0 z-40 w-full border-b shadow-xs border-border bg-background/90 backdrop-blur"><div class="container flex items-center h-14">
 <div class="hidden mr-4 md:flex">
-<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.6.7 documentation</span>
+<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.6.8 documentation</span>
 </a></div><button @click="showSidebar = true" class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden" type="button">
 <svg aria-hidden="true" fill="currentColor" height="24" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
 <path d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z"></path>
@@ -66,7 +66,7 @@
 </div>
 </header>
 <div class="flex-1"><div class="container md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }" class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky" id="left-sidebar">
-<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.6.7 documentation</span>
+<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.6.8 documentation</span>
 </a>
 <div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
 <div class="overflow-y-auto h-full w-full relative pr-6"><nav class="table w-full min-w-full my-6 lg:my-8">
@@ -101,7 +101,7 @@
 <div class="w-full min-w-0 mx-auto">
 <nav aria-label="breadcrumbs" class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
 <a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground" href="index.html">
-<span class="hidden md:inline">B-SNAP v2.6.7 documentation</span>
+<span class="hidden md:inline">B-SNAP v2.6.8 documentation</span>
 <svg aria-label="Home" class="md:hidden" fill="currentColor" height="18" stroke="none" viewbox="0 96 960 960" width="18" xmlns="http://www.w3.org/2000/svg">
 <path d="M240 856h120V616h240v240h120V496L480 316 240 496v360Zm-80 80V456l320-240 320 240v480H520V696h-80v240H160Zm320-350Z"></path>
 </svg>
@@ -121,11 +121,12 @@ rilis awal tetap dicatat sebagai riwayat. Bagian 12 mencatat perbaikan WebSocket
 mencatat perbaikan timezone monitor CA-24 pada 2.6.4.
 Bagian 15 mencatat optimasi dan benchmark CA-21 pada 2.6.5.
 Bagian 16 mencatat konsolidasi routing/review legacy CA-23 pada 2.6.6.
-Bagian 17 menuntaskan CSS halaman lain CA-17 pada 2.6.7.</p>
+Bagian 17 menuntaskan CSS halaman lain CA-17 pada 2.6.7.
+Bagian 18 mencatat konsolidasi formatter timezone audit hapus video pada 2.6.8.</p>
 <section id="arsitektur-dan-cakupan">
 <h2>1. Arsitektur dan cakupan<a class="headerlink" href="#arsitektur-dan-cakupan" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#arsitektur-dan-cakupan'"><span>#</span></a></h2>
 <ul class="simple">
-<li><p>Baseline paket/aplikasi <strong>2.5.2</strong>, hasil akhir <strong>2.6.7</strong>. Minimum Python <strong>3.11</strong>, default image Docker
+<li><p>Baseline paket/aplikasi <strong>2.5.2</strong>, hasil akhir <strong>2.6.8</strong>. Minimum Python <strong>3.11</strong>, default image Docker
 <strong>Python 3.14.7</strong>; verifikasi lokal memakai Python <strong>3.13</strong> dan Node <strong>22.16.0</strong>.</p></li>
 <li><p>FastAPI menyediakan halaman Jinja2 dan API; SQLAlchemy 2 dan Alembic memakai
 PostgreSQL. Model JSONB dan trigger audit membuat schema penuh tidak kompatibel
@@ -144,7 +145,7 @@ file server, sedangkan endpoint authenticated memeriksa grup dan mencatat audit.
 </ul>
 <p><a class="reference download internal" download="" href="_downloads/cb8f1f16a2a639fa98f1441315c2d8b7/comprehensive_audit_2026_11_02_inventory.json"><span class="xref download myst">Inventaris sumber dan endpoint</span></a>
 mencatat file, hash, syntax/compile check, serta dependency yang dideklarasikan.
-Inventaris hasil 2.6.7 mencakup <strong>292 file Python, 55 template, 15 JavaScript,
+Inventaris hasil 2.6.8 mencakup <strong>291 file Python, 55 template, 15 JavaScript,
 6 harness/test CJS, dan 261 deklarasi endpoint produksi</strong>. Jumlah endpoint mencakup router legacy yang
 belum tentu didaftarkan; tidak sama dengan jumlah URL unik yang aktif.</p>
 <p>Semua file pada inventaris menerima pemeriksaan statis. Penelusuran mendalam dan
@@ -1296,6 +1297,26 @@ checks lulus, 261 deklarasi endpoint tidak berubah. Build CSS dan version sync
 2.6.7 lulus. Suite penuh dan layanan produksi tidak dijalankan.</p></li>
 </ul>
 </section>
+<section id="formatter-timezone-audit-hapus-video-rilis-2-6-8">
+<h2>18. Formatter timezone audit hapus video - rilis 2.6.8<a class="headerlink" href="#formatter-timezone-audit-hapus-video-rilis-2-6-8" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#formatter-timezone-audit-hapus-video-rilis-2-6-8'"><span>#</span></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">DELETE</span> <span class="pre">/videos/{video_id}</span></code> memakai <code class="docutils literal notranslate"><span class="pre">format_datetime_standard(timestamp,</span> <span class="pre">db=db)</span></code>
+untuk detail timestamp video pada audit soft/hard delete. Konfigurasi database
+menentukan clock dan label timezone, menggantikan pemaksaan Asia/Makassar.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">app/utils/timezone.py</span></code> dihapus setelah satu-satunya pemanggil aktif diganti.
+Helper bersama menangani datetime naive sebagai UTC; timestamp video asli dan
+catatan audit historis tidak diubah. Pembatas akses, retention hold, dan aturan
+soft delete/purge tetap mengikuti implementasi yang ada.</p></li>
+<li><p>Dua belas kasus regresi terisolasi menjalankan handler asli untuk soft/hard
+delete, datetime UTC aware/naive, serta WIB/WITA/WIT di sekitar tengah malam.
+Database, audit sink, dan filesystem dimock; tidak menghapus footage nyata.</p></li>
+<li><p>Verifikasi: <strong>166 tes terarah lulus</strong> (gallery media, media retention, audit
+security, image version). Ruff file tes dan Black pada bagian berubah lulus;
+Ruff <code class="docutils literal notranslate"><span class="pre">videos.py</span></code> masih memiliki debt lama (124 menjadi 123 temuan), tanpa temuan
+baru. AST/Jinja/Node syntax inventory lulus; 291 Python, 55 template, 15 JS,
+6 CJS dan 261 deklarasi endpoint. Tidak menjalankan seluruh test suite.</p></li>
+</ul>
+</section>
 </section>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
 <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
@@ -1356,6 +1377,7 @@ checks lulus, 261 deklarasi endpoint tidak berubah. Build CSS dan version sync
 <li><a :data-current="activeSection === '#optimasi-dan-benchmark-ca-21-rilis-2-6-5'" class="reference internal" href="#optimasi-dan-benchmark-ca-21-rilis-2-6-5">15. Optimasi dan benchmark CA-21 — rilis 2.6.5</a></li>
 <li><a :data-current="activeSection === '#konsolidasi-routing-review-legacy-ca-23-rilis-2-6-6'" class="reference internal" href="#konsolidasi-routing-review-legacy-ca-23-rilis-2-6-6">16. Konsolidasi routing/review legacy CA-23 — rilis 2.6.6</a></li>
 <li><a :data-current="activeSection === '#penyelesaian-css-halaman-lain-ca-17-rilis-2-6-7'" class="reference internal" href="#penyelesaian-css-halaman-lain-ca-17-rilis-2-6-7">17. Penyelesaian CSS halaman lain CA-17 — rilis 2.6.7</a></li>
+<li><a :data-current="activeSection === '#formatter-timezone-audit-hapus-video-rilis-2-6-8'" class="reference internal" href="#formatter-timezone-audit-hapus-video-rilis-2-6-8">18. Formatter timezone audit hapus video - rilis 2.6.8</a></li>
 </ul>
 </div>
 </aside>
@@ -1369,7 +1391,7 @@ checks lulus, 261 deklarasi endpoint tidak berubah. Build CSS dan version sync
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=9e04b4c6"></script>
+<script src="_static/documentation_options.js?v=761e1704"></script>
 <script src="_static/doctools.js?v=fd6eb6e6"></script>
 <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script defer="defer" src="_static/theme.js?v=582b20c5"></script>

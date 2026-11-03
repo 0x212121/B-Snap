@@ -22,8 +22,7 @@ from app.routes.auth import admin_access_required, operator_access_required
 from app.schemas.video import VideoRecordRequest
 from app.utils.audit_logger import log_audit
 from app.utils.media_access import require_camera_group_access, restrict_media_query
-from app.utils.timezone import format_wita
-from app.utils.timezone_helper import format_datetime_standard, to_current_timezone
+from app.utils.timezone_helper import format_datetime_standard
 from app.utils.video import record_video_and_save_db
 
 router = APIRouter(tags=["Videos"])
@@ -221,10 +220,11 @@ def delete_video(
             action=action,
             target=camera_name,
             ip=request.client.host,
-            extra=(f"Video timestamp: {format_wita(v_timestamp)} | Hard delete: {hard_delete}"
-                if isinstance(v_timestamp, datetime) else
-                f"Hard delete: {hard_delete}"
-             )
+            extra=(
+                f"Video timestamp: {format_datetime_standard(v_timestamp, db=db)} | Hard delete: {hard_delete}"
+                if isinstance(v_timestamp, datetime)
+                else f"Hard delete: {hard_delete}"
+            ),
         )
     except Exception as e:
         logger.error("Failed to delete video %s: %s", video_id, e)

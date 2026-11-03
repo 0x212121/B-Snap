@@ -2,7 +2,7 @@
   "audit_date": "2026-11-02",
   "scope": "Source inventory and static checks; not equivalent to runtime or security coverage",
   "counts": {
-    ".py": 292,
+    ".py": 291,
     ".cjs": 6,
     ".js": 15,
     ".html": 55
@@ -891,7 +891,7 @@
     {
       "path": "app/routes/videos.py",
       "lines": 913,
-      "sha256": "bdacb27b926eeef02053abd480676076bba01b6f202f75f33128dfb3fb33b425",
+      "sha256": "ed85881ee6efd5e79e08530eeceddd9ccabe83d3d19eccc0e237bc27aa11cb1e",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1100,8 +1100,8 @@
     },
     {
       "path": "app/tests/test_gallery_media.py",
-      "lines": 183,
-      "sha256": "44838d5607fcbc7703fba180db7d9f2876ad23fbcece0e1bcad1b98eb97ab035",
+      "lines": 250,
+      "sha256": "2b365547c404640397b3d327a8dbb803e06185479267cc11e2436c98d3565db7",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1687,12 +1687,6 @@
       "check": "AST syntax and structural scan"
     },
     {
-      "path": "app/utils/timezone.py",
-      "lines": 18,
-      "sha256": "5a9ef16fb7d449d31ad55c92c4adbc6f9976831161a6ec173ebe371194512b8d",
-      "check": "AST syntax and structural scan"
-    },
-    {
       "path": "app/utils/timezone_helper.py",
       "lines": 108,
       "sha256": "09735d56569c835286f68ddbadb8ce5667511e25701a90ab52f69d3bb00b857a",
@@ -1743,7 +1737,7 @@
     {
       "path": "app/version.py",
       "lines": 1,
-      "sha256": "29cd9cc93bdf21d7da331ada3618fad47c3d32bdc2f9e4c27503cb2b9287d404",
+      "sha256": "dd644260a6b0c07e5766044c43c7d71281b20b3e58a2b6f24df396b98f525778",
       "check": "AST syntax and structural scan"
     },
     {
@@ -4562,7 +4556,7 @@
     },
     {
       "file": "app/routes/videos.py",
-      "line": 108,
+      "line": 107,
       "method": "GET",
       "path": "/videos",
       "function": "show_videos",
@@ -4573,7 +4567,7 @@
     },
     {
       "file": "app/routes/videos.py",
-      "line": 141,
+      "line": 140,
       "method": "GET",
       "path": "/video-gallery-data",
       "function": "get_video_gallery_data",
@@ -4584,7 +4578,7 @@
     },
     {
       "file": "app/routes/videos.py",
-      "line": 165,
+      "line": 164,
       "method": "DELETE",
       "path": "/videos/{video_id}",
       "function": "delete_video",
@@ -4907,6 +4901,6 @@
       "declared_dependencies": []
     }
   ],
-  "release_version": "2.6.7",
+  "release_version": "2.6.8",
   "hash_format": "SHA-256 of file bytes with CRLF normalized to LF"
 }

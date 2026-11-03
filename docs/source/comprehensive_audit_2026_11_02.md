@@ -12,10 +12,11 @@ mencatat perbaikan timezone monitor CA-24 pada 2.6.4.
 Bagian 15 mencatat optimasi dan benchmark CA-21 pada 2.6.5.
 Bagian 16 mencatat konsolidasi routing/review legacy CA-23 pada 2.6.6.
 Bagian 17 menuntaskan CSS halaman lain CA-17 pada 2.6.7.
+Bagian 18 mencatat konsolidasi formatter timezone audit hapus video pada 2.6.8.
 
 ## 1. Arsitektur dan cakupan
 
-- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.7**. Minimum Python **3.11**, default image Docker
+- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.8**. Minimum Python **3.11**, default image Docker
   **Python 3.14.7**; verifikasi lokal memakai Python **3.13** dan Node **22.16.0**.
 - FastAPI menyediakan halaman Jinja2 dan API; SQLAlchemy 2 dan Alembic memakai
   PostgreSQL. Model JSONB dan trigger audit membuat schema penuh tidak kompatibel
@@ -34,7 +35,7 @@ Bagian 17 menuntaskan CSS halaman lain CA-17 pada 2.6.7.
 
 [Inventaris sumber dan endpoint](comprehensive_audit_2026_11_02_inventory.json)
 mencatat file, hash, syntax/compile check, serta dependency yang dideklarasikan.
-Inventaris hasil 2.6.7 mencakup **292 file Python, 55 template, 15 JavaScript,
+Inventaris hasil 2.6.8 mencakup **291 file Python, 55 template, 15 JavaScript,
 6 harness/test CJS, dan 261 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
 belum tentu didaftarkan; tidak sama dengan jumlah URL unik yang aktif.
 
@@ -947,3 +948,22 @@ di deployment; tidak melakukan deployment atau image registry publish otomatis.
   lulus. Inventory: 292 Python AST, 55 template Jinja, 15 JS dan 6 CJS Node syntax
   checks lulus, 261 deklarasi endpoint tidak berubah. Build CSS dan version sync
   2.6.7 lulus. Suite penuh dan layanan produksi tidak dijalankan.
+
+
+## 18. Formatter timezone audit hapus video - rilis 2.6.8
+
+- `DELETE /videos/{video_id}` memakai `format_datetime_standard(timestamp, db=db)`
+  untuk detail timestamp video pada audit soft/hard delete. Konfigurasi database
+  menentukan clock dan label timezone, menggantikan pemaksaan Asia/Makassar.
+- `app/utils/timezone.py` dihapus setelah satu-satunya pemanggil aktif diganti.
+  Helper bersama menangani datetime naive sebagai UTC; timestamp video asli dan
+  catatan audit historis tidak diubah. Pembatas akses, retention hold, dan aturan
+  soft delete/purge tetap mengikuti implementasi yang ada.
+- Dua belas kasus regresi terisolasi menjalankan handler asli untuk soft/hard
+  delete, datetime UTC aware/naive, serta WIB/WITA/WIT di sekitar tengah malam.
+  Database, audit sink, dan filesystem dimock; tidak menghapus footage nyata.
+- Verifikasi: **166 tes terarah lulus** (gallery media, media retention, audit
+  security, image version). Ruff file tes dan Black pada bagian berubah lulus;
+  Ruff `videos.py` masih memiliki debt lama (124 menjadi 123 temuan), tanpa temuan
+  baru. AST/Jinja/Node syntax inventory lulus; 291 Python, 55 template, 15 JS,
+  6 CJS dan 261 deklarasi endpoint. Tidak menjalankan seluruh test suite.
