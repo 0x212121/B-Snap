@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import page_header, toggle_switch %}
+{% block title %}B-Snap - Recording Schedules{% endblock %}
+{% block content %}
+<div class="ui-page">
+  {% call page_header("Recording Schedules", "Archive camera video independently of WhatsApp.") %}
+    <a href="/videos" class="ui-button ui-button-secondary">Video Gallery</a>
+    <button id="add-recording" type="button" class="ui-button ui-button-primary">Add schedule</button>
+  {% endcall %}
+  <div class="ui-card ui-card-body mb-4 space-y-2 text-sm text-gray-600 dark:text-gray-300">
+    <p><span>Timezone:</span> <strong id="recording-timezone" class="no-translate"></strong></p>
+    <p id="recording-resource-state" role="status"></p>
+    <p>Archives follow the video retention settings. Soft delete keeps files until they are purged. Retention holds are preserved.</p>
+    <p>Continuous and time-window recording use video segments. Segment boundaries follow camera keyframes. Audio is not recorded.</p>
+    <p>Only active cameras are recorded. Overlapping schedules share one camera session; missed clips are skipped. Changes apply shortly after saving.</p>
+    <div class="flex flex-wrap gap-3"><a href="/admin/config" class="text-blue-600 dark:text-blue-400">Storage and retention settings</a><a href="/admin/jobs/" class="text-blue-600 dark:text-blue-400">Job Management</a></div>
+  </div>
+  <div class="ui-filter-bar mb-4">
+    <label class="ui-label"><span>Camera</span><select id="recording-filter" class="ui-control ml-2"><option value="">All cameras</option></select></label>
+    <button type="button" id="refresh-recordings" class="ui-button ui-button-secondary">Refresh</button>
+  </div>
+  <p id="recording-error" role="alert" class="hidden mb-4 text-red-600 dark:text-red-400"></p>
+  <div class="ui-card overflow-x-auto">
+    <table class="w-full min-w-[960px] text-left text-sm text-gray-700 dark:text-gray-200">
+      <thead class="bg-gray-50 dark:bg-gray-800"><tr>
+        <th class="px-4 py-3">Schedule / Camera</th><th class="px-4 py-3">Recording plan</th><th class="px-4 py-3">Status</th>
+        <th class="px-4 py-3"><span>Last recorded / Next clip</span> <span id="recording-column-zone" class="no-translate text-xs"></span></th><th class="px-4 py-3">Actions</th>
+      </tr></thead>
+      <tbody id="recording-rows" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+    </table>
+    <div id="recording-pagination" class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 p-4 text-sm dark:border-gray-700"></div>
+  </div>
+</div>
+<div id="recording-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="recording-modal-title">
+  <div class="ui-card flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl bg-white dark:bg-gray-800">
+    <div class="flex items-center justify-between border-b border-gray-200 p-5 dark:border-gray-700"><h2 id="recording-modal-title" class="ui-section-title">Add schedule</h2><button id="close-recording" type="button" class="ui-button ui-button-secondary" aria-label="Close">Close</button></div>
+    <form id="recording-form" class="overflow-y-auto p-5 space-y-4">
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <label class="ui-label"><span>Schedule name</span><input name="name" required maxlength="120" class="ui-control mt-1 w-full"></label>
+        <label class="ui-label"><span>Camera</span><select name="camera_id" required class="ui-control mt-1 w-full"></select></label>
+        <label class="ui-label"><span>Recording mode</span><select name="mode" class="ui-control mt-1 w-full"><option value="clips">Periodic clips</option><option value="window">Time window</option><option value="continuous">Continuous (24 hours)</option></select></label>
+        <div class="flex items-center">{{ toggle_switch("Enable schedule", id="recording-enabled", name="enabled") }}</div>
+      </div>
+      <div data-recording-mode="clips" class="space-y-4">
+        <label class="ui-label block"><span>Clip timing</span><select name="timing" class="ui-control mt-1 w-full"><option value="interval">Interval</option><option value="cron">Cron (5 fields)</option></select></label>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <label id="recording-interval" class="ui-label"><span>Interval (minutes)</span><input name="interval_minutes" type="number" min="1" max="10080" value="15" required class="ui-control mt-1 w-full"></label>
+          <label id="recording-cron" class="ui-label hidden"><span>Cron</span><input name="cron" maxlength="100" placeholder="0,30 * * * *" class="ui-control mt-1 w-full font-mono"></label>
+          <label class="ui-label"><span>Clip duration (seconds)</span><input name="clip_seconds" type="number" min="5" max="3600" value="30" required class="ui-control mt-1 w-full"></label>
+        </div>
+      </div>
+      <div data-recording-mode="window" class="hidden space-y-4">
+        <fieldset><legend class="ui-label mb-2">Days (window start)</legend><div class="flex flex-wrap gap-3">
+          {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+          <label class="inline-flex items-center gap-1 text-sm text-gray-700 dark:text-gray-200"><input type="checkbox" name="weekdays" value="{{ loop.index0 }}" checked><span>{{ day }}</span></label>
+          {% endfor %}
+        </div></fieldset>
+        <div class="grid grid-cols-2 gap-4"><label class="ui-label"><span>Start time</span><input name="start_time" type="time" value="08:00" required class="ui-control mt-1 w-full"></label><label class="ui-label"><span>End time</span><input name="end_time" type="time" value="17:00" required class="ui-control mt-1 w-full"></label></div>
+        <p class="text-xs text-gray-500 dark:text-gray-400">An end time before the start time continues into the next day. Times use the configured timezone and a 24-hour clock.</p>
+      </div>
+      <label data-recording-segment class="ui-label hidden"><span>Segment duration (seconds)</span><input name="segment_seconds" type="number" min="30" max="3600" value="600" required class="ui-control mt-1 w-full"></label>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Saving changes closes the active segment. Enabled schedules then resume with the new settings.</p>
+      <p id="recording-form-error" role="alert" class="hidden text-sm text-red-600 dark:text-red-400"></p>
+      <div class="flex justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-700"><button id="cancel-recording" type="button" class="ui-button ui-button-secondary">Cancel</button><button id="save-recording" type="submit" class="ui-button ui-button-primary">Save schedule</button></div>
+    </form>
+  </div>
+</div>
+<script src="/static/js/recording-schedules.js?v={{ version }}" defer></script>
+{% endblock %}

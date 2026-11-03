@@ -25,6 +25,9 @@ DEFAULT_CONFIG = {
     "retention_video_mode": "age",
     "retention_video_days": "7",
     "max_video_per_camera": "20",
+    "recording_dispatch_cron": "",
+    "recording_max_cameras": "4",
+    "recording_min_free_mb": "1024",
     # Log retention settings
     "retention_api_logs_days": "90",
     "retention_command_logs_days": "90",

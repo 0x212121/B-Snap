@@ -3,9 +3,9 @@ from __future__ import annotations
 import logging
 import os
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, ORJSONResponse, RedirectResponse
@@ -22,8 +22,10 @@ from app.routes.auth import admin_access_required, operator_access_required
 from app.schemas.video import VideoRecordRequest
 from app.utils.audit_logger import log_audit
 from app.utils.media_access import require_camera_group_access, restrict_media_query
-from app.utils.timezone_helper import format_datetime_standard
+from app.utils.recording_lease import require_recording_available
+from app.utils.timezone_helper import format_datetime_standard, get_current_timezone
 from app.utils.video import record_video_and_save_db
+from app.utils.video_dates import filter_video_dates
 
 router = APIRouter(tags=["Videos"])
 from app.utils.template_helper import templates
@@ -47,7 +49,10 @@ def _get_filtered_videos(
     camera_filter: Optional[str] = None,
     search_query: Optional[str] = None,
     offset: int = 0,
-    limit: int = 12
+    limit: int = 12,
+    *,
+    date_from: date | None = None,
+    date_to: date | None = None,
 ) -> List[Dict[str, Any]]:
     """
     Helper function to fetch and filter videos from the database.
@@ -73,6 +78,9 @@ def _get_filtered_videos(
 
     if search_query:
         video_query = video_query.filter(Video.camera_name.ilike(f"%{search_query}%"))
+
+    if date_from or date_to:
+        video_query = filter_video_dates(video_query, date_from, date_to, get_current_timezone(db))
 
     videos = video_query.order_by(Video.timestamp.desc(), Video.id.desc()).offset(offset).limit(limit).all()
 
@@ -108,7 +116,10 @@ def show_videos(
     request: Request,
     db: Session = Depends(get_db),
     camera: str = "",
-    current_operator: User = Depends(operator_access_required)
+    current_operator: User = Depends(operator_access_required),
+    *,
+    date_from: Annotated[date | None, Query()] = None,
+    date_to: Annotated[date | None, Query()] = None,
 ):
     # FIX: Always get fresh group_id from database to handle group changes without relogin
     user = db.query(User).filter(User.id == request.session.get("user_id")).first()
@@ -126,13 +137,18 @@ def show_videos(
 
     all_camera_names = sorted([row[0] for row in all_cameras_query.all()])
 
-    videos_data = _get_filtered_videos(db, group_id, camera_filter=camera)
+    videos_data = _get_filtered_videos(
+        db, group_id, camera_filter=camera, date_from=date_from, date_to=date_to
+    )
 
     return templates.TemplateResponse("video_gallery.html", {
         "request": request,
         "videos": videos_data,
         "camera_names": all_camera_names,
         "selected_camera": camera,
+        "selected_date_from": date_from.isoformat() if date_from else "",
+        "selected_date_to": date_to.isoformat() if date_to else "",
+        "timezone": get_current_timezone(db),
     })
 
 
@@ -143,7 +159,10 @@ async def get_video_gallery_data(
     camera: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_operator: User = Depends(operator_access_required)
+    current_operator: User = Depends(operator_access_required),
+    *,
+    date_from: Annotated[date | None, Query()] = None,
+    date_to: Annotated[date | None, Query()] = None,
 ):
     # FIX: Always get fresh group_id from database to handle group changes without relogin
     user = db.query(User).filter(User.id == request.session.get("user_id")).first()
@@ -154,7 +173,16 @@ async def get_video_gallery_data(
         return ORJSONResponse(status_code=403, content={"detail": "Authentication required."})
 
     offset = (page - 1) * 12
-    videos = _get_filtered_videos(db, group_id, camera_filter=camera, search_query=q, offset=offset, limit=12)
+    videos = _get_filtered_videos(
+        db,
+        group_id,
+        camera_filter=camera,
+        search_query=q,
+        offset=offset,
+        limit=12,
+        date_from=date_from,
+        date_to=date_to,
+    )
 
     gallery_html = templates.get_template("_video_grid.html").render({"videos": videos, "request": request})
     return ORJSONResponse({'html': gallery_html})
@@ -385,6 +413,7 @@ def _authorize_video_recording(
     ):
         raise HTTPException(status_code=403, detail="Access denied to this camera")
 
+    require_recording_available(db, camera.id)
     log_audit(
         db=db,
         user=current_operator.username,

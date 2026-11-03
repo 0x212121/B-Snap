@@ -72,6 +72,7 @@ def test_destination_permissions_are_preserved(role: str) -> None:
             "/cameras",
             "/nvrs",
             "/admin/record-checks",
+            "/admin/recording-schedules",
             "/health",
             "/admin/users",
             "/admin/camera-groups",

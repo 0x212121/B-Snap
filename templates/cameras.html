@@ -424,11 +424,12 @@
     </form>
     
     <!-- Modal Footer -->
-    <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 rounded-b-2xl">
+    <div class="flex flex-wrap justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 rounded-b-2xl">
       <button type="button" onclick="hideCameraModal()" 
         class="ui-button ui-button-secondary">
         Cancel
       </button>
+      <a id="camera-recording-link" href="/admin/recording-schedules" style="display:none" class="ui-button ui-button-secondary">Recording Schedules</a>
       <button type="submit" form="cameraForm" id="modalSubmitButton" 
         class="ui-button ui-button-primary">
         {{ icon_save("w-5 h-5") }}
@@ -727,6 +728,7 @@
     }
     
     window.showAddCameraModal = async () => {
+      document.getElementById('camera-recording-link').style.display = 'none';
       modalForm.reset();
       modalTitle.textContent = 'Add New Camera';
       modalSubmitButton.querySelector('span').textContent = 'Add Camera';
@@ -755,6 +757,8 @@
     }
     
     window.showEditCameraModal = async (cameraId) => {
+      document.getElementById('camera-recording-link').href = `/admin/recording-schedules?camera_id=${encodeURIComponent(cameraId)}`;
+      document.getElementById('camera-recording-link').style.display = '';
       modalForm.reset();
       modalTitle.textContent = 'Edit Camera';
       modalSubmitButton.querySelector('span').textContent = 'Save Changes';

@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
@@ -23,6 +24,7 @@ from starlette.requests import Request
 from app.db.database import Base, get_db
 from app.models.camera import Camera, camera_camera_groups
 from app.models.camera_group import CameraGroup
+from app.models.recording_schedule import CameraRecordingState
 from app.models.video import Video
 from app.models.whitelist import RoleEnum, WhatsappWhitelist
 from app.routes import cameras, videos, wa_webhook
@@ -46,6 +48,7 @@ class VideoRecordAPITests(unittest.TestCase):
                 Camera.__table__,
                 camera_camera_groups,
                 Video.__table__,
+                CameraRecordingState.__table__,
                 WhatsappWhitelist.__table__,
             ],
         )
@@ -98,6 +101,27 @@ class VideoRecordAPITests(unittest.TestCase):
             },
         )
         self.assertEqual(self.audit.call_args.kwargs["user"], "api-operator")
+
+    def test_manual_endpoints_reject_an_active_archive_session(self) -> None:
+        camera_id = self.camera.id
+        self.db.add(
+            CameraRecordingState(
+                camera_id=camera_id,
+                lease_owner="archive-owner",
+                status="recording",
+                lease_until=datetime.now(UTC) + timedelta(minutes=1),
+            )
+        )
+        self.db.commit()
+        for endpoint, body in (
+            ("/api/videos/record", {"hostname": "CCTV-GATE-01", "duration": 30}),
+            ("/api/videos/record-and-wait", {"hostname": "CCTV-GATE-01", "duration": 30}),
+            (f"/videos/record/{camera_id}", None),
+            (f"/capture_video/{camera_id}", None),
+        ):
+            response = self.client.post(endpoint, json=body)
+            assert response.status_code == 409
+        self.recorder.assert_not_awaited()
 
     def test_unique_ip_uses_default_duration(self) -> None:
         response = self.client.post("/api/videos/record", json={"ip": "192.168.1.100"})
@@ -293,6 +317,8 @@ class VideoRecordAPITests(unittest.TestCase):
                 ),
                 patch.object(video_utils, "generate_thumbnail", return_value=True),
                 patch.object(video_utils, "log_audit") as audit,
+                patch.object(video_utils, "acquire_recording_lease", return_value="test-owner"),
+                patch.object(video_utils, "release_recording_lease"),
             ):
                 result = asyncio.run(
                     video_utils.record_video_and_save_db(

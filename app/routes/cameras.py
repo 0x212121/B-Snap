@@ -27,6 +27,7 @@ from app.utils.healthcheck import ping_camera_by_id
 from app.utils.template_helper import templates
 from app.utils.notification_service import NotificationService
 from app.utils.video import record_video_and_save_db
+from app.utils.recording_lease import require_recording_available
 from app.core.logging_config import setup_logging
 
 # Dependency injection for router
@@ -260,6 +261,7 @@ async def capture_video(
             group.id == current_operator.group_id for group in camera.groups
         ):
             raise HTTPException(status_code=403, detail="Access denied to this camera")
+        require_recording_available(db, camera_id)
         asyncio.create_task(
             record_video_and_save_db(
                 request,

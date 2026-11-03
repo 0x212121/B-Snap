@@ -13,7 +13,7 @@
   #branding-preview .preview-muted { color: var(--preview-muted); }
   .branding-palette-choice:has(input:checked) { border-color: var(--ui-primary); outline: 1px solid var(--ui-primary); }
 </style>
-<div class="ui-page max-w-6xl mx-auto">
+<div class="ui-page w-full text-gray-900 dark:text-gray-100 flex flex-col overflow-hidden">
   {{ page_header("Branding", "Manage your application identity and preview changes before saving.") }}
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
     <form id="branding-form" method="post" action="/admin/branding" enctype="multipart/form-data" class="space-y-4">

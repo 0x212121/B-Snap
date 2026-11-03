@@ -2113,6 +2113,10 @@ select {
   min-width: 60px;
 }
 
+.min-w-\[960px\] {
+  min-width: 960px;
+}
+
 .min-w-fit {
   min-width: -moz-fit-content;
   min-width: fit-content;
@@ -3330,6 +3334,11 @@ select {
   padding-bottom: 0.375rem;
 }
 
+.py-10 {
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
 .py-12 {
   padding-top: 3rem;
   padding-bottom: 3rem;
@@ -4135,6 +4144,10 @@ select {
 
 .ease-out {
   transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
+
+.\[index\:index\] {
+  index: index;
 }
 
 .\[start\:end\] {
@@ -5410,6 +5423,11 @@ select {
 
 :is(.dark .dark\:hover\:bg-gray-700\/50:hover) {
   background-color: rgb(55 65 81 / 0.5);
+}
+
+:is(.dark .dark\:hover\:bg-gray-800:hover) {
+  --tw-bg-opacity: 1;
+  background-color: rgb(31 41 55 / var(--tw-bg-opacity));
 }
 
 :is(.dark .dark\:hover\:bg-gray-800\/60:hover) {

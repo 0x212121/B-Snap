@@ -6,48 +6,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.6.3] - 2026-11-03
 
-Consolidates changes previously listed under 2.6.3 through 2.6.3 and the pending branding/WhatsApp updates.
-
 ### Added
 
-- Improve Branding with direct logo upload, live navigation/sign-in previews, light/dark preview modes, draft defaults/revert controls and unsaved-change protection. New uploads use immutable asset URLs so failed saves do not replace the active logo.
-- Add administrator branding settings for the application name, login tagline, and existing uploaded logo on the main navigation and login page.
-- Apply the selected logo to authentication pages and the favicon, and persist newly uploaded branding assets in a dedicated Docker volume.
-- Add validated primary color palettes for shared buttons and dialogs.
-- Use the configured name and logo in the localized Insights executive PDF.
-- Use the configured application name in GoWA outage alert emails.
-- Apply the configured name and logo to health PDF reports and the name to CSV report headers.
+- Configurable application branding: name, tagline, logos, primary palettes, direct uploads, live light/dark previews, draft/revert controls, and unsaved-change protection. Immutable upload URLs and a dedicated Docker volume preserve active assets.
+- Apply branding to navigation, authentication, favicon, Insights/health PDFs, CSV headers, and GoWA outage emails; keep the Maps logo independent.
+- Camera Recording Schedules for interval/cron clips, overnight weekday windows, and continuous segmented archives, accessible from Devices and Edit Camera. Includes supervised FFmpeg, shared camera leases, concurrency/disk limits, closed-segment recovery, and job history; preserves original video codecs, integrity hashes, authenticated access, and retention holds.
+- Video Gallery camera/date-range filters using the configured timezone. See [recording schedules](docs/source/recording-schedules.md) for setup and limitations, including excluded audio and soft-delete/purge behavior.
 
 ### Changed
 
-- Store newly created WhatsApp whitelist numbers in E.164 format; retain lookup compatibility for existing digit-only numbers and add a unique index across both representations.
-- Simplify the Add Whitelist form to accept a national number for the selected country and safely render user-provided names and group labels.
-- Normalize formatted international numbers for whitelist search, group lookup, administration and the WhatsApp allow-check while rejecting malformed lookup identities.
-- Reject malformed WhatsApp sender identities in webhook and camera resolver access checks while keeping supported legacy number and JID formats.
-- Add country-aware international number validation to WhatsApp whitelist creation, CSV import and bot whitelist actions. Existing digit-only records remain readable; new entries use canonical E.164 storage.
+- Normalize new WhatsApp whitelist numbers to E.164 with country-aware validation and a uniqueness index; retain legacy lookup compatibility. Simplify national-number entry and safely handle formatted numbers, sender identities, names, and group labels across import, bot, and admin flows.
+- Run `python -m app.db.migrate` before restarting web/scheduler workers to apply migrations `20261103_retire_inbox`, `20261103_wa_phone_unique`, `20261103_recording_schedules`, and `20261103_recording_timezone`, and seed missing settings.
 
 ### Removed
 
-- Retired Power BI Record Checks: removed its admin preview page, navigation entry, six `/api/powerbi/record-checks/*` dataset endpoints, dedicated channel-summary helper, translations and connector documentation. Retired URLs now return 404 and are absent from OpenAPI. Core record checks, source/mount configuration, status/history, daily reports, scheduler jobs, notifications and stored data remain available; no database migration is required.
-- Removed the unused persistent toast inbox (CA-22), its `/api/notifications/*` endpoints, ORM model, and dormant database-write branch. Live authenticated WebSocket toasts, on-screen dismissal behavior, email delivery/retries, and `/email-logs` remain available.
-- Migration `20261103_retire_inbox` renames the legacy table to `retired_notifications`, retaining historical rows for rollback; Alembic autogenerate excludes this archive from managed runtime tables. The removed service no longer accepts a database session for inbox storage. Run `alembic upgrade head` before starting the updated workers.
+- Retire Power BI Record Checks pages, navigation, six dataset endpoints, helpers, translations, and connector docs. Retired URLs return 404; core record checks, mounts, reports, notifications, and stored data remain available.
+- Remove the unused persistent toast inbox and API (CA-22). Preserve historical rows in `retired_notifications` for rollback; live WebSocket toasts, email delivery/retries, and email logs remain available.
 
 ### Fixed
 
-- Hide Branding's cancel-upload control until a file is selected, including when shared button styles set an explicit display mode.
-- Align Application Logo and Map Logo upload panels in Appearance with matching buttons, preview sizes, selected filenames, and responsive layout.
-- Keep Maps heading logos separate from application branding. Configuration provides independent Map Logo and Application Logo uploads/previews; neither upload overwrites the other or the legacy map asset. Maps uses its own selected PNG/ICO with a legacy map-only fallback, never the application logo or name.
-- Resolved CA-12: move eight legacy live diagnostics out of pytest discovery and require explicit command-line opt-in. Shared database tests now use a disposable PostgreSQL schema with transaction rollback instead of a global SQLite schema; preserve JSONB and append-only audit triggers. Block application-engine access and unmocked external connections, avoid application lifespan startup in HTTP fixtures, consolidate pytest configuration and add collection/isolation regressions.
-- Video deletion audit details now format the original video timestamp using the configured database timezone instead of always using WITA. Both soft delete and hard delete use the shared timezone helper; removed the unused `app/utils/timezone.py` module. Existing audit records remain unchanged.
-- Added isolated regressions for WIB/WITA/WIT, UTC-aware and naive timestamps, midnight rollover, and both deletion modes.
-- Completed CA-17: compile the remaining page styles through Tailwind instead of shipping raw `@apply` in eight templates (cameras, NVRs, email logs, device health, recipients, users, WhatsApp whitelist and changelog). Restored table zebra/hover states, email reason badges, user role colors and changelog cards/markdown; scoped selectors to their page containers and removed obsolete badge/toggle rules already replaced by shared UI components.
-- Added a regression guard against uncompiled Tailwind directives in templates and generated CSS. Verified all eight pages at desktop/mobile sizes in light/dark themes with isolated synthetic data.
-- Resolved CA-23 documentation routing: `/docs` redirects to `/docs/environment`; Swagger has one admin-only implementation at `/docs/openapi`, with `/developer/docs` retained as a protected alias. `/docs/openapi.json` redirects to the existing `/openapi.json` schema. Removed the shadowed `/docs` handler and consolidated the developer-docs router; updated navigation, API links and proxy configuration descriptions.
-- Removed unreachable rendering code after the `/stats` redirect and preserved URL-encoded camera/days filters. Marked six unused templates, the unregistered standalone MFA router and obsolete proxy overrides as deprecated; retained active nested Maps routers, analytics APIs and existing bookmarks. See the [legacy routing review](docs/source/legacy_routing_review_2026_11_03.md).
-- Fixed CA-21: load camera-group camera/NVR/user counts with one SQL query using separately aggregated subqueries, preserving association-based camera membership, empty groups, sort order, response fields, totals, and admin access.
-- Added count/query-budget regressions and a reproducible before/after PostgreSQL HTTP benchmark. At 250 synthetic groups, SELECTs fell from 751 to 1 and median latency from 674.469 ms to 15.282 ms; all response bodies matched. See the [benchmark report](docs/source/benchmarks/camera_groups_2026_11_03.md) for datasets, p95, empty-case overhead and measurement limits. No schema migration is required.
-- Fixed CA-24: WhatsApp Bot Builder's Message monitor now uses the configured B-Snap timezone for message rows, Details dialogs and refresh timestamps, with an explicit zone label and immediate EN/ID updates. The API supplies timezone metadata and timestamps with explicit offsets, treating naive database timestamps as UTC.
-- Interpret monitor From/To filters in the configured timezone and compare UTC instants instead of browser-local dates. Invalid/reversed ranges are reported; nonexistent DST clocks are rejected, and ambiguous bounds include both occurrences. Latest-100-message filtering and machine input values remain stable across language changes.
+- Correct Branding upload/cancel visibility and align Application/Map Logo controls without overwriting either logo.
+- Isolate database tests in disposable PostgreSQL schemas with rollback, preserve JSONB/audit triggers, block application DB/external connections, and move eight live diagnostics behind explicit opt-in (CA-12).
+- Use configured timezones for video-deletion audits and WhatsApp Message monitor timestamps/filters, with immediate EN/ID updates and UTC comparisons. Cover Indonesian zones, midnight rollover, naive timestamps, and DST bounds (CA-24).
+- Compile remaining styles in eight pages through Tailwind, restoring table states, badges, role colors, and changelog styling; add an uncompiled-directive regression guard (CA-17).
+- Consolidate admin-only OpenAPI/docs routing and remove unreachable stats rendering while preserving legacy redirects, filters, and active routes (CA-23). See the [legacy routing review](docs/source/legacy_routing_review_2026_11_03.md).
+- Fetch camera-group camera/NVR/user counts with one aggregated query (CA-21). At 250 groups, SELECTs fell from 751 to 1 and median latency from 674.469 ms to 15.282 ms; see the [benchmark](docs/source/benchmarks/camera_groups_2026_11_03.md).
+- Use RTSP-specific FFmpeg timeouts for scheduled recording, retain HTTP/HLS timeouts, and expose credential-safe failure reasons. Recalculate archive cron runs after timezone changes, bound thumbnail generation, and migrate early installations missing timezone tracking.
 
 ## [2.6.2] - 2026-11-02
 

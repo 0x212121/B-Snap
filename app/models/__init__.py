@@ -9,6 +9,7 @@ from .nvr import NVR
 from .snapshot import Snapshot
 from .snapshot_log import SnapshotLog
 from .video import Video
+from .recording_schedule import CameraRecordingState, RecordingSchedule
 from .camera_daily_stats import CameraDailyStats
 from .camera_status_change_log import CameraStatusChangeLog
 from .health import CameraHealth
@@ -51,6 +52,8 @@ __all__ = [
     "Snapshot",
     "SnapshotLog",
     "Video",
+    "RecordingSchedule",
+    "CameraRecordingState",
     "CameraDailyStats",
     "CameraStatusChangeLog",
     "CameraHealth",

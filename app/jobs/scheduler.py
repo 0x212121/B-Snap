@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.config import get_config
 from app.core.job_schedules import JOB_SCHEDULES, build_job_trigger, get_job_schedule
 from app.jobs.wa_command_schedule import sync_command_jobs
+from app.jobs.recording_archive import dispatch_recordings
 from app.core.logging_config import setup_logging
 from app.db.database import SessionLocal, engine
 from app.models.audit_log import AuditLog
@@ -813,6 +814,15 @@ def start_scheduler():
         max_instances=1,
         coalesce=True,
         misfire_grace_time=60,
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        dispatch_recordings,
+        trigger=build_job_trigger(job_schedules["recording_dispatch"], scheduler.timezone),
+        id="recording_dispatch",
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=10,
         replace_existing=True,
     )
     sync_command_jobs(scheduler)

@@ -64,6 +64,7 @@ from app.routes import (
     email_templates,
     online_users,
     record_checks,
+    recording_schedules,
 )
 from app.routes import insights
 from app.ws.routes import notification_listener, router as ws_router
@@ -321,6 +322,7 @@ app.include_router(jobs.router)
 app.include_router(camera_groups.router)
 app.include_router(online_users.router)
 app.include_router(record_checks.router)
+app.include_router(recording_schedules.router)
 # Demo routes - remove in production
 app.include_router(toast_demo.router)
 

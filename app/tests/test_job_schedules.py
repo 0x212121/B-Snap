@@ -39,7 +39,7 @@ def config(monkeypatch) -> dict:
 @pytest.mark.asyncio
 async def test_every_listed_job_has_an_independent_schedule(job_id: str) -> None:
     assert set(routes.CONFIGURED_JOBS) == set(schedules.JOB_SCHEDULES)
-    assert len({definition[0] for definition in schedules.JOB_SCHEDULES.values()}) == 14
+    assert len({definition[0] for definition in schedules.JOB_SCHEDULES.values()}) == 15
     db = MagicMock()
     db.query.return_value.filter.return_value.first.return_value = None
     response = await routes.update_job_schedule(
@@ -150,9 +150,9 @@ async def test_job_list_exposes_editing_for_all_jobs(monkeypatch, config) -> Non
     monkeypatch.setattr(routes.JobExecutionLog, "get_job_stats", lambda *args, **kwargs: {})
     response = await routes.list_jobs(db=db, current_admin=MagicMock())
     result = json.loads(response.body)
-    assert len(result["jobs"]) == 14
+    assert len(result["jobs"]) == 15
     assert all(job["schedule_editable"] for job in result["jobs"])
-    assert len(result["cron_configs"]) == 14
+    assert len(result["cron_configs"]) == 15
 
 
 @pytest.mark.asyncio

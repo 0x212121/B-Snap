@@ -50,6 +50,9 @@
           </select>
         </div>
 
+        <label class="ui-label"><span>From date</span><input id="videoDateFrom" type="date" value="{{ selected_date_from | default('') }}" class="ui-control mt-1 w-full"></label>
+        <label class="ui-label"><span>To date</span><input id="videoDateTo" type="date" value="{{ selected_date_to | default('') }}" class="ui-control mt-1 w-full"></label>
+        <span class="text-xs text-gray-500 dark:text-gray-400"><span>Timezone:</span> <span class="no-translate">{{ timezone }}</span></span>
         <!-- Clear Button -->
         <button id="clearFilterBtn" class="ui-button ui-button-secondary">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -117,7 +120,7 @@
     hasMore: true,
     currentPage: 1,
     offset: 0,
-    currentFilter: { camera: {{ selected_camera | tojson }}, q: "" },
+    currentFilter: { camera: {{ selected_camera | tojson }}, q: "", date_from: {{ selected_date_from | default('') | tojson }}, date_to: {{ selected_date_to | default('') | tojson }} },
     observer: null,
     lastRequestId: 0,
     // CRIT-001: Store current video info for download
@@ -177,11 +180,27 @@
       }, 300);
     });
 
+    ['videoDateFrom', 'videoDateTo'].forEach(id => {
+      document.getElementById(id).addEventListener('change', () => {
+        const start = document.getElementById('videoDateFrom').value;
+        const end = document.getElementById('videoDateTo').value;
+        if (start && end && start > end) {
+          Toast.error(window.BSnapI18n?.t('Start date must not be after end date') || 'Start date must not be after end date');
+          return;
+        }
+        VideoState.currentFilter.date_from = start;
+        VideoState.currentFilter.date_to = end;
+        resetAndLoad();
+      });
+    });
+
     // Clear filters
     document.getElementById("clearFilterBtn").addEventListener("click", () => {
       document.getElementById("searchInput").value = "";
       VideoState.tomSelect.clear(true);
-      VideoState.currentFilter = { camera: "", q: "" };
+      document.getElementById('videoDateFrom').value = '';
+      document.getElementById('videoDateTo').value = '';
+      VideoState.currentFilter = { camera: "", q: "", date_from: "", date_to: "" };
       resetAndLoad();
     });
   }
@@ -205,6 +224,8 @@
         const params = new URLSearchParams();
         if (VideoState.currentFilter.camera) params.set('camera', VideoState.currentFilter.camera);
         if (VideoState.currentFilter.q) params.set('q', VideoState.currentFilter.q);
+        if (VideoState.currentFilter.date_from) params.set('date_from', VideoState.currentFilter.date_from);
+        if (VideoState.currentFilter.date_to) params.set('date_to', VideoState.currentFilter.date_to);
         return params;
       }
     });

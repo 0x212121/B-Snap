@@ -22,6 +22,7 @@ def run_scheduler(stop: threading.Event) -> None:
 
     from app.db.database import SessionLocal, engine
     from app.jobs.execution_recovery import recover_interrupted_executions
+    from app.jobs.recording_archive import archive_runtime
     from app.jobs.scheduler import scheduler, start_scheduler, update_scheduler_config
 
     logger = logging.getLogger("scheduler")
@@ -51,6 +52,7 @@ def run_scheduler(stop: threading.Event) -> None:
             stop.wait(60)
     finally:
         clear_heartbeat("scheduler")
+        archive_runtime.shutdown()
         if scheduler.running:
             scheduler.pause()
             logger.info("Waiting for active scheduler jobs to finish.")

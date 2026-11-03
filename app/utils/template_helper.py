@@ -94,6 +94,12 @@ nav_items = [
                 "roles": ["admin"],
             },
             {
+                "label": "Recording Schedules",
+                "href": "/admin/recording-schedules",
+                "icon": "video",
+                "roles": ["admin"],
+            },
+            {
                 "label": "Status",
                 "href": "/health",
                 "icon": "activity",

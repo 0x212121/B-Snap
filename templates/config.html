@@ -201,6 +201,10 @@
         <input type="number" id="retention_video_days" name="retention_video_days" min="1" max="3650" required value="{{ configs.get('retention_video_days', 7) }}" class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
         <label for="max_video_per_camera" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400 mt-2">Videos maximum count per camera</label>
         <input type="number" id="max_video_per_camera" name="max_video_per_camera" min="1" max="1000000" required value="{{ configs.get('max_video_per_camera', 20) }}" class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        <label for="recording_max_cameras" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400 mt-2">Maximum archive cameras recording at once</label>
+        <input type="number" id="recording_max_cameras" name="recording_max_cameras" min="1" max="64" required value="{{ configs.get('recording_max_cameras', 4) }}" class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+        <label for="recording_min_free_mb" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400 mt-2">Archive free disk reserve (MiB)</label>
+        <input type="number" id="recording_min_free_mb" name="recording_min_free_mb" min="128" max="1048576" required value="{{ configs.get('recording_min_free_mb', 1024) }}" class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
       </div>
     </div>
     <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">By age uses only the age limit. By count uses only the count limit. By age and count removes items exceeding either limit. Held items count toward the limit and can keep a camera above it.</p>

@@ -24,6 +24,11 @@ from app.models.video import Video
 from app.utils.audit_logger import log_audit
 from app.utils.camera_onvif import get_rtsp_url
 from app.utils.network_utils import is_reachable
+from app.utils.recording_lease import (
+    MANUAL_LEASE_SECONDS,
+    acquire_recording_lease,
+    release_recording_lease,
+)
 
 # --- Basic Configuration ---
 STATIC_VIDEO_DIR = Path("static/videos")
@@ -337,6 +342,7 @@ def generate_thumbnail(video_path: str, output_thumb_path: str):
                 ],
                 capture_output=True,
                 text=True,
+                timeout=15,
             )
 
             if (
@@ -395,6 +401,32 @@ def detect_codec(rtsp_url: str) -> str:
 
 
 async def record_video_and_save_db(
+    request: Request,
+    camera_id: str,
+    duration: int = 10,
+    actor_username: str | None = None,
+    *,
+    notification_user_id: int | None = None,
+) -> dict[str, Any]:
+    """Exclude overlapping scheduled and manual recordings across web workers."""
+    owner = await asyncio.to_thread(
+        acquire_recording_lease, camera_id, seconds=MANUAL_LEASE_SECONDS
+    )
+    if owner is None:
+        return {"status": "error", "message": "Camera is already recording"}
+    try:
+        return await _record_video_and_save_db(
+            request,
+            camera_id,
+            duration,
+            actor_username,
+            notification_user_id=notification_user_id,
+        )
+    finally:
+        await asyncio.to_thread(release_recording_lease, camera_id, owner)
+
+
+async def _record_video_and_save_db(
     request: Request,
     camera_id: str,
     duration: int = 10,

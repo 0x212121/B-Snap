@@ -260,6 +260,9 @@ configuration keys read by `get_config()`, rather than uppercase environment set
 | `retention_video_mode` | `age` | Video policy: `age`, `count`, or `both` |
 | `retention_video_days` | `7` | Maximum video age in days (1-3650) |
 | `max_video_per_camera` | `20` | Maximum active videos per camera (1-1000000) |
+| `recording_max_cameras` | `4` | Maximum simultaneous archive camera sessions per scheduler process (1-64) |
+| `recording_min_free_mb` | `1024` | Archive free-space reserve in MiB (128-1048576) |
+| `recording_dispatch_cron` | empty | Optional cron for archive dispatch; empty restores a 10-second interval |
 
 `age` ignores the count limit; `count` ignores the age limit. `both` removes media
 exceeding either limit, processing age first and then keeping the newest remaining
