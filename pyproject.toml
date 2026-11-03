@@ -60,6 +60,7 @@ dependencies = [
     "markdown>=3.8.0",
     "itsdangerous>=2.2.0",
     "reportlab>=4.0.0",
+    "phonenumbers>=9.0.0,<10",
 ]
 
 [project.optional-dependencies]

@@ -147,9 +147,11 @@
 {% block scripts %}
 <script>
   const GROUP_API = '/api/camera_groups';
+  const PHONE_REGIONS = {{ phone_regions | default([]) | tojson }};
   
   // ====== STATE ======
   let cameraGroups = [];
+  let groupsLoaded = false;
   let currentPage = 1;
   let perPage = 20;
   let totalPages = 1;
@@ -187,7 +189,8 @@
               phone_number,name,role,group_name
             </code>
             <ul class="text-xs space-y-1 list-disc list-inside">
-              <li><strong>phone_number</strong>: required (628xxxxxxxxxx)</li>
+              <li><strong>phone_number</strong>: required (e.g. +12025550123 or 6281234567890)</li>
+              <li><strong>country</strong>: optional ISO code for local numbers (default ID)</li>
               <li><strong>name</strong>: optional</li>
               <li><strong>role</strong>: optional (user/admin)</li>
               <li><strong>group_name</strong>: optional</li>
@@ -228,6 +231,7 @@
       try {
         const res = await fetch('/api/whitelist/import', {
           method: 'POST',
+          headers: { 'Accept': 'application/json' },
           body: formData
         });
         
@@ -254,8 +258,10 @@
   }
 
   // ====== UTIL ======
-  function validatePhoneNumber(phone) {
-    return /^628[1-9][0-9]{7,12}$/.test(phone);
+  function escapeHtml(value) {
+    const node = document.createElement('span');
+    node.textContent = value == null ? '' : String(value);
+    return node.innerHTML;
   }
 
   async function safeParseJSONResponse(res) {
@@ -270,12 +276,17 @@
   // ====== GROUPS ======
   async function loadGroups() {
     try {
-      const res = await fetch(GROUP_API);
+      const res = await fetch(GROUP_API, {headers: {'Accept': 'application/json'}});
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const groups = await res.json();
-      cameraGroups = Array.isArray(groups) ? groups : [];
+      if (!Array.isArray(groups)) throw new Error('Invalid camera group response');
+      cameraGroups = groups;
+      groupsLoaded = true;
+      return true;
     } catch (err) {
       console.error('Failed to load camera groups:', err);
+      groupsLoaded = false;
+      return false;
     }
   }
 
@@ -425,15 +436,15 @@
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
                   <div class="w-10 h-10 rounded-md bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-sm font-medium">
-                    ${initials}
+                    ${escapeHtml(initials)}
                   </div>
                   <div>
-                    <p class="font-semibold text-gray-900 dark:text-white">${w.phone_number}</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">${escapeHtml(w.phone_number)}</p>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Added ${BSnapDates.html(w.added_at, 'date')}</p>
                   </div>
                 </div>
               </td>
-              <td class="px-4 py-3 text-gray-700 dark:text-gray-300">${w.name || '-'}</td>
+              <td class="px-4 py-3 text-gray-700 dark:text-gray-300">${escapeHtml(w.name || '-')}</td>
               <td class="px-4 py-3">${getRoleBadge(w.role)}</td>
               <td class="px-4 py-3">
                 ${w.group_name 
@@ -441,7 +452,7 @@
                       <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                       </svg>
-                      ${w.group_name}
+                      ${escapeHtml(w.group_name)}
                     </span>`
                   : `<span class="ui-badge ui-badge-neutral">
                       <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -453,12 +464,12 @@
               </td>
               <td class="px-4 py-3 text-center">
                 <div class="flex items-center justify-center gap-1">
-                  <button onclick="showEditModal('${w.phone_number}', '${w.name || ''}', '${w.role}', '${w.group_id || ''}')"
+                  <button data-action="edit"
                           title="Edit"
                           class="ui-button ui-button-secondary ui-button-icon" aria-label="Edit">
                     {{ ui_icons.icon_pencil("w-5 h-5") | replace("\n", "") }}
                   </button>
-                  <button onclick="confirmDelete('${w.phone_number}')"
+                  <button data-action="delete"
                           title="Delete"
                           class="ui-button ui-button-danger-quiet ui-button-icon" aria-label="Delete">
                     {{ ui_icons.icon_trash("w-5 h-5") | replace("\n", "") }}
@@ -467,6 +478,11 @@
               </td>
             </tr>
           `);
+          const row = tableBody.lastElementChild;
+          row.querySelector('[data-action="edit"]').addEventListener('click', () =>
+            showEditModal(w.phone_number, w.name || '', w.role, w.group_id));
+          row.querySelector('[data-action="delete"]').addEventListener('click', () =>
+            confirmDelete(w.phone_number));
         });
       }
 
@@ -522,7 +538,12 @@
   }
 
   // ====== MODALS ======
-  function openAddModal() {
+  async function openAddModal() {
+    if (!groupsLoaded && !await loadGroups()) {
+      Toast.error('Failed to load camera groups');
+      return;
+    }
+    if (document.getElementById('add-modal')) return;
     const modalHtml = `
     <div id="add-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
@@ -543,15 +564,14 @@
         
         <form id="add-form" class="p-6 space-y-4">
           <div>
-            <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number <span class="text-red-500">*</span></label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span class="text-gray-500 font-medium">+</span>
-              </div>
-              <input type="text" name="phone_number" placeholder="628xxxxxxxxxx" required
-                     class="ui-control pl-8 pr-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition">
-            </div>
-            <p class="mt-1 text-xs text-gray-500">Format: 628xxxxxxxxxx (without +)</p>
+            <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300" for="phone-country">Country</label>
+            <select id="phone-country" name="country" class="ui-control w-full"></select>
+          </div>
+          <div>
+            <label for="add-phone" class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number <span class="text-red-500">*</span></label>
+            <input id="add-phone" type="tel" name="phone_number" placeholder="81234567890" autocomplete="tel-national" required
+                   class="ui-control px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition">
+            <p class="mt-1 text-xs text-gray-500">Enter the phone number for the selected country.</p>
           </div>
           
           <div>
@@ -569,10 +589,9 @@
               </select>
             </div>
             <div>
-              <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Group <span class="text-red-500">*</span></label>
+              <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Group</label>
               <select name="group_id" class="ui-control px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition">
                 <option value="">All Groups</option>
-                  ${cameraGroups.map(g => `<option value="${g.id}">${g.name}</option>`).join('')}
               </select>
             </div>
           </div>
@@ -586,31 +605,51 @@
     </div>`;
     
     document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
+    const countrySelect = document.getElementById('phone-country');
+    const regionNames = typeof Intl.DisplayNames === 'function'
+      ? new Intl.DisplayNames([document.documentElement.lang || 'en'], {type: 'region'}) : null;
+    const regionOptions = PHONE_REGIONS.map(([code, dial]) => ({
+      code, label: `${regionNames?.of(code) || code} (+${dial})`
+    })).sort((a, b) => a.label.localeCompare(b.label));
+    for (const region of regionOptions) {
+      const option = document.createElement('option');
+      option.value = region.code;
+      option.textContent = region.label;
+      option.selected = region.code === 'ID';
+      countrySelect.appendChild(option);
+    }
+    const groupSelect = document.querySelector('#add-form select[name="group_id"]');
+    for (const group of cameraGroups) {
+      const option = document.createElement('option');
+      option.value = group.id;
+      option.textContent = group.name;
+      groupSelect.appendChild(option);
+    }
+    const phoneInput = document.getElementById('add-phone');
+    countrySelect.addEventListener('change', () => {
+      phoneInput.placeholder = countrySelect.value === 'ID' ? '81234567890' : '';
+    });
+
     // Handle form submit
     document.getElementById('add-form').onsubmit = async (e) => {
       e.preventDefault();
       const form = e.target;
       const phone = form.phone_number.value.trim();
       
-      if (!validatePhoneNumber(phone)) {
-        if (typeof Toast !== 'undefined') {
-          Toast.error('Invalid phone format. Use 628xxxxxxxxxx', { title: 'Validation Error' });
-        }
-        return;
-      }
-      
       const payload = {
         phone_number: phone,
-        name: form.name.value || null,
+        country: form.country.value,
+        name: form.elements.namedItem('name').value || null,
         role: form.role.value,
         group_id: form.group_id.value ? parseInt(form.group_id.value) : null,
       };
+      const submitButton = form.querySelector('button[type="submit"]');
+      submitButton.disabled = true;
       
       try {
         const res = await fetch('/api/whitelist', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify(payload)
         });
         
@@ -622,7 +661,7 @@
           loadWhitelist(1);
         } else {
           const data = await safeParseJSONResponse(res);
-          const msg = data.detail || 'Failed to add entry';
+          const msg = Array.isArray(data.detail) ? data.detail.map(item => item.msg).join('; ') : (data.detail || 'Failed to add entry');
           if (typeof Toast !== 'undefined') {
             Toast.error(msg, { title: 'Error' });
           }
@@ -631,12 +670,17 @@
         if (typeof Toast !== 'undefined') {
           Toast.error('Network error', { title: 'Error' });
         }
+      } finally {
+        submitButton.disabled = false;
       }
     };
   }
 
   async function showEditModal(phone, name, role, groupId) {
-    if (!cameraGroups.length) await loadGroups();
+    if (!groupsLoaded && !await loadGroups()) {
+      Toast.error('Failed to load camera groups');
+      return;
+    }
     
     const modalHtml = `
     <div id="edit-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -650,7 +694,7 @@
             </div>
             <div>
               <h3 class="text-lg font-bold text-gray-900 dark:text-white">Edit Entry</h3>
-              <p class="text-sm text-gray-500 dark:text-gray-400">${phone}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(phone)}</p>
             </div>
           </div>
           <button onclick="closeModal('edit-modal')" class="ui-button ui-button-ghost ui-button-icon" aria-label="Close">{{ ui_icons.icon_x_mark("w-5 h-5") }}</button>
@@ -659,7 +703,7 @@
         <form id="edit-form" class="p-6 space-y-4">
           <div>
             <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
-            <input type="text" name="name" value="${name || ''}" placeholder="John Doe"
+            <input type="text" name="name" placeholder="John Doe"
                    class="ui-control px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
           </div>
           
@@ -675,7 +719,6 @@
               <label class="ui-label block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Group</label>
               <select name="group_id" class="ui-control px-4 py-2.5 w-full border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                 <option value="">All Groups</option>
-                ${cameraGroups.map(g => `<option value="${g.id}" ${String(g.id) === String(groupId) ? 'selected' : ''}>${g.name}</option>`).join('')}
               </select>
             </div>
           </div>
@@ -689,12 +732,21 @@
     </div>`;
     
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const editForm = document.getElementById('edit-form');
+    editForm.elements.namedItem('name').value = name || '';
+    for (const group of cameraGroups) {
+      const option = document.createElement('option');
+      option.value = group.id;
+      option.textContent = group.name;
+      option.selected = String(group.id) === String(groupId);
+      editForm.elements.group_id.appendChild(option);
+    }
     
     document.getElementById('edit-form').onsubmit = async (e) => {
       e.preventDefault();
       const form = e.target;
       const payload = {
-        name: form.name.value || null,
+        name: form.elements.namedItem('name').value || null,
         role: form.role.value,
         group_id: form.group_id.value ? parseInt(form.group_id.value) : null,
       };
@@ -702,7 +754,7 @@
       try {
         const res = await fetch(`/api/whitelist/${encodeURIComponent(phone)}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify(payload)
         });
         

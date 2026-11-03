@@ -12,35 +12,30 @@ DEFAULT_CONFIG = {
     "snapshot_batch_delay_seconds": "5",
     "snapshot_ping_check_enabled": "true",
     "snapshot_ping_timeout_ms": "3000",
-    
     # Health check settings
     "healthcheck_interval_minutes": "15",
-    
     # Map settings
     "map_title": "CCTV Maps",
+    "map_logo": "",
     "map_live_enabled": DEFAULT_MAP_LIVE_ENABLED,
     "watermark_text": "Property of ...",
-    
     # Captured media retention (preserve existing snapshot count + age behavior).
     "retention_snapshot_mode": "both",
     "retention_snapshot_days": "30",
     "retention_video_mode": "age",
     "retention_video_days": "7",
     "max_video_per_camera": "20",
-
     # Log retention settings
     "retention_api_logs_days": "90",
     "retention_command_logs_days": "90",
     "retention_camera_stats_days": "90",
     "retention_email_logs_days": "90",
     "retention_job_logs_days": "30",  # New: job execution log retention
-    
     # Storage monitoring settings
     "storage_critical_percent": "95",
     "storage_warning_percent": "85",
     "storage_info_percent": "75",
     "storage_critical_free_gb": "5",
-    
     # SMTP settings
     "smtp_host": "",
     "smtp_port": "587",
@@ -49,7 +44,6 @@ DEFAULT_CONFIG = {
     "smtp_security": "starttls",
     "email_from": "",
     "email_cc": "",
-    
     # Email retry settings
     "email_retry_interval_minutes": "10",  # New: configurable email retry interval
     "email_retry_max_attempts": "5",
@@ -57,7 +51,6 @@ DEFAULT_CONFIG = {
     "email_retry_batch_size": "50",
     "email_retry_max_run_seconds": "120",
     "email_retry_smtp_timeout_seconds": "30",
-    
     # Cleanup job settings
     "storage_check_interval_hours": "1",  # New: storage check interval
     "cleanup_interval_days": "1",  # New: configurable cleanup interval
@@ -65,7 +58,6 @@ DEFAULT_CONFIG = {
     "retention_record_check_days": "90",
     "record_check_daily_report_enabled": "1",
     "app_public_url": "",
-    
     # Job Cron Schedules (NEW) - Cron expressions override interval settings
     # Format: "minute hour day month weekday" (e.g., "0 8,13,23 * * *" = jam 8, 13, 23)
     "snapshot_cron": "",  # Empty = use interval, e.g., "0 8,13,23 * * *" for specific times
@@ -74,7 +66,6 @@ DEFAULT_CONFIG = {
     "record_check_cron": "",  # Empty = use interval
     "cleanup_cron": "0 2 * * *",  # Default: 2 AM daily
     "email_retry_cron": "",  # Empty = use interval
-    
     # Independent job schedules; empty restores the legacy/default schedule.
     "cleanup_camera_stats_cron": "",
     "cleanup_api_logs_cron": "",
@@ -85,7 +76,6 @@ DEFAULT_CONFIG = {
     "orphaned_snapshots_check_cron": "",
     "retention_policy_cron": "",
     "cleanup_retry_queue_interval_days": "1",
-
     # WhatsApp Gateway settings
     "gowa_enabled": "0",
     "gowa_base_url": "http://172.16.1.200:3535",

@@ -22,6 +22,19 @@ from app.models.config import Configuration
 logger = logging.getLogger("main")
 
 
+def _gateway_recipient(phone: str) -> str:
+    """Convert E.164 personal numbers to GoWA's digit-based representation."""
+    if phone.startswith("+"):
+        number, separator, domain = phone.partition("@")
+        if (
+            number[1:].isascii()
+            and number[1:].isdigit()
+            and (not separator or domain == "s.whatsapp.net")
+        ):
+            return number[1:] + (separator + domain if separator else "")
+    return phone
+
+
 class GoWAConfig:
     """GoWA Configuration manager."""
     
@@ -86,7 +99,7 @@ class GoWAConfig:
 
 class WAGatewayService:
     """Service for interacting with GoWA API."""
-    
+
     def __init__(self, db: Session = None):
         self.config = GoWAConfig(db)
         self.session = requests.Session()
@@ -160,13 +173,13 @@ class WAGatewayService:
             encoded = base64.b64encode(secret.encode("utf-8")).decode("ascii")
             return {"Authorization": f"Basic {encoded}"}
         return {"Authorization": f"Bearer {secret}"}
-    
+
     def _make_url(self, endpoint: str) -> str:
         """Build full URL from endpoint."""
         base = self.config.base_url.rstrip("/")
         endpoint = endpoint.lstrip("/")
         return f"{base}/{endpoint}"
-    
+
     def send_text(self, phone: str, message: str, reply_to: Optional[str] = None) -> Dict[str, Any]:
         """
         Send text message via GoWA.
@@ -181,10 +194,11 @@ class WAGatewayService:
         """
         if not self.config.is_configured():
             return {"success": False, "error": "GoWA not configured"}
-        
+
         try:
             # GoWA expects individual recipients as WhatsApp JIDs; group JIDs
             # and already-qualified personal JIDs are passed through unchanged.
+            phone = _gateway_recipient(phone)
             if "@" not in phone:
                 phone = f"{phone}@s.whatsapp.net"
             payload = {
@@ -193,27 +207,27 @@ class WAGatewayService:
             }
             if reply_to:
                 payload["reply_message_id"] = reply_to
-            
+
             response = self._post_with_retry(self._make_url("/send/message"), json=payload)
             if response.status_code == 404:
                 response = self._post_with_retry(self._make_url("/api/send-message"), json=payload)
             response.raise_for_status()
             result = response.json()
-            
+
             logger.info(f"WA message sent to {phone}: {result.get('status', 'unknown')}")
             return {
                 "success": True,
                 "data": result,
                 "message_id": result.get("id")
             }
-            
+
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to send WA message to {phone}: {e}")
             return {"success": False, "error": str(e)}
         except Exception as e:
             logger.error(f"Unexpected error sending WA: {e}")
             return {"success": False, "error": str(e)}
-    
+
     def send_image(
         self,
         phone: str,
@@ -235,8 +249,9 @@ class WAGatewayService:
         """
         if not self.config.is_configured():
             return {"success": False, "error": "GoWA not configured"}
-        
+
         try:
+            phone = _gateway_recipient(phone)
             if "@" not in phone:
                 phone = f"{phone}@s.whatsapp.net"
             payload = {"phone": phone, "image_url": image_url}
@@ -265,10 +280,10 @@ class WAGatewayService:
                 response = self._post_with_retry(self._make_url("/api/send-image"), json=legacy_payload)
             response.raise_for_status()
             result = response.json()
-            
+
             logger.info(f"WA image sent to {phone}: {result.get('status', 'unknown')}")
             return {"success": True, "data": result}
-            
+
         except Exception as e:
             logger.error(f"Failed to send WA image to {phone}: {e}")
             return {"success": False, "error": str(e)}
@@ -291,6 +306,7 @@ class WAGatewayService:
             return {"success": False, "error": f"Image not found: {image_path}"}
 
         try:
+            phone = _gateway_recipient(phone)
             if "@" not in phone:
                 phone = f"{phone}@s.whatsapp.net"
             data = {"phone": phone}
@@ -311,26 +327,27 @@ class WAGatewayService:
         except Exception as e:
             logger.error(f"Failed to send WA image file to {phone}: {e}")
             return {"success": False, "error": str(e)}
-    
+
     def send_document(self, phone: str, document_url: str, filename: Optional[str] = None) -> Dict[str, Any]:
         """Send document via GoWA."""
         if not self.config.is_configured():
             return {"success": False, "error": "GoWA not configured"}
-        
+
         try:
+            phone = _gateway_recipient(phone)
             payload = {
                 "phone": phone,
                 "document": document_url,
             }
             if filename:
                 payload["filename"] = filename
-            
+
             response = self.session.post(self._make_url("/send/file"), json=payload, timeout=60)
             if response.status_code == 404:
                 response = self.session.post(self._make_url("/api/send-document"), json=payload, timeout=60)
             response.raise_for_status()
             return {"success": True, "data": response.json()}
-            
+
         except Exception as e:
             logger.error(f"Failed to send WA document to {phone}: {e}")
             return {"success": False, "error": str(e)}
@@ -345,6 +362,7 @@ class WAGatewayService:
             return {"success": False, "error": f"File not found: {file_path}"}
 
         try:
+            phone = _gateway_recipient(phone)
             data = {"phone": phone}
             if caption:
                 data["caption"] = caption
@@ -356,7 +374,7 @@ class WAGatewayService:
         except Exception as e:
             logger.error(f"Failed to send WA file to {phone}: {e}")
             return {"success": False, "error": str(e)}
-    
+
     def send_video_file(
         self,
         phone: str,
@@ -371,6 +389,7 @@ class WAGatewayService:
         if not path.is_file():
             return {"success": False, "error": "Video file not found"}
         try:
+            phone = _gateway_recipient(phone)
             if "@" not in phone:
                 phone = f"{phone}@s.whatsapp.net"
             data = {"phone": phone}
@@ -397,7 +416,7 @@ class WAGatewayService:
         """Check GoWA connection status."""
         if not self.config.is_configured():
             return {"connected": False, "response_time_ms": None, "error": "Not configured"}
-        
+
         started_at = time.perf_counter()
 
         def elapsed_ms() -> int:
@@ -407,7 +426,7 @@ class WAGatewayService:
             response = self.session.get(self._make_url("/app/status"), timeout=10)
             if response.status_code == 404:
                 response = self.session.get(self._make_url("/api/status"), timeout=10)
-            
+
             # Check content type to detect HTML error pages
             content_type = response.headers.get('content-type', '')
             if 'text/html' in content_type:
@@ -417,9 +436,9 @@ class WAGatewayService:
                     "response_time_ms": elapsed_ms(),
                     "error": f"GoWA returned HTML (not running or wrong URL). Check if GoWA is running at {self.config.base_url}"
                 }
-            
+
             response.raise_for_status()
-            
+
             try:
                 result = response.json()
             except ValueError as e:
@@ -429,7 +448,7 @@ class WAGatewayService:
                     "response_time_ms": elapsed_ms(),
                     "error": "Invalid response from GoWA (not valid JSON)"
                 }
-            
+
             status_payload = result.get("results", result)
             connected = status_payload.get("connected", status_payload.get("is_connected"))
             logged_in = status_payload.get(
@@ -448,7 +467,7 @@ class WAGatewayService:
                 "response_time_ms": elapsed_ms(),
                 "error": None
             }
-            
+
         except requests.exceptions.ConnectionError as e:
             logger.error(f"GoWA connection refused: {e}")
             return {

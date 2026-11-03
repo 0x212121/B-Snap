@@ -1,17 +1,29 @@
 import os
 import re
 
-from io import BytesIO
+from hashlib import sha256
 from typing import Annotated
 
 import pytz
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
-from PIL import Image
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core.branding import (
+    BRANDING_KEYS,
+    DEFAULT_BRANDING,
+    branding_logo_choices,
+    read_branding,
+    validate_branding,
+)
+from app.core.branding_assets import (
+    MAX_LOGO_SIZE,
+    map_logo_url,
+    save_logo_image,
+    validate_logo_image,
+)
 from app.core.logging_config import set_debug_mode
 from app.db.database import get_db
 from app.models.config import Configuration
@@ -25,6 +37,70 @@ from app.utils.timezone_helper import clear_timezone_cache
 from app.utils.wa_monitor import parse_monitor_recipients
 
 router = APIRouter(tags=["Config"])
+
+
+@router.get("/admin/branding", response_class=HTMLResponse)
+def branding_page(
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+    _current_admin: Annotated[User, Depends(admin_access_required)],
+) -> HTMLResponse:
+    """Show identity settings to administrators."""
+    branding = read_branding(db)
+    return templates.TemplateResponse(
+        "branding.html",
+        {
+            "request": request,
+            "branding": branding,
+            "branding_defaults": DEFAULT_BRANDING,
+            "logo_choices": branding_logo_choices(branding),
+            "max_logo_size": MAX_LOGO_SIZE,
+        },
+    )
+
+
+@router.post("/admin/branding")
+async def save_branding(
+    *,
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+    current_admin: Annotated[User, Depends(admin_access_required)],
+    name: Annotated[str, Form(max_length=80)],
+    tagline: Annotated[str, Form(max_length=160)] = "",
+    logo: Annotated[str, Form()] = "/static/icons/b-snap.png",
+    palette: Annotated[str, Form()] = "blue",
+    application_logo: Annotated[UploadFile | None, File()] = None,
+) -> JSONResponse:
+    """Store validated branding without modifying unrelated configuration."""
+    try:
+        upload = application_logo if application_logo and application_logo.filename else None
+        values = validate_branding(
+            name, tagline, DEFAULT_BRANDING["logo"] if upload else logo, palette
+        )
+        if upload:
+            contents = await upload.read(MAX_LOGO_SIZE + 1)
+            extension = validate_logo_image(upload.filename, upload.content_type, contents)
+            # A failed DB save cannot replace the currently active image.
+            stem = "application-" + sha256(contents).hexdigest()
+            values["logo"] = save_logo_image(stem, extension, contents)
+    except ValueError as exc:
+        return JSONResponse(status_code=400, content={"message": str(exc)})
+    for field, key in BRANDING_KEYS.items():
+        row = db.get(Configuration, key)
+        if row is None:
+            db.add(Configuration(key=key, value=values[field]))
+        else:
+            row.value = values[field]
+    # log_audit commits both the settings and their audit event in one transaction.
+    log_audit(
+        db=db,
+        user=current_admin.username,
+        action="update_branding",
+        target="branding",
+        ip=request.client.host if request.client else None,
+        extra=values,
+    )
+    return JSONResponse({"message": "Branding saved.", "branding": values})
 
 
 @router.post("/config/test-smtp")
@@ -77,24 +153,26 @@ async def config_page(
     config_dict = {c.key: c.value for c in configs}
     timezones = pytz.common_timezones
 
-    # Check for logo file
-    logo_url = None
-    logo_path = os.path.join("static", "icons", "logo.png")
-    ico_path = os.path.join("static", "icons", "logo.ico")
-    if os.path.exists(logo_path):
-        logo_url = "/static/icons/logo.png"
-    elif os.path.exists(ico_path):
-        logo_url = "/static/icons/logo.ico"
+    logo_url = map_logo_url(config_dict)
+    application_logo_url = next(
+        (
+            url
+            for url in ("/static/branding/logo.png", "/static/branding/logo.ico")
+            if os.path.isfile(url.lstrip("/"))
+        ),
+        None,
+    )
 
     return templates.TemplateResponse(
         "config.html",
-        {"request": request, "configs": config_dict, "timezones": timezones, "logo_url": logo_url},
+        {
+            "request": request,
+            "configs": config_dict,
+            "timezones": timezones,
+            "logo_url": logo_url,
+            "application_logo_url": application_logo_url,
+        },
     )
-
-
-MAX_LOGO_SIZE = 512 * 1024  # 512 KB
-ALLOWED_EXTENSIONS = {".png", ".ico"}
-ALLOWED_MIME_TYPES = {"image/png", "image/x-icon"}
 
 
 @router.post("/config/save")
@@ -146,6 +224,8 @@ async def config_save(  # noqa: C901, PLR0911, PLR0912
     gowa_device_id: Annotated[str, Form()] = "",
     gowa_default_receiver: Annotated[str, Form()] = "",
     app_logo: Annotated[UploadFile | None, File()] = None,
+    map_logo: Annotated[UploadFile | None, File()] = None,
+    application_logo: Annotated[UploadFile | None, File()] = None,
     gowa_monitor_enabled: Annotated[bool, Form()] = False,
     gowa_monitor_recipients: Annotated[str, Form(max_length=2000)] = "",
     gowa_monitor_interval_minutes: Annotated[int, Form(ge=1, le=1440)] = 1,
@@ -322,6 +402,23 @@ async def config_save(  # noqa: C901, PLR0911, PLR0912
         }
     )
 
+    # app_logo was the historical map upload field; retain it for older clients.
+    map_upload = map_logo if map_logo and map_logo.filename else app_logo
+    logo_uploads = []
+    for stem, upload in (("map-logo", map_upload), ("logo", application_logo)):
+        if upload and upload.filename:
+            contents = await upload.read(MAX_LOGO_SIZE + 1)
+            try:
+                extension = validate_logo_image(upload.filename, upload.content_type, contents)
+            except ValueError as exc:
+                return JSONResponse(status_code=400, content={"message": str(exc)})
+            logo_uploads.append((stem, extension, contents))
+
+    for stem, extension, contents in logo_uploads:
+        saved_url = save_logo_image(stem, extension, contents)
+        if stem == "map-logo":
+            keys["map_logo"] = saved_url
+
     for config_key, config_value in keys.items():
         config_entry = db.query(Configuration).filter_by(key=config_key).first()
         if config_entry:
@@ -329,41 +426,6 @@ async def config_save(  # noqa: C901, PLR0911, PLR0912
         else:
             config_entry = Configuration(key=config_key, value=str(config_value))
             db.add(config_entry)
-
-    # Hardened logo upload
-    if app_logo and app_logo.filename:
-        ext = os.path.splitext(app_logo.filename)[-1].lower()
-        content_type = app_logo.content_type
-
-        # Validate extension & MIME type
-        if ext not in ALLOWED_EXTENSIONS or content_type not in ALLOWED_MIME_TYPES:
-            return JSONResponse(
-                status_code=400,
-                content={"message": "Invalid logo file format. Only .png or .ico are allowed."},
-            )
-
-        # Read file content
-        contents = await app_logo.read()
-        if len(contents) > MAX_LOGO_SIZE:
-            return JSONResponse(
-                status_code=400,
-                content={"message": "Uploaded logo file is too large (max 512 KB)."},
-            )
-
-        # Validate image integrity with Pillow
-        try:
-            image = Image.open(BytesIO(contents))
-            image.verify()
-        except Exception:
-            return JSONResponse(
-                status_code=400, content={"message": "The uploaded image file is corrupt."}
-            )
-
-        # Save file securely
-        save_path = os.path.join("static", "icons", f"logo{ext}")
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        with open(save_path, "wb") as buffer:
-            buffer.write(contents)
 
     db.commit()
 

@@ -68,6 +68,7 @@ services:
     volumes:
       - ./static/snapshots:/app/static/snapshots
       - ./static/videos:/app/static/videos
+      - branding_data:/app/static/branding
       - ./logs:/app/logs
       - ./archives/audit_logs:/app/archives/audit_logs
       - shared_tmp:/tmp/shared
@@ -200,6 +201,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  branding_data:
   postgres_data:
   pgadmin_data:
   shared_tmp:

@@ -11,6 +11,7 @@ from hashlib import sha256
 
 from sqlalchemy.orm import Session
 
+from app.core.branding import read_branding
 from app.models.config import Configuration
 from app.utils.email_helper import send_email
 from app.utils.timezone_helper import format_datetime_standard
@@ -92,14 +93,15 @@ def check_gowa_device(db: Session) -> dict:
     row.value = json.dumps(state)
 
     if status != "healthy" and state["failures"] >= CONFIRMATIONS and not state.get("sent"):
+        brand_name = read_branding(db)["name"]
         descriptions = {
             "logged_out": "Device logged off. Pair the device again in GoWA.",
             "disconnected": "Device disconnected from WhatsApp. Check its connection in GoWA.",
-            "unreachable": "B-Snap cannot obtain device status from GoWA. Check gateway connectivity and configuration.",
+            "unreachable": f"{brand_name} cannot obtain device status from GoWA. Check gateway connectivity and configuration.",
         }
         incident_time = datetime.fromisoformat(state["incident_time"])
         body = (
-            "B-Snap WhatsApp device alert\n\n"
+            f"{brand_name} WhatsApp device alert\n\n"
             f"Device ID: {config.device_id or '(default device)'}\n"
             f"Status: {status}\n"
             f"First detected: {format_datetime_standard(incident_time, db)}\n\n"
@@ -108,7 +110,9 @@ def check_gowa_device(db: Session) -> dict:
             "One alert is sent per outage; alerts resume after a healthy check."
         )
         try:
-            send_email(recipients, f"[B-Snap] WhatsApp device {status}", body, high_importance=True)
+            send_email(
+                recipients, f"[{brand_name}] WhatsApp device {status}", body, high_importance=True
+            )
         except Exception:
             # Do not include transport exceptions, which may contain credentials.
             db.commit()

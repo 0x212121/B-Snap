@@ -3,14 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Initial Admin Setup</title>
-  <link rel="icon" type="image/x-icon" href="/static/icons/favicon.ico">
+  <title>{{ branding.name }} - Initial Admin Setup</title>
+  <link rel="icon" href="{{ branding.logo if branding.logo != '/static/icons/b-snap.png' else '/static/icons/favicon.ico' }}">
   <link href="/static/css/output.css" rel="stylesheet">
     <link href="/static/css/design-system.css" rel="stylesheet">
+    {% include "_branding_theme.html" %}
 </head>
 <body class="ui-auth bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white transition-colors">
 
   <div class="container mx-auto py-16 max-w-lg px-6">
+    <img src="{{ branding.logo }}" alt="{{ branding.name }}" class="h-12 mx-auto mb-4">
     <h1 class="ui-page-title text-3xl font-bold mb-6 text-center">🛡️ Initial Admin Setup</h1>
 
     <form method="post" class="ui-card ui-card-body space-y-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow">

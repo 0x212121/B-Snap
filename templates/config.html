@@ -4,6 +4,28 @@
 
 {% from "macros/ui.html" import toggle_switch, page_header %}
 
+{% macro logo_upload(title, input_id, field_name, preview_id, preview_url, help_text) %}
+<div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+  <label id="{{ input_id }}Label" for="{{ input_id }}" class="ui-label block mb-3">{{ title }}</label>
+  <div class="flex items-center gap-4">
+    <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-gray-100 dark:bg-gray-700">
+      <img id="{{ preview_id }}" {% if preview_url %}src="{{ preview_url }}"{% endif %} data-original-src="{{ preview_url or '' }}"
+           alt="{{ title }} Preview" class="h-16 w-16 object-contain rounded-md {{ 'invisible' if not preview_url }}">
+    </div>
+    <div class="min-w-0 flex-1">
+      <button type="button" data-logo-upload-for="{{ input_id }}" class="ui-button ui-button-primary w-full"
+              aria-labelledby="{{ input_id }}ButtonText {{ input_id }}Label">
+        {{ icon_folder("h-5 w-5") }}<span id="{{ input_id }}ButtonText">Choose Logo File</span>
+      </button>
+      <input type="file" accept=".png,.ico" name="{{ field_name }}" id="{{ input_id }}" class="hidden"
+             data-logo-preview="{{ preview_id }}" data-logo-filename="{{ input_id }}Filename">
+      <p id="{{ input_id }}Filename" class="mt-2 truncate text-xs text-gray-500 dark:text-gray-400">No file chosen</p>
+    </div>
+  </div>
+  <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">{{ help_text }}</p>
+</div>
+{% endmacro %}
+
 {% block content %}
 <style>
   body:has(#configPage) { overflow: hidden; }
@@ -604,32 +626,14 @@
         class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Camera Location Overview">
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Title shown on the map view.</p>
       </div>
-      <div class="md:col-span-1">
+      <div class="md:col-span-2">
         {{ toggle_switch("Maps Live View", id="map_live_enabled", name="map_live_enabled", value="1", checked=configs.get('map_live_enabled', '1') == '1') }}
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Allow administrators to open live streams from camera images on Maps.</p>
       </div>
-      <div class="md:col-span-1">
-        <label class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Application Logo</label>
-        
-        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <img id="logoPreview"
-          src="{{ logo_url or '#' }}"
-          alt="Logo Preview"
-          class="h-16 w-16 object-contain rounded-md bg-gray-100 dark:bg-gray-700 {{ 'hidden' if not logo_url }}">
-          
-          <label for="logoUpload" class="w-full">
-            <div class="w-full h-10 flex items-center justify-center text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg cursor-pointer transition duration-150 gap-2">
-              {{ icon_folder("w-8 h-8 text-yellow-500 inline") }} Choose Logo File
-            </div>
-            <input type="file" accept=".png,.ico" name="app_logo" id="logoUpload"
-            class="hidden">
-          </label>
-        </div>
-        
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          Upload a PNG or ICO file. Displayed on the maps view.
-        </p>
-      </div>
+      {{ logo_upload("Application Logo", "applicationLogoUpload", "application_logo", "applicationLogoPreview", application_logo_url,
+                     "Upload a PNG or ICO, save, then select it in Branding.") }}
+      {{ logo_upload("Map Logo", "logoUpload", "map_logo", "logoPreview", logo_url,
+                     "Upload a PNG or ICO file. Displayed on the maps view.") }}
       
     </div>
   </div>
@@ -836,19 +840,28 @@
       }
     }
     
-    const logoUpload = document.getElementById('logoUpload');
-    const logoPreview = document.getElementById('logoPreview');
-    
-    logoUpload.addEventListener('change', function (e) {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-          logoPreview.src = event.target.result;
-          logoPreview.classList.remove('hidden');
+    document.querySelectorAll('[data-logo-upload-for]').forEach(button => {
+      const input = document.getElementById(button.dataset.logoUploadFor);
+      const preview = document.getElementById(input.dataset.logoPreview);
+      const filename = document.getElementById(input.dataset.logoFilename);
+      button.addEventListener('click', () => input.click());
+      input.addEventListener('change', () => {
+        const file = input.files[0];
+        filename.textContent = file ? file.name : (window.BSnapI18n?.t('No file chosen') || 'No file chosen');
+        if (!file) {
+          if (preview.dataset.originalSrc) preview.src = preview.dataset.originalSrc;
+          else preview.removeAttribute('src');
+          preview.classList.toggle('invisible', !preview.dataset.originalSrc);
+          return;
         }
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (input.files[0] !== file) return;
+          preview.src = reader.result;
+          preview.classList.remove('invisible');
+        };
         reader.readAsDataURL(file);
-      }
+      });
     });
 
     // WhatsApp Gateway Toggle

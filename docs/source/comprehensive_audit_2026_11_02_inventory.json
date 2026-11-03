@@ -2,12 +2,12 @@
   "audit_date": "2026-11-02",
   "scope": "Source inventory and static checks; not equivalent to runtime or security coverage",
   "counts": {
-    ".py": 292,
+    ".py": 307,
     ".cjs": 6,
-    ".js": 15,
-    ".html": 54
+    ".js": 16,
+    ".html": 57
   },
-  "route_declarations": 254,
+  "route_declarations": 256,
   "syntax_errors": [],
   "template_errors": [],
   "js_errors": [],
@@ -193,6 +193,12 @@
       "check": "AST syntax and structural scan"
     },
     {
+      "path": "alembic/versions/20261103_whatsapp_phone_unique.py",
+      "lines": 32,
+      "sha256": "5b262ffdc2e690c0978a0e5fda4a4d2f787e737bf55ad7c998e037f2d457242f",
+      "check": "AST syntax and structural scan"
+    },
+    {
       "path": "alembic/versions/300b57036bb7_add_recipients_table_for_email_logs.py",
       "lines": 50,
       "sha256": "68059412de6306f58814d8b2c4235614a9271650c6b0a9a15651448cf67c2c63",
@@ -350,14 +356,26 @@
     },
     {
       "path": "app/api/whatsapp_routes.py",
-      "lines": 20,
-      "sha256": "05552d3ea50e7c7291d58258b93f83ef80a9f713d9926763dd485ad9ef962851",
+      "lines": 24,
+      "sha256": "a223c70622393957c2f7dfc57da9dcab395bfb18e86a7e5de438475e1b466244",
       "check": "AST syntax and structural scan"
     },
     {
       "path": "app/core/__init__.py",
       "lines": 0,
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/core/branding.py",
+      "lines": 109,
+      "sha256": "0569ddcd37fb60b4052afd836ed3b3e1ea3057c07eaceb28c16c1733a2039fd3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/core/branding_assets.py",
+      "lines": 68,
+      "sha256": "2c6d0a2335dff65a670a5c5f31276cdf107be6ca683f21968b941bf9c5089811",
       "check": "AST syntax and structural scan"
     },
     {
@@ -368,8 +386,8 @@
     },
     {
       "path": "app/core/config_initializer.py",
-      "lines": 125,
-      "sha256": "30d98c60e5ebcd0e2523c7030c5b3a48d34b9f79bb1ceff421fb8b8b845ae71d",
+      "lines": 115,
+      "sha256": "82c43864697502541b9e0310dc5c22421f97dc69d4b7832798999448dd0cdeb1",
       "check": "AST syntax and structural scan"
     },
     {
@@ -692,8 +710,8 @@
     },
     {
       "path": "app/models/whitelist.py",
-      "lines": 40,
-      "sha256": "5e9a415add28e15c3282d02fa7ae41cee139a32d40871c7a415fe4505feee544",
+      "lines": 41,
+      "sha256": "daf72a82ee5a0ad29c7426e0410b7c9744fe81ff129107396ecc2c8334c20053",
       "check": "AST syntax and structural scan"
     },
     {
@@ -710,8 +728,8 @@
     },
     {
       "path": "app/routes/admin.py",
-      "lines": 88,
-      "sha256": "9f4e58a59cc39f96654c4e566f22b90d8f63779027024754504c8ed397677df3",
+      "lines": 96,
+      "sha256": "da72c37aaa4b584c3d2727f3b9ccb3bd6aecc27c27fdd2ecb7ef4c7e4d1eb571",
       "check": "AST syntax and structural scan"
     },
     {
@@ -746,8 +764,8 @@
     },
     {
       "path": "app/routes/config.py",
-      "lines": 516,
-      "sha256": "bde1e77642c90cc561a8db0514844dd8bf2744018a3b59f700bab10f931860fc",
+      "lines": 578,
+      "sha256": "3b1a1b62b2b67a32e79e2e6b8aa24b2b880e552a4b79bc267d3153eb0c257453",
       "check": "AST syntax and structural scan"
     },
     {
@@ -776,14 +794,14 @@
     },
     {
       "path": "app/routes/health.py",
-      "lines": 1480,
-      "sha256": "4d65964569a3208c61ab2d43ca809ce42e1a6323062ae1445104aa0d674896be",
+      "lines": 1555,
+      "sha256": "921cdea7708b897952c3e3ed54b28902a44443d64fd759b45dbf370655dcad34",
       "check": "AST syntax and structural scan"
     },
     {
       "path": "app/routes/insights.py",
-      "lines": 800,
-      "sha256": "461fb19bd06c84c47cc9edb8229a4051384f0487fe6c19269160584dc17d4f07",
+      "lines": 812,
+      "sha256": "78488a20322fa0b785eb46c860074000c0eaacf5a1e4d20cd61f9cc66f512ed9",
       "check": "AST syntax and structural scan"
     },
     {
@@ -812,8 +830,8 @@
     },
     {
       "path": "app/routes/maps.py",
-      "lines": 224,
-      "sha256": "1b7354c6599ecd5474c6cf75ecb774cea7084fb307562cd878f5b79293f26184",
+      "lines": 229,
+      "sha256": "9054ec2e014da1a93123da824af0fe923ed2f2567bd2b69bbc4322e04853d756",
       "check": "AST syntax and structural scan"
     },
     {
@@ -842,8 +860,8 @@
     },
     {
       "path": "app/routes/resolve_ip.py",
-      "lines": 118,
-      "sha256": "8ad06fa8fff0d5910b210117ab0e83359437c793bd1804e13731bb7f62bb18d0",
+      "lines": 124,
+      "sha256": "dcfd70da795658501d7f69468d1e11262d5462b3cd0e153a144b48177cf4d6c4",
       "check": "AST syntax and structural scan"
     },
     {
@@ -854,14 +872,14 @@
     },
     {
       "path": "app/routes/snap_gallery.py",
-      "lines": 1025,
-      "sha256": "3f10cd8624ea3cfb4ba2bbcbb545d547e09b2febf31997a519650fe4c21a9dce",
+      "lines": 1026,
+      "sha256": "96fd2e78fd08837853744ac419050e615f0bdaced78b1be897479d297c73e6e2",
       "check": "AST syntax and structural scan"
     },
     {
       "path": "app/routes/snapshots.py",
-      "lines": 383,
-      "sha256": "b5779a791f47046b2d7890d90dbcf5b2ec6a780604712ae19db033649d0aa684",
+      "lines": 384,
+      "sha256": "9ca8734c5c8dc7ee88ec201188148406df01fc335d9cd741ccbb141eef80571c",
       "check": "AST syntax and structural scan"
     },
     {
@@ -896,14 +914,14 @@
     },
     {
       "path": "app/routes/wa_webhook.py",
-      "lines": 1705,
-      "sha256": "e33540144d23b471aaecea935ed91291ca3bcd80040dac11ae4fb8968ea3fdc1",
+      "lines": 1717,
+      "sha256": "f685a2b8b884f840c66b55e96519feddca5c70c603b696e647bd43ea83cd9f84",
       "check": "AST syntax and structural scan"
     },
     {
       "path": "app/routes/whitelist.py",
-      "lines": 380,
-      "sha256": "ecd5ad7a969a74231e4cded6c7d3c2bfba6de6ccf1afbcc2cc6be8ed542dd5a3",
+      "lines": 422,
+      "sha256": "8eeb46fa1cb99bdb9d45ccb623f05e6bf9b39ffb32c8f038097ffe34a2ea9380",
       "check": "AST syntax and structural scan"
     },
     {
@@ -944,8 +962,8 @@
     },
     {
       "path": "app/schemas/whitelist_schema.py",
-      "lines": 31,
-      "sha256": "e6c48872732acb67940edd477ed5a776115475dec29ea57e672c553d6bcd4bf9",
+      "lines": 52,
+      "sha256": "f86c05f07f4dcdcb4531a8375ae3ec0aeb85a5eba03fbdf899765e3f2da20443",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1027,6 +1045,30 @@
       "check": "AST syntax and structural scan"
     },
     {
+      "path": "app/tests/test_branding_frontend.py",
+      "lines": 98,
+      "sha256": "bbfc1bc632a86ceba609b0a72487057d49fc2ebf56c6c4acb72124963efd8a04",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_branding_settings.py",
+      "lines": 163,
+      "sha256": "6af67297f23d96b3f344c4c7870fba30d0408cdba8ae260ddb3ef72dd669429e",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_branding_standalone.py",
+      "lines": 123,
+      "sha256": "5faff4b4c3b209408967237bc7d40b0bd3dfb4e072417c437fb2ba649c77979d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_branding_upload.py",
+      "lines": 92,
+      "sha256": "ee72491a386c035c9d47020ded77c9a63d20afe2b25276a247d679f376275d94",
+      "check": "AST syntax and structural scan"
+    },
+    {
       "path": "app/tests/test_camera_group_counts.py",
       "lines": 137,
       "sha256": "9a09073ca4dcc6762cd65c812f7ff425c3ae31323a2f299672e0ac4ad0b3e32f",
@@ -1040,8 +1082,8 @@
     },
     {
       "path": "app/tests/test_config_authorization.py",
-      "lines": 70,
-      "sha256": "629c2dd77d9fe27629607664aab7aa55da1801abe66bd0f88e94d35c460954a2",
+      "lines": 72,
+      "sha256": "a7dd64366c3319f91c2105e4c05a80b57fe3a62c926aaf610c3e072442ff7140",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1099,6 +1141,12 @@
       "check": "AST syntax and structural scan"
     },
     {
+      "path": "app/tests/test_health_report_branding.py",
+      "lines": 59,
+      "sha256": "cce37140c87e9dc662db617049b6b2f032d2db9662c8ac5c3a1af9697abc677b",
+      "check": "AST syntax and structural scan"
+    },
+    {
       "path": "app/tests/test_high_security.py",
       "lines": 432,
       "sha256": "9e98d15ce372ef3ff3607c66f8ece5cc82ea9900d05d253ec45e9283a84f5da1",
@@ -1118,8 +1166,8 @@
     },
     {
       "path": "app/tests/test_insights_report.py",
-      "lines": 112,
-      "sha256": "c588fcd3cd3b398cbde2e7fb02e8e13b4c33c28815ec96d1f7c2276881103ee7",
+      "lines": 159,
+      "sha256": "210fa5927096af3c764d819cfeb6b5daf1c51c90b370d479ac118c42a51f9bee",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1159,6 +1207,12 @@
       "check": "AST syntax and structural scan"
     },
     {
+      "path": "app/tests/test_map_logo.py",
+      "lines": 95,
+      "sha256": "8208cb5374ec7220903cfc4a7ac5135b9cc57a826ed8005b67f11fac100b7218",
+      "check": "AST syntax and structural scan"
+    },
+    {
       "path": "app/tests/test_media_retention.py",
       "lines": 125,
       "sha256": "99bfb7b6e57cd6a9221b66e5ef24e2634b56d7a52c6dc1a4cdef43b581f85b0a",
@@ -1168,6 +1222,12 @@
       "path": "app/tests/test_navigation.py",
       "lines": 113,
       "sha256": "3d8f75c7d5638903fdef78f821196004dde90338cc2fcdcd4aed56cb6497d3a4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_phone_numbers_standalone.py",
+      "lines": 49,
+      "sha256": "bf55402c928e7a6d869c990fbb27458fa7497a51bc1bb1dfc086e16729cbd66c",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1202,8 +1262,8 @@
     },
     {
       "path": "app/tests/test_resolve_ip.py",
-      "lines": 110,
-      "sha256": "ed61df4f2f7ceb6ae21678efca909390bfc484331fa56ff5d7b0cf731411e132",
+      "lines": 127,
+      "sha256": "b2cfb40bbd0a352985753b07305d54de5331fc8059b90e30601a772f30a10d67",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1309,6 +1369,12 @@
       "check": "AST syntax and structural scan"
     },
     {
+      "path": "app/tests/test_wa_e164_delivery.py",
+      "lines": 51,
+      "sha256": "8d69bf154ac2f7df0abc1a0010b639b8c359d28cfd91a36a87701d8c1c81b15e",
+      "check": "AST syntax and structural scan"
+    },
+    {
       "path": "app/tests/test_wa_image_hd.py",
       "lines": 212,
       "sha256": "d772b6728c802f370e27616e3ed2451f1175bc190dcfadfcadd88916139789c8",
@@ -1316,8 +1382,8 @@
     },
     {
       "path": "app/tests/test_wa_monitor.py",
-      "lines": 340,
-      "sha256": "88b56763513a22a47deb970947f88164b60411fcab5a64318e1bc2492c267373",
+      "lines": 352,
+      "sha256": "ba6582de701229e2674ea046d3bcef8a287f721be22d216694e7b47df053e77a",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1328,8 +1394,8 @@
     },
     {
       "path": "app/tests/test_wa_reply_routing.py",
-      "lines": 123,
-      "sha256": "15ea32cffe1b187ff5a7abc61f0764478f912ad05661a7901584b1e4b82b4d72",
+      "lines": 131,
+      "sha256": "c961891430c0734bd072c0b2b29eec2aa07911d04fc7304a0255244f7a663210",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1354,6 +1420,24 @@
       "path": "app/tests/test_websocket_proxy.py",
       "lines": 198,
       "sha256": "230798eee91cd70429010c52dfdd23e829e03d5bebbd72d5fa160515013dcf9d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_whatsapp_phone_migration.py",
+      "lines": 62,
+      "sha256": "38132fca8e9f7bb0ca284c05f8d6a5f3ca237fa5ceb732ca726d2c837a31092a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_whitelist_international_standalone.py",
+      "lines": 62,
+      "sha256": "7435b8e179ea358159d52173555167d3f755fe03ff52d3ddf179b0136733e882",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_whitelist_lookup.py",
+      "lines": 118,
+      "sha256": "46fe240a0b7a1aff6ddd70ae9048e98b830a82688d895c7858efa8128cbf8e44",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1567,6 +1651,12 @@
       "check": "AST syntax and structural scan"
     },
     {
+      "path": "app/utils/phone_numbers.py",
+      "lines": 61,
+      "sha256": "d0a50f7a5f935abef776fa669ed9e5db9472d35154c4e6ebaedd21f2c27fab8c",
+      "check": "AST syntax and structural scan"
+    },
+    {
       "path": "app/utils/record_check.py",
       "lines": 570,
       "sha256": "535cd10de6bdbafa9ba557fc418fbf7033aa2124af5dc1d3d22ce3a69e79d940",
@@ -1640,8 +1730,8 @@
     },
     {
       "path": "app/utils/template_helper.py",
-      "lines": 317,
-      "sha256": "b38079dabb2448ddd330f7cddbeda489763c18d0e230a52eab68387dd130081a",
+      "lines": 326,
+      "sha256": "92faf681427b1dd976358d2cf89b8656f334c5344d543cb366c4324e41d30c14",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1676,14 +1766,14 @@
     },
     {
       "path": "app/utils/wa_gateway.py",
-      "lines": 540,
-      "sha256": "b39b3db0a3c0b56dc55713630cc298a382ee3905f5af473260f352624cc008e5",
+      "lines": 559,
+      "sha256": "63f3b04a88323918cbb007c36e274bf4736a6bb593acacda73861788aa74ec54",
       "check": "AST syntax and structural scan"
     },
     {
       "path": "app/utils/wa_monitor.py",
-      "lines": 120,
-      "sha256": "e5b9ac8c5df6d95eedc2454ece70f892ab9ebe83cafac7189313878611b8724f",
+      "lines": 124,
+      "sha256": "c4279cddba2f401ef99dde9c7e482e3101d3cada9515c5ddcf6e62c1d8a944a0",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1807,6 +1897,12 @@
       "check": "Node syntax check"
     },
     {
+      "path": "static/js/branding.js",
+      "lines": 148,
+      "sha256": "738d8e2c54a3d86f7eaab62d3a632ea9f491088af71d1bab3c21093c0d602ff6",
+      "check": "Node syntax check"
+    },
+    {
       "path": "static/js/cron-description.js",
       "lines": 111,
       "sha256": "cf2eb8e97a65092e8ea29d882a55850689c4c9898bc0ae66580fb8ba56e9c3dd",
@@ -1832,8 +1928,8 @@
     },
     {
       "path": "static/js/i18n.js",
-      "lines": 1138,
-      "sha256": "26223fc45274fb5781e27d959014953ac1944297d7ee44cf222c3c5f4df67400",
+      "lines": 1159,
+      "sha256": "b909dfff40b8f2848315bd8b698f79680d98754b77a770cee28cb8b68fb8bbe6",
       "check": "Node syntax check"
     },
     {
@@ -1915,6 +2011,12 @@
       "check": "Jinja template compile"
     },
     {
+      "path": "templates/_branding_theme.html",
+      "lines": 3,
+      "sha256": "3bd5c07e3603abf3c23a0d9809ca192b195780c0d952d4fce8243548db2505dd",
+      "check": "Jinja template compile"
+    },
+    {
       "path": "templates/_gallery_grid.html",
       "lines": 88,
       "sha256": "45db200daf263e2f622116f9df1413a2520ec49a739fb4e1fbfdd459f3c7c660",
@@ -1958,8 +2060,14 @@
     },
     {
       "path": "templates/base.html",
-      "lines": 1003,
-      "sha256": "e23f0ecada9d6df94a9dd5ecf54dc00d04833f6a2f6b2efdf36f081340bbd6e2",
+      "lines": 1007,
+      "sha256": "46ef4ecfa447054e322874cfeca19559bfe6d0b1a86bfb2b4bc9f4892c44cc93",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/branding.html",
+      "lines": 109,
+      "sha256": "b1ec57ce36bae4f92b0aa7375e15f2ee981f2023c628b5701b8f1a9315243593",
       "check": "Jinja template compile"
     },
     {
@@ -1988,8 +2096,8 @@
     },
     {
       "path": "templates/config.html",
-      "lines": 1090,
-      "sha256": "2f9e59935d48c3f4c609d772e53cf4341c8041036f69c592eaee0e601b45414e",
+      "lines": 1103,
+      "sha256": "c603358a30a427816697a05334745822adcddc1f10e517123189549d70c41b48",
       "check": "Jinja template compile"
     },
     {
@@ -2030,8 +2138,8 @@
     },
     {
       "path": "templates/force_mfa_setup.html",
-      "lines": 119,
-      "sha256": "65ac61dc94549c22597c28350fbf25d6dcf5786f45795f3199d879e11f3f74bf",
+      "lines": 121,
+      "sha256": "c355dd2b8497912ae5d08da5d17deb56fa650b7d9e373b6a57fd19c5e761aba3",
       "check": "Jinja template compile"
     },
     {
@@ -2060,14 +2168,14 @@
     },
     {
       "path": "templates/login.html",
-      "lines": 135,
-      "sha256": "1595c2d32d0550a419cee7e9d386d1c13be99c591a2d06a9eec0d1fca04922ec",
+      "lines": 137,
+      "sha256": "9ba124b4d0e6d37d95c5a51ded6dd0c7e01e4f573ac363a6c8c10436f8003936",
       "check": "Jinja template compile"
     },
     {
       "path": "templates/login_2fa.html",
-      "lines": 100,
-      "sha256": "f97916225fe7b6014dab0f4acb0ade011ff67938fe833ff708681df723835f97",
+      "lines": 102,
+      "sha256": "ce6026f5d5953abdeaa033f972826e007187db5bc0feca9fc4ea86dd7aab57ca",
       "check": "Jinja template compile"
     },
     {
@@ -2080,6 +2188,12 @@
       "path": "templates/logs.html",
       "lines": 566,
       "sha256": "3c5dffbae9ecd3d6dce9b8e7fb1f7512f52521e22f7adb4d9474ccb97fb7660e",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/macros/branding.html",
+      "lines": 7,
+      "sha256": "d0200ea8ecec3884276874835322bfb701e894e64c5828a810547e51f8695dcf",
       "check": "Jinja template compile"
     },
     {
@@ -2102,8 +2216,8 @@
     },
     {
       "path": "templates/maps.html",
-      "lines": 743,
-      "sha256": "3d089ddf5191b98988ea6a8919c2d26da02e7d8b545270d52d3c45625803a698",
+      "lines": 757,
+      "sha256": "2a4745b784db8b89b844e1d9d3c2dbe6a1ea1d28c7154e8a8e3a6b2d415d9c7b",
       "check": "Jinja template compile"
     },
     {
@@ -2144,8 +2258,8 @@
     },
     {
       "path": "templates/setup.html",
-      "lines": 38,
-      "sha256": "a9274c3aa4e0bb0c68af1cb943146d10a678beeb1aadfdc5e13d0b3ca8ee4597",
+      "lines": 40,
+      "sha256": "7647a79ebbc60ff760bd4f1aa2b57001334efb8239a974b498aa1e543ee595e0",
       "check": "Jinja template compile"
     },
     {
@@ -2210,8 +2324,8 @@
     },
     {
       "path": "templates/whitelist.html",
-      "lines": 792,
-      "sha256": "aebb2f52fdf1c99c58483b19e362fe4f01d7ee5410794116011ae505cbd016b9",
+      "lines": 844,
+      "sha256": "16b09ef8f22a58b813b8d007732c93a4ba5d74d56e31a17934a469f8fb6a42ba",
       "check": "Jinja template compile"
     }
   ],
@@ -2266,7 +2380,7 @@
     },
     {
       "file": "app/api/whatsapp_routes.py",
-      "line": 11,
+      "line": 12,
       "method": "GET",
       "path": "/api/whatsapp/is-allowed",
       "function": "is_whatsapp_allowed",
@@ -2334,7 +2448,7 @@
     },
     {
       "file": "app/routes/admin.py",
-      "line": 20,
+      "line": 21,
       "method": "GET",
       "path": "/admin/wa-bot",
       "function": "wa_bot_builder_page",
@@ -2344,7 +2458,7 @@
     },
     {
       "file": "app/routes/admin.py",
-      "line": 32,
+      "line": 33,
       "method": "GET",
       "path": "/admin/whitelist",
       "function": "whitelist_admin_page",
@@ -2355,7 +2469,7 @@
     },
     {
       "file": "app/routes/admin.py",
-      "line": 45,
+      "line": 53,
       "method": "GET",
       "path": "/api/changelog",
       "function": "changelog_api",
@@ -2363,7 +2477,7 @@
     },
     {
       "file": "app/routes/admin.py",
-      "line": 76,
+      "line": 84,
       "method": "GET",
       "path": "/changelog",
       "function": "changelog_html",
@@ -2775,7 +2889,23 @@
     },
     {
       "file": "app/routes/config.py",
-      "line": 31,
+      "line": 43,
+      "method": "GET",
+      "path": "/admin/branding",
+      "function": "branding_page",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/config.py",
+      "line": 63,
+      "method": "POST",
+      "path": "/admin/branding",
+      "function": "save_branding",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/config.py",
+      "line": 107,
       "method": "POST",
       "path": "/config/test-smtp",
       "function": "test_smtp_email",
@@ -2783,7 +2913,7 @@
     },
     {
       "file": "app/routes/config.py",
-      "line": 69,
+      "line": 145,
       "method": "GET",
       "path": "/admin/config",
       "function": "config_page",
@@ -2791,7 +2921,7 @@
     },
     {
       "file": "app/routes/config.py",
-      "line": 69,
+      "line": 145,
       "method": "GET",
       "path": "/config",
       "function": "config_page",
@@ -2799,7 +2929,7 @@
     },
     {
       "file": "app/routes/config.py",
-      "line": 102,
+      "line": 180,
       "method": "POST",
       "path": "/config/save",
       "function": "config_save",
@@ -2807,7 +2937,7 @@
     },
     {
       "file": "app/routes/config.py",
-      "line": 388,
+      "line": 450,
       "method": "POST",
       "path": "/reload-config",
       "function": "reload_config",
@@ -2817,7 +2947,7 @@
     },
     {
       "file": "app/routes/config.py",
-      "line": 416,
+      "line": 478,
       "method": "POST",
       "path": "/config/run-cleanup",
       "function": "run_cleanup_now",
@@ -3107,7 +3237,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 120,
+      "line": 122,
       "method": "GET",
       "path": "/health",
       "function": "health_monitor_page",
@@ -3118,7 +3248,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 139,
+      "line": 141,
       "method": "GET",
       "path": "/health/status",
       "function": "get_health_status_api",
@@ -3129,7 +3259,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 180,
+      "line": 182,
       "method": "GET",
       "path": "/health/uptime",
       "function": "get_camera_uptime_api",
@@ -3140,7 +3270,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 200,
+      "line": 202,
       "method": "POST",
       "path": "/health/trigger/{entity_id}",
       "function": "trigger_healthcheck",
@@ -3151,7 +3281,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 216,
+      "line": 218,
       "method": "POST",
       "path": "/health/trigger_all",
       "function": "trigger_healthcheck_all",
@@ -3162,7 +3292,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 237,
+      "line": 239,
       "method": "GET",
       "path": "/health/status/check",
       "function": "check_healthcheck_status",
@@ -3173,7 +3303,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 266,
+      "line": 268,
       "method": "GET",
       "path": "/health/history",
       "function": "health_history",
@@ -3184,7 +3314,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 495,
+      "line": 497,
       "method": "GET",
       "path": "/health/sla-report",
       "function": "sla_report",
@@ -3195,7 +3325,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 624,
+      "line": 626,
       "method": "GET",
       "path": "/health/history/export",
       "function": "export_health_history",
@@ -3206,7 +3336,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 745,
+      "line": 747,
       "method": "POST",
       "path": "/health/history/report",
       "function": "generate_health_report",
@@ -3217,7 +3347,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 1405,
+      "line": 1480,
       "method": "GET",
       "path": "/health/reports/scheduled",
       "function": "list_scheduled_reports",
@@ -3228,7 +3358,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 1430,
+      "line": 1505,
       "method": "POST",
       "path": "/health/reports/scheduled",
       "function": "create_scheduled_report",
@@ -3239,7 +3369,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 1466,
+      "line": 1541,
       "method": "DELETE",
       "path": "/health/reports/scheduled/{report_id}",
       "function": "delete_scheduled_report",
@@ -3250,7 +3380,7 @@
     },
     {
       "file": "app/routes/insights.py",
-      "line": 210,
+      "line": 211,
       "method": "GET",
       "path": "/insights",
       "function": "insights_dashboard_redirect",
@@ -3258,7 +3388,7 @@
     },
     {
       "file": "app/routes/insights.py",
-      "line": 218,
+      "line": 219,
       "method": "GET",
       "path": "/log/stats/daily",
       "function": "get_daily_stats",
@@ -3269,7 +3399,7 @@
     },
     {
       "file": "app/routes/insights.py",
-      "line": 253,
+      "line": 254,
       "method": "GET",
       "path": "/log/stats/top-commands",
       "function": "get_top_commands",
@@ -3280,7 +3410,7 @@
     },
     {
       "file": "app/routes/insights.py",
-      "line": 292,
+      "line": 293,
       "method": "GET",
       "path": "/log/stats/top-cameras",
       "function": "get_top_cameras_by_email",
@@ -3291,7 +3421,7 @@
     },
     {
       "file": "app/routes/insights.py",
-      "line": 406,
+      "line": 407,
       "method": "GET",
       "path": "/log/stats/summary",
       "function": "get_summary",
@@ -3302,7 +3432,7 @@
     },
     {
       "file": "app/routes/insights.py",
-      "line": 452,
+      "line": 453,
       "method": "GET",
       "path": "/log/stats/dashboard",
       "function": "get_dashboard_stats",
@@ -3313,7 +3443,7 @@
     },
     {
       "file": "app/routes/insights.py",
-      "line": 489,
+      "line": 490,
       "method": "POST",
       "path": "/log/stats/report-pro",
       "function": "get_executive_report_pro",
@@ -3516,7 +3646,7 @@
     },
     {
       "file": "app/routes/maps.py",
-      "line": 81,
+      "line": 83,
       "method": "GET",
       "path": "/maps",
       "function": "maps_page",
@@ -3524,7 +3654,7 @@
     },
     {
       "file": "app/routes/maps.py",
-      "line": 110,
+      "line": 115,
       "method": "GET",
       "path": "/camera-locations",
       "function": "get_camera_locations",
@@ -3838,7 +3968,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 128,
+      "line": 129,
       "method": "POST",
       "path": "/api/snapshots/capture/{camera_identifier}",
       "function": "snapshot_handler",
@@ -3849,7 +3979,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 128,
+      "line": 129,
       "method": "POST",
       "path": "/snap/{camera_identifier}",
       "function": "snapshot_handler",
@@ -3860,7 +3990,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 290,
+      "line": 291,
       "method": "DELETE",
       "path": "/snap/{snapshot_id}",
       "function": "delete_snapshot",
@@ -3871,7 +4001,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 319,
+      "line": 320,
       "method": "GET",
       "path": "/snap_gallery",
       "function": "show_snapshots",
@@ -3882,7 +4012,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 360,
+      "line": 361,
       "method": "GET",
       "path": "/gallery-data",
       "function": "get_gallery_data",
@@ -3893,7 +4023,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 408,
+      "line": 409,
       "method": "GET",
       "path": "/snapshots/tampered",
       "function": "get_tampered_snapshots",
@@ -3904,7 +4034,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 444,
+      "line": 445,
       "method": "GET",
       "path": "/admin/snapshots/deleted",
       "function": "get_deleted_snapshots",
@@ -3915,7 +4045,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 502,
+      "line": 503,
       "method": "POST",
       "path": "/snap/{snapshot_id}/restore",
       "function": "restore_snapshot",
@@ -3926,7 +4056,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 542,
+      "line": 543,
       "method": "DELETE",
       "path": "/admin/snapshots/{snapshot_id}/purge",
       "function": "purge_snapshot",
@@ -3937,7 +4067,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 587,
+      "line": 588,
       "method": "POST",
       "path": "/admin/snapshots/purge",
       "function": "purge_old_deleted_snapshots",
@@ -3948,7 +4078,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 642,
+      "line": 643,
       "method": "GET",
       "path": "/snap/{snapshot_id}/verify",
       "function": "verify_snapshot_integrity",
@@ -3959,7 +4089,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 706,
+      "line": 707,
       "method": "GET",
       "path": "/admin/trash",
       "function": "admin_trash_page",
@@ -3970,7 +4100,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 718,
+      "line": 719,
       "method": "POST",
       "path": "/snap/{snapshot_id}/retention-hold",
       "function": "toggle_snapshot_retention_hold",
@@ -3981,7 +4111,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 772,
+      "line": 773,
       "method": "GET",
       "path": "/api/snapshots/file/{file_path:path}",
       "function": "serve_snapshot_file",
@@ -3992,7 +4122,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 833,
+      "line": 834,
       "method": "GET",
       "path": "/api/snapshots/secure/{snapshot_id}",
       "function": "serve_snapshot_by_id",
@@ -4003,7 +4133,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 937,
+      "line": 938,
       "method": "POST",
       "path": "/api/snapshots/gallery-view",
       "function": "log_gallery_view",
@@ -4014,7 +4144,7 @@
     },
     {
       "file": "app/routes/snap_gallery.py",
-      "line": 984,
+      "line": 985,
       "method": "GET",
       "path": "/admin/trash/stats",
       "function": "get_trash_stats",
@@ -4025,7 +4155,7 @@
     },
     {
       "file": "app/routes/snapshots.py",
-      "line": 115,
+      "line": 116,
       "method": "GET",
       "path": "/snapshots/search",
       "function": "search_snapshots",
@@ -4036,7 +4166,7 @@
     },
     {
       "file": "app/routes/snapshots.py",
-      "line": 226,
+      "line": 227,
       "method": "GET",
       "path": "/snapshot/latest/{camera_identifier}/info",
       "function": "get_latest_snapshot_info",
@@ -4044,7 +4174,7 @@
     },
     {
       "file": "app/routes/snapshots.py",
-      "line": 291,
+      "line": 292,
       "method": "GET",
       "path": "/snapshot/file/{file_path:path}",
       "function": "get_snapshot_file_raw",
@@ -4052,7 +4182,7 @@
     },
     {
       "file": "app/routes/snapshots.py",
-      "line": 359,
+      "line": 360,
       "method": "GET",
       "path": "/snapshot/token/{file_path:path}",
       "function": "get_signed_token",
@@ -4060,7 +4190,7 @@
     },
     {
       "file": "app/routes/snapshots.py",
-      "line": 371,
+      "line": 372,
       "method": "POST",
       "path": "/snapshot/token/batch",
       "function": "generate_tokens_batch",
@@ -4634,7 +4764,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 158,
+      "line": 167,
       "method": "GET",
       "path": "/api/admin/wa-bot/commands",
       "function": "get_wa_bot_commands",
@@ -4645,7 +4775,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 175,
+      "line": 184,
       "method": "PUT",
       "path": "/api/admin/wa-bot/commands",
       "function": "put_wa_bot_commands",
@@ -4656,7 +4786,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 201,
+      "line": 210,
       "method": "GET",
       "path": "/api/admin/wa-bot/messages",
       "function": "get_wa_bot_messages",
@@ -4667,7 +4797,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 237,
+      "line": 246,
       "method": "POST",
       "path": "/api/admin/wa-bot/preview",
       "function": "preview_wa_bot_command",
@@ -4678,7 +4808,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 301,
+      "line": 310,
       "method": "POST",
       "path": "/api/admin/wa-bot/test-flow",
       "function": "test_wa_bot_flow",
@@ -4689,7 +4819,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 348,
+      "line": 357,
       "method": "POST",
       "path": "/api/admin/wa-bot/test-action",
       "function": "test_wa_bot_action",
@@ -4700,7 +4830,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 1436,
+      "line": 1448,
       "method": "POST",
       "path": "/webhook/gowa",
       "function": "gowa_webhook",
@@ -4710,7 +4840,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 1638,
+      "line": 1650,
       "method": "POST",
       "path": "/api/wa/status",
       "function": "get_wa_status",
@@ -4721,7 +4851,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 1664,
+      "line": 1676,
       "method": "GET",
       "path": "/api/wa/groups",
       "function": "get_wa_groups",
@@ -4732,7 +4862,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 1690,
+      "line": 1702,
       "method": "POST",
       "path": "/api/wa/send-test",
       "function": "send_test_wa",
@@ -4743,7 +4873,7 @@
     },
     {
       "file": "app/routes/whitelist.py",
-      "line": 29,
+      "line": 36,
       "method": "GET",
       "path": "/api/whitelist",
       "function": "get_whitelist",
@@ -4753,7 +4883,7 @@
     },
     {
       "file": "app/routes/whitelist.py",
-      "line": 93,
+      "line": 102,
       "method": "GET",
       "path": "/api/whitelist/group/{phone_number}",
       "function": "get_whitelist_group",
@@ -4763,7 +4893,7 @@
     },
     {
       "file": "app/routes/whitelist.py",
-      "line": 108,
+      "line": 118,
       "method": "POST",
       "path": "/api/whitelist",
       "function": "add_whitelist",
@@ -4774,7 +4904,7 @@
     },
     {
       "file": "app/routes/whitelist.py",
-      "line": 155,
+      "line": 174,
       "method": "DELETE",
       "path": "/api/whitelist/{phone_number}",
       "function": "delete_whitelist",
@@ -4785,7 +4915,7 @@
     },
     {
       "file": "app/routes/whitelist.py",
-      "line": 187,
+      "line": 212,
       "method": "PUT",
       "path": "/api/whitelist/{phone_number}",
       "function": "edit_whitelist",
@@ -4796,7 +4926,7 @@
     },
     {
       "file": "app/routes/whitelist.py",
-      "line": 230,
+      "line": 261,
       "method": "GET",
       "path": "/api/whitelist/export",
       "function": "export_whitelist_csv",
@@ -4807,7 +4937,7 @@
     },
     {
       "file": "app/routes/whitelist.py",
-      "line": 267,
+      "line": 298,
       "method": "POST",
       "path": "/api/whitelist/import",
       "function": "import_whitelist_csv",

@@ -1,6 +1,7 @@
 from fastapi.templating import Jinja2Templates
 from starlette.templating import _TemplateResponse
 from app.version import __version__
+from app.core.branding import get_branding
 import logging
 
 logger = logging.getLogger(__name__)
@@ -149,6 +150,12 @@ nav_items = [
                 "roles": ["admin"],
             },
             {
+                "label": "Branding",
+                "href": "/admin/branding",
+                "icon": "settings",
+                "roles": ["admin"],
+            },
+            {
                 "label": "Job Management",
                 "href": "/admin/jobs",
                 "icon": "clock",
@@ -217,29 +224,31 @@ nav_items = [
 
 class TemplatesWithExtras(Jinja2Templates):
     def TemplateResponse(self, name: str, context: dict, *args, **kwargs) -> _TemplateResponse:
+        if "branding" not in context:
+            context["branding"] = get_branding()
         try:
             request = context.get("request")
-            
+
             # Default values kalau request tidak ada
             user_role = "viewer"
             user_name = "User"
             current_path = "/"
             timezone = "UTC"
             debug_mode = False
-            
+
             if request is not None:
                 # Extract dengan aman
                 if hasattr(request, 'session') and request.session:
                     user_role = request.session.get("user_role", "viewer")
                     user_name = request.session.get("user_name", "User")
-                
+
                 if hasattr(request, 'url') and request.url:
                     current_path = getattr(request.url, 'path', '/')
-                
+
                 if hasattr(request, 'state') and request.state:
                     timezone = getattr(request.state, 'timezone', 'UTC')
                     debug_mode = getattr(request.state, 'debug_mode', False)
-            
+
             # Filter navigation dengan SVG icon conversion
             filtered_nav = []
             for section in nav_items:
@@ -247,14 +256,14 @@ class TemplatesWithExtras(Jinja2Templates):
                 section_roles = section.get("roles", [])
                 if user_role not in section_roles:
                     continue
-                
+
                 # Filter items dalam section
                 filtered_items = []
                 for item in section.get("items", []):
                     item_roles = item.get("roles", [])
                     if user_role not in item_roles:
                         continue
-                    
+
                     # Cek active state
                     item_path = item.get("href", "")
                     is_active = False
@@ -262,11 +271,11 @@ class TemplatesWithExtras(Jinja2Templates):
                         is_active = current_path == item_path or current_path.startswith(item_path + "/")
                     elif current_path == "/" and item_path == "/":
                         is_active = True
-                    
+
                     # Convert nama icon ke SVG HTML
                     icon_name = item.get("icon", "")
                     icon_svg = ICONS.get(icon_name, "")
-                    
+
                     filtered_items.append({
                         "label": item.get("label", ""),
                         "href": item_path,
@@ -274,15 +283,15 @@ class TemplatesWithExtras(Jinja2Templates):
                         "is_active": is_active,
                         "external": item.get("external", False),
                     })
-                
+
                 # Hanya tambahkan section kalau ada items yang visible
                 if filtered_items:
                     section_active = any(item["is_active"] for item in filtered_items)
-                    
+
                     # Convert section icon juga
                     section_icon_name = section.get("icon", "")
                     section_icon_svg = ICONS.get(section_icon_name, "")
-                    
+
                     filtered_nav.append({
                         "label": section.get("label", ""),
                         "primary": section.get("primary", False),
@@ -290,7 +299,7 @@ class TemplatesWithExtras(Jinja2Templates):
                         "is_active": section_active,
                         "items": filtered_items,
                     })
-            
+
             # Update context - but don't overwrite values already set by routes
             context.setdefault("nav_items", filtered_nav)
             context.setdefault("user_role", user_role)
@@ -300,7 +309,7 @@ class TemplatesWithExtras(Jinja2Templates):
             context.setdefault("debug_mode", debug_mode)
             context.setdefault("version", __version__)
             context.setdefault("request", request)
-            
+
         except Exception as e:
             logger.error(f"Error in TemplateResponse: {e}")
             # Fallback
@@ -311,7 +320,7 @@ class TemplatesWithExtras(Jinja2Templates):
             context.setdefault("timezone", "UTC")
             context.setdefault("debug_mode", False)
             context.setdefault("version", __version__)
-        
+
         return super().TemplateResponse(name, context, *args, **kwargs)
 
 templates = TemplatesWithExtras(directory="templates")

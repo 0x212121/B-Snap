@@ -1,4 +1,5 @@
 from collections import Counter, defaultdict
+from xml.sax.saxutils import escape
 from datetime import datetime, timedelta, date, timezone
 import logging
 import math
@@ -10,6 +11,7 @@ import pytz
 from sqlalchemy import asc, desc, func, union_all, literal_column, select, and_
 from sqlalchemy.orm import Session, joinedload
 from app.core.config import get_config
+from app.core.branding import DEFAULT_BRANDING, read_branding
 from app.core.logging_config import setup_logging
 from app.db.database import get_db
 from app.routes.auth import operator_access_required
@@ -850,39 +852,77 @@ async def generate_health_report(
         total_cameras = 0
 
     # Generate report based on format
+    branding = read_branding(db)
+    brand_name = "B-SNAP" if branding["name"] == DEFAULT_BRANDING["name"] else branding["name"]
     if format == "pdf":
         return _generate_pdf_report(
-            start_date, end_date, report_data, compliance_summary,
-            avg_uptime, worst_performer, best_performer, total_cameras,
-            sla_threshold, uptime_chart, heatmap_chart, include_charts,
-            selected_groups=groups
+            start_date,
+            end_date,
+            report_data,
+            compliance_summary,
+            avg_uptime,
+            worst_performer,
+            best_performer,
+            total_cameras,
+            sla_threshold,
+            uptime_chart,
+            heatmap_chart,
+            include_charts,
+            selected_groups=groups,
+            brand_name=brand_name,
+            brand_logo=branding["logo"],
         )
     elif format == "excel":
         return _generate_excel_report(
-            start_date, end_date, report_data, compliance_summary,
-            avg_uptime, worst_performer, best_performer, total_cameras,
-            sla_threshold, selected_groups=groups
+            start_date,
+            end_date,
+            report_data,
+            compliance_summary,
+            avg_uptime,
+            worst_performer,
+            best_performer,
+            total_cameras,
+            sla_threshold,
+            selected_groups=groups,
+            brand_name=brand_name,
         )
     else:  # csv
         return _generate_csv_report(
-            start_date, end_date, report_data, compliance_summary,
-            avg_uptime, worst_performer, best_performer, total_cameras,
-            sla_threshold, selected_groups=groups
+            start_date,
+            end_date,
+            report_data,
+            compliance_summary,
+            avg_uptime,
+            worst_performer,
+            best_performer,
+            total_cameras,
+            sla_threshold,
+            selected_groups=groups,
+            brand_name=brand_name,
         )
 
 
 def _generate_pdf_report(
-    start_date: date, end_date: date, report_data: list,
-    compliance_summary: dict, avg_uptime: float,
-    worst_performer: dict, best_performer: dict,
-    total_cameras: int, sla_threshold: float,
-    uptime_chart: str = None, heatmap_chart: str = None,
-    include_charts: bool = True, selected_groups: List[str] = None
+    start_date: date,
+    end_date: date,
+    report_data: list,
+    compliance_summary: dict,
+    avg_uptime: float,
+    worst_performer: dict,
+    best_performer: dict,
+    total_cameras: int,
+    sla_threshold: float,
+    uptime_chart: str = None,
+    heatmap_chart: str = None,
+    include_charts: bool = True,
+    selected_groups: List[str] = None,
+    brand_name: str = "B-SNAP",
+    brand_logo: str = "/static/icons/b-snap.png",
 ):
     """Generate professional PDF health report with enhanced features."""
     from reportlab.platypus import KeepTogether
     from reportlab.lib.styles import ParagraphStyle
-    
+
     buf = BytesIO()
     doc = SimpleDocTemplate(
         buf,
@@ -892,13 +932,13 @@ def _generate_pdf_report(
         leftMargin=2 * cm,
         rightMargin=2 * cm,
     )
-    
-    doc.title = f"B-SNAP Health Report – {start_date} to {end_date}"
-    doc.author = "B-SNAP Monitoring System"
+
+    doc.title = f"{brand_name} Health Report – {start_date} to {end_date}"
+    doc.author = f"{brand_name} Monitoring System"
     doc.subject = "Executive Health and SLA Compliance Report"
-    
+
     styles = getSampleStyleSheet()
-    
+
     # Custom styles for text wrapping
     wrapped_style = ParagraphStyle(
         'Wrapped',
@@ -907,35 +947,39 @@ def _generate_pdf_report(
         leading=10,
         wordWrap='CJK',
     )
-    
+
     elems = []
-    
+
     # Calculate derived metrics
     total_incidents = sum(d["incident_count"] for d in report_data)
     total_downtime_hours = sum(d["total_downtime_hours"] for d in report_data)
-    
+
     # Top performers (top 5 with Pass status)
     top_performers = sorted(
         [d for d in report_data if d["compliance_status"] == "Pass"],
         key=lambda x: x["uptime_percentage"],
         reverse=True
     )[:5]
-    
+
     # Devices requiring attention - only Fail status, sorted by worst uptime
     worst_performers = sorted(
         [d for d in report_data if d["compliance_status"] == "Fail"],
         key=lambda x: x["uptime_percentage"]
     )[:5]
-    
+
     # --- Cover Page ---
-    logo_path = "static/icons/logo.png"
+    logo_path = (
+        "static/icons/logo.png"
+        if brand_logo == DEFAULT_BRANDING["logo"]
+        else brand_logo.lstrip("/")
+    )
     try:
         elems.append(RLImage(logo_path, width=4 * cm, height=4 * cm))
     except Exception:
         pass
-    
+
     elems.append(Spacer(1, 1 * cm))
-    elems.append(Paragraph("B-SNAP Health Report", styles["Title"]))
+    elems.append(Paragraph(f"{escape(brand_name)} Health Report", styles["Title"]))
     elems.append(Paragraph("Executive Summary & SLA Compliance", styles["Heading2"]))
     elems.append(Spacer(1, 0.5 * cm))
     elems.append(Paragraph(f"Period: {start_date.strftime('%d %B %Y')} – {end_date.strftime('%d %B %Y')}", styles["Normal"]))
@@ -944,10 +988,10 @@ def _generate_pdf_report(
         group_text = ", ".join(selected_groups) if len(selected_groups) <= 3 else f"{len(selected_groups)} groups selected"
         elems.append(Paragraph(f"Device Groups: {group_text}", styles["Normal"]))
     elems.append(PageBreak())
-    
+
     # --- Executive Summary Section ---
     elems.append(Paragraph("Executive Summary", styles["Heading2"]))
-    
+
     # Key metrics summary table
     summary_data = [
         ["Metric", "Value"],
@@ -958,7 +1002,7 @@ def _generate_pdf_report(
         ["Total Downtime", f"{total_downtime_hours:.2f} hours"],
         ["SLA Threshold", f"{sla_threshold}%"],
     ]
-    
+
     summary_tbl = Table(summary_data, colWidths=[6 * cm, 6 * cm])
     summary_tbl.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#374151")),
@@ -976,9 +1020,9 @@ def _generate_pdf_report(
     ]))
     elems.append(summary_tbl)
     elems.append(Spacer(1, 0.5 * cm))
-    
+
     summary_text = (
-        f"This report provides a comprehensive overview of {total_cameras} cameras monitored by B-SNAP "
+        f"This report provides a comprehensive overview of {total_cameras} cameras monitored by {escape(brand_name)} "
         f"during the period {start_date.strftime('%d %B %Y')} to {end_date.strftime('%d %B %Y')}. "
         f"The overall system availability is {avg_uptime:.2f}%, with {total_incidents} incidents recorded "
         f"resulting in {total_downtime_hours:.2f} hours of total downtime. "
@@ -987,24 +1031,24 @@ def _generate_pdf_report(
         summary_text += f"<b>The system meets the SLA target of {sla_threshold}%.</b>"
     else:
         summary_text += f"<b>Attention required: System is below the SLA target of {sla_threshold}%.</b>"
-    
+
     elems.append(Paragraph(summary_text, styles["Normal"]))
     elems.append(Spacer(1, 0.5 * cm))
-    
+
     # --- SLA Compliance Summary ---
     elems.append(Paragraph("SLA Compliance Summary", styles["Heading2"]))
-    
+
     pass_count = compliance_summary.get("pass", 0)
     warning_count = compliance_summary.get("warning", 0)
     fail_count = compliance_summary.get("fail", 0)
-    
+
     # Helper function to create visual bar (max 10 blocks)
     def make_bar(count, total):
         if total == 0:
             return ""
         bar_len = int(count / total * 10)
         return "■" * bar_len
-    
+
     compliance_data = [
         ["Status", "Count", "Percentage", "Visual"],
         ["Pass", str(pass_count), 
@@ -1017,7 +1061,7 @@ def _generate_pdf_report(
          f"{(fail_count / total_cameras * 100):.1f}%" if total_cameras else "0%",
          make_bar(fail_count, total_cameras)],
     ]
-    
+
     comp_tbl = Table(compliance_data, colWidths=[3 * cm, 2.5 * cm, 2.5 * cm, 3 * cm])
     comp_tbl.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#374151")),
@@ -1036,10 +1080,10 @@ def _generate_pdf_report(
     ]))
     elems.append(comp_tbl)
     elems.append(Spacer(1, 0.5 * cm))
-    
+
     # --- Key Highlights ---
     elems.append(Paragraph("Key Highlights", styles["Heading2"]))
-    
+
     highlights = []
     if best_performer:
         highlights.append(f"<b>Best Overall Performance:</b> {best_performer['camera_name']} achieved {best_performer['uptime_percentage']:.2f}% uptime")
@@ -1048,11 +1092,11 @@ def _generate_pdf_report(
     if total_incidents > 0:
         avg_incidents = total_incidents / total_cameras if total_cameras > 0 else 0
         highlights.append(f"<b>Incident Rate:</b> Average of {avg_incidents:.1f} incidents per device")
-    
+
     for highlight in highlights:
         elems.append(Paragraph(f"• {highlight}", styles["Normal"]))
     elems.append(Spacer(1, 0.3 * cm))
-    
+
     # --- Top Performers ---
     if top_performers:
         elems.append(Paragraph("Top Performers", styles["Heading3"]))
@@ -1065,7 +1109,7 @@ def _generate_pdf_report(
                 str(performer['incident_count']),
                 f"{performer['total_downtime_hours']:.2f}"
             ])
-        
+
         top_tbl = Table(top_data, colWidths=[1.5 * cm, 5 * cm, 2.5 * cm, 2 * cm, 2.5 * cm])
         top_tbl.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#059669")),
@@ -1080,7 +1124,7 @@ def _generate_pdf_report(
         ]))
         elems.append(top_tbl)
         elems.append(Spacer(1, 0.3 * cm))
-    
+
     # --- Devices Requiring Attention ---
     if worst_performers:
         elems.append(Paragraph("Devices Requiring Attention", styles["Heading3"]))
@@ -1093,7 +1137,7 @@ def _generate_pdf_report(
                 str(performer['incident_count']),
                 f"{performer['total_downtime_hours']:.2f}"
             ])
-        
+
         worst_tbl = Table(worst_data, colWidths=[1.5 * cm, 5 * cm, 2.5 * cm, 2 * cm, 2.5 * cm])
         worst_tbl.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#DC2626")),
@@ -1117,7 +1161,7 @@ def _generate_pdf_report(
             styles["Normal"]
         ))
         elems.append(Spacer(1, 0.5 * cm))
-    
+
     # --- Charts (if provided) ---
     if include_charts:
         def add_chart(b64_str, caption):
@@ -1132,22 +1176,22 @@ def _generate_pdf_report(
                 elems.append(Spacer(1, 0.4 * cm))
             except Exception:
                 logger.exception("Chart embedding failed")
-        
+
         if uptime_chart or heatmap_chart:
             elems.append(PageBreak())
             elems.append(Paragraph("Visual Analytics", styles["Heading2"]))
-            
+
         if uptime_chart:
             add_chart(uptime_chart, "Uptime Trend Over Time")
         if heatmap_chart:
             add_chart(heatmap_chart, "Outage Heatmap")
         if uptime_chart or heatmap_chart:
             elems.append(Spacer(1, 0.3 * cm))
-    
+
     # --- Detailed Device Table ---
     elems.append(PageBreak())
     elems.append(Paragraph("Complete Device Details", styles["Heading2"]))
-    
+
     # Create smaller wrapped style for device details table
     detail_wrapped_style = ParagraphStyle(
         'DetailWrapped',
@@ -1156,22 +1200,22 @@ def _generate_pdf_report(
         leading=9,
         wordWrap='CJK',
     )
-    
+
     # Table header with new columns
     table_data = [[
         "Device Name", "Location", "Group", "Uptime %", 
         "Downtime (h)", "Incidents", "MTTR (h)", "SLA Status"
     ]]
-    
+
     # Table rows with text wrapping for device names
     for item in report_data:
         mttr_hours = (item["mttr_seconds"] or 0) / 3600
-        
+
         # Truncate long text to prevent overflow
         device_name = item["camera_name"][:35] if len(item["camera_name"]) > 35 else item["camera_name"]
         location = item["location"][:25] if item["location"] and len(item["location"]) > 25 else (item["location"] or "-")
         group_name = item["group"][:15] if len(item["group"]) > 15 else item["group"]
-        
+
         table_data.append([
             Paragraph(device_name, detail_wrapped_style),
             Paragraph(location, detail_wrapped_style),
@@ -1182,11 +1226,11 @@ def _generate_pdf_report(
             f"{mttr_hours:.1f}",
             item["compliance_status"]
         ])
-    
+
     # Create table with adjusted column widths - total width ~17cm for A4
     col_widths = [3.2 * cm, 2.5 * cm, 1.8 * cm, 1.7 * cm, 1.7 * cm, 1.4 * cm, 1.4 * cm, 1.8 * cm]
     device_tbl = Table(table_data, colWidths=col_widths, repeatRows=1)
-    
+
     # Build style with conditional formatting for each row's SLA status
     table_style = [
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#374151")),
@@ -1205,7 +1249,7 @@ def _generate_pdf_report(
         # Allow table to split across pages
         ("SPLITBYROW", (0, 0), (-1, -1), True),
     ]
-    
+
     # Add conditional formatting for each row based on compliance status
     for idx, item in enumerate(report_data, start=1):
         status_colors = {
@@ -1216,18 +1260,18 @@ def _generate_pdf_report(
         status_color = status_colors.get(item["compliance_status"], colors.black)
         table_style.append(("TEXTCOLOR", (7, idx), (7, idx), status_color))
         table_style.append(("FONTNAME", (7, idx), (7, idx), "Helvetica-Bold"))
-    
+
     device_tbl.setStyle(TableStyle(table_style))
     elems.append(device_tbl)
-    
+
     # Footer
     elems.append(Spacer(1, 0.5 * cm))
-    footer_text = f"Generated automatically by B-SNAP Monitoring System • {datetime.now().strftime('%d %B %Y %H:%M')}"
+    footer_text = f"Generated automatically by {escape(brand_name)} Monitoring System • {datetime.now().strftime('%d %B %Y %H:%M')}"
     elems.append(Paragraph(footer_text, styles["Normal"]))
-    
+
     doc.build(elems)
     buf.seek(0)
-    
+
     filename = f"b-snap-health-report_{start_date}_{end_date}.pdf"
     return StreamingResponse(
         buf,
@@ -1246,16 +1290,22 @@ def _clean_ascii(text):
 
 
 def _generate_excel_report(
-    start_date: date, end_date: date, report_data: list,
-    compliance_summary: dict, avg_uptime: float,
-    worst_performer: dict, best_performer: dict,
-    total_cameras: int, sla_threshold: float,
-    selected_groups: List[str] = None
+    start_date: date,
+    end_date: date,
+    report_data: list,
+    compliance_summary: dict,
+    avg_uptime: float,
+    worst_performer: dict,
+    best_performer: dict,
+    total_cameras: int,
+    sla_threshold: float,
+    selected_groups: List[str] = None,
+    brand_name: str = "B-SNAP",
 ):
     """Generate Excel health report."""
     try:
         import pandas as pd
-        
+
         # Create summary sheet data
         summary_data = {
             "Metric": [
@@ -1283,7 +1333,7 @@ def _generate_excel_report(
                 f"{worst_performer['camera_name']} ({worst_performer['uptime_percentage']:.2f}%)" if worst_performer else "N/A",
             ]
         }
-        
+
         # Prepare device details data for Excel (exclude internal fields)
         device_data = []
         for item in report_data:
@@ -1298,17 +1348,17 @@ def _generate_excel_report(
                 "MTTR (h)": round((item.get("mttr_seconds") or 0) / 3600, 1),
                 "SLA Status": item["compliance_status"]
             })
-        
+
         # Create Excel with multiple sheets
         output = BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             # Summary sheet
             pd.DataFrame(summary_data).to_excel(writer, sheet_name="Summary", index=False)
-            
+
             # Device details sheet
             if device_data:
                 pd.DataFrame(device_data).to_excel(writer, sheet_name="Device Details", index=False)
-        
+
         output.seek(0)
         filename = f"b-snap-health-report_{start_date}_{end_date}.xlsx"
         return StreamingResponse(
@@ -1319,43 +1369,68 @@ def _generate_excel_report(
     except ImportError:
         # Fallback to CSV
         return _generate_csv_report(
-            start_date, end_date, report_data, compliance_summary,
-            avg_uptime, worst_performer, best_performer, total_cameras, sla_threshold,
-            selected_groups
+            start_date,
+            end_date,
+            report_data,
+            compliance_summary,
+            avg_uptime,
+            worst_performer,
+            best_performer,
+            total_cameras,
+            sla_threshold,
+            selected_groups,
+            brand_name,
         )
     except Exception as e:
         logger.error(f"Excel generation failed: {e}")
         # Fallback to CSV on any error
         return _generate_csv_report(
-            start_date, end_date, report_data, compliance_summary,
-            avg_uptime, worst_performer, best_performer, total_cameras, sla_threshold,
-            selected_groups
+            start_date,
+            end_date,
+            report_data,
+            compliance_summary,
+            avg_uptime,
+            worst_performer,
+            best_performer,
+            total_cameras,
+            sla_threshold,
+            selected_groups,
+            brand_name,
         )
 
 
 def _generate_csv_report(
-    start_date: date, end_date: date, report_data: list,
-    compliance_summary: dict, avg_uptime: float,
-    worst_performer: dict, best_performer: dict,
-    total_cameras: int, sla_threshold: float,
-    selected_groups: List[str] = None
+    start_date: date,
+    end_date: date,
+    report_data: list,
+    compliance_summary: dict,
+    avg_uptime: float,
+    worst_performer: dict,
+    best_performer: dict,
+    total_cameras: int,
+    sla_threshold: float,
+    selected_groups: List[str] = None,
+    brand_name: str = "B-SNAP",
 ):
     """Generate CSV health report."""
     import csv
     from io import StringIO
-    
+
     try:
         output = StringIO()
         writer = csv.writer(output)
-        
+
         # Write header info
-        writer.writerow(["B-SNAP Health Report"])
+        report_title = f"{brand_name} Health Report"
+        if report_title.lstrip().startswith(("=", "+", "-", "@")):
+            report_title = "'" + report_title
+        writer.writerow([report_title])
         writer.writerow(["Period:", f"{start_date} to {end_date}"])
         writer.writerow(["Total Cameras:", total_cameras])
         writer.writerow(["Average Uptime %:", round(avg_uptime, 2)])
         writer.writerow(["SLA Threshold %:", sla_threshold])
         writer.writerow([])
-        
+
         # Write compliance summary
         writer.writerow(["SLA Compliance Summary"])
         writer.writerow(["Status", "Count"])
@@ -1363,7 +1438,7 @@ def _generate_csv_report(
         writer.writerow(["Warning", compliance_summary.get("warning", 0)])
         writer.writerow(["Fail", compliance_summary.get("fail", 0)])
         writer.writerow([])
-        
+
         # Write device details
         if report_data:
             writer.writerow([
@@ -1382,10 +1457,10 @@ def _generate_csv_report(
                     round((item.get("mttr_seconds") or 0) / 3600, 1),
                     item["compliance_status"]
                 ])
-        
+
         csv_content = output.getvalue()
         output.close()
-        
+
         filename = f"b-snap-health-report_{start_date}_{end_date}.csv"
         return StreamingResponse(
             BytesIO(csv_content.encode('utf-8')),

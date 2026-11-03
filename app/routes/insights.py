@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.db.database import get_db
+from app.core.branding import DEFAULT_BRANDING, read_branding
 from app.models.log import ApiLog, CommandLog
 from app.utils.api_daily_stats import api_daily_counts
 from app.utils.insights_report_locale import InsightsReportLocale
@@ -499,6 +500,8 @@ async def get_executive_report_pro(
     form = await request.form()
     locale = InsightsReportLocale(form.get("language", "en"))
     t, number = locale.text, locale.number
+    branding = read_branding(db)
+    report_brand = "B-SNAP" if branding["name"] == DEFAULT_BRANDING["name"] else branding["name"]
     api_chart = form.get("api_chart")
     email_chart = form.get("email_chart")
     topcmd_chart = form.get("topcmd_chart")
@@ -536,7 +539,7 @@ async def get_executive_report_pro(
     camera_group = db.get(CameraGroup, group_id) if group_id is not None else None
     if group_id is not None and camera_group is None:
         raise HTTPException(status_code=404, detail="Camera group not found")
-    
+
     # Get totals
     api_now = _total_count(db, ApiLog, "timestamp", start_dt, end_dt)
     cmd_now = _total_count(db, CommandLog, "timestamp", start_dt, end_dt)
@@ -544,7 +547,7 @@ async def get_executive_report_pro(
     api_prev = _total_count(db, ApiLog, "timestamp", prev_start, prev_end)
     cmd_prev = _total_count(db, CommandLog, "timestamp", prev_start, prev_end)
     email_prev = _total_count(db, CameraEmailNotificationLog, "sent_at", prev_start, prev_end, success_only=True)
-    
+
     # Calculate deltas and activity trend index.
     days_now = (end_dt - start_dt).days + 1
     days_prev = (prev_end - prev_start).days + 1
@@ -561,12 +564,12 @@ async def get_executive_report_pro(
         days_now=days_now,
         days_prev=days_prev,
     )
-    
+
     totals = {"api": api_now, "command": cmd_now, "email": email_now}
     deltas = {"api": api_delta, "command": cmd_delta, "email": email_delta}
     hi = {"value": idx, "label": label, "color": color}
     previous = {"api": api_prev, "command": cmd_prev, "email": email_prev}
-    
+
     top_cmd = get_top_commands(db, start_date, end_date, limit=10)
     top_cam = get_top_cameras_by_email(db, start_date, end_date, limit=5)
 
@@ -587,6 +590,7 @@ async def get_executive_report_pro(
         api_change=pct_phrase(api_delta), command_change=pct_phrase(cmd_delta),
         email_change=pct_phrase(email_delta), index=number(idx), trend=t(label).lower(),
     )
+    summary_text = summary_text.replace("B-SNAP", escape(report_brand))
     highlights = [
         t("{metric}: {change} compared with the previous period.",
           metric=t(metric), change=pct_phrase(value).capitalize())
@@ -615,20 +619,24 @@ async def get_executive_report_pro(
         rightMargin=2 * cm,
     )
 
-    doc.title = f"{t('B-SNAP Executive Report')} - {period}"
-    doc.author = t("B-SNAP Automated Observability System")
+    doc.title = f"{t('B-SNAP Executive Report').replace('B-SNAP', report_brand)} - {period}"
+    doc.author = t("B-SNAP Automated Observability System").replace("B-SNAP", report_brand)
     doc.subject = t("Executive Summary and Key Metrics Report")
     styles = getSampleStyleSheet()
     elems = []
 
     # --- Header ---
-    logo_path = LOGO_PATH if os.path.exists(LOGO_PATH) else "/app/static/icons/logo.png"
+    logo_path = (
+        LOGO_PATH
+        if branding["logo"] == DEFAULT_BRANDING["logo"]
+        else os.path.join(PROJECT_ROOT, branding["logo"].lstrip("/"))
+    )
     try:
         if os.path.exists(logo_path):
             elems.append(RLImage(logo_path, width=3 * cm, height=3 * cm))
     except Exception:
         pass
-    report_title = t("B-SNAP Executive Report")
+    report_title = t("B-SNAP Executive Report").replace("B-SNAP", escape(report_brand))
     elems.append(Paragraph(report_title, styles["Title"]))
     elems.append(Paragraph(f"{t('Period')}: {period}", styles["Normal"]))
     group_label = escape(camera_group.name) if camera_group else t("All groups")
@@ -785,10 +793,14 @@ async def get_executive_report_pro(
     elems.append(cmd_tbl)
     elems.append(Spacer(1, 0.5 * cm))
 
-    elems.append(Paragraph(
-        t("Generated automatically by B-SNAP Insights Module - Confidential"),
-        styles["Normal"]
-    ))
+    elems.append(
+        Paragraph(
+            t("Generated automatically by B-SNAP Insights Module - Confidential").replace(
+                "B-SNAP", escape(report_brand)
+            ),
+            styles["Normal"],
+        )
+    )
 
     doc.build(elems)
     buf.seek(0)

@@ -4,10 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <link rel="icon" type="image/x-icon" href="/static/icons/favicon.ico">
-  <title>{% block title %}B-SNAP{% endblock %}</title>
+  <link rel="icon" href="{{ branding.logo if branding.logo != '/static/icons/b-snap.png' else '/static/icons/favicon.ico' }}">
+  {% set page_title %}{% block title %}B-SNAP{% endblock %}{% endset %}
+  <title>{{ page_title | replace('B-SNAP', branding.name) | replace('B-Snap', branding.name) }}</title>
   <link href="/static/css/output.css" rel="stylesheet">
   <link href="/static/css/design-system.css" rel="stylesheet">
+  {% include "_branding_theme.html" %}
   <script>
     try {
       const savedLanguage = localStorage.getItem('language') === 'id' ? 'id' : 'en';
@@ -18,7 +20,7 @@
     }
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
-      if (document.querySelector('link[rel="icon"]')) {
+      if ({{ (branding.logo == '/static/icons/b-snap.png') | tojson }} && document.querySelector('link[rel="icon"]')) {
         document.querySelector('link[rel="icon"]').href = '/static/icons/favicon-white.ico';
       }
     } else {
@@ -143,7 +145,7 @@ class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 s
   <div class="flex items-center justify-between h-16">
     <!-- Logo -->
     <a href="/" class="flex items-center gap-2">
-      <img src="/static/icons/b-snap.png" class="h-8" alt="B-SNAP">
+      <img src="{{ branding.logo }}" class="h-8" alt="{{ branding.name }}">
     </a>
     
     <!-- Desktop Navigation -->
@@ -839,9 +841,11 @@ function changelogModal() {
     let html = document.documentElement;
     let isDark = html.classList.toggle('dark');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    document.querySelector('link[rel="icon"]').href = isDark 
-      ? '/static/icons/favicon-white.ico' 
-      : '/static/icons/favicon.ico';
+    if ({{ (branding.logo == '/static/icons/b-snap.png') | tojson }}) {
+      document.querySelector('link[rel="icon"]').href = isDark
+        ? '/static/icons/favicon-white.ico'
+        : '/static/icons/favicon.ico';
+    }
     document.querySelectorAll('[x-show]').forEach(el => {
       if (el.getAttribute('x-show') === '!isDarkMode') {
         el.style.display = isDark ? 'none' : '';

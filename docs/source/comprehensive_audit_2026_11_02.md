@@ -37,8 +37,8 @@ Bagian 20 menyelesaikan isolasi discovery dan fixture test CA-12 pada 2.6.10.
 
 [Inventaris sumber dan endpoint](comprehensive_audit_2026_11_02_inventory.json)
 mencatat file, hash, syntax/compile check, serta dependency yang dideklarasikan.
-Inventaris hasil 2.6.10 mencakup **292 file Python, 54 template, 15 JavaScript,
-6 harness/test CJS, dan 254 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
+Inventaris hasil 2.6.10 mencakup **307 file Python, 57 template, 16 JavaScript,
+6 harness/test CJS, dan 256 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
 belum tentu didaftarkan; tidak sama dengan jumlah URL unik yang aktif.
 
 Semua file pada inventaris menerima pemeriksaan statis. Penelusuran mendalam dan
@@ -1042,3 +1042,31 @@ di deployment; tidak melakukan deployment atau image registry publish otomatis.
   **969 tes lulus, 73 skip, 60 subtests lulus**. Skip database eksplisit dan
   FFmpeg tetap terlihat pada ringkasan; hasil ini tidak menggantikan validasi
   PostgreSQL di atas. Build dokumentasi Sphinx `-W` lulus.
+
+
+## 21. Konsolidasi rilis 2.6.10 dan perubahan lokal
+
+- Atas permintaan pengguna, entri changelog 2.6.3 sampai 2.6.10 dan perubahan
+  branding/WhatsApp yang sebelumnya Unreleased digabung menjadi satu entri 2.6.10.
+  Entri 2.6.2 ke bawah tetap ada. Riwayat commit/migration dan bukti audit per
+  versi pada bagian terdahulu dipertahankan sebagai riwayat implementasi.
+- Rilis kini menyertakan konfigurasi/upload/preview branding, logo peta independen,
+  identitas laporan, parser nomor internasional, penyimpanan whitelist E.164 baru,
+  lookup legacy, boundary GoWA digit-only dan migration unique identity. Lihat
+  `docs/branding-phone-audit.md` untuk batas cakupan dan pemeriksaan deployment.
+- Migration `20261103_wa_phone_unique` mempertahankan nilai lama dan menolak
+  collision identitas. Upgrade database serta pengujian gateway deployment tetap
+  menjadi langkah operasional; tidak dijalankan terhadap database aplikasi.
+- Validasi source gabungan: **1.103 tes lulus, 1 skip, 77 subtests lulus** dengan
+  PostgreSQL 17 disposable; migration/index, lookup dan delivery boundary ikut
+  tercakup. Build CSS, sinkronisasi versi dan AST/Jinja/Node syntax lulus.
+  Inventaris diperbarui menjadi 307 Python, 57 template, 16 JS, 6 CJS dan 256
+  deklarasi endpoint; dua route tambahan adalah GET/POST branding admin.
+- Browser Chrome dengan template/CSS/JS branding asli dan fixture terisolasi:
+  1440x1000 serta 390x844, light/dark, live draft preview dan revert lulus;
+  tidak ada page error atau overflow horizontal. Ini bukan acceptance login/MFA,
+  gateway deployment atau pengiriman notifikasi produksi.
+- QA visual memperbaiki kontrol Cancel upload yang tertimpa display komponen
+  tombol: selector `[hidden]` dibatasi ke kontrol tersebut pada halaman branding.
+  Browser memverifikasi hidden awal, tampil saat file dipilih, hidden setelah
+  cancel, draft/revert dan empat kombinasi viewport/tema tanpa layanan nyata.

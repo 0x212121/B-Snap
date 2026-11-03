@@ -25,6 +25,8 @@ def setup_test_database() -> None:
         ("GET", "/admin/config"),
         ("POST", "/config/save"),
         ("POST", "/config/test-smtp"),
+        ("GET", "/admin/branding"),
+        ("POST", "/admin/branding"),
         ("POST", "/config/run-cleanup"),
     ],
 )

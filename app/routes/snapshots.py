@@ -24,6 +24,7 @@ from app.routes.auth import (
 )
 from app.utils.audit_logger import log_audit
 from app.utils.media_access import require_camera_group_access
+from app.utils.phone_numbers import whatsapp_phone_variants
 from app.utils.snapshot_utils import SNAPSHOT_BASE_DIR  # points to app/static/snapshots
 from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz
 from app.utils.healthcheck import format_uptime_duration
@@ -138,7 +139,7 @@ def search_snapshots(
     if phone_number:
         whitelist_entries = (
             db.query(WhatsappWhitelist)
-            .filter(WhatsappWhitelist.phone_number == phone_number)
+            .filter(WhatsappWhitelist.phone_number.in_(whatsapp_phone_variants(phone_number)))
             .all()
         )
         if not whitelist_entries:

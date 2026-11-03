@@ -25,6 +25,7 @@ from app.utils.audit_logger import log_audit
 from app.utils.gallery_preview import snapshot_preview_response
 from app.utils.media_access import require_camera_group_access, restrict_media_query
 from app.utils.notification_service import NotificationService
+from app.utils.phone_numbers import whatsapp_phone_variants
 from app.utils.snapshot_service import SnapshotService
 from app.utils.snapshot_utils import record_snapshot_metadata
 from app.utils.template_helper import templates
@@ -142,7 +143,7 @@ async def snapshot_handler(
         if user_phone:
             user_whitelist = (
                 db.query(WhatsappWhitelist)
-                .filter(WhatsappWhitelist.phone_number == user_phone)
+                .filter(WhatsappWhitelist.phone_number.in_(whatsapp_phone_variants(user_phone)))
                 .first()
             )
             if user_whitelist and user_whitelist.name:
@@ -238,7 +239,7 @@ async def snapshot_handler(
                 ip=request.client.host,
                 extra=f"{extra} | file={snapshot.file_path} | resolution={snapshot.resolution}"
             )
-            
+
             result = {
                 "status": "success",
                 "success": True,

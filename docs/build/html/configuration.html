@@ -162,6 +162,48 @@
     <div id="content" role="main">
       <section id="configuration-guide">
 <h1>Configuration Guide<a class="headerlink" href="#configuration-guide" title="Link to this heading"><span>#</span></a></h1>
+<section id="branding">
+<h2>Branding<a class="headerlink" href="#branding" title="Link to this heading"><span>#</span></a></h2>
+<p>Administrators can open <strong>Branding</strong> in the administration menu to set the
+application name, login tagline, logo and primary color. Upload a PNG or ICO directly
+on this page (up to 512 KB), or select an available application logo uploaded under
+<strong>Configuration → Appearance → Application Logo</strong>. The live preview shows the draft
+navigation and sign-in identity in light or dark appearance. <strong>Cancel changes</strong>
+restores the saved settings; <strong>Use defaults</strong> prepares a default draft. Both draft
+changes and new uploads take effect only after <strong>Save branding</strong> succeeds.
+The logo appears in the main navigation and authentication pages,
+and is used as the favicon when a custom logo is selected. The
+name appears in the login title and titles of pages using the main template.
+The primary color palette controls shared primary buttons and dialogs; individual
+page-specific colors may remain unchanged.
+Missing or invalid configuration falls back to the B-Snap defaults.</p>
+<p>These settings are stored in the <code class="docutils literal notranslate"><span class="pre">configurations</span></code> table. Preserve the uploaded
+logo file alongside database backups. New uploads are stored in <code class="docutils literal notranslate"><span class="pre">static/branding</span></code>,
+which Docker Compose persists in its <code class="docutils literal notranslate"><span class="pre">branding_data</span></code> volume. Existing logos selected
+under <code class="docutils literal notranslate"><span class="pre">static/icons</span></code> remain legacy assets; upload them again and select the new
+entry to use persistent storage. Application uploads do not overwrite legacy map
+or report assets under <code class="docutils literal notranslate"><span class="pre">static/icons</span></code>.
+Direct Branding uploads use content-addressed filenames; the previous active image
+is preserved if saving fails. Existing assets are retained when changing the logo
+or choosing the default. Back up the whole branding directory/volume with the database.
+The Insights executive PDF and health PDF use the configured name and logo; health
+CSV headers and GoWA outage email alerts use the configured name. This initial
+feature does not change all page-specific colors, other email and reports,
+integration URLs or authentication settings.</p>
+<section id="map-logo">
+<h3>Map logo<a class="headerlink" href="#map-logo" title="Link to this heading"><span>#</span></a></h3>
+<p><strong>Configuration → Appearance → Map Logo</strong> manages the image in the map heading
+independently of application branding. New map uploads use <code class="docutils literal notranslate"><span class="pre">static/branding/map-logo.png</span></code>
+or <code class="docutils literal notranslate"><span class="pre">map-logo.ico</span></code>, selected through the <code class="docutils literal notranslate"><span class="pre">map_logo</span></code> configuration key, and share the
+persistent <code class="docutils literal notranslate"><span class="pre">branding_data</span></code> volume. Changing the application name or logo cannot
+change this map image. The application logo still appears in the common navigation.</p>
+<p>Existing <code class="docutils literal notranslate"><span class="pre">static/icons/logo.png</span></code> or <code class="docutils literal notranslate"><span class="pre">logo.ico</span></code> remains a map-only fallback until a
+map logo is uploaded. A missing map image is omitted rather than replaced by the
+application logo. The historical <code class="docutils literal notranslate"><span class="pre">app_logo</span></code> upload API field remains an alias for
+map uploads; new forms use <code class="docutils literal notranslate"><span class="pre">map_logo</span></code> and <code class="docutils literal notranslate"><span class="pre">application_logo</span></code> separately. These
+changes do not rewrite existing files or require a schema migration.</p>
+</section>
+</section>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"><span>#</span></a></h2>
 <p>B-Snap uses environment variables for configuration, allowing flexible deployment across different environments (development, testing, production).</p>
@@ -904,6 +946,10 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
     </div></div><aside id="right-sidebar" class="hidden text-sm xl:block">
   <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
     <ul>
+<li><a class="reference internal" href="#branding">Branding</a><ul>
+<li><a class="reference internal" href="#map-logo">Map logo</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#overview">Overview</a></li>
 <li><a class="reference internal" href="#quick-start">Quick Start</a><ul>
 <li><a class="reference internal" href="#create-configuration-file">1. Create Configuration File</a></li>

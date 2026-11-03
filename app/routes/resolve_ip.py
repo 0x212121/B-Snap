@@ -15,7 +15,7 @@ from app.models.camera_group import CameraGroup
 from app.models.user import User
 from app.models.whitelist import WhatsappWhitelist
 from app.routes.auth import admin_access_required
-from app.utils.wa_gateway import format_phone_number
+from app.utils.phone_numbers import legacy_whatsapp_lookup, whatsapp_phone_variants
 
 router = APIRouter()
 
@@ -55,13 +55,19 @@ def resolve_ip_by_name(
     if direction not in {"asc", "desc"}:
         raise HTTPException(status_code=400, detail="sort_order must be asc or desc")
 
-    phone = format_phone_number(re.split(r"[@:]", str(phone_number or "").strip(), maxsplit=1)[0])
+    phone = legacy_whatsapp_lookup(
+        re.split(r"[@:]", str(phone_number or "").strip(), maxsplit=1)[0]
+    )
     if not phone:
         raise HTTPException(
             status_code=403,
             detail="phone_number is required and must be on the WhatsApp whitelist.",
         )
-    entry = db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == phone).first()
+    entry = (
+        db.query(WhatsappWhitelist)
+        .filter(WhatsappWhitelist.phone_number.in_(whatsapp_phone_variants(phone)))
+        .first()
+    )
     if not entry:
         raise HTTPException(
             status_code=403, detail="Phone number is not on the WhatsApp whitelist."

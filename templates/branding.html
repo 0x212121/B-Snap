@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import page_header, section_header %}
+{% from "macros/branding.html" import palettes %}
+{% from "_icons.html" import icon_folder, icon_save %}
+{% block title %}B-SNAP – Branding{% endblock %}
+
+{% block content %}
+<style>
+  #branding-clear-upload[hidden] { display: none; }
+  #branding-preview { --preview-bg: #f3f4f6; --preview-card: #fff; --preview-text: #111827; --preview-muted: #6b7280; --preview-border: #d1d5db; background: var(--preview-bg); color: var(--preview-text); border-color: var(--preview-border); }
+  #branding-preview[data-mode="dark"] { --preview-bg: #111827; --preview-card: #1f2937; --preview-text: #f3f4f6; --preview-muted: #9ca3af; --preview-border: #4b5563; }
+  #branding-preview .preview-card { background: var(--preview-card); border-color: var(--preview-border); }
+  #branding-preview .preview-muted { color: var(--preview-muted); }
+  .branding-palette-choice:has(input:checked) { border-color: var(--ui-primary); outline: 1px solid var(--ui-primary); }
+</style>
+<div class="ui-page max-w-6xl mx-auto">
+  {{ page_header("Branding", "Manage your application identity and preview changes before saving.") }}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+    <form id="branding-form" method="post" action="/admin/branding" enctype="multipart/form-data" class="space-y-4">
+      <fieldset id="branding-fields" class="space-y-4 min-w-0">
+        <legend class="sr-only">Application branding</legend>
+        <section class="ui-card ui-card-body space-y-4">
+          {{ section_header("Application identity") }}
+          <div>
+            <label class="ui-label block mb-2" for="branding-name">Application name</label>
+            <input class="ui-control w-full" id="branding-name" name="name" maxlength="80" required value="{{ branding.name }}" autocomplete="organization">
+          </div>
+          <div>
+            <label class="ui-label block mb-2" for="branding-tagline">Login tagline</label>
+            <input class="ui-control w-full" id="branding-tagline" name="tagline" maxlength="160" value="{{ branding.tagline }}">
+            <p class="ui-description">Optional text displayed on the sign-in page.</p>
+          </div>
+        </section>
+        <section class="ui-card ui-card-body space-y-4">
+          {{ section_header("Application Logo") }}
+          <div>
+            <label class="ui-label block mb-2" for="branding-logo">Current or available logo</label>
+            <select class="ui-control w-full" id="branding-logo" name="logo">
+              {% for choice in logo_choices %}
+              <option value="{{ choice.value }}" {% if branding.logo == choice.value %}selected{% endif %}>{{ choice.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <button class="ui-button ui-button-secondary" id="branding-upload-button" type="button" aria-label="Upload application logo">
+              {{ icon_folder("h-5 w-5") }}<span>Upload new logo</span>
+            </button>
+            <button class="ui-button ui-button-ghost" id="branding-clear-upload" type="button" hidden>Cancel upload</button>
+            <input id="branding-upload" type="file" name="application_logo" accept=".png,.ico" class="hidden">
+          </div>
+          <p id="branding-filename" class="ui-metadata break-all no-translate" hidden></p>
+          <p class="ui-description">PNG or ICO, up to 512 KB. The new logo is applied when you save.</p>
+        </section>
+        <section class="ui-card ui-card-body space-y-4">
+          {{ section_header("Primary color") }}
+          <div class="grid grid-cols-2 gap-3">
+            {% for value, colors in palettes.items() %}
+            <label class="branding-palette-choice flex items-center gap-3 cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600 p-3">
+              <input type="radio" name="palette" value="{{ value }}" class="h-4 w-4" style="accent-color: {{ colors.primary }}" {% if branding.palette == value %}checked{% endif %}>
+              <span class="h-5 w-5 rounded-full shrink-0" style="background-color: {{ colors.primary }}" aria-hidden="true"></span>
+              <span class="text-sm">{{ colors.label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          <p class="ui-description">Applies to shared primary buttons and dialogs.</p>
+        </section>
+      </fieldset>
+      <div class="ui-card ui-card-body space-y-3">
+        <p id="branding-status" role="status" aria-live="polite" class="ui-metadata">No changes to save.</p>
+        <div class="flex flex-wrap gap-2">
+          <button class="ui-button ui-button-primary" id="branding-save" type="submit" disabled>{{ icon_save("h-4 w-4") }}<span>Save branding</span></button>
+          <button class="ui-button ui-button-secondary" id="branding-revert" type="button" disabled>Cancel changes</button>
+          <button class="ui-button ui-button-ghost" id="branding-defaults" type="button">Use defaults</button>
+        </div>
+        <p class="ui-metadata">Changes and defaults are applied only after saving.</p>
+      </div>
+    </form>
+    <aside class="ui-card ui-card-body space-y-4 lg:sticky lg:top-20">
+      {{ section_header("Live preview", "Preview the navigation and sign-in identity.") }}
+      <div class="flex flex-wrap gap-2" role="group" aria-label="Preview appearance">
+        <button class="ui-button ui-button-secondary" type="button" data-preview-mode="light" aria-pressed="true">Light</button>
+        <button class="ui-button ui-button-secondary" type="button" data-preview-mode="dark" aria-pressed="false">Dark</button>
+      </div>
+      <div id="branding-preview" class="rounded-xl border overflow-hidden" data-mode="light">
+        <div class="preview-card flex items-center gap-3 border-b px-4 py-3">
+          <img data-branding-preview-logo src="{{ branding.logo }}" alt="{{ branding.name }}" class="h-8 w-8 object-contain">
+          <span data-branding-preview-name class="no-translate text-sm font-semibold break-words min-w-0">{{ branding.name }}</span>
+        </div>
+        <div class="px-5 py-8">
+          <div class="preview-card border rounded-xl max-w-sm mx-auto p-5 space-y-4">
+            <img data-branding-preview-logo src="{{ branding.logo }}" alt="{{ branding.name }}" class="h-16 max-w-full object-contain mx-auto">
+            <div class="text-center">
+              <p data-branding-preview-name class="no-translate text-xl font-semibold break-words">{{ branding.name }}</p>
+              <p id="branding-preview-tagline" class="no-translate preview-muted text-sm mt-2 break-words" {% if not branding.tagline %}hidden{% endif %}>{{ branding.tagline }}</p>
+            </div>
+            <div class="preview-muted border rounded-lg px-3 py-2 text-sm" style="border-color: var(--preview-border)">Username</div>
+            <div class="preview-muted border rounded-lg px-3 py-2 text-sm" style="border-color: var(--preview-border)">Password</div>
+            <div class="ui-button ui-button-primary w-full" aria-hidden="true">Sign In</div>
+          </div>
+        </div>
+      </div>
+      <p class="ui-description">The map heading logo is managed separately in Configuration → Appearance.</p>
+    </aside>
+  </div>
+</div>
+<script type="application/json" id="branding-data">{{ {'initial': branding, 'defaults': branding_defaults, 'palettes': palettes, 'maxLogoSize': max_logo_size} | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/branding.js" defer></script>{% endblock %}

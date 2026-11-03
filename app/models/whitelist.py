@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime,
     Index,
     Enum as SAEnum,  # Enum untuk SQLAlchemy
+    func as sqlfunc,
 )
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -30,9 +31,9 @@ class WhatsappWhitelist(Base):
     group_id = Column(Integer, ForeignKey("camera_groups.id", ondelete="SET NULL"), nullable=True)
     group = relationship("CameraGroup", back_populates="whatsapp_whitelist", lazy="joined")
 
-
     __table_args__ = (
         Index("idx_whatsapp_phone_group", "phone_number", "group_id"),
+        Index("uq_whatsapp_phone_canonical", sqlfunc.ltrim(phone_number, "+"), unique=True),
     )
 
     @property

@@ -50,12 +50,15 @@ def resolver_client() -> Generator[TestClient, None, None]:
         session.add_all(
             [
                 WhatsappWhitelist(phone_number="628123456789", group_id=allowed.id),
+                WhatsappWhitelist(phone_number="+12025550123", group_id=allowed.id),
                 Camera(hostname="gate-ip", ip="192.168.1.10", groups=[allowed]),
                 Camera(hostname="gate-null", ip=None, groups=[allowed]),
                 Camera(hostname="gate-empty", ip="", groups=[allowed]),
                 Camera(hostname="gate-denied", ip=None, groups=[denied]),
                 # A stale primary-group column must not authorize a camera.
-                Camera(hostname="gate-legacy", ip="192.168.1.99", group_id=allowed.id, groups=[denied]),
+                Camera(
+                    hostname="gate-legacy", ip="192.168.1.99", group_id=allowed.id, groups=[denied]
+                ),
             ]
         )
         session.commit()
@@ -108,3 +111,17 @@ def test_include_without_ip_errors(
     assert response.status_code == status
     if keyword == "missing":
         assert response.json()["detail"] == "No camera matches the provided keyword."
+
+
+def test_formatted_sender_keeps_group_restrictions(resolver_client: TestClient) -> None:
+    params = {"keyword": "gate", "phone_number": "+62 812 3456 789"}
+    response = resolver_client.get("/api/cctv/resolve-ip", params=params)
+    assert response.status_code == 200
+    assert {item["name"] for item in response.json()["results"]} == {"gate-ip"}
+    params["phone_number"] = "evil628123456789"
+    assert resolver_client.get("/api/cctv/resolve-ip", params=params).status_code == 403
+    params["phone_number"] = "12025550123"
+    assert resolver_client.get("/api/cctv/resolve-ip", params=params).status_code == 200
+    params["keyword"] = "gate-denied"
+    params["include_without_ip"] = "true"
+    assert resolver_client.get("/api/cctv/resolve-ip", params=params).status_code == 403

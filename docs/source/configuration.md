@@ -1,5 +1,49 @@
 # Configuration Guide
 
+## Branding
+
+Administrators can open **Branding** in the administration menu to set the
+application name, login tagline, logo and primary color. Upload a PNG or ICO directly
+on this page (up to 512 KB), or select an available application logo uploaded under
+**Configuration → Appearance → Application Logo**. The live preview shows the draft
+navigation and sign-in identity in light or dark appearance. **Cancel changes**
+restores the saved settings; **Use defaults** prepares a default draft. Both draft
+changes and new uploads take effect only after **Save branding** succeeds.
+The logo appears in the main navigation and authentication pages,
+and is used as the favicon when a custom logo is selected. The
+name appears in the login title and titles of pages using the main template.
+The primary color palette controls shared primary buttons and dialogs; individual
+page-specific colors may remain unchanged.
+Missing or invalid configuration falls back to the B-Snap defaults.
+
+These settings are stored in the `configurations` table. Preserve the uploaded
+logo file alongside database backups. New uploads are stored in `static/branding`,
+which Docker Compose persists in its `branding_data` volume. Existing logos selected
+under `static/icons` remain legacy assets; upload them again and select the new
+entry to use persistent storage. Application uploads do not overwrite legacy map
+or report assets under `static/icons`.
+Direct Branding uploads use content-addressed filenames; the previous active image
+is preserved if saving fails. Existing assets are retained when changing the logo
+or choosing the default. Back up the whole branding directory/volume with the database.
+The Insights executive PDF and health PDF use the configured name and logo; health
+CSV headers and GoWA outage email alerts use the configured name. This initial
+feature does not change all page-specific colors, other email and reports,
+integration URLs or authentication settings.
+
+### Map logo
+
+**Configuration → Appearance → Map Logo** manages the image in the map heading
+independently of application branding. New map uploads use `static/branding/map-logo.png`
+or `map-logo.ico`, selected through the `map_logo` configuration key, and share the
+persistent `branding_data` volume. Changing the application name or logo cannot
+change this map image. The application logo still appears in the common navigation.
+
+Existing `static/icons/logo.png` or `logo.ico` remains a map-only fallback until a
+map logo is uploaded. A missing map image is omitted rather than replaced by the
+application logo. The historical `app_logo` upload API field remains an alias for
+map uploads; new forms use `map_logo` and `application_logo` separately. These
+changes do not rewrite existing files or require a schema migration.
+
 ## Overview
 
 B-Snap uses environment variables for configuration, allowing flexible deployment across different environments (development, testing, production).

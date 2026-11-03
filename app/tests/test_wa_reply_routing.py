@@ -16,6 +16,14 @@ from app.routes import wa_webhook
 
 
 class ReplyRoutingTests(unittest.TestCase):
+
+    def test_sender_lookup_rejects_malformed_identity(self) -> None:
+        assert (
+            wa_webhook._normalize_wa_sender("+1 (202) 555-0123:4@s.whatsapp.net") == "12025550123"
+        )
+        assert wa_webhook._normalize_wa_sender("x12025550123@s.whatsapp.net") == ""
+        assert wa_webhook._normalize_wa_sender("+012025550123@s.whatsapp.net") == ""
+
     def test_processing_and_api_results_quote_the_originating_chat(self) -> None:
         for chat_id in ("record-group@g.us", "628123456789@s.whatsapp.net"):
             for quote_reply in (True, False):

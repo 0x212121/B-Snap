@@ -100,6 +100,18 @@ def test_transient_failure_does_not_send(local_db, transports) -> None:
     email.assert_not_called()
 
 
+def test_device_alert_uses_brand_name(local_db, transports) -> None:
+    """Keep incident confirmation while applying the configured sender identity."""
+    local_db.add(Configuration(key="branding_name", value="Acme CCTV"))
+    local_db.commit()
+    _, email = transports
+    monitor.check_gowa_device(local_db)
+    email.assert_not_called()
+    monitor.check_gowa_device(local_db)
+    assert email.call_args.args[1] == "[Acme CCTV] WhatsApp device disconnected"
+    assert email.call_args.args[2].startswith("Acme CCTV WhatsApp device alert")
+
+
 def test_failed_email_retries_with_original_incident_time(local_db, transports) -> None:
     _, email = transports
     email.side_effect = RuntimeError("transport failure")

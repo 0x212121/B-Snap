@@ -13,11 +13,13 @@ from pydantic import BaseModel
 from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Session
 
+from app.core.branding_assets import map_logo_url
 from app.core.config import get_config
 from app.db.database import get_db
 from app.models.camera import Camera as DBCamera
 from app.models.camera_group import CameraGroup
 from app.models.camera_status_change_log import CameraStatusChangeLog
+from app.models.config import Configuration
 from app.models.snapshot import Snapshot
 from app.models.user import User
 from app.routes.auth import get_current_user
@@ -85,6 +87,8 @@ def maps_page(
 ) -> Response:
     """Render the map shell using one configured-timezone lookup."""
     map_title = get_config("map_title", default="CCTV Maps")
+    logo_setting = db.get(Configuration, "map_logo")
+    logo_url = map_logo_url({"map_logo": logo_setting.value if logo_setting else ""})
     tz_name = get_current_timezone(db)
 
     now_utc = datetime.now(UTC)
@@ -96,6 +100,7 @@ def maps_page(
         {
             "request": request,
             "map_title": map_title,
+            "map_logo_url": logo_url,
             "timezone": tz_name,
             "refresh_time": refresh_time,
             "live_view_enabled": current_user.role == "admin" and map_live_enabled(db),

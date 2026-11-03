@@ -12,6 +12,7 @@ from app.utils.changelog_parser import (
     get_changelog_stats
 )
 from app.utils.template_helper import templates
+import phonenumbers
 
 router = APIRouter(tags=["Admin"])
 
@@ -34,11 +35,18 @@ async def whitelist_admin_page(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_access_required)
 ):
-    return templates.TemplateResponse("whitelist.html", {
-        "request": request,
-        "title": "WhatsApp Whitelist",
-        "admin": current_admin,
-    })
+    return templates.TemplateResponse(
+        "whitelist.html",
+        {
+            "request": request,
+            "title": "WhatsApp Whitelist",
+            "admin": current_admin,
+            "phone_regions": sorted(
+                (region, phonenumbers.country_code_for_region(region))
+                for region in phonenumbers.SUPPORTED_REGIONS
+            ),
+        },
+    )
 
 
 @router.get("/api/changelog")

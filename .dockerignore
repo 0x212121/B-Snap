@@ -9,6 +9,7 @@ secret/
 static/snapshots/
 static/videos/
 static/images/
+static/branding/
 Backlog.md
 .venv
 venv/

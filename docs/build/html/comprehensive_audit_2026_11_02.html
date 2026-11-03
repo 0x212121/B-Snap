@@ -147,8 +147,8 @@ file server, sedangkan endpoint authenticated memeriksa grup dan mencatat audit.
 </ul>
 <p><a class="reference download internal" download="" href="_downloads/cb8f1f16a2a639fa98f1441315c2d8b7/comprehensive_audit_2026_11_02_inventory.json"><span class="xref download myst">Inventaris sumber dan endpoint</span></a>
 mencatat file, hash, syntax/compile check, serta dependency yang dideklarasikan.
-Inventaris hasil 2.6.10 mencakup <strong>292 file Python, 54 template, 15 JavaScript,
-6 harness/test CJS, dan 254 deklarasi endpoint produksi</strong>. Jumlah endpoint mencakup router legacy yang
+Inventaris hasil 2.6.10 mencakup <strong>307 file Python, 57 template, 16 JavaScript,
+6 harness/test CJS, dan 256 deklarasi endpoint produksi</strong>. Jumlah endpoint mencakup router legacy yang
 belum tentu didaftarkan; tidak sama dengan jumlah URL unik yang aktif.</p>
 <p>Semua file pada inventaris menerima pemeriksaan statis. Penelusuran mendalam dan
 tes dilakukan pada boundary autentikasi, proxy, media, retensi, notifikasi, API
@@ -1399,6 +1399,35 @@ FFmpeg tetap terlihat pada ringkasan; hasil ini tidak menggantikan validasi
 PostgreSQL di atas. Build dokumentasi Sphinx <code class="docutils literal notranslate"><span class="pre">-W</span></code> lulus.</p></li>
 </ul>
 </section>
+<section id="konsolidasi-rilis-2-6-10-dan-perubahan-lokal">
+<h2>21. Konsolidasi rilis 2.6.10 dan perubahan lokal<a class="headerlink" href="#konsolidasi-rilis-2-6-10-dan-perubahan-lokal" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#konsolidasi-rilis-2-6-10-dan-perubahan-lokal'"><span>#</span></a></h2>
+<ul class="simple">
+<li><p>Atas permintaan pengguna, entri changelog 2.6.3 sampai 2.6.10 dan perubahan
+branding/WhatsApp yang sebelumnya Unreleased digabung menjadi satu entri 2.6.10.
+Entri 2.6.2 ke bawah tetap ada. Riwayat commit/migration dan bukti audit per
+versi pada bagian terdahulu dipertahankan sebagai riwayat implementasi.</p></li>
+<li><p>Rilis kini menyertakan konfigurasi/upload/preview branding, logo peta independen,
+identitas laporan, parser nomor internasional, penyimpanan whitelist E.164 baru,
+lookup legacy, boundary GoWA digit-only dan migration unique identity. Lihat
+<code class="docutils literal notranslate"><span class="pre">docs/branding-phone-audit.md</span></code> untuk batas cakupan dan pemeriksaan deployment.</p></li>
+<li><p>Migration <code class="docutils literal notranslate"><span class="pre">20261103_wa_phone_unique</span></code> mempertahankan nilai lama dan menolak
+collision identitas. Upgrade database serta pengujian gateway deployment tetap
+menjadi langkah operasional; tidak dijalankan terhadap database aplikasi.</p></li>
+<li><p>Validasi source gabungan: <strong>1.103 tes lulus, 1 skip, 77 subtests lulus</strong> dengan
+PostgreSQL 17 disposable; migration/index, lookup dan delivery boundary ikut
+tercakup. Build CSS, sinkronisasi versi dan AST/Jinja/Node syntax lulus.
+Inventaris diperbarui menjadi 307 Python, 57 template, 16 JS, 6 CJS dan 256
+deklarasi endpoint; dua route tambahan adalah GET/POST branding admin.</p></li>
+<li><p>Browser Chrome dengan template/CSS/JS branding asli dan fixture terisolasi:
+1440x1000 serta 390x844, light/dark, live draft preview dan revert lulus;
+tidak ada page error atau overflow horizontal. Ini bukan acceptance login/MFA,
+gateway deployment atau pengiriman notifikasi produksi.</p></li>
+<li><p>QA visual memperbaiki kontrol Cancel upload yang tertimpa display komponen
+tombol: selector <code class="docutils literal notranslate"><span class="pre">[hidden]</span></code> dibatasi ke kontrol tersebut pada halaman branding.
+Browser memverifikasi hidden awal, tampil saat file dipilih, hidden setelah
+cancel, draft/revert dan empat kombinasi viewport/tema tanpa layanan nyata.</p></li>
+</ul>
+</section>
 </section>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
 <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
@@ -1462,6 +1491,7 @@ PostgreSQL di atas. Build dokumentasi Sphinx <code class="docutils literal notra
 <li><a :data-current="activeSection === '#formatter-timezone-audit-hapus-video-rilis-2-6-8'" class="reference internal" href="#formatter-timezone-audit-hapus-video-rilis-2-6-8">18. Formatter timezone audit hapus video - rilis 2.6.8</a></li>
 <li><a :data-current="activeSection === '#penghentian-power-bi-record-checks-rilis-2-6-9'" class="reference internal" href="#penghentian-power-bi-record-checks-rilis-2-6-9">19. Penghentian Power BI Record Checks - rilis 2.6.9</a></li>
 <li><a :data-current="activeSection === '#isolasi-discovery-dan-fixture-test-ca-12-rilis-2-6-10'" class="reference internal" href="#isolasi-discovery-dan-fixture-test-ca-12-rilis-2-6-10">20. Isolasi discovery dan fixture test CA-12 - rilis 2.6.10</a></li>
+<li><a :data-current="activeSection === '#konsolidasi-rilis-2-6-10-dan-perubahan-lokal'" class="reference internal" href="#konsolidasi-rilis-2-6-10-dan-perubahan-lokal">21. Konsolidasi rilis 2.6.10 dan perubahan lokal</a></li>
 </ul>
 </div>
 </aside>

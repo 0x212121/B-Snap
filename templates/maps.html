@@ -208,6 +208,7 @@
 
 <script>
   const MAP_TITLE = {{ map_title | tojson }};
+  const MAP_LOGO = {{ map_logo_url | default(none) | tojson }};
   document.addEventListener('DOMContentLoaded', async function initializeMap() {
     const statusPanel = document.getElementById('map-data-status');
     const retryButton = document.getElementById('map-data-retry');
@@ -328,7 +329,20 @@
     updateBaseLayerLabels();
     
     // Title, filter, stats controls
-    L.Control.MapTitle = L.Control.extend({ onAdd: function () { const div = L.DomUtil.create('div', 'leaflet-control-map-title'); div.innerHTML = `<div class="custom-title-bar"><img src="/static/icons/logo.png" alt="Logo KPC" class="title-logo"><span class="title-text"></span></div>`; div.querySelector('.title-text').textContent = MAP_TITLE; L.DomEvent.disableClickPropagation(div); return div; }, });
+    L.Control.MapTitle = L.Control.extend({ onAdd: function () {
+      const div = L.DomUtil.create('div', 'leaflet-control-map-title');
+      div.innerHTML = '<div class="custom-title-bar"><span class="title-text"></span></div>';
+      if (MAP_LOGO) {
+        const logo = document.createElement('img');
+        logo.className = 'title-logo';
+        logo.src = MAP_LOGO;
+        logo.alt = MAP_TITLE;
+        div.firstElementChild.prepend(logo);
+      }
+      div.querySelector('.title-text').textContent = MAP_TITLE;
+      L.DomEvent.disableClickPropagation(div);
+      return div;
+    }, });
     L.control.mapTitle = function (opts) { return new L.Control.MapTitle(opts); };
     L.control.mapTitle({ position: "topleft" }).addTo(map);
     

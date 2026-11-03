@@ -1452,6 +1452,10 @@ select {
   visibility: visible;
 }
 
+.invisible {
+  visibility: hidden;
+}
+
 .collapse {
   visibility: collapse;
 }
@@ -3402,10 +3406,6 @@ select {
 
 .pl-4 {
   padding-left: 1rem;
-}
-
-.pl-8 {
-  padding-left: 2rem;
 }
 
 .pl-9 {
@@ -5580,10 +5580,6 @@ select {
 }
 
 @media (min-width: 768px) {
-  .md\:col-span-1 {
-    grid-column: span 1 / span 1;
-  }
-
   .md\:col-span-2 {
     grid-column: span 2 / span 2;
   }
@@ -5631,6 +5627,14 @@ select {
 }
 
 @media (min-width: 1024px) {
+  .lg\:sticky {
+    position: sticky;
+  }
+
+  .lg\:top-20 {
+    top: 5rem;
+  }
+
   .lg\:col-span-1 {
     grid-column: span 1 / span 1;
   }
@@ -5673,6 +5677,10 @@ select {
 
   .lg\:grid-cols-12 {
     grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .lg\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .lg\:grid-cols-3 {

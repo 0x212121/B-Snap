@@ -110,3 +110,50 @@ async def test_report_embeds_chart_image(
         assert "activity trend index is 50/100 (stable)" in text
         assert "Ringkasan Eksekutif" not in text
     assert "2026-10-01_2026-10-15.pdf" in response.headers["content-disposition"]
+
+
+@pytest.mark.asyncio
+async def test_report_uses_custom_brand_safely(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Apply the configured name without treating it as ReportLab markup."""
+    request = MagicMock()
+    request.form = AsyncMock(return_value={"language": "id"})
+    monkeypatch.setattr(
+        insights,
+        "read_branding",
+        lambda _db: {"name": "Acme <CCTV>", "logo": "/static/icons/b-snap.png"},
+    )
+    monkeypatch.setattr(insights, "get_current_timezone", lambda _db: "Asia/Makassar")
+    monkeypatch.setattr(insights, "_total_count", lambda *_args, **_kwargs: 0)
+    monkeypatch.setattr(insights, "get_top_commands", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(insights, "get_top_cameras_by_email", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(insights, "LOGO_PATH", "missing-report-test-logo.png")
+    monkeypatch.setattr(
+        insights,
+        "get_camera_operations_data",
+        AsyncMock(
+            return_value={
+                "total_uptime_seconds": 0,
+                "total_downtime_seconds": 0,
+                "total_offline_incidents": 0,
+                "top_downtime_cameras": [],
+            }
+        ),
+    )
+    paragraphs = []
+    original = insights.Paragraph
+
+    def capture(*args, **kwargs):
+        paragraph = original(*args, **kwargs)
+        paragraphs.append(paragraph.getPlainText())
+        return paragraph
+
+    monkeypatch.setattr(insights, "Paragraph", capture)
+    response = await insights.get_executive_report_pro(
+        request,
+        db=MagicMock(),
+        start_date="2026-10-01",
+        end_date="2026-10-15",
+        current_admin=MagicMock(),
+    )
+    assert b"".join([chunk async for chunk in response.body_iterator]).startswith(b"%PDF-")
+    assert "Laporan Eksekutif Acme <CCTV>" in paragraphs

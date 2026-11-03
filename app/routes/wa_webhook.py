@@ -24,6 +24,11 @@ from app.models.whitelist import RoleEnum, WhatsappWhitelist
 from app.routes.auth import admin_access_required, get_current_user
 from app.routes.ping import ping_ip
 from app.utils.wa_gateway import WAGatewayService, format_phone_number
+from app.utils.phone_numbers import (
+    legacy_whatsapp_lookup,
+    normalize_whatsapp_phone,
+    whatsapp_phone_variants,
+)
 from app.utils.response_helper import json_success_response, json_error_response
 from app.utils.wa_bot_commands import (
     CUSTOM_ACTION_ROLES,
@@ -59,14 +64,18 @@ WA_API_TOKEN_ID_KEY = "wa_bot_api_token_id"
 
 def _normalize_wa_sender(sender: str) -> str:
     """Normalize phone numbers and device-qualified GoWA JIDs identically."""
-    return format_phone_number(re.split(r"[@:]", str(sender).strip(), maxsplit=1)[0])
+    return legacy_whatsapp_lookup(re.split(r"[@:]", str(sender).strip(), maxsplit=1)[0]) or ""
 
 
 def _whitelisted_sender(db: Session, sender: str) -> WhatsappWhitelist | None:
     phone = _normalize_wa_sender(sender)
     if not phone:
         return None
-    return db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == phone).first()
+    return (
+        db.query(WhatsappWhitelist)
+        .filter(WhatsappWhitelist.phone_number.in_(whatsapp_phone_variants(phone)))
+        .first()
+    )
 
 
 def _command_access_error(entry: WhatsappWhitelist | None, command: dict) -> str:
@@ -784,7 +793,7 @@ class WABotHandler:
                 db=self.db, authorization=f"Bearer {token}",
             )
         else:
-            owner = self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == self._sender).first()
+            owner = _whitelisted_sender(self.db, self._sender)
         if not owner:
             raise ValueError("Image access is not authorized")
         camera = self.db.query(Camera).filter(Camera.id == snapshot.camera_id).first()
@@ -1278,14 +1287,17 @@ class WABotHandler:
             parts = argument.split(maxsplit=1)
             if not parts:
                 self.action_failed = True
-                return "Invalid whitelist format. Use a number in the format 628xxxxxxxxxx."
-            phone = re.sub(r"\D", "", parts[0])
-            if phone.startswith("08"):
-                phone = "628" + phone[1:]
-            if not re.fullmatch(r"628[1-9]\d{7,12}", phone):
+                return "Invalid whitelist format. Use an international number starting with +."
+            try:
+                phone = normalize_whatsapp_phone(parts[0])
+            except ValueError:
                 self.action_failed = True
-                return "Invalid phone number. Use the format 628xxxxxxxxxx."
-            entry = self.db.query(WhatsappWhitelist).filter(WhatsappWhitelist.phone_number == phone).first()
+                return "Invalid phone number. Use an international number starting with +."
+            entry = (
+                self.db.query(WhatsappWhitelist)
+                .filter(WhatsappWhitelist.phone_number.in_(whatsapp_phone_variants(phone)))
+                .first()
+            )
             if action == "whitelist_add":
                 if entry:
                     self.action_failed = True
@@ -1294,7 +1306,7 @@ class WABotHandler:
                 self.db.add(WhatsappWhitelist(phone_number=phone, name=name[:100], role=RoleEnum.user))
                 self.db.flush()
             else:
-                if phone == sender:
+                if legacy_whatsapp_lookup(phone) == legacy_whatsapp_lookup(sender):
                     self.action_failed = True
                     return "You cannot remove your own number from the whitelist."
                 if not entry:

@@ -14,6 +14,13 @@ from app.models.camera_group import CameraGroup
 from app.routes.auth import admin_access_required
 from app.schemas.whitelist_schema import WhitelistCreate, WhitelistUpdate
 from app.utils.audit_logger import log_audit
+from app.utils.phone_numbers import (
+    legacy_whatsapp_lookup,
+    normalize_phone_number,
+    normalize_whatsapp_phone,
+    whatsapp_phone_variants,
+)
+from sqlalchemy.exc import IntegrityError
 from app.core.logging_config import setup_logging
 
 
@@ -38,10 +45,12 @@ def get_whitelist(
     query = db.query(WhatsappWhitelist).options(joinedload(WhatsappWhitelist.group))
 
     if search:
+        phone_search = legacy_whatsapp_lookup(search)
         query = query.filter(
             or_(
                 WhatsappWhitelist.phone_number.ilike(f"%{search}%"),
-                WhatsappWhitelist.name.ilike(f"%{search}%")
+                WhatsappWhitelist.name.ilike(f"%{search}%"),
+                WhatsappWhitelist.phone_number.ilike(f"%{phone_search or search}%"),
             )
         )
 
@@ -67,7 +76,7 @@ def get_whitelist(
 
     # Calculate stats
     total_entries = db.query(WhatsappWhitelist).count()
-    
+
     # Role distribution
     admin_count = db.query(WhatsappWhitelist).filter(WhatsappWhitelist.role == RoleEnum.admin).count()
     user_count = db.query(WhatsappWhitelist).filter(WhatsappWhitelist.role == RoleEnum.user).count()
@@ -91,9 +100,10 @@ def get_whitelist(
 # ============================================================
 @router.get("/api/whitelist/group/{phone_number}", response_class=JSONResponse)
 def get_whitelist_group(phone_number: str, db: Session = Depends(get_db)):
+    variants = whatsapp_phone_variants(phone_number)
     entries = (
         db.query(WhatsappWhitelist)
-        .filter(WhatsappWhitelist.phone_number == phone_number)
+        .filter(WhatsappWhitelist.phone_number.in_(variants))
         .options(joinedload(WhatsappWhitelist.group))
         .all()
     )
@@ -115,7 +125,11 @@ def add_whitelist(
         logger.debug("Add whitelist request by %s (%s)", current_admin.username, request.client.host)
 
         # 🚫 Cek apakah nomor sudah ada
-        existing = db.query(WhatsappWhitelist).filter_by(phone_number=entry.phone_number).first()
+        existing = (
+            db.query(WhatsappWhitelist)
+            .filter(WhatsappWhitelist.phone_number.in_(whatsapp_phone_variants(entry.phone_number)))
+            .first()
+        )
         if existing:
             logger.warning("Attempt to add duplicate phone_number: %s", entry.phone_number)
             raise HTTPException(
@@ -142,6 +156,11 @@ def add_whitelist(
 
     except HTTPException:
         raise  # biarkan FastAPI kirim langsung 409
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail="Phone number already exists in whitelist."
+        ) from None
     except Exception as e:
         logger.error("Error in add_whitelist: %s", e, exc_info=True)
         db.rollback()
@@ -159,7 +178,11 @@ def delete_whitelist(
     current_admin: User = Depends(admin_access_required)
 ):
     try:
-        entry = db.query(WhatsappWhitelist).filter_by(phone_number=phone_number).first()
+        entry = (
+            db.query(WhatsappWhitelist)
+            .filter(WhatsappWhitelist.phone_number.in_(whatsapp_phone_variants(phone_number)))
+            .first()
+        )
         if not entry:
             raise HTTPException(404, "Not found")
 
@@ -174,6 +197,8 @@ def delete_whitelist(
             ip=request.client.host
         )
         return {"status": "deleted"}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Error in delete_whitelist: %s", e, exc_info=True)
         db.rollback()
@@ -192,7 +217,11 @@ def edit_whitelist(
     current_admin: User = Depends(admin_access_required)
 ):
     try:
-        entry = db.query(WhatsappWhitelist).filter_by(phone_number=phone_number).first()
+        entry = (
+            db.query(WhatsappWhitelist)
+            .filter(WhatsappWhitelist.phone_number.in_(whatsapp_phone_variants(phone_number)))
+            .first()
+        )
         if not entry:
             raise HTTPException(404, "Not found")
 
@@ -217,6 +246,8 @@ def edit_whitelist(
 
         return {"status": "updated"}
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Error in edit_whitelist: %s", e, exc_info=True)
         db.rollback()
@@ -271,9 +302,10 @@ async def import_whitelist_csv(
     current_admin: User = Depends(admin_access_required)
 ):
     """Bulk import whitelist entries from CSV file.
-    
+
     CSV Format: phone_number,name,role,group_name
-    - phone_number: required, format: 628xxxxxxxxxx
+    - phone_number: required, international number or local number with country column
+    - country: optional ISO country code, defaults to ID
     - name: optional
     - role: optional, default 'user' (values: user, admin)
     - group_name: optional
@@ -284,27 +316,27 @@ async def import_whitelist_csv(
             status_code=400,
             content={"status": "error", "message": "File must be a CSV"}
         )
-    
+
     try:
         content = await file.read()
         content_str = content.decode('utf-8')
-        
+
         csv_file = io.StringIO(content_str)
         reader = csv.DictReader(csv_file)
-        
+
         if not reader.fieldnames or 'phone_number' not in reader.fieldnames:
             return JSONResponse(
                 status_code=400,
                 content={"status": "error", "message": "CSV must have a 'phone_number' column"}
             )
-        
+
         # Cache groups for lookup
         groups = {g.name: g.id for g in db.query(CameraGroup).all()}
-        
+
         imported = 0
         skipped = 0
         errors = []
-        
+
         for row_num, row in enumerate(reader, start=2):
             try:
                 phone = row.get('phone_number', '').strip()
@@ -315,28 +347,38 @@ async def import_whitelist_csv(
                     errors.append(f"Row {row_num}: Missing phone_number")
                     skipped += 1
                     continue
-                
-                # Validate phone format
-                if not phone.startswith('628') or not phone[3:].isdigit():
-                    errors.append(f"Row {row_num}: Invalid phone format '{phone}'. Must start with 628")
+
+                try:
+                    country = row.get("country", "").strip()
+                    phone = (
+                        normalize_phone_number(phone, country)
+                        if country
+                        else normalize_whatsapp_phone(phone)
+                    )
+                except ValueError:
+                    errors.append(f"Row {row_num}: Invalid phone number or country")
                     skipped += 1
                     continue
-                
+
                 # Check if already exists
-                existing = db.query(WhatsappWhitelist).filter_by(phone_number=phone).first()
+                existing = (
+                    db.query(WhatsappWhitelist)
+                    .filter(WhatsappWhitelist.phone_number.in_(whatsapp_phone_variants(phone)))
+                    .first()
+                )
                 if existing:
                     skipped += 1
                     continue
-                
+
                 # Parse role
                 role = RoleEnum.admin if role_str == 'admin' else RoleEnum.user
-                
+
                 # Find group_id
                 group_id = groups.get(group_name) if group_name else None
                 if group_name and not group_id:
                     errors.append(f"Row {row_num}: Group '{group_name}' not found")
                     # Continue anyway, just without group
-                
+
                 # Create entry
                 entry = WhatsappWhitelist(
                     phone_number=phone,
@@ -346,13 +388,13 @@ async def import_whitelist_csv(
                 )
                 db.add(entry)
                 imported += 1
-                
+
             except Exception as e:
                 errors.append(f"Row {row_num}: {str(e)}")
                 skipped += 1
-        
+
         db.commit()
-        
+
         # Log audit
         log_audit(
             db=db,
@@ -362,7 +404,7 @@ async def import_whitelist_csv(
             ip=request.client.host,
             extra=f"Imported: {imported}, Skipped: {skipped}, Errors: {len(errors)}"
         )
-        
+
         return {
             "status": "success",
             "message": f"Import complete: {imported} imported, {skipped} skipped",
@@ -370,7 +412,7 @@ async def import_whitelist_csv(
             "skipped": skipped,
             "errors": errors[:10]
         }
-        
+
     except Exception as e:
         db.rollback()
         logger.error("Error importing whitelist: %s", e, exc_info=True)
