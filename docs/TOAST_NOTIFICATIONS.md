@@ -11,7 +11,7 @@ B-Snap includes a powerful toast notification system for real-time user feedback
 - 🌙 **Dark mode support**
 - 📱 **Responsive design**
 - ⏱️ **Auto-dismiss** with progress bar
-- 🔒 **Persistent notifications** (require manual close)
+- 🔒 **Sticky on-screen toasts** (no automatic dismissal; not an inbox)
 
 ## Quick Start
 
@@ -88,44 +88,24 @@ ToastPosition.BOTTOM_CENTER
 
 ```python
 # Camera events
-await NotificationService.camera_offline(camera_name="Front Gate", camera_id=1)
-await NotificationService.camera_online(camera_name="Front Gate", camera_id=1)
+await NotificationService.camera_offline(camera_name="Front Gate", camera_id="camera-uuid")
+await NotificationService.camera_online(camera_name="Front Gate", camera_id="camera-uuid")
 
 # Snapshot events
 await NotificationService.snapshot_saved(
     camera_name="Front Gate",
-    camera_id=1,
-    snapshot_id=123
+    camera_id="camera-uuid",
+    snapshot_id="snapshot-uuid"
 )
 
 ```
 
-## API Endpoints
+## Live delivery
 
-### Get Notifications
-```http
-GET /api/notifications/?unread_only=true&limit=50
-```
-
-### Get Unread Count
-```http
-GET /api/notifications/unread-count
-```
-
-### Mark as Read
-```http
-POST /api/notifications/{id}/read
-```
-
-### Mark All as Read
-```http
-POST /api/notifications/mark-all-read
-```
-
-### Delete Notification
-```http
-DELETE /api/notifications/{id}
-```
+Authenticated browsers receive toasts over `/ws`. The server checks the live
+session, target user, and camera-group access before delivery. There is no inbox,
+unread counter, or read/delete API: `/api/notifications/*` was removed in 2.6.3.
+Email delivery history uses independent tables and `/email-logs`.
 
 ## Demo Page
 
@@ -139,7 +119,7 @@ Visit `/demo/toast/` to see all notification types in action.
 from app.utils.notification_service import NotificationService
 
 @router.post("/cameras/{camera_id}/snapshot")
-async def take_snapshot(camera_id: int, request: Request, db: Session = Depends(get_db)):
+async def take_snapshot(camera_id: str, request: Request, db: Session = Depends(get_db)):
     try:
         # ... capture logic ...
         
@@ -178,28 +158,22 @@ async def scheduled_snapshot():
             )
 ```
 
-## Database Schema
+## On-screen duration and retired inbox
 
-Notifications can be persisted to the database:
+Use `duration=0` for a live toast that does not automatically disappear. The
+client-side `persistent` option also controls presentation only. Neither option
+stores a message in an inbox. The Python service no longer accepts `db`.
 
-```python
-# Save to database
-await NotificationService.send_toast(
-    message="Important message",
-    db=db,  # Pass database session
-    persistent=True
-)
-```
+The former persistence branch was inactive through the standard service. Its
+shared broadcast read/delete state and camera-ID type were unsuitable for a
+personal inbox, so the model and API were removed rather than activated.
 
-Table: `notifications`
-- `id`: Primary key
-- `title`: Notification title
-- `message`: Notification content
-- `type`: success/error/warning/info
-- `user_id`: Target user (null = broadcast)
-- `camera_id`: Associated camera
-- `is_read`: Read timestamp
-- `created_at`: Creation timestamp
+Apply migration `20261103_retire_inbox` with `alembic upgrade head` before starting
+the updated workers. It renames `notifications` to `retired_notifications`, keeping
+any historical rows for rollback. The archive has no model, routes, or new writes;
+Alembic autogenerate excludes it. Downgrade renames it back without discarding rows.
+The migration does not change `notification_queue`, email logs, recipients, or
+email retry state. Never delete the old migration that originally created the table.
 
 ## Configuration
 

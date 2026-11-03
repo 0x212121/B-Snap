@@ -6,11 +6,12 @@ migration ke database aplikasi, capture kamera, atau pengiriman notifikasi nyata
 
 **Pembaruan 2.6.1:** seluruh temuan High yang tersisa (CA-19, CA-20, CA-27,
 CA-28) telah diperbaiki pada source dan diverifikasi secara terisolasi. Hasil
-rilis awal tetap dicatat sebagai riwayat; hasil terbaru ada di bagian 11.
+rilis awal tetap dicatat sebagai riwayat. Bagian 12 mencatat perbaikan WebSocket
+2.6.2; bagian 13 mencatat penghentian inbox CA-22 pada 2.6.3.
 
 ## 1. Arsitektur dan cakupan
 
-- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.2**. Minimum Python **3.11**, default image Docker
+- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.3**. Minimum Python **3.11**, default image Docker
   **Python 3.14.7**; verifikasi lokal memakai Python **3.13** dan Node **22.16.0**.
 - FastAPI menyediakan halaman Jinja2 dan API; SQLAlchemy 2 dan Alembic memakai
   PostgreSQL. Model JSONB dan trigger audit membuat schema penuh tidak kompatibel
@@ -29,8 +30,8 @@ rilis awal tetap dicatat sebagai riwayat; hasil terbaru ada di bagian 11.
 
 [Inventaris sumber dan endpoint](comprehensive_audit_2026_11_02_inventory.json)
 mencatat file, hash, syntax/compile check, serta dependency yang dideklarasikan.
-Inventaris hasil 2.6.2 mencakup **288 file Python, 55 template, 15 JavaScript,
-5 harness CJS, dan 266 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
+Inventaris hasil 2.6.3 mencakup **289 file Python, 55 template, 15 JavaScript,
+5 harness CJS, dan 260 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
 belum tentu didaftarkan; tidak sama dengan jumlah URL unik yang aktif.
 
 Semua file pada inventaris menerima pemeriksaan statis. Penelusuran mendalam dan
@@ -50,7 +51,8 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 | 3 | CA-07–11, CA-17, CA-25 | Medium: kontrak error, sesi, waktu, UI | Kecil–sedang; backward compatibility dijaga | Diperbaiki |
 | 4 | CA-12, CA-15–16, CA-26 | Test/dependency/release consistency | Pembaruan kompatibel; tanpa deploy | Diperbaiki sebagian/seluruhnya sesuai rincian |
 | 5 | CA-19–20, CA-27–28 | High: CSRF, produksi, webhook, health group | Middleware, migration, dan kontrak integrasi | Diperbaiki pada 2.6.1; lihat bagian 11 |
-| Berikutnya | CA-21–24 dan sisa CA-12/15/17 | Notification model, UI/debt, test/dependency | Memerlukan desain/validasi tambahan | Backlog non-High |
+| 6 | CA-22 | Inbox persisten tidak digunakan pada jalur standar | Hapus fitur dan arsipkan data legacy | Dihapus pada 2.6.3 |
+| Berikutnya | CA-21/23/24 dan sisa CA-12/15/17 | UI/debt, test/dependency | Memerlukan desain/validasi tambahan | Backlog non-High |
 
 ## 3. Findings: Backend
 
@@ -478,23 +480,30 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
   audit ini tidak melakukan pull/build/push atau menjalankan Compose.
 - **Verification:** version-check script dan release-version regression test.
 
-### CA-22 — Model notifikasi persisten belum mempunyai state per penerima
+### CA-22 — Inbox persisten legacy: fitur dihentikan
 
-- **Layer / Severity / Status:** Cross-Layer / Medium / confirmed source issue,
-  backlog; berbeda dari perbaikan live delivery CA-18.
-- **Location / Evidence:** `Notification.is_read` berada pada satu row broadcast;
-  mark-all-read/delete API juga memasukkan user_id NULL. Camera ID model berupa
-  Integer, sementara primary key kamera berupa UUID string. Query persistent
-  notification belum memakai membership kamera.
-- **Root Cause:** model broadcast dipakai sekaligus sebagai inbox personal.
-- **Impact:** pengguna dapat memengaruhi status/broadcast milik pengguna lain;
-  persistent camera notification membutuhkan pemeriksaan grup dan tipe ID benar.
-- **Recommended Fix:** analisis data existing, migration camera ID dan receipt
-  per user, kebijakan delete broadcast, dan filter grup yang konsisten.
-- **Regression Risk:** perubahan schema/kontrak/read semantics; tidak aman mengklaim
-  selesai hanya dengan menyaring live toast atau mengganti satu tipe kolom.
-- **Verification:** PostgreSQL disposable, multi-user/group tests, migration round
-  trip, revocation, serta backward compatibility data notifikasi lama.
+- **Layer / Severity / Status:** Cross-Layer / Medium (potensial/bersyarat) /
+  bug laten dikonfirmasi dengan data sintetis; fitur dihapus pada 2.6.3.
+- **Evidence sebelum penghapusan:** `Notification.is_read` berada pada satu row
+  broadcast; satu pengguna membaca/menghapus dapat memengaruhi pengguna lain bila
+  data broadcast ada. Camera ID Integer tidak sesuai UUID kamera dan query inbox
+  belum memeriksa grup. Dampak pada database deployment tidak diverifikasi.
+- **Koreksi cakupan:** ini bukan email atau `/email-logs`. Email memakai
+  `CameraEmailNotificationLog`/recipients/retry terpisah. Jalur `send_toast()`
+  standar tidak mengaktifkan penyimpanan dan frontend tidak ditemukan memakai
+  API inbox. `duration=0` hanya mengatur tampilan toast, bukan penyimpanan.
+- **Implementasi atas instruksi pengguna:** hapus model, enam endpoint
+  `/api/notifications/*`, registrasi router/model, argumen `db`, dan blok insert
+  yang tidak aktif. Live toast dan pemeriksaan sesi/penerima/grup tetap tersedia.
+- **Migration:** `20261103_retire_inbox` mengarsipkan tabel sebagai
+  `retired_notifications`; tidak menghapus data historis. Downgrade memulihkan
+  nama/data lama. Tabel arsip dikecualikan dari Alembic autogenerate.
+- **Regression Risk:** integrasi eksternal inbox harus berhenti memakai endpoint
+  yang dihapus. Jalankan migration sebelum start worker baru; audit tidak
+  menjalankan migration pada database aplikasi pengguna.
+- **Verification:** endpoint tidak terdaftar/404, live toast authenticated dan
+  data `/api/email-logs` tetap berfungsi, PostgreSQL upgrade/downgrade/re-upgrade
+  mempertahankan inbox legacy, email log dan queue transport. Lihat bagian 13.
 
 ### CA-23 — Routing/dead code masih perlu konsolidasi
 
@@ -629,8 +638,8 @@ accessibility/contrast audit semua halaman, atau benchmark fan-out notifikasi.
 ## 9. Tindak lanjut
 
 1. Terapkan migration/configuration 2.6.1 dan acceptance test pada staging untuk
-   CA-19/20/27/28 yang sudah diperbaiki di source. Persistent notification (CA-22)
-   tetap backlog non-High.
+   CA-19/20/27/28 yang sudah diperbaiki di source. CA-22 dihentikan pada 2.6.3;
+   jalankan migration arsipnya saat menerapkan versi tersebut.
 2. Pisahkan manual diagnostic scripts dari pytest discovery dan siapkan database
    PostgreSQL test agar migration/trigger/schema bisa diuji rutin.
 3. Tuntaskan advisory build Moderate setelah analisis compatibility; tambahkan
@@ -738,3 +747,31 @@ tetap merupakan catatan historis; tidak menjalankan ulang migrasi PostgreSQL pad
 patch tanpa schema ini. Deployment perlu build/pakai image 2.6.2, mengatur origin
 HTTPS publik yang tepat, dan recreate web agar environment berubah. Petunjuk ada
 di [Cloudflare Tunnel setup](high_security_rollout.md#cloudflare-tunnel-websocket-and-toast-262).
+
+## 13. Penghapusan inbox persisten CA-22 — rilis 2.6.3
+
+Pada 3 November 2026, pengguna memilih menghapus fitur inbox persisten yang tidak
+dipakai daripada mengaktifkan ulang model broadcast yang bermasalah. Catatan
+temuan historis dipertahankan untuk traceability; tidak lagi menjadi backlog.
+Email, `/email-logs`, email retry, WhatsApp, toast langsung, dan notification_queue
+bukan bagian fitur yang dihapus. Sticky toast tetap hanya perilaku tampilan.
+
+- **799 pytest lulus, 1 skip**, pada 44 modul yang ditinjau aman, serta **142
+  unittest lulus**; bukan full-suite atau persentase keamanan aplikasi.
+- PostgreSQL 17 disposable memverifikasi migrasi dari database kosong/existing,
+  data inbox arsip tetap utuh saat upgrade/downgrade/re-upgrade, serta email log
+  dan queue transport tidak berubah. Autogenerate dengan hook environment nyata
+  tidak mengusulkan drop arsip. Schema fixture dibersihkan setelah tes.
+- Enam endpoint lama diuji 404 memakai daftar route produksi tanpa startup DB.
+  Toast diuji melalui service/delivery authenticated; email-log API memakai
+  subset SQLite yang kompatibel dan tidak mengirim email nyata.
+- Satu skip tetap tes DELETE RETURNING concurrency milik fixture SQLite.
+  PostgreSQL migration/concurrency tests lainnya dijalankan, bukan di-skip.
+- Script sinkronisasi versi 2.6.3, AST/Jinja/Node inventory, Ruff/Black pada
+  migration dan dua modul tes baru, serta `git diff --check` lulus.
+
+Log lokal: `tmp/retired-inbox-pytest.txt` dan `tmp/retired-inbox-unit.txt`.
+Migration baru `20261103_retire_inbox` adalah satu head setelah
+`20261102_high_security`. Apply dengan `alembic upgrade head` atau layanan migrate
+Compose sebelum menjalankan worker baru. Tidak ada deployment, perubahan `.env`,
+penghapusan data production, atau penerbitan image registry dalam pekerjaan ini.

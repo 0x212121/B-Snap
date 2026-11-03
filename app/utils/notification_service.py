@@ -1,8 +1,7 @@
 """Toast Notification Service for B-Snap.
 
-This module provides a service for sending toast notifications to users
-via WebSocket. It supports both immediate broadcasts and persistent
-notifications stored in the database.
+This module sends live toast notifications through authenticated WebSockets.
+The persistent option controls on-screen dismissal, not database storage.
 """
 
 from __future__ import annotations
@@ -13,11 +12,8 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Optional
 
-from sqlalchemy.orm import Session
-
 from app.ws.manager import websocket_connections
 from app.ws.record_notifications import deliver_notification
-from app.models.notification import Notification
 
 logger = logging.getLogger("notifications")
 
@@ -44,7 +40,7 @@ class ToastPosition(str, Enum):
 
 class ToastNotification:
     """Toast notification data class."""
-    
+
     def __init__(
         self,
         message: str,
@@ -55,7 +51,7 @@ class ToastNotification:
         dismissible: bool = True,
         persistent: bool = False,
         user_id: Optional[int] = None,
-        camera_id: Optional[int] = None,
+        camera_id: Optional[str] = None,
         actions: Optional[list[dict[str, str]]] = None,
     ):
         self.message = message
@@ -68,7 +64,7 @@ class ToastNotification:
         self.user_id = user_id
         self.camera_id = camera_id
         self.actions = actions or []
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
@@ -87,7 +83,7 @@ class ToastNotification:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         }
-    
+
     def to_json(self) -> str:
         """Convert to JSON string."""
         return json.dumps(self.to_dict())
@@ -105,24 +101,22 @@ class NotificationService:
         position: ToastPosition = ToastPosition.TOP_RIGHT,
         dismissible: bool = True,
         user_id: Optional[int] = None,
-        camera_id: Optional[int] = None,
+        camera_id: Optional[str] = None,
         actions: Optional[list[dict[str, str]]] = None,
-        db: Optional[Session] = None,
     ) -> ToastNotification:
         """Send a toast notification via WebSocket.
-        
+
         Args:
             message: The notification message
             title: Optional title for the notification
             toast_type: Type of notification (success, error, warning, info)
-            duration: Duration in milliseconds (0 for persistent)
+            duration: Duration in milliseconds (0 disables automatic dismissal)
             position: Position on screen
             dismissible: Whether user can dismiss the toast
             user_id: Target user ID (None = broadcast to all)
             camera_id: Associated camera ID
             actions: Optional action buttons [{"label": "View", "url": "/cameras/1"}]
-            db: Database session for persistent notifications
-            
+
         Returns:
             The created ToastNotification object
         """
@@ -137,23 +131,6 @@ class NotificationService:
             camera_id=camera_id,
             actions=actions,
         )
-
-        # Save to database if persistent
-        if db and toast.persistent:
-            notification = Notification(
-                title=toast.title,
-                message=toast.message,
-                type=toast.type.value,
-                user_id=toast.user_id,
-                camera_id=toast.camera_id,
-            )
-            db.add(notification)
-            try:
-                db.commit()
-                db.refresh(notification)
-            except Exception as e:
-                db.rollback()
-                logger.error(f"Failed to save notification to database: {e}")
 
         # Send via WebSocket
         await NotificationService._broadcast(toast)
@@ -251,7 +228,7 @@ class NotificationService:
     # ==================== System Notifications ====================
 
     @staticmethod
-    async def camera_offline(camera_name: str, camera_id: int, **kwargs) -> ToastNotification:
+    async def camera_offline(camera_name: str, camera_id: str, **kwargs) -> ToastNotification:
         """Notify when a camera goes offline."""
         return await NotificationService.error(
             message=f"Camera '{camera_name}' is offline",
@@ -262,7 +239,7 @@ class NotificationService:
         )
 
     @staticmethod
-    async def camera_online(camera_name: str, camera_id: int, **kwargs) -> ToastNotification:
+    async def camera_online(camera_name: str, camera_id: str, **kwargs) -> ToastNotification:
         """Notify when a camera comes online."""
         return await NotificationService.success(
             message=f"Camera '{camera_name}' is back online",
@@ -273,7 +250,9 @@ class NotificationService:
         )
 
     @staticmethod
-    async def snapshot_saved(camera_name: str, camera_id: int, snapshot_id: int, **kwargs) -> ToastNotification:
+    async def snapshot_saved(
+        camera_name: str, camera_id: str, snapshot_id: str, **kwargs
+    ) -> ToastNotification:
         """Notify when snapshot is saved."""
         return await NotificationService.success(
             message=f"Snapshot saved from '{camera_name}'",
@@ -283,6 +262,7 @@ class NotificationService:
             duration=4000,
             **kwargs
         )
+
 
 # ==================== HTTP Context Helper ====================
 

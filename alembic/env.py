@@ -29,12 +29,22 @@ import app.models  # noqa: F401
 target_metadata = Base.metadata
 
 
+def include_object(
+    _object: object, name: str, type_: str, reflected: bool, compare_to: object | None
+) -> bool:
+    """Keep retired inbox data outside autogenerate's managed runtime tables."""
+    return not (
+        type_ == "table" and reflected and name == "retired_notifications" and compare_to is None
+    )
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
+        include_object=include_object,
         version_table_schema="public",
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -48,7 +58,11 @@ def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
     supplied_connection = config.attributes.get("connection")
     if supplied_connection is not None:
-        context.configure(connection=supplied_connection, target_metadata=target_metadata)
+        context.configure(
+            connection=supplied_connection,
+            target_metadata=target_metadata,
+            include_object=include_object,
+        )
         with context.begin_transaction():
             context.run_migrations()
         return
@@ -63,6 +77,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+            include_object=include_object,
         )
 
         with context.begin_transaction():

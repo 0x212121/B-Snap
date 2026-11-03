@@ -18,7 +18,6 @@ from .whitelist import WhatsappWhitelist
 from .task_timing import TaskTiming
 from .audit_log import AuditLog, AuditLogLegacy, AuditArchiveHistory
 from .storage_metric import StorageMetric, StorageAlert
-from .notification import Notification
 
 # Additional models
 from .recipient import GroupRecipient
@@ -64,7 +63,6 @@ __all__ = [
     "AuditArchiveHistory",
     "StorageMetric",
     "StorageAlert",
-    "Notification",
     "GroupRecipient",
     "CommandLog",
     "ApiLog",

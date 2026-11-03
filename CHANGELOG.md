@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.6.3] - 2026-11-03
+
+### Removed
+
+- Removed the unused persistent toast inbox (CA-22), its `/api/notifications/*` endpoints, ORM model, and dormant database-write branch. Live authenticated WebSocket toasts, on-screen dismissal behavior, email delivery/retries, and `/email-logs` remain available.
+- Migration `20261103_retire_inbox` renames the legacy table to `retired_notifications`, retaining historical rows for rollback; Alembic autogenerate excludes this archive from managed runtime tables. The removed service no longer accepts a database session for inbox storage. Run `alembic upgrade head` before starting the updated workers.
+
 ## [2.6.2] - 2026-11-02
 
 ### Fixed

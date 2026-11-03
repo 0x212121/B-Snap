@@ -35,10 +35,37 @@ from app.utils.timezone_helper import clear_timezone_cache
 # Register all models without performing schema changes during web startup.
 import app.models  # noqa: F401 - imports all models via __init__.py
 from app.routes import (
-    admin, auth, audit, audit_log, cameras, camera_groups, config, dev_docs, docs, health, jobs, logs, maps,
-    nvrs, ping, resolve_ip, setup, snap_gallery, snapshots, stats,
-    user_management, user_profile, videos, whitelist, group_recipients, email_logs, wa_webhook,
-    notifications, toast_demo, email_templates, online_users, record_checks
+    admin,
+    auth,
+    audit,
+    audit_log,
+    cameras,
+    camera_groups,
+    config,
+    dev_docs,
+    docs,
+    health,
+    jobs,
+    logs,
+    maps,
+    nvrs,
+    ping,
+    resolve_ip,
+    setup,
+    snap_gallery,
+    snapshots,
+    stats,
+    user_management,
+    user_profile,
+    videos,
+    whitelist,
+    group_recipients,
+    email_logs,
+    wa_webhook,
+    toast_demo,
+    email_templates,
+    online_users,
+    record_checks,
 )
 from app.routes import insights
 from app.ws.routes import notification_listener, router as ws_router
@@ -293,7 +320,6 @@ app.include_router(email_logs.router)
 app.include_router(email_templates.router)
 app.include_router(wa_webhook.router)
 app.include_router(insights.router)
-app.include_router(notifications.router)
 app.include_router(jobs.router)
 app.include_router(camera_groups.router)
 app.include_router(online_users.router)

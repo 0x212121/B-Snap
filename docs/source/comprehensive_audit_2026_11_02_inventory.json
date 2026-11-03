@@ -2,20 +2,20 @@
   "audit_date": "2026-11-02",
   "scope": "Source inventory and static checks; not equivalent to runtime or security coverage",
   "counts": {
-    ".py": 288,
+    ".py": 289,
     ".cjs": 5,
     ".js": 15,
     ".html": 55
   },
-  "route_declarations": 266,
+  "route_declarations": 260,
   "syntax_errors": [],
   "template_errors": [],
   "js_errors": [],
   "files": [
     {
       "path": "alembic/env.py",
-      "lines": 75,
-      "sha256": "cd48d5b16011ec1120e5beae4f23d8af28313469ab36fe33b2adc0e7f65e614a",
+      "lines": 90,
+      "sha256": "de4d4d57cc9d73eee6bf1eb417519868bb8814633702891cc0102a5e5f0a2517",
       "check": "AST syntax and structural scan"
     },
     {
@@ -184,6 +184,12 @@
       "path": "alembic/versions/20261102_high_security.py",
       "lines": 47,
       "sha256": "e5c7466afdc9e70409418dbd0108a8895a44a137c4f3da843228246cc0709cd4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20261103_retire_inbox.py",
+      "lines": 24,
+      "sha256": "04ad9b3da25857e834d6e92e235ca6d4772e73286afdac95523c629ce11bf107",
       "check": "AST syntax and structural scan"
     },
     {
@@ -458,8 +464,8 @@
     },
     {
       "path": "app/main.py",
-      "lines": 455,
-      "sha256": "c06d969f14d4a924facd20edd6d88e9b36d52f458a8d31ec528303003f9343e8",
+      "lines": 481,
+      "sha256": "d27fdaa3e7d6056b5318764b3191c3770e6f6b4fd964d9fed2170e6666142f28",
       "check": "AST syntax and structural scan"
     },
     {
@@ -518,8 +524,8 @@
     },
     {
       "path": "app/models/__init__.py",
-      "lines": 88,
-      "sha256": "4d472e1e4b8a3fa3c9fe2fd7b329cc445e59d00382ebbf78c437d479f14bbaae",
+      "lines": 86,
+      "sha256": "4351332b599b68e0dae7b08a1666abc2b05af6050ad4d97314fed9d6f8dc5c1b",
       "check": "AST syntax and structural scan"
     },
     {
@@ -613,12 +619,6 @@
       "check": "AST syntax and structural scan"
     },
     {
-      "path": "app/models/notification.py",
-      "lines": 41,
-      "sha256": "e3075a5a0c186e1419a5284494db14b5e8b06feb6894bfa1309b572831b623cb",
-      "check": "AST syntax and structural scan"
-    },
-    {
       "path": "app/models/notification_queue.py",
       "lines": 12,
       "sha256": "1a7d1d08de052b1a1851e9172a1141833ef8a5cfee2da7e966f4840351c05f12",
@@ -704,8 +704,8 @@
     },
     {
       "path": "app/routes/__init__.py",
-      "lines": 64,
-      "sha256": "330e62c3f6fc67241467285eb7dbaced09b78bef52f2addee62e3c7953f8148c",
+      "lines": 62,
+      "sha256": "f195c3ea18039ab19537f2de6a4d527b8727b06556df408f8d59d60b7edf06b8",
       "check": "AST syntax and structural scan"
     },
     {
@@ -820,12 +820,6 @@
       "path": "app/routes/maps.py",
       "lines": 224,
       "sha256": "1b7354c6599ecd5474c6cf75ecb774cea7084fb307562cd878f5b79293f26184",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/notifications.py",
-      "lines": 170,
-      "sha256": "b0fb272fbb498aedd34d0a973313d6d6ecc9e096a880a1e9db4c53b514a76410",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1237,6 +1231,18 @@
       "check": "AST syntax and structural scan"
     },
     {
+      "path": "app/tests/test_retired_inbox.py",
+      "lines": 125,
+      "sha256": "09df4952c9588ec5cbe83c7ef66bae6f489164165e65346d98d1b4ec7750fa31",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_retired_inbox_postgres.py",
+      "lines": 90,
+      "sha256": "6b080b221d0b054f685b52f0bd15bab2e6da9d891cc85b0461a6d1c1bebc7db7",
+      "check": "AST syntax and structural scan"
+    },
+    {
       "path": "app/tests/test_runtime_dependencies.py",
       "lines": 59,
       "sha256": "188c61a9ce8445d045a6e981fa533b563340154d374c97e40e9156f757bc2973",
@@ -1574,8 +1580,8 @@
     },
     {
       "path": "app/utils/notification_service.py",
-      "lines": 301,
-      "sha256": "041fe4fcffb1102f0f266ba8ef47ba5f604ecb0fcd6b06d27176395a1c9fa117",
+      "lines": 281,
+      "sha256": "fa8cf662ea0fafd65f55609462b54e92dc521f7d5fce91adf0d9840ab50038e0",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1719,7 +1725,7 @@
     {
       "path": "app/version.py",
       "lines": 1,
-      "sha256": "e774a28b8c3a0485a7fb5461693caa50ee3a8037b89c309140301ca6c5851f6e",
+      "sha256": "b89e932cad7c8e10ab2f469c9418daecdce50062c0c998d5a57fa0ab7778eb59",
       "check": "AST syntax and structural scan"
     },
     {
@@ -2252,7 +2258,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 223,
+      "line": 250,
       "method": "GET",
       "path": "/static/snapshots/{path:path}",
       "function": "block_snapshot_access",
@@ -2260,7 +2266,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 243,
+      "line": 270,
       "method": "GET",
       "path": "/static/videos/{path:path}",
       "function": "block_video_access",
@@ -2268,7 +2274,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 308,
+      "line": 334,
       "method": "GET",
       "path": "/",
       "function": "root_redirect",
@@ -2276,7 +2282,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 381,
+      "line": 407,
       "method": "GET",
       "path": "/docs",
       "function": "custom_swagger_ui",
@@ -2284,7 +2290,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 396,
+      "line": 422,
       "method": "GET",
       "path": "/version",
       "function": "version",
@@ -2292,7 +2298,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 400,
+      "line": 426,
       "method": "GET",
       "path": "/debug/ip",
       "function": "debug_ip",
@@ -2300,7 +2306,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 411,
+      "line": 437,
       "method": "GET",
       "path": "/documentation-index",
       "function": "html_docs_redirect",
@@ -3493,72 +3499,6 @@
       "path": "/camera-locations",
       "function": "get_camera_locations",
       "declared_dependencies": []
-    },
-    {
-      "file": "app/routes/notifications.py",
-      "line": 26,
-      "method": "GET",
-      "path": "/",
-      "function": "get_notifications",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/notifications.py",
-      "line": 59,
-      "method": "GET",
-      "path": "/unread-count",
-      "function": "get_unread_count",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/notifications.py",
-      "line": 75,
-      "method": "POST",
-      "path": "/{notification_id}/read",
-      "function": "mark_as_read",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/notifications.py",
-      "line": 103,
-      "method": "POST",
-      "path": "/mark-all-read",
-      "function": "mark_all_as_read",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/notifications.py",
-      "line": 125,
-      "method": "DELETE",
-      "path": "/{notification_id}",
-      "function": "delete_notification",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/notifications.py",
-      "line": 151,
-      "method": "DELETE",
-      "path": "/",
-      "function": "clear_all_notifications",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
     },
     {
       "file": "app/routes/nvrs.py",
@@ -4931,6 +4871,6 @@
       "declared_dependencies": []
     }
   ],
-  "release_version": "2.6.2",
+  "release_version": "2.6.3",
   "hash_format": "SHA-256 of file bytes with CRLF normalized to LF"
 }
