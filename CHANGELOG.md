@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.6.5] - 2026-11-03
+
+### Fixed
+
+- Fixed CA-21: load camera-group camera/NVR/user counts with one SQL query using separately aggregated subqueries, preserving association-based camera membership, empty groups, sort order, response fields, totals, and admin access.
+- Added count/query-budget regressions and a reproducible before/after PostgreSQL HTTP benchmark. At 250 synthetic groups, SELECTs fell from 751 to 1 and median latency from 674.469 ms to 15.282 ms; all response bodies matched. See the [benchmark report](docs/source/benchmarks/camera_groups_2026_11_03.md) for datasets, p95, empty-case overhead and measurement limits. No schema migration is required.
+
 ## [2.6.4] - 2026-11-03
 
 ### Fixed

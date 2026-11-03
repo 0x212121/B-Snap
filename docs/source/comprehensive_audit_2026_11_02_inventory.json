@@ -2,7 +2,7 @@
   "audit_date": "2026-11-02",
   "scope": "Source inventory and static checks; not equivalent to runtime or security coverage",
   "counts": {
-    ".py": 290,
+    ".py": 292,
     ".cjs": 6,
     ".js": 15,
     ".html": 55
@@ -734,8 +734,8 @@
     },
     {
       "path": "app/routes/camera_groups.py",
-      "lines": 264,
-      "sha256": "86f8d661d1c507589b9a3a1313e009b0d07cdb8d14439273dd0aa2487e8827df",
+      "lines": 291,
+      "sha256": "9f952b5fae068808d4996471697d9455c760f045b9a68ce74c19604f1a8069e7",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1030,6 +1030,12 @@
       "path": "app/tests/test_auth_cookie_failures.py",
       "lines": 455,
       "sha256": "c60f7587cbbcbb690ba40e034c2878b920564723cc429811895049461e7e0f7b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_camera_group_counts.py",
+      "lines": 137,
+      "sha256": "9a09073ca4dcc6762cd65c812f7ff425c3ae31323a2f299672e0ac4ad0b3e32f",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1737,7 +1743,7 @@
     {
       "path": "app/version.py",
       "lines": 1,
-      "sha256": "38323023a49fcd69b1fc576dc027ebea4e539a936e03925dbc6c95fbd1bd62b3",
+      "sha256": "6fc2f77628e9b3ba1a30f98ea49cceb97c2f39c6c8baba3dc169ae3f088bf3ba",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1768,6 +1774,12 @@
       "path": "app/ws/routes.py",
       "lines": 119,
       "sha256": "1ea53124336421aff42df5178263e5d4c57e88f99da31bf80ffecdfa11ee7dd9",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/benchmark_camera_groups.py",
+      "lines": 268,
+      "sha256": "839bd8d43f4a60cb6e5bdc58f5699c57bb8ac3aca06da46eb673367e91637ae2",
       "check": "AST syntax and structural scan"
     },
     {
@@ -2600,7 +2612,7 @@
     },
     {
       "file": "app/routes/camera_groups.py",
-      "line": 65,
+      "line": 92,
       "method": "POST",
       "path": "/api/camera-groups",
       "function": "create_camera_group",
@@ -2611,7 +2623,7 @@
     },
     {
       "file": "app/routes/camera_groups.py",
-      "line": 123,
+      "line": 150,
       "method": "GET",
       "path": "/api/camera-groups/{group_id}",
       "function": "get_camera_group",
@@ -2622,7 +2634,7 @@
     },
     {
       "file": "app/routes/camera_groups.py",
-      "line": 149,
+      "line": 176,
       "method": "POST",
       "path": "/api/camera-groups/{group_id}/update",
       "function": "update_camera_group",
@@ -2633,7 +2645,7 @@
     },
     {
       "file": "app/routes/camera_groups.py",
-      "line": 214,
+      "line": 241,
       "method": "POST",
       "path": "/api/camera-groups/{group_id}/delete",
       "function": "delete_camera_group",
@@ -4883,6 +4895,6 @@
       "declared_dependencies": []
     }
   ],
-  "release_version": "2.6.4",
+  "release_version": "2.6.5",
   "hash_format": "SHA-256 of file bytes with CRLF normalized to LF"
 }

@@ -9,10 +9,11 @@ CA-28) telah diperbaiki pada source dan diverifikasi secara terisolasi. Hasil
 rilis awal tetap dicatat sebagai riwayat. Bagian 12 mencatat perbaikan WebSocket
 2.6.2; bagian 13 mencatat penghentian inbox CA-22 pada 2.6.3, dan bagian 14
 mencatat perbaikan timezone monitor CA-24 pada 2.6.4.
+Bagian 15 mencatat optimasi dan benchmark CA-21 pada 2.6.5.
 
 ## 1. Arsitektur dan cakupan
 
-- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.4**. Minimum Python **3.11**, default image Docker
+- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.5**. Minimum Python **3.11**, default image Docker
   **Python 3.14.7**; verifikasi lokal memakai Python **3.13** dan Node **22.16.0**.
 - FastAPI menyediakan halaman Jinja2 dan API; SQLAlchemy 2 dan Alembic memakai
   PostgreSQL. Model JSONB dan trigger audit membuat schema penuh tidak kompatibel
@@ -31,7 +32,7 @@ mencatat perbaikan timezone monitor CA-24 pada 2.6.4.
 
 [Inventaris sumber dan endpoint](comprehensive_audit_2026_11_02_inventory.json)
 mencatat file, hash, syntax/compile check, serta dependency yang dideklarasikan.
-Inventaris hasil 2.6.4 mencakup **290 file Python, 55 template, 15 JavaScript,
+Inventaris hasil 2.6.5 mencakup **292 file Python, 55 template, 15 JavaScript,
 6 harness/test CJS, dan 260 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
 belum tentu didaftarkan; tidak sama dengan jumlah URL unik yang aktif.
 
@@ -54,7 +55,8 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 | 5 | CA-19–20, CA-27–28 | High: CSRF, produksi, webhook, health group | Middleware, migration, dan kontrak integrasi | Diperbaiki pada 2.6.1; lihat bagian 11 |
 | 6 | CA-22 | Inbox persisten tidak digunakan pada jalur standar | Hapus fitur dan arsipkan data legacy | Dihapus pada 2.6.3 |
 | 7 | CA-24 | Timezone monitor pesan bot | API timezone metadata, formatter, dan filter UTC | Diperbaiki pada 2.6.4 |
-| Berikutnya | CA-21/23 dan sisa CA-12/15/17 | UI/debt, test/dependency | Memerlukan desain/validasi tambahan | Backlog non-High |
+| 8 | CA-21 | Query counts per grup | Satu query agregasi dan benchmark PostgreSQL | Diperbaiki pada 2.6.5 |
+| Berikutnya | CA-23 dan sisa CA-12/15/17 | UI/debt, test/dependency | Memerlukan desain/validasi tambahan | Backlog non-High |
 
 ## 3. Findings: Backend
 
@@ -175,15 +177,26 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 
 ### CA-21 — Query counts camera groups bertumbuh per grup
 
-- **Layer / Severity / Status:** Backend / Low / improvement opportunity, backlog.
-- **Location / Evidence:** loop `list_camera_groups` pada `app/routes/camera_groups.py`
-  melakukan query count kamera/NVR/user untuk setiap grup.
+- **Layer / Severity / Status:** Backend / Low / improvement opportunity,
+  diperbaiki dan dibenchmark pada 2.6.5.
+- **Location / Evidence sebelum perbaikan:** loop `get_camera_groups` pada
+  `app/routes/camera_groups.py` melakukan query count kamera/NVR/user per grup,
+  sehingga query data bertambah sebagai 1 + 3G.
 - **Issue / Root Cause:** agregasi per item, bukan grouped aggregation.
-- **Impact:** jumlah query meningkat mengikuti jumlah grup; tidak ada benchmark
-  produksi yang membuktikan latency pengguna pada audit ini.
-- **Recommended Fix:** grouped counts/subquery, dengan snapshot response-equivalence.
-- **Regression Risk:** duplicate membership dapat menggandakan count jika join salah.
-- **Verification:** tambahkan query-count test dan benchmark dataset staging.
+- **Impact:** pada PostgreSQL lokal, 250 grup memerlukan 751 SELECT dan median
+  674,469 ms. Latency deployment pengguna belum diukur.
+- **Implemented Fix:** agregasi kamera/association, NVR dan pengguna dalam subquery
+  terpisah, kemudian LEFT JOIN/COALESCE ke daftar grup. Satu SELECT untuk setiap
+  jumlah grup; urutan, field, total dan admin dependency tetap sama.
+- **Regression Risk:** join multiplication dicegah oleh agregasi terpisah;
+  shared camera dihitung per membership, legacy scalar tidak menjadi sumber
+  count. Kasus kosong memiliki overhead tetap sekitar 2 ms lebih tinggi dalam
+  benchmark ini, bukan klaim semua request selalu lebih cepat.
+- **Verification:** tujuh regresi mencakup ukuran 0/1/10/100, grup kosong,
+  shared camera, stale primary group, orphan association, NULL group user,
+  count/total/order dan role checks. Benchmark before/after memakai dataset yang
+  sama; body SHA-256 identik untuk semua ukuran. Pada 250 grup, median menjadi
+  15,282 ms dan satu SELECT; lihat bagian 15 dan laporan benchmark.
 
 ## 4. Findings: Middleware / integration
 
@@ -654,8 +667,9 @@ accessibility/contrast audit semua halaman, atau benchmark fan-out notifikasi.
 4. Selesaikan raw @apply halaman lain dan duplicate docs route; periksa EN/ID,
    keyboard, focus, empty/error/loading states per halaman. Timezone monitor bot
    telah diperbaiki pada 2.6.4.
-5. Agregasikan group counts dan ukur performa notification delivery dengan
-   dataset/jumlah browser representatif.
+5. Ukur performa notification delivery dengan dataset/jumlah browser representatif.
+   Group counts telah diagregasikan dan dibenchmark pada 2.6.5; ukur kembali pada
+   deployment bila membutuhkan angka kapasitas produksi.
 
 Audit ini memberikan bukti dan perbaikan yang dapat ditinjau, beserta backlog yang
 masih terbuka; tidak memberi sertifikasi bahwa aplikasi bebas seluruh kerentanan.
@@ -809,3 +823,39 @@ Jadwal bot, pengiriman WhatsApp/email, dan schema database tidak diubah.
 
 Artefak lokal: `tmp/wa-monitor-browser.json`, `tmp/wa-monitor-light-1440.png`,
 `tmp/wa-monitor-dark-1440.png`, dan `tmp/wa-monitor-dark-390.png`.
+
+## 15. Optimasi dan benchmark CA-21 — rilis 2.6.5
+
+Pada 3 November 2026, endpoint daftar grup diubah dari 1+3G SELECT menjadi satu
+SELECT. Subquery agregasi independen mempertahankan hitungan kamera berdasarkan
+association, NVR/user berdasarkan group_id, grup kosong dan sort nama. Tidak ada
+perubahan schema, migration, frontend, maupun aturan akses admin.
+
+[Laporan benchmark](benchmarks/camera_groups_2026_11_03.md) dan
+[raw measurements](benchmarks/camera_groups_2026_11_03.json) memuat lima dataset
+yang sama sebelum/sesudah, lima warmup dan 30 sampel per variant/dataset, median,
+p95, query count, source hash, dan response hash. PostgreSQL 17.9 memakai schema
+disposable; HTTP diukur melalui FastAPI TestClient dengan auth override dan
+session baru per request. Ini tidak mencakup jaringan Cloudflare atau auth nyata.
+
+| Grup | SELECT sebelum → sesudah | Median sebelum → sesudah |
+| ---: | ---: | ---: |
+| 0 | 1 → 1 | 4,340 → 6,315 ms |
+| 10 | 31 → 1 | 25,567 → 7,607 ms |
+| 50 | 151 → 1 | 113,492 → 8,864 ms |
+| 100 | 301 → 1 | 246,131 → 12,014 ms |
+| 250 | 751 → 1 | 674,469 → 15,282 ms |
+
+Pada 250 grup, median turun 97,73% (44,13× lebih cepat), p95 turun dari 736,654
+menjadi 25,173 ms, dan respons JSON identik. Ada overhead tetap sekitar 2 ms pada
+kasus tanpa grup; seluruh hasil merupakan pengukuran lokal, bukan SLA produksi.
+
+**810 pytest terpilih lulus, 1 skip**, pada 46 modul termasuk tujuh regresi count
+baru, security, timestamp, serta migration/concurrency PostgreSQL. Satu skip adalah
+tes DELETE RETURNING concurrency pada fixture SQLite yang sudah dicatat sebelumnya.
+Ruff/Black pada script benchmark dan test baru, syntax inventory, version sync
+2.6.5 serta whitespace check lulus. Log lokal: `tmp/ca21-tests.txt`.
+
+Script `scripts/benchmark_camera_groups.py` disertakan agar pengukuran dapat
+diulang pada PostgreSQL test yang dipilih. Tidak ada database aplikasi, kamera,
+SMTP/GoWA atau deployment production yang disentuh oleh benchmark ini.

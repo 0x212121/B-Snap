@@ -9,7 +9,7 @@ from sqlalchemy import func
 
 from app.db.database import get_db
 from app.models.camera_group import CameraGroup
-from app.models.camera import Camera
+from app.models.camera import Camera, camera_camera_groups
 from app.models.nvr import NVR
 from app.models.user import User
 from app.routes.auth import admin_access_required
@@ -40,25 +40,52 @@ async def get_camera_groups(
     current_admin: User = Depends(admin_access_required)
 ):
     """Get all camera groups with usage counts."""
-    groups = db.query(CameraGroup).order_by(CameraGroup.name).all()
-    
-    result = []
-    for group in groups:
-        # Count cameras and NVRs using this group
-        camera_count = db.query(func.count(Camera.id)).filter(Camera.groups.any(CameraGroup.id == group.id)).scalar()
-        nvr_count = db.query(func.count(NVR.id)).filter(NVR.group_id == group.id).scalar()
-        user_count = db.query(func.count(User.id)).filter(User.group_id == group.id).scalar()
-        
-        result.append({
+    # Aggregate each relationship independently so joins cannot multiply counts.
+    camera_counts = (
+        db.query(
+            camera_camera_groups.c.camera_group_id.label("group_id"),
+            func.count(Camera.id).label("count"),
+        )
+        .select_from(Camera)
+        .join(camera_camera_groups, camera_camera_groups.c.camera_id == Camera.id)
+        .group_by(camera_camera_groups.c.camera_group_id)
+        .subquery()
+    )
+    nvr_counts = (
+        db.query(NVR.group_id.label("group_id"), func.count(NVR.id).label("count"))
+        .group_by(NVR.group_id)
+        .subquery()
+    )
+    user_counts = (
+        db.query(User.group_id.label("group_id"), func.count(User.id).label("count"))
+        .group_by(User.group_id)
+        .subquery()
+    )
+    groups = (
+        db.query(
+            CameraGroup.id,
+            CameraGroup.name,
+            func.coalesce(camera_counts.c.count, 0).label("camera_count"),
+            func.coalesce(nvr_counts.c.count, 0).label("nvr_count"),
+            func.coalesce(user_counts.c.count, 0).label("user_count"),
+        )
+        .outerjoin(camera_counts, camera_counts.c.group_id == CameraGroup.id)
+        .outerjoin(nvr_counts, nvr_counts.c.group_id == CameraGroup.id)
+        .outerjoin(user_counts, user_counts.c.group_id == CameraGroup.id)
+        .order_by(CameraGroup.name)
+        .all()
+    )
+    return [
+        {
             "id": group.id,
             "name": group.name,
-            "camera_count": camera_count,
-            "nvr_count": nvr_count,
-            "user_count": user_count,
-            "total_usage": camera_count + nvr_count + user_count
-        })
-    
-    return result
+            "camera_count": group.camera_count,
+            "nvr_count": group.nvr_count,
+            "user_count": group.user_count,
+            "total_usage": group.camera_count + group.nvr_count + group.user_count,
+        }
+        for group in groups
+    ]
 
 
 @router.post("/api/camera-groups", response_class=JSONResponse)
