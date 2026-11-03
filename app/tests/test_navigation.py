@@ -80,7 +80,6 @@ def test_destination_permissions_are_preserved(role: str) -> None:
             "/admin/email-templates",
             "/admin/config",
             "/admin/jobs",
-            "/admin/powerbi-record-checks",
             "/admin/trash",
             "/logs",
             "/audit-logs",

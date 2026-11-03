@@ -28,12 +28,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.config import get_config
-from app.models.record_check import (
-    RecordFolderCheck,
-    RecordFolderStatus,
-    RecordSource,
-    RecordStatusEvent,
-)
+from app.models.record_check import RecordFolderCheck, RecordSource, RecordStatusEvent
 from app.utils.wa_gateway import WAGatewayService, format_phone_number
 
 logger = logging.getLogger("record_check")
@@ -332,91 +327,6 @@ def build_14_day_trend(
             row["active_count"] += 1 if item.active else 0
     rows.extend(channel_days.values())
     return rows
-
-
-def summarize_downtime_by_channel(
-    db: Session,
-    start_at: datetime,
-    end_at: datetime,
-    source_id: str | None = None,
-) -> list[dict]:
-    intervals = get_record_downtime_intervals(db, start_at, end_at, source_id)
-    statuses = db.query(RecordFolderStatus).options(
-        joinedload(RecordFolderStatus.source).joinedload(RecordSource.nvr),
-        joinedload(RecordFolderStatus.camera),
-    )
-    if source_id:
-        statuses = statuses.filter(RecordFolderStatus.source_id == source_id)
-
-    grouped: dict[tuple[str, str], dict] = {}
-    for status_row in statuses.all():
-        key = (status_row.source_id, status_row.folder_name)
-        grouped[key] = {
-            "source_id": status_row.source_id,
-            "source_name": status_row.source.name if status_row.source else None,
-            "nvr_name": (
-                status_row.source.nvr.hostname
-                if status_row.source and status_row.source.nvr
-                else None
-            ),
-            "folder_name": status_row.folder_name,
-            "channel_name": status_row.folder_name,
-            "camera_name": status_row.camera.hostname if status_row.camera else None,
-            "status": status_row.status,
-            "last_mtime": (
-                _as_aware(status_row.last_mtime).isoformat() if status_row.last_mtime else None
-            ),
-            "last_checked_at": (
-                _as_aware(status_row.last_checked_at).isoformat()
-                if status_row.last_checked_at
-                else None
-            ),
-            "incident_count": 0,
-            "active_incident_count": 0,
-            "downtime_seconds": 0,
-            "downtime_minutes": 0,
-            "history_downtime": "",
-        }
-
-    histories: dict[tuple[str, str], list[str]] = defaultdict(list)
-    for item in intervals:
-        key = (item.source_id, item.folder_name)
-        row = grouped.setdefault(
-            key,
-            {
-                "source_id": item.source_id,
-                "source_name": item.source_name,
-                "nvr_name": item.nvr_name,
-                "folder_name": item.folder_name,
-                "channel_name": item.folder_name,
-                "camera_name": item.camera_name,
-                "status": "unknown",
-                "last_mtime": None,
-                "last_checked_at": None,
-                "incident_count": 0,
-                "active_incident_count": 0,
-                "downtime_seconds": 0,
-                "downtime_minutes": 0,
-                "history_downtime": "",
-            },
-        )
-        row["incident_count"] += 1
-        row["active_incident_count"] += 1 if item.active else 0
-        row["downtime_seconds"] += item.duration_seconds
-        row["downtime_minutes"] = round(row["downtime_seconds"] / 60, 2)
-        if not row.get("camera_name") and item.camera_name:
-            row["camera_name"] = item.camera_name
-        recovery = _fmt_event_time(item.recovery_at) if item.recovery_at else "Still active"
-        histories[key].append(
-            f"{_fmt_event_time(item.problem_at)} -> {recovery} ({_duration_label(item.duration_seconds)})"
-        )
-
-    for key, row in grouped.items():
-        row["history_downtime"] = "; ".join(histories.get(key, []))
-
-    return sorted(
-        grouped.values(), key=lambda item: (item.get("source_name") or "", item["folder_name"])
-    )
 
 
 def format_daily_report_message(report: SourceDailyReport) -> str:

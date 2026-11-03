@@ -5,9 +5,9 @@
     ".py": 291,
     ".cjs": 6,
     ".js": 15,
-    ".html": 55
+    ".html": 54
   },
-  "route_declarations": 261,
+  "route_declarations": 254,
   "syntax_errors": [],
   "template_errors": [],
   "js_errors": [],
@@ -836,8 +836,8 @@
     },
     {
       "path": "app/routes/record_checks.py",
-      "lines": 1106,
-      "sha256": "3848ed556b36b2c0ca115e4db8482604075ba774822ae2e15bffa6c7124f33d5",
+      "lines": 790,
+      "sha256": "8c6dd356157648016bd764d194db610389b130b4e8b9200a42c3c674348aaf73",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1196,8 +1196,8 @@
     },
     {
       "path": "app/tests/test_navigation.py",
-      "lines": 110,
-      "sha256": "3acedac837d73f534c5fdceb189f56bc3cb6705d9dfdc24a333066f84df353da",
+      "lines": 109,
+      "sha256": "95d8acac52e07a67a52997b5b91183aa5a905fa0f56a7feeb85f046a632e8b98",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1220,8 +1220,8 @@
     },
     {
       "path": "app/tests/test_record_mount.py",
-      "lines": 488,
-      "sha256": "9e922d5ebf75300e5d5ce9b37910667403a3819c45dbd32599d13257de8b224f",
+      "lines": 523,
+      "sha256": "4fbf1d17d405195e339f006ba9040929812bc890241a735b595696f1c100bfda",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1310,8 +1310,8 @@
     },
     {
       "path": "app/tests/test_ui_system.py",
-      "lines": 474,
-      "sha256": "65028283311c1761f2844b02ec2cafdaf6b08b52c34e6b92b45ddf36ec7e852a",
+      "lines": 473,
+      "sha256": "77c33f9c4426163afd4e3b71ced997cb158adc200d63364e3f360eb996967cee",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1616,8 +1616,8 @@
     },
     {
       "path": "app/utils/record_check_report.py",
-      "lines": 964,
-      "sha256": "963ce31121335f7fd47db807d501e7ba4817281ff22a3dd46b04e0d2841ace6d",
+      "lines": 874,
+      "sha256": "86ac8ccc34fe4cd0e2791cdc801b7d8b16af77057fcee916f024305eadc06fb5",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1682,8 +1682,8 @@
     },
     {
       "path": "app/utils/template_helper.py",
-      "lines": 323,
-      "sha256": "7b39ba38ab23ef7dc4558d4cf2c71bdc97b87b5f985cd4d53ade4096bf962d51",
+      "lines": 317,
+      "sha256": "b38079dabb2448ddd330f7cddbeda489763c18d0e230a52eab68387dd130081a",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1737,7 +1737,7 @@
     {
       "path": "app/version.py",
       "lines": 1,
-      "sha256": "dd644260a6b0c07e5766044c43c7d71281b20b3e58a2b6f24df396b98f525778",
+      "sha256": "fd256fd3dc03719a07d9ec86d5d4df09405a0cfe8f4190521f21ec8654408090",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1826,8 +1826,8 @@
     },
     {
       "path": "static/js/i18n.js",
-      "lines": 1140,
-      "sha256": "1bca70ad1027cbf48028e5bd9b3b3cdc8b8dd54075e9fc8737e9e70f480aebed",
+      "lines": 1138,
+      "sha256": "26223fc45274fb5781e27d959014953ac1944297d7ee44cf222c3c5f4df67400",
       "check": "Node syntax check"
     },
     {
@@ -2116,12 +2116,6 @@
       "path": "templates/partials/nvr_rows.html",
       "lines": 27,
       "sha256": "dea2eba57ceba39974caafaa8db284929367d3ad5caec9c4afafcab90c17a780",
-      "check": "Jinja template compile"
-    },
-    {
-      "path": "templates/powerbi_record_checks.html",
-      "lines": 203,
-      "sha256": "52e2fd3938f1fde7da217885b2d9722ea113cdbbb60528be3ea461ba04f41cbe",
       "check": "Jinja template compile"
     },
     {
@@ -3685,73 +3679,7 @@
     },
     {
       "file": "app/routes/record_checks.py",
-      "line": 247,
-      "method": "GET",
-      "path": "/api/powerbi/record-checks/sources",
-      "function": "powerbi_record_sources",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/record_checks.py",
-      "line": 278,
-      "method": "GET",
-      "path": "/api/powerbi/record-checks/current-status",
-      "function": "powerbi_record_current_status",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/record_checks.py",
-      "line": 337,
-      "method": "GET",
-      "path": "/api/powerbi/record-checks/runs",
-      "function": "powerbi_record_runs",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/record_checks.py",
-      "line": 386,
-      "method": "GET",
-      "path": "/api/powerbi/record-checks/folder-checks",
-      "function": "powerbi_record_folder_checks",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/record_checks.py",
-      "line": 446,
-      "method": "GET",
-      "path": "/api/powerbi/record-checks/events",
-      "function": "powerbi_record_events",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/record_checks.py",
-      "line": 500,
-      "method": "GET",
-      "path": "/api/powerbi/record-checks/downtime",
-      "function": "powerbi_record_downtime",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/record_checks.py",
-      "line": 532,
+      "line": 224,
       "method": "GET",
       "path": "/admin/record-checks",
       "function": "record_checks_page",
@@ -3762,17 +3690,7 @@
     },
     {
       "file": "app/routes/record_checks.py",
-      "line": 542,
-      "method": "GET",
-      "path": "/admin/powerbi-record-checks",
-      "function": "powerbi_record_checks_page",
-      "declared_dependencies": [
-        "Depends(admin_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/record_checks.py",
-      "line": 550,
+      "line": 234,
       "method": "GET",
       "path": "/api/record-checks/sources",
       "function": "list_record_sources",
@@ -3783,7 +3701,7 @@
     },
     {
       "file": "app/routes/record_checks.py",
-      "line": 578,
+      "line": 262,
       "method": "POST",
       "path": "/api/record-checks/sources",
       "function": "create_record_source",
@@ -3794,7 +3712,7 @@
     },
     {
       "file": "app/routes/record_checks.py",
-      "line": 637,
+      "line": 321,
       "method": "PUT",
       "path": "/api/record-checks/sources/{source_id}",
       "function": "update_record_source",
@@ -3805,7 +3723,7 @@
     },
     {
       "file": "app/routes/record_checks.py",
-      "line": 729,
+      "line": 413,
       "method": "DELETE",
       "path": "/api/record-checks/sources/{source_id}",
       "function": "delete_record_source",
@@ -3816,7 +3734,7 @@
     },
     {
       "file": "app/routes/record_checks.py",
-      "line": 805,
+      "line": 489,
       "method": "POST",
       "path": "/api/record-checks/sources/{source_id}/run",
       "function": "run_record_source_now",
@@ -3827,7 +3745,7 @@
     },
     {
       "file": "app/routes/record_checks.py",
-      "line": 840,
+      "line": 524,
       "method": "POST",
       "path": "/api/record-checks/sources/{source_id}/mount",
       "function": "mount_record_source",
@@ -3835,7 +3753,7 @@
     },
     {
       "file": "app/routes/record_checks.py",
-      "line": 875,
+      "line": 559,
       "method": "POST",
       "path": "/api/record-checks/sources/{source_id}/unmount",
       "function": "unmount_record_source",
@@ -3843,7 +3761,7 @@
     },
     {
       "file": "app/routes/record_checks.py",
-      "line": 915,
+      "line": 599,
       "method": "GET",
       "path": "/api/record-checks/status",
       "function": "get_record_status",
@@ -3854,7 +3772,7 @@
     },
     {
       "file": "app/routes/record_checks.py",
-      "line": 979,
+      "line": 663,
       "method": "GET",
       "path": "/api/record-checks/cameras",
       "function": "list_record_mapping_cameras",
@@ -3865,7 +3783,7 @@
     },
     {
       "file": "app/routes/record_checks.py",
-      "line": 1007,
+      "line": 691,
       "method": "PUT",
       "path": "/api/record-checks/status/{status_id}/mapping",
       "function": "update_record_folder_mapping",
@@ -3876,7 +3794,7 @@
     },
     {
       "file": "app/routes/record_checks.py",
-      "line": 1065,
+      "line": 749,
       "method": "GET",
       "path": "/api/record-checks/runs",
       "function": "get_record_runs",
@@ -4901,6 +4819,6 @@
       "declared_dependencies": []
     }
   ],
-  "release_version": "2.6.8",
+  "release_version": "2.6.9",
   "hash_format": "SHA-256 of file bytes with CRLF normalized to LF"
 }

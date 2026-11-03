@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.6.9] - 2026-11-03
+
+### Removed
+
+- Retired Power BI Record Checks: removed its admin preview page, navigation entry, six `/api/powerbi/record-checks/*` dataset endpoints, dedicated channel-summary helper, translations and connector documentation. Retired URLs now return 404 and are absent from OpenAPI. Core record checks, source/mount configuration, status/history, daily reports, scheduler jobs, notifications and stored data remain available; no database migration is required.
+
 ## [2.6.8] - 2026-11-03
 
 ### Fixed

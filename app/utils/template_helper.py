@@ -155,12 +155,6 @@ nav_items = [
                 "roles": ["admin"],
             },
             {
-                "label": "Power BI Record Checks",
-                "href": "/admin/powerbi-record-checks",
-                "icon": "bar-chart",
-                "roles": ["admin"],
-            },
-            {
                 "label": "Trash Management",
                 "href": "/admin/trash",
                 "icon": "trash",

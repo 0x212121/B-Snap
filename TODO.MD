@@ -367,7 +367,6 @@ Webhook dan API untuk integrasi dengan sistem enterprise lainnya.
 - [ ] Prometheus metrics endpoint (`/health/metrics/prometheus`)
 - [ ] REST API untuk ITSM integration (ServiceNow, Jira)
 - [ ] Grafana datasource plugin
-- [ ] PowerBI connector
 
 **Endpoints:**
 ```python

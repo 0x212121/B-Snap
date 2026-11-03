@@ -177,7 +177,6 @@ class PageParser(HTMLParser):
         ("nvrs", {"nvr-table", "csvFileInput", "perPageSelect"}),
         ("camera_groups", {"loading-overlay", "stat-total"}),
         ("record_checks", {"sources-list", "sum-healthy"}),
-        ("powerbi_record_checks", set()),
         ("jobs", {"stat-total-runs"}),
         ("whitelist", {"whitelist-table", "stat-total"}),
         ("recipients", {"recipients-table", "stat-total"}),

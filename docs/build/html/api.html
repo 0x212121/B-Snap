@@ -24,9 +24,9 @@
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#030711" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>API Documentation | B-SNAP v2.6.8 documentation</title>
-  <meta property="og:title" content="API Documentation | B-SNAP v2.6.8 documentation" />
-  <meta name="twitter:title" content="API Documentation | B-SNAP v2.6.8 documentation" />
+  <title>API Documentation | B-SNAP v2.6.9 documentation</title>
+  <meta property="og:title" content="API Documentation | B-SNAP v2.6.9 documentation" />
+  <meta name="twitter:title" content="API Documentation | B-SNAP v2.6.9 documentation" />
   <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e72c8e07" />
   <link rel="stylesheet" type="text/css" href="_static/theme.css?v=73505e79" />
   <link rel="search" title="Search" href="search.html" />
@@ -44,7 +44,7 @@
       Skip to content
     </a><header class="sticky top-0 z-40 w-full border-b shadow-xs border-border bg-background/90 backdrop-blur"><div class="container flex items-center h-14">
     <div class="hidden mr-4 md:flex">
-      <a href="index.html" class="flex items-center mr-6"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.6.8 documentation</span>
+      <a href="index.html" class="flex items-center mr-6"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.6.9 documentation</span>
       </a></div><button
       class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden"
       type="button" @click="showSidebar = true">
@@ -100,7 +100,7 @@
   class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky"
   :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }">
 
-    <a href="index.html" class="justify-start text-sm md:!hidden bg-background"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.6.8 documentation</span>
+    <a href="index.html" class="justify-start text-sm md:!hidden bg-background"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.6.9 documentation</span>
     </a>
 
     <div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
@@ -142,7 +142,7 @@
      class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
   <a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground"
      href="index.html">
-    <span class="hidden md:inline">B-SNAP v2.6.8 documentation</span>
+    <span class="hidden md:inline">B-SNAP v2.6.9 documentation</span>
     <svg xmlns="http://www.w3.org/2000/svg"
          height="18"
          width="18"
@@ -555,66 +555,6 @@ executes the request, including starting a recording for POST nodes.</p>
 </div>
 <p>Statuses include <code class="docutils literal notranslate"><span class="pre">healthy</span></code>, <code class="docutils literal notranslate"><span class="pre">stale</span></code>, <code class="docutils literal notranslate"><span class="pre">long_dead</span></code>, <code class="docutils literal notranslate"><span class="pre">unknown</span></code>, and <code class="docutils literal notranslate"><span class="pre">missing</span></code>. Previously known folders that disappear are retained as <code class="docutils literal notranslate"><span class="pre">missing</span></code> so operators can investigate renamed or deleted folders.</p>
 </section>
-<section id="power-bi-record-check-endpoints">
-<h3>Power BI Record Check Endpoints<a class="headerlink" href="#power-bi-record-check-endpoints" title="Link to this heading"><span>#</span></a></h3>
-<p>These read-only endpoints are designed for Power BI Web connector usage through an on-premises Power BI Gateway. Use a B-SNAP API token in the <code class="docutils literal notranslate"><span class="pre">Authorization</span></code> header:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">Authorization: Bearer &lt;api_token&gt;
-</span></code></pre></div>
-</div>
-<p>Available datasets:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">GET /api/powerbi/record-checks/sources
-</span><span id="line-2">GET /api/powerbi/record-checks/current-status
-</span><span id="line-3">GET /api/powerbi/record-checks/runs
-</span><span id="line-4">GET /api/powerbi/record-checks/folder-checks
-</span><span id="line-5">GET /api/powerbi/record-checks/events
-</span><span id="line-6">GET /api/powerbi/record-checks/downtime
-</span></code></pre></div>
-</div>
-<p>All endpoints return flat JSON rows under <code class="docutils literal notranslate"><span class="pre">data</span></code>. Paginated endpoints also return <code class="docutils literal notranslate"><span class="pre">pagination</span></code> with <code class="docutils literal notranslate"><span class="pre">limit</span></code>, <code class="docutils literal notranslate"><span class="pre">offset</span></code>, <code class="docutils literal notranslate"><span class="pre">count</span></code>, <code class="docutils literal notranslate"><span class="pre">total</span></code>, <code class="docutils literal notranslate"><span class="pre">has_more</span></code>, and <code class="docutils literal notranslate"><span class="pre">next_offset</span></code>.</p>
-<p>Common parameters:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">limit</span></code>: 1-5000 rows per request, default 1000</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">offset</span></code>: zero-based offset for pagination</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">source_id</span></code>: optional source filter</p></li>
-<li><p>date filters use ISO-8601 timestamps, for example <code class="docutils literal notranslate"><span class="pre">2026-07-01T00:00:00+08:00</span></code></p></li>
-</ul>
-<p>Endpoint-specific filters:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">current-status</span></code>: <code class="docutils literal notranslate"><span class="pre">status</span></code>, <code class="docutils literal notranslate"><span class="pre">updated_since</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">runs</span></code>: <code class="docutils literal notranslate"><span class="pre">status</span></code>, <code class="docutils literal notranslate"><span class="pre">started_from</span></code>, <code class="docutils literal notranslate"><span class="pre">started_to</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">folder-checks</span></code>: <code class="docutils literal notranslate"><span class="pre">run_id</span></code>, <code class="docutils literal notranslate"><span class="pre">status</span></code>, <code class="docutils literal notranslate"><span class="pre">checked_from</span></code>, <code class="docutils literal notranslate"><span class="pre">checked_to</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">events</span></code>: <code class="docutils literal notranslate"><span class="pre">event_type</span></code>, <code class="docutils literal notranslate"><span class="pre">created_from</span></code>, <code class="docutils literal notranslate"><span class="pre">created_to</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">downtime</span></code>: required <code class="docutils literal notranslate"><span class="pre">start_at</span></code> and <code class="docutils literal notranslate"><span class="pre">end_at</span></code>, optional <code class="docutils literal notranslate"><span class="pre">source_id</span></code>, optional <code class="docutils literal notranslate"><span class="pre">group_by=channel|interval</span></code></p></li>
-</ul>
-<p>Use <code class="docutils literal notranslate"><span class="pre">/api/powerbi/record-checks/downtime</span></code> to calculate how long a channel was not recording in a selected time range. The default <code class="docutils literal notranslate"><span class="pre">group_by=channel</span></code> returns dashboard-ready rows with folder/channel name, camera name, current status, downtime history, incident count, and duration. <code class="docutils literal notranslate"><span class="pre">group_by=interval</span></code> returns each problem/recovery interval.</p>
-<p>Power Query example:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">let
-</span><span id="line-2">    BaseUrl = &quot;http://bsnap.local:8080&quot;,
-</span><span id="line-3">    Token = &quot;YOUR_API_TOKEN&quot;,
-</span><span id="line-4">    GetPage = (Offset as number) =&gt;
-</span><span id="line-5">        Json.Document(
-</span><span id="line-6">            Web.Contents(
-</span><span id="line-7">                BaseUrl,
-</span><span id="line-8">                [
-</span><span id="line-9">                    RelativePath = &quot;api/powerbi/record-checks/current-status&quot;,
-</span><span id="line-10">                    Query = [limit = &quot;1000&quot;, offset = Text.From(Offset)],
-</span><span id="line-11">                    Headers = [Authorization = &quot;Bearer &quot; &amp; Token]
-</span><span id="line-12">                ]
-</span><span id="line-13">            )
-</span><span id="line-14">        ),
-</span><span id="line-15">    Pages = List.Generate(
-</span><span id="line-16">        () =&gt; GetPage(0),
-</span><span id="line-17">        each [pagination][count] &gt; 0,
-</span><span id="line-18">        each if [pagination][has_more] then GetPage([pagination][next_offset]) else [pagination = [count = 0]],
-</span><span id="line-19">        each [data]
-</span><span id="line-20">    ),
-</span><span id="line-21">    Rows = List.Combine(Pages),
-</span><span id="line-22">    Table = Table.FromRecords(Rows)
-</span><span id="line-23">in
-</span><span id="line-24">    Table
-</span></code></pre></div>
-</div>
-</section>
 <section id="camera-mapping">
 <h3>Camera Mapping<a class="headerlink" href="#camera-mapping" title="Link to this heading"><span>#</span></a></h3>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">GET /api/record-checks/cameras
@@ -1007,7 +947,6 @@ applies to fallback images and scheduled delivery as well. This sends GoWA’s
 <li><a class="reference internal" href="#delete-source">Delete Source</a></li>
 <li><a class="reference internal" href="#run-check-now">Run Check Now</a></li>
 <li><a class="reference internal" href="#current-status-and-history">Current Status and History</a></li>
-<li><a class="reference internal" href="#power-bi-record-check-endpoints">Power BI Record Check Endpoints</a></li>
 <li><a class="reference internal" href="#camera-mapping">Camera Mapping</a></li>
 </ul>
 </li>
@@ -1083,7 +1022,7 @@ applies to fallback images and scheduled delivery as well. This sends GoWA’s
 </footer>
     </div>
 
-    <script src="_static/documentation_options.js?v=761e1704"></script>
+    <script src="_static/documentation_options.js?v=d266931d"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="_static/theme.js?v=582b20c5"></script>

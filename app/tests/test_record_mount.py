@@ -107,6 +107,41 @@ def api(record_db, monkeypatch, tmp_path):
         yield client, audit
 
 
+def test_powerbi_record_checks_are_retired(api: tuple[TestClient, list[dict]]) -> None:
+    """Old exports return 404 and disappear from OpenAPI; core routes remain."""
+    client, audit = api
+    paths = [
+        "/admin/powerbi-record-checks",
+        *[
+            f"/api/powerbi/record-checks/{dataset}"
+            for dataset in (
+                "sources",
+                "current-status",
+                "runs",
+                "folder-checks",
+                "events",
+                "downtime",
+            )
+        ],
+    ]
+    schema_paths = client.get("/openapi.json").json()["paths"]
+    assert not set(paths) & schema_paths.keys()
+    assert {
+        "/admin/record-checks",
+        "/api/record-checks/sources",
+        "/api/record-checks/status",
+        "/api/record-checks/runs",
+    } <= schema_paths.keys()
+    for role in ("admin", "operator", None):
+        if role:
+            client.headers["x-test-role"] = role
+        else:
+            client.headers.pop("x-test-role", None)
+        for path in paths:
+            assert client.get(path).status_code == 404
+    assert not audit
+
+
 def smb_payload(**changes):
     return {
         "name": "SMB recordings",

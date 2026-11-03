@@ -13,10 +13,11 @@ Bagian 15 mencatat optimasi dan benchmark CA-21 pada 2.6.5.
 Bagian 16 mencatat konsolidasi routing/review legacy CA-23 pada 2.6.6.
 Bagian 17 menuntaskan CSS halaman lain CA-17 pada 2.6.7.
 Bagian 18 mencatat konsolidasi formatter timezone audit hapus video pada 2.6.8.
+Bagian 19 mencatat penghentian integrasi Power BI Record Checks pada 2.6.9.
 
 ## 1. Arsitektur dan cakupan
 
-- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.8**. Minimum Python **3.11**, default image Docker
+- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.9**. Minimum Python **3.11**, default image Docker
   **Python 3.14.7**; verifikasi lokal memakai Python **3.13** dan Node **22.16.0**.
 - FastAPI menyediakan halaman Jinja2 dan API; SQLAlchemy 2 dan Alembic memakai
   PostgreSQL. Model JSONB dan trigger audit membuat schema penuh tidak kompatibel
@@ -35,8 +36,8 @@ Bagian 18 mencatat konsolidasi formatter timezone audit hapus video pada 2.6.8.
 
 [Inventaris sumber dan endpoint](comprehensive_audit_2026_11_02_inventory.json)
 mencatat file, hash, syntax/compile check, serta dependency yang dideklarasikan.
-Inventaris hasil 2.6.8 mencakup **291 file Python, 55 template, 15 JavaScript,
-6 harness/test CJS, dan 261 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
+Inventaris hasil 2.6.9 mencakup **291 file Python, 54 template, 15 JavaScript,
+6 harness/test CJS, dan 254 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
 belum tentu didaftarkan; tidak sama dengan jumlah URL unik yang aktif.
 
 Semua file pada inventaris menerima pemeriksaan statis. Penelusuran mendalam dan
@@ -967,3 +968,27 @@ di deployment; tidak melakukan deployment atau image registry publish otomatis.
   Ruff `videos.py` masih memiliki debt lama (124 menjadi 123 temuan), tanpa temuan
   baru. AST/Jinja/Node syntax inventory lulus; 291 Python, 55 template, 15 JS,
   6 CJS dan 261 deklarasi endpoint. Tidak menjalankan seluruh test suite.
+
+
+## 19. Penghentian Power BI Record Checks - rilis 2.6.9
+
+- Atas permintaan pengguna, halaman `/admin/powerbi-record-checks`, enam dataset
+  `/api/powerbi/record-checks/*`, entry navigasi, template preview, terjemahan, dan
+  dokumentasi connector dihapus. URL lama mengembalikan 404 dan tidak muncul lagi
+  pada OpenAPI. Backlog connector Power BI juga dihapus.
+- Helper `summarize_downtime_by_channel` khusus ekspor tersebut dihapus bersama
+  helper pagination/ISO khusus endpoint. `get_record_downtime_intervals` tetap
+  dipakai laporan harian; model/tabel dan seluruh data record checks dipertahankan.
+  Tidak ada migration atau penghapusan data pengguna.
+- Pemeriksaan recording utama tetap tersedia: halaman admin, source lokal/SMB/NFS,
+  mapping kamera, run/status/history, scheduler, daily report dan notifikasi.
+  Regression retirement memeriksa 404 untuk admin/operator/anonymous, absennya URL
+  pada OpenAPI, dan keberadaan route utama. Tes menggunakan database terisolasi
+  dan mock transport; tidak memindai storage atau mengirim pesan produksi.
+- Verifikasi: **303 tes pytest terarah dan 8 tes unittest lulus**, mencakup mounts,
+  laporan/notifikasi recording, navigasi/UI, audit security, scheduler timezone,
+  job schedules, static assets, dan image version. Ruff tidak menambah temuan pada
+  file berubah; Black bagian berubah lulus. Build CSS, version sync 2.6.9,
+  AST/Jinja/Node syntax inventory lulus: 291 Python, 54 template, 15 JS, 6 CJS,
+  254 deklarasi endpoint (tepat tujuh route Power BI dihapus). Suite penuh dan
+  acceptance deployment tidak dijalankan.
