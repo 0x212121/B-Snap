@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.6.7] - 2026-11-03
+
+### Fixed
+
+- Completed CA-17: compile the remaining page styles through Tailwind instead of shipping raw `@apply` in eight templates (cameras, NVRs, email logs, device health, recipients, users, WhatsApp whitelist and changelog). Restored table zebra/hover states, email reason badges, user role colors and changelog cards/markdown; scoped selectors to their page containers and removed obsolete badge/toggle rules already replaced by shared UI components.
+- Added a regression guard against uncompiled Tailwind directives in templates and generated CSS. Verified all eight pages at desktop/mobile sizes in light/dark themes with isolated synthetic data.
+
 ## [2.6.6] - 2026-11-03
 
 ### Fixed

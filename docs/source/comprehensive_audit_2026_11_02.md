@@ -11,10 +11,11 @@ rilis awal tetap dicatat sebagai riwayat. Bagian 12 mencatat perbaikan WebSocket
 mencatat perbaikan timezone monitor CA-24 pada 2.6.4.
 Bagian 15 mencatat optimasi dan benchmark CA-21 pada 2.6.5.
 Bagian 16 mencatat konsolidasi routing/review legacy CA-23 pada 2.6.6.
+Bagian 17 menuntaskan CSS halaman lain CA-17 pada 2.6.7.
 
 ## 1. Arsitektur dan cakupan
 
-- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.6**. Minimum Python **3.11**, default image Docker
+- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.7**. Minimum Python **3.11**, default image Docker
   **Python 3.14.7**; verifikasi lokal memakai Python **3.13** dan Node **22.16.0**.
 - FastAPI menyediakan halaman Jinja2 dan API; SQLAlchemy 2 dan Alembic memakai
   PostgreSQL. Model JSONB dan trigger audit membuat schema penuh tidak kompatibel
@@ -33,7 +34,7 @@ Bagian 16 mencatat konsolidasi routing/review legacy CA-23 pada 2.6.6.
 
 [Inventaris sumber dan endpoint](comprehensive_audit_2026_11_02_inventory.json)
 mencatat file, hash, syntax/compile check, serta dependency yang dideklarasikan.
-Inventaris hasil 2.6.6 mencakup **292 file Python, 55 template, 15 JavaScript,
+Inventaris hasil 2.6.7 mencakup **292 file Python, 55 template, 15 JavaScript,
 6 harness/test CJS, dan 261 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
 belum tentu didaftarkan; tidak sama dengan jumlah URL unik yang aktif.
 
@@ -58,7 +59,8 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 | 7 | CA-24 | Timezone monitor pesan bot | API timezone metadata, formatter, dan filter UTC | Diperbaiki pada 2.6.4 |
 | 8 | CA-21 | Query counts per grup | Satu query agregasi dan benchmark PostgreSQL | Diperbaiki pada 2.6.5 |
 | 9 | CA-23 | Routing dokumentasi dan review legacy | Canonical routes, alias, deprecation inventory | Diselesaikan pada 2.6.6 |
-| Berikutnya | Sisa CA-12/15/17 | UI/debt, test/dependency | Memerlukan desain/validasi tambahan | Backlog non-High |
+| 10 | CA-17 | CSS delapan halaman aktif | Build Tailwind, selector scoped, browser QA | Diselesaikan pada 2.6.7 |
+| Berikutnya | Sisa CA-12/15 | UI/debt, test/dependency | Memerlukan desain/validasi tambahan | Backlog non-High |
 
 ## 3. Findings: Backend
 
@@ -333,7 +335,7 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 ### CA-17 — Log viewer terpotong di mobile dan badge tidak diproses
 
 - **Layer / Severity / Status:** Frontend / Medium / confirmed issue, diperbaiki
-  untuk Logs Viewer; pola CSS sejenis pada halaman lain masih backlog.
+  untuk Logs Viewer pada audit awal dan delapan halaman lain pada 2.6.7.
 - **Location / Evidence:** sidebar w-72 dan main flex row tanpa min-width constraint;
   screenshot 390px memperlihatkan kontrol di luar viewport. CSS badge memakai
   Tailwind `@apply` pada style inline yang tidak melewati build.
@@ -345,10 +347,15 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 - **Regression Risk:** sidebar/file list memiliki scroll tersendiri pada mobile.
 - **Verification:** build CSS dan screenshot Chrome 1440×1000/390×844, light/dark;
   kontrol tersedia dan tidak ada horizontal overflow halaman.
-- **Remaining:** raw `@apply` ditemukan juga pada delapan template lain. Pindahkan
-  ke stylesheet build atau utility classes setelah memeriksa benturan selector
-  generik seperti `.status-badge`/`.role-badge`; jangan memindahkannya global secara
-  otomatis. Verifikasi visual masing-masing halaman diperlukan.
+- **Penyelesaian 2.6.7:** seluruh raw `@apply` pada delapan template aktif sudah
+  dihapus. Style yang masih dipakai dikompilasi dari `assets/css/tailwind.css`,
+  dibatasi oleh ID tabel atau `#changelog-content`. Aturan badge/toggle lama yang
+  sudah diganti komponen `ui-*` dihapus; tidak dijadikan selector global.
+- **Verification tambahan:** 32 kombinasi delapan halaman × desktop/mobile ×
+  light/dark; computed styles zebra/hover, warna badge, layout kartu, scope isolation,
+  screenshot, tanpa horizontal overflow halaman atau page error. Fixture memakai
+  template dan renderer badge/card asli dengan data sintetis; bukan acceptance test
+  deployment, layanan eksternal, atau seluruh alur CRUD.
 
 ### CA-24 — Monitor bot masih mengikuti clock browser untuk tanggal tertentu
 
@@ -678,7 +685,7 @@ accessibility/contrast audit semua halaman, atau benchmark fan-out notifikasi.
    PostgreSQL test agar migration/trigger/schema bisa diuji rutin.
 3. Tuntaskan advisory build Moderate setelah analisis compatibility; tambahkan
    Python dependency/image scan pada pipeline yang memiliki tool sesuai.
-4. Selesaikan raw @apply halaman lain; periksa EN/ID,
+4. Raw `@apply` halaman lain telah diselesaikan pada 2.6.7; lanjutkan QA EN/ID,
    keyboard, focus, empty/error/loading states per halaman. Timezone monitor bot
    telah diperbaiki pada 2.6.4. Duplikasi docs dan deprecation review CA-23
    diselesaikan pada 2.6.6.
@@ -913,3 +920,30 @@ Log/artefak lokal: `tmp/routing-tests.txt`, `tmp/documentation-browser.json`,
 Hasil ini tidak menyatakan seluruh file legacy sudah dihapus atau semua konten
 dokumentasi lama telah diaudit ulang. Rilis tetap memerlukan pembaruan source/image
 di deployment; tidak melakukan deployment atau image registry publish otomatis.
+
+
+## 17. Penyelesaian CSS halaman lain CA-17 — rilis 2.6.7
+
+- Cakupan: `cameras.html`, `nvrs.html`, `email_logs.html`, `health.html`,
+  `recipients.html`, `user_management.html`, `whitelist.html`, dan `changelog.html`.
+  Tidak ada lagi directive Tailwind mentah di template; browser menerima CSS hasil
+  build melalui stylesheet global yang sudah ada.
+- Style aktif dipindahkan ke layer components pada input Tailwind. Zebra/hover
+  memakai ID tabel; reason email, role pengguna, dan konten changelog memakai
+  selector di dalam kontainernya. Style obsolete untuk status/role badge dan toggle
+  dihapus karena markup telah memakai komponen bersama.
+- Verifikasi browser Chrome headless memakai template asli, CSS produksi dalam
+  urutan asli, renderer JavaScript badge/card asli, dan baris sintetis. Ukuran
+  1440×1000 serta 390×844, light/dark: **32 skenario lulus**, tanpa page error atau
+  overflow horizontal pada halaman. Tabel lebar tetap memakai scroll lokal.
+  Screenshot desktop/mobile diperiksa; probe di luar kontainer tidak terpengaruh.
+- Pengujian ini mengisolasi styling; script startup/API dan base shell diganti
+  fixture untuk menghindari scheduler, kamera, SMTP, GoWA, atau database aplikasi.
+  Tidak mengklaim seluruh alur CRUD, toggle, i18n, atau deployment telah diuji ulang.
+- Regression guard mencegah directive Tailwind mentah muncul kembali di template
+  maupun CSS hasil build. Changelog dan seluruh sumber versi memakai 2.6.7.
+- Validasi source: **62 tes terarah lulus** (UI system, audit frontend, static
+  assets, SweetAlert i18n, image version, navigation); Ruff/Black file tes berubah
+  lulus. Inventory: 292 Python AST, 55 template Jinja, 15 JS dan 6 CJS Node syntax
+  checks lulus, 261 deklarasi endpoint tidak berubah. Build CSS dan version sync
+  2.6.7 lulus. Suite penuh dan layanan produksi tidak dijalankan.

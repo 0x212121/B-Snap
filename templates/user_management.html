@@ -135,31 +135,6 @@
 {% endblock %}
 
 {% block scripts %}
-<style>
-  /* Role Badge Styles */
-  .role-badge {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
-  }
-  .role-admin { @apply bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400; }
-  .role-operator { @apply bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400; }
-  .role-viewer { @apply bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300; }
-  
-  /* Alternating Row Colors */
-  #userTable tbody tr:nth-child(even) {
-    @apply bg-gray-50/50 dark:bg-gray-800/30;
-  }
-  
-  /* Hover effect */
-  #userTable tbody tr:hover {
-    @apply bg-blue-50/50 dark:bg-blue-900/10;
-  }
-  
-  /* Smooth transitions */
-  #userTable tbody tr {
-    @apply transition-colors duration-150;
-  }
-</style>
-
 <script>
   // ====== STATE ======
   let cameraGroups = [];

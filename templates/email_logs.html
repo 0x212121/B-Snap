@@ -214,43 +214,6 @@
 {% endblock %}
 
 {% block scripts %}
-<style>
-  /* Status Badge Styles */
-  .status-badge {
-    @apply inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
-  }
-  .status-badge svg {
-    @apply flex-shrink-0;
-  }
-  .status-success { @apply bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400; }
-  .status-failed { @apply bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400; }
-  
-  /* Reason Badge Styles */
-  .reason-badge {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium;
-  }
-  .reason-tampered { @apply bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400; }
-  .reason-offline { @apply bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300; }
-  .reason-online { @apply bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400; }
-  .reason-error { @apply bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400; }
-  .reason-default { @apply bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400; }
-  
-  /* Alternating Row Colors */
-  #email-table tbody tr:nth-child(even) {
-    @apply bg-gray-50/50 dark:bg-gray-800/30;
-  }
-  
-  /* Hover effect */
-  #email-table tbody tr:hover {
-    @apply bg-blue-50/50 dark:bg-blue-900/10;
-  }
-  
-  /* Smooth transitions */
-  #email-table tbody tr {
-    @apply transition-colors duration-150;
-  }
-</style>
-
 <script>
   // State
   let currentPage = 1;

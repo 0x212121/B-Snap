@@ -20,6 +20,19 @@ from starlette.routing import Route, Router
 from app.utils.template_helper import templates
 
 
+def test_templates_do_not_ship_uncompiled_tailwind_directives() -> None:
+    """Browsers cannot expand Tailwind directives in inline template styles."""
+    root = Path(__file__).resolve().parents[2]
+    uncompiled = [
+        str(path.relative_to(root))
+        for path in (root / "templates").rglob("*.html")
+        if re.search(r"@(apply|tailwind|layer)\b", path.read_text(encoding="utf-8"))
+    ]
+    assert not uncompiled, f"Move Tailwind directives to the CSS build: {uncompiled}"
+    compiled = (root / "static/css/output.css").read_text(encoding="utf-8")
+    assert not re.search(r"@(apply|tailwind)\b", re.sub(r"/\*.*?\*/", "", compiled, flags=re.S))
+
+
 @pytest.mark.parametrize("scenario", ["idle", "running_on_open", "fast_ping_all"])
 def test_health_refreshes_only_on_load_or_check_completion(scenario: str) -> None:
     """Execute the page script with isolated timers and health-check responses."""

@@ -284,33 +284,6 @@
 {% endblock %}
 
 {% block scripts %}
-<style>
-  .status-badge {
-    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
-  }
-  .status-active { 
-    @apply bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400; 
-  }
-  .status-deactivated { 
-    @apply bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400; 
-  }
-  .status-restricted { 
-    @apply bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400; 
-  }
-  
-  #nvr-table tbody tr:nth-child(even) {
-    @apply bg-gray-50/50 dark:bg-gray-800/30;
-  }
-  
-  #nvr-table tbody tr:hover {
-    @apply bg-blue-50/50 dark:bg-blue-900/10;
-  }
-  
-  #nvr-table tbody tr {
-    @apply transition-colors duration-150;
-  }
-</style>
-
 <script>
 (function() {
   'use strict';

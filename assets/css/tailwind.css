@@ -32,3 +32,154 @@
     outline-offset: 2px;
   }
 }
+
+/* Page-specific styles must be compiled, never embedded as raw @apply in HTML. */
+@layer components {
+  /* Cameras */
+  #camera-table tbody tr:nth-child(even) {
+    @apply bg-gray-50/50 dark:bg-gray-800/30;
+  }
+  #camera-table tbody tr:hover {
+    @apply bg-blue-50/50 dark:bg-blue-900/10;
+  }
+  #camera-table tbody tr {
+    @apply transition-colors duration-150;
+  }
+
+  /* Nvrs */
+  #nvr-table tbody tr:nth-child(even) {
+    @apply bg-gray-50/50 dark:bg-gray-800/30;
+  }
+  #nvr-table tbody tr:hover {
+    @apply bg-blue-50/50 dark:bg-blue-900/10;
+  }
+  #nvr-table tbody tr {
+    @apply transition-colors duration-150;
+  }
+
+  /* Email Logs */
+  #email-table .reason-badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium;
+  }
+  #email-table .reason-tampered {
+    @apply bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400;
+  }
+  #email-table .reason-offline {
+    @apply bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300;
+  }
+  #email-table .reason-online {
+    @apply bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400;
+  }
+  #email-table .reason-error {
+    @apply bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400;
+  }
+  #email-table .reason-default {
+    @apply bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400;
+  }
+  #email-table tbody tr:nth-child(even) {
+    @apply bg-gray-50/50 dark:bg-gray-800/30;
+  }
+  #email-table tbody tr:hover {
+    @apply bg-blue-50/50 dark:bg-blue-900/10;
+  }
+  #email-table tbody tr {
+    @apply transition-colors duration-150;
+  }
+
+  /* Health */
+  #healthCheckTable tbody tr:nth-child(even) {
+    @apply bg-gray-50/50 dark:bg-gray-800/30;
+  }
+
+  /* Recipients */
+  #recipients-table tbody tr:nth-child(even) {
+    @apply bg-gray-50/50 dark:bg-gray-800/30;
+  }
+  #recipients-table tbody tr:hover {
+    @apply bg-blue-50/50 dark:bg-blue-900/10;
+  }
+  #recipients-table tbody tr {
+    @apply transition-colors duration-150;
+  }
+
+  /* User Management */
+  #userTable .role-admin {
+    @apply bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400;
+  }
+  #userTable .role-operator {
+    @apply bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400;
+  }
+  #userTable .role-viewer {
+    @apply bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300;
+  }
+  #userTable tbody tr:nth-child(even) {
+    @apply bg-gray-50/50 dark:bg-gray-800/30;
+  }
+  #userTable tbody tr:hover {
+    @apply bg-blue-50/50 dark:bg-blue-900/10;
+  }
+  #userTable tbody tr {
+    @apply transition-colors duration-150;
+  }
+
+  /* Whitelist */
+  #whitelist-table tbody tr:nth-child(even) {
+    @apply bg-gray-50/50 dark:bg-gray-800/30;
+  }
+  #whitelist-table tbody tr:hover {
+    @apply bg-green-50/50 dark:bg-green-900/10;
+  }
+  #whitelist-table tbody tr {
+    @apply transition-colors duration-150;
+  }
+
+  /* Changelog */
+  #changelog-content .version-card {
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden;
+  }
+  #changelog-content .version-header {
+    @apply w-full flex items-center justify-between px-6 py-4 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+  }
+  #changelog-content .version-content {
+    @apply px-6 py-4 space-y-4;
+  }
+  #changelog-content .markdown-content h1, #changelog-content .markdown-content h2, #changelog-content .markdown-content h3 {
+    @apply font-semibold text-gray-900 dark:text-white mt-4 mb-2;
+  }
+  #changelog-content .markdown-content h1 {
+    @apply text-xl;
+  }
+  #changelog-content .markdown-content h2 {
+    @apply text-lg;
+  }
+  #changelog-content .markdown-content h3 {
+    @apply text-base;
+  }
+  #changelog-content .markdown-content p {
+    @apply text-gray-700 dark:text-gray-300 mb-2;
+  }
+  #changelog-content .markdown-content ul {
+    @apply list-disc ml-5 space-y-1 mb-3;
+  }
+  #changelog-content .markdown-content ol {
+    @apply list-decimal ml-5 space-y-1 mb-3;
+  }
+  #changelog-content .markdown-content code {
+    @apply px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono text-gray-800 dark:text-gray-200;
+  }
+  #changelog-content .markdown-content pre {
+    @apply p-3 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-x-auto mb-3;
+  }
+  #changelog-content .markdown-content pre code {
+    @apply bg-transparent p-0;
+  }
+  #changelog-content .markdown-content a {
+    @apply text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline;
+  }
+  #changelog-content .markdown-content strong {
+    @apply font-semibold text-gray-900 dark:text-white;
+  }
+  #changelog-content .markdown-content blockquote {
+    @apply pl-4 border-l-4 border-gray-300 dark:border-gray-600 italic text-gray-600 dark:text-gray-400;
+  }
+}

@@ -1310,8 +1310,8 @@
     },
     {
       "path": "app/tests/test_ui_system.py",
-      "lines": 461,
-      "sha256": "bfdfe0005b8c9129f6bb243646dc9e7273136cda5e7b3f177dc7a9369a09acce",
+      "lines": 474,
+      "sha256": "65028283311c1761f2844b02ec2cafdaf6b08b52c34e6b92b45ddf36ec7e852a",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1743,7 +1743,7 @@
     {
       "path": "app/version.py",
       "lines": 1,
-      "sha256": "3091c6c7e428d27c9c23b58749abe72bc32893a1d2fc37bfa8b7c65978a1e8e8",
+      "sha256": "29cd9cc93bdf21d7da331ada3618fad47c3d32bdc2f9e4c27503cb2b9287d404",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1970,8 +1970,8 @@
     },
     {
       "path": "templates/cameras.html",
-      "lines": 1108,
-      "sha256": "df3da5723e4f27e090070b9daa008f91f770a57cfa71b45a35f56f62a293949a",
+      "lines": 1091,
+      "sha256": "4e30657b941fca9f7f797d011d0e6b4eb521dc35ca9c750a7299becb8a89f102",
       "check": "Jinja template compile"
     },
     {
@@ -1982,8 +1982,8 @@
     },
     {
       "path": "templates/changelog.html",
-      "lines": 468,
-      "sha256": "8b793554e7756f0a9c6737b25d715ead28760cc5f0b56c6c35fcb1581ef0fec0",
+      "lines": 404,
+      "sha256": "f651eafcd1596750bebe3045182db5dc99ba4b67002b298d1d4f0ecec739fad4",
       "check": "Jinja template compile"
     },
     {
@@ -2018,8 +2018,8 @@
     },
     {
       "path": "templates/email_logs.html",
-      "lines": 720,
-      "sha256": "68abd08d2d69af068c31b539a02d0c80dfd0c3fc67ac5154b365d270d499f570",
+      "lines": 683,
+      "sha256": "e840c7a6e426f4c40e0d84c7730fa7eb110bb41c9e0bad5aed9def60c18d40bb",
       "check": "Jinja template compile"
     },
     {
@@ -2036,8 +2036,8 @@
     },
     {
       "path": "templates/health.html",
-      "lines": 732,
-      "sha256": "9b532c72a9163b9558ea7529838d4e1da6c26c3fca89f39fe74c0ae096fb33b4",
+      "lines": 726,
+      "sha256": "cb16e41cf2f766149312b298c52633e06edb39dc5f22ad91b1c0e805e27b90eb",
       "check": "Jinja template compile"
     },
     {
@@ -2108,8 +2108,8 @@
     },
     {
       "path": "templates/nvrs.html",
-      "lines": 925,
-      "sha256": "d67b3322aa93a985960c77a84570839990110ec6a34c7382794b8bb855db3ba9",
+      "lines": 898,
+      "sha256": "91745f6c9e0f5c695747e621c035f7305c39a4b5496d3ada07c38183c7964dd7",
       "check": "Jinja template compile"
     },
     {
@@ -2132,8 +2132,8 @@
     },
     {
       "path": "templates/recipients.html",
-      "lines": 1303,
-      "sha256": "d549239309c160232763f01b72bb7ac27a2ff0a7fea2bf60efb0064df48de325",
+      "lines": 1286,
+      "sha256": "94103617b34c4dfce045ecbdbecb96863e4c34c5ea5ac2491945fe95846b1581",
       "check": "Jinja template compile"
     },
     {
@@ -2186,8 +2186,8 @@
     },
     {
       "path": "templates/user_management.html",
-      "lines": 847,
-      "sha256": "5a8ef0b155048a8cc8227b4b95ddd7e3a6d331160546df1754a46a0f51df8f4e",
+      "lines": 822,
+      "sha256": "58f1620d95dc7a7d54fd37cce2dd4551514a656a3a8cde5317ed6b0b4051d4f9",
       "check": "Jinja template compile"
     },
     {
@@ -2216,8 +2216,8 @@
     },
     {
       "path": "templates/whitelist.html",
-      "lines": 826,
-      "sha256": "99698f57c51aa38b93cebc9586666db0e7582654acb99270b06e5d82dbac845c",
+      "lines": 792,
+      "sha256": "aebb2f52fdf1c99c58483b19e362fe4f01d7ee5410794116011ae505cbd016b9",
       "check": "Jinja template compile"
     }
   ],
@@ -4907,6 +4907,6 @@
       "declared_dependencies": []
     }
   ],
-  "release_version": "2.6.6",
+  "release_version": "2.6.7",
   "hash_format": "SHA-256 of file bytes with CRLF normalized to LF"
 }
