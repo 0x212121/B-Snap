@@ -200,7 +200,7 @@ nav_items = [
         "items": [
             {
                 "label": "API Docs",
-                "href": "/developer/docs",
+                "href": "/docs/openapi",
                 "icon": "book-open",
                 "roles": ["admin"],
             },

@@ -1,3 +1,9 @@
+"""Deprecated standalone enrollment router; keep unregistered.
+
+Production MFA enrollment lives in app/routes/auth.py. See the legacy routing
+review before removing or reusing this module; do not activate this older flow.
+"""
+
 import io
 from fastapi import APIRouter, Depends, HTTPException, Response
 import pyotp

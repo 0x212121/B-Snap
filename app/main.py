@@ -11,7 +11,6 @@ import traceback
 
 from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.responses import ORJSONResponse, RedirectResponse, HTMLResponse, JSONResponse
-from fastapi.openapi.docs import get_swagger_ui_html
 from sqlalchemy import inspect
 
 from starlette.middleware.sessions import SessionMiddleware
@@ -42,7 +41,6 @@ from app.routes import (
     cameras,
     camera_groups,
     config,
-    dev_docs,
     docs,
     health,
     jobs,
@@ -309,7 +307,6 @@ app.include_router(nvrs.router)
 app.include_router(snap_gallery.router)
 app.include_router(audit.router)
 app.include_router(audit_log.router)
-app.include_router(dev_docs.router)
 app.include_router(ws_router)
 app.include_router(whatsapp_routes.router)
 app.include_router(observability_log.router)
@@ -402,15 +399,6 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
         content=f"An error occurred: {exc.detail}", status_code=exc.status_code, headers=exc.headers
     )
 
-
-@app.get("/docs", include_in_schema=False)
-async def custom_swagger_ui():
-    return get_swagger_ui_html(
-        openapi_url="/openapi.json",
-        title=app.title + " - Docs",
-        swagger_js_url="/static/swagger-ui-bundle.js",
-        swagger_css_url="/static/swagger-ui-tailwind.css"
-    )
 
 @lru_cache()
 def get_version_info():

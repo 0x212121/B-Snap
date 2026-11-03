@@ -67,11 +67,27 @@ def test_destination_permissions_are_preserved(role: str) -> None:
         expected |= {"/snap_gallery", "/videos"}
     if role == "admin":
         expected |= {
-            "/analytics", "/cameras", "/nvrs", "/admin/record-checks", "/health",
-            "/admin/users", "/admin/camera-groups", "/admin/whitelist", "/admin/wa-bot",
-            "/admin/recipients", "/admin/email-templates", "/admin/config", "/admin/jobs",
-            "/admin/powerbi-record-checks", "/admin/trash", "/logs", "/audit-logs",
-            "/email-logs", "/developer/docs", "/docs/environment", "/documentation/index.html",
+            "/analytics",
+            "/cameras",
+            "/nvrs",
+            "/admin/record-checks",
+            "/health",
+            "/admin/users",
+            "/admin/camera-groups",
+            "/admin/whitelist",
+            "/admin/wa-bot",
+            "/admin/recipients",
+            "/admin/email-templates",
+            "/admin/config",
+            "/admin/jobs",
+            "/admin/powerbi-record-checks",
+            "/admin/trash",
+            "/logs",
+            "/audit-logs",
+            "/email-logs",
+            "/docs/openapi",
+            "/docs/environment",
+            "/documentation/index.html",
         }
     parsed = NavigationParser(response.body)
     for label in ("Main navigation", "Mobile navigation"):

@@ -20,6 +20,10 @@ Welcome to B-Snap Documentation!
    development
    deployment
    maintenance
+   legacy_routing_review_2026_11_03
+   high_security_rollout
+   comprehensive_audit_2026_11_02
+   benchmarks/camera_groups_2026_11_03
    appendix
 
 Indices and tables

@@ -818,7 +818,10 @@ Consider implementing rate limiting for:
 
 - {doc}`configuration` - Environment variables
 - {doc}`security` - Security best practices
-- OpenAPI Spec: `/docs/openapi.json`
+- OpenAPI Spec: `/openapi.json`
+- Interactive Swagger UI (admin): `/docs/openapi`
+- Compatibility redirects: `/docs/openapi.json` → `/openapi.json`,
+  `/developer/docs` → `/docs/openapi`
 
 
 ### Resolve camera IP for WhatsApp commands

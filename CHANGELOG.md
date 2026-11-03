@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.6.6] - 2026-11-03
+
+### Fixed
+
+- Resolved CA-23 documentation routing: `/docs` redirects to `/docs/environment`; Swagger has one admin-only implementation at `/docs/openapi`, with `/developer/docs` retained as a protected alias. `/docs/openapi.json` redirects to the existing `/openapi.json` schema. Removed the shadowed `/docs` handler and consolidated the developer-docs router; updated navigation, API links and proxy configuration descriptions.
+- Removed unreachable rendering code after the `/stats` redirect and preserved URL-encoded camera/days filters. Marked six unused templates, the unregistered standalone MFA router and obsolete proxy overrides as deprecated; retained active nested Maps routers, analytics APIs and existing bookmarks. See the [legacy routing review](docs/source/legacy_routing_review_2026_11_03.md).
+
 ## [2.6.5] - 2026-11-03
 
 ### Fixed

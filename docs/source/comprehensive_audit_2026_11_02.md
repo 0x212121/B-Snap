@@ -10,10 +10,11 @@ rilis awal tetap dicatat sebagai riwayat. Bagian 12 mencatat perbaikan WebSocket
 2.6.2; bagian 13 mencatat penghentian inbox CA-22 pada 2.6.3, dan bagian 14
 mencatat perbaikan timezone monitor CA-24 pada 2.6.4.
 Bagian 15 mencatat optimasi dan benchmark CA-21 pada 2.6.5.
+Bagian 16 mencatat konsolidasi routing/review legacy CA-23 pada 2.6.6.
 
 ## 1. Arsitektur dan cakupan
 
-- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.5**. Minimum Python **3.11**, default image Docker
+- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.6**. Minimum Python **3.11**, default image Docker
   **Python 3.14.7**; verifikasi lokal memakai Python **3.13** dan Node **22.16.0**.
 - FastAPI menyediakan halaman Jinja2 dan API; SQLAlchemy 2 dan Alembic memakai
   PostgreSQL. Model JSONB dan trigger audit membuat schema penuh tidak kompatibel
@@ -32,8 +33,8 @@ Bagian 15 mencatat optimasi dan benchmark CA-21 pada 2.6.5.
 
 [Inventaris sumber dan endpoint](comprehensive_audit_2026_11_02_inventory.json)
 mencatat file, hash, syntax/compile check, serta dependency yang dideklarasikan.
-Inventaris hasil 2.6.5 mencakup **292 file Python, 55 template, 15 JavaScript,
-6 harness/test CJS, dan 260 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
+Inventaris hasil 2.6.6 mencakup **292 file Python, 55 template, 15 JavaScript,
+6 harness/test CJS, dan 261 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
 belum tentu didaftarkan; tidak sama dengan jumlah URL unik yang aktif.
 
 Semua file pada inventaris menerima pemeriksaan statis. Penelusuran mendalam dan
@@ -56,7 +57,8 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 | 6 | CA-22 | Inbox persisten tidak digunakan pada jalur standar | Hapus fitur dan arsipkan data legacy | Dihapus pada 2.6.3 |
 | 7 | CA-24 | Timezone monitor pesan bot | API timezone metadata, formatter, dan filter UTC | Diperbaiki pada 2.6.4 |
 | 8 | CA-21 | Query counts per grup | Satu query agregasi dan benchmark PostgreSQL | Diperbaiki pada 2.6.5 |
-| Berikutnya | CA-23 dan sisa CA-12/15/17 | UI/debt, test/dependency | Memerlukan desain/validasi tambahan | Backlog non-High |
+| 9 | CA-23 | Routing dokumentasi dan review legacy | Canonical routes, alias, deprecation inventory | Diselesaikan pada 2.6.6 |
+| Berikutnya | Sisa CA-12/15/17 | UI/debt, test/dependency | Memerlukan desain/validasi tambahan | Backlog non-High |
 
 ## 3. Findings: Backend
 
@@ -527,17 +529,29 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 
 ### CA-23 — Routing/dead code masih perlu konsolidasi
 
-- **Layer / Severity / Status:** Cross-Layer / Low / improvement opportunity, backlog.
-- **Location / Evidence:** GET `/docs` didaftarkan oleh docs router dan app utama;
+- **Layer / Severity / Status:** Cross-Layer / Low / improvement opportunity,
+  konsolidasi dan review deprecation diselesaikan pada 2.6.6.
+- **Location / Evidence sebelum perbaikan:** GET `/docs` didaftarkan oleh docs router dan app utama;
   beberapa template/router legacy tidak dirender/didaftarkan pada jalur utama.
 - **Issue / Root Cause:** riwayat fitur meninggalkan jalur alternatif; routing order
   menentukan handler yang dipakai, bukan hanya nama fungsi.
 - **Impact:** maintenance/confusing documentation, bukan bukti akses tanpa izin.
-- **Recommended Fix:** pilih canonical docs entry, inventaris pemakai legacy view,
-  dan dokumentasikan deprecation sebelum penghapusan.
+- **Implemented Fix:** satu router dokumentasi: `/docs` mengarah ke
+  `/docs/environment`, Swagger admin-only pada `/docs/openapi`, alias
+  `/developer/docs` tetap protected, serta alias schema lama menuju `/openapi.json`.
+  Handler tertutup di main dan modul dev_docs yang redundan dihapus; navigation
+  dan tautan diperbarui. Dead block setelah redirect `/stats` dihapus dan parameter
+  camera/days di-URL-encode dengan status/tujuan redirect tetap.
+- **Legacy review:** enam template tanpa referensi produksi statis dan tiga modul
+  nonaktif ditandai deprecated serta dipertahankan untuk downstream review;
+  map_live/map_heatmap dan audit APIs dipastikan aktif, bukan ikut dihapus.
+  Lihat [inventaris dan keputusan](legacy_routing_review_2026_11_03.md).
 - **Regression Risk:** bookmark, embedded Swagger, dan integrasi dokumentasi.
-- **Verification:** route-order/redirect tests dan pencarian pemakai template;
-  jangan mengaktifkan view legacy hanya karena compile sekarang lulus.
+- **Verification:** tidak ada duplikasi method/path pada registry produksi,
+  redirect/bookmark/schema/role tests, encoded stats filters, registry Maps/MFA,
+  dan compile semua template. Chrome memuat Swagger assets dan schema melalui
+  alias, tanpa page error; Sphinx build dengan warnings-as-errors lulus.
+  Legacy view tidak diaktifkan hanya karena kompilasinya lulus.
 
 ## 6a. Temuan tambahan pada boundary integrasi
 
@@ -664,9 +678,10 @@ accessibility/contrast audit semua halaman, atau benchmark fan-out notifikasi.
    PostgreSQL test agar migration/trigger/schema bisa diuji rutin.
 3. Tuntaskan advisory build Moderate setelah analisis compatibility; tambahkan
    Python dependency/image scan pada pipeline yang memiliki tool sesuai.
-4. Selesaikan raw @apply halaman lain dan duplicate docs route; periksa EN/ID,
+4. Selesaikan raw @apply halaman lain; periksa EN/ID,
    keyboard, focus, empty/error/loading states per halaman. Timezone monitor bot
-   telah diperbaiki pada 2.6.4.
+   telah diperbaiki pada 2.6.4. Duplikasi docs dan deprecation review CA-23
+   diselesaikan pada 2.6.6.
 5. Ukur performa notification delivery dengan dataset/jumlah browser representatif.
    Group counts telah diagregasikan dan dibenchmark pada 2.6.5; ukur kembali pada
    deployment bila membutuhkan angka kapasitas produksi.
@@ -859,3 +874,42 @@ Ruff/Black pada script benchmark dan test baru, syntax inventory, version sync
 Script `scripts/benchmark_camera_groups.py` disertakan agar pengukuran dapat
 diulang pada PostgreSQL test yang dipilih. Tidak ada database aplikasi, kamera,
 SMTP/GoWA atau deployment production yang disentuh oleh benchmark ini.
+
+## 16. Konsolidasi routing/review legacy CA-23 — rilis 2.6.6
+
+Pada 3 November 2026, dokumentasi diarahkan ke tujuan canonical tanpa bergantung
+pada urutan pendaftaran router. `/docs` mempertahankan entry lama melalui 307 ke
+environment docs. Swagger admin-only memakai `/docs/openapi`; bookmark developer
+dan schema lama tetap berfungsi melalui alias. Registrasi GET `/docs` yang
+tertutup serta modul developer-docs yang redundan dihapus. Static documentation
+mount/absence policy dipertahankan. Deskripsi proxy kini memakai peer IP/CIDR.
+
+Block rendering lama setelah return pada `/stats` dihapus; redirect 301 tetap
+mempertahankan filter camera/days dengan URL encoding. Enam template legacy dan
+tiga modul nonaktif diberi penanda deprecation dan dicatat di
+[legacy review](legacy_routing_review_2026_11_03.md). Penghapusan file legacy lain
+tidak dipaksakan tanpa review pemakai downstream; tidak ada route MFA lama yang
+diaktifkan. Maps nested routers, stats/insights APIs, password POST dan audit APIs
+tetap aktif. Tidak ada migration atau perubahan data.
+
+- **826 pytest terpilih lulus, 1 skip**, pada 47 modul, termasuk **16 regresi
+  dokumentasi/routing baru**. Recheck 16 kasus setelah penyelesaian signature/
+  metadata docs juga lulus. Skip tunggal tetap tes concurrency fixture SQLite.
+- Registry method/path produksi tidak mempunyai duplikasi. Tes memeriksa tujuan
+  redirect, HTML Swagger, schema, role admin/anonymous/operator/viewer, parameter
+  URL yang mengandung spasi/ampersand/Unicode, dan status route legacy/nested.
+- Chrome memverifikasi environment docs light/dark, link Swagger di mobile 390px,
+  alias ke canonical Swagger, pemuatan remote assets dan schema, tanpa page error.
+  Fixture memakai template/routes nyata dengan auth override; database aplikasi
+  dan camera/notifier startup tidak dijalankan.
+- Build CSS, Sphinx HTML dengan **warnings-as-errors**, Python/Jinja/Node syntax
+  inventory, version sync 2.6.6, Ruff/Black pada docs router/test baru, dan
+  whitespace check lulus. Heading anchors Markdown konsisten dengan GitHub;
+  audit, rollout, benchmark dan review legacy masuk navigasi generated docs.
+
+Log/artefak lokal: `tmp/routing-tests.txt`, `tmp/documentation-browser.json`,
+`tmp/docs-environment-light.png`, `tmp/docs-environment-dark.png`,
+`tmp/docs-api-canonical-link.png`, dan `tmp/routing-sphinx-final.log`.
+Hasil ini tidak menyatakan seluruh file legacy sudah dihapus atau semua konten
+dokumentasi lama telah diaudit ulang. Rilis tetap memerlukan pembaruan source/image
+di deployment; tidak melakukan deployment atau image registry publish otomatis.

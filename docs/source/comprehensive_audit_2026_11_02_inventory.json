@@ -7,7 +7,7 @@
     ".js": 15,
     ".html": 55
   },
-  "route_declarations": 260,
+  "route_declarations": 261,
   "syntax_errors": [],
   "template_errors": [],
   "js_errors": [],
@@ -464,8 +464,8 @@
     },
     {
       "path": "app/main.py",
-      "lines": 481,
-      "sha256": "d27fdaa3e7d6056b5318764b3191c3770e6f6b4fd964d9fed2170e6666142f28",
+      "lines": 469,
+      "sha256": "da575b92e00c5bbe65ccd710404d74289d73b04ffb3d79b534195be5d8cd57f7",
       "check": "AST syntax and structural scan"
     },
     {
@@ -488,8 +488,8 @@
     },
     {
       "path": "app/middleware/http_proxy_fix.py",
-      "lines": 8,
-      "sha256": "8c3f541dcc633f32ad382d4caf855b827663eca074bfd667b0383924e33c65cf",
+      "lines": 14,
+      "sha256": "30f092620b0ffd8f5f75f38e36e4d38f7c206ff7daf722b18428569a566e69e3",
       "check": "AST syntax and structural scan"
     },
     {
@@ -506,8 +506,8 @@
     },
     {
       "path": "app/middleware/real_ip_fix.py",
-      "lines": 22,
-      "sha256": "91f26b4201ab48c0e0ba20fbe1d0812fd11a834ecd8eaeae50a1829d7e718e0b",
+      "lines": 28,
+      "sha256": "50c7b985a447e99b95294290a73ae7a05cc4954de0e3b05f7e3d669ff4e5dbf1",
       "check": "AST syntax and structural scan"
     },
     {
@@ -698,14 +698,14 @@
     },
     {
       "path": "app/routes/2fa.py",
-      "lines": 42,
-      "sha256": "92a452d8f7a029dabb6cf299c7d708466e5a118f6143790944869b92ace2d65f",
+      "lines": 48,
+      "sha256": "eccd6a35a0908f87aece65f1b38b4e7379abc23806dbd7e9fbf5c3974648ce53",
       "check": "AST syntax and structural scan"
     },
     {
       "path": "app/routes/__init__.py",
-      "lines": 62,
-      "sha256": "f195c3ea18039ab19537f2de6a4d527b8727b06556df408f8d59d60b7edf06b8",
+      "lines": 60,
+      "sha256": "75c7725b870a3ec68de1e92896065f4fc6343988c8f754fc2cf36199dbcb55ff",
       "check": "AST syntax and structural scan"
     },
     {
@@ -751,15 +751,9 @@
       "check": "AST syntax and structural scan"
     },
     {
-      "path": "app/routes/dev_docs.py",
-      "lines": 14,
-      "sha256": "eb6c315646cfc445c269bdd02caa77fa9f41f82cb4240b570c4bfedbb5c5b248",
-      "check": "AST syntax and structural scan"
-    },
-    {
       "path": "app/routes/docs.py",
-      "lines": 399,
-      "sha256": "4b5ee447deda1be3a0f19d1fc8d9786ced76ad4b075d3ad6e5189f416af39797",
+      "lines": 443,
+      "sha256": "4873bcfe071e345ffe579f868c23dfe510c464302448c8d6df54856b22d9760e",
       "check": "AST syntax and structural scan"
     },
     {
@@ -872,8 +866,8 @@
     },
     {
       "path": "app/routes/stats.py",
-      "lines": 762,
-      "sha256": "a875d13922b3fc64d9e062d05905b261a8aa3a049ffefe89b68164f3b793c9ab",
+      "lines": 674,
+      "sha256": "39a3bad977c71735ae24663eb1d52822131419305bb3b2a891ff192b236283dc",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1075,6 +1069,12 @@
       "check": "AST syntax and structural scan"
     },
     {
+      "path": "app/tests/test_documentation_routing.py",
+      "lines": 148,
+      "sha256": "64434b5b9c096f290910e1c61076912ebf782d6331d6c4cb5acc5b29d81a2739",
+      "check": "AST syntax and structural scan"
+    },
+    {
       "path": "app/tests/test_email_notifier.py",
       "lines": 79,
       "sha256": "8c50ff7fdaf1d9193dc4666a0bb9a42a6c7392f19a42f636930aea8541adcba5",
@@ -1196,8 +1196,8 @@
     },
     {
       "path": "app/tests/test_navigation.py",
-      "lines": 94,
-      "sha256": "90c3365d8690db07b554c2fb081ea8ca7af77e919b6191c9ad18926bb0283418",
+      "lines": 110,
+      "sha256": "3acedac837d73f534c5fdceb189f56bc3cb6705d9dfdc24a333066f84df353da",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1683,7 +1683,7 @@
     {
       "path": "app/utils/template_helper.py",
       "lines": 323,
-      "sha256": "4596ee98d36f77e28ebc154b40cca82b6b5709bbacbb8ba161eefbb4c04a9ee1",
+      "sha256": "7b39ba38ab23ef7dc4558d4cf2c71bdc97b87b5f985cd4d53ade4096bf962d51",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1743,7 +1743,7 @@
     {
       "path": "app/version.py",
       "lines": 1,
-      "sha256": "6fc2f77628e9b3ba1a30f98ea49cceb97c2f39c6c8baba3dc169ae3f088bf3ba",
+      "sha256": "3091c6c7e428d27c9c23b58749abe72bc32893a1d2fc37bfa8b7c65978a1e8e8",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1928,8 +1928,8 @@
     },
     {
       "path": "templates/_orphaned_files_list.html",
-      "lines": 49,
-      "sha256": "9f88b6de75f3d29ced699c778c4506bc0bf906723b2ebc358787580490f3fefb",
+      "lines": 51,
+      "sha256": "8073c1dc8cd6697b36985b4cd6b0bf8036d66ecb72a1bc75cd2f490b96b664a7",
       "check": "Jinja template compile"
     },
     {
@@ -1976,8 +1976,8 @@
     },
     {
       "path": "templates/change_password.html",
-      "lines": 145,
-      "sha256": "a8c0dacbcffc5dad4fe936beb2dff3564e80b83e8e390b25f3c639661436675e",
+      "lines": 147,
+      "sha256": "25ed7b1578f858e96da3548f72867becc27ba1c8eea35810e6d89d4eff18a01b",
       "check": "Jinja template compile"
     },
     {
@@ -2001,13 +2001,13 @@
     {
       "path": "templates/docs/api.html",
       "lines": 71,
-      "sha256": "33ced8fb869c8acc0a67db61bcf37e65c25143624c645b4550b6e6b032253941",
+      "sha256": "1e0c74515d64a556df5003c2058f73c9b36765503fdcb4292fa78bf491838d86",
       "check": "Jinja template compile"
     },
     {
       "path": "templates/docs/environment.html",
       "lines": 192,
-      "sha256": "ac3283f14630be3d7250fe386a8b56dc57459d3286e7d65c6df0e9bc2ded2c91",
+      "sha256": "f7dc87101dea0e60b79fda406aae464b82e5a1522f37886e3942790f32855789",
       "check": "Jinja template compile"
     },
     {
@@ -2048,8 +2048,8 @@
     },
     {
       "path": "templates/insights.html",
-      "lines": 328,
-      "sha256": "1cf88dce21695ee5477f65724d327a4473c8796fadf4175a47b033449601a554",
+      "lines": 330,
+      "sha256": "b3ab86ea662de70fb3576d0bc92307d18e8b9f53f261ed072b905760e33dbdca",
       "check": "Jinja template compile"
     },
     {
@@ -2138,8 +2138,8 @@
     },
     {
       "path": "templates/recipients_table.html",
-      "lines": 142,
-      "sha256": "760983313e50b59519b9b5e97611f2d1d29dda3dee85e99bedec99dc0c76e575",
+      "lines": 144,
+      "sha256": "d98c1d431226d464895b3f24538f6dc96ef678ff9b4636f599f316a7c3e17bcc",
       "check": "Jinja template compile"
     },
     {
@@ -2168,8 +2168,8 @@
     },
     {
       "path": "templates/stats.html",
-      "lines": 470,
-      "sha256": "d582e3156a05a1e168f837a6ef517075ffbc0174e2df6189b5a355d4d5ae7be7",
+      "lines": 472,
+      "sha256": "5c4298b2fd1a20d55b46c74fb5db2a767152bc0de7895b474c1781850447e531",
       "check": "Jinja template compile"
     },
     {
@@ -2192,8 +2192,8 @@
     },
     {
       "path": "templates/user_management2.html",
-      "lines": 514,
-      "sha256": "63fcaa04a71c156980db2fec5a551733d8dcdb3491b9a8175e7c1cdc0322f289",
+      "lines": 516,
+      "sha256": "3d4637e6531e47591c04b6cd7786d3278b6169591ced43a12ff9b06ec70662b0",
       "check": "Jinja template compile"
     },
     {
@@ -2282,7 +2282,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 250,
+      "line": 248,
       "method": "GET",
       "path": "/static/snapshots/{path:path}",
       "function": "block_snapshot_access",
@@ -2290,7 +2290,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 270,
+      "line": 268,
       "method": "GET",
       "path": "/static/videos/{path:path}",
       "function": "block_video_access",
@@ -2298,7 +2298,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 334,
+      "line": 331,
       "method": "GET",
       "path": "/",
       "function": "root_redirect",
@@ -2306,15 +2306,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 407,
-      "method": "GET",
-      "path": "/docs",
-      "function": "custom_swagger_ui",
-      "declared_dependencies": []
-    },
-    {
-      "file": "app/main.py",
-      "line": 422,
+      "line": 410,
       "method": "GET",
       "path": "/version",
       "function": "version",
@@ -2322,7 +2314,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 426,
+      "line": 414,
       "method": "GET",
       "path": "/debug/ip",
       "function": "debug_ip",
@@ -2330,7 +2322,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 437,
+      "line": 425,
       "method": "GET",
       "path": "/documentation-index",
       "function": "html_docs_redirect",
@@ -2338,7 +2330,7 @@
     },
     {
       "file": "app/routes/2fa.py",
-      "line": 14,
+      "line": 20,
       "method": "POST",
       "path": "/2fa/enable",
       "function": "enable_2fa_setup",
@@ -2838,16 +2830,8 @@
       "declared_dependencies": []
     },
     {
-      "file": "app/routes/dev_docs.py",
-      "line": 13,
-      "method": "GET",
-      "path": "/developer/docs",
-      "function": "embedded_docs",
-      "declared_dependencies": []
-    },
-    {
       "file": "app/routes/docs.py",
-      "line": 363,
+      "line": 383,
       "method": "GET",
       "path": "/docs",
       "function": "get_docs",
@@ -2855,7 +2839,35 @@
     },
     {
       "file": "app/routes/docs.py",
-      "line": 369,
+      "line": 394,
+      "method": "GET",
+      "path": "/docs/openapi",
+      "function": "get_openapi_docs",
+      "declared_dependencies": [
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/docs.py",
+      "line": 405,
+      "method": "GET",
+      "path": "/developer/docs",
+      "function": "developer_docs_alias",
+      "declared_dependencies": [
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/docs.py",
+      "line": 411,
+      "method": "GET",
+      "path": "/docs/openapi.json",
+      "function": "openapi_schema_alias",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/docs.py",
+      "line": 417,
       "method": "GET",
       "path": "/docs/environment",
       "function": "get_env_docs",
@@ -2863,7 +2875,7 @@
     },
     {
       "file": "app/routes/docs.py",
-      "line": 385,
+      "line": 431,
       "method": "GET",
       "path": "/docs/api",
       "function": "get_api_docs",
@@ -2871,7 +2883,7 @@
     },
     {
       "file": "app/routes/docs.py",
-      "line": 394,
+      "line": 439,
       "method": "GET",
       "path": "/docs/security",
       "function": "get_security_docs",
@@ -4138,7 +4150,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 39,
+      "line": 40,
       "method": "GET",
       "path": "/analytics",
       "function": "get_analytics",
@@ -4149,7 +4161,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 68,
+      "line": 69,
       "method": "GET",
       "path": "/stats/snapshot-details",
       "function": "get_snapshot_details",
@@ -4159,7 +4171,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 124,
+      "line": 125,
       "method": "GET",
       "path": "/stats",
       "function": "get_camera_stats_redirect",
@@ -4170,7 +4182,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 231,
+      "line": 143,
       "method": "GET",
       "path": "/stats/data",
       "function": "get_camera_stats_data",
@@ -4181,7 +4193,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 322,
+      "line": 234,
       "method": "GET",
       "path": "/stats/operations",
       "function": "get_camera_operations_data",
@@ -4192,7 +4204,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 461,
+      "line": 373,
       "method": "GET",
       "path": "/stats/no-data-cameras",
       "function": "get_no_data_cameras",
@@ -4203,7 +4215,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 534,
+      "line": 446,
       "method": "GET",
       "path": "/stats/heatmap",
       "function": "get_snapshot_heatmap",
@@ -4214,7 +4226,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 592,
+      "line": 504,
       "method": "GET",
       "path": "/storage/status",
       "function": "get_storage_status",
@@ -4225,7 +4237,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 651,
+      "line": 563,
       "method": "GET",
       "path": "/storage/trend",
       "function": "get_storage_trend",
@@ -4236,7 +4248,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 684,
+      "line": 596,
       "method": "GET",
       "path": "/storage/alerts",
       "function": "get_storage_alerts",
@@ -4247,7 +4259,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 722,
+      "line": 634,
       "method": "POST",
       "path": "/storage/check-now",
       "function": "trigger_storage_check",
@@ -4895,6 +4907,6 @@
       "declared_dependencies": []
     }
   ],
-  "release_version": "2.6.5",
+  "release_version": "2.6.6",
   "hash_format": "SHA-256 of file bytes with CRLF normalized to LF"
 }

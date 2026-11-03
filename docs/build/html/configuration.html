@@ -1,8 +1,10 @@
 <!DOCTYPE html>
+<html lang="en" data-content_root="./"
+  x-data="{ darkMode: $persist(window.matchMedia('(prefers-color-scheme: dark)').matches), activeSection: ''}"
+  :class="{ 'dark' : darkMode === true }">
 
-<html :class="{ 'dark' : darkMode === true }" data-content_root="./" lang="en" x-data="{ darkMode: $persist(window.matchMedia('(prefers-color-scheme: dark)').matches), activeSection: ''}">
 <head>
-<script>
+  <script>
     (function () {
       // Set initial color scheme
       if ((localStorage.getItem("_x_darkMode") === "true") || (window.matchMedia("(prefers-color-scheme: dark)").matches)) {
@@ -16,61 +18,94 @@
       });
     })();
   </script>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<meta charset="utf-8"/>
-<meta content="#ffffff" media="(prefers-color-scheme: light)" name="theme-color"/>
-<meta content="#030711" media="(prefers-color-scheme: dark)" name="theme-color"/>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Configuration Guide | B-SNAP v2.6.0 documentation</title>
-<meta content="Configuration Guide | B-SNAP v2.6.0 documentation" property="og:title"/>
-<meta content="Configuration Guide | B-SNAP v2.6.0 documentation" name="twitter:title"/>
-<link href="_static/pygments.css?v=e72c8e07" rel="stylesheet" type="text/css"/>
-<link href="_static/theme.css?v=73505e79" rel="stylesheet" type="text/css"/>
-<link href="search.html" rel="search" title="Search"/>
-<link href="genindex.html" rel="index" title="Index"/>
-<link href="record-mounts.html" rel="next" title="Native SMB and NFS recording mounts"/>
-<link href="architecture.html" rel="prev" title="System Architecture"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#030711" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Configuration Guide | B-SNAP v2.6.6 documentation</title>
+  <meta property="og:title" content="Configuration Guide | B-SNAP v2.6.6 documentation" />
+  <meta name="twitter:title" content="Configuration Guide | B-SNAP v2.6.6 documentation" />
+  <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e72c8e07" />
+  <link rel="stylesheet" type="text/css" href="_static/theme.css?v=73505e79" />
+  <link rel="search" title="Search" href="search.html" />
+  <link rel="index" title="Index" href="genindex.html" />
+  <link rel="next" title="Native SMB and NFS recording mounts" href="record-mounts.html" />
+  <link rel="prev" title="System Architecture" href="architecture.html" />
 </head>
-<body :class="{ 'overflow-hidden': showSidebar }" class="min-h-screen font-sans antialiased bg-background text-foreground" x-data="{ showSidebar: false, showScrollTop: false }">
-<div @click.self="showSidebar = false" class="fixed inset-0 z-50 overflow-hidden bg-background/80 backdrop-blur-sm md:hidden" x-cloak="" x-show="showSidebar"></div><div class="relative flex flex-col min-h-screen" id="page"><a class="absolute top-0 left-0 z-[100] block bg-background p-4 text-xl transition -translate-x-full opacity-0 focus:translate-x-0 focus:opacity-100" href="#content">
+
+<body x-data="{ showSidebar: false, showScrollTop: false }"
+  class="min-h-screen font-sans antialiased bg-background text-foreground" :class="{ 'overflow-hidden': showSidebar }">
+  <div x-cloak x-show="showSidebar"
+    class="fixed inset-0 z-50 overflow-hidden bg-background/80 backdrop-blur-sm md:hidden"
+    @click.self="showSidebar = false"></div><div id="page" class="relative flex flex-col min-h-screen"><a href="#content"
+      class="absolute top-0 left-0 z-[100] block bg-background p-4 text-xl transition -translate-x-full opacity-0 focus:translate-x-0 focus:opacity-100">
       Skip to content
     </a><header class="sticky top-0 z-40 w-full border-b shadow-xs border-border bg-background/90 backdrop-blur"><div class="container flex items-center h-14">
-<div class="hidden mr-4 md:flex">
-<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.6.0 documentation</span>
-</a></div><button @click="showSidebar = true" class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden" type="button">
-<svg aria-hidden="true" fill="currentColor" height="24" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
-<path d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z"></path>
-</svg>
-<span class="sr-only">Toggle navigation menu</span>
-</button>
-<div class="flex items-center justify-between flex-1 gap-2 sm:gap-4 md:justify-end">
-<div class="flex-1 w-full md:w-auto md:flex-none"><form @keydown.k.window.meta="$refs.search.focus()" action="search.html" class="relative flex items-center group" id="searchbox" method="get">
-<input aria-label="Search the docs" class="inline-flex items-center font-medium transition-colors bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input hover:bg-accent focus:bg-accent hover:text-accent-foreground focus:text-accent-foreground hover:placeholder-accent-foreground py-2 px-4 relative h-9 w-full justify-start rounded-[0.5rem] text-sm text-muted-foreground sm:pr-12 md:w-40 lg:w-64" id="search-input" name="q" placeholder="Search ..." type="search" x-ref="search"/>
-<kbd class="pointer-events-none absolute right-1.5 top-2 hidden h-5 select-none text-muted-foreground items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex group-hover:bg-accent group-hover:text-accent-foreground">
-<span class="text-xs">⌘</span>
+    <div class="hidden mr-4 md:flex">
+      <a href="index.html" class="flex items-center mr-6"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.6.6 documentation</span>
+      </a></div><button
+      class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden"
+      type="button" @click="showSidebar = true">
+      <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 96 960 960" aria-hidden="true"
+        fill="currentColor">
+        <path
+          d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z" />
+      </svg>
+      <span class="sr-only">Toggle navigation menu</span>
+    </button>
+    <div class="flex items-center justify-between flex-1 gap-2 sm:gap-4 md:justify-end">
+      <div class="flex-1 w-full md:w-auto md:flex-none"><form id="searchbox"
+      action="search.html"
+      method="get"
+      class="relative flex items-center group"
+      @keydown.k.window.meta="$refs.search.focus()">
+  <input x-ref="search"
+          name="q"
+          id="search-input"
+          type="search"
+          aria-label="Search the docs"
+          placeholder="Search ..."
+          class="inline-flex items-center font-medium transition-colors bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input hover:bg-accent focus:bg-accent hover:text-accent-foreground focus:text-accent-foreground hover:placeholder-accent-foreground py-2 px-4 relative h-9 w-full justify-start rounded-[0.5rem] text-sm text-muted-foreground sm:pr-12 md:w-40 lg:w-64" />
+  <kbd class="pointer-events-none absolute right-1.5 top-2 hidden h-5 select-none text-muted-foreground items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex group-hover:bg-accent group-hover:text-accent-foreground">
+    <span class="text-xs">⌘</span>
     K
   </kbd>
 </form>
-</div>
-<nav class="flex items-center gap-1">
-<button @click="darkMode = !darkMode" class="relative inline-flex items-center justify-center px-0 text-sm font-medium transition-colors rounded-md hover:bg-accent hover:text-accent-foreground h-9 w-9" title="Toggle color scheme" type="button">
-<svg class="absolute transition-all scale-100 rotate-0 dark:-rotate-90 dark:scale-0" fill="currentColor" height="16" viewbox="0 96 960 960" width="16" xmlns="http://www.w3.org/2000/svg">
-<path d="M480 685q45.456 0 77.228-31.772Q589 621.456 589 576q0-45.456-31.772-77.228Q525.456 467 480 467q-45.456 0-77.228 31.772Q371 530.544 371 576q0 45.456 31.772 77.228Q434.544 685 480 685Zm0 91q-83 0-141.5-58.5T280 576q0-83 58.5-141.5T480 376q83 0 141.5 58.5T680 576q0 83-58.5 141.5T480 776ZM80 621.5q-19.152 0-32.326-13.174T34.5 576q0-19.152 13.174-32.326T80 530.5h80q19.152 0 32.326 13.174T205.5 576q0 19.152-13.174 32.326T160 621.5H80Zm720 0q-19.152 0-32.326-13.174T754.5 576q0-19.152 13.174-32.326T800 530.5h80q19.152 0 32.326 13.174T925.5 576q0 19.152-13.174 32.326T880 621.5h-80Zm-320-320q-19.152 0-32.326-13.174T434.5 256v-80q0-19.152 13.174-32.326T480 130.5q19.152 0 32.326 13.174T525.5 176v80q0 19.152-13.174 32.326T480 301.5Zm0 720q-19.152 0-32.326-13.17Q434.5 995.152 434.5 976v-80q0-19.152 13.174-32.326T480 850.5q19.152 0 32.326 13.174T525.5 896v80q0 19.152-13.174 32.33-13.174 13.17-32.326 13.17ZM222.174 382.065l-43-42Q165.5 327.391 166 308.239t13.174-33.065q13.435-13.674 32.587-13.674t32.065 13.674l42.239 43q12.674 13.435 12.555 31.706-.12 18.272-12.555 31.946-12.674 13.674-31.445 13.413-18.772-.261-32.446-13.174Zm494 494.761-42.239-43q-12.674-13.435-12.674-32.087t12.674-31.565Q686.609 756.5 705.38 757q18.772.5 32.446 13.174l43 41.761Q794.5 824.609 794 843.761t-13.174 33.065Q767.391 890.5 748.239 890.5t-32.065-13.674Zm-42-494.761Q660.5 369.391 661 350.62q.5-18.772 13.174-32.446l41.761-43Q728.609 261.5 747.761 262t33.065 13.174q13.674 13.435 13.674 32.587t-13.674 32.065l-43 42.239q-13.435 12.674-31.706 12.555-18.272-.12-31.946-12.555Zm-495 494.761Q165.5 863.391 165.5 844.239t13.674-32.065l43-42.239q13.435-12.674 32.087-12.674t31.565 12.674Q299.5 782.609 299 801.38q-.5 18.772-13.174 32.446l-41.761 43Q231.391 890.5 212.239 890t-33.065-13.174ZM480 576Z"></path>
-</svg>
-<svg class="absolute transition-all scale-0 rotate-90 dark:rotate-0 dark:scale-100" fill="currentColor" height="16" viewbox="0 96 960 960" width="16" xmlns="http://www.w3.org/2000/svg">
-<path d="M480 936q-151 0-255.5-104.5T120 576q0-138 90-239.5T440 218q25-3 39 18t-1 44q-17 26-25.5 55t-8.5 61q0 90 63 153t153 63q31 0 61.5-9t54.5-25q21-14 43-1.5t19 39.5q-14 138-117.5 229T480 936Zm0-80q88 0 158-48.5T740 681q-20 5-40 8t-40 3q-123 0-209.5-86.5T364 396q0-20 3-40t8-40q-78 32-126.5 102T200 576q0 116 82 198t198 82Zm-10-270Z"></path>
-</svg>
-</button>
-</nav>
-</div>
-</div>
+      </div>
+      <nav class="flex items-center gap-1">
+        <button @click="darkMode = !darkMode"
+          class="relative inline-flex items-center justify-center px-0 text-sm font-medium transition-colors rounded-md hover:bg-accent hover:text-accent-foreground h-9 w-9"
+          type="button"
+          title="Toggle color scheme">
+          <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 96 960 960" fill="currentColor"
+            class="absolute transition-all scale-100 rotate-0 dark:-rotate-90 dark:scale-0">
+            <path
+              d="M480 685q45.456 0 77.228-31.772Q589 621.456 589 576q0-45.456-31.772-77.228Q525.456 467 480 467q-45.456 0-77.228 31.772Q371 530.544 371 576q0 45.456 31.772 77.228Q434.544 685 480 685Zm0 91q-83 0-141.5-58.5T280 576q0-83 58.5-141.5T480 376q83 0 141.5 58.5T680 576q0 83-58.5 141.5T480 776ZM80 621.5q-19.152 0-32.326-13.174T34.5 576q0-19.152 13.174-32.326T80 530.5h80q19.152 0 32.326 13.174T205.5 576q0 19.152-13.174 32.326T160 621.5H80Zm720 0q-19.152 0-32.326-13.174T754.5 576q0-19.152 13.174-32.326T800 530.5h80q19.152 0 32.326 13.174T925.5 576q0 19.152-13.174 32.326T880 621.5h-80Zm-320-320q-19.152 0-32.326-13.174T434.5 256v-80q0-19.152 13.174-32.326T480 130.5q19.152 0 32.326 13.174T525.5 176v80q0 19.152-13.174 32.326T480 301.5Zm0 720q-19.152 0-32.326-13.17Q434.5 995.152 434.5 976v-80q0-19.152 13.174-32.326T480 850.5q19.152 0 32.326 13.174T525.5 896v80q0 19.152-13.174 32.33-13.174 13.17-32.326 13.17ZM222.174 382.065l-43-42Q165.5 327.391 166 308.239t13.174-33.065q13.435-13.674 32.587-13.674t32.065 13.674l42.239 43q12.674 13.435 12.555 31.706-.12 18.272-12.555 31.946-12.674 13.674-31.445 13.413-18.772-.261-32.446-13.174Zm494 494.761-42.239-43q-12.674-13.435-12.674-32.087t12.674-31.565Q686.609 756.5 705.38 757q18.772.5 32.446 13.174l43 41.761Q794.5 824.609 794 843.761t-13.174 33.065Q767.391 890.5 748.239 890.5t-32.065-13.674Zm-42-494.761Q660.5 369.391 661 350.62q.5-18.772 13.174-32.446l41.761-43Q728.609 261.5 747.761 262t33.065 13.174q13.674 13.435 13.674 32.587t-13.674 32.065l-43 42.239q-13.435 12.674-31.706 12.555-18.272-.12-31.946-12.555Zm-495 494.761Q165.5 863.391 165.5 844.239t13.674-32.065l43-42.239q13.435-12.674 32.087-12.674t31.565 12.674Q299.5 782.609 299 801.38q-.5 18.772-13.174 32.446l-41.761 43Q231.391 890.5 212.239 890t-33.065-13.174ZM480 576Z" />
+          </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 96 960 960" fill="currentColor"
+            class="absolute transition-all scale-0 rotate-90 dark:rotate-0 dark:scale-100">
+            <path
+              d="M480 936q-151 0-255.5-104.5T120 576q0-138 90-239.5T440 218q25-3 39 18t-1 44q-17 26-25.5 55t-8.5 61q0 90 63 153t153 63q31 0 61.5-9t54.5-25q21-14 43-1.5t19 39.5q-14 138-117.5 229T480 936Zm0-80q88 0 158-48.5T740 681q-20 5-40 8t-40 3q-123 0-209.5-86.5T364 396q0-20 3-40t8-40q-78 32-126.5 102T200 576q0 116 82 198t198 82Zm-10-270Z" />
+          </svg>
+        </button>
+      </nav>
+    </div>
+  </div>
 </header>
-<div class="flex-1"><div class="container md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }" class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky" id="left-sidebar">
-<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.6.0 documentation</span>
-</a>
-<div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
-<div class="overflow-y-auto h-full w-full relative pr-6"><nav class="table w-full min-w-full my-6 lg:my-8">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+
+    <div class="flex-1"><div
+        class="container md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside id="left-sidebar"
+  class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky"
+  :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }">
+
+    <a href="index.html" class="justify-start text-sm md:!hidden bg-background"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.6.6 documentation</span>
+    </a>
+
+    <div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
+      <div class="overflow-y-auto h-full w-full relative pr-6"><nav class="table w-full min-w-full my-6 lg:my-8">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="architecture.html">System Architecture</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration Guide</a></li>
@@ -82,49 +117,69 @@
 <li class="toctree-l1"><a class="reference internal" href="development.html">Development Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="deployment.html">Deployment</a></li>
 <li class="toctree-l1"><a class="reference internal" href="maintenance.html">Maintenance &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legacy_routing_review_2026_11_03.html">CA-23 routing and legacy review — 3 November 2026</a></li>
+<li class="toctree-l1"><a class="reference internal" href="high_security_rollout.html">Security rollout — B-Snap 2.6.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="comprehensive_audit_2026_11_02.html">Comprehensive audit B-Snap — 2 November 2026</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks/camera_groups_2026_11_03.html">CA-21 camera-group counts: before/after benchmark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
 </ul>
+
 </nav>
-</div>
-</div>
-<button @click="showSidebar = false" class="absolute md:hidden right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100" type="button">
-<svg class="h-4 w-4" fill="currentColor" height="24" stroke="none" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
-<path d="M480 632 284 828q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536 576l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11L480 632Z"></path>
-</svg>
-</button>
-</aside>
-<main class="relative py-6 lg:gap-10 lg:py-8 xl:grid xl:grid-cols-[1fr_300px]">
+      </div>
+    </div>
+    <button type="button" @click="showSidebar = false"
+      class="absolute md:hidden right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100">
+      <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 96 960 960" fill="currentColor"
+        stroke="none" class="h-4 w-4">
+        <path
+          d="M480 632 284 828q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536 576l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11L480 632Z" />
+      </svg>
+    </button>
+  </aside>
+          <main class="relative py-6 lg:gap-10 lg:py-8 xl:grid xl:grid-cols-[1fr_300px]">
 <div class="w-full min-w-0 mx-auto">
-<nav aria-label="breadcrumbs" class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
-<a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground" href="index.html">
-<span class="hidden md:inline">B-SNAP v2.6.0 documentation</span>
-<svg aria-label="Home" class="md:hidden" fill="currentColor" height="18" stroke="none" viewbox="0 96 960 960" width="18" xmlns="http://www.w3.org/2000/svg">
-<path d="M240 856h120V616h240v240h120V496L480 316 240 496v360Zm-80 80V456l320-240 320 240v480H520V696h-80v240H160Zm320-350Z"></path>
-</svg>
-</a>
-<div class="mr-1">/</div><span aria-current="page" class="font-medium text-foreground overflow-hidden text-ellipsis whitespace-nowrap">Configuration Guide</span>
+<nav aria-label="breadcrumbs"
+     class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
+  <a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground"
+     href="index.html">
+    <span class="hidden md:inline">B-SNAP v2.6.6 documentation</span>
+    <svg xmlns="http://www.w3.org/2000/svg"
+         height="18"
+         width="18"
+         viewBox="0 96 960 960"
+         aria-label="Home"
+         fill="currentColor"
+         stroke="none"
+         class="md:hidden">
+      <path d="M240 856h120V616h240v240h120V496L480 316 240 496v360Zm-80 80V456l320-240 320 240v480H520V696h-80v240H160Zm320-350Z" />
+    </svg>
+  </a>
+
+<div class="mr-1">/</div><span aria-current="page"
+        class="font-medium text-foreground overflow-hidden text-ellipsis whitespace-nowrap">Configuration Guide</span>
 </nav>
-<div id="content" role="main">
-<section id="configuration-guide">
+
+    <div id="content" role="main">
+      <section id="configuration-guide">
 <h1>Configuration Guide<a class="headerlink" href="#configuration-guide" title="Link to this heading"><span>#</span></a></h1>
 <section id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#overview'"><span>#</span></a></h2>
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"><span>#</span></a></h2>
 <p>B-Snap uses environment variables for configuration, allowing flexible deployment across different environments (development, testing, production).</p>
-<p><strong>Total Environment Variables</strong>: 40+<br/>
-<strong>Configuration File</strong>: <code class="docutils literal notranslate"><span class="pre">.env</span></code> (copy from <code class="docutils literal notranslate"><span class="pre">.env.example</span></code>)<br/>
+<p><strong>Total Environment Variables</strong>: 40+<br />
+<strong>Configuration File</strong>: <code class="docutils literal notranslate"><span class="pre">.env</span></code> (copy from <code class="docutils literal notranslate"><span class="pre">.env.example</span></code>)<br />
 <strong>Documentation</strong>: Available at <code class="docutils literal notranslate"><span class="pre">/docs/environment</span></code> endpoint</p>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="quick-start">
-<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#quick-start'"><span>#</span></a></h2>
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"><span>#</span></a></h2>
 <section id="create-configuration-file">
-<h3>1. Create Configuration File<a class="headerlink" href="#create-configuration-file" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#create-configuration-file'"><span>#</span></a></h3>
+<h3>1. Create Configuration File<a class="headerlink" href="#create-configuration-file" title="Link to this heading"><span>#</span></a></h3>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">cp .env.example .env
 </span></code></pre></div>
 </div>
 </section>
 <section id="generate-secure-keys">
-<h3>2. Generate Secure Keys<a class="headerlink" href="#generate-secure-keys" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#generate-secure-keys'"><span>#</span></a></h3>
+<h3>2. Generate Secure Keys<a class="headerlink" href="#generate-secure-keys" title="Link to this heading"><span>#</span></a></h3>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"># Generate SECRET_KEY (for sessions)
 </span><span id="line-2">export SECRET_KEY=$(openssl rand -hex 32)
 </span><span id="line-3">
@@ -134,17 +189,17 @@
 </div>
 </section>
 <section id="edit-configuration">
-<h3>3. Edit Configuration<a class="headerlink" href="#edit-configuration" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#edit-configuration'"><span>#</span></a></h3>
+<h3>3. Edit Configuration<a class="headerlink" href="#edit-configuration" title="Link to this heading"><span>#</span></a></h3>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">nano .env
 </span></code></pre></div>
 </div>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="core-settings-required">
-<h2>Core Settings (Required)<a class="headerlink" href="#core-settings-required" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#core-settings-required'"><span>#</span></a></h2>
+<h2>Core Settings (Required)<a class="headerlink" href="#core-settings-required" title="Link to this heading"><span>#</span></a></h2>
 <section id="secret-key">
-<h3>SECRET_KEY<a class="headerlink" href="#secret-key" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#secret-key'"><span>#</span></a></h3>
+<h3>SECRET_KEY<a class="headerlink" href="#secret-key" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String</p></li>
 <li><p><strong>Required</strong>: Yes</p></li>
@@ -155,7 +210,7 @@
 </ul>
 </section>
 <section id="encryption-key">
-<h3>ENCRYPTION_KEY<a class="headerlink" href="#encryption-key" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#encryption-key'"><span>#</span></a></h3>
+<h3>ENCRYPTION_KEY<a class="headerlink" href="#encryption-key" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String (32-byte hex)</p></li>
 <li><p><strong>Required</strong>: Yes</p></li>
@@ -166,18 +221,18 @@
 </ul>
 </section>
 <section id="database-url">
-<h3>DATABASE_URL<a class="headerlink" href="#database-url" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#database-url'"><span>#</span></a></h3>
+<h3>DATABASE_URL<a class="headerlink" href="#database-url" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String (URL)</p></li>
 <li><p><strong>Required</strong>: Yes</p></li>
-<li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">postgresql+psycopg2://bsnap_user:bsnap_pass@localhost:5432/bsnap_db</span></code></p></li>
+<li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">postgresql+psycopg2://bsnap_user:bsnap_pass&#64;localhost:5432/bsnap_db</span></code></p></li>
 <li><p><strong>Description</strong>: PostgreSQL database connection URL</p></li>
-<li><p><strong>Format</strong>: <code class="docutils literal notranslate"><span class="pre">postgresql+psycopg2://user:password@host:port/database</span></code></p></li>
+<li><p><strong>Format</strong>: <code class="docutils literal notranslate"><span class="pre">postgresql+psycopg2://user:password&#64;host:port/database</span></code></p></li>
 <li><p><strong>Used In</strong>: <code class="docutils literal notranslate"><span class="pre">app/db/database.py</span></code></p></li>
 </ul>
 </section>
 <section id="environment">
-<h3>ENVIRONMENT<a class="headerlink" href="#environment" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#environment'"><span>#</span></a></h3>
+<h3>ENVIRONMENT<a class="headerlink" href="#environment" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String</p></li>
 <li><p><strong>Required</strong>: Yes</p></li>
@@ -189,11 +244,11 @@
 </ul>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="session-authentication">
-<h2>Session &amp; Authentication<a class="headerlink" href="#session-authentication" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#session-authentication'"><span>#</span></a></h2>
+<h2>Session &amp; Authentication<a class="headerlink" href="#session-authentication" title="Link to this heading"><span>#</span></a></h2>
 <section id="session-max-age-seconds">
-<h3>SESSION_MAX_AGE_SECONDS<a class="headerlink" href="#session-max-age-seconds" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#session-max-age-seconds'"><span>#</span></a></h3>
+<h3>SESSION_MAX_AGE_SECONDS<a class="headerlink" href="#session-max-age-seconds" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Integer (seconds)</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">86400</span></code> (24 hours)</p></li>
@@ -204,7 +259,7 @@
 </ul>
 </section>
 <section id="max-web-sessions">
-<h3>MAX_WEB_SESSIONS<a class="headerlink" href="#max-web-sessions" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#max-web-sessions'"><span>#</span></a></h3>
+<h3>MAX_WEB_SESSIONS<a class="headerlink" href="#max-web-sessions" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Integer</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">1</span></code></p></li>
@@ -213,11 +268,11 @@
 </ul>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="security-settings">
-<h2>Security Settings<a class="headerlink" href="#security-settings" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#security-settings'"><span>#</span></a></h2>
+<h2>Security Settings<a class="headerlink" href="#security-settings" title="Link to this heading"><span>#</span></a></h2>
 <section id="trusted-hosts">
-<h3>TRUSTED_HOSTS<a class="headerlink" href="#trusted-hosts" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#trusted-hosts'"><span>#</span></a></h3>
+<h3>TRUSTED_HOSTS<a class="headerlink" href="#trusted-hosts" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String (comma-separated)</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">*</span></code></p></li>
@@ -228,7 +283,7 @@
 </ul>
 </section>
 <section id="debug">
-<h3>DEBUG<a class="headerlink" href="#debug" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#debug'"><span>#</span></a></h3>
+<h3>DEBUG<a class="headerlink" href="#debug" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Boolean</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">false</span></code></p></li>
@@ -239,11 +294,11 @@
 </ul>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="email-configuration-smtp">
-<h2>Email Configuration (SMTP)<a class="headerlink" href="#email-configuration-smtp" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#email-configuration-smtp'"><span>#</span></a></h2>
+<h2>Email Configuration (SMTP)<a class="headerlink" href="#email-configuration-smtp" title="Link to this heading"><span>#</span></a></h2>
 <section id="smtp-host">
-<h3>SMTP_HOST<a class="headerlink" href="#smtp-host" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#smtp-host'"><span>#</span></a></h3>
+<h3>SMTP_HOST<a class="headerlink" href="#smtp-host" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">smtp.gmail.com</span></code></p></li>
@@ -252,7 +307,7 @@
 </ul>
 </section>
 <section id="smtp-port">
-<h3>SMTP_PORT<a class="headerlink" href="#smtp-port" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#smtp-port'"><span>#</span></a></h3>
+<h3>SMTP_PORT<a class="headerlink" href="#smtp-port" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Integer</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">587</span></code></p></li>
@@ -261,7 +316,7 @@
 </ul>
 </section>
 <section id="smtp-user-smtp-password">
-<h3>SMTP_USER / SMTP_PASSWORD<a class="headerlink" href="#smtp-user-smtp-password" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#smtp-user-smtp-password'"><span>#</span></a></h3>
+<h3>SMTP_USER / SMTP_PASSWORD<a class="headerlink" href="#smtp-user-smtp-password" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String</p></li>
 <li><p><strong>Description</strong>: SMTP authentication credentials</p></li>
@@ -270,7 +325,7 @@
 </ul>
 </section>
 <section id="email-from-email-cc">
-<h3>EMAIL_FROM / EMAIL_CC<a class="headerlink" href="#email-from-email-cc" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#email-from-email-cc'"><span>#</span></a></h3>
+<h3>EMAIL_FROM / EMAIL_CC<a class="headerlink" href="#email-from-email-cc" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String</p></li>
 <li><p><strong>Description</strong>: Default sender and CC email addresses</p></li>
@@ -278,7 +333,7 @@
 </ul>
 </section>
 <section id="email-retry-resource-limits">
-<h3>Email retry resource limits<a class="headerlink" href="#email-retry-resource-limits" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#email-retry-resource-limits'"><span>#</span></a></h3>
+<h3>Email retry resource limits<a class="headerlink" href="#email-retry-resource-limits" title="Link to this heading"><span>#</span></a></h3>
 <p>These are database settings, editable in App Config under job settings. They are
 read at the start of each retry run. Initialization seeds missing values only.</p>
 <table class="docutils align-default">
@@ -333,11 +388,11 @@ deferrals or unfinished work. An empty run is <code class="docutils literal notr
 with <code class="docutils literal notranslate"><span class="pre">smtp_failed</span></code>, and a successful batch may still have future pending retries.</p>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="storage-paths">
-<h2>Storage &amp; Paths<a class="headerlink" href="#storage-paths" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#storage-paths'"><span>#</span></a></h2>
+<h2>Storage &amp; Paths<a class="headerlink" href="#storage-paths" title="Link to this heading"><span>#</span></a></h2>
 <section id="snapshot-path">
-<h3>SNAPSHOT_PATH<a class="headerlink" href="#snapshot-path" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#snapshot-path'"><span>#</span></a></h3>
+<h3>SNAPSHOT_PATH<a class="headerlink" href="#snapshot-path" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String (path)</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">./static/snapshots</span></code></p></li>
@@ -345,7 +400,7 @@ with <code class="docutils literal notranslate"><span class="pre">smtp_failed</s
 </ul>
 </section>
 <section id="video-path">
-<h3>VIDEO_PATH<a class="headerlink" href="#video-path" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#video-path'"><span>#</span></a></h3>
+<h3>VIDEO_PATH<a class="headerlink" href="#video-path" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String (path)</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">./static/videos</span></code></p></li>
@@ -353,7 +408,7 @@ with <code class="docutils literal notranslate"><span class="pre">smtp_failed</s
 </ul>
 </section>
 <section id="ffmpeg-ffprobe">
-<h3>ffmpeg / ffprobe<a class="headerlink" href="#ffmpeg-ffprobe" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ffmpeg-ffprobe'"><span>#</span></a></h3>
+<h3>ffmpeg / ffprobe<a class="headerlink" href="#ffmpeg-ffprobe" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Executable dependency</p></li>
 <li><p><strong>Description</strong>: Video recording, thumbnail generation, and metadata extraction use FFmpeg tooling</p></li>
@@ -361,7 +416,7 @@ with <code class="docutils literal notranslate"><span class="pre">smtp_failed</s
 </ul>
 </section>
 <section id="log-dir">
-<h3>LOG_DIR<a class="headerlink" href="#log-dir" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#log-dir'"><span>#</span></a></h3>
+<h3>LOG_DIR<a class="headerlink" href="#log-dir" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String (path)</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">./logs</span></code></p></li>
@@ -370,7 +425,7 @@ with <code class="docutils literal notranslate"><span class="pre">smtp_failed</s
 </ul>
 </section>
 <section id="alembic-ini-path">
-<h3>ALEMBIC_INI_PATH<a class="headerlink" href="#alembic-ini-path" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#alembic-ini-path'"><span>#</span></a></h3>
+<h3>ALEMBIC_INI_PATH<a class="headerlink" href="#alembic-ini-path" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String (path)</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">./alembic.ini</span></code></p></li>
@@ -379,9 +434,9 @@ with <code class="docutils literal notranslate"><span class="pre">smtp_failed</s
 </ul>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="retention-policy-med-003">
-<h2>Retention Policy (MED-003)<a class="headerlink" href="#retention-policy-med-003" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#retention-policy-med-003'"><span>#</span></a></h2>
+<h2>Retention Policy (MED-003)<a class="headerlink" href="#retention-policy-med-003" title="Link to this heading"><span>#</span></a></h2>
 <p>Configure captured media under <strong>Configuration &gt; Retention</strong>. These are database
 configuration keys read by <code class="docutils literal notranslate"><span class="pre">get_config()</span></code>, rather than uppercase environment settings.</p>
 <table class="docutils align-default">
@@ -436,7 +491,7 @@ scheduled job. Existing saved settings are preserved when new keys are seeded.</
 <p>Implementation: <code class="docutils literal notranslate"><span class="pre">app/utils/media_retention.py</span></code>, <code class="docutils literal notranslate"><span class="pre">app/jobs/scheduler.py</span></code>, and
 <code class="docutils literal notranslate"><span class="pre">app/utils/snapshot_utils.py</span></code>.</p>
 <section id="retention-record-check-days">
-<h3>retention_record_check_days<a class="headerlink" href="#retention-record-check-days" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#retention-record-check-days'"><span>#</span></a></h3>
+<h3>retention_record_check_days<a class="headerlink" href="#retention-record-check-days" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Integer</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">90</span></code></p></li>
@@ -446,7 +501,7 @@ scheduled job. Existing saved settings are preserved when new keys are seeded.</
 </ul>
 </section>
 <section id="retention-api-logs-days">
-<h3>retention_api_logs_days<a class="headerlink" href="#retention-api-logs-days" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#retention-api-logs-days'"><span>#</span></a></h3>
+<h3>retention_api_logs_days<a class="headerlink" href="#retention-api-logs-days" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">90</span></code>; configurable through <strong>Log Retention → API Logs (days)</strong>.</p></li>
 <li><p><strong>Cleanup</strong>: <code class="docutils literal notranslate"><span class="pre">cleanup_api_logs</span></code> follows its own cron override or the shared
@@ -468,11 +523,11 @@ be reconstructed. Downgrading removes the aggregate history.</p></li>
 </ul>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="job-scheduling">
-<h2>Job Scheduling<a class="headerlink" href="#job-scheduling" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#job-scheduling'"><span>#</span></a></h2>
+<h2>Job Scheduling<a class="headerlink" href="#job-scheduling" title="Link to this heading"><span>#</span></a></h2>
 <section id="native-storage-mounts">
-<h3>Native storage mounts<a class="headerlink" href="#native-storage-mounts" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#native-storage-mounts'"><span>#</span></a></h3>
+<h3>Native storage mounts<a class="headerlink" href="#native-storage-mounts" title="Link to this heading"><span>#</span></a></h3>
 <p>Native SMB/NFS mounts also use the deployment-only variables
 <code class="docutils literal notranslate"><span class="pre">BSNAP_RECORD_MOUNTS_ENABLED</span></code> (default <code class="docutils literal notranslate"><span class="pre">false</span></code>),
 <code class="docutils literal notranslate"><span class="pre">BSNAP_RECORD_MOUNT_ALLOWED_NETWORKS</span></code> (default empty; IP/CIDR allowlist), and
@@ -480,7 +535,7 @@ be reconstructed. Downgrading removes the aggregate history.</p></li>
 for secure Linux deployment prerequisites and protocol requirements.</p>
 </section>
 <section id="record-check-interval-minutes">
-<h3>record_check_interval_minutes<a class="headerlink" href="#record-check-interval-minutes" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#record-check-interval-minutes'"><span>#</span></a></h3>
+<h3>record_check_interval_minutes<a class="headerlink" href="#record-check-interval-minutes" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Integer</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">10</span></code></p></li>
@@ -489,7 +544,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="record-check-cron">
-<h3>record_check_cron<a class="headerlink" href="#record-check-cron" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#record-check-cron'"><span>#</span></a></h3>
+<h3>record_check_cron<a class="headerlink" href="#record-check-cron" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String (5-part cron)</p></li>
 <li><p><strong>Default</strong>: empty</p></li>
@@ -498,7 +553,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="cleanup-cron">
-<h3>cleanup_cron<a class="headerlink" href="#cleanup-cron" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#cleanup-cron'"><span>#</span></a></h3>
+<h3>cleanup_cron<a class="headerlink" href="#cleanup-cron" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String (5-part cron)</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">0</span> <span class="pre">2</span> <span class="pre">*</span> <span class="pre">*</span> <span class="pre">*</span></code></p></li>
@@ -507,12 +562,12 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="whatsapp-gateway-gowa">
-<h2>WhatsApp Gateway (GoWA)<a class="headerlink" href="#whatsapp-gateway-gowa" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#whatsapp-gateway-gowa'"><span>#</span></a></h2>
+<h2>WhatsApp Gateway (GoWA)<a class="headerlink" href="#whatsapp-gateway-gowa" title="Link to this heading"><span>#</span></a></h2>
 <p>These values are normally saved through the Config UI and stored in the database configuration table.</p>
 <section id="gowa-enabled">
-<h3>gowa_enabled<a class="headerlink" href="#gowa-enabled" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#gowa-enabled'"><span>#</span></a></h3>
+<h3>gowa_enabled<a class="headerlink" href="#gowa-enabled" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Boolean</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">0</span></code></p></li>
@@ -521,7 +576,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="gowa-base-url">
-<h3>gowa_base_url<a class="headerlink" href="#gowa-base-url" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#gowa-base-url'"><span>#</span></a></h3>
+<h3>gowa_base_url<a class="headerlink" href="#gowa-base-url" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: URL</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">http://localhost:3000</span></code></p></li>
@@ -531,7 +586,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="gowa-api-key">
-<h3>gowa_api_key<a class="headerlink" href="#gowa-api-key" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#gowa-api-key'"><span>#</span></a></h3>
+<h3>gowa_api_key<a class="headerlink" href="#gowa-api-key" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String</p></li>
 <li><p><strong>Default</strong>: empty</p></li>
@@ -541,7 +596,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="gowa-send-timeout-seconds">
-<h3>GOWA_SEND_TIMEOUT_SECONDS<a class="headerlink" href="#gowa-send-timeout-seconds" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#gowa-send-timeout-seconds'"><span>#</span></a></h3>
+<h3>GOWA_SEND_TIMEOUT_SECONDS<a class="headerlink" href="#gowa-send-timeout-seconds" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Integer (seconds)</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">10</span></code></p></li>
@@ -551,7 +606,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="gowa-send-retries">
-<h3>GOWA_SEND_RETRIES<a class="headerlink" href="#gowa-send-retries" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#gowa-send-retries'"><span>#</span></a></h3>
+<h3>GOWA_SEND_RETRIES<a class="headerlink" href="#gowa-send-retries" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Integer</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">2</span></code></p></li>
@@ -561,7 +616,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="wa-camera-thread-workers">
-<h3>WA_CAMERA_THREAD_WORKERS<a class="headerlink" href="#wa-camera-thread-workers" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#wa-camera-thread-workers'"><span>#</span></a></h3>
+<h3>WA_CAMERA_THREAD_WORKERS<a class="headerlink" href="#wa-camera-thread-workers" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Integer</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">4</span></code></p></li>
@@ -571,7 +626,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="wa-gateway-thread-workers">
-<h3>WA_GATEWAY_THREAD_WORKERS<a class="headerlink" href="#wa-gateway-thread-workers" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#wa-gateway-thread-workers'"><span>#</span></a></h3>
+<h3>WA_GATEWAY_THREAD_WORKERS<a class="headerlink" href="#wa-gateway-thread-workers" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Integer</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">8</span></code></p></li>
@@ -582,17 +637,17 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 <p>The effective total capacity is the configured pool size multiplied by the number of web worker processes. For example, two web workers and <code class="docutils literal notranslate"><span class="pre">WA_CAMERA_THREAD_WORKERS=4</span></code> allow up to eight captures at once across the instance.</p>
 </section>
 <section id="gowa-default-receiver">
-<h3>gowa_default_receiver<a class="headerlink" href="#gowa-default-receiver" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#gowa-default-receiver'"><span>#</span></a></h3>
+<h3>gowa_default_receiver<a class="headerlink" href="#gowa-default-receiver" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String (comma-separated)</p></li>
 <li><p><strong>Default</strong>: empty</p></li>
 <li><p><strong>Description</strong>: Default WhatsApp recipients for reports and alerts. Supports personal numbers and group JIDs</p></li>
-<li><p><strong>Examples</strong>: <code class="docutils literal notranslate"><span class="pre">6281234567890</span></code>, <code class="docutils literal notranslate"><span class="pre">120363xxxxxxxx@g.us</span></code></p></li>
+<li><p><strong>Examples</strong>: <code class="docutils literal notranslate"><span class="pre">6281234567890</span></code>, <code class="docutils literal notranslate"><span class="pre">120363xxxxxxxx&#64;g.us</span></code></p></li>
 <li><p><strong>Used In</strong>: <code class="docutils literal notranslate"><span class="pre">app/utils/wa_gateway.py</span></code>, <code class="docutils literal notranslate"><span class="pre">app/utils/record_check.py</span></code></p></li>
 </ul>
 </section>
 <section id="app-public-url">
-<h3>app_public_url<a class="headerlink" href="#app-public-url" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#app-public-url'"><span>#</span></a></h3>
+<h3>app_public_url<a class="headerlink" href="#app-public-url" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: URL</p></li>
 <li><p><strong>Default</strong>: empty</p></li>
@@ -602,11 +657,11 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="camera-monitoring">
-<h2>Camera &amp; Monitoring<a class="headerlink" href="#camera-monitoring" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#camera-monitoring'"><span>#</span></a></h2>
+<h2>Camera &amp; Monitoring<a class="headerlink" href="#camera-monitoring" title="Link to this heading"><span>#</span></a></h2>
 <section id="offline-alert-threshold-seconds">
-<h3>OFFLINE_ALERT_THRESHOLD_SECONDS<a class="headerlink" href="#offline-alert-threshold-seconds" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#offline-alert-threshold-seconds'"><span>#</span></a></h3>
+<h3>OFFLINE_ALERT_THRESHOLD_SECONDS<a class="headerlink" href="#offline-alert-threshold-seconds" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Integer (seconds)</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">1800</span></code> (30 minutes)</p></li>
@@ -616,7 +671,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="camera-timeout">
-<h3>CAMERA_TIMEOUT<a class="headerlink" href="#camera-timeout" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#camera-timeout'"><span>#</span></a></h3>
+<h3>CAMERA_TIMEOUT<a class="headerlink" href="#camera-timeout" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Integer (seconds)</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">10</span></code></p></li>
@@ -624,11 +679,11 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="logging-configuration">
-<h2>Logging Configuration<a class="headerlink" href="#logging-configuration" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#logging-configuration'"><span>#</span></a></h2>
+<h2>Logging Configuration<a class="headerlink" href="#logging-configuration" title="Link to this heading"><span>#</span></a></h2>
 <section id="log-level">
-<h3>LOG_LEVEL<a class="headerlink" href="#log-level" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#log-level'"><span>#</span></a></h3>
+<h3>LOG_LEVEL<a class="headerlink" href="#log-level" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">INFO</span></code></p></li>
@@ -638,7 +693,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="log-format">
-<h3>LOG_FORMAT<a class="headerlink" href="#log-format" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#log-format'"><span>#</span></a></h3>
+<h3>LOG_FORMAT<a class="headerlink" href="#log-format" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">text</span></code></p></li>
@@ -647,7 +702,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="bsnap-log-via-gunicorn">
-<h3>BSNAP_LOG_VIA_GUNICORN<a class="headerlink" href="#bsnap-log-via-gunicorn" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#bsnap-log-via-gunicorn'"><span>#</span></a></h3>
+<h3>BSNAP_LOG_VIA_GUNICORN<a class="headerlink" href="#bsnap-log-via-gunicorn" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Integer (0/1)</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">1</span></code></p></li>
@@ -657,11 +712,11 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="server-performance">
-<h2>Server &amp; Performance<a class="headerlink" href="#server-performance" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#server-performance'"><span>#</span></a></h2>
+<h2>Server &amp; Performance<a class="headerlink" href="#server-performance" title="Link to this heading"><span>#</span></a></h2>
 <section id="workers">
-<h3>WORKERS<a class="headerlink" href="#workers" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#workers'"><span>#</span></a></h3>
+<h3>WORKERS<a class="headerlink" href="#workers" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Integer</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">2</span></code></p></li>
@@ -670,7 +725,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="port">
-<h3>PORT<a class="headerlink" href="#port" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#port'"><span>#</span></a></h3>
+<h3>PORT<a class="headerlink" href="#port" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Integer</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">8080</span></code></p></li>
@@ -678,7 +733,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="bind">
-<h3>BIND<a class="headerlink" href="#bind" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#bind'"><span>#</span></a></h3>
+<h3>BIND<a class="headerlink" href="#bind" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">0.0.0.0:8080</span></code></p></li>
@@ -686,7 +741,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="timeout">
-<h3>TIMEOUT<a class="headerlink" href="#timeout" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#timeout'"><span>#</span></a></h3>
+<h3>TIMEOUT<a class="headerlink" href="#timeout" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Integer (seconds)</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">60</span></code></p></li>
@@ -694,11 +749,11 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="timezone-scheduling">
-<h2>Timezone &amp; Scheduling<a class="headerlink" href="#timezone-scheduling" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#timezone-scheduling'"><span>#</span></a></h2>
+<h2>Timezone &amp; Scheduling<a class="headerlink" href="#timezone-scheduling" title="Link to this heading"><span>#</span></a></h2>
 <section id="tz-scheduler-tz">
-<h3>TZ / SCHEDULER_TZ<a class="headerlink" href="#tz-scheduler-tz" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#tz-scheduler-tz'"><span>#</span></a></h3>
+<h3>TZ / SCHEDULER_TZ<a class="headerlink" href="#tz-scheduler-tz" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: String</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">Asia/Singapore</span></code></p></li>
@@ -706,7 +761,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="scheduler-enabled">
-<h3>SCHEDULER_ENABLED<a class="headerlink" href="#scheduler-enabled" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#scheduler-enabled'"><span>#</span></a></h3>
+<h3>SCHEDULER_ENABLED<a class="headerlink" href="#scheduler-enabled" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Type</strong>: Boolean</p></li>
 <li><p><strong>Default</strong>: <code class="docutils literal notranslate"><span class="pre">true</span></code></p></li>
@@ -714,9 +769,9 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="configuration-priority">
-<h2>Configuration Priority<a class="headerlink" href="#configuration-priority" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#configuration-priority'"><span>#</span></a></h2>
+<h2>Configuration Priority<a class="headerlink" href="#configuration-priority" title="Link to this heading"><span>#</span></a></h2>
 <p>B-Snap uses the following priority for configuration:</p>
 <ol class="arabic simple">
 <li><p><strong>Environment Variables</strong> (highest priority)</p></li>
@@ -724,11 +779,11 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 <li><p><strong>Default Values</strong> (lowest priority)</p></li>
 </ol>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="production-checklist">
-<h2>Production Checklist<a class="headerlink" href="#production-checklist" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#production-checklist'"><span>#</span></a></h2>
+<h2>Production Checklist<a class="headerlink" href="#production-checklist" title="Link to this heading"><span>#</span></a></h2>
 <section id="critical-must-change">
-<h3>Critical (Must Change)<a class="headerlink" href="#critical-must-change" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#critical-must-change'"><span>#</span></a></h3>
+<h3>Critical (Must Change)<a class="headerlink" href="#critical-must-change" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p>[ ] <strong>SECRET_KEY</strong>: Generate new secure key</p></li>
 <li><p>[ ] <strong>ENCRYPTION_KEY</strong>: Generate new encryption key</p></li>
@@ -737,7 +792,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="security">
-<h3>Security<a class="headerlink" href="#security" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#security'"><span>#</span></a></h3>
+<h3>Security<a class="headerlink" href="#security" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p>[ ] <strong>DEBUG</strong>: Set to <code class="docutils literal notranslate"><span class="pre">false</span></code></p></li>
 <li><p>[ ] <strong>TRUSTED_HOSTS</strong>: Restrict to specific domains</p></li>
@@ -745,7 +800,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="email">
-<h3>Email<a class="headerlink" href="#email" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#email'"><span>#</span></a></h3>
+<h3>Email<a class="headerlink" href="#email" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p>[ ] <strong>SMTP_HOST</strong>: Configure production SMTP server</p></li>
 <li><p>[ ] <strong>SMTP_USER/PASSWORD</strong>: Set valid credentials</p></li>
@@ -753,25 +808,25 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 <section id="retention">
-<h3>Retention<a class="headerlink" href="#retention" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#retention'"><span>#</span></a></h3>
+<h3>Retention<a class="headerlink" href="#retention" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p>[ ] <strong>RETENTION_SNAPSHOT_DAYS</strong>: Adjust based on storage capacity</p></li>
 <li><p>[ ] <strong>RETENTION_VIDEO_DAYS</strong>: Adjust based on storage capacity</p></li>
 </ul>
 </section>
 <section id="performance">
-<h3>Performance<a class="headerlink" href="#performance" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#performance'"><span>#</span></a></h3>
+<h3>Performance<a class="headerlink" href="#performance" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p>[ ] <strong>WORKERS</strong>: Tune based on CPU cores</p></li>
 <li><p>[ ] <strong>BIND</strong>: Configure for production network</p></li>
 </ul>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="environment-specific-recommendations">
-<h2>Environment-Specific Recommendations<a class="headerlink" href="#environment-specific-recommendations" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#environment-specific-recommendations'"><span>#</span></a></h2>
+<h2>Environment-Specific Recommendations<a class="headerlink" href="#environment-specific-recommendations" title="Link to this heading"><span>#</span></a></h2>
 <section id="mining-cctv-operations-24-7">
-<h3>Mining/CCTV Operations (24/7)<a class="headerlink" href="#mining-cctv-operations-24-7" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#mining-cctv-operations-24-7'"><span>#</span></a></h3>
+<h3>Mining/CCTV Operations (24/7)<a class="headerlink" href="#mining-cctv-operations-24-7" title="Link to this heading"><span>#</span></a></h3>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"># Session (use Remember Me feature instead of extending)
 </span><span id="line-2">SESSION_MAX_AGE_SECONDS=86400
 </span><span id="line-3">
@@ -788,7 +843,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </div>
 </section>
 <section id="development">
-<h3>Development<a class="headerlink" href="#development" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#development'"><span>#</span></a></h3>
+<h3>Development<a class="headerlink" href="#development" title="Link to this heading"><span>#</span></a></h3>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">ENVIRONMENT=development
 </span><span id="line-2">DEBUG=true
 </span><span id="line-3">LOG_LEVEL=DEBUG
@@ -797,7 +852,7 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </div>
 </section>
 <section id="testing">
-<h3>Testing<a class="headerlink" href="#testing" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#testing'"><span>#</span></a></h3>
+<h3>Testing<a class="headerlink" href="#testing" title="Link to this heading"><span>#</span></a></h3>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">ENVIRONMENT=testing
 </span><span id="line-2">DEBUG=false
 </span><span id="line-3">DATABASE_URL=postgresql+psycopg2://bsnap_user:pass@localhost:5432/bsnap_test
@@ -806,22 +861,22 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </div>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="troubleshooting">
-<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#troubleshooting'"><span>#</span></a></h2>
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"><span>#</span></a></h2>
 <section id="common-issues">
-<h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#common-issues'"><span>#</span></a></h3>
-<p><strong>Issue</strong>: “SECRET_KEY not set” error<br/>
+<h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading"><span>#</span></a></h3>
+<p><strong>Issue</strong>: “SECRET_KEY not set” error<br />
 <strong>Solution</strong>: Set SECRET_KEY in .env file</p>
-<p><strong>Issue</strong>: “Database connection failed”<br/>
+<p><strong>Issue</strong>: “Database connection failed”<br />
 <strong>Solution</strong>: Check DATABASE_URL format and credentials</p>
-<p><strong>Issue</strong>: “Encryption key error”<br/>
+<p><strong>Issue</strong>: “Encryption key error”<br />
 <strong>Solution</strong>: Ensure ENCRYPTION_KEY is 32-byte hex string</p>
 </section>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="web-documentation">
-<h2>Web Documentation<a class="headerlink" href="#web-documentation" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#web-documentation'"><span>#</span></a></h2>
+<h2>Web Documentation<a class="headerlink" href="#web-documentation" title="Link to this heading"><span>#</span></a></h2>
 <p>Access interactive documentation at:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">your</span><span class="o">-</span><span class="n">server</span><span class="p">:</span><span class="mi">8080</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">environment</span>
 </span></code></pre></div>
@@ -835,9 +890,9 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 <li><p>Quick reference cards</p></li>
 </ul>
 </section>
-<hr class="docutils"/>
+<hr class="docutils" />
 <section id="see-also">
-<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#see-also'"><span>#</span></a></h2>
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"><span>#</span></a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="security.html"><span class="doc">Security</span></a> - Security best practices</p></li>
 <li><p><a class="reference internal" href="deployment.html"><span class="doc">Deployment</span></a> - Deployment guide</p></li>
@@ -845,133 +900,139 @@ for secure Linux deployment prerequisites and protocol requirements.</p>
 </ul>
 </section>
 </section>
-</div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
-<div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
-<ul>
-<li><a :data-current="activeSection === '#overview'" class="reference internal" href="#overview">Overview</a></li>
-<li><a :data-current="activeSection === '#quick-start'" class="reference internal" href="#quick-start">Quick Start</a><ul>
-<li><a :data-current="activeSection === '#create-configuration-file'" class="reference internal" href="#create-configuration-file">1. Create Configuration File</a></li>
-<li><a :data-current="activeSection === '#generate-secure-keys'" class="reference internal" href="#generate-secure-keys">2. Generate Secure Keys</a></li>
-<li><a :data-current="activeSection === '#edit-configuration'" class="reference internal" href="#edit-configuration">3. Edit Configuration</a></li>
+
+    </div></div><aside id="right-sidebar" class="hidden text-sm xl:block">
+  <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
+    <ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#quick-start">Quick Start</a><ul>
+<li><a class="reference internal" href="#create-configuration-file">1. Create Configuration File</a></li>
+<li><a class="reference internal" href="#generate-secure-keys">2. Generate Secure Keys</a></li>
+<li><a class="reference internal" href="#edit-configuration">3. Edit Configuration</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#core-settings-required'" class="reference internal" href="#core-settings-required">Core Settings (Required)</a><ul>
-<li><a :data-current="activeSection === '#secret-key'" class="reference internal" href="#secret-key">SECRET_KEY</a></li>
-<li><a :data-current="activeSection === '#encryption-key'" class="reference internal" href="#encryption-key">ENCRYPTION_KEY</a></li>
-<li><a :data-current="activeSection === '#database-url'" class="reference internal" href="#database-url">DATABASE_URL</a></li>
-<li><a :data-current="activeSection === '#environment'" class="reference internal" href="#environment">ENVIRONMENT</a></li>
+<li><a class="reference internal" href="#core-settings-required">Core Settings (Required)</a><ul>
+<li><a class="reference internal" href="#secret-key">SECRET_KEY</a></li>
+<li><a class="reference internal" href="#encryption-key">ENCRYPTION_KEY</a></li>
+<li><a class="reference internal" href="#database-url">DATABASE_URL</a></li>
+<li><a class="reference internal" href="#environment">ENVIRONMENT</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#session-authentication'" class="reference internal" href="#session-authentication">Session &amp; Authentication</a><ul>
-<li><a :data-current="activeSection === '#session-max-age-seconds'" class="reference internal" href="#session-max-age-seconds">SESSION_MAX_AGE_SECONDS</a></li>
-<li><a :data-current="activeSection === '#max-web-sessions'" class="reference internal" href="#max-web-sessions">MAX_WEB_SESSIONS</a></li>
+<li><a class="reference internal" href="#session-authentication">Session &amp; Authentication</a><ul>
+<li><a class="reference internal" href="#session-max-age-seconds">SESSION_MAX_AGE_SECONDS</a></li>
+<li><a class="reference internal" href="#max-web-sessions">MAX_WEB_SESSIONS</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#security-settings'" class="reference internal" href="#security-settings">Security Settings</a><ul>
-<li><a :data-current="activeSection === '#trusted-hosts'" class="reference internal" href="#trusted-hosts">TRUSTED_HOSTS</a></li>
-<li><a :data-current="activeSection === '#debug'" class="reference internal" href="#debug">DEBUG</a></li>
+<li><a class="reference internal" href="#security-settings">Security Settings</a><ul>
+<li><a class="reference internal" href="#trusted-hosts">TRUSTED_HOSTS</a></li>
+<li><a class="reference internal" href="#debug">DEBUG</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#email-configuration-smtp'" class="reference internal" href="#email-configuration-smtp">Email Configuration (SMTP)</a><ul>
-<li><a :data-current="activeSection === '#smtp-host'" class="reference internal" href="#smtp-host">SMTP_HOST</a></li>
-<li><a :data-current="activeSection === '#smtp-port'" class="reference internal" href="#smtp-port">SMTP_PORT</a></li>
-<li><a :data-current="activeSection === '#smtp-user-smtp-password'" class="reference internal" href="#smtp-user-smtp-password">SMTP_USER / SMTP_PASSWORD</a></li>
-<li><a :data-current="activeSection === '#email-from-email-cc'" class="reference internal" href="#email-from-email-cc">EMAIL_FROM / EMAIL_CC</a></li>
-<li><a :data-current="activeSection === '#email-retry-resource-limits'" class="reference internal" href="#email-retry-resource-limits">Email retry resource limits</a></li>
+<li><a class="reference internal" href="#email-configuration-smtp">Email Configuration (SMTP)</a><ul>
+<li><a class="reference internal" href="#smtp-host">SMTP_HOST</a></li>
+<li><a class="reference internal" href="#smtp-port">SMTP_PORT</a></li>
+<li><a class="reference internal" href="#smtp-user-smtp-password">SMTP_USER / SMTP_PASSWORD</a></li>
+<li><a class="reference internal" href="#email-from-email-cc">EMAIL_FROM / EMAIL_CC</a></li>
+<li><a class="reference internal" href="#email-retry-resource-limits">Email retry resource limits</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#storage-paths'" class="reference internal" href="#storage-paths">Storage &amp; Paths</a><ul>
-<li><a :data-current="activeSection === '#snapshot-path'" class="reference internal" href="#snapshot-path">SNAPSHOT_PATH</a></li>
-<li><a :data-current="activeSection === '#video-path'" class="reference internal" href="#video-path">VIDEO_PATH</a></li>
-<li><a :data-current="activeSection === '#ffmpeg-ffprobe'" class="reference internal" href="#ffmpeg-ffprobe">ffmpeg / ffprobe</a></li>
-<li><a :data-current="activeSection === '#log-dir'" class="reference internal" href="#log-dir">LOG_DIR</a></li>
-<li><a :data-current="activeSection === '#alembic-ini-path'" class="reference internal" href="#alembic-ini-path">ALEMBIC_INI_PATH</a></li>
+<li><a class="reference internal" href="#storage-paths">Storage &amp; Paths</a><ul>
+<li><a class="reference internal" href="#snapshot-path">SNAPSHOT_PATH</a></li>
+<li><a class="reference internal" href="#video-path">VIDEO_PATH</a></li>
+<li><a class="reference internal" href="#ffmpeg-ffprobe">ffmpeg / ffprobe</a></li>
+<li><a class="reference internal" href="#log-dir">LOG_DIR</a></li>
+<li><a class="reference internal" href="#alembic-ini-path">ALEMBIC_INI_PATH</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#retention-policy-med-003'" class="reference internal" href="#retention-policy-med-003">Retention Policy (MED-003)</a><ul>
-<li><a :data-current="activeSection === '#retention-record-check-days'" class="reference internal" href="#retention-record-check-days">retention_record_check_days</a></li>
-<li><a :data-current="activeSection === '#retention-api-logs-days'" class="reference internal" href="#retention-api-logs-days">retention_api_logs_days</a></li>
+<li><a class="reference internal" href="#retention-policy-med-003">Retention Policy (MED-003)</a><ul>
+<li><a class="reference internal" href="#retention-record-check-days">retention_record_check_days</a></li>
+<li><a class="reference internal" href="#retention-api-logs-days">retention_api_logs_days</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#job-scheduling'" class="reference internal" href="#job-scheduling">Job Scheduling</a><ul>
-<li><a :data-current="activeSection === '#native-storage-mounts'" class="reference internal" href="#native-storage-mounts">Native storage mounts</a></li>
-<li><a :data-current="activeSection === '#record-check-interval-minutes'" class="reference internal" href="#record-check-interval-minutes">record_check_interval_minutes</a></li>
-<li><a :data-current="activeSection === '#record-check-cron'" class="reference internal" href="#record-check-cron">record_check_cron</a></li>
-<li><a :data-current="activeSection === '#cleanup-cron'" class="reference internal" href="#cleanup-cron">cleanup_cron</a></li>
+<li><a class="reference internal" href="#job-scheduling">Job Scheduling</a><ul>
+<li><a class="reference internal" href="#native-storage-mounts">Native storage mounts</a></li>
+<li><a class="reference internal" href="#record-check-interval-minutes">record_check_interval_minutes</a></li>
+<li><a class="reference internal" href="#record-check-cron">record_check_cron</a></li>
+<li><a class="reference internal" href="#cleanup-cron">cleanup_cron</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#whatsapp-gateway-gowa'" class="reference internal" href="#whatsapp-gateway-gowa">WhatsApp Gateway (GoWA)</a><ul>
-<li><a :data-current="activeSection === '#gowa-enabled'" class="reference internal" href="#gowa-enabled">gowa_enabled</a></li>
-<li><a :data-current="activeSection === '#gowa-base-url'" class="reference internal" href="#gowa-base-url">gowa_base_url</a></li>
-<li><a :data-current="activeSection === '#gowa-api-key'" class="reference internal" href="#gowa-api-key">gowa_api_key</a></li>
-<li><a :data-current="activeSection === '#gowa-send-timeout-seconds'" class="reference internal" href="#gowa-send-timeout-seconds">GOWA_SEND_TIMEOUT_SECONDS</a></li>
-<li><a :data-current="activeSection === '#gowa-send-retries'" class="reference internal" href="#gowa-send-retries">GOWA_SEND_RETRIES</a></li>
-<li><a :data-current="activeSection === '#wa-camera-thread-workers'" class="reference internal" href="#wa-camera-thread-workers">WA_CAMERA_THREAD_WORKERS</a></li>
-<li><a :data-current="activeSection === '#wa-gateway-thread-workers'" class="reference internal" href="#wa-gateway-thread-workers">WA_GATEWAY_THREAD_WORKERS</a></li>
-<li><a :data-current="activeSection === '#gowa-default-receiver'" class="reference internal" href="#gowa-default-receiver">gowa_default_receiver</a></li>
-<li><a :data-current="activeSection === '#app-public-url'" class="reference internal" href="#app-public-url">app_public_url</a></li>
+<li><a class="reference internal" href="#whatsapp-gateway-gowa">WhatsApp Gateway (GoWA)</a><ul>
+<li><a class="reference internal" href="#gowa-enabled">gowa_enabled</a></li>
+<li><a class="reference internal" href="#gowa-base-url">gowa_base_url</a></li>
+<li><a class="reference internal" href="#gowa-api-key">gowa_api_key</a></li>
+<li><a class="reference internal" href="#gowa-send-timeout-seconds">GOWA_SEND_TIMEOUT_SECONDS</a></li>
+<li><a class="reference internal" href="#gowa-send-retries">GOWA_SEND_RETRIES</a></li>
+<li><a class="reference internal" href="#wa-camera-thread-workers">WA_CAMERA_THREAD_WORKERS</a></li>
+<li><a class="reference internal" href="#wa-gateway-thread-workers">WA_GATEWAY_THREAD_WORKERS</a></li>
+<li><a class="reference internal" href="#gowa-default-receiver">gowa_default_receiver</a></li>
+<li><a class="reference internal" href="#app-public-url">app_public_url</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#camera-monitoring'" class="reference internal" href="#camera-monitoring">Camera &amp; Monitoring</a><ul>
-<li><a :data-current="activeSection === '#offline-alert-threshold-seconds'" class="reference internal" href="#offline-alert-threshold-seconds">OFFLINE_ALERT_THRESHOLD_SECONDS</a></li>
-<li><a :data-current="activeSection === '#camera-timeout'" class="reference internal" href="#camera-timeout">CAMERA_TIMEOUT</a></li>
+<li><a class="reference internal" href="#camera-monitoring">Camera &amp; Monitoring</a><ul>
+<li><a class="reference internal" href="#offline-alert-threshold-seconds">OFFLINE_ALERT_THRESHOLD_SECONDS</a></li>
+<li><a class="reference internal" href="#camera-timeout">CAMERA_TIMEOUT</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#logging-configuration'" class="reference internal" href="#logging-configuration">Logging Configuration</a><ul>
-<li><a :data-current="activeSection === '#log-level'" class="reference internal" href="#log-level">LOG_LEVEL</a></li>
-<li><a :data-current="activeSection === '#log-format'" class="reference internal" href="#log-format">LOG_FORMAT</a></li>
-<li><a :data-current="activeSection === '#bsnap-log-via-gunicorn'" class="reference internal" href="#bsnap-log-via-gunicorn">BSNAP_LOG_VIA_GUNICORN</a></li>
+<li><a class="reference internal" href="#logging-configuration">Logging Configuration</a><ul>
+<li><a class="reference internal" href="#log-level">LOG_LEVEL</a></li>
+<li><a class="reference internal" href="#log-format">LOG_FORMAT</a></li>
+<li><a class="reference internal" href="#bsnap-log-via-gunicorn">BSNAP_LOG_VIA_GUNICORN</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#server-performance'" class="reference internal" href="#server-performance">Server &amp; Performance</a><ul>
-<li><a :data-current="activeSection === '#workers'" class="reference internal" href="#workers">WORKERS</a></li>
-<li><a :data-current="activeSection === '#port'" class="reference internal" href="#port">PORT</a></li>
-<li><a :data-current="activeSection === '#bind'" class="reference internal" href="#bind">BIND</a></li>
-<li><a :data-current="activeSection === '#timeout'" class="reference internal" href="#timeout">TIMEOUT</a></li>
+<li><a class="reference internal" href="#server-performance">Server &amp; Performance</a><ul>
+<li><a class="reference internal" href="#workers">WORKERS</a></li>
+<li><a class="reference internal" href="#port">PORT</a></li>
+<li><a class="reference internal" href="#bind">BIND</a></li>
+<li><a class="reference internal" href="#timeout">TIMEOUT</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#timezone-scheduling'" class="reference internal" href="#timezone-scheduling">Timezone &amp; Scheduling</a><ul>
-<li><a :data-current="activeSection === '#tz-scheduler-tz'" class="reference internal" href="#tz-scheduler-tz">TZ / SCHEDULER_TZ</a></li>
-<li><a :data-current="activeSection === '#scheduler-enabled'" class="reference internal" href="#scheduler-enabled">SCHEDULER_ENABLED</a></li>
+<li><a class="reference internal" href="#timezone-scheduling">Timezone &amp; Scheduling</a><ul>
+<li><a class="reference internal" href="#tz-scheduler-tz">TZ / SCHEDULER_TZ</a></li>
+<li><a class="reference internal" href="#scheduler-enabled">SCHEDULER_ENABLED</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#configuration-priority'" class="reference internal" href="#configuration-priority">Configuration Priority</a></li>
-<li><a :data-current="activeSection === '#production-checklist'" class="reference internal" href="#production-checklist">Production Checklist</a><ul>
-<li><a :data-current="activeSection === '#critical-must-change'" class="reference internal" href="#critical-must-change">Critical (Must Change)</a></li>
-<li><a :data-current="activeSection === '#security'" class="reference internal" href="#security">Security</a></li>
-<li><a :data-current="activeSection === '#email'" class="reference internal" href="#email">Email</a></li>
-<li><a :data-current="activeSection === '#retention'" class="reference internal" href="#retention">Retention</a></li>
-<li><a :data-current="activeSection === '#performance'" class="reference internal" href="#performance">Performance</a></li>
+<li><a class="reference internal" href="#configuration-priority">Configuration Priority</a></li>
+<li><a class="reference internal" href="#production-checklist">Production Checklist</a><ul>
+<li><a class="reference internal" href="#critical-must-change">Critical (Must Change)</a></li>
+<li><a class="reference internal" href="#security">Security</a></li>
+<li><a class="reference internal" href="#email">Email</a></li>
+<li><a class="reference internal" href="#retention">Retention</a></li>
+<li><a class="reference internal" href="#performance">Performance</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#environment-specific-recommendations'" class="reference internal" href="#environment-specific-recommendations">Environment-Specific Recommendations</a><ul>
-<li><a :data-current="activeSection === '#mining-cctv-operations-24-7'" class="reference internal" href="#mining-cctv-operations-24-7">Mining/CCTV Operations (24/7)</a></li>
-<li><a :data-current="activeSection === '#development'" class="reference internal" href="#development">Development</a></li>
-<li><a :data-current="activeSection === '#testing'" class="reference internal" href="#testing">Testing</a></li>
+<li><a class="reference internal" href="#environment-specific-recommendations">Environment-Specific Recommendations</a><ul>
+<li><a class="reference internal" href="#mining-cctv-operations-24-7">Mining/CCTV Operations (24/7)</a></li>
+<li><a class="reference internal" href="#development">Development</a></li>
+<li><a class="reference internal" href="#testing">Testing</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#troubleshooting'" class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
-<li><a :data-current="activeSection === '#common-issues'" class="reference internal" href="#common-issues">Common Issues</a></li>
+<li><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
+<li><a class="reference internal" href="#common-issues">Common Issues</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#web-documentation'" class="reference internal" href="#web-documentation">Web Documentation</a></li>
-<li><a :data-current="activeSection === '#see-also'" class="reference internal" href="#see-also">See Also</a></li>
+<li><a class="reference internal" href="#web-documentation">Web Documentation</a></li>
+<li><a class="reference internal" href="#see-also">See Also</a></li>
 </ul>
 </div>
 </aside>
-</main>
-</div>
-</div><footer class="py-6 border-t border-border md:py-0">
-<div class="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
-<div class="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
-<p class="text-sm leading-loose text-center text-muted-foreground md:text-left">© 2025, Indra W. Built with <a class="font-medium underline underline-offset-4" href="https://www.sphinx-doc.org" rel="noreferrer">Sphinx 9.1.0</a></p>
+          </main>
+        </div>
+      </div><footer class="py-6 border-t border-border md:py-0">
+    <div class="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
+      <div class="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
+        <p class="text-sm leading-loose text-center text-muted-foreground md:text-left">© 2025, Indra W.&nbsp;Built with <a class="font-medium underline underline-offset-4"
+    href="https://www.sphinx-doc.org"
+    rel="noreferrer">Sphinx 9.1.0</a></p>
 </div>
 </div>
 </footer>
-</div>
-<script src="_static/documentation_options.js?v=558d240b"></script>
-<script src="_static/doctools.js?v=fd6eb6e6"></script>
-<script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
-<script defer="defer" src="_static/theme.js?v=582b20c5"></script>
+    </div>
+
+    <script src="_static/documentation_options.js?v=3a7c30df"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script defer="defer" src="_static/theme.js?v=582b20c5"></script>
+
 </body>
+
 </html>

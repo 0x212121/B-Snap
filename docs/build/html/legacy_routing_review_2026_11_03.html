@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en" data-content_root="./"
+  x-data="{ darkMode: $persist(window.matchMedia('(prefers-color-scheme: dark)').matches), activeSection: ''}"
+  :class="{ 'dark' : darkMode === true }">
+
+<head>
+  <script>
+    (function () {
+      // Set initial color scheme
+      if ((localStorage.getItem("_x_darkMode") === "true") || (window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+        document.documentElement.classList.add("dark");
+      }
+
+      // Watch for media preference changes
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (event) => {
+        localStorage.setItem("_x_darkMode", event.matches);
+        document.documentElement.classList.toggle("dark", event.matches);
+      });
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#030711" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>CA-23 routing and legacy review — 3 November 2026 | B-SNAP v2.6.6 documentation</title>
+  <meta property="og:title" content="CA-23 routing and legacy review — 3 November 2026 | B-SNAP v2.6.6 documentation" />
+  <meta name="twitter:title" content="CA-23 routing and legacy review — 3 November 2026 | B-SNAP v2.6.6 documentation" />
+  <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e72c8e07" />
+  <link rel="stylesheet" type="text/css" href="_static/theme.css?v=73505e79" />
+  <link rel="search" title="Search" href="search.html" />
+  <link rel="index" title="Index" href="genindex.html" />
+  <link rel="next" title="Security rollout — B-Snap 2.6.1" href="high_security_rollout.html" />
+  <link rel="prev" title="Maintenance &amp; Troubleshooting" href="maintenance.html" />
+</head>
+
+<body x-data="{ showSidebar: false, showScrollTop: false }"
+  class="min-h-screen font-sans antialiased bg-background text-foreground" :class="{ 'overflow-hidden': showSidebar }">
+  <div x-cloak x-show="showSidebar"
+    class="fixed inset-0 z-50 overflow-hidden bg-background/80 backdrop-blur-sm md:hidden"
+    @click.self="showSidebar = false"></div><div id="page" class="relative flex flex-col min-h-screen"><a href="#content"
+      class="absolute top-0 left-0 z-[100] block bg-background p-4 text-xl transition -translate-x-full opacity-0 focus:translate-x-0 focus:opacity-100">
+      Skip to content
+    </a><header class="sticky top-0 z-40 w-full border-b shadow-xs border-border bg-background/90 backdrop-blur"><div class="container flex items-center h-14">
+    <div class="hidden mr-4 md:flex">
+      <a href="index.html" class="flex items-center mr-6"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.6.6 documentation</span>
+      </a></div><button
+      class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden"
+      type="button" @click="showSidebar = true">
+      <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 96 960 960" aria-hidden="true"
+        fill="currentColor">
+        <path
+          d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z" />
+      </svg>
+      <span class="sr-only">Toggle navigation menu</span>
+    </button>
+    <div class="flex items-center justify-between flex-1 gap-2 sm:gap-4 md:justify-end">
+      <div class="flex-1 w-full md:w-auto md:flex-none"><form id="searchbox"
+      action="search.html"
+      method="get"
+      class="relative flex items-center group"
+      @keydown.k.window.meta="$refs.search.focus()">
+  <input x-ref="search"
+          name="q"
+          id="search-input"
+          type="search"
+          aria-label="Search the docs"
+          placeholder="Search ..."
+          class="inline-flex items-center font-medium transition-colors bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input hover:bg-accent focus:bg-accent hover:text-accent-foreground focus:text-accent-foreground hover:placeholder-accent-foreground py-2 px-4 relative h-9 w-full justify-start rounded-[0.5rem] text-sm text-muted-foreground sm:pr-12 md:w-40 lg:w-64" />
+  <kbd class="pointer-events-none absolute right-1.5 top-2 hidden h-5 select-none text-muted-foreground items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex group-hover:bg-accent group-hover:text-accent-foreground">
+    <span class="text-xs">⌘</span>
+    K
+  </kbd>
+</form>
+      </div>
+      <nav class="flex items-center gap-1">
+        <button @click="darkMode = !darkMode"
+          class="relative inline-flex items-center justify-center px-0 text-sm font-medium transition-colors rounded-md hover:bg-accent hover:text-accent-foreground h-9 w-9"
+          type="button"
+          title="Toggle color scheme">
+          <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 96 960 960" fill="currentColor"
+            class="absolute transition-all scale-100 rotate-0 dark:-rotate-90 dark:scale-0">
+            <path
+              d="M480 685q45.456 0 77.228-31.772Q589 621.456 589 576q0-45.456-31.772-77.228Q525.456 467 480 467q-45.456 0-77.228 31.772Q371 530.544 371 576q0 45.456 31.772 77.228Q434.544 685 480 685Zm0 91q-83 0-141.5-58.5T280 576q0-83 58.5-141.5T480 376q83 0 141.5 58.5T680 576q0 83-58.5 141.5T480 776ZM80 621.5q-19.152 0-32.326-13.174T34.5 576q0-19.152 13.174-32.326T80 530.5h80q19.152 0 32.326 13.174T205.5 576q0 19.152-13.174 32.326T160 621.5H80Zm720 0q-19.152 0-32.326-13.174T754.5 576q0-19.152 13.174-32.326T800 530.5h80q19.152 0 32.326 13.174T925.5 576q0 19.152-13.174 32.326T880 621.5h-80Zm-320-320q-19.152 0-32.326-13.174T434.5 256v-80q0-19.152 13.174-32.326T480 130.5q19.152 0 32.326 13.174T525.5 176v80q0 19.152-13.174 32.326T480 301.5Zm0 720q-19.152 0-32.326-13.17Q434.5 995.152 434.5 976v-80q0-19.152 13.174-32.326T480 850.5q19.152 0 32.326 13.174T525.5 896v80q0 19.152-13.174 32.33-13.174 13.17-32.326 13.17ZM222.174 382.065l-43-42Q165.5 327.391 166 308.239t13.174-33.065q13.435-13.674 32.587-13.674t32.065 13.674l42.239 43q12.674 13.435 12.555 31.706-.12 18.272-12.555 31.946-12.674 13.674-31.445 13.413-18.772-.261-32.446-13.174Zm494 494.761-42.239-43q-12.674-13.435-12.674-32.087t12.674-31.565Q686.609 756.5 705.38 757q18.772.5 32.446 13.174l43 41.761Q794.5 824.609 794 843.761t-13.174 33.065Q767.391 890.5 748.239 890.5t-32.065-13.674Zm-42-494.761Q660.5 369.391 661 350.62q.5-18.772 13.174-32.446l41.761-43Q728.609 261.5 747.761 262t33.065 13.174q13.674 13.435 13.674 32.587t-13.674 32.065l-43 42.239q-13.435 12.674-31.706 12.555-18.272-.12-31.946-12.555Zm-495 494.761Q165.5 863.391 165.5 844.239t13.674-32.065l43-42.239q13.435-12.674 32.087-12.674t31.565 12.674Q299.5 782.609 299 801.38q-.5 18.772-13.174 32.446l-41.761 43Q231.391 890.5 212.239 890t-33.065-13.174ZM480 576Z" />
+          </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 96 960 960" fill="currentColor"
+            class="absolute transition-all scale-0 rotate-90 dark:rotate-0 dark:scale-100">
+            <path
+              d="M480 936q-151 0-255.5-104.5T120 576q0-138 90-239.5T440 218q25-3 39 18t-1 44q-17 26-25.5 55t-8.5 61q0 90 63 153t153 63q31 0 61.5-9t54.5-25q21-14 43-1.5t19 39.5q-14 138-117.5 229T480 936Zm0-80q88 0 158-48.5T740 681q-20 5-40 8t-40 3q-123 0-209.5-86.5T364 396q0-20 3-40t8-40q-78 32-126.5 102T200 576q0 116 82 198t198 82Zm-10-270Z" />
+          </svg>
+        </button>
+      </nav>
+    </div>
+  </div>
+</header>
+
+    <div class="flex-1"><div
+        class="container md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside id="left-sidebar"
+  class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky"
+  :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }">
+
+    <a href="index.html" class="justify-start text-sm md:!hidden bg-background"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.6.6 documentation</span>
+    </a>
+
+    <div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
+      <div class="overflow-y-auto h-full w-full relative pr-6"><nav class="table w-full min-w-full my-6 lg:my-8">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">System Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="record-mounts.html">Native SMB and NFS recording mounts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="security.html">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="audit_logging.html">Audit Logging System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notifications.html">Email Notifications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development.html">Development Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="maintenance.html">Maintenance &amp; Troubleshooting</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">CA-23 routing and legacy review — 3 November 2026</a></li>
+<li class="toctree-l1"><a class="reference internal" href="high_security_rollout.html">Security rollout — B-Snap 2.6.1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="comprehensive_audit_2026_11_02.html">Comprehensive audit B-Snap — 2 November 2026</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks/camera_groups_2026_11_03.html">CA-21 camera-group counts: before/after benchmark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
+</ul>
+
+</nav>
+      </div>
+    </div>
+    <button type="button" @click="showSidebar = false"
+      class="absolute md:hidden right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100">
+      <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 96 960 960" fill="currentColor"
+        stroke="none" class="h-4 w-4">
+        <path
+          d="M480 632 284 828q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536 576l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11L480 632Z" />
+      </svg>
+    </button>
+  </aside>
+          <main class="relative py-6 lg:gap-10 lg:py-8 xl:grid xl:grid-cols-[1fr_300px]">
+<div class="w-full min-w-0 mx-auto">
+<nav aria-label="breadcrumbs"
+     class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
+  <a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground"
+     href="index.html">
+    <span class="hidden md:inline">B-SNAP v2.6.6 documentation</span>
+    <svg xmlns="http://www.w3.org/2000/svg"
+         height="18"
+         width="18"
+         viewBox="0 96 960 960"
+         aria-label="Home"
+         fill="currentColor"
+         stroke="none"
+         class="md:hidden">
+      <path d="M240 856h120V616h240v240h120V496L480 316 240 496v360Zm-80 80V456l320-240 320 240v480H520V696h-80v240H160Zm320-350Z" />
+    </svg>
+  </a>
+
+<div class="mr-1">/</div><span aria-current="page"
+        class="font-medium text-foreground overflow-hidden text-ellipsis whitespace-nowrap">CA-23 routing and legacy review — 3 November 2026</span>
+</nav>
+
+    <div id="content" role="main">
+      <section id="ca-23-routing-and-legacy-review-3-november-2026">
+<h1>CA-23 routing and legacy review — 3 November 2026<a class="headerlink" href="#ca-23-routing-and-legacy-review-3-november-2026" title="Link to this heading"><span>#</span></a></h1>
+<p>Reviewed against the production route registry and Python/Jinja references in
+B-Snap 2.6.6. This review resolves the duplicate documentation entry, consolidates
+Swagger routing, and records deprecation decisions without enabling old views.
+Static references do not prove whether a downstream custom deployment imports a
+file; retained legacy templates/modules are explicitly marked before deletion.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>URL</p></th>
+<th class="head"><p>Result in 2.6.6</p></th>
+<th class="head"><p>Access/compatibility</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">/docs</span></code></p></td>
+<td><p>307 to <code class="docutils literal notranslate"><span class="pre">/docs/environment</span></code></p></td>
+<td><p>One registration; preserves the bookmarked documentation entry</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">/docs/environment</span></code></p></td>
+<td><p>Environment reference</p></td>
+<td><p>Existing documentation access policy; static configuration metadata only</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">/docs/api</span></code></p></td>
+<td><p>API reference</p></td>
+<td><p>Existing documentation page; links to canonical Swagger URL</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">/docs/security</span></code></p></td>
+<td><p>Security reference</p></td>
+<td><p>Existing documentation page</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">/docs/openapi</span></code></p></td>
+<td><p>Existing <code class="docutils literal notranslate"><span class="pre">swagger_embed.html</span></code></p></td>
+<td><p>Admin dependency checks current user; canonical Swagger URL</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">/developer/docs</span></code></p></td>
+<td><p>307 to <code class="docutils literal notranslate"><span class="pre">/docs/openapi</span></code></p></td>
+<td><p>Preserved admin-only bookmark and <code class="docutils literal notranslate"><span class="pre">embedded_docs</span></code> route name</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">/openapi.json</span></code></p></td>
+<td><p>FastAPI-generated schema</p></td>
+<td><p>Existing schema policy preserved</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">/docs/openapi.json</span></code></p></td>
+<td><p>307 to <code class="docutils literal notranslate"><span class="pre">/openapi.json</span></code></p></td>
+<td><p>Compatibility with the URL published in older docs</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">/documentation-index</span></code></p></td>
+<td><p>307 to <code class="docutils literal notranslate"><span class="pre">/documentation/index.html</span></code></p></td>
+<td><p>Existing generated-documentation bookmark preserved</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">/documentation/*</span></code></p></td>
+<td><p>Optional bundled Sphinx output</p></td>
+<td><p>Static mount when bundled; authenticated 404 when absent, as before</p></td>
+</tr>
+</tbody>
+</table>
+<p>Previously <code class="docutils literal notranslate"><span class="pre">/docs</span></code> was registered both by <code class="docutils literal notranslate"><span class="pre">app/routes/docs.py</span></code> and <code class="docutils literal notranslate"><span class="pre">app/main.py</span></code>.
+The environment handler won by registration order, shadowing a Swagger handler
+whose <code class="docutils literal notranslate"><span class="pre">/static/swagger-ui-bundle.js</span></code> file was absent. The duplicate handler/import
+is removed. The active <code class="docutils literal notranslate"><span class="pre">app/routes/dev_docs.py</span></code> implementation is consolidated
+into the documentation router and the redundant module is removed. Its URL remains
+an alias; the existing embedded Swagger template and remote assets remain in use.
+Environment docs now describe IP/CIDR proxy peers rather than the old CORS/domain
+example, plus PUBLIC_ORIGIN and cookie settings from the shared security loader.</p>
+<p><code class="docutils literal notranslate"><span class="pre">/stats</span></code> still returns a 301 to <code class="docutils literal notranslate"><span class="pre">/analytics?tab=snapshots</span></code>, retaining camera/days
+filters with proper URL encoding. Its unreachable legacy rendering block after
+<code class="docutils literal notranslate"><span class="pre">return</span></code> was removed. <code class="docutils literal notranslate"><span class="pre">/insights</span></code> still redirects to <code class="docutils literal notranslate"><span class="pre">/analytics?tab=overview</span></code>,
+GET <code class="docutils literal notranslate"><span class="pre">/change-password</span></code> to <code class="docutils literal notranslate"><span class="pre">/profile</span></code>, and the legacy password POST remains active.
+Stats and Insights data/report APIs remain registered.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Retained legacy file</p></th>
+<th class="head"><p>Evidence and disposition</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">templates/user_management2.html</span></code></p></td>
+<td><p>No static production render/include reference. Active UI uses <code class="docutils literal notranslate"><span class="pre">user_management.html</span></code>. Deprecated; do not activate without auth/UI review.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">templates/change_password.html</span></code></p></td>
+<td><p>No active render reference; GET <code class="docutils literal notranslate"><span class="pre">/change-password</span></code> redirects to <code class="docutils literal notranslate"><span class="pre">/profile</span></code>. Retain template for downstream review; preserve password POST compatibility.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">templates/insights.html</span></code></p></td>
+<td><p>No active render reference; <code class="docutils literal notranslate"><span class="pre">/insights</span></code> redirects to Analytics. Insights APIs/reports are active and are not deprecated.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">templates/stats.html</span></code></p></td>
+<td><p>Its sole reference was in the unreachable block removed from <code class="docutils literal notranslate"><span class="pre">/stats</span></code>. Analytics and <code class="docutils literal notranslate"><span class="pre">/stats/*</span></code> data APIs remain active. Retain template pending downstream review.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">templates/recipients_table.html</span></code></p></td>
+<td><p>No static Python/Jinja reference. Active recipient UI uses <code class="docutils literal notranslate"><span class="pre">recipients.html</span></code>. Deprecated partial retained for external/template review.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">templates/_orphaned_files_list.html</span></code></p></td>
+<td><p>No static Python/Jinja reference. Orphan/media APIs remain active; retain this partial pending access/UI review before reuse/removal.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">app/routes/2fa.py</span></code></p></td>
+<td><p>No endpoints registered in the production app. Production MFA enrollment is in <code class="docutils literal notranslate"><span class="pre">auth.py</span></code>. Deprecated standalone flow remains unregistered; do not reactivate it.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">app/middleware/real_ip_fix.py</span></code></p></td>
+<td><p>Not in the production middleware stack and no active import. Deprecated unguarded IP-header override retained for downstream review; use explicit proxy trust.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">app/middleware/http_proxy_fix.py</span></code></p></td>
+<td><p>Not in the production stack and no active import. Deprecated unguarded scheme override retained for downstream review.</p></td>
+</tr>
+</tbody>
+</table>
+<p>This is not a list of files safe to delete immediately. Templates receive Jinja
+deprecation comments and the inactive Python modules receive module docstrings.
+No DB schema, historical migration, email flow, evidence retention, or production
+data is deleted. Future deletion requires a downstream-reference review and updated
+template/route regressions; do not resurrect these views to satisfy a static scan.</p>
+<p>Two apparent candidates are <strong>active</strong>: <code class="docutils literal notranslate"><span class="pre">map_live.py</span></code> and <code class="docutils literal notranslate"><span class="pre">map_heatmap.py</span></code> are
+included through <code class="docutils literal notranslate"><span class="pre">maps.router</span></code>. <code class="docutils literal notranslate"><span class="pre">audit.py</span></code> and <code class="docutils literal notranslate"><span class="pre">audit_log.py</span></code> also remain active
+at distinct API/compatibility paths. They are not classified as unused simply
+because <code class="docutils literal notranslate"><span class="pre">main.py</span></code> does not name every nested router or exposes alternate URLs.</p>
+<p>Verification includes unique production method/path pairs, documentation redirect
+chains, canonical Swagger HTML/schema URLs, anonymous/non-admin denial, retained
+bookmarks, encoded legacy stats filters, inactive <code class="docutils literal notranslate"><span class="pre">/2fa/enable</span></code>, nested map routes,
+navigation, template compilation, and existing analytics/security regressions.
+Tests use dependency overrides and isolated fixtures; application DB startup and
+camera/notifier jobs are not run. Serving the existing remote Swagger assets still
+depends on the browser’s network access, as it did before this consolidation.
+Chrome verification loaded those assets and the schema successfully through the
+legacy alias; environment reference light/dark and the canonical API link at
+390px were inspected without page errors. Generated docs also link this review,
+the rollout guide and audit/benchmark reports in their navigation.</p>
+</section>
+
+    </div></div>
+          </main>
+        </div>
+      </div><footer class="py-6 border-t border-border md:py-0">
+    <div class="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
+      <div class="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
+        <p class="text-sm leading-loose text-center text-muted-foreground md:text-left">© 2025, Indra W.&nbsp;Built with <a class="font-medium underline underline-offset-4"
+    href="https://www.sphinx-doc.org"
+    rel="noreferrer">Sphinx 9.1.0</a></p>
+</div>
+</div>
+</footer>
+    </div>
+
+    <script src="_static/documentation_options.js?v=3a7c30df"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script defer="defer" src="_static/theme.js?v=582b20c5"></script>
+
+</body>
+
+</html>

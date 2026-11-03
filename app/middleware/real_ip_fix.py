@@ -1,3 +1,9 @@
+"""Deprecated untrusted-header override; not part of the production stack.
+
+Use ProxyHeadersMiddleware with explicit trusted proxy peers instead. Retained
+for legacy review only; do not re-enable to restore visitor-IP display.
+"""
+
 from starlette.middleware.base import BaseHTTPMiddleware
 
 class RealIPFixMiddleware(BaseHTTPMiddleware):

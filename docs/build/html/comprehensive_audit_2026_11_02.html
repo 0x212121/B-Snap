@@ -1,8 +1,10 @@
 <!DOCTYPE html>
+<html lang="en" data-content_root="./"
+  x-data="{ darkMode: $persist(window.matchMedia('(prefers-color-scheme: dark)').matches), activeSection: ''}"
+  :class="{ 'dark' : darkMode === true }">
 
-<html :class="{ 'dark' : darkMode === true }" data-content_root="./" lang="en" x-data="{ darkMode: $persist(window.matchMedia('(prefers-color-scheme: dark)').matches), activeSection: ''}">
 <head>
-<script>
+  <script>
     (function () {
       // Set initial color scheme
       if ((localStorage.getItem("_x_darkMode") === "true") || (window.matchMedia("(prefers-color-scheme: dark)").matches)) {
@@ -16,60 +18,95 @@
       });
     })();
   </script>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<meta charset="utf-8"/>
-<meta content="#ffffff" media="(prefers-color-scheme: light)" name="theme-color"/>
-<meta content="#030711" media="(prefers-color-scheme: dark)" name="theme-color"/>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Comprehensive audit B-Snap — 2 November 2026 | B-SNAP v2.6.0 documentation</title>
-<meta content="Comprehensive audit B-Snap — 2 November 2026 | B-SNAP v2.6.0 documentation" property="og:title"/>
-<meta content="Comprehensive audit B-Snap — 2 November 2026 | B-SNAP v2.6.0 documentation" name="twitter:title"/>
-<link href="_static/pygments.css?v=e72c8e07" rel="stylesheet" type="text/css"/>
-<link href="_static/theme.css?v=73505e79" rel="stylesheet" type="text/css"/>
-<link href="search.html" rel="search" title="Search"/>
-<link href="genindex.html" rel="index" title="Index"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#030711" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Comprehensive audit B-Snap — 2 November 2026 | B-SNAP v2.6.6 documentation</title>
+  <meta property="og:title" content="Comprehensive audit B-Snap — 2 November 2026 | B-SNAP v2.6.6 documentation" />
+  <meta name="twitter:title" content="Comprehensive audit B-Snap — 2 November 2026 | B-SNAP v2.6.6 documentation" />
+  <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e72c8e07" />
+  <link rel="stylesheet" type="text/css" href="_static/theme.css?v=73505e79" />
+  <link rel="search" title="Search" href="search.html" />
+  <link rel="index" title="Index" href="genindex.html" />
+  <link rel="next" title="CA-21 camera-group counts: before/after benchmark" href="benchmarks/camera_groups_2026_11_03.html" />
+  <link rel="prev" title="Security rollout — B-Snap 2.6.1" href="high_security_rollout.html" />
 </head>
-<body :class="{ 'overflow-hidden': showSidebar }" class="min-h-screen font-sans antialiased bg-background text-foreground" x-data="{ showSidebar: false, showScrollTop: false }">
-<div @click.self="showSidebar = false" class="fixed inset-0 z-50 overflow-hidden bg-background/80 backdrop-blur-sm md:hidden" x-cloak="" x-show="showSidebar"></div><div class="relative flex flex-col min-h-screen" id="page"><a class="absolute top-0 left-0 z-[100] block bg-background p-4 text-xl transition -translate-x-full opacity-0 focus:translate-x-0 focus:opacity-100" href="#content">
+
+<body x-data="{ showSidebar: false, showScrollTop: false }"
+  class="min-h-screen font-sans antialiased bg-background text-foreground" :class="{ 'overflow-hidden': showSidebar }">
+  <div x-cloak x-show="showSidebar"
+    class="fixed inset-0 z-50 overflow-hidden bg-background/80 backdrop-blur-sm md:hidden"
+    @click.self="showSidebar = false"></div><div id="page" class="relative flex flex-col min-h-screen"><a href="#content"
+      class="absolute top-0 left-0 z-[100] block bg-background p-4 text-xl transition -translate-x-full opacity-0 focus:translate-x-0 focus:opacity-100">
       Skip to content
     </a><header class="sticky top-0 z-40 w-full border-b shadow-xs border-border bg-background/90 backdrop-blur"><div class="container flex items-center h-14">
-<div class="hidden mr-4 md:flex">
-<a class="flex items-center mr-6" href="index.html"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.6.0 documentation</span>
-</a></div><button @click="showSidebar = true" class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden" type="button">
-<svg aria-hidden="true" fill="currentColor" height="24" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
-<path d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z"></path>
-</svg>
-<span class="sr-only">Toggle navigation menu</span>
-</button>
-<div class="flex items-center justify-between flex-1 gap-2 sm:gap-4 md:justify-end">
-<div class="flex-1 w-full md:w-auto md:flex-none"><form @keydown.k.window.meta="$refs.search.focus()" action="search.html" class="relative flex items-center group" id="searchbox" method="get">
-<input aria-label="Search the docs" class="inline-flex items-center font-medium transition-colors bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input hover:bg-accent focus:bg-accent hover:text-accent-foreground focus:text-accent-foreground hover:placeholder-accent-foreground py-2 px-4 relative h-9 w-full justify-start rounded-[0.5rem] text-sm text-muted-foreground sm:pr-12 md:w-40 lg:w-64" id="search-input" name="q" placeholder="Search ..." type="search" x-ref="search"/>
-<kbd class="pointer-events-none absolute right-1.5 top-2 hidden h-5 select-none text-muted-foreground items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex group-hover:bg-accent group-hover:text-accent-foreground">
-<span class="text-xs">⌘</span>
+    <div class="hidden mr-4 md:flex">
+      <a href="index.html" class="flex items-center mr-6"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.6.6 documentation</span>
+      </a></div><button
+      class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden"
+      type="button" @click="showSidebar = true">
+      <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 96 960 960" aria-hidden="true"
+        fill="currentColor">
+        <path
+          d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z" />
+      </svg>
+      <span class="sr-only">Toggle navigation menu</span>
+    </button>
+    <div class="flex items-center justify-between flex-1 gap-2 sm:gap-4 md:justify-end">
+      <div class="flex-1 w-full md:w-auto md:flex-none"><form id="searchbox"
+      action="search.html"
+      method="get"
+      class="relative flex items-center group"
+      @keydown.k.window.meta="$refs.search.focus()">
+  <input x-ref="search"
+          name="q"
+          id="search-input"
+          type="search"
+          aria-label="Search the docs"
+          placeholder="Search ..."
+          class="inline-flex items-center font-medium transition-colors bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input hover:bg-accent focus:bg-accent hover:text-accent-foreground focus:text-accent-foreground hover:placeholder-accent-foreground py-2 px-4 relative h-9 w-full justify-start rounded-[0.5rem] text-sm text-muted-foreground sm:pr-12 md:w-40 lg:w-64" />
+  <kbd class="pointer-events-none absolute right-1.5 top-2 hidden h-5 select-none text-muted-foreground items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex group-hover:bg-accent group-hover:text-accent-foreground">
+    <span class="text-xs">⌘</span>
     K
   </kbd>
 </form>
-</div>
-<nav class="flex items-center gap-1">
-<button @click="darkMode = !darkMode" class="relative inline-flex items-center justify-center px-0 text-sm font-medium transition-colors rounded-md hover:bg-accent hover:text-accent-foreground h-9 w-9" title="Toggle color scheme" type="button">
-<svg class="absolute transition-all scale-100 rotate-0 dark:-rotate-90 dark:scale-0" fill="currentColor" height="16" viewbox="0 96 960 960" width="16" xmlns="http://www.w3.org/2000/svg">
-<path d="M480 685q45.456 0 77.228-31.772Q589 621.456 589 576q0-45.456-31.772-77.228Q525.456 467 480 467q-45.456 0-77.228 31.772Q371 530.544 371 576q0 45.456 31.772 77.228Q434.544 685 480 685Zm0 91q-83 0-141.5-58.5T280 576q0-83 58.5-141.5T480 376q83 0 141.5 58.5T680 576q0 83-58.5 141.5T480 776ZM80 621.5q-19.152 0-32.326-13.174T34.5 576q0-19.152 13.174-32.326T80 530.5h80q19.152 0 32.326 13.174T205.5 576q0 19.152-13.174 32.326T160 621.5H80Zm720 0q-19.152 0-32.326-13.174T754.5 576q0-19.152 13.174-32.326T800 530.5h80q19.152 0 32.326 13.174T925.5 576q0 19.152-13.174 32.326T880 621.5h-80Zm-320-320q-19.152 0-32.326-13.174T434.5 256v-80q0-19.152 13.174-32.326T480 130.5q19.152 0 32.326 13.174T525.5 176v80q0 19.152-13.174 32.326T480 301.5Zm0 720q-19.152 0-32.326-13.17Q434.5 995.152 434.5 976v-80q0-19.152 13.174-32.326T480 850.5q19.152 0 32.326 13.174T525.5 896v80q0 19.152-13.174 32.33-13.174 13.17-32.326 13.17ZM222.174 382.065l-43-42Q165.5 327.391 166 308.239t13.174-33.065q13.435-13.674 32.587-13.674t32.065 13.674l42.239 43q12.674 13.435 12.555 31.706-.12 18.272-12.555 31.946-12.674 13.674-31.445 13.413-18.772-.261-32.446-13.174Zm494 494.761-42.239-43q-12.674-13.435-12.674-32.087t12.674-31.565Q686.609 756.5 705.38 757q18.772.5 32.446 13.174l43 41.761Q794.5 824.609 794 843.761t-13.174 33.065Q767.391 890.5 748.239 890.5t-32.065-13.674Zm-42-494.761Q660.5 369.391 661 350.62q.5-18.772 13.174-32.446l41.761-43Q728.609 261.5 747.761 262t33.065 13.174q13.674 13.435 13.674 32.587t-13.674 32.065l-43 42.239q-13.435 12.674-31.706 12.555-18.272-.12-31.946-12.555Zm-495 494.761Q165.5 863.391 165.5 844.239t13.674-32.065l43-42.239q13.435-12.674 32.087-12.674t31.565 12.674Q299.5 782.609 299 801.38q-.5 18.772-13.174 32.446l-41.761 43Q231.391 890.5 212.239 890t-33.065-13.174ZM480 576Z"></path>
-</svg>
-<svg class="absolute transition-all scale-0 rotate-90 dark:rotate-0 dark:scale-100" fill="currentColor" height="16" viewbox="0 96 960 960" width="16" xmlns="http://www.w3.org/2000/svg">
-<path d="M480 936q-151 0-255.5-104.5T120 576q0-138 90-239.5T440 218q25-3 39 18t-1 44q-17 26-25.5 55t-8.5 61q0 90 63 153t153 63q31 0 61.5-9t54.5-25q21-14 43-1.5t19 39.5q-14 138-117.5 229T480 936Zm0-80q88 0 158-48.5T740 681q-20 5-40 8t-40 3q-123 0-209.5-86.5T364 396q0-20 3-40t8-40q-78 32-126.5 102T200 576q0 116 82 198t198 82Zm-10-270Z"></path>
-</svg>
-</button>
-</nav>
-</div>
-</div>
+      </div>
+      <nav class="flex items-center gap-1">
+        <button @click="darkMode = !darkMode"
+          class="relative inline-flex items-center justify-center px-0 text-sm font-medium transition-colors rounded-md hover:bg-accent hover:text-accent-foreground h-9 w-9"
+          type="button"
+          title="Toggle color scheme">
+          <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 96 960 960" fill="currentColor"
+            class="absolute transition-all scale-100 rotate-0 dark:-rotate-90 dark:scale-0">
+            <path
+              d="M480 685q45.456 0 77.228-31.772Q589 621.456 589 576q0-45.456-31.772-77.228Q525.456 467 480 467q-45.456 0-77.228 31.772Q371 530.544 371 576q0 45.456 31.772 77.228Q434.544 685 480 685Zm0 91q-83 0-141.5-58.5T280 576q0-83 58.5-141.5T480 376q83 0 141.5 58.5T680 576q0 83-58.5 141.5T480 776ZM80 621.5q-19.152 0-32.326-13.174T34.5 576q0-19.152 13.174-32.326T80 530.5h80q19.152 0 32.326 13.174T205.5 576q0 19.152-13.174 32.326T160 621.5H80Zm720 0q-19.152 0-32.326-13.174T754.5 576q0-19.152 13.174-32.326T800 530.5h80q19.152 0 32.326 13.174T925.5 576q0 19.152-13.174 32.326T880 621.5h-80Zm-320-320q-19.152 0-32.326-13.174T434.5 256v-80q0-19.152 13.174-32.326T480 130.5q19.152 0 32.326 13.174T525.5 176v80q0 19.152-13.174 32.326T480 301.5Zm0 720q-19.152 0-32.326-13.17Q434.5 995.152 434.5 976v-80q0-19.152 13.174-32.326T480 850.5q19.152 0 32.326 13.174T525.5 896v80q0 19.152-13.174 32.33-13.174 13.17-32.326 13.17ZM222.174 382.065l-43-42Q165.5 327.391 166 308.239t13.174-33.065q13.435-13.674 32.587-13.674t32.065 13.674l42.239 43q12.674 13.435 12.555 31.706-.12 18.272-12.555 31.946-12.674 13.674-31.445 13.413-18.772-.261-32.446-13.174Zm494 494.761-42.239-43q-12.674-13.435-12.674-32.087t12.674-31.565Q686.609 756.5 705.38 757q18.772.5 32.446 13.174l43 41.761Q794.5 824.609 794 843.761t-13.174 33.065Q767.391 890.5 748.239 890.5t-32.065-13.674Zm-42-494.761Q660.5 369.391 661 350.62q.5-18.772 13.174-32.446l41.761-43Q728.609 261.5 747.761 262t33.065 13.174q13.674 13.435 13.674 32.587t-13.674 32.065l-43 42.239q-13.435 12.674-31.706 12.555-18.272-.12-31.946-12.555Zm-495 494.761Q165.5 863.391 165.5 844.239t13.674-32.065l43-42.239q13.435-12.674 32.087-12.674t31.565 12.674Q299.5 782.609 299 801.38q-.5 18.772-13.174 32.446l-41.761 43Q231.391 890.5 212.239 890t-33.065-13.174ZM480 576Z" />
+          </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 96 960 960" fill="currentColor"
+            class="absolute transition-all scale-0 rotate-90 dark:rotate-0 dark:scale-100">
+            <path
+              d="M480 936q-151 0-255.5-104.5T120 576q0-138 90-239.5T440 218q25-3 39 18t-1 44q-17 26-25.5 55t-8.5 61q0 90 63 153t153 63q31 0 61.5-9t54.5-25q21-14 43-1.5t19 39.5q-14 138-117.5 229T480 936Zm0-80q88 0 158-48.5T740 681q-20 5-40 8t-40 3q-123 0-209.5-86.5T364 396q0-20 3-40t8-40q-78 32-126.5 102T200 576q0 116 82 198t198 82Zm-10-270Z" />
+          </svg>
+        </button>
+      </nav>
+    </div>
+  </div>
 </header>
-<div class="flex-1"><div class="container md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }" class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky" id="left-sidebar">
-<a class="justify-start text-sm md:!hidden bg-background" href="index.html"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.6.0 documentation</span>
-</a>
-<div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
-<div class="overflow-y-auto h-full w-full relative pr-6"><nav class="table w-full min-w-full my-6 lg:my-8">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
+
+    <div class="flex-1"><div
+        class="container md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside id="left-sidebar"
+  class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky"
+  :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }">
+
+    <a href="index.html" class="justify-start text-sm md:!hidden bg-background"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.6.6 documentation</span>
+    </a>
+
+    <div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
+      <div class="overflow-y-auto h-full w-full relative pr-6"><nav class="table w-full min-w-full my-6 lg:my-8">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="architecture.html">System Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="record-mounts.html">Native SMB and NFS recording mounts</a></li>
@@ -80,38 +117,65 @@
 <li class="toctree-l1"><a class="reference internal" href="development.html">Development Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="deployment.html">Deployment</a></li>
 <li class="toctree-l1"><a class="reference internal" href="maintenance.html">Maintenance &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legacy_routing_review_2026_11_03.html">CA-23 routing and legacy review — 3 November 2026</a></li>
+<li class="toctree-l1"><a class="reference internal" href="high_security_rollout.html">Security rollout — B-Snap 2.6.1</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Comprehensive audit B-Snap — 2 November 2026</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks/camera_groups_2026_11_03.html">CA-21 camera-group counts: before/after benchmark</a></li>
 <li class="toctree-l1"><a class="reference internal" href="appendix.html">Appendix</a></li>
 </ul>
+
 </nav>
-</div>
-</div>
-<button @click="showSidebar = false" class="absolute md:hidden right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100" type="button">
-<svg class="h-4 w-4" fill="currentColor" height="24" stroke="none" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
-<path d="M480 632 284 828q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536 576l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11L480 632Z"></path>
-</svg>
-</button>
-</aside>
-<main class="relative py-6 lg:gap-10 lg:py-8 xl:grid xl:grid-cols-[1fr_300px]">
+      </div>
+    </div>
+    <button type="button" @click="showSidebar = false"
+      class="absolute md:hidden right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100">
+      <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 96 960 960" fill="currentColor"
+        stroke="none" class="h-4 w-4">
+        <path
+          d="M480 632 284 828q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536 576l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11L480 632Z" />
+      </svg>
+    </button>
+  </aside>
+          <main class="relative py-6 lg:gap-10 lg:py-8 xl:grid xl:grid-cols-[1fr_300px]">
 <div class="w-full min-w-0 mx-auto">
-<nav aria-label="breadcrumbs" class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
-<a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground" href="index.html">
-<span class="hidden md:inline">B-SNAP v2.6.0 documentation</span>
-<svg aria-label="Home" class="md:hidden" fill="currentColor" height="18" stroke="none" viewbox="0 96 960 960" width="18" xmlns="http://www.w3.org/2000/svg">
-<path d="M240 856h120V616h240v240h120V496L480 316 240 496v360Zm-80 80V456l320-240 320 240v480H520V696h-80v240H160Zm320-350Z"></path>
-</svg>
-</a>
-<div class="mr-1">/</div><span aria-current="page" class="font-medium text-foreground overflow-hidden text-ellipsis whitespace-nowrap">Comprehensive audit B-Snap — 2 November 2026</span>
+<nav aria-label="breadcrumbs"
+     class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
+  <a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground"
+     href="index.html">
+    <span class="hidden md:inline">B-SNAP v2.6.6 documentation</span>
+    <svg xmlns="http://www.w3.org/2000/svg"
+         height="18"
+         width="18"
+         viewBox="0 96 960 960"
+         aria-label="Home"
+         fill="currentColor"
+         stroke="none"
+         class="md:hidden">
+      <path d="M240 856h120V616h240v240h120V496L480 316 240 496v360Zm-80 80V456l320-240 320 240v480H520V696h-80v240H160Zm320-350Z" />
+    </svg>
+  </a>
+
+<div class="mr-1">/</div><span aria-current="page"
+        class="font-medium text-foreground overflow-hidden text-ellipsis whitespace-nowrap">Comprehensive audit B-Snap — 2 November 2026</span>
 </nav>
-<div id="content" role="main">
-<section id="comprehensive-audit-b-snap-2-november-2026">
+
+    <div id="content" role="main">
+      <section id="comprehensive-audit-b-snap-2-november-2026">
 <h1>Comprehensive audit B-Snap — 2 November 2026<a class="headerlink" href="#comprehensive-audit-b-snap-2-november-2026" title="Link to this heading"><span>#</span></a></h1>
 <p>Audit mengikuti <code class="docutils literal notranslate"><span class="pre">COMPREHENSIVE_AUDIT.MD</span></code> dan <code class="docutils literal notranslate"><span class="pre">AGENTS.md</span></code>. Analisis, reproduksi,
 remediasi, dan verifikasi dilakukan pada working tree lokal; tidak ada deployment,
 migration ke database aplikasi, capture kamera, atau pengiriman notifikasi nyata.</p>
+<p><strong>Pembaruan 2.6.1:</strong> seluruh temuan High yang tersisa (CA-19, CA-20, CA-27,
+CA-28) telah diperbaiki pada source dan diverifikasi secara terisolasi. Hasil
+rilis awal tetap dicatat sebagai riwayat. Bagian 12 mencatat perbaikan WebSocket
+2.6.2; bagian 13 mencatat penghentian inbox CA-22 pada 2.6.3, dan bagian 14
+mencatat perbaikan timezone monitor CA-24 pada 2.6.4.
+Bagian 15 mencatat optimasi dan benchmark CA-21 pada 2.6.5.
+Bagian 16 mencatat konsolidasi routing/review legacy CA-23 pada 2.6.6.</p>
 <section id="arsitektur-dan-cakupan">
-<h2>1. Arsitektur dan cakupan<a class="headerlink" href="#arsitektur-dan-cakupan" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#arsitektur-dan-cakupan'"><span>#</span></a></h2>
+<h2>1. Arsitektur dan cakupan<a class="headerlink" href="#arsitektur-dan-cakupan" title="Link to this heading"><span>#</span></a></h2>
 <ul class="simple">
-<li><p>Versi paket/aplikasi <strong>2.5.2</strong>. Minimum Python <strong>3.11</strong>, default image Docker
+<li><p>Baseline paket/aplikasi <strong>2.5.2</strong>, hasil akhir <strong>2.6.6</strong>. Minimum Python <strong>3.11</strong>, default image Docker
 <strong>Python 3.14.7</strong>; verifikasi lokal memakai Python <strong>3.13</strong> dan Node <strong>22.16.0</strong>.</p></li>
 <li><p>FastAPI menyediakan halaman Jinja2 dan API; SQLAlchemy 2 dan Alembic memakai
 PostgreSQL. Model JSONB dan trigger audit membuat schema penuh tidak kompatibel
@@ -121,7 +185,7 @@ layanan terpisah. Scheduled capture, health checks, record checks, retry email,
 WhatsApp schedules, dan arsip audit dijalankan melalui worker/helper terkait.</p></li>
 <li><p>Frontend memakai Tailwind 3, design-system CSS, JavaScript, shared date formatter,
 Toast, SweetAlert bertema, serta komponen peta lokal.</p></li>
-<li><p>Jalur request: error/observability middleware → proxy headers → gzip → signed
+<li><p>Jalur request: error/observability middleware → proxy headers → gzip → CSRF → signed
 session → online tracking → auth/setup → router/dependency role → SQLAlchemy →
 JSON/template/file/stream. WebSocket memerlukan penanganan autentikasi tersendiri.</p></li>
 <li><p>Kamera memakai association table <code class="docutils literal notranslate"><span class="pre">camera_camera_groups</span></code>; snapshot/video memakai
@@ -130,8 +194,8 @@ file server, sedangkan endpoint authenticated memeriksa grup dan mencatat audit.
 </ul>
 <p><a class="reference download internal" download="" href="_downloads/cb8f1f16a2a639fa98f1441315c2d8b7/comprehensive_audit_2026_11_02_inventory.json"><span class="xref download myst">Inventaris sumber dan endpoint</span></a>
 mencatat file, hash, syntax/compile check, serta dependency yang dideklarasikan.
-Inventaris mencakup <strong>276 file Python, 54 template, 15 JavaScript, 5 harness CJS,
-dan 265 deklarasi endpoint produksi</strong>. Jumlah endpoint mencakup router legacy yang
+Inventaris hasil 2.6.6 mencakup <strong>292 file Python, 55 template, 15 JavaScript,
+6 harness/test CJS, dan 261 deklarasi endpoint produksi</strong>. Jumlah endpoint mencakup router legacy yang
 belum tentu didaftarkan; tidak sama dengan jumlah URL unik yang aktif.</p>
 <p>Semua file pada inventaris menerima pemeriksaan statis. Penelusuran mendalam dan
 tes dilakukan pada boundary autentikasi, proxy, media, retensi, notifikasi, API
@@ -139,7 +203,7 @@ error, scheduler, bot, report, peta, dan UI yang memiliki tes terisolasi. Ini bu
 klaim bahwa setiap cabang business logic atau setiap halaman sudah diuji runtime.</p>
 </section>
 <section id="daftar-prioritas-sebelum-implementasi">
-<h2>2. Daftar prioritas sebelum implementasi<a class="headerlink" href="#daftar-prioritas-sebelum-implementasi" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#daftar-prioritas-sebelum-implementasi'"><span>#</span></a></h2>
+<h2>2. Daftar prioritas sebelum implementasi<a class="headerlink" href="#daftar-prioritas-sebelum-implementasi" title="Link to this heading"><span>#</span></a></h2>
 <p>Daftar CA-01 sampai CA-12 dibuat sebelum perubahan kode. CA-13 dan seterusnya
 ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.</p>
 <table class="docutils align-default">
@@ -176,19 +240,49 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.</p>
 <td><p>Pembaruan kompatibel; tanpa deploy</p></td>
 <td><p>Diperbaiki sebagian/seluruhnya sesuai rincian</p></td>
 </tr>
-<tr class="row-even"><td><p>Berikutnya</p></td>
-<td><p>CA-19–24, CA-27–28 dan sisa CA-15/17</p></td>
-<td><p>Webhook, health-group scope, CSRF, deployment, notification model, UI/debt</p></td>
+<tr class="row-even"><td><p>5</p></td>
+<td><p>CA-19–20, CA-27–28</p></td>
+<td><p>High: CSRF, produksi, webhook, health group</p></td>
+<td><p>Middleware, migration, dan kontrak integrasi</p></td>
+<td><p>Diperbaiki pada 2.6.1; lihat bagian 11</p></td>
+</tr>
+<tr class="row-odd"><td><p>6</p></td>
+<td><p>CA-22</p></td>
+<td><p>Inbox persisten tidak digunakan pada jalur standar</p></td>
+<td><p>Hapus fitur dan arsipkan data legacy</p></td>
+<td><p>Dihapus pada 2.6.3</p></td>
+</tr>
+<tr class="row-even"><td><p>7</p></td>
+<td><p>CA-24</p></td>
+<td><p>Timezone monitor pesan bot</p></td>
+<td><p>API timezone metadata, formatter, dan filter UTC</p></td>
+<td><p>Diperbaiki pada 2.6.4</p></td>
+</tr>
+<tr class="row-odd"><td><p>8</p></td>
+<td><p>CA-21</p></td>
+<td><p>Query counts per grup</p></td>
+<td><p>Satu query agregasi dan benchmark PostgreSQL</p></td>
+<td><p>Diperbaiki pada 2.6.5</p></td>
+</tr>
+<tr class="row-even"><td><p>9</p></td>
+<td><p>CA-23</p></td>
+<td><p>Routing dokumentasi dan review legacy</p></td>
+<td><p>Canonical routes, alias, deprecation inventory</p></td>
+<td><p>Diselesaikan pada 2.6.6</p></td>
+</tr>
+<tr class="row-odd"><td><p>Berikutnya</p></td>
+<td><p>Sisa CA-12/15/17</p></td>
+<td><p>UI/debt, test/dependency</p></td>
 <td><p>Memerlukan desain/validasi tambahan</p></td>
-<td><p>Backlog eksplisit</p></td>
+<td><p>Backlog non-High</p></td>
 </tr>
 </tbody>
 </table>
 </section>
 <section id="findings-backend">
-<h2>3. Findings: Backend<a class="headerlink" href="#findings-backend" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#findings-backend'"><span>#</span></a></h2>
+<h2>3. Findings: Backend<a class="headerlink" href="#findings-backend" title="Link to this heading"><span>#</span></a></h2>
 <section id="ca-02-enrollment-mfa-membocorkan-secret-akun-yang-sudah-aktif">
-<h3>CA-02 — Enrollment MFA membocorkan secret akun yang sudah aktif<a class="headerlink" href="#ca-02-enrollment-mfa-membocorkan-secret-akun-yang-sudah-aktif" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-02-enrollment-mfa-membocorkan-secret-akun-yang-sudah-aktif'"><span>#</span></a></h3>
+<h3>CA-02 — Enrollment MFA membocorkan secret akun yang sudah aktif<a class="headerlink" href="#ca-02-enrollment-mfa-membocorkan-secret-akun-yang-sudah-aktif" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Backend / High / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location:</strong> <code class="docutils literal notranslate"><span class="pre">app/routes/auth.py</span></code>, <code class="docutils literal notranslate"><span class="pre">mfa_setup_form</span></code>, <code class="docutils literal notranslate"><span class="pre">mfa_setup_post</span></code>.</p></li>
@@ -205,7 +299,7 @@ rendering QR, validasi OTP, commit, atau pembuatan sesi.</p></li>
 </ul>
 </section>
 <section id="ca-04-mutasi-media-dan-purge-mengabaikan-grup-retention-hold">
-<h3>CA-04 — Mutasi media dan purge mengabaikan grup/retention hold<a class="headerlink" href="#ca-04-mutasi-media-dan-purge-mengabaikan-grup-retention-hold" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-04-mutasi-media-dan-purge-mengabaikan-grup-retention-hold'"><span>#</span></a></h3>
+<h3>CA-04 — Mutasi media dan purge mengabaikan grup/retention hold<a class="headerlink" href="#ca-04-mutasi-media-dan-purge-mengabaikan-grup-retention-hold" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Backend / High / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location:</strong> <code class="docutils literal notranslate"><span class="pre">app/routes/snap_gallery.py</span></code>, <code class="docutils literal notranslate"><span class="pre">app/routes/videos.py</span></code>,
@@ -227,7 +321,7 @@ orphan, stale legacy group, hold, bulk purge, serta restore yang diizinkan diuji
 </ul>
 </section>
 <section id="ca-05-dependency-role-tidak-merata-pada-management-integration-routes">
-<h3>CA-05 — Dependency role tidak merata pada management/integration routes<a class="headerlink" href="#ca-05-dependency-role-tidak-merata-pada-management-integration-routes" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-05-dependency-role-tidak-merata-pada-management-integration-routes'"><span>#</span></a></h3>
+<h3>CA-05 — Dependency role tidak merata pada management/integration routes<a class="headerlink" href="#ca-05-dependency-role-tidak-merata-pada-management-integration-routes" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Backend / High / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location:</strong> recipient, whitelist, telemetry log, WhatsApp lookup, toast demo,
@@ -246,7 +340,7 @@ transport email, atau jaringan ping; tes SMTP admin yang sudah ada tetap dijalan
 </ul>
 </section>
 <section id="ca-08-malformed-web-token-menghasilkan-exception">
-<h3>CA-08 — Malformed web token menghasilkan exception<a class="headerlink" href="#ca-08-malformed-web-token-menghasilkan-exception" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-08-malformed-web-token-menghasilkan-exception'"><span>#</span></a></h3>
+<h3>CA-08 — Malformed web token menghasilkan exception<a class="headerlink" href="#ca-08-malformed-web-token-menghasilkan-exception" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Backend / Medium / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location:</strong> <code class="docutils literal notranslate"><span class="pre">app/utils/auth_token.py</span></code>, <code class="docutils literal notranslate"><span class="pre">get_current_user</span></code>, optional auth.</p></li>
@@ -265,7 +359,7 @@ serialisasi JSON, legacy UTC, Bearer, dan sesi tanpa token diuji.</p></li>
 </ul>
 </section>
 <section id="ca-11-duplikasi-handler-tamper-membuat-filter-tidak-terjangkau">
-<h3>CA-11 — Duplikasi handler tamper membuat filter tidak terjangkau<a class="headerlink" href="#ca-11-duplikasi-handler-tamper-membuat-filter-tidak-terjangkau" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-11-duplikasi-handler-tamper-membuat-filter-tidak-terjangkau'"><span>#</span></a></h3>
+<h3>CA-11 — Duplikasi handler tamper membuat filter tidak terjangkau<a class="headerlink" href="#ca-11-duplikasi-handler-tamper-membuat-filter-tidak-terjangkau" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Backend / Medium / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location:</strong> <code class="docutils literal notranslate"><span class="pre">app/routes/snap_gallery.py</span></code>, <code class="docutils literal notranslate"><span class="pre">/snapshots/tampered</span></code>.</p></li>
@@ -282,7 +376,7 @@ dan event UTC yang berada pada tanggal lokal berikutnya diuji.</p></li>
 </ul>
 </section>
 <section id="ca-13-menghapus-kamera-menghapus-video-evidence">
-<h3>CA-13 — Menghapus kamera menghapus video evidence<a class="headerlink" href="#ca-13-menghapus-kamera-menghapus-video-evidence" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-13-menghapus-kamera-menghapus-video-evidence'"><span>#</span></a></h3>
+<h3>CA-13 — Menghapus kamera menghapus video evidence<a class="headerlink" href="#ca-13-menghapus-kamera-menghapus-video-evidence" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Backend / High / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location:</strong> <code class="docutils literal notranslate"><span class="pre">Camera.videos</span></code>, <code class="docutils literal notranslate"><span class="pre">app/routes/cameras.py::delete_camera</span></code>.</p></li>
@@ -300,7 +394,7 @@ ada penghapusan file; PostgreSQL runtime tetap perlu verifikasi staging.</p></li
 </ul>
 </section>
 <section id="ca-14-legacy-group-column-masih-mengizinkan-akses">
-<h3>CA-14 — Legacy group column masih mengizinkan akses<a class="headerlink" href="#ca-14-legacy-group-column-masih-mengizinkan-akses" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-14-legacy-group-column-masih-mengizinkan-akses'"><span>#</span></a></h3>
+<h3>CA-14 — Legacy group column masih mengizinkan akses<a class="headerlink" href="#ca-14-legacy-group-column-masih-mengizinkan-akses" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Backend / High / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location:</strong> resolver kamera dan <code class="docutils literal notranslate"><span class="pre">WABotHandler</span></code> lookup/access helpers.</p></li>
@@ -317,24 +411,35 @@ relasi denied; tes WhatsApp access dan media menguji kondisi yang sama.</p></li>
 </ul>
 </section>
 <section id="ca-21-query-counts-camera-groups-bertumbuh-per-grup">
-<h3>CA-21 — Query counts camera groups bertumbuh per grup<a class="headerlink" href="#ca-21-query-counts-camera-groups-bertumbuh-per-grup" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-21-query-counts-camera-groups-bertumbuh-per-grup'"><span>#</span></a></h3>
+<h3>CA-21 — Query counts camera groups bertumbuh per grup<a class="headerlink" href="#ca-21-query-counts-camera-groups-bertumbuh-per-grup" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
-<li><p><strong>Layer / Severity / Status:</strong> Backend / Low / improvement opportunity, backlog.</p></li>
-<li><p><strong>Location / Evidence:</strong> loop <code class="docutils literal notranslate"><span class="pre">list_camera_groups</span></code> pada <code class="docutils literal notranslate"><span class="pre">app/routes/camera_groups.py</span></code>
-melakukan query count kamera/NVR/user untuk setiap grup.</p></li>
+<li><p><strong>Layer / Severity / Status:</strong> Backend / Low / improvement opportunity,
+diperbaiki dan dibenchmark pada 2.6.5.</p></li>
+<li><p><strong>Location / Evidence sebelum perbaikan:</strong> loop <code class="docutils literal notranslate"><span class="pre">get_camera_groups</span></code> pada
+<code class="docutils literal notranslate"><span class="pre">app/routes/camera_groups.py</span></code> melakukan query count kamera/NVR/user per grup,
+sehingga query data bertambah sebagai 1 + 3G.</p></li>
 <li><p><strong>Issue / Root Cause:</strong> agregasi per item, bukan grouped aggregation.</p></li>
-<li><p><strong>Impact:</strong> jumlah query meningkat mengikuti jumlah grup; tidak ada benchmark
-produksi yang membuktikan latency pengguna pada audit ini.</p></li>
-<li><p><strong>Recommended Fix:</strong> grouped counts/subquery, dengan snapshot response-equivalence.</p></li>
-<li><p><strong>Regression Risk:</strong> duplicate membership dapat menggandakan count jika join salah.</p></li>
-<li><p><strong>Verification:</strong> tambahkan query-count test dan benchmark dataset staging.</p></li>
+<li><p><strong>Impact:</strong> pada PostgreSQL lokal, 250 grup memerlukan 751 SELECT dan median
+674,469 ms. Latency deployment pengguna belum diukur.</p></li>
+<li><p><strong>Implemented Fix:</strong> agregasi kamera/association, NVR dan pengguna dalam subquery
+terpisah, kemudian LEFT JOIN/COALESCE ke daftar grup. Satu SELECT untuk setiap
+jumlah grup; urutan, field, total dan admin dependency tetap sama.</p></li>
+<li><p><strong>Regression Risk:</strong> join multiplication dicegah oleh agregasi terpisah;
+shared camera dihitung per membership, legacy scalar tidak menjadi sumber
+count. Kasus kosong memiliki overhead tetap sekitar 2 ms lebih tinggi dalam
+benchmark ini, bukan klaim semua request selalu lebih cepat.</p></li>
+<li><p><strong>Verification:</strong> tujuh regresi mencakup ukuran 0/1/10/100, grup kosong,
+shared camera, stale primary group, orphan association, NULL group user,
+count/total/order dan role checks. Benchmark before/after memakai dataset yang
+sama; body SHA-256 identik untuk semua ukuran. Pada 250 grup, median menjadi
+15,282 ms dan satu SELECT; lihat bagian 15 dan laporan benchmark.</p></li>
 </ul>
 </section>
 </section>
 <section id="findings-middleware-integration">
-<h2>4. Findings: Middleware / integration<a class="headerlink" href="#findings-middleware-integration" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#findings-middleware-integration'"><span>#</span></a></h2>
+<h2>4. Findings: Middleware / integration<a class="headerlink" href="#findings-middleware-integration" title="Link to this heading"><span>#</span></a></h2>
 <section id="ca-06-header-proxy-menimpa-trust-policy">
-<h3>CA-06 — Header proxy menimpa trust policy<a class="headerlink" href="#ca-06-header-proxy-menimpa-trust-policy" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-06-header-proxy-menimpa-trust-policy'"><span>#</span></a></h3>
+<h3>CA-06 — Header proxy menimpa trust policy<a class="headerlink" href="#ca-06-header-proxy-menimpa-trust-policy" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Middleware / High / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location:</strong> middleware stack <code class="docutils literal notranslate"><span class="pre">app/main.py</span></code>.</p></li>
@@ -347,11 +452,11 @@ ada; keluarkan kedua override dari stack.</p></li>
 <li><p><strong>Regression Risk:</strong> deployment yang hanya mengirim X-Real-IP harus menyediakan
 X-Forwarded-For/Proto dari proxy tepercaya.</p></li>
 <li><p><strong>Verification:</strong> peer trusted/untrusted dan header X-Real-IP diuji terhadap
-konfigurasi stack; default wildcard masih dicatat terpisah pada CA-20.</p></li>
+konfigurasi stack; default wildcard selanjutnya dihapus pada perbaikan CA-20.</p></li>
 </ul>
 </section>
 <section id="ca-07-respons-error-kehilangan-format-status-header">
-<h3>CA-07 — Respons error kehilangan format/status/header<a class="headerlink" href="#ca-07-respons-error-kehilangan-format-status-header" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-07-respons-error-kehilangan-format-status-header'"><span>#</span></a></h3>
+<h3>CA-07 — Respons error kehilangan format/status/header<a class="headerlink" href="#ca-07-respons-error-kehilangan-format-status-header" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Middleware / Medium / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location:</strong> error wrapper dan exception handlers pada <code class="docutils literal notranslate"><span class="pre">app/main.py</span></code>.</p></li>
@@ -370,7 +475,7 @@ API error dan live preview yang sudah ada.</p></li>
 </ul>
 </section>
 <section id="ca-10-session-cookie-berbeda-dari-cookie-autentikasi">
-<h3>CA-10 — Session cookie berbeda dari cookie autentikasi<a class="headerlink" href="#ca-10-session-cookie-berbeda-dari-cookie-autentikasi" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-10-session-cookie-berbeda-dari-cookie-autentikasi'"><span>#</span></a></h3>
+<h3>CA-10 — Session cookie berbeda dari cookie autentikasi<a class="headerlink" href="#ca-10-session-cookie-berbeda-dari-cookie-autentikasi" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Middleware / Medium / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location:</strong> <code class="docutils literal notranslate"><span class="pre">SessionMiddleware</span></code> pada <code class="docutils literal notranslate"><span class="pre">app/main.py</span></code>.</p></li>
@@ -385,7 +490,7 @@ tes session/Remember Me failure dan rotation dijalankan.</p></li>
 </ul>
 </section>
 <section id="ca-18-websocket-anonim-dan-toast-tidak-memeriksa-penerima">
-<h3>CA-18 — WebSocket anonim dan toast tidak memeriksa penerima<a class="headerlink" href="#ca-18-websocket-anonim-dan-toast-tidak-memeriksa-penerima" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-18-websocket-anonim-dan-toast-tidak-memeriksa-penerima'"><span>#</span></a></h3>
+<h3>CA-18 — WebSocket anonim dan toast tidak memeriksa penerima<a class="headerlink" href="#ca-18-websocket-anonim-dan-toast-tidak-memeriksa-penerima" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Middleware / High / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location:</strong> <code class="docutils literal notranslate"><span class="pre">app/ws/routes.py</span></code>, <code class="docutils literal notranslate"><span class="pre">app/ws/record_notifications.py</span></code>,
@@ -407,49 +512,60 @@ user berbeda, dan group-denied notifications diuji tanpa layanan notifier nyata.
 </ul>
 </section>
 <section id="ca-19-proteksi-csrf-belum-merata">
-<h3>CA-19 — Proteksi CSRF belum merata<a class="headerlink" href="#ca-19-proteksi-csrf-belum-merata" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-19-proteksi-csrf-belum-merata'"><span>#</span></a></h3>
+<h3>CA-19 — Proteksi CSRF belum merata<a class="headerlink" href="#ca-19-proteksi-csrf-belum-merata" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
-<li><p><strong>Layer / Severity / Status:</strong> Middleware / High / potential risk, backlog.</p></li>
-<li><p><strong>Location / Evidence:</strong> guard Origin/non-simple request terdapat pada record
+<li><p><strong>Layer / Severity / Status:</strong> Middleware / High / potential risk, diperbaiki pada source 2.6.1.</p></li>
+<li><p><strong>Location / Evidence sebelum perbaikan:</strong> guard Origin/non-simple request terdapat pada record
 mount actions, tetapi tidak ada mekanisme CSRF global untuk seluruh form; logout
 masih GET. Cookie SameSite lax merupakan mitigasi yang sudah ada.</p></li>
 <li><p><strong>Issue / Root Cause:</strong> perlindungan diterapkan per fitur, belum menjadi kontrak
 lintas aplikasi. Audit ini tidak mereproduksi serangan pada deployment nyata.</p></li>
 <li><p><strong>Impact:</strong> residual risk pada request berbasis cookie, khususnya topology
 same-site berbeda origin dan state-changing navigation.</p></li>
-<li><p><strong>Recommended Fix:</strong> inventaris form/GET mutating, desain CSRF token atau guard
-Origin/Fetch Metadata yang konsisten, dengan pengecualian eksplisit untuk API
-Bearer, webhook, dan signed media.</p></li>
-<li><p><strong>Regression Risk:</strong> guard global tanpa pengujian dapat memutus form, proxy, bot,
-dan integrasi. Karena itu tidak dipasang secara menyeluruh pada change set ini.</p></li>
-<li><p><strong>Verification:</strong> browser cross-site/same-site, session expiry, proxy HTTPS,
-form biasa, AJAX, dan Bearer integration pada staging.</p></li>
+<li><p><strong>Implemented Fix:</strong> <code class="docutils literal notranslate"><span class="pre">CSRFMiddleware</span></code> memeriksa Origin/Referer/Fetch Metadata
+pada seluruh unsafe method sebelum autentikasi/DB. Bearer tanpa cookie browser
+dikecualikan; POST webhook memakai HMAC tersendiri. GET logout hanya konfirmasi,
+logout aktual dan seluruh tombol logout memakai POST. Signed media GET tetap
+mengikuti pemeriksaan akses yang ada.</p></li>
+<li><p><strong>Regression Risk:</strong> klien cookie tanpa provenance ditolak 403; proxy yang
+mengubah Host memerlukan <code class="docutils literal notranslate"><span class="pre">PUBLIC_ORIGIN</span></code> canonical. GET MFA tetap hanya menyiapkan
+secret akun yang belum aktif dengan token tahap-login valid; tidak mengaktifkan MFA.</p></li>
+<li><p><strong>Verification:</strong> matriks ASGI origin invalid/duplicate, sibling-origin,
+same-origin, proxy-host rewrite, Bearer dengan/tanpa cookie, GET/POST logout;
+Chrome nyata menerima form/AJAX same-origin dan menolak form cross-site serta
+same-site beda port. Penerimaan pada proxy deployment tetap perlu diverifikasi.</p></li>
 </ul>
 </section>
 <section id="ca-20-default-development-proxy-secret-perlu-kebijakan-deployment">
-<h3>CA-20 — Default development/proxy/secret perlu kebijakan deployment<a class="headerlink" href="#ca-20-default-development-proxy-secret-perlu-kebijakan-deployment" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-20-default-development-proxy-secret-perlu-kebijakan-deployment'"><span>#</span></a></h3>
+<h3>CA-20 — Default development/proxy/secret perlu kebijakan deployment<a class="headerlink" href="#ca-20-default-development-proxy-secret-perlu-kebijakan-deployment" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
-<li><p><strong>Layer / Severity / Status:</strong> Middleware / High / potential risk, backlog.</p></li>
-<li><p><strong>Location / Evidence:</strong> <code class="docutils literal notranslate"><span class="pre">app/main.py</span></code> menyediakan development/default secret dan
+<li><p><strong>Layer / Severity / Status:</strong> Middleware / High / potential risk, diperbaiki pada source 2.6.1.</p></li>
+<li><p><strong>Location / Evidence sebelum perbaikan:</strong> <code class="docutils literal notranslate"><span class="pre">app/main.py</span></code> menyediakan development/default secret dan
 proxy trust wildcard; pemakaian default hanya diperingatkan. Audit tidak membaca
 atau menyimpulkan nilai secret/policy production pengguna.</p></li>
 <li><p><strong>Issue / Root Cause:</strong> default pengembangan dapat dipakai deployment yang belum
 lengkap konfigurasinya; belum ada fail-fast policy produksi terpusat.</p></li>
 <li><p><strong>Impact:</strong> keamanan session, debug output, dan keandalan IP audit bergantung pada
 deployment; tidak membuktikan bahwa production saat ini salah konfigurasi.</p></li>
-<li><p><strong>Recommended Fix:</strong> fail-fast khusus production untuk secret wajib, explicit
-trusted proxy, serta validasi HTTPS cookie. Evaluasi rate limiting login/OTP.</p></li>
-<li><p><strong>Regression Risk:</strong> mengubah default secara global bisa menghentikan environment
-existing; membutuhkan matriks konfigurasi dan rollout tersendiri.</p></li>
-<li><p><strong>Verification:</strong> startup dengan missing/valid config, proxy topology, dan abuse
-tests login/OTP; tidak mencatat secret pada hasil tes.</p></li>
+<li><p><strong>Implemented Fix:</strong> <code class="docutils literal notranslate"><span class="pre">app/core/security.py</span></code> menjadi sumber bersama session,
+auth token, dan Remember Me. Production menolak secret pendek/default, Secure
+cookie nonaktif, SameSite invalid, proxy wildcard <code class="docutils literal notranslate"><span class="pre">/0</span></code>/invalid, dan HTTPS proxy
+tanpa IP/CIDR eksplisit. Default proxy trust development hanya loopback.
+Counter password/OTP persisten memakai upsert atomik PostgreSQL dan mengembalikan
+429 + Retry-After; kegagalan penyimpanan counter gagal tertutup dengan 503.</p></li>
+<li><p><strong>Regression Risk:</strong> konfigurasi production lama yang tidak aman akan gagal
+startup; jalankan migration dan ikuti <code class="docutils literal notranslate"><span class="pre">high_security_rollout.md</span></code>. Nilai secret
+environment deployment tidak diperiksa, ditulis ulang, atau dicatat oleh audit.</p></li>
+<li><p><strong>Verification:</strong> matriks konfigurasi valid/invalid, representasi tanpa secret,
+route password/OTP/enrollment dan reset window; 20 percobaan concurrent melalui
+session PostgreSQL terpisah menghasilkan tepat 10 diterima dan 10 ditolak.</p></li>
 </ul>
 </section>
 </section>
 <section id="findings-frontend">
-<h2>5. Findings: Frontend<a class="headerlink" href="#findings-frontend" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#findings-frontend'"><span>#</span></a></h2>
+<h2>5. Findings: Frontend<a class="headerlink" href="#findings-frontend" title="Link to this heading"><span>#</span></a></h2>
 <section id="ca-09-log-viewer-memasukkan-metadata-error-ke-html">
-<h3>CA-09 — Log viewer memasukkan metadata/error ke HTML<a class="headerlink" href="#ca-09-log-viewer-memasukkan-metadata-error-ke-html" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-09-log-viewer-memasukkan-metadata-error-ke-html'"><span>#</span></a></h3>
+<h3>CA-09 — Log viewer memasukkan metadata/error ke HTML<a class="headerlink" href="#ca-09-log-viewer-memasukkan-metadata-error-ke-html" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Frontend / Medium / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location:</strong> <code class="docutils literal notranslate"><span class="pre">templates/logs.html</span></code>, renderer dan fetch helpers.</p></li>
@@ -466,13 +582,13 @@ serta error; tidak ada elemen/payload yang dieksekusi atau page error.</p></li>
 </ul>
 </section>
 <section id="ca-17-log-viewer-terpotong-di-mobile-dan-badge-tidak-diproses">
-<h3>CA-17 — Log viewer terpotong di mobile dan badge tidak diproses<a class="headerlink" href="#ca-17-log-viewer-terpotong-di-mobile-dan-badge-tidak-diproses" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-17-log-viewer-terpotong-di-mobile-dan-badge-tidak-diproses'"><span>#</span></a></h3>
+<h3>CA-17 — Log viewer terpotong di mobile dan badge tidak diproses<a class="headerlink" href="#ca-17-log-viewer-terpotong-di-mobile-dan-badge-tidak-diproses" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Frontend / Medium / confirmed issue, diperbaiki
 untuk Logs Viewer; pola CSS sejenis pada halaman lain masih backlog.</p></li>
 <li><p><strong>Location / Evidence:</strong> sidebar w-72 dan main flex row tanpa min-width constraint;
 screenshot 390px memperlihatkan kontrol di luar viewport. CSS badge memakai
-Tailwind <code class="docutils literal notranslate"><span class="pre">@apply</span></code> pada style inline yang tidak melewati build.</p></li>
+Tailwind <code class="docutils literal notranslate"><span class="pre">&#64;apply</span></code> pada style inline yang tidak melewati build.</p></li>
 <li><p><strong>Root Cause:</strong> layout desktop dipakai di semua viewport; template CSS dianggap
 ikut diproses oleh CLI Tailwind.</p></li>
 <li><p><strong>Impact:</strong> kontrol sulit dijangkau dan warna badge tidak konsisten.</p></li>
@@ -481,33 +597,38 @@ min-width/min-height untuk viewer, dan reuse ui-badge variants.</p></li>
 <li><p><strong>Regression Risk:</strong> sidebar/file list memiliki scroll tersendiri pada mobile.</p></li>
 <li><p><strong>Verification:</strong> build CSS dan screenshot Chrome 1440×1000/390×844, light/dark;
 kontrol tersedia dan tidak ada horizontal overflow halaman.</p></li>
-<li><p><strong>Remaining:</strong> raw <code class="docutils literal notranslate"><span class="pre">@apply</span></code> ditemukan juga pada delapan template lain. Pindahkan
+<li><p><strong>Remaining:</strong> raw <code class="docutils literal notranslate"><span class="pre">&#64;apply</span></code> ditemukan juga pada delapan template lain. Pindahkan
 ke stylesheet build atau utility classes setelah memeriksa benturan selector
 generik seperti <code class="docutils literal notranslate"><span class="pre">.status-badge</span></code>/<code class="docutils literal notranslate"><span class="pre">.role-badge</span></code>; jangan memindahkannya global secara
 otomatis. Verifikasi visual masing-masing halaman diperlukan.</p></li>
 </ul>
 </section>
 <section id="ca-24-monitor-bot-masih-mengikuti-clock-browser-untuk-tanggal-tertentu">
-<h3>CA-24 — Monitor bot masih mengikuti clock browser untuk tanggal tertentu<a class="headerlink" href="#ca-24-monitor-bot-masih-mengikuti-clock-browser-untuk-tanggal-tertentu" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-24-monitor-bot-masih-mengikuti-clock-browser-untuk-tanggal-tertentu'"><span>#</span></a></h3>
+<h3>CA-24 — Monitor bot masih mengikuti clock browser untuk tanggal tertentu<a class="headerlink" href="#ca-24-monitor-bot-masih-mengikuti-clock-browser-untuk-tanggal-tertentu" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Frontend / Medium / confirmed source inconsistency,
-backlog; belum diuji pada deployment.</p></li>
-<li><p><strong>Location / Evidence:</strong> <code class="docutils literal notranslate"><span class="pre">static/js/wa-bot-builder.js</span></code> memakai
+diperbaiki pada source 2.6.4; deployment pengguna belum diverifikasi.</p></li>
+<li><p><strong>Location / Evidence sebelum perbaikan:</strong> <code class="docutils literal notranslate"><span class="pre">static/js/wa-bot-builder.js</span></code> memakai
 <code class="docutils literal notranslate"><span class="pre">new</span> <span class="pre">Date(item.timestamp).toLocaleString(BSnapDates.locale())</span></code> tanpa timeZone;
 detail juga menampilkan timestamp mentah.</p></li>
 <li><p><strong>Issue / Root Cause:</strong> locale sudah mengikuti bahasa, tetapi clock belum selalu
 memakai timezone database.</p></li>
 <li><p><strong>Impact:</strong> browser di timezone lain dapat menampilkan clock berbeda.</p></li>
-<li><p><strong>Recommended Fix:</strong> kirim timezone dan UTC offset eksplisit dari API, pakai
-helper date bersama dengan opsi timezone, dan rerender monitor/detail saat
-language change. Audit filter datetime-local secara terpisah.</p></li>
+<li><p><strong>Implemented Fix:</strong> API mengirim timezone/label dan ISO dengan offset eksplisit,
+termasuk timestamp naive yang diperlakukan UTC. Tabel, Details, dan refresh
+memakai BSnapDates.format dengan timezone konfigurasi, header WIB/WITA/WIT atau
+nama IANA yang benar, serta re-render EN/ID langsung. Filter datetime-local
+dikonversi melalui helper bersama parseLocal menjadi instant UTC; rentang
+reversed/nonexistent ditolak, fold DST memakai bound earlier/later inklusif.</p></li>
 <li><p><strong>Regression Risk:</strong> reinterpretasi ISO naive atau filter mesin dapat menggeser
 rentang waktu bila diperbaiki hanya pada label.</p></li>
-<li><p><strong>Verification:</strong> EN–ID–EN pada browser zone berbeda, WIB/WITA/WIT dan midnight.</p></li>
+<li><p><strong>Verification:</strong> API isolated, Node parser/format tests, Chrome EN–ID–EN pada
+browser Los Angeles/Jakarta dengan WIB/WITA/WIT/London, midnight, filter dan
+Details terbuka. Light/dark/mobile diperiksa; hasil rinci pada bagian 14.</p></li>
 </ul>
 </section>
 <section id="ca-25-format-log-baru-tidak-dikenali-dan-waktu-file-ambigu">
-<h3>CA-25 — Format log baru tidak dikenali dan waktu file ambigu<a class="headerlink" href="#ca-25-format-log-baru-tidak-dikenali-dan-waktu-file-ambigu" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-25-format-log-baru-tidak-dikenali-dan-waktu-file-ambigu'"><span>#</span></a></h3>
+<h3>CA-25 — Format log baru tidak dikenali dan waktu file ambigu<a class="headerlink" href="#ca-25-format-log-baru-tidak-dikenali-dan-waktu-file-ambigu" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Cross-Layer / Medium / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location:</strong> <code class="docutils literal notranslate"><span class="pre">LogEntry</span></code>, file metadata API, <code class="docutils literal notranslate"><span class="pre">BSnapDates</span></code>, log renderer.</p></li>
@@ -527,7 +648,7 @@ tetapi log Asia/Makassar tetap 00:30 pada tanggal berikutnya.</p></li>
 </ul>
 </section>
 <section id="ca-26-template-legacy-tidak-dapat-dikompilasi">
-<h3>CA-26 — Template legacy tidak dapat dikompilasi<a class="headerlink" href="#ca-26-template-legacy-tidak-dapat-dikompilasi" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-26-template-legacy-tidak-dapat-dikompilasi'"><span>#</span></a></h3>
+<h3>CA-26 — Template legacy tidak dapat dikompilasi<a class="headerlink" href="#ca-26-template-legacy-tidak-dapat-dikompilasi" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Frontend / Low / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location / Evidence:</strong> <code class="docutils literal notranslate"><span class="pre">templates/user_management2.html</span></code> mempunyai ekspresi
@@ -545,9 +666,9 @@ diaktifkan; business/security flow-nya memerlukan review sebelum reuse.</p></li>
 </section>
 </section>
 <section id="findings-cross-layer-delivery-tooling">
-<h2>6. Findings: Cross-Layer / delivery / tooling<a class="headerlink" href="#findings-cross-layer-delivery-tooling" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#findings-cross-layer-delivery-tooling'"><span>#</span></a></h2>
+<h2>6. Findings: Cross-Layer / delivery / tooling<a class="headerlink" href="#findings-cross-layer-delivery-tooling" title="Link to this heading"><span>#</span></a></h2>
 <section id="ca-01-alias-url-melewati-pemblokiran-static-footage">
-<h3>CA-01 — Alias URL melewati pemblokiran static footage<a class="headerlink" href="#ca-01-alias-url-melewati-pemblokiran-static-footage" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-01-alias-url-melewati-pemblokiran-static-footage'"><span>#</span></a></h3>
+<h3>CA-01 — Alias URL melewati pemblokiran static footage<a class="headerlink" href="#ca-01-alias-url-melewati-pemblokiran-static-footage" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Cross-Layer / Critical / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location:</strong> static mount <code class="docutils literal notranslate"><span class="pre">app/main.py</span></code>, <code class="docutils literal notranslate"><span class="pre">app/core/static_assets.py</span></code>.</p></li>
@@ -567,7 +688,7 @@ symlink, serta CSS publik diuji pada temporary directory.</p></li>
 </ul>
 </section>
 <section id="ca-03-boundary-legacy-snapshot-tidak-konsisten">
-<h3>CA-03 — Boundary legacy snapshot tidak konsisten<a class="headerlink" href="#ca-03-boundary-legacy-snapshot-tidak-konsisten" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-03-boundary-legacy-snapshot-tidak-konsisten'"><span>#</span></a></h3>
+<h3>CA-03 — Boundary legacy snapshot tidak konsisten<a class="headerlink" href="#ca-03-boundary-legacy-snapshot-tidak-konsisten" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Cross-Layer / High / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location:</strong> <code class="docutils literal notranslate"><span class="pre">app/routes/snapshots.py</span></code>, auth/setup middleware.</p></li>
@@ -591,7 +712,7 @@ positive token/file, invalid signature, dan link yang dicabut melalui soft delet
 </ul>
 </section>
 <section id="ca-12-test-discovery-fixtures-legacy-tidak-aman-untuk-full-suite-run">
-<h3>CA-12 — Test discovery/fixtures legacy tidak aman untuk full-suite run<a class="headerlink" href="#ca-12-test-discovery-fixtures-legacy-tidak-aman-untuk-full-suite-run" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-12-test-discovery-fixtures-legacy-tidak-aman-untuk-full-suite-run'"><span>#</span></a></h3>
+<h3>CA-12 — Test discovery/fixtures legacy tidak aman untuk full-suite run<a class="headerlink" href="#ca-12-test-discovery-fixtures-legacy-tidak-aman-untuk-full-suite-run" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Cross-Layer / Medium / confirmed issue, sebagian
 diperbaiki; restrukturisasi test suite masih backlog.</p></li>
@@ -615,7 +736,7 @@ PostgreSQL disposable sebagai pekerjaan berikutnya.</p></li>
 </ul>
 </section>
 <section id="ca-15-dependency-build-memiliki-advisory-npm">
-<h3>CA-15 — Dependency build memiliki advisory npm<a class="headerlink" href="#ca-15-dependency-build-memiliki-advisory-npm" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-15-dependency-build-memiliki-advisory-npm'"><span>#</span></a></h3>
+<h3>CA-15 — Dependency build memiliki advisory npm<a class="headerlink" href="#ca-15-dependency-build-memiliki-advisory-npm" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Cross-Layer / High (hasil scanner awal) / confirmed
 scanner finding, sebagian diremediasi; exploitability aplikasi tidak dibuktikan.</p></li>
@@ -637,7 +758,7 @@ dependency CVE audit dan Docker image vulnerability scan belum dilakukan.</p></l
 </ul>
 </section>
 <section id="ca-16-default-compose-image-tertinggal-dari-versi-aplikasi">
-<h3>CA-16 — Default Compose image tertinggal dari versi aplikasi<a class="headerlink" href="#ca-16-default-compose-image-tertinggal-dari-versi-aplikasi" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-16-default-compose-image-tertinggal-dari-versi-aplikasi'"><span>#</span></a></h3>
+<h3>CA-16 — Default Compose image tertinggal dari versi aplikasi<a class="headerlink" href="#ca-16-default-compose-image-tertinggal-dari-versi-aplikasi" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
 <li><p><strong>Layer / Severity / Status:</strong> Cross-Layer / Medium / confirmed issue, diperbaiki.</p></li>
 <li><p><strong>Location / Evidence:</strong> Compose memakai default v2.4.1; package, app version,
@@ -651,72 +772,95 @@ audit ini tidak melakukan pull/build/push atau menjalankan Compose.</p></li>
 <li><p><strong>Verification:</strong> version-check script dan release-version regression test.</p></li>
 </ul>
 </section>
-<section id="ca-22-model-notifikasi-persisten-belum-mempunyai-state-per-penerima">
-<h3>CA-22 — Model notifikasi persisten belum mempunyai state per penerima<a class="headerlink" href="#ca-22-model-notifikasi-persisten-belum-mempunyai-state-per-penerima" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-22-model-notifikasi-persisten-belum-mempunyai-state-per-penerima'"><span>#</span></a></h3>
+<section id="ca-22-inbox-persisten-legacy-fitur-dihentikan">
+<h3>CA-22 — Inbox persisten legacy: fitur dihentikan<a class="headerlink" href="#ca-22-inbox-persisten-legacy-fitur-dihentikan" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
-<li><p><strong>Layer / Severity / Status:</strong> Cross-Layer / Medium / confirmed source issue,
-backlog; berbeda dari perbaikan live delivery CA-18.</p></li>
-<li><p><strong>Location / Evidence:</strong> <code class="docutils literal notranslate"><span class="pre">Notification.is_read</span></code> berada pada satu row broadcast;
-mark-all-read/delete API juga memasukkan user_id NULL. Camera ID model berupa
-Integer, sementara primary key kamera berupa UUID string. Query persistent
-notification belum memakai membership kamera.</p></li>
-<li><p><strong>Root Cause:</strong> model broadcast dipakai sekaligus sebagai inbox personal.</p></li>
-<li><p><strong>Impact:</strong> pengguna dapat memengaruhi status/broadcast milik pengguna lain;
-persistent camera notification membutuhkan pemeriksaan grup dan tipe ID benar.</p></li>
-<li><p><strong>Recommended Fix:</strong> analisis data existing, migration camera ID dan receipt
-per user, kebijakan delete broadcast, dan filter grup yang konsisten.</p></li>
-<li><p><strong>Regression Risk:</strong> perubahan schema/kontrak/read semantics; tidak aman mengklaim
-selesai hanya dengan menyaring live toast atau mengganti satu tipe kolom.</p></li>
-<li><p><strong>Verification:</strong> PostgreSQL disposable, multi-user/group tests, migration round
-trip, revocation, serta backward compatibility data notifikasi lama.</p></li>
+<li><p><strong>Layer / Severity / Status:</strong> Cross-Layer / Medium (potensial/bersyarat) /
+bug laten dikonfirmasi dengan data sintetis; fitur dihapus pada 2.6.3.</p></li>
+<li><p><strong>Evidence sebelum penghapusan:</strong> <code class="docutils literal notranslate"><span class="pre">Notification.is_read</span></code> berada pada satu row
+broadcast; satu pengguna membaca/menghapus dapat memengaruhi pengguna lain bila
+data broadcast ada. Camera ID Integer tidak sesuai UUID kamera dan query inbox
+belum memeriksa grup. Dampak pada database deployment tidak diverifikasi.</p></li>
+<li><p><strong>Koreksi cakupan:</strong> ini bukan email atau <code class="docutils literal notranslate"><span class="pre">/email-logs</span></code>. Email memakai
+<code class="docutils literal notranslate"><span class="pre">CameraEmailNotificationLog</span></code>/recipients/retry terpisah. Jalur <code class="docutils literal notranslate"><span class="pre">send_toast()</span></code>
+standar tidak mengaktifkan penyimpanan dan frontend tidak ditemukan memakai
+API inbox. <code class="docutils literal notranslate"><span class="pre">duration=0</span></code> hanya mengatur tampilan toast, bukan penyimpanan.</p></li>
+<li><p><strong>Implementasi atas instruksi pengguna:</strong> hapus model, enam endpoint
+<code class="docutils literal notranslate"><span class="pre">/api/notifications/*</span></code>, registrasi router/model, argumen <code class="docutils literal notranslate"><span class="pre">db</span></code>, dan blok insert
+yang tidak aktif. Live toast dan pemeriksaan sesi/penerima/grup tetap tersedia.</p></li>
+<li><p><strong>Migration:</strong> <code class="docutils literal notranslate"><span class="pre">20261103_retire_inbox</span></code> mengarsipkan tabel sebagai
+<code class="docutils literal notranslate"><span class="pre">retired_notifications</span></code>; tidak menghapus data historis. Downgrade memulihkan
+nama/data lama. Tabel arsip dikecualikan dari Alembic autogenerate.</p></li>
+<li><p><strong>Regression Risk:</strong> integrasi eksternal inbox harus berhenti memakai endpoint
+yang dihapus. Jalankan migration sebelum start worker baru; audit tidak
+menjalankan migration pada database aplikasi pengguna.</p></li>
+<li><p><strong>Verification:</strong> endpoint tidak terdaftar/404, live toast authenticated dan
+data <code class="docutils literal notranslate"><span class="pre">/api/email-logs</span></code> tetap berfungsi, PostgreSQL upgrade/downgrade/re-upgrade
+mempertahankan inbox legacy, email log dan queue transport. Lihat bagian 13.</p></li>
 </ul>
 </section>
 <section id="ca-23-routing-dead-code-masih-perlu-konsolidasi">
-<h3>CA-23 — Routing/dead code masih perlu konsolidasi<a class="headerlink" href="#ca-23-routing-dead-code-masih-perlu-konsolidasi" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-23-routing-dead-code-masih-perlu-konsolidasi'"><span>#</span></a></h3>
+<h3>CA-23 — Routing/dead code masih perlu konsolidasi<a class="headerlink" href="#ca-23-routing-dead-code-masih-perlu-konsolidasi" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
-<li><p><strong>Layer / Severity / Status:</strong> Cross-Layer / Low / improvement opportunity, backlog.</p></li>
-<li><p><strong>Location / Evidence:</strong> GET <code class="docutils literal notranslate"><span class="pre">/docs</span></code> didaftarkan oleh docs router dan app utama;
+<li><p><strong>Layer / Severity / Status:</strong> Cross-Layer / Low / improvement opportunity,
+konsolidasi dan review deprecation diselesaikan pada 2.6.6.</p></li>
+<li><p><strong>Location / Evidence sebelum perbaikan:</strong> GET <code class="docutils literal notranslate"><span class="pre">/docs</span></code> didaftarkan oleh docs router dan app utama;
 beberapa template/router legacy tidak dirender/didaftarkan pada jalur utama.</p></li>
 <li><p><strong>Issue / Root Cause:</strong> riwayat fitur meninggalkan jalur alternatif; routing order
 menentukan handler yang dipakai, bukan hanya nama fungsi.</p></li>
 <li><p><strong>Impact:</strong> maintenance/confusing documentation, bukan bukti akses tanpa izin.</p></li>
-<li><p><strong>Recommended Fix:</strong> pilih canonical docs entry, inventaris pemakai legacy view,
-dan dokumentasikan deprecation sebelum penghapusan.</p></li>
+<li><p><strong>Implemented Fix:</strong> satu router dokumentasi: <code class="docutils literal notranslate"><span class="pre">/docs</span></code> mengarah ke
+<code class="docutils literal notranslate"><span class="pre">/docs/environment</span></code>, Swagger admin-only pada <code class="docutils literal notranslate"><span class="pre">/docs/openapi</span></code>, alias
+<code class="docutils literal notranslate"><span class="pre">/developer/docs</span></code> tetap protected, serta alias schema lama menuju <code class="docutils literal notranslate"><span class="pre">/openapi.json</span></code>.
+Handler tertutup di main dan modul dev_docs yang redundan dihapus; navigation
+dan tautan diperbarui. Dead block setelah redirect <code class="docutils literal notranslate"><span class="pre">/stats</span></code> dihapus dan parameter
+camera/days di-URL-encode dengan status/tujuan redirect tetap.</p></li>
+<li><p><strong>Legacy review:</strong> enam template tanpa referensi produksi statis dan tiga modul
+nonaktif ditandai deprecated serta dipertahankan untuk downstream review;
+map_live/map_heatmap dan audit APIs dipastikan aktif, bukan ikut dihapus.
+Lihat <a class="reference internal" href="legacy_routing_review_2026_11_03.html"><span class="std std-doc">inventaris dan keputusan</span></a>.</p></li>
 <li><p><strong>Regression Risk:</strong> bookmark, embedded Swagger, dan integrasi dokumentasi.</p></li>
-<li><p><strong>Verification:</strong> route-order/redirect tests dan pencarian pemakai template;
-jangan mengaktifkan view legacy hanya karena compile sekarang lulus.</p></li>
+<li><p><strong>Verification:</strong> tidak ada duplikasi method/path pada registry produksi,
+redirect/bookmark/schema/role tests, encoded stats filters, registry Maps/MFA,
+dan compile semua template. Chrome memuat Swagger assets dan schema melalui
+alias, tanpa page error; Sphinx build dengan warnings-as-errors lulus.
+Legacy view tidak diaktifkan hanya karena kompilasinya lulus.</p></li>
 </ul>
 </section>
 </section>
 <section id="a-temuan-tambahan-pada-boundary-integrasi">
-<h2>6a. Temuan tambahan pada boundary integrasi<a class="headerlink" href="#a-temuan-tambahan-pada-boundary-integrasi" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#a-temuan-tambahan-pada-boundary-integrasi'"><span>#</span></a></h2>
+<h2>6a. Temuan tambahan pada boundary integrasi<a class="headerlink" href="#a-temuan-tambahan-pada-boundary-integrasi" title="Link to this heading"><span>#</span></a></h2>
 <section id="ca-27-identitas-sender-webhook-belum-membuktikan-sumber-request">
-<h3>CA-27 — Identitas sender webhook belum membuktikan sumber request<a class="headerlink" href="#ca-27-identitas-sender-webhook-belum-membuktikan-sumber-request" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-27-identitas-sender-webhook-belum-membuktikan-sumber-request'"><span>#</span></a></h3>
+<h3>CA-27 — Identitas sender webhook belum membuktikan sumber request<a class="headerlink" href="#ca-27-identitas-sender-webhook-belum-membuktikan-sumber-request" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
-<li><p><strong>Layer / Severity / Status:</strong> Middleware / High / potential deployment risk;
-authentication gap pada handler terkonfirmasi, exploit deployment belum diuji.</p></li>
-<li><p><strong>Location / Evidence:</strong> <code class="docutils literal notranslate"><span class="pre">/webhook/gowa</span></code> sengaja public; handler mengambil sender
+<li><p><strong>Layer / Severity / Status:</strong> Middleware / High / authentication gap diperbaiki
+pada source 2.6.1; exploit deployment tidak diuji.</p></li>
+<li><p><strong>Location / Evidence sebelum perbaikan:</strong> <code class="docutils literal notranslate"><span class="pre">/webhook/gowa</span></code> sengaja public; handler mengambil sender
 dari body, lalu memeriksa whitelist. Tidak ditemukan signature/shared-secret
 verification pada handler. Pembatasan ingress/proxy di luar aplikasi belum diverifikasi.</p></li>
 <li><p><strong>Issue / Root Cause:</strong> whitelist memvalidasi nilai sender yang diklaim payload,
 bukan asal HTTP request dari GoWA.</p></li>
 <li><p><strong>Impact:</strong> apabila endpoint dapat diakses pihak tidak tepercaya, payload yang
 mengaku berasal dari nomor whitelist dapat memicu aksi bot sesuai role nomor itu.</p></li>
-<li><p><strong>Recommended Fix:</strong> verifikasi kemampuan autentikasi GoWA/ingress, kemudian
-terapkan signature/shared secret atau authenticated proxy allowlist yang sesuai;
-whitelist tetap menjadi pemeriksaan authorization tambahan.</p></li>
-<li><p><strong>Regression Risk:</strong> menambahkan browser-session/admin dependency begitu saja
-akan memutus webhook sah. Perubahan memerlukan konfigurasi kedua layanan dan
-pengelolaan secret yang tidak dilakukan otomatis dalam audit ini.</p></li>
-<li><p><strong>Verification:</strong> request forged ditolak sebelum bot/DB/network side effects,
-request GoWA sah diterima, replay dan rotasi credential diperiksa di staging.</p></li>
+<li><p><strong>Implemented Fix:</strong> verifikasi native GoWA <code class="docutils literal notranslate"><span class="pre">X-Hub-Signature-256</span></code> memakai
+HMAC-SHA256/constant-time comparison terhadap raw body sebelum parsing/aksi.
+<code class="docutils literal notranslate"><span class="pre">GOWA_WEBHOOK_SECRET</span></code> minimal 32 karakter wajib; konfigurasi kosong/pendek -&gt;503,
+signature invalid/missing/duplicate -&gt;401, body &gt;1 MiB -&gt;413. Tidak ada fallback
+unsigned. Whitelist, role, group, dan deduplikasi provider ID tetap berlaku.</p></li>
+<li><p><strong>Regression Risk:</strong> operator harus menyamakan secret B-Snap dengan
+<code class="docutils literal notranslate"><span class="pre">WHATSAPP_WEBHOOK_SECRET</span></code>/device secret GoWA dan mengoordinasikan rotasi.
+HMAC bukan nonce/timestamp; deduplikasi mengikuti retensi provider message ID.</p></li>
+<li><p><strong>Verification:</strong> raw bytes berubah, signature palsu/hilang/duplicate, body
+oversized, JSON invalid, sender non-whitelist, dan provider ID duplikat diuji
+tanpa transport nyata. Stack aplikasi menolak unsigned webhook sebelum query
+autentikasi. Konfigurasi GoWA/TLS/rotasi nyata tetap pemeriksaan deployment.</p></li>
 </ul>
 </section>
 <section id="ca-28-health-monitoring-belum-konsisten-membatasi-grup">
-<h3>CA-28 — Health monitoring belum konsisten membatasi grup<a class="headerlink" href="#ca-28-health-monitoring-belum-konsisten-membatasi-grup" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ca-28-health-monitoring-belum-konsisten-membatasi-grup'"><span>#</span></a></h3>
+<h3>CA-28 — Health monitoring belum konsisten membatasi grup<a class="headerlink" href="#ca-28-health-monitoring-belum-konsisten-membatasi-grup" title="Link to this heading"><span>#</span></a></h3>
 <ul class="simple">
-<li><p><strong>Layer / Severity / Status:</strong> Backend / High / confirmed source issue, backlog.</p></li>
-<li><p><strong>Location / Evidence:</strong> <code class="docutils literal notranslate"><span class="pre">get_health_status_api</span></code> memanggil
+<li><p><strong>Layer / Severity / Status:</strong> Backend / High / confirmed source issue, diperbaiki pada 2.6.1.</p></li>
+<li><p><strong>Location / Evidence sebelum perbaikan:</strong> <code class="docutils literal notranslate"><span class="pre">get_health_status_api</span></code> memanggil
 <code class="docutils literal notranslate"><span class="pre">_get_all_devices_health_data(db)</span></code> tanpa current group. Query UNION kamera/NVR
 helper tersebut tidak memiliki membership filter; route cukup memerlukan operator.</p></li>
 <li><p><strong>Issue / Root Cause:</strong> role monitoring dianggap sebagai cakupan seluruh device,
@@ -724,18 +868,24 @@ berbeda dari pembatasan grup pada Maps/gallery/media.</p></li>
 <li><p><strong>Impact:</strong> operator dengan group_id tertentu dapat memperoleh metadata/status
 device di luar grup melalui status API. Cakupan history/report/trigger sejenis
 perlu diperiksa dan diselaraskan dalam change set yang sama.</p></li>
-<li><p><strong>Recommended Fix:</strong> filter camera via association, NVR via group relation yang
-berlaku, dan enforce group sebelum lookup/trigger/history/export/report; group
-NULL mempertahankan cakupan global.</p></li>
+<li><p><strong>Implemented Fix:</strong> scope kamera memakai association, NVR memakai relasi grup
+yang berlaku, pada status/uptime/history/count/dropdown/SLA/export/report dan
+single/bulk trigger. Worker memeriksa ulang membership sebelum network work.
+Progress per grup dipisahkan dari tracker global dan start dikunci per scope;
+scheduled-report definitions global hanya dapat dikelola user group NULL.
+Group NULL mempertahankan cakupan global. Restricted run tidak menjalankan
+cleanup email-log global.</p></li>
 <li><p><strong>Regression Risk:</strong> perubahan memengaruhi count dashboard, SLA/report, pilihan
 filter, dan job monitoring. Hindari hanya menyaring label UI atau satu response.</p></li>
-<li><p><strong>Verification:</strong> PostgreSQL/compatible isolated query tests dengan dua grup,
-admin/operator global dan restricted, serta transport ping/capture dimock.</p></li>
+<li><p><strong>Verification:</strong> subset SQLite terisolasi dengan dua grup, shared camera dan
+primary-group stale, admin/operator restricted/global, semua query/report/trigger,
+serta mock ping. PostgreSQL membuktikan 20 start concurrent menerima satu run
+untuk scope yang sama, tanpa memakai tracker global ID 1.</p></li>
 </ul>
 </section>
 </section>
 <section id="ringkasan-implementasi">
-<h2>7. Ringkasan implementasi<a class="headerlink" href="#ringkasan-implementasi" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ringkasan-implementasi'"><span>#</span></a></h2>
+<h2>7. Ringkasan implementasi<a class="headerlink" href="#ringkasan-implementasi" title="Link to this heading"><span>#</span></a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Area/file</p></th>
@@ -782,12 +932,14 @@ admin/operator global dan restricted, serta transport ping/capture dimock.</p></
 </tr>
 </tbody>
 </table>
-<p>Tidak ada dependency runtime langsung baru, perubahan credential, database schema,
-atau migration baru. File CSS hasil build ikut diperbarui.</p>
+<p>Rilis awal 2.6.0 tidak menambah dependency runtime, credential, schema, atau migration.
+Rilis lanjutan 2.6.1 menambah migration security; lihat bagian 11. File CSS hasil
+build ikut diperbarui.</p>
 </section>
 <section id="test-dan-verifikasi">
-<h2>8. Test dan verifikasi<a class="headerlink" href="#test-dan-verifikasi" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#test-dan-verifikasi'"><span>#</span></a></h2>
-<p>Hasil final dan batas cakupan dicatat di tabel berikut.
+<h2>8. Test dan verifikasi<a class="headerlink" href="#test-dan-verifikasi" title="Link to this heading"><span>#</span></a></h2>
+<p>Hasil rilis awal 2.6.0 dan batas cakupan dicatat di tabel berikut. Hasil 2.6.1
+menggantikan batas PostgreSQL yang sudah diverifikasi; lihat bagian 11.
 Log command rinci tersedia di <code class="docutils literal notranslate"><span class="pre">tmp/comprehensive-audit-*</span></code> pada workspace lokal.
 File tmp bukan bagian deployment maupun artefak yang berisi data pengguna.</p>
 <table class="docutils align-default">
@@ -863,30 +1015,33 @@ coverage 70% atau keberhasilan full test suite.</p></li>
 CSS lokal, dan base scripts dinonaktifkan. Ini pemeriksaan Logs Viewer, bukan
 end-to-end seluruh aplikasi, login nyata, atau validasi semua kontrol base layout.</p></li>
 </ul>
-<p>Keterbatasan yang tetap material: belum ada PostgreSQL disposable/production-like
+<p>Keterbatasan pada rilis awal: belum ada PostgreSQL disposable/production-like
 E2E, upgrade schema nyata, Docker build/pull, kamera/NVR/GoWA/SMTP nyata, full
 accessibility/contrast audit semua halaman, atau benchmark fan-out notifikasi.</p>
 </section>
 <section id="tindak-lanjut">
-<h2>9. Tindak lanjut<a class="headerlink" href="#tindak-lanjut" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#tindak-lanjut'"><span>#</span></a></h2>
+<h2>9. Tindak lanjut<a class="headerlink" href="#tindak-lanjut" title="Link to this heading"><span>#</span></a></h2>
 <ol class="arabic simple">
-<li><p>Prioritaskan authenticated ingress webhook (CA-27), health group scope (CA-28),
-CSRF (CA-19), deployment policy (CA-20), dan persistent notification (CA-22) pada
-staging; semuanya memerlukan pemeriksaan security/kontrak lintas fitur.</p></li>
+<li><p>Terapkan migration/configuration 2.6.1 dan acceptance test pada staging untuk
+CA-19/20/27/28 yang sudah diperbaiki di source. CA-22 dihentikan pada 2.6.3;
+jalankan migration arsipnya saat menerapkan versi tersebut.</p></li>
 <li><p>Pisahkan manual diagnostic scripts dari pytest discovery dan siapkan database
 PostgreSQL test agar migration/trigger/schema bisa diuji rutin.</p></li>
 <li><p>Tuntaskan advisory build Moderate setelah analisis compatibility; tambahkan
 Python dependency/image scan pada pipeline yang memiliki tool sesuai.</p></li>
-<li><p>Selesaikan timezone monitor bot, raw @apply halaman lain, dan duplicate docs
-route; periksa EN/ID, keyboard, focus, empty/error/loading states per halaman.</p></li>
-<li><p>Agregasikan group counts dan ukur performa notification delivery dengan
-dataset/jumlah browser representatif.</p></li>
+<li><p>Selesaikan raw &#64;apply halaman lain; periksa EN/ID,
+keyboard, focus, empty/error/loading states per halaman. Timezone monitor bot
+telah diperbaiki pada 2.6.4. Duplikasi docs dan deprecation review CA-23
+diselesaikan pada 2.6.6.</p></li>
+<li><p>Ukur performa notification delivery dengan dataset/jumlah browser representatif.
+Group counts telah diagregasikan dan dibenchmark pada 2.6.5; ukur kembali pada
+deployment bila membutuhkan angka kapasitas produksi.</p></li>
 </ol>
 <p>Audit ini memberikan bukti dan perbaikan yang dapat ditinjau, beserta backlog yang
 masih terbuka; tidak memberi sertifikasi bahwa aplikasi bebas seluruh kerentanan.</p>
 </section>
 <section id="persiapan-rilis-2-6-0">
-<h2>10. Persiapan rilis 2.6.0<a class="headerlink" href="#persiapan-rilis-2-6-0" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#persiapan-rilis-2-6-0'"><span>#</span></a></h2>
+<h2>10. Persiapan rilis 2.6.0<a class="headerlink" href="#persiapan-rilis-2-6-0" title="Link to this heading"><span>#</span></a></h2>
 <p>Atas instruksi pengguna, perubahan dipersiapkan sebagai versi <strong>2.6.0</strong> pada
 2 November 2026. Minor version dipakai karena mencakup fitur retensi yang sebelumnya
 berada pada Unreleased. Versi package, app, Dockerfile, Compose default, dan heading
@@ -895,81 +1050,344 @@ changelog diselaraskan; rilis historis 2.5.2 tidak ditulis ulang.</p>
 Inventaris diperbarui terhadap source hasil rilis. Gate regresi mempunyai 820 kasus
 lulus dan 11 skip (98,7% kasus lulus, tanpa kegagalan); angka ini mengukur hasil tes
 terpilih, bukan persentase keselamatan aplikasi, coverage, atau penutupan findings.
-Backlog High, advisory Moderate, dan batas validasi PostgreSQL/Docker tetap berlaku.
+Saat rilis awal, backlog High, advisory Moderate, dan batas PostgreSQL/Docker masih
+berlaku. High dan pengujian PostgreSQL ditangani pada rilis lanjutan di bawah.
 Push repository tidak menjalankan deployment atau menerbitkan image container.</p>
 <p>Verifikasi tambahan setelah version bump: <strong>178 tes release/runtime/UI/security
 lulus</strong>, serta script version sync berhasil untuk 2.6.0. Hash inventaris memakai
 source dengan line ending LF agar stabil lintas Windows/Linux.</p>
 </section>
+<section id="penyelesaian-seluruh-high-rilis-2-6-1">
+<h2>11. Penyelesaian seluruh High — rilis 2.6.1<a class="headerlink" href="#penyelesaian-seluruh-high-rilis-2-6-1" title="Link to this heading"><span>#</span></a></h2>
+<p>CA-19, CA-20, CA-27, dan CA-28 merupakan empat High yang tersisa setelah 2.6.0.
+Semuanya sekarang diperbaiki pada source, disertai regresi; tidak ada High audit
+yang masih menjadi backlog implementasi. Advisory build Moderate dan backlog
+non-High tetap dicatat pada finding masing-masing.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Pemeriksaan 2.6.1</p></th>
+<th class="head"><p>Hasil</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Pytest terpilih, 41 modul</p></td>
+<td><p><strong>772 passed, 1 skipped</strong>; bukan full-suite/coverage claim</p></td>
+</tr>
+<tr class="row-odd"><td><p>Unittest terisolasi, 11 modul berbeda</p></td>
+<td><p><strong>142 tests, OK</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>Total kedua kelompok</p></td>
+<td><p><strong>914 tes lulus</strong>, tanpa kegagalan</p></td>
+</tr>
+<tr class="row-odd"><td><p>PostgreSQL 17 disposable</p></td>
+<td><p>Upgrade database kosong/existing, repeat upgrade, migration security upgrade/downgrade/re-upgrade; tracker global dipertahankan</p></td>
+</tr>
+<tr class="row-even"><td><p>Concurrency PostgreSQL</p></td>
+<td><p>20 percobaan login, tepat 10 diterima/10 ditolak; 20 start health scope sama, tepat satu diterima; session/koneksi terpisah</p></td>
+</tr>
+<tr class="row-odd"><td><p>Chrome headless / loopback server</p></td>
+<td><p>Native form + AJAX same-origin 200; same-site origin beda port dan cross-site form 403; hanya dua mutasi sah dieksekusi</p></td>
+</tr>
+<tr class="row-even"><td><p>Fixture tampilan logout</p></td>
+<td><p>Template dan asset lokal: mobile light/dark, EN–ID–EN, form POST; tidak ada overflow atau page error. Bukan E2E base layout</p></td>
+</tr>
+<tr class="row-odd"><td><p>AST / Jinja / Node</p></td>
+<td><p>287 Python, 55 template, 15 JavaScript + 5 CJS: lulus</p></td>
+</tr>
+<tr class="row-even"><td><p>Ruff / Black pada 11 file Python baru</p></td>
+<td><p>Lulus; line length 100</p></td>
+</tr>
+<tr class="row-odd"><td><p>Ruff seluruh app/scripts</p></td>
+<td><p>3.971 diagnostic legacy; tidak ada F821/invalid-syntax. Lint global belum hijau</p></td>
+</tr>
+<tr class="row-even"><td><p>CSS build / version sync</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">npm</span> <span class="pre">run</span> <span class="pre">build</span></code> dan <code class="docutils literal notranslate"><span class="pre">check_image_version.py</span> <span class="pre">2.6.1</span></code> lulus</p></td>
+</tr>
+<tr class="row-odd"><td><p>npm audit</p></td>
+<td><p>0 Critical/High, 5 Moderate (belum ditangani pada lingkup High)</p></td>
+</tr>
+<tr class="row-even"><td><p>Alembic</p></td>
+<td><p>Satu head <code class="docutils literal notranslate"><span class="pre">20261102_high_security</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>PostgreSQL tes dibuat khusus pada direktori tmp dan port loopback terpisah,
+dengan schema unik yang dibersihkan fixture; bukan database aplikasi pengguna.
+Skip tunggal merupakan tes DELETE RETURNING concurrency yang tidak dijalankan
+oleh fixture SQLite; pengujian PostgreSQL lainnya benar-benar dijalankan, tidak
+di-skip. Perbaikan fixture Maps memakai file SQLite sementara agar koneksi request
+concurrent terpisah; tes lifecycle migration memverifikasi satu head dan ancestry,
+tanpa mengunci nama head lama.</p>
+<p>Log lokal: <code class="docutils literal notranslate"><span class="pre">tmp/high-security-final-pytest.txt</span></code>, <code class="docutils literal notranslate"><span class="pre">tmp/high-security-final-unit.txt</span></code>,
+<code class="docutils literal notranslate"><span class="pre">tmp/high-security-browser.json</span></code>, dan <code class="docutils literal notranslate"><span class="pre">tmp/high-security-global-ruff.json</span></code>.
+Inventaris di-refresh terhadap source 2.6.1 dengan normalisasi CRLF ke LF.</p>
+<p><strong>Penerapan:</strong> ikuti <a class="reference internal" href="high_security_rollout.html"><span class="std std-doc">security rollout</span></a>, jalankan migration
+pada target yang dipilih, pasang signing secret sama pada B-Snap/GoWA, dan atur
+SECRET_KEY/cookie/proxy production dengan benar. Audit tidak mengubah <code class="docutils literal notranslate"><span class="pre">.env</span></code>,
+menjalankan migration pada database aplikasi, melakukan deployment/image publish,
+atau menghubungi kamera/GoWA/SMTP nyata. Validasi HTTPS proxy, integrasi nyata,
+restart worker, dan rotasi secret pada deployment masih diperlukan; hasil ini
+bukan sertifikasi bahwa seluruh aplikasi bebas kerentanan.</p>
 </section>
-</div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
-<div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
-<ul>
-<li><a :data-current="activeSection === '#arsitektur-dan-cakupan'" class="reference internal" href="#arsitektur-dan-cakupan">1. Arsitektur dan cakupan</a></li>
-<li><a :data-current="activeSection === '#daftar-prioritas-sebelum-implementasi'" class="reference internal" href="#daftar-prioritas-sebelum-implementasi">2. Daftar prioritas sebelum implementasi</a></li>
-<li><a :data-current="activeSection === '#findings-backend'" class="reference internal" href="#findings-backend">3. Findings: Backend</a><ul>
-<li><a :data-current="activeSection === '#ca-02-enrollment-mfa-membocorkan-secret-akun-yang-sudah-aktif'" class="reference internal" href="#ca-02-enrollment-mfa-membocorkan-secret-akun-yang-sudah-aktif">CA-02 — Enrollment MFA membocorkan secret akun yang sudah aktif</a></li>
-<li><a :data-current="activeSection === '#ca-04-mutasi-media-dan-purge-mengabaikan-grup-retention-hold'" class="reference internal" href="#ca-04-mutasi-media-dan-purge-mengabaikan-grup-retention-hold">CA-04 — Mutasi media dan purge mengabaikan grup/retention hold</a></li>
-<li><a :data-current="activeSection === '#ca-05-dependency-role-tidak-merata-pada-management-integration-routes'" class="reference internal" href="#ca-05-dependency-role-tidak-merata-pada-management-integration-routes">CA-05 — Dependency role tidak merata pada management/integration routes</a></li>
-<li><a :data-current="activeSection === '#ca-08-malformed-web-token-menghasilkan-exception'" class="reference internal" href="#ca-08-malformed-web-token-menghasilkan-exception">CA-08 — Malformed web token menghasilkan exception</a></li>
-<li><a :data-current="activeSection === '#ca-11-duplikasi-handler-tamper-membuat-filter-tidak-terjangkau'" class="reference internal" href="#ca-11-duplikasi-handler-tamper-membuat-filter-tidak-terjangkau">CA-11 — Duplikasi handler tamper membuat filter tidak terjangkau</a></li>
-<li><a :data-current="activeSection === '#ca-13-menghapus-kamera-menghapus-video-evidence'" class="reference internal" href="#ca-13-menghapus-kamera-menghapus-video-evidence">CA-13 — Menghapus kamera menghapus video evidence</a></li>
-<li><a :data-current="activeSection === '#ca-14-legacy-group-column-masih-mengizinkan-akses'" class="reference internal" href="#ca-14-legacy-group-column-masih-mengizinkan-akses">CA-14 — Legacy group column masih mengizinkan akses</a></li>
-<li><a :data-current="activeSection === '#ca-21-query-counts-camera-groups-bertumbuh-per-grup'" class="reference internal" href="#ca-21-query-counts-camera-groups-bertumbuh-per-grup">CA-21 — Query counts camera groups bertumbuh per grup</a></li>
+<section id="regresi-websocket-cloudflare-tunnel-rilis-2-6-2">
+<h2>12. Regresi WebSocket Cloudflare Tunnel — rilis 2.6.2<a class="headerlink" href="#regresi-websocket-cloudflare-tunnel-rilis-2-6-2" title="Link to this heading"><span>#</span></a></h2>
+<p>Setelah pengujian deployment pengguna, ditemukan <code class="docutils literal notranslate"><span class="pre">/ws</span></code> masih membandingkan Origin
+browser dengan URL backend walaupun <code class="docutils literal notranslate"><span class="pre">PUBLIC_ORIGIN</span></code> telah dipasang untuk CSRF HTTP.
+Hal ini dapat menolak koneksi cloudflared yang mengubah Host/port/protokol. Saran
+konfigurasi saja pada 2.6.1 belum menyelesaikan jalur tersebut.</p>
+<p>Perbaikan menggunakan public origin yang sama untuk handshake WebSocket, dengan
+normalisasi host/default port. Tanpa public origin eksplisit, URL request setelah
+trusted proxy headers tetap menjadi acuan; X-Forwarded-Host tidak dipercaya sebagai
+allowlist. Autentikasi session/token, revocation, recipient, dan group checks pada
+setiap delivery tetap aktif. Penolakan handshake mencatat alasan origin/session
+tanpa cookie/token/payload. Tidak ada perubahan schema atau dependency baru.</p>
+<p>Verifikasi 2.6.2:</p>
+<ul class="simple">
+<li><p>Sebelum perbaikan, enam kasus positif origin/proxy/toast ditolak oleh kode lama;
+setelah perbaikan, <strong>206 pytest terarah lulus</strong>, termasuk <strong>17 kasus proxy</strong>,
+serta <strong>33 unittest sesi/notifikasi</strong> dan <strong>8 Node toast layout tests</strong> lulus.</p></li>
+<li><p>Chrome headless membuka HTTPS melalui reverse proxy TLS lokal ke backend HTTP
+dengan Host internal berbeda, cookie Secure/HttpOnly dan session nyata; WebSocket
+terbuka dan toast dari fungsi delivery produksi tampil, tanpa page error.
+Database dan publisher dimock; ini bukan koneksi ke jaringan Cloudflare nyata.</p></li>
+<li><p>Invalid/duplicate/cross-origin, port berbeda, revoked/missing session, penerima
+berbeda, dan revocation setelah handshake tetap ditolak/tidak menerima payload.</p></li>
+<li><p>Syntax inventory diperbarui terhadap 2.6.2: 288 Python, 55 template, 15 JS dan
+5 CJS. Script version sync, Ruff test baru, serta whitespace check lulus.</p></li>
+</ul>
+<p>Artefak browser lokal: <code class="docutils literal notranslate"><span class="pre">tmp/tunnel-toast-browser.json</span></code>. Hasil 2.6.1 sebelumnya
+tetap merupakan catatan historis; tidak menjalankan ulang migrasi PostgreSQL pada
+patch tanpa schema ini. Deployment perlu build/pakai image 2.6.2, mengatur origin
+HTTPS publik yang tepat, dan recreate web agar environment berubah. Petunjuk ada
+di <a class="reference internal" href="high_security_rollout.html#cloudflare-tunnel-websocket-and-toast-2-6-2"><span class="std std-ref">Cloudflare Tunnel setup</span></a>.</p>
+</section>
+<section id="penghapusan-inbox-persisten-ca-22-rilis-2-6-3">
+<h2>13. Penghapusan inbox persisten CA-22 — rilis 2.6.3<a class="headerlink" href="#penghapusan-inbox-persisten-ca-22-rilis-2-6-3" title="Link to this heading"><span>#</span></a></h2>
+<p>Pada 3 November 2026, pengguna memilih menghapus fitur inbox persisten yang tidak
+dipakai daripada mengaktifkan ulang model broadcast yang bermasalah. Catatan
+temuan historis dipertahankan untuk traceability; tidak lagi menjadi backlog.
+Email, <code class="docutils literal notranslate"><span class="pre">/email-logs</span></code>, email retry, WhatsApp, toast langsung, dan notification_queue
+bukan bagian fitur yang dihapus. Sticky toast tetap hanya perilaku tampilan.</p>
+<ul class="simple">
+<li><p><strong>799 pytest lulus, 1 skip</strong>, pada 44 modul yang ditinjau aman, serta <strong>142
+unittest lulus</strong>; bukan full-suite atau persentase keamanan aplikasi.</p></li>
+<li><p>PostgreSQL 17 disposable memverifikasi migrasi dari database kosong/existing,
+data inbox arsip tetap utuh saat upgrade/downgrade/re-upgrade, serta email log
+dan queue transport tidak berubah. Autogenerate dengan hook environment nyata
+tidak mengusulkan drop arsip. Schema fixture dibersihkan setelah tes.</p></li>
+<li><p>Enam endpoint lama diuji 404 memakai daftar route produksi tanpa startup DB.
+Toast diuji melalui service/delivery authenticated; email-log API memakai
+subset SQLite yang kompatibel dan tidak mengirim email nyata.</p></li>
+<li><p>Satu skip tetap tes DELETE RETURNING concurrency milik fixture SQLite.
+PostgreSQL migration/concurrency tests lainnya dijalankan, bukan di-skip.</p></li>
+<li><p>Script sinkronisasi versi 2.6.3, AST/Jinja/Node inventory, Ruff/Black pada
+migration dan dua modul tes baru, serta <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">diff</span> <span class="pre">--check</span></code> lulus.</p></li>
+</ul>
+<p>Log lokal: <code class="docutils literal notranslate"><span class="pre">tmp/retired-inbox-pytest.txt</span></code> dan <code class="docutils literal notranslate"><span class="pre">tmp/retired-inbox-unit.txt</span></code>.
+Migration baru <code class="docutils literal notranslate"><span class="pre">20261103_retire_inbox</span></code> adalah satu head setelah
+<code class="docutils literal notranslate"><span class="pre">20261102_high_security</span></code>. Apply dengan <code class="docutils literal notranslate"><span class="pre">alembic</span> <span class="pre">upgrade</span> <span class="pre">head</span></code> atau layanan migrate
+Compose sebelum menjalankan worker baru. Tidak ada deployment, perubahan <code class="docutils literal notranslate"><span class="pre">.env</span></code>,
+penghapusan data production, atau penerbitan image registry dalam pekerjaan ini.</p>
+</section>
+<section id="timezone-monitor-bot-ca-24-rilis-2-6-4">
+<h2>14. Timezone monitor bot CA-24 — rilis 2.6.4<a class="headerlink" href="#timezone-monitor-bot-ca-24-rilis-2-6-4" title="Link to this heading"><span>#</span></a></h2>
+<p>Pada 3 November 2026, monitor pesan Bot Builder diselaraskan dengan timezone
+konfigurasi B-Snap. Locale tetap EN/ID, sementara instant pesan dan input mesin
+tidak bergeser saat bahasa diganti. API tetap memberi 100 pesan terbaru secara
+default (limit maksimum 250), dan filter UI tetap bekerja pada hasil tersebut.
+Jadwal bot, pengiriman WhatsApp/email, dan schema database tidak diubah.</p>
+<ul class="simple">
+<li><p><strong>149 pytest terarah lulus</strong>, mencakup monitor API baru, existing bot monitor,
+preview/schedule, date/log frontend, UI, SweetAlert i18n dan sinkronisasi versi.</p></li>
+<li><p><strong>6 Node tests lulus</strong>: WIB/WITA/WIT, Kathmandu, host timezone berbeda, parsing
+invalid, gap/fold New York DST, fractional seconds, EN–ID–EN, date-only dan
+backend-local timestamp. Helper baru membandingkan filter sebagai UTC instant;
+waktu tanpa timezone konfigurasi tidak diam-diam mengikuti browser.</p></li>
+<li><p><strong>Chrome: 8 kombinasi</strong> browser Los Angeles/Jakarta × konfigurasi
+Jakarta/Makassar/Jayapura/London. Timestamp dekat midnight, batas From/To sama
+yang inklusif, range terbalik, dialog detail terbuka saat language change, dan
+nilai input mesin tetap konsisten. Tidak ada page error; desktop light/dark dan
+mobile 390px diperiksa pada fixture template/asset nyata dengan API mock.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">npm</span> <span class="pre">run</span> <span class="pre">build</span></code>, Node syntax, AST/Jinja inventory, Ruff/Black test API baru,
+version check 2.6.4, dan whitespace check lulus. Ini bukan klaim full-suite atau
+verifikasi integrasi GoWA/deployment nyata. Tidak ada migration baru.</p></li>
+</ul>
+<p>Artefak lokal: <code class="docutils literal notranslate"><span class="pre">tmp/wa-monitor-browser.json</span></code>, <code class="docutils literal notranslate"><span class="pre">tmp/wa-monitor-light-1440.png</span></code>,
+<code class="docutils literal notranslate"><span class="pre">tmp/wa-monitor-dark-1440.png</span></code>, dan <code class="docutils literal notranslate"><span class="pre">tmp/wa-monitor-dark-390.png</span></code>.</p>
+</section>
+<section id="optimasi-dan-benchmark-ca-21-rilis-2-6-5">
+<h2>15. Optimasi dan benchmark CA-21 — rilis 2.6.5<a class="headerlink" href="#optimasi-dan-benchmark-ca-21-rilis-2-6-5" title="Link to this heading"><span>#</span></a></h2>
+<p>Pada 3 November 2026, endpoint daftar grup diubah dari 1+3G SELECT menjadi satu
+SELECT. Subquery agregasi independen mempertahankan hitungan kamera berdasarkan
+association, NVR/user berdasarkan group_id, grup kosong dan sort nama. Tidak ada
+perubahan schema, migration, frontend, maupun aturan akses admin.</p>
+<p><a class="reference internal" href="benchmarks/camera_groups_2026_11_03.html"><span class="std std-doc">Laporan benchmark</span></a> dan
+<a class="reference download internal" download="" href="_downloads/47b23ba8e67edde882fcc6e4a688a0ae/camera_groups_2026_11_03.json"><span class="xref download myst">raw measurements</span></a> memuat lima dataset
+yang sama sebelum/sesudah, lima warmup dan 30 sampel per variant/dataset, median,
+p95, query count, source hash, dan response hash. PostgreSQL 17.9 memakai schema
+disposable; HTTP diukur melalui FastAPI TestClient dengan auth override dan
+session baru per request. Ini tidak mencakup jaringan Cloudflare atau auth nyata.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head text-right"><p>Grup</p></th>
+<th class="head text-right"><p>SELECT sebelum → sesudah</p></th>
+<th class="head text-right"><p>Median sebelum → sesudah</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td class="text-right"><p>0</p></td>
+<td class="text-right"><p>1 → 1</p></td>
+<td class="text-right"><p>4,340 → 6,315 ms</p></td>
+</tr>
+<tr class="row-odd"><td class="text-right"><p>10</p></td>
+<td class="text-right"><p>31 → 1</p></td>
+<td class="text-right"><p>25,567 → 7,607 ms</p></td>
+</tr>
+<tr class="row-even"><td class="text-right"><p>50</p></td>
+<td class="text-right"><p>151 → 1</p></td>
+<td class="text-right"><p>113,492 → 8,864 ms</p></td>
+</tr>
+<tr class="row-odd"><td class="text-right"><p>100</p></td>
+<td class="text-right"><p>301 → 1</p></td>
+<td class="text-right"><p>246,131 → 12,014 ms</p></td>
+</tr>
+<tr class="row-even"><td class="text-right"><p>250</p></td>
+<td class="text-right"><p>751 → 1</p></td>
+<td class="text-right"><p>674,469 → 15,282 ms</p></td>
+</tr>
+</tbody>
+</table>
+<p>Pada 250 grup, median turun 97,73% (44,13× lebih cepat), p95 turun dari 736,654
+menjadi 25,173 ms, dan respons JSON identik. Ada overhead tetap sekitar 2 ms pada
+kasus tanpa grup; seluruh hasil merupakan pengukuran lokal, bukan SLA produksi.</p>
+<p><strong>810 pytest terpilih lulus, 1 skip</strong>, pada 46 modul termasuk tujuh regresi count
+baru, security, timestamp, serta migration/concurrency PostgreSQL. Satu skip adalah
+tes DELETE RETURNING concurrency pada fixture SQLite yang sudah dicatat sebelumnya.
+Ruff/Black pada script benchmark dan test baru, syntax inventory, version sync
+2.6.5 serta whitespace check lulus. Log lokal: <code class="docutils literal notranslate"><span class="pre">tmp/ca21-tests.txt</span></code>.</p>
+<p>Script <code class="docutils literal notranslate"><span class="pre">scripts/benchmark_camera_groups.py</span></code> disertakan agar pengukuran dapat
+diulang pada PostgreSQL test yang dipilih. Tidak ada database aplikasi, kamera,
+SMTP/GoWA atau deployment production yang disentuh oleh benchmark ini.</p>
+</section>
+<section id="konsolidasi-routing-review-legacy-ca-23-rilis-2-6-6">
+<h2>16. Konsolidasi routing/review legacy CA-23 — rilis 2.6.6<a class="headerlink" href="#konsolidasi-routing-review-legacy-ca-23-rilis-2-6-6" title="Link to this heading"><span>#</span></a></h2>
+<p>Pada 3 November 2026, dokumentasi diarahkan ke tujuan canonical tanpa bergantung
+pada urutan pendaftaran router. <code class="docutils literal notranslate"><span class="pre">/docs</span></code> mempertahankan entry lama melalui 307 ke
+environment docs. Swagger admin-only memakai <code class="docutils literal notranslate"><span class="pre">/docs/openapi</span></code>; bookmark developer
+dan schema lama tetap berfungsi melalui alias. Registrasi GET <code class="docutils literal notranslate"><span class="pre">/docs</span></code> yang
+tertutup serta modul developer-docs yang redundan dihapus. Static documentation
+mount/absence policy dipertahankan. Deskripsi proxy kini memakai peer IP/CIDR.</p>
+<p>Block rendering lama setelah return pada <code class="docutils literal notranslate"><span class="pre">/stats</span></code> dihapus; redirect 301 tetap
+mempertahankan filter camera/days dengan URL encoding. Enam template legacy dan
+tiga modul nonaktif diberi penanda deprecation dan dicatat di
+<a class="reference internal" href="legacy_routing_review_2026_11_03.html"><span class="std std-doc">legacy review</span></a>. Penghapusan file legacy lain
+tidak dipaksakan tanpa review pemakai downstream; tidak ada route MFA lama yang
+diaktifkan. Maps nested routers, stats/insights APIs, password POST dan audit APIs
+tetap aktif. Tidak ada migration atau perubahan data.</p>
+<ul class="simple">
+<li><p><strong>826 pytest terpilih lulus, 1 skip</strong>, pada 47 modul, termasuk <strong>16 regresi
+dokumentasi/routing baru</strong>. Recheck 16 kasus setelah penyelesaian signature/
+metadata docs juga lulus. Skip tunggal tetap tes concurrency fixture SQLite.</p></li>
+<li><p>Registry method/path produksi tidak mempunyai duplikasi. Tes memeriksa tujuan
+redirect, HTML Swagger, schema, role admin/anonymous/operator/viewer, parameter
+URL yang mengandung spasi/ampersand/Unicode, dan status route legacy/nested.</p></li>
+<li><p>Chrome memverifikasi environment docs light/dark, link Swagger di mobile 390px,
+alias ke canonical Swagger, pemuatan remote assets dan schema, tanpa page error.
+Fixture memakai template/routes nyata dengan auth override; database aplikasi
+dan camera/notifier startup tidak dijalankan.</p></li>
+<li><p>Build CSS, Sphinx HTML dengan <strong>warnings-as-errors</strong>, Python/Jinja/Node syntax
+inventory, version sync 2.6.6, Ruff/Black pada docs router/test baru, dan
+whitespace check lulus. Heading anchors Markdown konsisten dengan GitHub;
+audit, rollout, benchmark dan review legacy masuk navigasi generated docs.</p></li>
+</ul>
+<p>Log/artefak lokal: <code class="docutils literal notranslate"><span class="pre">tmp/routing-tests.txt</span></code>, <code class="docutils literal notranslate"><span class="pre">tmp/documentation-browser.json</span></code>,
+<code class="docutils literal notranslate"><span class="pre">tmp/docs-environment-light.png</span></code>, <code class="docutils literal notranslate"><span class="pre">tmp/docs-environment-dark.png</span></code>,
+<code class="docutils literal notranslate"><span class="pre">tmp/docs-api-canonical-link.png</span></code>, dan <code class="docutils literal notranslate"><span class="pre">tmp/routing-sphinx-final.log</span></code>.
+Hasil ini tidak menyatakan seluruh file legacy sudah dihapus atau semua konten
+dokumentasi lama telah diaudit ulang. Rilis tetap memerlukan pembaruan source/image
+di deployment; tidak melakukan deployment atau image registry publish otomatis.</p>
+</section>
+</section>
+
+    </div></div><aside id="right-sidebar" class="hidden text-sm xl:block">
+  <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
+    <ul>
+<li><a class="reference internal" href="#arsitektur-dan-cakupan">1. Arsitektur dan cakupan</a></li>
+<li><a class="reference internal" href="#daftar-prioritas-sebelum-implementasi">2. Daftar prioritas sebelum implementasi</a></li>
+<li><a class="reference internal" href="#findings-backend">3. Findings: Backend</a><ul>
+<li><a class="reference internal" href="#ca-02-enrollment-mfa-membocorkan-secret-akun-yang-sudah-aktif">CA-02 — Enrollment MFA membocorkan secret akun yang sudah aktif</a></li>
+<li><a class="reference internal" href="#ca-04-mutasi-media-dan-purge-mengabaikan-grup-retention-hold">CA-04 — Mutasi media dan purge mengabaikan grup/retention hold</a></li>
+<li><a class="reference internal" href="#ca-05-dependency-role-tidak-merata-pada-management-integration-routes">CA-05 — Dependency role tidak merata pada management/integration routes</a></li>
+<li><a class="reference internal" href="#ca-08-malformed-web-token-menghasilkan-exception">CA-08 — Malformed web token menghasilkan exception</a></li>
+<li><a class="reference internal" href="#ca-11-duplikasi-handler-tamper-membuat-filter-tidak-terjangkau">CA-11 — Duplikasi handler tamper membuat filter tidak terjangkau</a></li>
+<li><a class="reference internal" href="#ca-13-menghapus-kamera-menghapus-video-evidence">CA-13 — Menghapus kamera menghapus video evidence</a></li>
+<li><a class="reference internal" href="#ca-14-legacy-group-column-masih-mengizinkan-akses">CA-14 — Legacy group column masih mengizinkan akses</a></li>
+<li><a class="reference internal" href="#ca-21-query-counts-camera-groups-bertumbuh-per-grup">CA-21 — Query counts camera groups bertumbuh per grup</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#findings-middleware-integration'" class="reference internal" href="#findings-middleware-integration">4. Findings: Middleware / integration</a><ul>
-<li><a :data-current="activeSection === '#ca-06-header-proxy-menimpa-trust-policy'" class="reference internal" href="#ca-06-header-proxy-menimpa-trust-policy">CA-06 — Header proxy menimpa trust policy</a></li>
-<li><a :data-current="activeSection === '#ca-07-respons-error-kehilangan-format-status-header'" class="reference internal" href="#ca-07-respons-error-kehilangan-format-status-header">CA-07 — Respons error kehilangan format/status/header</a></li>
-<li><a :data-current="activeSection === '#ca-10-session-cookie-berbeda-dari-cookie-autentikasi'" class="reference internal" href="#ca-10-session-cookie-berbeda-dari-cookie-autentikasi">CA-10 — Session cookie berbeda dari cookie autentikasi</a></li>
-<li><a :data-current="activeSection === '#ca-18-websocket-anonim-dan-toast-tidak-memeriksa-penerima'" class="reference internal" href="#ca-18-websocket-anonim-dan-toast-tidak-memeriksa-penerima">CA-18 — WebSocket anonim dan toast tidak memeriksa penerima</a></li>
-<li><a :data-current="activeSection === '#ca-19-proteksi-csrf-belum-merata'" class="reference internal" href="#ca-19-proteksi-csrf-belum-merata">CA-19 — Proteksi CSRF belum merata</a></li>
-<li><a :data-current="activeSection === '#ca-20-default-development-proxy-secret-perlu-kebijakan-deployment'" class="reference internal" href="#ca-20-default-development-proxy-secret-perlu-kebijakan-deployment">CA-20 — Default development/proxy/secret perlu kebijakan deployment</a></li>
+<li><a class="reference internal" href="#findings-middleware-integration">4. Findings: Middleware / integration</a><ul>
+<li><a class="reference internal" href="#ca-06-header-proxy-menimpa-trust-policy">CA-06 — Header proxy menimpa trust policy</a></li>
+<li><a class="reference internal" href="#ca-07-respons-error-kehilangan-format-status-header">CA-07 — Respons error kehilangan format/status/header</a></li>
+<li><a class="reference internal" href="#ca-10-session-cookie-berbeda-dari-cookie-autentikasi">CA-10 — Session cookie berbeda dari cookie autentikasi</a></li>
+<li><a class="reference internal" href="#ca-18-websocket-anonim-dan-toast-tidak-memeriksa-penerima">CA-18 — WebSocket anonim dan toast tidak memeriksa penerima</a></li>
+<li><a class="reference internal" href="#ca-19-proteksi-csrf-belum-merata">CA-19 — Proteksi CSRF belum merata</a></li>
+<li><a class="reference internal" href="#ca-20-default-development-proxy-secret-perlu-kebijakan-deployment">CA-20 — Default development/proxy/secret perlu kebijakan deployment</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#findings-frontend'" class="reference internal" href="#findings-frontend">5. Findings: Frontend</a><ul>
-<li><a :data-current="activeSection === '#ca-09-log-viewer-memasukkan-metadata-error-ke-html'" class="reference internal" href="#ca-09-log-viewer-memasukkan-metadata-error-ke-html">CA-09 — Log viewer memasukkan metadata/error ke HTML</a></li>
-<li><a :data-current="activeSection === '#ca-17-log-viewer-terpotong-di-mobile-dan-badge-tidak-diproses'" class="reference internal" href="#ca-17-log-viewer-terpotong-di-mobile-dan-badge-tidak-diproses">CA-17 — Log viewer terpotong di mobile dan badge tidak diproses</a></li>
-<li><a :data-current="activeSection === '#ca-24-monitor-bot-masih-mengikuti-clock-browser-untuk-tanggal-tertentu'" class="reference internal" href="#ca-24-monitor-bot-masih-mengikuti-clock-browser-untuk-tanggal-tertentu">CA-24 — Monitor bot masih mengikuti clock browser untuk tanggal tertentu</a></li>
-<li><a :data-current="activeSection === '#ca-25-format-log-baru-tidak-dikenali-dan-waktu-file-ambigu'" class="reference internal" href="#ca-25-format-log-baru-tidak-dikenali-dan-waktu-file-ambigu">CA-25 — Format log baru tidak dikenali dan waktu file ambigu</a></li>
-<li><a :data-current="activeSection === '#ca-26-template-legacy-tidak-dapat-dikompilasi'" class="reference internal" href="#ca-26-template-legacy-tidak-dapat-dikompilasi">CA-26 — Template legacy tidak dapat dikompilasi</a></li>
+<li><a class="reference internal" href="#findings-frontend">5. Findings: Frontend</a><ul>
+<li><a class="reference internal" href="#ca-09-log-viewer-memasukkan-metadata-error-ke-html">CA-09 — Log viewer memasukkan metadata/error ke HTML</a></li>
+<li><a class="reference internal" href="#ca-17-log-viewer-terpotong-di-mobile-dan-badge-tidak-diproses">CA-17 — Log viewer terpotong di mobile dan badge tidak diproses</a></li>
+<li><a class="reference internal" href="#ca-24-monitor-bot-masih-mengikuti-clock-browser-untuk-tanggal-tertentu">CA-24 — Monitor bot masih mengikuti clock browser untuk tanggal tertentu</a></li>
+<li><a class="reference internal" href="#ca-25-format-log-baru-tidak-dikenali-dan-waktu-file-ambigu">CA-25 — Format log baru tidak dikenali dan waktu file ambigu</a></li>
+<li><a class="reference internal" href="#ca-26-template-legacy-tidak-dapat-dikompilasi">CA-26 — Template legacy tidak dapat dikompilasi</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#findings-cross-layer-delivery-tooling'" class="reference internal" href="#findings-cross-layer-delivery-tooling">6. Findings: Cross-Layer / delivery / tooling</a><ul>
-<li><a :data-current="activeSection === '#ca-01-alias-url-melewati-pemblokiran-static-footage'" class="reference internal" href="#ca-01-alias-url-melewati-pemblokiran-static-footage">CA-01 — Alias URL melewati pemblokiran static footage</a></li>
-<li><a :data-current="activeSection === '#ca-03-boundary-legacy-snapshot-tidak-konsisten'" class="reference internal" href="#ca-03-boundary-legacy-snapshot-tidak-konsisten">CA-03 — Boundary legacy snapshot tidak konsisten</a></li>
-<li><a :data-current="activeSection === '#ca-12-test-discovery-fixtures-legacy-tidak-aman-untuk-full-suite-run'" class="reference internal" href="#ca-12-test-discovery-fixtures-legacy-tidak-aman-untuk-full-suite-run">CA-12 — Test discovery/fixtures legacy tidak aman untuk full-suite run</a></li>
-<li><a :data-current="activeSection === '#ca-15-dependency-build-memiliki-advisory-npm'" class="reference internal" href="#ca-15-dependency-build-memiliki-advisory-npm">CA-15 — Dependency build memiliki advisory npm</a></li>
-<li><a :data-current="activeSection === '#ca-16-default-compose-image-tertinggal-dari-versi-aplikasi'" class="reference internal" href="#ca-16-default-compose-image-tertinggal-dari-versi-aplikasi">CA-16 — Default Compose image tertinggal dari versi aplikasi</a></li>
-<li><a :data-current="activeSection === '#ca-22-model-notifikasi-persisten-belum-mempunyai-state-per-penerima'" class="reference internal" href="#ca-22-model-notifikasi-persisten-belum-mempunyai-state-per-penerima">CA-22 — Model notifikasi persisten belum mempunyai state per penerima</a></li>
-<li><a :data-current="activeSection === '#ca-23-routing-dead-code-masih-perlu-konsolidasi'" class="reference internal" href="#ca-23-routing-dead-code-masih-perlu-konsolidasi">CA-23 — Routing/dead code masih perlu konsolidasi</a></li>
+<li><a class="reference internal" href="#findings-cross-layer-delivery-tooling">6. Findings: Cross-Layer / delivery / tooling</a><ul>
+<li><a class="reference internal" href="#ca-01-alias-url-melewati-pemblokiran-static-footage">CA-01 — Alias URL melewati pemblokiran static footage</a></li>
+<li><a class="reference internal" href="#ca-03-boundary-legacy-snapshot-tidak-konsisten">CA-03 — Boundary legacy snapshot tidak konsisten</a></li>
+<li><a class="reference internal" href="#ca-12-test-discovery-fixtures-legacy-tidak-aman-untuk-full-suite-run">CA-12 — Test discovery/fixtures legacy tidak aman untuk full-suite run</a></li>
+<li><a class="reference internal" href="#ca-15-dependency-build-memiliki-advisory-npm">CA-15 — Dependency build memiliki advisory npm</a></li>
+<li><a class="reference internal" href="#ca-16-default-compose-image-tertinggal-dari-versi-aplikasi">CA-16 — Default Compose image tertinggal dari versi aplikasi</a></li>
+<li><a class="reference internal" href="#ca-22-inbox-persisten-legacy-fitur-dihentikan">CA-22 — Inbox persisten legacy: fitur dihentikan</a></li>
+<li><a class="reference internal" href="#ca-23-routing-dead-code-masih-perlu-konsolidasi">CA-23 — Routing/dead code masih perlu konsolidasi</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#a-temuan-tambahan-pada-boundary-integrasi'" class="reference internal" href="#a-temuan-tambahan-pada-boundary-integrasi">6a. Temuan tambahan pada boundary integrasi</a><ul>
-<li><a :data-current="activeSection === '#ca-27-identitas-sender-webhook-belum-membuktikan-sumber-request'" class="reference internal" href="#ca-27-identitas-sender-webhook-belum-membuktikan-sumber-request">CA-27 — Identitas sender webhook belum membuktikan sumber request</a></li>
-<li><a :data-current="activeSection === '#ca-28-health-monitoring-belum-konsisten-membatasi-grup'" class="reference internal" href="#ca-28-health-monitoring-belum-konsisten-membatasi-grup">CA-28 — Health monitoring belum konsisten membatasi grup</a></li>
+<li><a class="reference internal" href="#a-temuan-tambahan-pada-boundary-integrasi">6a. Temuan tambahan pada boundary integrasi</a><ul>
+<li><a class="reference internal" href="#ca-27-identitas-sender-webhook-belum-membuktikan-sumber-request">CA-27 — Identitas sender webhook belum membuktikan sumber request</a></li>
+<li><a class="reference internal" href="#ca-28-health-monitoring-belum-konsisten-membatasi-grup">CA-28 — Health monitoring belum konsisten membatasi grup</a></li>
 </ul>
 </li>
-<li><a :data-current="activeSection === '#ringkasan-implementasi'" class="reference internal" href="#ringkasan-implementasi">7. Ringkasan implementasi</a></li>
-<li><a :data-current="activeSection === '#test-dan-verifikasi'" class="reference internal" href="#test-dan-verifikasi">8. Test dan verifikasi</a></li>
-<li><a :data-current="activeSection === '#tindak-lanjut'" class="reference internal" href="#tindak-lanjut">9. Tindak lanjut</a></li>
-<li><a :data-current="activeSection === '#persiapan-rilis-2-6-0'" class="reference internal" href="#persiapan-rilis-2-6-0">10. Persiapan rilis 2.6.0</a></li>
+<li><a class="reference internal" href="#ringkasan-implementasi">7. Ringkasan implementasi</a></li>
+<li><a class="reference internal" href="#test-dan-verifikasi">8. Test dan verifikasi</a></li>
+<li><a class="reference internal" href="#tindak-lanjut">9. Tindak lanjut</a></li>
+<li><a class="reference internal" href="#persiapan-rilis-2-6-0">10. Persiapan rilis 2.6.0</a></li>
+<li><a class="reference internal" href="#penyelesaian-seluruh-high-rilis-2-6-1">11. Penyelesaian seluruh High — rilis 2.6.1</a></li>
+<li><a class="reference internal" href="#regresi-websocket-cloudflare-tunnel-rilis-2-6-2">12. Regresi WebSocket Cloudflare Tunnel — rilis 2.6.2</a></li>
+<li><a class="reference internal" href="#penghapusan-inbox-persisten-ca-22-rilis-2-6-3">13. Penghapusan inbox persisten CA-22 — rilis 2.6.3</a></li>
+<li><a class="reference internal" href="#timezone-monitor-bot-ca-24-rilis-2-6-4">14. Timezone monitor bot CA-24 — rilis 2.6.4</a></li>
+<li><a class="reference internal" href="#optimasi-dan-benchmark-ca-21-rilis-2-6-5">15. Optimasi dan benchmark CA-21 — rilis 2.6.5</a></li>
+<li><a class="reference internal" href="#konsolidasi-routing-review-legacy-ca-23-rilis-2-6-6">16. Konsolidasi routing/review legacy CA-23 — rilis 2.6.6</a></li>
 </ul>
 </div>
 </aside>
-</main>
-</div>
-</div><footer class="py-6 border-t border-border md:py-0">
-<div class="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
-<div class="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
-<p class="text-sm leading-loose text-center text-muted-foreground md:text-left">© 2025, Indra W. Built with <a class="font-medium underline underline-offset-4" href="https://www.sphinx-doc.org" rel="noreferrer">Sphinx 9.1.0</a></p>
+          </main>
+        </div>
+      </div><footer class="py-6 border-t border-border md:py-0">
+    <div class="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
+      <div class="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
+        <p class="text-sm leading-loose text-center text-muted-foreground md:text-left">© 2025, Indra W.&nbsp;Built with <a class="font-medium underline underline-offset-4"
+    href="https://www.sphinx-doc.org"
+    rel="noreferrer">Sphinx 9.1.0</a></p>
 </div>
 </div>
 </footer>
-</div>
-<script src="_static/documentation_options.js?v=558d240b"></script>
-<script src="_static/doctools.js?v=fd6eb6e6"></script>
-<script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
-<script defer="defer" src="_static/theme.js?v=582b20c5"></script>
+    </div>
+
+    <script src="_static/documentation_options.js?v=3a7c30df"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script defer="defer" src="_static/theme.js?v=582b20c5"></script>
+
 </body>
+
 </html>

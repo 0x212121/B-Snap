@@ -70,7 +70,7 @@ SameSite must be lax, strict, or none; none also requires Secure outside product
 
 For HTTPS terminated by a trusted reverse proxy:
 
-```dotenv
+```ini
 ENVIRONMENT=production
 BEHIND_HTTPS_PROXY=true
 COOKIE_SECURE=true
@@ -162,7 +162,7 @@ without logging cookies/tokens or notification content.
 
 For a public URL of `https://camera.example.com`, set on every web worker:
 
-```dotenv
+```ini
 PUBLIC_ORIGIN=https://camera.example.com
 BEHIND_HTTPS_PROXY=true
 COOKIE_SECURE=true

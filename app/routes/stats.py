@@ -1,6 +1,7 @@
 from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta, timezone
 from typing import Annotated
+from urllib.parse import urlencode
 from fastapi import APIRouter, Query, Request, Depends, HTTPException
 import pytz
 from fastapi.responses import HTMLResponse, JSONResponse, ORJSONResponse
@@ -16,7 +17,7 @@ from app.models.camera_status_change_log import CameraStatusChangeLog
 from app.models.user import User
 from app.models.task_timing import TaskTiming
 from app.routes.auth import admin_access_required
-from app.utils.timezone_helper import to_current_timezone, format_datetime_with_tz, get_current_timezone
+from app.utils.timezone_helper import format_datetime_with_tz, get_current_timezone
 from app.utils.template_helper import templates
 import logging
 
@@ -130,101 +131,12 @@ async def get_camera_stats_redirect(
 ):
     """Redirect old /stats to /analytics for backwards compatibility."""
     from fastapi.responses import RedirectResponse
-    params = []
+    params: dict[str, str | int] = {"tab": "snapshots"}
     if camera:
-        params.append(f"camera={camera}")
+        params["camera"] = camera
     if days != 7:
-        params.append(f"days={days}")
-    query_string = "&".join(params)
-    url = f"/analytics?tab=snapshots"
-    if query_string:
-        url += f"&{query_string}"
-    return RedirectResponse(url=url, status_code=301)
-    # Calculate date range
-    now = datetime.now(timezone.utc).astimezone()
-    end_date = now.date()
-    start_date = end_date - timedelta(days=days - 1)
-    
-    # Query with date range and snapshot count filter
-    query = db.query(CameraDailyStats).filter(
-        CameraDailyStats.snapshot_count > 0,
-        CameraDailyStats.date >= start_date,
-        CameraDailyStats.date <= end_date
-    )
-
-    if camera:
-        query = query.filter(CameraDailyStats.camera_name == camera)
-
-    stats = query.order_by(CameraDailyStats.date).all()
-    stats_grouped = defaultdict(list)
-    chart_data = []
-    snapshot_count_by_date = defaultdict(int)
-
-    for stat in stats:
-        date_str = stat.date.strftime('%Y-%m-%d')
-        stat.date_str = date_str
-        stats_grouped[stat.camera_name].append(stat)
-
-        if camera:
-            chart_data.append({
-                "date": date_str,
-                "snapshot_count": stat.snapshot_count
-            })
-        else:
-            snapshot_count_by_date[date_str] += stat.snapshot_count
-
-    if not camera:
-        chart_data = [
-            {"date": d, "snapshot_count": snapshot_count_by_date[d]}
-            for d in sorted(snapshot_count_by_date)
-        ]
-
-    all_cameras = (
-        db.query(DBCamera.hostname)
-        .join(CameraHealth, DBCamera.id == CameraHealth.camera_id)
-        .filter(and_(
-            not_(CameraHealth.status.ilike("standalone")),
-            DBCamera.ip.isnot(None),
-            DBCamera.ip != ""
-        ))
-        .all()
-    )
-    all_cameras = [c[0].strip() for c in all_cameras]
-    cameras_with_data = {s.camera_name.strip() for s in stats if s.camera_name}
-    cameras_without_data = [c for c in all_cameras if c not in cameras_with_data]
-
-    timing_logs = (
-        db.query(TaskTiming)
-        .filter(TaskTiming.task_name == "scheduled_snapshot")
-        .order_by(TaskTiming.started_at.desc())
-        .limit(10)
-        .all()
-    )
-
-    for log in timing_logs:
-        log.started_at_local = format_datetime_with_tz(to_current_timezone(log.started_at, db))
-        log.ended_at_local = format_datetime_with_tz(to_current_timezone(log.ended_at, db))
-
-        # Format duration jadi hh:mm:ss
-        seconds = int((log.duration_ms or 0) / 1000)
-        hours = seconds // 3600
-        minutes = (seconds % 3600) // 60
-        secs = seconds % 60
-        log.duration_formatted = f"{hours:02}:{minutes:02}:{secs:02}"
-
-    context = {
-        "request": request,
-        "stats_grouped": dict(stats_grouped),
-        "camera_names": sorted(cameras_with_data),
-        "selected_camera": camera,
-        "chart_labels": [d["date"] for d in chart_data],
-        "chart_data": [d["snapshot_count"] for d in chart_data],
-        "no_data_cameras": cameras_without_data,
-        "total_cameras_without_data": len(cameras_without_data),
-        "timing_logs": timing_logs,
-    }
-
-    return templates.TemplateResponse("stats.html", context)
+        params["days"] = days
+    return RedirectResponse(url=f"/analytics?{urlencode(params)}", status_code=301)
 
 
 @router.get("/stats/data")

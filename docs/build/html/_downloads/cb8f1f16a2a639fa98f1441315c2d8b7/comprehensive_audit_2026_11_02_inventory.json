@@ -2,1400 +2,20 @@
   "audit_date": "2026-11-02",
   "scope": "Source inventory and static checks; not equivalent to runtime or security coverage",
   "counts": {
-    ".py": 276,
-    ".cjs": 5,
-    ".html": 54,
-    ".js": 15
+    ".py": 292,
+    ".cjs": 6,
+    ".js": 15,
+    ".html": 55
   },
-  "route_declarations": 265,
+  "route_declarations": 261,
   "syntax_errors": [],
   "template_errors": [],
   "js_errors": [],
   "files": [
     {
-      "path": "app/__init__.py",
-      "lines": 0,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/api/observability_log.py",
-      "lines": 37,
-      "sha256": "130f1edfdd208120f30bbd3899acfcfaaace904dab6454eb926d2dbb61c35865",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/api/readiness.py",
-      "lines": 26,
-      "sha256": "aaa212807093b6f7fea45ed649b90857d870ddc3df92cfdd5d1f8c0eafbae900",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/api/whatsapp_routes.py",
-      "lines": 20,
-      "sha256": "05552d3ea50e7c7291d58258b93f83ef80a9f713d9926763dd485ad9ef962851",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/core/__init__.py",
-      "lines": 0,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/core/config.py",
-      "lines": 19,
-      "sha256": "7332118beba56356cc651cfc481115ce75348d9625e9e1fe23edbc9ef98a08bb",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/core/config_initializer.py",
-      "lines": 125,
-      "sha256": "30d98c60e5ebcd0e2523c7030c5b3a48d34b9f79bb1ceff421fb8b8b845ae71d",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/core/job_schedules.py",
-      "lines": 62,
-      "sha256": "38d069cc2ede63166ad19784146d4fb91864753a3c8af1630dfdb27ce039dc72",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/core/logging_config.py",
-      "lines": 315,
-      "sha256": "82768bb076d0915d3d5b39127c9881876cf1ba3e6d6189f3592cb3eced172cca",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/core/service_health.py",
-      "lines": 63,
-      "sha256": "60d15ce7e8b214514bad1a6d42d6154c9d86c3716bd598569d9d3645cdc4a51a",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/core/static_assets.py",
-      "lines": 46,
-      "sha256": "21579d5488ce6ce068d09219347912e7963e0efede5db49fce4dcc4ed3e2bb9c",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/db/database.py",
-      "lines": 101,
-      "sha256": "aa5bc93d817780da66d6530c25e836a36a0003b6b8e5992c9356f2ba584a9079",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/db/migrate.py",
-      "lines": 66,
-      "sha256": "ea69aab8eeadc126eccb054541d5c40299408f3b742ac9645111211a6cedbaea",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/jobs/__init__.py",
-      "lines": 0,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/jobs/audit_archive.py",
-      "lines": 415,
-      "sha256": "d933d91064f8c2a0b117f3b3ef44f368f3a18fd33578933313419b92d6db1a16",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/jobs/execution_recovery.py",
-      "lines": 75,
-      "sha256": "d732c78b8141c95f52d9c6ac42d1108f5a0c91b33a50e97889b991b9bee08378",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/jobs/scheduled_archive.py",
-      "lines": 72,
-      "sha256": "1825c760e00eb379c20c4ce120ca8454636b792eeffd17ebe688278189b389ba",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/jobs/scheduler.py",
-      "lines": 1412,
-      "sha256": "f884d4dd91f18dca4f79f9709defd5b670be66aa1eebf12f3d89f92bc400946d",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/jobs/scheduler_main.py",
-      "lines": 71,
-      "sha256": "cac4fef922bd71d6b081aedf02af447350d4656a5830475eca58095103354923",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/jobs/snapshot_worker.py",
-      "lines": 23,
-      "sha256": "27f08d1fddd097a58a2c9f83e71d3b3b0070a5e42ed721e2eacacfa447212c30",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/jobs/wa_command_schedule.py",
-      "lines": 166,
-      "sha256": "4f788c8ef00a706af6740c0908050247414456a850c10e20d2e717d1db580d4d",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/main.py",
-      "lines": 455,
-      "sha256": "07746b1e183a43e5cab0d54e1e19eed5bf098f5c08bf613e1f128b2ac81fe06e",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/middleware/audit_protection.py",
-      "lines": 12,
-      "sha256": "da283499268f774f3b9884d5dec21fff27759542952be48de2ec5c510e6a4a69",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/middleware/auth_and_setup.py",
-      "lines": 407,
-      "sha256": "dfa62ebbf147b90561786891fc544697226e44c9d14926ae6019f27f66ef649c",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/middleware/http_proxy_fix.py",
-      "lines": 8,
-      "sha256": "8c3f541dcc633f32ad382d4caf855b827663eca074bfd667b0383924e33c65cf",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/middleware/observability.py",
-      "lines": 89,
-      "sha256": "6e3d890af5e5be57ff1f89eba145e29a8bf265afcf598269bd04af217c329839",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/middleware/online_user_tracker.py",
-      "lines": 42,
-      "sha256": "ceb4d3e040a5439b7ce7faf5b645a333f3268bc0b54fda14f76367b49bb74558",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/middleware/real_ip_fix.py",
-      "lines": 22,
-      "sha256": "91f26b4201ab48c0e0ba20fbe1d0812fd11a834ecd8eaeae50a1829d7e718e0b",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/middleware/redirect_unauthenticated.py",
-      "lines": 12,
-      "sha256": "98db8bbf08af8ec367bfcc358147afba12f874c9d2e6de973baa3e2b18b26074",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/middleware/session_restore.py",
-      "lines": 44,
-      "sha256": "b44f6872745b807c7f4bdb6fa6f37f99695d38e44c759127ea7615c65bcfda67",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/__init__.py",
-      "lines": 86,
-      "sha256": "7d8e5e1227bec1913c1ebe59b9aab9b458713e5f5a3645ca452614702f0aad7a",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/api_daily_stats.py",
-      "lines": 17,
-      "sha256": "b0fc4455d45ad00c87fbefc83836329b12fc93245eb04a8d2733a5aa5d5487e0",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/audit_log.py",
-      "lines": 150,
-      "sha256": "466fc5a9d2accecabbb550bf53ef20e249b82789069970676960f984f94d5cc4",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/camera.py",
-      "lines": 144,
-      "sha256": "c5b61df5ea76ad04dc9bcb24b7ccbf30fb7e7d003d1ed477ab1b4c67f4bf4b08",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/camera_daily_stats.py",
-      "lines": 18,
-      "sha256": "fa726c3623364ed5612c6cdf076bd0a3528bb5329f65f1ecf38440f5b66913ee",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/camera_email_notification_log.py",
-      "lines": 38,
-      "sha256": "2056da8ea97a3e3249b9fb2333b609ee85dbc70d2d5874eafc9859bb458a334e",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/camera_group.py",
-      "lines": 35,
-      "sha256": "f93e357296331ea60c0cf8ec65fce24fc32cb3ab388c97b72e49bb5d4e870cc3",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/camera_status_change_log.py",
-      "lines": 18,
-      "sha256": "4d9be45ec27cfd454cbd5e68fc6feab65a5faf402df1ce011927e110bdf15ba3",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/config.py",
-      "lines": 7,
-      "sha256": "7f2b67ad3ce0e06bbcdf838ef8381c00b3f8e6df7b71cd86360345ddcd9989c7",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/email_retry_queue.py",
-      "lines": 70,
-      "sha256": "ea10a20f1f7ddc7aa3150a1dce7619b0ea8b7cd041f4dcbd4cce5991770d58d0",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/email_template.py",
-      "lines": 260,
-      "sha256": "d3d2ef35e4b4320d47a5c9c504ffd0eaa06c25a685e220cabbb204734ad7a525",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/health.py",
-      "lines": 31,
-      "sha256": "a686716a13e0f29b32fb7e4c64c77b955e896b81221aa65655330166fe3eeff7",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/health_check_status.py",
-      "lines": 10,
-      "sha256": "6032a735eb49b4c1527b7b4f0a0d716fab943dec7a4866248c2da47b6cf07665",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/job_execution_log.py",
-      "lines": 183,
-      "sha256": "c068e21f825dabb6ee010d85927c7906c9aff27acafbda3c3d3fad245f484142",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/log.py",
-      "lines": 42,
-      "sha256": "1ba6fc47c30e4ae672ae0072d5eb2529c17d21f85742620ea9bd2eb3167fe684",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/notification.py",
-      "lines": 41,
-      "sha256": "e3075a5a0c186e1419a5284494db14b5e8b06feb6894bfa1309b572831b623cb",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/notification_queue.py",
-      "lines": 12,
-      "sha256": "1a7d1d08de052b1a1851e9172a1141833ef8a5cfee2da7e966f4840351c05f12",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/nvr.py",
-      "lines": 58,
-      "sha256": "6d501dbd7e34a2e7df90b8274d4a9141a9555d8b5bf20a2685803d20af001f9d",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/recipient.py",
-      "lines": 20,
-      "sha256": "760b2e5cac8fc361be99429d50dc23c4d25528b2b8e596ad2ffa9f3e19ce39ce",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/record_check.py",
-      "lines": 182,
-      "sha256": "03660654c65e34ac36f792efbc8cf4b29e180c3058743c15f49ac37521478d43",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/remember_token.py",
-      "lines": 26,
-      "sha256": "94ff7f05f93c53eba513729076c8c5969a582f5baedc742270180dcde4c8c845",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/sla_report.py",
-      "lines": 88,
-      "sha256": "3da21e4b39f81599d47f230082f0d41cfccea2c7629a1081bb139c92c1673f78",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/snapshot.py",
-      "lines": 100,
-      "sha256": "8143518978e130d5e234f2c74188378c2e3ce1be9c6a2c11c221f85dffb2bf55",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/snapshot_log.py",
-      "lines": 27,
-      "sha256": "960d0d432f6b8bf5989fd1dfefede943a1c369693b2b16f2251b4a117adf81cd",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/storage_metric.py",
-      "lines": 49,
-      "sha256": "b54e8d69f45277b87dccc70ae85a99598c3664ff2ea54baa35667adb1f84bf75",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/task_timing.py",
-      "lines": 17,
-      "sha256": "09516a43a9a7cf8bcad0224947d31530dfc383036371e65a0bf2aff6f5bac90e",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/user.py",
-      "lines": 28,
-      "sha256": "df906c37f250641447d33b12ed77746e87c6550e7482c485514ab8a2e82f9593",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/video.py",
-      "lines": 94,
-      "sha256": "73686c6e893757f7a2dd911e39cb7fa485d380d541d4a2c94a545a5da41d6748",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/models/whitelist.py",
-      "lines": 40,
-      "sha256": "5e9a415add28e15c3282d02fa7ae41cee139a32d40871c7a415fe4505feee544",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/2fa.py",
-      "lines": 42,
-      "sha256": "92a452d8f7a029dabb6cf299c7d708466e5a118f6143790944869b92ace2d65f",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/__init__.py",
-      "lines": 64,
-      "sha256": "330e62c3f6fc67241467285eb7dbaced09b78bef52f2addee62e3c7953f8148c",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/admin.py",
-      "lines": 88,
-      "sha256": "9f4e58a59cc39f96654c4e566f22b90d8f63779027024754504c8ed397677df3",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/audit.py",
-      "lines": 174,
-      "sha256": "1f055366aabe249ee58754ea7080e635332d8918c16d052f6a35172139835e33",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/audit_log.py",
-      "lines": 378,
-      "sha256": "50258f96af16ce4198ba638d309e8cc4750be7e408b6ee6bd1d0a187284841ba",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/auth.py",
-      "lines": 530,
-      "sha256": "1e9661654fb782b3e24b63f7ced18ca5f42f416706beaa6185e2e8a785f8ca57",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/camera_groups.py",
-      "lines": 264,
-      "sha256": "86f8d661d1c507589b9a3a1313e009b0d07cdb8d14439273dd0aa2487e8827df",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/cameras.py",
-      "lines": 1043,
-      "sha256": "cfc6dc353fb373bdf3345b55e3b4469a089cf3fad3ea181732d0cf0afdfc3635",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/config.py",
-      "lines": 516,
-      "sha256": "bde1e77642c90cc561a8db0514844dd8bf2744018a3b59f700bab10f931860fc",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/dev_docs.py",
-      "lines": 14,
-      "sha256": "eb6c315646cfc445c269bdd02caa77fa9f41f82cb4240b570c4bfedbb5c5b248",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/docs.py",
-      "lines": 399,
-      "sha256": "4b5ee447deda1be3a0f19d1fc8d9786ced76ad4b075d3ad6e5189f416af39797",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/email_logs.py",
-      "lines": 262,
-      "sha256": "645ec3be4df19d5bbfc7772cee26a24f8ab746e3ee567342273fa132078c5103",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/email_templates.py",
-      "lines": 257,
-      "sha256": "e5434eee4f81283c234e8a41af061e34f113972c517d356bc078ae30b4536515",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/group_recipients.py",
-      "lines": 791,
-      "sha256": "251d06c3c59a1a8655c2103bcc1d745cbbfbdbc1134430172d76b60e0d7066b6",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/health.py",
-      "lines": 1433,
-      "sha256": "41a1a8d57c61a8d683239aaec7072a7ef5ca788cdd796dd4b78fbdc610171052",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/insights.py",
-      "lines": 800,
-      "sha256": "461fb19bd06c84c47cc9edb8229a4051384f0487fe6c19269160584dc17d4f07",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/jobs.py",
-      "lines": 477,
-      "sha256": "ba169b7041f37c9b7fcac2f55b4374af9011cf37b9695e10b2a336e0f81e9432",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/logs.py",
-      "lines": 288,
-      "sha256": "f1582ae5c90f721b73f150ba8e19f5d6ae2ef1ad9804bc1c99235b448e76ebfb",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/map_heatmap.py",
-      "lines": 136,
-      "sha256": "63cbe8aa8451d4b06e5c391e09c1ef0a59e60625bc6ca5f4776a6865189af7e9",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/map_live.py",
-      "lines": 96,
-      "sha256": "14d1102e31200e6307dcb2f99646ef7fe49adc4593515675de8578d8d376b24d",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/maps.py",
-      "lines": 224,
-      "sha256": "1b7354c6599ecd5474c6cf75ecb774cea7084fb307562cd878f5b79293f26184",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/notifications.py",
-      "lines": 170,
-      "sha256": "b0fb272fbb498aedd34d0a973313d6d6ecc9e096a880a1e9db4c53b514a76410",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/nvrs.py",
-      "lines": 598,
-      "sha256": "b6529356dce84ff7c6bfdbce13d9b7d596baf8ff4e78419d502bb4660de997fc",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/online_users.py",
-      "lines": 117,
-      "sha256": "630e2ae4f8c80e139b738d205ea53de9740abf76f66d4e2c76eb6dbe34ea1c06",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/ping.py",
-      "lines": 31,
-      "sha256": "7030ded60023f1ea22a58819ed3adfd0d124f2fd27a9d5d84e71113124b9f675",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/record_checks.py",
-      "lines": 1106,
-      "sha256": "3848ed556b36b2c0ca115e4db8482604075ba774822ae2e15bffa6c7124f33d5",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/resolve_ip.py",
-      "lines": 118,
-      "sha256": "8ad06fa8fff0d5910b210117ab0e83359437c793bd1804e13731bb7f62bb18d0",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/setup.py",
-      "lines": 42,
-      "sha256": "17669ba2321680c7093836b5135ae6498e3b929fe0c3400ddb08ba1c47b0dca5",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/snap_gallery.py",
-      "lines": 1025,
-      "sha256": "3f10cd8624ea3cfb4ba2bbcbb545d547e09b2febf31997a519650fe4c21a9dce",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/snapshots.py",
-      "lines": 383,
-      "sha256": "b5779a791f47046b2d7890d90dbcf5b2ec6a780604712ae19db033649d0aa684",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/stats.py",
-      "lines": 762,
-      "sha256": "a875d13922b3fc64d9e062d05905b261a8aa3a049ffefe89b68164f3b793c9ab",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/toast_demo.py",
-      "lines": 139,
-      "sha256": "e300cc781c0c8e3d1928ce3d59aeb72d66047e417cf39bea5837dd2868e5cd17",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/user_management.py",
-      "lines": 784,
-      "sha256": "2e83051b8189964b62628ed850f0ababd11834fc4ce1c276e4d5a89bcba83c25",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/user_profile.py",
-      "lines": 479,
-      "sha256": "7391d120fb7cd7c561c8f40e17ed4ebd80696556e09a0d378a42fd3bab5c6283",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/videos.py",
-      "lines": 913,
-      "sha256": "bdacb27b926eeef02053abd480676076bba01b6f202f75f33128dfb3fb33b425",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/wa_webhook.py",
-      "lines": 1687,
-      "sha256": "5ca3016d86f42a88f84b746706369dd9b75d7ab0366aed86ac2665cb75c533f7",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/routes/whitelist.py",
-      "lines": 380,
-      "sha256": "ecd5ad7a969a74231e4cded6c7d3c2bfba6de6ccf1afbcc2cc6be8ed542dd5a3",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/schemas/__init__.py",
-      "lines": 0,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/schemas/camera.py",
-      "lines": 15,
-      "sha256": "427e2ab10e3132b6a903f73f7ec4331e1fbb74bd0c3690e02a83b3e234467bdb",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/schemas/health_schema.py",
-      "lines": 25,
-      "sha256": "88ecd92f5ba7a17a89c6e92c3841bbba2f85d771623f99daba1e00193772d0df",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/schemas/log.py",
-      "lines": 36,
-      "sha256": "0d98d3e4ea32ccdf01967fd0be65259db948d1d0a54a81812cacbc4898f7bdc2",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/schemas/snapshot_schema.py",
-      "lines": 41,
-      "sha256": "79c0bea247df0e85f8ac40916aba882fb339d74cc5fa24824df5fd93bde87c9c",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/schemas/video.py",
-      "lines": 22,
-      "sha256": "d424b7359ef39c8cf01386bb1d132e57d56cd85c7a7ca3ec61b10ec0b513d8bc",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/schemas/whitelist_schema.py",
-      "lines": 31,
-      "sha256": "e6c48872732acb67940edd477ed5a776115475dec29ea57e672c553d6bcd4bf9",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/snapshot.py",
-      "lines": 16,
-      "sha256": "f74feb44c9efc51109c416ff20757e40f26e602c44013a3cc925d1486698ecb1",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/analytics_dashboard_harness.cjs",
-      "lines": 175,
-      "sha256": "9afdc7824fed7ff8f546d3e3dde54b4947a93cdc589aefc4fcf1379f63df15e4",
-      "check": "Node syntax check"
-    },
-    {
-      "path": "app/tests/audit_frontend_harness.cjs",
-      "lines": 85,
-      "sha256": "d3b35aa86e5b5f233fb36445091721dc51b987bb896ce6e75b2402ac78e4f6af",
-      "check": "Node syntax check"
-    },
-    {
-      "path": "app/tests/conftest.py",
-      "lines": 222,
-      "sha256": "393f8c8ed69718e11b5040cd19f300be336a5e00beab9d9ae174db8b34cf1329",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/gallery_loader_harness.cjs",
-      "lines": 146,
-      "sha256": "ec4b7bf87f5473db10c8f514df439bf9608bf4ac98c27a886bca8333accc13e8",
-      "check": "Node syntax check"
-    },
-    {
-      "path": "app/tests/map_loading_harness.cjs",
-      "lines": 143,
-      "sha256": "96bfd5b38e02a97a52bb633b6224c3922b1733d2ecd82c796fcee317571ee779",
-      "check": "Node syntax check"
-    },
-    {
-      "path": "app/tests/test_analytics_performance.py",
-      "lines": 238,
-      "sha256": "ffd0f6fe167f3dbb85b6670aa0c56a7509e20f11c0711f16f0e4e4bc5cdc9672",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_api_daily_stats.py",
-      "lines": 185,
-      "sha256": "e45d0771dd0f35d426204373102f8db6aa591d3b1dc452d420870e74fed2c0e7",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_api_error_handlers.py",
-      "lines": 136,
-      "sha256": "697fd49a4046568a3cba59eee03d4a01109931585edbea84001f3503488f3b67",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_audit_frontend.py",
-      "lines": 63,
-      "sha256": "def9fb99b078964233f82e7163703d6377b320737457aa2b971f7bc4325047ef",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_audit_security.py",
-      "lines": 697,
-      "sha256": "ba6ad9f9f97f865afb4855413e5aae91773637886fe0ab90c3da3bce8506e9e6",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_auth_cookie_failures.py",
-      "lines": 455,
-      "sha256": "c60f7587cbbcbb690ba40e034c2878b920564723cc429811895049461e7e0f7b",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_camera_multiple_groups.py",
-      "lines": 70,
-      "sha256": "9af0020b1ab13228a295bfff91b47680b1ea0de890c663345db940819f3de373",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_config_authorization.py",
-      "lines": 70,
-      "sha256": "629c2dd77d9fe27629607664aab7aa55da1801abe66bd0f88e94d35c460954a2",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_container_storage.py",
-      "lines": 141,
-      "sha256": "c83cdb4dc9cc35a7f097d5c28cc291e7e9dd70027cc8bf52bf91b435570788df",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_database_migration.py",
-      "lines": 181,
-      "sha256": "a2551e4c121a2356eb86dc5419a054aa302329c6b8e9c83d62f9f692b24c0f3b",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_docker_import.py",
-      "lines": 47,
-      "sha256": "65d36237140f6a77be4fffb30276a3a48bf64a0ed5257a14285fedb787f92d4c",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_docker_security.py",
-      "lines": 124,
-      "sha256": "48d0c52794534bb11b729466e37764f051f37498d0c62d46d46b3a6eb5bc8a48",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_email_notifier.py",
-      "lines": 79,
-      "sha256": "8c50ff7fdaf1d9193dc4666a0bb9a42a6c7392f19a42f636930aea8541adcba5",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_email_retry_lifecycle.py",
-      "lines": 1125,
-      "sha256": "4b98348b8518de70cfa629b7b6f2d637455a4805de4e5383987a29d61a3c46af",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_email_retry_queue.py",
-      "lines": 176,
-      "sha256": "ade9daf85bbe051e9c552d6428b03c163c4fdeb627a2300f1bced45c849cf049",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_execution_recovery.py",
-      "lines": 146,
-      "sha256": "40e4afb9f1575779016ef8216878c1a06a1e0081eaf418bfeb4bc883ba527eb4",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_gallery_media.py",
-      "lines": 183,
-      "sha256": "44838d5607fcbc7703fba180db7d9f2876ad23fbcece0e1bcad1b98eb97ab035",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_group_access.py",
-      "lines": 159,
-      "sha256": "65b22e1eacb27681adc56b33bb3912f5bc01ac4b9cffe3e3a0f701fca0c63d4f",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_heads.py",
-      "lines": 12,
-      "sha256": "11d282798a9fa65f829f46ca0bd56ddbeeff76c21109bba9befddd04549e1306",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_image_version.py",
-      "lines": 37,
-      "sha256": "9d73b0fd547ad8f96cc9ca19aa22ad62920df7c99355778c85a0b18daae7f689",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_insights_report.py",
-      "lines": 112,
-      "sha256": "c588fcd3cd3b398cbde2e7fb02e8e13b4c33c28815ec96d1f7c2276881103ee7",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_job_schedules.py",
-      "lines": 242,
-      "sha256": "51e47cdeef29cd42fd9a0aa34c35c6c4f0f0e6c7b7177d42eaf6ce807c3961e9",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_map_heatmap.py",
-      "lines": 221,
-      "sha256": "507f4220cfff9bc56dc8e572afdd33b9c1e3781f1f80a027cce4ad9c124bed57",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_map_live.py",
-      "lines": 419,
-      "sha256": "3fbbb6383c3937f46f8c48f407316d6fcb6a6519709e2cbd7566daf825a026a1",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_map_live_config.py",
-      "lines": 142,
-      "sha256": "f3632e0a7d3e1a403c1741b5c7b7915d4ad7d96321b5f015cfe486fcfd365e4f",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_map_loading.py",
-      "lines": 63,
-      "sha256": "d1b87baeb34b80d408103f4f6aa4e4f3d8718be9c68443e5a44da8746b684ef8",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_map_locations.py",
-      "lines": 327,
-      "sha256": "d9af943799cf4bfffc55492389695a535fe67539d4ba12713758a120568ecc6d",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_media_retention.py",
-      "lines": 125,
-      "sha256": "99bfb7b6e57cd6a9221b66e5ef24e2634b56d7a52c6dc1a4cdef43b581f85b0a",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_migration.py",
-      "lines": 17,
-      "sha256": "68f3b5adc9273ec344fe3786f2d6d7f94231476c89898f29ff5c2759c4d40faa",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_navigation.py",
-      "lines": 94,
-      "sha256": "90c3365d8690db07b554c2fb081ea8ca7af77e919b6191c9ad18926bb0283418",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_record_check.py",
-      "lines": 84,
-      "sha256": "fabf309989bd72cc3628f5c6f901ed57c105aab0fd9206df513bcf5df7089762",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_record_check_daily_report.py",
-      "lines": 336,
-      "sha256": "913cc073fecb77aafbf888221b677803bc8e6bc805ab7c2d7a65cd7206e9cd15",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_record_check_notifications.py",
-      "lines": 127,
-      "sha256": "943a4e5695aef4123382871057b57b4aacf827a3d9b34b3b4a5d35d265546269",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_record_mount.py",
-      "lines": 488,
-      "sha256": "9e922d5ebf75300e5d5ce9b37910667403a3819c45dbd32599d13257de8b224f",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_record_notifications.py",
-      "lines": 116,
-      "sha256": "82b63d3b6d4433be0d980fb7a71589a82f19d961101bc818e05f17cc07f6216f",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_recovery_scenario.py",
-      "lines": 135,
-      "sha256": "1499cc1b36658e733fee5f17534f77df961110732b80516c84171a796edfded7",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_resolve_ip.py",
-      "lines": 110,
-      "sha256": "ed61df4f2f7ceb6ae21678efca909390bfc484331fa56ff5d7b0cf731411e132",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_runtime_dependencies.py",
-      "lines": 59,
-      "sha256": "188c61a9ce8445d045a6e981fa533b563340154d374c97e40e9156f757bc2973",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_scheduler_timezone.py",
-      "lines": 110,
-      "sha256": "b9b34056a3deeca07d51b04d522e49af08d420f5d5d15e6d96265ce39d64c21c",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_service_lifecycle.py",
-      "lines": 300,
-      "sha256": "f5126db756034adcb145df0ba0d31b362516fe7645b554a9027f64ecbacd83e7",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_snapshot_resilience.py",
-      "lines": 230,
-      "sha256": "62dc7019ad7f110ad585905d1de77af3e2c1b53cf3d6cc58d68d72c85b7eb819",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_static_assets.py",
-      "lines": 79,
-      "sha256": "4709b282e3f7d947619420bd64eff56577febca24b0f22ae2dccc805737b7481",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_stats_heatmap.py",
-      "lines": 63,
-      "sha256": "ffaf6d1fc93049cb8ab0f61985e45908f958f1ba4cb50b4426e4b0330b144b23",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_sweetalert_i18n.py",
-      "lines": 120,
-      "sha256": "ef6c2db690a49532ecb162ee8b1d4ec2a20c45f67f730cad203998991e13d890",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_tamper_alert.py",
-      "lines": 379,
-      "sha256": "4f1a9065cdbd380a99565be0d76fb6db5060c95df87b41694e197cc331fdae48",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_tamper_alert_v2.py",
-      "lines": 248,
-      "sha256": "8affe641eb0fac73a8970977916c36fc5df1cf3269d24820117a6fd9ca0a533c",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_ui_system.py",
-      "lines": 461,
-      "sha256": "bfdfe0005b8c9129f6bb243646dc9e7273136cda5e7b3f177dc7a9369a09acce",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_video_hls.py",
-      "lines": 165,
-      "sha256": "0a6c0fe5130ae3bbec1bb6e2b813f9f5b236666c1b2e58e00c518aa3c9a424b3",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_video_record_api.py",
-      "lines": 515,
-      "sha256": "e4d3ab225306587fb1c0fca61c655cd5a9c4d95d07bf6b4b5cc7e948805c3827",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_wa_api_methods.py",
-      "lines": 143,
-      "sha256": "aaba952934673d33409738bf24bdf5b0c3bd60f7eadc6266aa40fdf766d03f08",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_wa_bot_stages.py",
-      "lines": 750,
-      "sha256": "ba14f6f6e4fbf1d445e246b82b1a8a70cf72831f9a2b90ab668a1f9621a7cdb7",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_wa_builder_preview.py",
-      "lines": 62,
-      "sha256": "d927e0ea9482f82234f11b06c244539ac8baa319b0ba757ae22796aa32a5ee03",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_wa_command_schedule.py",
-      "lines": 458,
-      "sha256": "fe4a15671df52ed5ee17593c7513b5ee3826141a60ade238362c51734630812e",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_wa_image_hd.py",
-      "lines": 212,
-      "sha256": "d772b6728c802f370e27616e3ed2451f1175bc190dcfadfcadd88916139789c8",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_wa_monitor.py",
-      "lines": 340,
-      "sha256": "88b56763513a22a47deb970947f88164b60411fcab5a64318e1bc2492c267373",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_wa_reply_routing.py",
-      "lines": 108,
-      "sha256": "fdd63ddbb62a7ef9912c31b952c3363f286af98dc94bd2270f54e38a6ba81db0",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_wa_schedule_ui.py",
-      "lines": 88,
-      "sha256": "9c064bd3442f676420a3e758ae70dac7edf71257f613013b9654b66bb77f1aa5",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_wa_template_conditions.py",
-      "lines": 58,
-      "sha256": "d13a25f2c0f58a317a2bd58b436182a558c3c3e7dab6649fb5464dda86591ca7",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_wa_video_upload.py",
-      "lines": 66,
-      "sha256": "93b777e599fd536ac1afb805245673acb205a14b2d3e6d34215053ce99c95efc",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/toast_layout.test.cjs",
-      "lines": 108,
-      "sha256": "40d0ba9c5194fb4fabd0d8301a89c70f282c660a94086445d458869f82eb9f9b",
-      "check": "Node syntax check"
-    },
-    {
-      "path": "app/utils/__init__.py",
-      "lines": 0,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/api_daily_stats.py",
-      "lines": 128,
-      "sha256": "f57ffebebd1173ba48188d40e78638e5b8a8ad7fcb476444fddeb40d6558b8e6",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/audit_logger.py",
-      "lines": 104,
-      "sha256": "991b042d93a27cf610e9090345345182861dd844258f3e2711558a146cb89f0d",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/auth.py",
-      "lines": 9,
-      "sha256": "ac90e57c42c4aacc556ddcae924e3e2f635afa5eee1a684cf23cc8957cd21234",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/auth_token.py",
-      "lines": 39,
-      "sha256": "ac7e547d1c208e795f55a41eb10e3fe563e4c6fc89eca4f375f0318fdb491b7e",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/camera_capture.py",
-      "lines": 32,
-      "sha256": "91d394b0ad43dda65e7c3c147e7d68eda05322b92582454c7b6718e02023caa9",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/camera_onvif.py",
-      "lines": 104,
-      "sha256": "7a5ad880fa21bee033caad53a5ea531add5fb342d38767df05b18ec4285bb833",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/changelog_parser.py",
-      "lines": 202,
-      "sha256": "fb6ddb8f258a05dac53adb09706c8833bfb93dbbf19ed6a56162e8c3c3b1b29c",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/check_stats.py",
-      "lines": 36,
-      "sha256": "0883fa02e82e4d23c2a5b6fcf7cff98b70d1eb6bf7ce2592d4943f72eeffa838",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/cron_description.py",
-      "lines": 24,
-      "sha256": "f2466c743aa3a8344c28ee5f0e65b12d5deddf3e0aff75d98e918cb0e8c09f31",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/decorators.py",
-      "lines": 23,
-      "sha256": "bcd5383ad9d8722deb1ee73514c2df4f216063857fbc7523e0346467dabbff31",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/email_delivery.py",
-      "lines": 32,
-      "sha256": "11ab2a9abb1a7b6b6159a47ee0a35abc773cd15d24ff7c267f1adc6282d0c73a",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/email_helper.py",
-      "lines": 350,
-      "sha256": "005cb5f14644c9702e7907a91617f40f63bdd590b6f395a5553e28306d553a53",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/email_notifier.py",
-      "lines": 662,
-      "sha256": "b9fabd8c0a3f41ee7581b199f5ab3be3a02e74e6fd2e6d36e977e081ae4e50ef",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/email_retry_runtime.py",
-      "lines": 52,
-      "sha256": "1ef75e113f1999c2af1ca20ce7de5f71d2129411e477af104155624b5313bba7",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/email_retry_summary.py",
-      "lines": 85,
-      "sha256": "6939cb2468cc8942845fc55233279f2a722d7bfb948977ae4eb8a2678e46b17f",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/email_template_renderer.py",
-      "lines": 136,
-      "sha256": "513b84ba68a063c58d964e00261cc272a187bbcfc5551d120f346ec0e35f3e1e",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/encryption.py",
-      "lines": 132,
-      "sha256": "617c764cb0a34d4e39bb8dac47927192e02241b4698f132e87cf29d26d7670fc",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/gallery_preview.py",
-      "lines": 48,
-      "sha256": "e81a946ecaa3f6cb0a09fb82eefc374488746e8380bb328b55f81318c6443d42",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/healthcheck.py",
-      "lines": 422,
-      "sha256": "cab611bab7547a9450bb29ab3975ef74121bca1662d2b77e0d5d76d93e033491",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/image_check.py",
-      "lines": 83,
-      "sha256": "22905e425c8f55ab9dd041c73d3107ed2d7a502ab8117ce35ac35ac6510ea455",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/image_utils.py",
-      "lines": 64,
-      "sha256": "b61cecbbc750f669cff65a91c384299d19e304a7b4e712c09846ee2e479bbea1",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/insights_report_locale.py",
-      "lines": 98,
-      "sha256": "d9957b57955797640eba6eb1816778abb3ff5e6632a7586cbb0166c41683211b",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/live_stream.py",
-      "lines": 196,
-      "sha256": "4c6d968c3bc0e1c204cb3c8af4bf0e77aae7891bdad85eef400b1b05b439136d",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/map_heatmap.py",
-      "lines": 46,
-      "sha256": "e498efd9b076c5543a48d28b841247a26db546b61f7b43fc24c62fcb3b5ec6d6",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/map_live_access.py",
-      "lines": 27,
-      "sha256": "971823b4b3ea334b9e4d526678e5c453ec6e005dd77967e7eb52be8d5e76dae4",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/media_access.py",
-      "lines": 35,
-      "sha256": "0d32d97799ca5d851856eee92fc54ad2e67e06cce7015df98d25433004c5e8e1",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/media_retention.py",
-      "lines": 76,
-      "sha256": "719f3090b3dd580cc1077596d3e6240e9666c869bcc3e6ebe4c47445b7f1f6cb",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/network_utils.py",
-      "lines": 46,
-      "sha256": "f148275cd5ea277ecb46d820058741aa7ccfc69d808fa42234cff88b2718b629",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/notification_service.py",
-      "lines": 301,
-      "sha256": "041fe4fcffb1102f0f266ba8ef47ba5f604ecb0fcd6b06d27176395a1c9fa117",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/online_users.py",
-      "lines": 258,
-      "sha256": "54b330d150cc244588cc5557eba267e90aa9c0baceccbbb11ad1f9a3174939e8",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/record_check.py",
-      "lines": 570,
-      "sha256": "535cd10de6bdbafa9ba557fc418fbf7033aa2124af5dc1d3d22ce3a69e79d940",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/record_check_report.py",
-      "lines": 964,
-      "sha256": "963ce31121335f7fd47db807d501e7ba4817281ff22a3dd46b04e0d2841ace6d",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/record_mount.py",
-      "lines": 407,
-      "sha256": "71d1fa7ffacbd5b18711f2d281fba70c627d25658d4c07d4e596c51f73b2f2f8",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/remember_me.py",
-      "lines": 184,
-      "sha256": "c275dcdf81563846cc2ee3b067a50501897ba13309a5c15e1dcd449f23e7b47e",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/response_helper.py",
-      "lines": 25,
-      "sha256": "310f1fc0c183dbdec7e16728d5ad029fd139f26f551fe2d32a46fc1705b01cf2",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/smtp_config.py",
-      "lines": 113,
-      "sha256": "d6a484b8d7714ded037faf72ed3da56c6d0567b66cf46d515d90ca7d7e7c9e52",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/snapshot_locker.py",
-      "lines": 56,
-      "sha256": "e293cc36400fd8fc71f8bc2c807b900bce2a071263f67113544b5eb4a8880229",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/snapshot_process.py",
-      "lines": 68,
-      "sha256": "b112332a42070d77d74ac1d096db458b08dbfb3ff2e9e8b12de789c9742ef11a",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/snapshot_service.py",
-      "lines": 593,
-      "sha256": "addb3ecbd904b7abe93ac48d65ab442dd64721817171184ef06248ce09272fc1",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/snapshot_utils.py",
-      "lines": 373,
-      "sha256": "6962657bc922bd7760da9d54ea6016670888bf6c1315d863804b29a49c23cb63",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/status_utils.py",
-      "lines": 9,
-      "sha256": "ba3daf0068cf748f68d3cfacee7224b74ed7b557522e58def443157fc00bbe2f",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/storage_monitor.py",
-      "lines": 296,
-      "sha256": "80d696d4ea88df0b4c0fe204b053aabcb6936260a1e6ed4edbc012b84145ea6c",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/template_helper.py",
-      "lines": 323,
-      "sha256": "4596ee98d36f77e28ebc154b40cca82b6b5709bbacbb8ba161eefbb4c04a9ee1",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/timezone.py",
-      "lines": 18,
-      "sha256": "5a9ef16fb7d449d31ad55c92c4adbc6f9976831161a6ec173ebe371194512b8d",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/timezone_helper.py",
-      "lines": 108,
-      "sha256": "09735d56569c835286f68ddbadb8ce5667511e25701a90ab52f69d3bb00b857a",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/video.py",
-      "lines": 634,
-      "sha256": "d840c4f10d56bcf7e1e5c6fa5551166f521ee6ac6a529a254109712fb6ba6bab",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/wa_bot_commands.py",
-      "lines": 424,
-      "sha256": "791c345de2c35b8ce81f3ad8cca7cc24f77cd4495077045426dab77e0749b7f5",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/wa_bot_workflow.py",
-      "lines": 330,
-      "sha256": "17a48151b945fb3db88969a2d0e090f0474f12fcc10d2c27d1514f5e478c8afc",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/wa_executor.py",
-      "lines": 53,
-      "sha256": "02fbc508bd22cfcbd37bff642587981e94c9aaf0ea4ea4b9f1ae7592582fe548",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/wa_gateway.py",
-      "lines": 540,
-      "sha256": "b39b3db0a3c0b56dc55713630cc298a382ee3905f5af473260f352624cc008e5",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/utils/wa_monitor.py",
-      "lines": 120,
-      "sha256": "e5b9ac8c5df6d95eedc2454ece70f892ab9ebe83cafac7189313878611b8724f",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/version.py",
-      "lines": 1,
-      "sha256": "38489beb77b4c8f106961117cab584d4ec119e5791d1c1c8eca497ee864440bb",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/ws/__init__.py",
-      "lines": 0,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/ws/manager.py",
-      "lines": 41,
-      "sha256": "39e64b0d253fdcaeb6f184d1ff88fde0b0fc375c416fd66aefa2a1d29a389b27",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/ws/notifier.py",
-      "lines": 147,
-      "sha256": "f7e9fd7d22e2cbf7c1f1c9cdcad449eae0bd37b9380b7e7229c8215448a744c7",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/ws/record_notifications.py",
-      "lines": 72,
-      "sha256": "9a5044f5a5eb17642c9dd87ac3e843ede00d8f2d49255e76e242861c9ce02100",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/ws/routes.py",
-      "lines": 103,
-      "sha256": "f68cd880ffd63f680edf5357b913f5770c434a7d7b6b8f3f5871d272ab8cb40b",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "scripts/benchmark_log_response.py",
-      "lines": 216,
-      "sha256": "f29a83389b6b60a035b4beb7486ec8b39436d822edce0706c50ff6d573e10e10",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "scripts/check_image_version.py",
-      "lines": 36,
-      "sha256": "471e871aa6f60fd7a36603c0de564d727ba87f47db814b8ae24fe66fd37f6f3f",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "scripts/check_runtime_imports.py",
-      "lines": 38,
-      "sha256": "ce1b57ca89420c9e8cff098ae31f15b8a47a06d31e306a398c5dd81a97038ce8",
-      "check": "AST syntax and structural scan"
-    },
-    {
       "path": "alembic/env.py",
-      "lines": 75,
-      "sha256": "cd48d5b16011ec1120e5beae4f23d8af28313469ab36fe33b2adc0e7f65e614a",
+      "lines": 90,
+      "sha256": "de4d4d57cc9d73eee6bf1eb417519868bb8814633702891cc0102a5e5f0a2517",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1561,6 +181,18 @@
       "check": "AST syntax and structural scan"
     },
     {
+      "path": "alembic/versions/20261102_high_security.py",
+      "lines": 47,
+      "sha256": "e5c7466afdc9e70409418dbd0108a8895a44a137c4f3da843228246cc0709cd4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "alembic/versions/20261103_retire_inbox.py",
+      "lines": 24,
+      "sha256": "04ad9b3da25857e834d6e92e235ca6d4772e73286afdac95523c629ce11bf107",
+      "check": "AST syntax and structural scan"
+    },
+    {
       "path": "alembic/versions/300b57036bb7_add_recipients_table_for_email_logs.py",
       "lines": 50,
       "sha256": "68059412de6306f58814d8b2c4235614a9271650c6b0a9a15651448cf67c2c63",
@@ -1699,328 +331,1474 @@
       "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/403.html",
-      "lines": 120,
-      "sha256": "ff749dcd67dac8d218b1e9c07377d5a646d2e5f3b307c001e0d8422caea91adc",
-      "check": "Jinja compile"
+      "path": "app/__init__.py",
+      "lines": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/404.html",
-      "lines": 109,
-      "sha256": "42c3ccdd22776cd42a69a2f8d03962997eabea14102ea615dfc89b346875e843",
-      "check": "Jinja compile"
+      "path": "app/api/observability_log.py",
+      "lines": 37,
+      "sha256": "130f1edfdd208120f30bbd3899acfcfaaace904dab6454eb926d2dbb61c35865",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/500.html",
-      "lines": 126,
-      "sha256": "0bcaef3de06fd511f8982194254a6a47dee4612601e87977b4ef5db347d81277",
-      "check": "Jinja compile"
+      "path": "app/api/readiness.py",
+      "lines": 26,
+      "sha256": "aaa212807093b6f7fea45ed649b90857d870ddc3df92cfdd5d1f8c0eafbae900",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/_action_buttons.html",
-      "lines": 15,
-      "sha256": "a9cfb6852e7271da3463703af5747c230b156996bb308ced154800c5c67b18e2",
-      "check": "Jinja compile"
+      "path": "app/api/whatsapp_routes.py",
+      "lines": 20,
+      "sha256": "05552d3ea50e7c7291d58258b93f83ef80a9f713d9926763dd485ad9ef962851",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/_gallery_grid.html",
-      "lines": 88,
-      "sha256": "45db200daf263e2f622116f9df1413a2520ec49a739fb4e1fbfdd459f3c7c660",
-      "check": "Jinja compile"
+      "path": "app/core/__init__.py",
+      "lines": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/_icons.html",
-      "lines": 328,
-      "sha256": "e927fbb7144eeb9beb8d21c2e38d5fd99a75651a649039bad2a5a4458dcf09d5",
-      "check": "Jinja compile"
+      "path": "app/core/config.py",
+      "lines": 19,
+      "sha256": "7332118beba56356cc651cfc481115ce75348d9625e9e1fe23edbc9ef98a08bb",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/_orphaned_files_list.html",
-      "lines": 49,
-      "sha256": "9f88b6de75f3d29ced699c778c4506bc0bf906723b2ebc358787580490f3fefb",
-      "check": "Jinja compile"
+      "path": "app/core/config_initializer.py",
+      "lines": 125,
+      "sha256": "30d98c60e5ebcd0e2523c7030c5b3a48d34b9f79bb1ceff421fb8b8b845ae71d",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/_video_grid.html",
-      "lines": 89,
-      "sha256": "99f801ffab98324338bebadfc0184248796e5285422173989551741dfff7d006",
-      "check": "Jinja compile"
+      "path": "app/core/job_schedules.py",
+      "lines": 62,
+      "sha256": "38d069cc2ede63166ad19784146d4fb91864753a3c8af1630dfdb27ce039dc72",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/admin_trash.html",
-      "lines": 911,
-      "sha256": "87351890ba5866d71fffd4d3634ff4ef4af2793959245d1d97c4e8801b2d7454",
-      "check": "Jinja compile"
+      "path": "app/core/logging_config.py",
+      "lines": 315,
+      "sha256": "82768bb076d0915d3d5b39127c9881876cf1ba3e6d6189f3592cb3eced172cca",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/analytics.html",
-      "lines": 1092,
-      "sha256": "180fc2b9d3c8489fc7f34728b188d281ff5334a41fcbd58a261c412bdde915ba",
-      "check": "Jinja compile"
+      "path": "app/core/security.py",
+      "lines": 103,
+      "sha256": "584fdab243250082227d2f1a1bcfe3f2ea24c1091db5af380b9d07ce4047abd6",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/audit_logs.html",
-      "lines": 1368,
-      "sha256": "d54eff682bf0f8c1d1879a9945593c1654f4c13d60e9b3d3629a932a837a7f1f",
-      "check": "Jinja compile"
+      "path": "app/core/service_health.py",
+      "lines": 63,
+      "sha256": "60d15ce7e8b214514bad1a6d42d6154c9d86c3716bd598569d9d3645cdc4a51a",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/base.html",
-      "lines": 1001,
-      "sha256": "6b8f81acef9c547685b8c9d5a28ba3eba62fe588f072f32e533290d1785f5d3b",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/camera_groups.html",
-      "lines": 578,
-      "sha256": "f8657e3c2d4a50cdea65d47dcba26ea4298ad76cf0452070aa00c99a5e6eefbb",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/cameras.html",
-      "lines": 1108,
-      "sha256": "df3da5723e4f27e090070b9daa008f91f770a57cfa71b45a35f56f62a293949a",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/change_password.html",
-      "lines": 145,
-      "sha256": "a8c0dacbcffc5dad4fe936beb2dff3564e80b83e8e390b25f3c639661436675e",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/changelog.html",
-      "lines": 468,
-      "sha256": "8b793554e7756f0a9c6737b25d715ead28760cc5f0b56c6c35fcb1581ef0fec0",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/config.html",
-      "lines": 1090,
-      "sha256": "2f9e59935d48c3f4c609d772e53cf4341c8041036f69c592eaee0e601b45414e",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/demo/toast_demo.html",
-      "lines": 182,
-      "sha256": "645550eb1e4805770a04144b838aebea26d7303d9bfdb45c17e918c44d5577c0",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/docs/api.html",
-      "lines": 71,
-      "sha256": "33ced8fb869c8acc0a67db61bcf37e65c25143624c645b4550b6e6b032253941",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/docs/environment.html",
-      "lines": 192,
-      "sha256": "ac3283f14630be3d7250fe386a8b56dc57459d3286e7d65c6df0e9bc2ded2c91",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/docs/security.html",
-      "lines": 133,
-      "sha256": "7e82259a5d1da1e424d7530170a3a38786bba90378b8ed2755d461878c39749f",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/email_logs.html",
-      "lines": 720,
-      "sha256": "68abd08d2d69af068c31b539a02d0c80dfd0c3fc67ac5154b365d270d499f570",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/email_templates.html",
-      "lines": 432,
-      "sha256": "5d750e192d8beccb8b4ff956af75f07e6f9736de79fc8d2feea3fb2cd6ae47bf",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/force_mfa_setup.html",
-      "lines": 119,
-      "sha256": "70744f98993ffdae76746d75ae169194c650cb4543568d3c4f2a980baee6d561",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/health.html",
-      "lines": 732,
-      "sha256": "9b532c72a9163b9558ea7529838d4e1da6c26c3fca89f39fe74c0ae096fb33b4",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/health_history.html",
-      "lines": 325,
-      "sha256": "6ce178e97b8bef60f159bba74ad9e242c54b904ba6ace638ea572c1e203b1acd",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/insights.html",
-      "lines": 328,
-      "sha256": "1cf88dce21695ee5477f65724d327a4473c8796fadf4175a47b033449601a554",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/jobs.html",
-      "lines": 636,
-      "sha256": "e83eadacbf437b429b8e06fa7499f50d249cc7182a5460ce06f0464161775e0d",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/login.html",
-      "lines": 135,
-      "sha256": "1595c2d32d0550a419cee7e9d386d1c13be99c591a2d06a9eec0d1fca04922ec",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/login_2fa.html",
-      "lines": 100,
-      "sha256": "f97916225fe7b6014dab0f4acb0ade011ff67938fe833ff708681df723835f97",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/logs.html",
-      "lines": 566,
-      "sha256": "3c5dffbae9ecd3d6dce9b8e7fb1f7512f52521e22f7adb4d9474ccb97fb7660e",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/macros/file_size.html",
-      "lines": 10,
-      "sha256": "283eb5ac4a53f02415dec6291410d71b5054bccef1a74a7f5a1683431589f22b",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/macros/navigation.html",
-      "lines": 76,
-      "sha256": "2d9ea0cdc40031af4746e69b0fa5026af3fc28a07d1b249ebdd0e0fdfa2a2815",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/macros/ui.html",
-      "lines": 91,
-      "sha256": "b8d4ac8ffa9b3222e55758839599de75be0001b45fff0750c749587f728dec42",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/maps.html",
-      "lines": 743,
-      "sha256": "3d089ddf5191b98988ea6a8919c2d26da02e7d8b545270d52d3c45625803a698",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/nvrs.html",
-      "lines": 925,
-      "sha256": "d67b3322aa93a985960c77a84570839990110ec6a34c7382794b8bb855db3ba9",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/partials/camera_rows.html",
+      "path": "app/core/static_assets.py",
       "lines": 46,
-      "sha256": "d8e3fd5b720c2873165d378ec58b7ff2335db53130aeeb8a0ea342ccbd94216b",
-      "check": "Jinja compile"
+      "sha256": "21579d5488ce6ce068d09219347912e7963e0efede5db49fce4dcc4ed3e2bb9c",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/partials/nvr_rows.html",
-      "lines": 27,
-      "sha256": "dea2eba57ceba39974caafaa8db284929367d3ad5caec9c4afafcab90c17a780",
-      "check": "Jinja compile"
+      "path": "app/db/database.py",
+      "lines": 101,
+      "sha256": "aa5bc93d817780da66d6530c25e836a36a0003b6b8e5992c9356f2ba584a9079",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/powerbi_record_checks.html",
-      "lines": 203,
-      "sha256": "52e2fd3938f1fde7da217885b2d9722ea113cdbbb60528be3ea461ba04f41cbe",
-      "check": "Jinja compile"
+      "path": "app/db/migrate.py",
+      "lines": 66,
+      "sha256": "ea69aab8eeadc126eccb054541d5c40299408f3b742ac9645111211a6cedbaea",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/recipients.html",
-      "lines": 1303,
-      "sha256": "d549239309c160232763f01b72bb7ac27a2ff0a7fea2bf60efb0064df48de325",
-      "check": "Jinja compile"
+      "path": "app/jobs/__init__.py",
+      "lines": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/recipients_table.html",
-      "lines": 142,
-      "sha256": "760983313e50b59519b9b5e97611f2d1d29dda3dee85e99bedec99dc0c76e575",
-      "check": "Jinja compile"
+      "path": "app/jobs/audit_archive.py",
+      "lines": 415,
+      "sha256": "d933d91064f8c2a0b117f3b3ef44f368f3a18fd33578933313419b92d6db1a16",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/record_checks.html",
-      "lines": 868,
-      "sha256": "5772d853f26507bf12cc63dd1bd1904cecdd509591371d4e20dcda133d9b2407",
-      "check": "Jinja compile"
+      "path": "app/jobs/execution_recovery.py",
+      "lines": 75,
+      "sha256": "d732c78b8141c95f52d9c6ac42d1108f5a0c91b33a50e97889b991b9bee08378",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/setup.html",
-      "lines": 38,
-      "sha256": "a9274c3aa4e0bb0c68af1cb943146d10a678beeb1aadfdc5e13d0b3ca8ee4597",
-      "check": "Jinja compile"
+      "path": "app/jobs/scheduled_archive.py",
+      "lines": 72,
+      "sha256": "1825c760e00eb379c20c4ce120ca8454636b792eeffd17ebe688278189b389ba",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/sla_report.html",
-      "lines": 192,
-      "sha256": "ccd0b8aa8f99035ec763391c1b6f5feee4bb2db3a46767e55187b66e5b6eaca8",
-      "check": "Jinja compile"
+      "path": "app/jobs/scheduler.py",
+      "lines": 1412,
+      "sha256": "f884d4dd91f18dca4f79f9709defd5b670be66aa1eebf12f3d89f92bc400946d",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/snapshot_gallery.html",
-      "lines": 391,
-      "sha256": "50e5dab2b2349463173901b01b2904f821cb18eeb1de3e2d74467f659d562ccd",
-      "check": "Jinja compile"
+      "path": "app/jobs/scheduler_main.py",
+      "lines": 71,
+      "sha256": "cac4fef922bd71d6b081aedf02af447350d4656a5830475eca58095103354923",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/stats.html",
-      "lines": 470,
-      "sha256": "d582e3156a05a1e168f837a6ef517075ffbc0174e2df6189b5a355d4d5ae7be7",
-      "check": "Jinja compile"
-    },
-    {
-      "path": "templates/swagger_embed.html",
+      "path": "app/jobs/snapshot_worker.py",
       "lines": 23,
-      "sha256": "22ae4ea0d6899c7cdc2ab02736c80f67864d56d532c542757b31f1bc5ea301c3",
-      "check": "Jinja compile"
+      "sha256": "27f08d1fddd097a58a2c9f83e71d3b3b0070a5e42ed721e2eacacfa447212c30",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/unauthorized.html",
+      "path": "app/jobs/wa_command_schedule.py",
+      "lines": 166,
+      "sha256": "4f788c8ef00a706af6740c0908050247414456a850c10e20d2e717d1db580d4d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/main.py",
+      "lines": 469,
+      "sha256": "da575b92e00c5bbe65ccd710404d74289d73b04ffb3d79b534195be5d8cd57f7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/audit_protection.py",
+      "lines": 12,
+      "sha256": "da283499268f774f3b9884d5dec21fff27759542952be48de2ec5c510e6a4a69",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/auth_and_setup.py",
+      "lines": 410,
+      "sha256": "6912ea40e74377122a3e47b29fa070062643df0337f0709b4883afeb307f3c2b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/csrf.py",
+      "lines": 72,
+      "sha256": "f5b9c57a904a90114e65329299ad607994d44cd2564549c5d4a0d03d2fb02fe7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/http_proxy_fix.py",
+      "lines": 14,
+      "sha256": "30f092620b0ffd8f5f75f38e36e4d38f7c206ff7daf722b18428569a566e69e3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/observability.py",
+      "lines": 89,
+      "sha256": "6e3d890af5e5be57ff1f89eba145e29a8bf265afcf598269bd04af217c329839",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/online_user_tracker.py",
+      "lines": 42,
+      "sha256": "ceb4d3e040a5439b7ce7faf5b645a333f3268bc0b54fda14f76367b49bb74558",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/real_ip_fix.py",
+      "lines": 28,
+      "sha256": "50c7b985a447e99b95294290a73ae7a05cc4954de0e3b05f7e3d669ff4e5dbf1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/redirect_unauthenticated.py",
+      "lines": 12,
+      "sha256": "98db8bbf08af8ec367bfcc358147afba12f874c9d2e6de973baa3e2b18b26074",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/middleware/session_restore.py",
+      "lines": 44,
+      "sha256": "b44f6872745b807c7f4bdb6fa6f37f99695d38e44c759127ea7615c65bcfda67",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/__init__.py",
+      "lines": 86,
+      "sha256": "4351332b599b68e0dae7b08a1666abc2b05af6050ad4d97314fed9d6f8dc5c1b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/api_daily_stats.py",
       "lines": 17,
-      "sha256": "912b6b94396b777d395f075ada5c3da6568449a34f883f4cea48bd86c45a5338",
-      "check": "Jinja compile"
+      "sha256": "b0fc4455d45ad00c87fbefc83836329b12fc93245eb04a8d2733a5aa5d5487e0",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/user_management.html",
-      "lines": 847,
-      "sha256": "5a8ef0b155048a8cc8227b4b95ddd7e3a6d331160546df1754a46a0f51df8f4e",
-      "check": "Jinja compile"
+      "path": "app/models/audit_log.py",
+      "lines": 150,
+      "sha256": "466fc5a9d2accecabbb550bf53ef20e249b82789069970676960f984f94d5cc4",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/user_management2.html",
-      "lines": 514,
-      "sha256": "63fcaa04a71c156980db2fec5a551733d8dcdb3491b9a8175e7c1cdc0322f289",
-      "check": "Jinja compile"
+      "path": "app/models/auth_rate_limit.py",
+      "lines": 17,
+      "sha256": "2054b3d2d76d1ef6a18ddfd38904c80644144c571423e69864e54ef359ae7983",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/user_profile.html",
-      "lines": 772,
-      "sha256": "9c3ceab261c5bf0cff8a8161515b8aa6191ad69491014096e78cf8a3d8e627f8",
-      "check": "Jinja compile"
+      "path": "app/models/camera.py",
+      "lines": 144,
+      "sha256": "c5b61df5ea76ad04dc9bcb24b7ccbf30fb7e7d003d1ed477ab1b4c67f4bf4b08",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/video_gallery.html",
-      "lines": 363,
-      "sha256": "058ba7be486952777c69616b88ebbbe41b2b811571f89c65d0850daa7ad14a98",
-      "check": "Jinja compile"
+      "path": "app/models/camera_daily_stats.py",
+      "lines": 18,
+      "sha256": "fa726c3623364ed5612c6cdf076bd0a3528bb5329f65f1ecf38440f5b66913ee",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/wa_bot_builder.html",
-      "lines": 278,
-      "sha256": "02503bcf0a2bd99f13160b60abce152f68354cf4f073b182e1264168d352a2a5",
-      "check": "Jinja compile"
+      "path": "app/models/camera_email_notification_log.py",
+      "lines": 38,
+      "sha256": "2056da8ea97a3e3249b9fb2333b609ee85dbc70d2d5874eafc9859bb458a334e",
+      "check": "AST syntax and structural scan"
     },
     {
-      "path": "templates/whitelist.html",
-      "lines": 826,
-      "sha256": "99698f57c51aa38b93cebc9586666db0e7582654acb99270b06e5d82dbac845c",
-      "check": "Jinja compile"
+      "path": "app/models/camera_group.py",
+      "lines": 35,
+      "sha256": "f93e357296331ea60c0cf8ec65fce24fc32cb3ab388c97b72e49bb5d4e870cc3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/camera_status_change_log.py",
+      "lines": 18,
+      "sha256": "4d9be45ec27cfd454cbd5e68fc6feab65a5faf402df1ce011927e110bdf15ba3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/config.py",
+      "lines": 7,
+      "sha256": "7f2b67ad3ce0e06bbcdf838ef8381c00b3f8e6df7b71cd86360345ddcd9989c7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/email_retry_queue.py",
+      "lines": 70,
+      "sha256": "ea10a20f1f7ddc7aa3150a1dce7619b0ea8b7cd041f4dcbd4cce5991770d58d0",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/email_template.py",
+      "lines": 260,
+      "sha256": "d3d2ef35e4b4320d47a5c9c504ffd0eaa06c25a685e220cabbb204734ad7a525",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/health.py",
+      "lines": 31,
+      "sha256": "a686716a13e0f29b32fb7e4c64c77b955e896b81221aa65655330166fe3eeff7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/health_check_status.py",
+      "lines": 13,
+      "sha256": "f9ecd6ede275c362f4a3846c4dae5de776e84a501055997e800a334ce10c6c48",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/job_execution_log.py",
+      "lines": 183,
+      "sha256": "c068e21f825dabb6ee010d85927c7906c9aff27acafbda3c3d3fad245f484142",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/log.py",
+      "lines": 42,
+      "sha256": "1ba6fc47c30e4ae672ae0072d5eb2529c17d21f85742620ea9bd2eb3167fe684",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/notification_queue.py",
+      "lines": 12,
+      "sha256": "1a7d1d08de052b1a1851e9172a1141833ef8a5cfee2da7e966f4840351c05f12",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/nvr.py",
+      "lines": 58,
+      "sha256": "6d501dbd7e34a2e7df90b8274d4a9141a9555d8b5bf20a2685803d20af001f9d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/recipient.py",
+      "lines": 20,
+      "sha256": "760b2e5cac8fc361be99429d50dc23c4d25528b2b8e596ad2ffa9f3e19ce39ce",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/record_check.py",
+      "lines": 182,
+      "sha256": "03660654c65e34ac36f792efbc8cf4b29e180c3058743c15f49ac37521478d43",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/remember_token.py",
+      "lines": 26,
+      "sha256": "94ff7f05f93c53eba513729076c8c5969a582f5baedc742270180dcde4c8c845",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/sla_report.py",
+      "lines": 88,
+      "sha256": "3da21e4b39f81599d47f230082f0d41cfccea2c7629a1081bb139c92c1673f78",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/snapshot.py",
+      "lines": 100,
+      "sha256": "8143518978e130d5e234f2c74188378c2e3ce1be9c6a2c11c221f85dffb2bf55",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/snapshot_log.py",
+      "lines": 27,
+      "sha256": "960d0d432f6b8bf5989fd1dfefede943a1c369693b2b16f2251b4a117adf81cd",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/storage_metric.py",
+      "lines": 49,
+      "sha256": "b54e8d69f45277b87dccc70ae85a99598c3664ff2ea54baa35667adb1f84bf75",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/task_timing.py",
+      "lines": 17,
+      "sha256": "09516a43a9a7cf8bcad0224947d31530dfc383036371e65a0bf2aff6f5bac90e",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/user.py",
+      "lines": 28,
+      "sha256": "df906c37f250641447d33b12ed77746e87c6550e7482c485514ab8a2e82f9593",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/video.py",
+      "lines": 94,
+      "sha256": "73686c6e893757f7a2dd911e39cb7fa485d380d541d4a2c94a545a5da41d6748",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/models/whitelist.py",
+      "lines": 40,
+      "sha256": "5e9a415add28e15c3282d02fa7ae41cee139a32d40871c7a415fe4505feee544",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/2fa.py",
+      "lines": 48,
+      "sha256": "eccd6a35a0908f87aece65f1b38b4e7379abc23806dbd7e9fbf5c3974648ce53",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/__init__.py",
+      "lines": 60,
+      "sha256": "75c7725b870a3ec68de1e92896065f4fc6343988c8f754fc2cf36199dbcb55ff",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/admin.py",
+      "lines": 88,
+      "sha256": "9f4e58a59cc39f96654c4e566f22b90d8f63779027024754504c8ed397677df3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/audit.py",
+      "lines": 174,
+      "sha256": "1f055366aabe249ee58754ea7080e635332d8918c16d052f6a35172139835e33",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/audit_log.py",
+      "lines": 378,
+      "sha256": "50258f96af16ce4198ba638d309e8cc4750be7e408b6ee6bd1d0a187284841ba",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/auth.py",
+      "lines": 543,
+      "sha256": "8a02a1376bfac432cfeab457294d872daf4ea0c9d23e5ad0475f94b5fdda0982",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/camera_groups.py",
+      "lines": 291,
+      "sha256": "9f952b5fae068808d4996471697d9455c760f045b9a68ce74c19604f1a8069e7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/cameras.py",
+      "lines": 1043,
+      "sha256": "cfc6dc353fb373bdf3345b55e3b4469a089cf3fad3ea181732d0cf0afdfc3635",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/config.py",
+      "lines": 516,
+      "sha256": "bde1e77642c90cc561a8db0514844dd8bf2744018a3b59f700bab10f931860fc",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/docs.py",
+      "lines": 443,
+      "sha256": "4873bcfe071e345ffe579f868c23dfe510c464302448c8d6df54856b22d9760e",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/email_logs.py",
+      "lines": 262,
+      "sha256": "645ec3be4df19d5bbfc7772cee26a24f8ab746e3ee567342273fa132078c5103",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/email_templates.py",
+      "lines": 257,
+      "sha256": "e5434eee4f81283c234e8a41af061e34f113972c517d356bc078ae30b4536515",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/group_recipients.py",
+      "lines": 791,
+      "sha256": "251d06c3c59a1a8655c2103bcc1d745cbbfbdbc1134430172d76b60e0d7066b6",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/health.py",
+      "lines": 1480,
+      "sha256": "4d65964569a3208c61ab2d43ca809ce42e1a6323062ae1445104aa0d674896be",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/insights.py",
+      "lines": 800,
+      "sha256": "461fb19bd06c84c47cc9edb8229a4051384f0487fe6c19269160584dc17d4f07",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/jobs.py",
+      "lines": 477,
+      "sha256": "ba169b7041f37c9b7fcac2f55b4374af9011cf37b9695e10b2a336e0f81e9432",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/logs.py",
+      "lines": 288,
+      "sha256": "f1582ae5c90f721b73f150ba8e19f5d6ae2ef1ad9804bc1c99235b448e76ebfb",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/map_heatmap.py",
+      "lines": 136,
+      "sha256": "63cbe8aa8451d4b06e5c391e09c1ef0a59e60625bc6ca5f4776a6865189af7e9",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/map_live.py",
+      "lines": 96,
+      "sha256": "14d1102e31200e6307dcb2f99646ef7fe49adc4593515675de8578d8d376b24d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/maps.py",
+      "lines": 224,
+      "sha256": "1b7354c6599ecd5474c6cf75ecb774cea7084fb307562cd878f5b79293f26184",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/nvrs.py",
+      "lines": 598,
+      "sha256": "b6529356dce84ff7c6bfdbce13d9b7d596baf8ff4e78419d502bb4660de997fc",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/online_users.py",
+      "lines": 117,
+      "sha256": "630e2ae4f8c80e139b738d205ea53de9740abf76f66d4e2c76eb6dbe34ea1c06",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/ping.py",
+      "lines": 31,
+      "sha256": "7030ded60023f1ea22a58819ed3adfd0d124f2fd27a9d5d84e71113124b9f675",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/record_checks.py",
+      "lines": 1106,
+      "sha256": "3848ed556b36b2c0ca115e4db8482604075ba774822ae2e15bffa6c7124f33d5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/resolve_ip.py",
+      "lines": 118,
+      "sha256": "8ad06fa8fff0d5910b210117ab0e83359437c793bd1804e13731bb7f62bb18d0",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/setup.py",
+      "lines": 42,
+      "sha256": "17669ba2321680c7093836b5135ae6498e3b929fe0c3400ddb08ba1c47b0dca5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/snap_gallery.py",
+      "lines": 1025,
+      "sha256": "3f10cd8624ea3cfb4ba2bbcbb545d547e09b2febf31997a519650fe4c21a9dce",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/snapshots.py",
+      "lines": 383,
+      "sha256": "b5779a791f47046b2d7890d90dbcf5b2ec6a780604712ae19db033649d0aa684",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/stats.py",
+      "lines": 674,
+      "sha256": "39a3bad977c71735ae24663eb1d52822131419305bb3b2a891ff192b236283dc",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/toast_demo.py",
+      "lines": 139,
+      "sha256": "e300cc781c0c8e3d1928ce3d59aeb72d66047e417cf39bea5837dd2868e5cd17",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/user_management.py",
+      "lines": 784,
+      "sha256": "2e83051b8189964b62628ed850f0ababd11834fc4ce1c276e4d5a89bcba83c25",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/user_profile.py",
+      "lines": 479,
+      "sha256": "7391d120fb7cd7c561c8f40e17ed4ebd80696556e09a0d378a42fd3bab5c6283",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/videos.py",
+      "lines": 913,
+      "sha256": "bdacb27b926eeef02053abd480676076bba01b6f202f75f33128dfb3fb33b425",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/wa_webhook.py",
+      "lines": 1705,
+      "sha256": "e33540144d23b471aaecea935ed91291ca3bcd80040dac11ae4fb8968ea3fdc1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/routes/whitelist.py",
+      "lines": 380,
+      "sha256": "ecd5ad7a969a74231e4cded6c7d3c2bfba6de6ccf1afbcc2cc6be8ed542dd5a3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/schemas/__init__.py",
+      "lines": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/schemas/camera.py",
+      "lines": 15,
+      "sha256": "427e2ab10e3132b6a903f73f7ec4331e1fbb74bd0c3690e02a83b3e234467bdb",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/schemas/health_schema.py",
+      "lines": 25,
+      "sha256": "88ecd92f5ba7a17a89c6e92c3841bbba2f85d771623f99daba1e00193772d0df",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/schemas/log.py",
+      "lines": 36,
+      "sha256": "0d98d3e4ea32ccdf01967fd0be65259db948d1d0a54a81812cacbc4898f7bdc2",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/schemas/snapshot_schema.py",
+      "lines": 41,
+      "sha256": "79c0bea247df0e85f8ac40916aba882fb339d74cc5fa24824df5fd93bde87c9c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/schemas/video.py",
+      "lines": 22,
+      "sha256": "d424b7359ef39c8cf01386bb1d132e57d56cd85c7a7ca3ec61b10ec0b513d8bc",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/schemas/whitelist_schema.py",
+      "lines": 31,
+      "sha256": "e6c48872732acb67940edd477ed5a776115475dec29ea57e672c553d6bcd4bf9",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/snapshot.py",
+      "lines": 16,
+      "sha256": "f74feb44c9efc51109c416ff20757e40f26e602c44013a3cc925d1486698ecb1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/analytics_dashboard_harness.cjs",
+      "lines": 175,
+      "sha256": "9afdc7824fed7ff8f546d3e3dde54b4947a93cdc589aefc4fcf1379f63df15e4",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "app/tests/audit_frontend_harness.cjs",
+      "lines": 85,
+      "sha256": "d3b35aa86e5b5f233fb36445091721dc51b987bb896ce6e75b2402ac78e4f6af",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "app/tests/conftest.py",
+      "lines": 222,
+      "sha256": "393f8c8ed69718e11b5040cd19f300be336a5e00beab9d9ae174db8b34cf1329",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/date_timezone.test.cjs",
+      "lines": 48,
+      "sha256": "02e41c97b93bf5712e1f4260fe4721ceaac160ce82f970dde2fd3a622edf9ec7",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "app/tests/gallery_loader_harness.cjs",
+      "lines": 146,
+      "sha256": "ec4b7bf87f5473db10c8f514df439bf9608bf4ac98c27a886bca8333accc13e8",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "app/tests/map_loading_harness.cjs",
+      "lines": 143,
+      "sha256": "96bfd5b38e02a97a52bb633b6224c3922b1733d2ecd82c796fcee317571ee779",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "app/tests/test_analytics_performance.py",
+      "lines": 238,
+      "sha256": "ffd0f6fe167f3dbb85b6670aa0c56a7509e20f11c0711f16f0e4e4bc5cdc9672",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_api_daily_stats.py",
+      "lines": 185,
+      "sha256": "e45d0771dd0f35d426204373102f8db6aa591d3b1dc452d420870e74fed2c0e7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_api_error_handlers.py",
+      "lines": 136,
+      "sha256": "697fd49a4046568a3cba59eee03d4a01109931585edbea84001f3503488f3b67",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_audit_frontend.py",
+      "lines": 63,
+      "sha256": "def9fb99b078964233f82e7163703d6377b320737457aa2b971f7bc4325047ef",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_audit_security.py",
+      "lines": 700,
+      "sha256": "ca0875f02a3b93df2ab5f49b88cddbd82c44d447b5bcdd5959aa245f0f0553d9",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_auth_cookie_failures.py",
+      "lines": 455,
+      "sha256": "c60f7587cbbcbb690ba40e034c2878b920564723cc429811895049461e7e0f7b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_camera_group_counts.py",
+      "lines": 137,
+      "sha256": "9a09073ca4dcc6762cd65c812f7ff425c3ae31323a2f299672e0ac4ad0b3e32f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_camera_multiple_groups.py",
+      "lines": 70,
+      "sha256": "9af0020b1ab13228a295bfff91b47680b1ea0de890c663345db940819f3de373",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_config_authorization.py",
+      "lines": 70,
+      "sha256": "629c2dd77d9fe27629607664aab7aa55da1801abe66bd0f88e94d35c460954a2",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_container_storage.py",
+      "lines": 141,
+      "sha256": "c83cdb4dc9cc35a7f097d5c28cc291e7e9dd70027cc8bf52bf91b435570788df",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_database_migration.py",
+      "lines": 181,
+      "sha256": "a2551e4c121a2356eb86dc5419a054aa302329c6b8e9c83d62f9f692b24c0f3b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_docker_import.py",
+      "lines": 47,
+      "sha256": "65d36237140f6a77be4fffb30276a3a48bf64a0ed5257a14285fedb787f92d4c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_docker_security.py",
+      "lines": 124,
+      "sha256": "48d0c52794534bb11b729466e37764f051f37498d0c62d46d46b3a6eb5bc8a48",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_documentation_routing.py",
+      "lines": 148,
+      "sha256": "64434b5b9c096f290910e1c61076912ebf782d6331d6c4cb5acc5b29d81a2739",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_email_notifier.py",
+      "lines": 79,
+      "sha256": "8c50ff7fdaf1d9193dc4666a0bb9a42a6c7392f19a42f636930aea8541adcba5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_email_retry_lifecycle.py",
+      "lines": 1128,
+      "sha256": "89b2d5171c23f24ee00457efaacd674b0425ff8777f50d4b96c4b63f86c22c59",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_email_retry_queue.py",
+      "lines": 176,
+      "sha256": "ade9daf85bbe051e9c552d6428b03c163c4fdeb627a2300f1bced45c849cf049",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_execution_recovery.py",
+      "lines": 146,
+      "sha256": "40e4afb9f1575779016ef8216878c1a06a1e0081eaf418bfeb4bc883ba527eb4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_gallery_media.py",
+      "lines": 183,
+      "sha256": "44838d5607fcbc7703fba180db7d9f2876ad23fbcece0e1bcad1b98eb97ab035",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_group_access.py",
+      "lines": 159,
+      "sha256": "65b22e1eacb27681adc56b33bb3912f5bc01ac4b9cffe3e3a0f701fca0c63d4f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_heads.py",
+      "lines": 12,
+      "sha256": "11d282798a9fa65f829f46ca0bd56ddbeeff76c21109bba9befddd04549e1306",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_health_group_security.py",
+      "lines": 300,
+      "sha256": "c287260ed2618b32cf6df31c2a24c3218f3dc62009796efdddb2acf206fbd293",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_high_security.py",
+      "lines": 432,
+      "sha256": "9e98d15ce372ef3ff3607c66f8ece5cc82ea9900d05d253ec45e9283a84f5da1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_high_security_postgres.py",
+      "lines": 127,
+      "sha256": "709859828f32dfae41757e1098acfcd626d5bcba1fa8040ea558e9050f7dce77",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_image_version.py",
+      "lines": 37,
+      "sha256": "9d73b0fd547ad8f96cc9ca19aa22ad62920df7c99355778c85a0b18daae7f689",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_insights_report.py",
+      "lines": 112,
+      "sha256": "c588fcd3cd3b398cbde2e7fb02e8e13b4c33c28815ec96d1f7c2276881103ee7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_job_schedules.py",
+      "lines": 242,
+      "sha256": "51e47cdeef29cd42fd9a0aa34c35c6c4f0f0e6c7b7177d42eaf6ce807c3961e9",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_map_heatmap.py",
+      "lines": 221,
+      "sha256": "507f4220cfff9bc56dc8e572afdd33b9c1e3781f1f80a027cce4ad9c124bed57",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_map_live.py",
+      "lines": 419,
+      "sha256": "3fbbb6383c3937f46f8c48f407316d6fcb6a6519709e2cbd7566daf825a026a1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_map_live_config.py",
+      "lines": 142,
+      "sha256": "f3632e0a7d3e1a403c1741b5c7b7915d4ad7d96321b5f015cfe486fcfd365e4f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_map_loading.py",
+      "lines": 63,
+      "sha256": "d1b87baeb34b80d408103f4f6aa4e4f3d8718be9c68443e5a44da8746b684ef8",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_map_locations.py",
+      "lines": 330,
+      "sha256": "aaaa711dcce47fd15e8bb6d1de960b74924e1a6dc7fbac2ae79e4f0efa6ad9b9",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_media_retention.py",
+      "lines": 125,
+      "sha256": "99bfb7b6e57cd6a9221b66e5ef24e2634b56d7a52c6dc1a4cdef43b581f85b0a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_migration.py",
+      "lines": 17,
+      "sha256": "68f3b5adc9273ec344fe3786f2d6d7f94231476c89898f29ff5c2759c4d40faa",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_navigation.py",
+      "lines": 110,
+      "sha256": "3acedac837d73f534c5fdceb189f56bc3cb6705d9dfdc24a333066f84df353da",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_record_check.py",
+      "lines": 84,
+      "sha256": "fabf309989bd72cc3628f5c6f901ed57c105aab0fd9206df513bcf5df7089762",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_record_check_daily_report.py",
+      "lines": 336,
+      "sha256": "913cc073fecb77aafbf888221b677803bc8e6bc805ab7c2d7a65cd7206e9cd15",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_record_check_notifications.py",
+      "lines": 127,
+      "sha256": "943a4e5695aef4123382871057b57b4aacf827a3d9b34b3b4a5d35d265546269",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_record_mount.py",
+      "lines": 488,
+      "sha256": "9e922d5ebf75300e5d5ce9b37910667403a3819c45dbd32599d13257de8b224f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_record_notifications.py",
+      "lines": 116,
+      "sha256": "82b63d3b6d4433be0d980fb7a71589a82f19d961101bc818e05f17cc07f6216f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_recovery_scenario.py",
+      "lines": 135,
+      "sha256": "1499cc1b36658e733fee5f17534f77df961110732b80516c84171a796edfded7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_resolve_ip.py",
+      "lines": 110,
+      "sha256": "ed61df4f2f7ceb6ae21678efca909390bfc484331fa56ff5d7b0cf731411e132",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_retired_inbox.py",
+      "lines": 125,
+      "sha256": "09df4952c9588ec5cbe83c7ef66bae6f489164165e65346d98d1b4ec7750fa31",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_retired_inbox_postgres.py",
+      "lines": 90,
+      "sha256": "6b080b221d0b054f685b52f0bd15bab2e6da9d891cc85b0461a6d1c1bebc7db7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_runtime_dependencies.py",
+      "lines": 59,
+      "sha256": "188c61a9ce8445d045a6e981fa533b563340154d374c97e40e9156f757bc2973",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_scheduler_timezone.py",
+      "lines": 110,
+      "sha256": "b9b34056a3deeca07d51b04d522e49af08d420f5d5d15e6d96265ce39d64c21c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_service_lifecycle.py",
+      "lines": 300,
+      "sha256": "f5126db756034adcb145df0ba0d31b362516fe7645b554a9027f64ecbacd83e7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_snapshot_resilience.py",
+      "lines": 230,
+      "sha256": "62dc7019ad7f110ad585905d1de77af3e2c1b53cf3d6cc58d68d72c85b7eb819",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_static_assets.py",
+      "lines": 79,
+      "sha256": "4709b282e3f7d947619420bd64eff56577febca24b0f22ae2dccc805737b7481",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_stats_heatmap.py",
+      "lines": 63,
+      "sha256": "ffaf6d1fc93049cb8ab0f61985e45908f958f1ba4cb50b4426e4b0330b144b23",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_sweetalert_i18n.py",
+      "lines": 120,
+      "sha256": "ef6c2db690a49532ecb162ee8b1d4ec2a20c45f67f730cad203998991e13d890",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_tamper_alert.py",
+      "lines": 379,
+      "sha256": "4f1a9065cdbd380a99565be0d76fb6db5060c95df87b41694e197cc331fdae48",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_tamper_alert_v2.py",
+      "lines": 248,
+      "sha256": "8affe641eb0fac73a8970977916c36fc5df1cf3269d24820117a6fd9ca0a533c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_ui_system.py",
+      "lines": 461,
+      "sha256": "bfdfe0005b8c9129f6bb243646dc9e7273136cda5e7b3f177dc7a9369a09acce",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_video_hls.py",
+      "lines": 165,
+      "sha256": "0a6c0fe5130ae3bbec1bb6e2b813f9f5b236666c1b2e58e00c518aa3c9a424b3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_video_record_api.py",
+      "lines": 515,
+      "sha256": "e4d3ab225306587fb1c0fca61c655cd5a9c4d95d07bf6b4b5cc7e948805c3827",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_api_methods.py",
+      "lines": 143,
+      "sha256": "aaba952934673d33409738bf24bdf5b0c3bd60f7eadc6266aa40fdf766d03f08",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_bot_stages.py",
+      "lines": 750,
+      "sha256": "ba14f6f6e4fbf1d445e246b82b1a8a70cf72831f9a2b90ab668a1f9621a7cdb7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_builder_preview.py",
+      "lines": 62,
+      "sha256": "d927e0ea9482f82234f11b06c244539ac8baa319b0ba757ae22796aa32a5ee03",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_command_schedule.py",
+      "lines": 458,
+      "sha256": "fe4a15671df52ed5ee17593c7513b5ee3826141a60ade238362c51734630812e",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_image_hd.py",
+      "lines": 212,
+      "sha256": "d772b6728c802f370e27616e3ed2451f1175bc190dcfadfcadd88916139789c8",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_monitor.py",
+      "lines": 340,
+      "sha256": "88b56763513a22a47deb970947f88164b60411fcab5a64318e1bc2492c267373",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_monitor_dates.py",
+      "lines": 70,
+      "sha256": "69c18637ffa75fcc452e9b3cafdf430f6fc249b71b88847a7aeafe8418673852",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_reply_routing.py",
+      "lines": 123,
+      "sha256": "15ea32cffe1b187ff5a7abc61f0764478f912ad05661a7901584b1e4b82b4d72",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_schedule_ui.py",
+      "lines": 88,
+      "sha256": "9c064bd3442f676420a3e758ae70dac7edf71257f613013b9654b66bb77f1aa5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_template_conditions.py",
+      "lines": 58,
+      "sha256": "d13a25f2c0f58a317a2bd58b436182a558c3c3e7dab6649fb5464dda86591ca7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_video_upload.py",
+      "lines": 66,
+      "sha256": "93b777e599fd536ac1afb805245673acb205a14b2d3e6d34215053ce99c95efc",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_websocket_proxy.py",
+      "lines": 198,
+      "sha256": "230798eee91cd70429010c52dfdd23e829e03d5bebbd72d5fa160515013dcf9d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/toast_layout.test.cjs",
+      "lines": 108,
+      "sha256": "40d0ba9c5194fb4fabd0d8301a89c70f282c660a94086445d458869f82eb9f9b",
+      "check": "Node syntax check"
+    },
+    {
+      "path": "app/utils/__init__.py",
+      "lines": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/api_daily_stats.py",
+      "lines": 128,
+      "sha256": "f57ffebebd1173ba48188d40e78638e5b8a8ad7fcb476444fddeb40d6558b8e6",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/audit_logger.py",
+      "lines": 104,
+      "sha256": "991b042d93a27cf610e9090345345182861dd844258f3e2711558a146cb89f0d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/auth.py",
+      "lines": 9,
+      "sha256": "ac90e57c42c4aacc556ddcae924e3e2f635afa5eee1a684cf23cc8957cd21234",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/auth_rate_limit.py",
+      "lines": 70,
+      "sha256": "e3fbbdf53df688480e0699ec49e4a41c63eb4d96b794714489698e6f3c163d1f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/auth_token.py",
+      "lines": 39,
+      "sha256": "ac7e547d1c208e795f55a41eb10e3fe563e4c6fc89eca4f375f0318fdb491b7e",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/camera_capture.py",
+      "lines": 32,
+      "sha256": "91d394b0ad43dda65e7c3c147e7d68eda05322b92582454c7b6718e02023caa9",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/camera_onvif.py",
+      "lines": 104,
+      "sha256": "7a5ad880fa21bee033caad53a5ea531add5fb342d38767df05b18ec4285bb833",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/changelog_parser.py",
+      "lines": 202,
+      "sha256": "fb6ddb8f258a05dac53adb09706c8833bfb93dbbf19ed6a56162e8c3c3b1b29c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/check_stats.py",
+      "lines": 36,
+      "sha256": "0883fa02e82e4d23c2a5b6fcf7cff98b70d1eb6bf7ce2592d4943f72eeffa838",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/cron_description.py",
+      "lines": 24,
+      "sha256": "f2466c743aa3a8344c28ee5f0e65b12d5deddf3e0aff75d98e918cb0e8c09f31",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/decorators.py",
+      "lines": 23,
+      "sha256": "bcd5383ad9d8722deb1ee73514c2df4f216063857fbc7523e0346467dabbff31",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/device_access.py",
+      "lines": 41,
+      "sha256": "51bfdffb81541b09bf84d68c19306c7bc34b38b71e7df3ada6f67ff52ff72ebf",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/email_delivery.py",
+      "lines": 32,
+      "sha256": "11ab2a9abb1a7b6b6159a47ee0a35abc773cd15d24ff7c267f1adc6282d0c73a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/email_helper.py",
+      "lines": 350,
+      "sha256": "005cb5f14644c9702e7907a91617f40f63bdd590b6f395a5553e28306d553a53",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/email_notifier.py",
+      "lines": 662,
+      "sha256": "b9fabd8c0a3f41ee7581b199f5ab3be3a02e74e6fd2e6d36e977e081ae4e50ef",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/email_retry_runtime.py",
+      "lines": 52,
+      "sha256": "1ef75e113f1999c2af1ca20ce7de5f71d2129411e477af104155624b5313bba7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/email_retry_summary.py",
+      "lines": 85,
+      "sha256": "6939cb2468cc8942845fc55233279f2a722d7bfb948977ae4eb8a2678e46b17f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/email_template_renderer.py",
+      "lines": 136,
+      "sha256": "513b84ba68a063c58d964e00261cc272a187bbcfc5551d120f346ec0e35f3e1e",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/encryption.py",
+      "lines": 132,
+      "sha256": "617c764cb0a34d4e39bb8dac47927192e02241b4698f132e87cf29d26d7670fc",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/gallery_preview.py",
+      "lines": 48,
+      "sha256": "e81a946ecaa3f6cb0a09fb82eefc374488746e8380bb328b55f81318c6443d42",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/health_progress.py",
+      "lines": 37,
+      "sha256": "5d8fcc25b8237233bb53feb653bb4297c28b63ba1239572a244df189cfd8a7f6",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/healthcheck.py",
+      "lines": 442,
+      "sha256": "ae98199cfd935fd4a6dc16b4d790064dc32b7b02d8caeb2a9d1aefa525768556",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/image_check.py",
+      "lines": 83,
+      "sha256": "22905e425c8f55ab9dd041c73d3107ed2d7a502ab8117ce35ac35ac6510ea455",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/image_utils.py",
+      "lines": 64,
+      "sha256": "b61cecbbc750f669cff65a91c384299d19e304a7b4e712c09846ee2e479bbea1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/insights_report_locale.py",
+      "lines": 98,
+      "sha256": "d9957b57955797640eba6eb1816778abb3ff5e6632a7586cbb0166c41683211b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/live_stream.py",
+      "lines": 196,
+      "sha256": "4c6d968c3bc0e1c204cb3c8af4bf0e77aae7891bdad85eef400b1b05b439136d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/map_heatmap.py",
+      "lines": 46,
+      "sha256": "e498efd9b076c5543a48d28b841247a26db546b61f7b43fc24c62fcb3b5ec6d6",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/map_live_access.py",
+      "lines": 27,
+      "sha256": "971823b4b3ea334b9e4d526678e5c453ec6e005dd77967e7eb52be8d5e76dae4",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/media_access.py",
+      "lines": 35,
+      "sha256": "0d32d97799ca5d851856eee92fc54ad2e67e06cce7015df98d25433004c5e8e1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/media_retention.py",
+      "lines": 76,
+      "sha256": "719f3090b3dd580cc1077596d3e6240e9666c869bcc3e6ebe4c47445b7f1f6cb",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/network_utils.py",
+      "lines": 46,
+      "sha256": "f148275cd5ea277ecb46d820058741aa7ccfc69d808fa42234cff88b2718b629",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/notification_service.py",
+      "lines": 281,
+      "sha256": "fa8cf662ea0fafd65f55609462b54e92dc521f7d5fce91adf0d9840ab50038e0",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/online_users.py",
+      "lines": 258,
+      "sha256": "54b330d150cc244588cc5557eba267e90aa9c0baceccbbb11ad1f9a3174939e8",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/record_check.py",
+      "lines": 570,
+      "sha256": "535cd10de6bdbafa9ba557fc418fbf7033aa2124af5dc1d3d22ce3a69e79d940",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/record_check_report.py",
+      "lines": 964,
+      "sha256": "963ce31121335f7fd47db807d501e7ba4817281ff22a3dd46b04e0d2841ace6d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/record_mount.py",
+      "lines": 407,
+      "sha256": "71d1fa7ffacbd5b18711f2d281fba70c627d25658d4c07d4e596c51f73b2f2f8",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/remember_me.py",
+      "lines": 180,
+      "sha256": "0a73cda79971ba8147e4c63b06e2837491296934604591b0890e13bc8c709fda",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/response_helper.py",
+      "lines": 25,
+      "sha256": "310f1fc0c183dbdec7e16728d5ad029fd139f26f551fe2d32a46fc1705b01cf2",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/smtp_config.py",
+      "lines": 113,
+      "sha256": "d6a484b8d7714ded037faf72ed3da56c6d0567b66cf46d515d90ca7d7e7c9e52",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/snapshot_locker.py",
+      "lines": 56,
+      "sha256": "e293cc36400fd8fc71f8bc2c807b900bce2a071263f67113544b5eb4a8880229",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/snapshot_process.py",
+      "lines": 68,
+      "sha256": "b112332a42070d77d74ac1d096db458b08dbfb3ff2e9e8b12de789c9742ef11a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/snapshot_service.py",
+      "lines": 593,
+      "sha256": "addb3ecbd904b7abe93ac48d65ab442dd64721817171184ef06248ce09272fc1",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/snapshot_utils.py",
+      "lines": 373,
+      "sha256": "6962657bc922bd7760da9d54ea6016670888bf6c1315d863804b29a49c23cb63",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/status_utils.py",
+      "lines": 9,
+      "sha256": "ba3daf0068cf748f68d3cfacee7224b74ed7b557522e58def443157fc00bbe2f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/storage_monitor.py",
+      "lines": 296,
+      "sha256": "80d696d4ea88df0b4c0fe204b053aabcb6936260a1e6ed4edbc012b84145ea6c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/template_helper.py",
+      "lines": 323,
+      "sha256": "7b39ba38ab23ef7dc4558d4cf2c71bdc97b87b5f985cd4d53ade4096bf962d51",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/timezone.py",
+      "lines": 18,
+      "sha256": "5a9ef16fb7d449d31ad55c92c4adbc6f9976831161a6ec173ebe371194512b8d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/timezone_helper.py",
+      "lines": 108,
+      "sha256": "09735d56569c835286f68ddbadb8ce5667511e25701a90ab52f69d3bb00b857a",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/video.py",
+      "lines": 634,
+      "sha256": "d840c4f10d56bcf7e1e5c6fa5551166f521ee6ac6a529a254109712fb6ba6bab",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/wa_bot_commands.py",
+      "lines": 424,
+      "sha256": "791c345de2c35b8ce81f3ad8cca7cc24f77cd4495077045426dab77e0749b7f5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/wa_bot_workflow.py",
+      "lines": 330,
+      "sha256": "17a48151b945fb3db88969a2d0e090f0474f12fcc10d2c27d1514f5e478c8afc",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/wa_executor.py",
+      "lines": 53,
+      "sha256": "02fbc508bd22cfcbd37bff642587981e94c9aaf0ea4ea4b9f1ae7592582fe548",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/wa_gateway.py",
+      "lines": 540,
+      "sha256": "b39b3db0a3c0b56dc55713630cc298a382ee3905f5af473260f352624cc008e5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/wa_monitor.py",
+      "lines": 120,
+      "sha256": "e5b9ac8c5df6d95eedc2454ece70f892ab9ebe83cafac7189313878611b8724f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/utils/webhook_auth.py",
+      "lines": 35,
+      "sha256": "5a5e4d51e38e5c15e5d5bea39f18f61fabacb8a7f730ac1b9cb1513ce3d06b9b",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/version.py",
+      "lines": 1,
+      "sha256": "3091c6c7e428d27c9c23b58749abe72bc32893a1d2fc37bfa8b7c65978a1e8e8",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/ws/__init__.py",
+      "lines": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/ws/manager.py",
+      "lines": 41,
+      "sha256": "39e64b0d253fdcaeb6f184d1ff88fde0b0fc375c416fd66aefa2a1d29a389b27",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/ws/notifier.py",
+      "lines": 147,
+      "sha256": "f7e9fd7d22e2cbf7c1f1c9cdcad449eae0bd37b9380b7e7229c8215448a744c7",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/ws/record_notifications.py",
+      "lines": 72,
+      "sha256": "9a5044f5a5eb17642c9dd87ac3e843ede00d8f2d49255e76e242861c9ce02100",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/ws/routes.py",
+      "lines": 119,
+      "sha256": "1ea53124336421aff42df5178263e5d4c57e88f99da31bf80ffecdfa11ee7dd9",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/benchmark_camera_groups.py",
+      "lines": 268,
+      "sha256": "839bd8d43f4a60cb6e5bdc58f5699c57bb8ac3aca06da46eb673367e91637ae2",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/benchmark_log_response.py",
+      "lines": 216,
+      "sha256": "f29a83389b6b60a035b4beb7486ec8b39436d822edce0706c50ff6d573e10e10",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/check_image_version.py",
+      "lines": 36,
+      "sha256": "471e871aa6f60fd7a36603c0de564d727ba87f47db814b8ae24fe66fd37f6f3f",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/check_runtime_imports.py",
+      "lines": 38,
+      "sha256": "ce1b57ca89420c9e8cff098ae31f15b8a47a06d31e306a398c5dd81a97038ce8",
+      "check": "AST syntax and structural scan"
     },
     {
       "path": "static/js/admin-table-sort.js",
@@ -2036,8 +1814,8 @@
     },
     {
       "path": "static/js/date-format.js",
-      "lines": 56,
-      "sha256": "915cba43f6c051ee9375b596ca291f5454cf5e44addc77c88f423db7f38c4168",
+      "lines": 92,
+      "sha256": "0c2464d7152bd8c76fb4c75ff1176c4b6eadb870043ffb0ede72a8a87ea59642",
       "check": "Node syntax check"
     },
     {
@@ -2054,8 +1832,8 @@
     },
     {
       "path": "static/js/i18n.js",
-      "lines": 1139,
-      "sha256": "8cf04f1a0d716c13f78ab0fd3c105e4963854c7a2673f47c3a18ac00c6400b17",
+      "lines": 1140,
+      "sha256": "1bca70ad1027cbf48028e5bd9b3b3cdc8b8dd54075e9fc8737e9e70f480aebed",
       "check": "Node syntax check"
     },
     {
@@ -2108,9 +1886,339 @@
     },
     {
       "path": "static/js/wa-bot-builder.js",
-      "lines": 958,
-      "sha256": "443907121342d721d1c4575eab65264b0ee06924fbd15e815bfa1452afcff47c",
+      "lines": 977,
+      "sha256": "6603a37116daf70d659b6d60c6b185279244abe9f44bdaf120cc129ec0b4aaba",
       "check": "Node syntax check"
+    },
+    {
+      "path": "templates/403.html",
+      "lines": 120,
+      "sha256": "ff749dcd67dac8d218b1e9c07377d5a646d2e5f3b307c001e0d8422caea91adc",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/404.html",
+      "lines": 109,
+      "sha256": "42c3ccdd22776cd42a69a2f8d03962997eabea14102ea615dfc89b346875e843",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/500.html",
+      "lines": 126,
+      "sha256": "0bcaef3de06fd511f8982194254a6a47dee4612601e87977b4ef5db347d81277",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/_action_buttons.html",
+      "lines": 15,
+      "sha256": "a9cfb6852e7271da3463703af5747c230b156996bb308ced154800c5c67b18e2",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/_gallery_grid.html",
+      "lines": 88,
+      "sha256": "45db200daf263e2f622116f9df1413a2520ec49a739fb4e1fbfdd459f3c7c660",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/_icons.html",
+      "lines": 328,
+      "sha256": "e927fbb7144eeb9beb8d21c2e38d5fd99a75651a649039bad2a5a4458dcf09d5",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/_orphaned_files_list.html",
+      "lines": 51,
+      "sha256": "8073c1dc8cd6697b36985b4cd6b0bf8036d66ecb72a1bc75cd2f490b96b664a7",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/_video_grid.html",
+      "lines": 89,
+      "sha256": "99f801ffab98324338bebadfc0184248796e5285422173989551741dfff7d006",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/admin_trash.html",
+      "lines": 911,
+      "sha256": "87351890ba5866d71fffd4d3634ff4ef4af2793959245d1d97c4e8801b2d7454",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/analytics.html",
+      "lines": 1092,
+      "sha256": "180fc2b9d3c8489fc7f34728b188d281ff5334a41fcbd58a261c412bdde915ba",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/audit_logs.html",
+      "lines": 1368,
+      "sha256": "d54eff682bf0f8c1d1879a9945593c1654f4c13d60e9b3d3629a932a837a7f1f",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/base.html",
+      "lines": 1003,
+      "sha256": "e23f0ecada9d6df94a9dd5ecf54dc00d04833f6a2f6b2efdf36f081340bbd6e2",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/camera_groups.html",
+      "lines": 578,
+      "sha256": "f8657e3c2d4a50cdea65d47dcba26ea4298ad76cf0452070aa00c99a5e6eefbb",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/cameras.html",
+      "lines": 1108,
+      "sha256": "df3da5723e4f27e090070b9daa008f91f770a57cfa71b45a35f56f62a293949a",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/change_password.html",
+      "lines": 147,
+      "sha256": "25ed7b1578f858e96da3548f72867becc27ba1c8eea35810e6d89d4eff18a01b",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/changelog.html",
+      "lines": 468,
+      "sha256": "8b793554e7756f0a9c6737b25d715ead28760cc5f0b56c6c35fcb1581ef0fec0",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/config.html",
+      "lines": 1090,
+      "sha256": "2f9e59935d48c3f4c609d772e53cf4341c8041036f69c592eaee0e601b45414e",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/demo/toast_demo.html",
+      "lines": 182,
+      "sha256": "645550eb1e4805770a04144b838aebea26d7303d9bfdb45c17e918c44d5577c0",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/docs/api.html",
+      "lines": 71,
+      "sha256": "1e0c74515d64a556df5003c2058f73c9b36765503fdcb4292fa78bf491838d86",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/docs/environment.html",
+      "lines": 192,
+      "sha256": "f7dc87101dea0e60b79fda406aae464b82e5a1522f37886e3942790f32855789",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/docs/security.html",
+      "lines": 133,
+      "sha256": "7e82259a5d1da1e424d7530170a3a38786bba90378b8ed2755d461878c39749f",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/email_logs.html",
+      "lines": 720,
+      "sha256": "68abd08d2d69af068c31b539a02d0c80dfd0c3fc67ac5154b365d270d499f570",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/email_templates.html",
+      "lines": 432,
+      "sha256": "5d750e192d8beccb8b4ff956af75f07e6f9736de79fc8d2feea3fb2cd6ae47bf",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/force_mfa_setup.html",
+      "lines": 119,
+      "sha256": "65ac61dc94549c22597c28350fbf25d6dcf5786f45795f3199d879e11f3f74bf",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/health.html",
+      "lines": 732,
+      "sha256": "9b532c72a9163b9558ea7529838d4e1da6c26c3fca89f39fe74c0ae096fb33b4",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/health_history.html",
+      "lines": 325,
+      "sha256": "6ce178e97b8bef60f159bba74ad9e242c54b904ba6ace638ea572c1e203b1acd",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/insights.html",
+      "lines": 330,
+      "sha256": "b3ab86ea662de70fb3576d0bc92307d18e8b9f53f261ed072b905760e33dbdca",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/jobs.html",
+      "lines": 636,
+      "sha256": "e83eadacbf437b429b8e06fa7499f50d249cc7182a5460ce06f0464161775e0d",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/login.html",
+      "lines": 135,
+      "sha256": "1595c2d32d0550a419cee7e9d386d1c13be99c591a2d06a9eec0d1fca04922ec",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/login_2fa.html",
+      "lines": 100,
+      "sha256": "f97916225fe7b6014dab0f4acb0ade011ff67938fe833ff708681df723835f97",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/logout.html",
+      "lines": 12,
+      "sha256": "47fbfc89fa8ec757fcb1eaf8ddfa55937e44d39c0e4f575fe2d75a23f59a546d",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/logs.html",
+      "lines": 566,
+      "sha256": "3c5dffbae9ecd3d6dce9b8e7fb1f7512f52521e22f7adb4d9474ccb97fb7660e",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/macros/file_size.html",
+      "lines": 10,
+      "sha256": "283eb5ac4a53f02415dec6291410d71b5054bccef1a74a7f5a1683431589f22b",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/macros/navigation.html",
+      "lines": 78,
+      "sha256": "6891f7faa7d9ecd7fcb46df9fff9d84ef87f5ca644678bf58830be05c4ad946c",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/macros/ui.html",
+      "lines": 91,
+      "sha256": "b8d4ac8ffa9b3222e55758839599de75be0001b45fff0750c749587f728dec42",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/maps.html",
+      "lines": 743,
+      "sha256": "3d089ddf5191b98988ea6a8919c2d26da02e7d8b545270d52d3c45625803a698",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/nvrs.html",
+      "lines": 925,
+      "sha256": "d67b3322aa93a985960c77a84570839990110ec6a34c7382794b8bb855db3ba9",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/partials/camera_rows.html",
+      "lines": 46,
+      "sha256": "d8e3fd5b720c2873165d378ec58b7ff2335db53130aeeb8a0ea342ccbd94216b",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/partials/nvr_rows.html",
+      "lines": 27,
+      "sha256": "dea2eba57ceba39974caafaa8db284929367d3ad5caec9c4afafcab90c17a780",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/powerbi_record_checks.html",
+      "lines": 203,
+      "sha256": "52e2fd3938f1fde7da217885b2d9722ea113cdbbb60528be3ea461ba04f41cbe",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/recipients.html",
+      "lines": 1303,
+      "sha256": "d549239309c160232763f01b72bb7ac27a2ff0a7fea2bf60efb0064df48de325",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/recipients_table.html",
+      "lines": 144,
+      "sha256": "d98c1d431226d464895b3f24538f6dc96ef678ff9b4636f599f316a7c3e17bcc",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/record_checks.html",
+      "lines": 868,
+      "sha256": "5772d853f26507bf12cc63dd1bd1904cecdd509591371d4e20dcda133d9b2407",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/setup.html",
+      "lines": 38,
+      "sha256": "a9274c3aa4e0bb0c68af1cb943146d10a678beeb1aadfdc5e13d0b3ca8ee4597",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/sla_report.html",
+      "lines": 192,
+      "sha256": "ccd0b8aa8f99035ec763391c1b6f5feee4bb2db3a46767e55187b66e5b6eaca8",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/snapshot_gallery.html",
+      "lines": 391,
+      "sha256": "50e5dab2b2349463173901b01b2904f821cb18eeb1de3e2d74467f659d562ccd",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/stats.html",
+      "lines": 472,
+      "sha256": "5c4298b2fd1a20d55b46c74fb5db2a767152bc0de7895b474c1781850447e531",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/swagger_embed.html",
+      "lines": 23,
+      "sha256": "22ae4ea0d6899c7cdc2ab02736c80f67864d56d532c542757b31f1bc5ea301c3",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/unauthorized.html",
+      "lines": 17,
+      "sha256": "912b6b94396b777d395f075ada5c3da6568449a34f883f4cea48bd86c45a5338",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/user_management.html",
+      "lines": 847,
+      "sha256": "5a8ef0b155048a8cc8227b4b95ddd7e3a6d331160546df1754a46a0f51df8f4e",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/user_management2.html",
+      "lines": 516,
+      "sha256": "3d4637e6531e47591c04b6cd7786d3278b6169591ced43a12ff9b06ec70662b0",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/user_profile.html",
+      "lines": 772,
+      "sha256": "9c3ceab261c5bf0cff8a8161515b8aa6191ad69491014096e78cf8a3d8e627f8",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/video_gallery.html",
+      "lines": 363,
+      "sha256": "058ba7be486952777c69616b88ebbbe41b2b811571f89c65d0850daa7ad14a98",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/wa_bot_builder.html",
+      "lines": 280,
+      "sha256": "05a2eaebd8ef3082c5785e2f6dba45b30537b23e1bb210a59a9754667d12f16e",
+      "check": "Jinja template compile"
+    },
+    {
+      "path": "templates/whitelist.html",
+      "lines": 826,
+      "sha256": "99698f57c51aa38b93cebc9586666db0e7582654acb99270b06e5d82dbac845c",
+      "check": "Jinja template compile"
     }
   ],
   "routes": [
@@ -2121,8 +2229,7 @@
       "path": "/log/command",
       "function": "create_command_log",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2132,8 +2239,7 @@
       "path": "/log/command",
       "function": "read_command_logs",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2143,8 +2249,7 @@
       "path": "/log/api",
       "function": "create_api_log",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2154,8 +2259,7 @@
       "path": "/log/api",
       "function": "read_api_logs",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2173,13 +2277,12 @@
       "path": "/api/whatsapp/is-allowed",
       "function": "is_whatsapp_allowed",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
       "file": "app/main.py",
-      "line": 224,
+      "line": 248,
       "method": "GET",
       "path": "/static/snapshots/{path:path}",
       "function": "block_snapshot_access",
@@ -2187,7 +2290,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 244,
+      "line": 268,
       "method": "GET",
       "path": "/static/videos/{path:path}",
       "function": "block_video_access",
@@ -2195,7 +2298,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 309,
+      "line": 331,
       "method": "GET",
       "path": "/",
       "function": "root_redirect",
@@ -2203,15 +2306,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 381,
-      "method": "GET",
-      "path": "/docs",
-      "function": "custom_swagger_ui",
-      "declared_dependencies": []
-    },
-    {
-      "file": "app/main.py",
-      "line": 396,
+      "line": 410,
       "method": "GET",
       "path": "/version",
       "function": "version",
@@ -2219,7 +2314,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 400,
+      "line": 414,
       "method": "GET",
       "path": "/debug/ip",
       "function": "debug_ip",
@@ -2227,7 +2322,7 @@
     },
     {
       "file": "app/main.py",
-      "line": 411,
+      "line": 425,
       "method": "GET",
       "path": "/documentation-index",
       "function": "html_docs_redirect",
@@ -2235,7 +2330,7 @@
     },
     {
       "file": "app/routes/2fa.py",
-      "line": 14,
+      "line": 20,
       "method": "POST",
       "path": "/2fa/enable",
       "function": "enable_2fa_setup",
@@ -2392,7 +2487,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 75,
+      "line": 78,
       "method": "GET",
       "path": "/login",
       "function": "login_form",
@@ -2400,7 +2495,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 81,
+      "line": 84,
       "method": "POST",
       "path": "/login",
       "function": "login_post",
@@ -2410,7 +2505,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 116,
+      "line": 120,
       "method": "GET",
       "path": "/login/otp",
       "function": "otp_form",
@@ -2418,7 +2513,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 127,
+      "line": 131,
       "method": "POST",
       "path": "/login/otp",
       "function": "otp_post",
@@ -2428,7 +2523,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 157,
+      "line": 162,
       "method": "GET",
       "path": "/mfa/setup",
       "function": "mfa_setup_form",
@@ -2438,7 +2533,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 186,
+      "line": 191,
       "method": "POST",
       "path": "/mfa/setup",
       "function": "mfa_setup_post",
@@ -2448,8 +2543,16 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 321,
+      "line": 328,
       "method": "GET",
+      "path": "/logout",
+      "function": "logout_confirmation",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/auth.py",
+      "line": 334,
+      "method": "POST",
       "path": "/logout",
       "function": "logout",
       "declared_dependencies": [
@@ -2458,7 +2561,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 475,
+      "line": 488,
       "method": "GET",
       "path": "/change-password",
       "function": "change_password_page",
@@ -2468,7 +2571,7 @@
     },
     {
       "file": "app/routes/auth.py",
-      "line": 481,
+      "line": 494,
       "method": "POST",
       "path": "/change-password",
       "function": "change_password",
@@ -2501,7 +2604,7 @@
     },
     {
       "file": "app/routes/camera_groups.py",
-      "line": 65,
+      "line": 92,
       "method": "POST",
       "path": "/api/camera-groups",
       "function": "create_camera_group",
@@ -2512,7 +2615,7 @@
     },
     {
       "file": "app/routes/camera_groups.py",
-      "line": 123,
+      "line": 150,
       "method": "GET",
       "path": "/api/camera-groups/{group_id}",
       "function": "get_camera_group",
@@ -2523,7 +2626,7 @@
     },
     {
       "file": "app/routes/camera_groups.py",
-      "line": 149,
+      "line": 176,
       "method": "POST",
       "path": "/api/camera-groups/{group_id}/update",
       "function": "update_camera_group",
@@ -2534,7 +2637,7 @@
     },
     {
       "file": "app/routes/camera_groups.py",
-      "line": 214,
+      "line": 241,
       "method": "POST",
       "path": "/api/camera-groups/{group_id}/delete",
       "function": "delete_camera_group",
@@ -2550,8 +2653,7 @@
       "path": "/cameras",
       "function": "manage",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2561,8 +2663,7 @@
       "path": "/cameras/data",
       "function": "manage_data",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2572,8 +2673,7 @@
       "path": "/cameras/add_camera",
       "function": "add_camera_submit",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2584,8 +2684,7 @@
       "function": "capture_video",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(operator_access_required)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(operator_access_required)"
       ]
     },
     {
@@ -2595,8 +2694,7 @@
       "path": "/cameras/edit_camera/{camera_id}",
       "function": "edit_camera_submit",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2607,8 +2705,7 @@
       "function": "get_camera_details",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(operator_access_required)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(operator_access_required)"
       ]
     },
     {
@@ -2619,8 +2716,7 @@
       "function": "get_camera_password",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -2630,8 +2726,7 @@
       "path": "/api/camera_groups",
       "function": "get_camera_groups_list",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2641,8 +2736,7 @@
       "path": "/cameras/delete/{camera_id}",
       "function": "delete_camera",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2652,8 +2746,7 @@
       "path": "/admin/cleanup-orphaned-files",
       "function": "cleanup_orphaned_files",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2663,8 +2756,7 @@
       "path": "/cameras/upload_csv",
       "function": "upload_csv",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2674,8 +2766,7 @@
       "path": "/cameras/export_csv",
       "function": "export_csv",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2685,8 +2776,7 @@
       "path": "/api/n8n/update-camera",
       "function": "update_camera_n8n",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(get_db), Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2695,9 +2785,7 @@
       "method": "POST",
       "path": "/config/test-smtp",
       "function": "test_smtp_email",
-      "declared_dependencies": [
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/config.py",
@@ -2705,10 +2793,7 @@
       "method": "GET",
       "path": "/admin/config",
       "function": "config_page",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/config.py",
@@ -2716,10 +2801,7 @@
       "method": "GET",
       "path": "/config",
       "function": "config_page",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/config.py",
@@ -2727,10 +2809,7 @@
       "method": "POST",
       "path": "/config/save",
       "function": "config_save",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/config.py",
@@ -2748,22 +2827,11 @@
       "method": "POST",
       "path": "/config/run-cleanup",
       "function": "run_cleanup_now",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/dev_docs.py",
-      "line": 13,
-      "method": "GET",
-      "path": "/developer/docs",
-      "function": "embedded_docs",
       "declared_dependencies": []
     },
     {
       "file": "app/routes/docs.py",
-      "line": 363,
+      "line": 383,
       "method": "GET",
       "path": "/docs",
       "function": "get_docs",
@@ -2771,7 +2839,35 @@
     },
     {
       "file": "app/routes/docs.py",
-      "line": 369,
+      "line": 394,
+      "method": "GET",
+      "path": "/docs/openapi",
+      "function": "get_openapi_docs",
+      "declared_dependencies": [
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/docs.py",
+      "line": 405,
+      "method": "GET",
+      "path": "/developer/docs",
+      "function": "developer_docs_alias",
+      "declared_dependencies": [
+        "[Depends(admin_access_required)]"
+      ]
+    },
+    {
+      "file": "app/routes/docs.py",
+      "line": 411,
+      "method": "GET",
+      "path": "/docs/openapi.json",
+      "function": "openapi_schema_alias",
+      "declared_dependencies": []
+    },
+    {
+      "file": "app/routes/docs.py",
+      "line": 417,
       "method": "GET",
       "path": "/docs/environment",
       "function": "get_env_docs",
@@ -2779,7 +2875,7 @@
     },
     {
       "file": "app/routes/docs.py",
-      "line": 385,
+      "line": 431,
       "method": "GET",
       "path": "/docs/api",
       "function": "get_api_docs",
@@ -2787,7 +2883,7 @@
     },
     {
       "file": "app/routes/docs.py",
-      "line": 394,
+      "line": 439,
       "method": "GET",
       "path": "/docs/security",
       "function": "get_security_docs",
@@ -2909,8 +3005,7 @@
       "path": "/admin/recipients",
       "function": "list_recipients_page",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2920,8 +3015,7 @@
       "path": "/recipients",
       "function": "list_recipients_page",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2931,8 +3025,7 @@
       "path": "/api/recipients",
       "function": "list_recipients_api",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2942,8 +3035,7 @@
       "path": "/recipients/add",
       "function": "add_recipient",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2953,8 +3045,7 @@
       "path": "/recipients/edit/{recipient_id}",
       "function": "edit_recipient_submit",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2964,8 +3055,7 @@
       "path": "/recipients/delete/{recipient_id}",
       "function": "delete_recipient_submit",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2975,8 +3065,7 @@
       "path": "/api/recipients/test-send",
       "function": "test_send_email",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -2987,8 +3076,7 @@
       "function": "export_recipients_csv",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -2999,8 +3087,7 @@
       "function": "import_recipients_csv",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -3010,8 +3097,7 @@
       "path": "/api/recipients/locations-without-recipients",
       "function": "get_locations_without_recipients",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -3022,13 +3108,12 @@
       "function": "export_locations_without_recipients_excel",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
       "file": "app/routes/health.py",
-      "line": 99,
+      "line": 120,
       "method": "GET",
       "path": "/health",
       "function": "health_monitor_page",
@@ -3039,7 +3124,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 118,
+      "line": 139,
       "method": "GET",
       "path": "/health/status",
       "function": "get_health_status_api",
@@ -3050,7 +3135,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 159,
+      "line": 180,
       "method": "GET",
       "path": "/health/uptime",
       "function": "get_camera_uptime_api",
@@ -3061,17 +3146,18 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 177,
+      "line": 200,
       "method": "POST",
       "path": "/health/trigger/{entity_id}",
       "function": "trigger_healthcheck",
       "declared_dependencies": [
+        "Depends(get_db)",
         "Depends(operator_access_required)"
       ]
     },
     {
       "file": "app/routes/health.py",
-      "line": 190,
+      "line": 216,
       "method": "POST",
       "path": "/health/trigger_all",
       "function": "trigger_healthcheck_all",
@@ -3082,7 +3168,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 207,
+      "line": 237,
       "method": "GET",
       "path": "/health/status/check",
       "function": "check_healthcheck_status",
@@ -3093,7 +3179,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 236,
+      "line": 266,
       "method": "GET",
       "path": "/health/history",
       "function": "health_history",
@@ -3104,7 +3190,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 456,
+      "line": 495,
       "method": "GET",
       "path": "/health/sla-report",
       "function": "sla_report",
@@ -3115,7 +3201,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 583,
+      "line": 624,
       "method": "GET",
       "path": "/health/history/export",
       "function": "export_health_history",
@@ -3126,7 +3212,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 702,
+      "line": 745,
       "method": "POST",
       "path": "/health/history/report",
       "function": "generate_health_report",
@@ -3137,7 +3223,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 1361,
+      "line": 1405,
       "method": "GET",
       "path": "/health/reports/scheduled",
       "function": "list_scheduled_reports",
@@ -3148,7 +3234,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 1385,
+      "line": 1430,
       "method": "POST",
       "path": "/health/reports/scheduled",
       "function": "create_scheduled_report",
@@ -3159,7 +3245,7 @@
     },
     {
       "file": "app/routes/health.py",
-      "line": 1420,
+      "line": 1466,
       "method": "DELETE",
       "path": "/health/reports/scheduled/{report_id}",
       "function": "delete_scheduled_report",
@@ -3367,8 +3453,7 @@
       "path": "/logs",
       "function": "view_logs",
       "declared_dependencies": [
-        "Depends(operator_access_required)",
-        "Depends(get_db)"
+        "Depends(operator_access_required)"
       ]
     },
     {
@@ -3417,10 +3502,7 @@
       "method": "GET",
       "path": "/camera-heatmap",
       "function": "camera_heatmap",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(get_current_user)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/map_live.py",
@@ -3428,10 +3510,7 @@
       "method": "GET",
       "path": "/maps/live/status",
       "function": "live_status",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/map_live.py",
@@ -3439,10 +3518,7 @@
       "method": "GET",
       "path": "/maps/cameras/{camera_id}/live",
       "function": "live_camera",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/maps.py",
@@ -3450,10 +3526,7 @@
       "method": "GET",
       "path": "/maps",
       "function": "maps_page",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(get_current_user)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/maps.py",
@@ -3461,76 +3534,7 @@
       "method": "GET",
       "path": "/camera-locations",
       "function": "get_camera_locations",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(get_current_user)"
-      ]
-    },
-    {
-      "file": "app/routes/notifications.py",
-      "line": 26,
-      "method": "GET",
-      "path": "/",
-      "function": "get_notifications",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/notifications.py",
-      "line": 59,
-      "method": "GET",
-      "path": "/unread-count",
-      "function": "get_unread_count",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/notifications.py",
-      "line": 75,
-      "method": "POST",
-      "path": "/{notification_id}/read",
-      "function": "mark_as_read",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/notifications.py",
-      "line": 103,
-      "method": "POST",
-      "path": "/mark-all-read",
-      "function": "mark_all_as_read",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/notifications.py",
-      "line": 125,
-      "method": "DELETE",
-      "path": "/{notification_id}",
-      "function": "delete_notification",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
-    },
-    {
-      "file": "app/routes/notifications.py",
-      "line": 151,
-      "method": "DELETE",
-      "path": "/",
-      "function": "clear_all_notifications",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/nvrs.py",
@@ -3833,10 +3837,7 @@
       "method": "POST",
       "path": "/api/record-checks/sources/{source_id}/mount",
       "function": "mount_record_source",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/record_checks.py",
@@ -3844,10 +3845,7 @@
       "method": "POST",
       "path": "/api/record-checks/sources/{source_id}/unmount",
       "function": "unmount_record_source",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(admin_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/record_checks.py",
@@ -4124,10 +4122,7 @@
       "method": "GET",
       "path": "/snapshot/latest/{camera_identifier}/info",
       "function": "get_latest_snapshot_info",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/snapshots.py",
@@ -4135,10 +4130,7 @@
       "method": "GET",
       "path": "/snapshot/file/{file_path:path}",
       "function": "get_snapshot_file_raw",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required_optional)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/snapshots.py",
@@ -4146,10 +4138,7 @@
       "method": "GET",
       "path": "/snapshot/token/{file_path:path}",
       "function": "get_signed_token",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/snapshots.py",
@@ -4157,14 +4146,11 @@
       "method": "POST",
       "path": "/snapshot/token/batch",
       "function": "generate_tokens_batch",
-      "declared_dependencies": [
-        "Depends(get_db)",
-        "Depends(user_access_required)"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/stats.py",
-      "line": 39,
+      "line": 40,
       "method": "GET",
       "path": "/analytics",
       "function": "get_analytics",
@@ -4175,18 +4161,17 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 68,
+      "line": 69,
       "method": "GET",
       "path": "/stats/snapshot-details",
       "function": "get_snapshot_details",
       "declared_dependencies": [
-        "Depends(get_db)",
         "[Depends(admin_access_required)]"
       ]
     },
     {
       "file": "app/routes/stats.py",
-      "line": 124,
+      "line": 125,
       "method": "GET",
       "path": "/stats",
       "function": "get_camera_stats_redirect",
@@ -4197,7 +4182,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 231,
+      "line": 143,
       "method": "GET",
       "path": "/stats/data",
       "function": "get_camera_stats_data",
@@ -4208,7 +4193,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 322,
+      "line": 234,
       "method": "GET",
       "path": "/stats/operations",
       "function": "get_camera_operations_data",
@@ -4219,7 +4204,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 461,
+      "line": 373,
       "method": "GET",
       "path": "/stats/no-data-cameras",
       "function": "get_no_data_cameras",
@@ -4230,7 +4215,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 534,
+      "line": 446,
       "method": "GET",
       "path": "/stats/heatmap",
       "function": "get_snapshot_heatmap",
@@ -4241,7 +4226,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 592,
+      "line": 504,
       "method": "GET",
       "path": "/storage/status",
       "function": "get_storage_status",
@@ -4252,7 +4237,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 651,
+      "line": 563,
       "method": "GET",
       "path": "/storage/trend",
       "function": "get_storage_trend",
@@ -4263,7 +4248,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 684,
+      "line": 596,
       "method": "GET",
       "path": "/storage/alerts",
       "function": "get_storage_alerts",
@@ -4274,7 +4259,7 @@
     },
     {
       "file": "app/routes/stats.py",
-      "line": 722,
+      "line": 634,
       "method": "POST",
       "path": "/storage/check-now",
       "function": "trigger_storage_check",
@@ -4291,8 +4276,7 @@
       "function": "toast_demo_page",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -4301,9 +4285,7 @@
       "method": "POST",
       "path": "/test-success",
       "function": "test_success_notification",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4311,9 +4293,7 @@
       "method": "POST",
       "path": "/test-error",
       "function": "test_error_notification",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4321,9 +4301,7 @@
       "method": "POST",
       "path": "/test-warning",
       "function": "test_warning_notification",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4331,9 +4309,7 @@
       "method": "POST",
       "path": "/test-info",
       "function": "test_info_notification",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4341,9 +4317,7 @@
       "method": "POST",
       "path": "/test-with-actions",
       "function": "test_notification_with_actions",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4351,9 +4325,7 @@
       "method": "POST",
       "path": "/test-camera-offline",
       "function": "test_camera_offline",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4361,9 +4333,7 @@
       "method": "POST",
       "path": "/test-camera-online",
       "function": "test_camera_online",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4371,9 +4341,7 @@
       "method": "POST",
       "path": "/test-persistent",
       "function": "test_persistent_notification",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/toast_demo.py",
@@ -4381,9 +4349,7 @@
       "method": "POST",
       "path": "/test-position/{position}",
       "function": "test_position_notification",
-      "declared_dependencies": [
-        "[Depends(admin_access_required)]"
-      ]
+      "declared_dependencies": []
     },
     {
       "file": "app/routes/user_management.py",
@@ -4783,7 +4749,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 219,
+      "line": 237,
       "method": "POST",
       "path": "/api/admin/wa-bot/preview",
       "function": "preview_wa_bot_command",
@@ -4794,7 +4760,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 283,
+      "line": 301,
       "method": "POST",
       "path": "/api/admin/wa-bot/test-flow",
       "function": "test_wa_bot_flow",
@@ -4805,7 +4771,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 330,
+      "line": 348,
       "method": "POST",
       "path": "/api/admin/wa-bot/test-action",
       "function": "test_wa_bot_action",
@@ -4816,7 +4782,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 1418,
+      "line": 1436,
       "method": "POST",
       "path": "/webhook/gowa",
       "function": "gowa_webhook",
@@ -4826,7 +4792,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 1620,
+      "line": 1638,
       "method": "POST",
       "path": "/api/wa/status",
       "function": "get_wa_status",
@@ -4837,7 +4803,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 1646,
+      "line": 1664,
       "method": "GET",
       "path": "/api/wa/groups",
       "function": "get_wa_groups",
@@ -4848,7 +4814,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 1672,
+      "line": 1690,
       "method": "POST",
       "path": "/api/wa/send-test",
       "function": "send_test_wa",
@@ -4864,8 +4830,7 @@
       "path": "/api/whitelist",
       "function": "get_whitelist",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -4875,8 +4840,7 @@
       "path": "/api/whitelist/group/{phone_number}",
       "function": "get_whitelist_group",
       "declared_dependencies": [
-        "Depends(get_db)",
-        "[Depends(admin_access_required)]"
+        "Depends(get_db)"
       ]
     },
     {
@@ -4887,8 +4851,7 @@
       "function": "add_whitelist",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -4899,8 +4862,7 @@
       "function": "delete_whitelist",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -4911,8 +4873,7 @@
       "function": "edit_whitelist",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -4923,8 +4884,7 @@
       "function": "export_whitelist_csv",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
@@ -4935,19 +4895,18 @@
       "function": "import_whitelist_csv",
       "declared_dependencies": [
         "Depends(get_db)",
-        "Depends(admin_access_required)",
-        "[Depends(admin_access_required)]"
+        "Depends(admin_access_required)"
       ]
     },
     {
       "file": "app/ws/routes.py",
-      "line": 79,
+      "line": 97,
       "method": "WEBSOCKET",
       "path": "/ws",
       "function": "websocket_endpoint",
       "declared_dependencies": []
     }
   ],
-  "release_version": "2.6.0",
+  "release_version": "2.6.6",
   "hash_format": "SHA-256 of file bytes with CRLF normalized to LF"
 }
