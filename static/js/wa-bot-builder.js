@@ -42,6 +42,15 @@
   let savedTokenId = '', editorBaseline = '', editorReturnFocus = null, previousBodyOverflow = '';
   let saving = false, executing = false, monitorLoading = false, lastMonitorRefresh = null;
   let messageRows = [], previewRequest = 0, loaded = false, previewTimer = null;
+  let monitorTimezone = 'UTC', monitorTimezoneLabel = 'UTC', monitorError = '';
+  const formatMonitorTime = value => BSnapDates.format(value, {timeZone: monitorTimezone});
+  function renderMonitorRefreshState() {
+    const updated = lastMonitorRefresh ? formatMonitorTime(lastMonitorRefresh) : '';
+    document.getElementById('messageRefreshState').textContent = monitorError
+      ? `${t('Refresh failed','Pembaruan gagal')}: ${monitorError}${updated ? ' · '+t('Last updated','Terakhir diperbarui')+' '+updated : ''}`
+      : lastMonitorRefresh ? `${t('Updated','Diperbarui')} ${updated} · ${t('Filters apply to the latest 100 messages','Filter berlaku pada 100 pesan terbaru')}`
+      : t('Loading latest 100 messages…','Memuat 100 pesan terbaru…');
+  }
   function collectCommand() {
     if (!draft) return null;
     const result = structuredClone(draft);
@@ -217,18 +226,25 @@
     const command=document.getElementById('messageCommand').value.trim().toLowerCase();
     const status=document.getElementById('messageStatus').value;
     const from=document.getElementById('messageFrom').value, to=document.getElementById('messageTo').value;
-    const rows=messageRows.filter(item=>(!phone || (item.phone_number||'').toLowerCase().includes(phone)) && (!command || (item.command||'').toLowerCase().includes(command)) && (!status || (status==='failed' ? Boolean(item.error)||/fail|error|reject/i.test(item.status) : item.status===status)) && (!from || new Date(item.timestamp)>=new Date(from)) && (!to || new Date(item.timestamp)<=new Date(to)));
+    const fromDate = from ? BSnapDates.parseLocal(from, {timeZone: monitorTimezone}) : null;
+    const toDate = to ? BSnapDates.parseLocal(to, {timeZone: monitorTimezone, disambiguation: 'later'}) : null;
+    const invalid = (from && !fromDate) || (to && !toDate) || (fromDate && toDate && fromDate > toDate);
+    const filterError = document.getElementById('messageFilterError');
+    filterError.textContent = invalid ? t('Invalid date range in the configured timezone.','Rentang tanggal tidak valid pada zona waktu konfigurasi.') : '';
+    filterError.classList.toggle('hidden', !invalid);
+    document.getElementById('messageTimezone').textContent = monitorTimezoneLabel;
+    const rows=messageRows.filter(item=>!invalid && (!phone || (item.phone_number||'').toLowerCase().includes(phone)) && (!command || (item.command||'').toLowerCase().includes(command)) && (!status || (status==='failed' ? Boolean(item.error)||/fail|error|reject/i.test(item.status) : item.status===status)) && (!fromDate || (item.timestamp && new Date(item.timestamp)>=fromDate)) && (!toDate || (item.timestamp && new Date(item.timestamp)<=toDate)));
     const body=document.getElementById('waMessageRows'); body.replaceChildren();
     for (const item of rows) {
       const row=document.createElement('tr'); row.className='border-b align-top dark:border-gray-700';
-      for (const value of [item.timestamp ? new Date(item.timestamp).toLocaleString(BSnapDates.locale()) : '',item.phone_number,item.direction,item.status,item.command || '',item.error || item.message || '']) {
+      for (const value of [item.timestamp ? formatMonitorTime(item.timestamp) : '',item.phone_number,item.direction,item.status,item.command || '',item.error || item.message || '']) {
         const cell=document.createElement('td'); cell.className='max-w-sm break-words p-2';
         if (row.children.length===3) { const badge=document.createElement('span'); badge.className=`ui-badge ${item.error || /fail|error|reject/i.test(item.status) ? 'ui-badge-critical' : item.status==='sent' ? 'ui-badge-success' : 'ui-badge-neutral'}`; badge.textContent=value; cell.appendChild(badge); }
         else { const text=document.createElement('span'); text.className='wa-message-summary'; text.textContent=value; cell.appendChild(text); }
         row.appendChild(cell);
       }
       const cell=document.createElement('td'); cell.className='p-2'; const details=document.createElement('button'); details.type='button'; details.className='ui-button ui-button-secondary'; details.textContent=t('Details','Detail');
-      details.addEventListener('click',()=>themedSwal(() => ({title:t('Message details','Detail pesan'),text:[`ID: ${item.id}`,`${t('Time','Waktu')}: ${item.timestamp}`,`${t('Phone','Nomor')}: ${item.phone_number}`,`${t('Direction')}: ${item.direction}`,`Status: ${item.status}`,`${t('Command')}: ${item.command||'—'}`,`${t('Message','Pesan')}: ${item.message||'—'}`,`${t('Error')}: ${item.error||'—'}`].join('\n'),customClass:{htmlContainer:'wa-message-detail'},confirmButtonText:t('Close','Tutup')})));
+      details.addEventListener('click',()=>themedSwal(() => ({title:t('Message details','Detail pesan'),text:[`ID: ${item.id}`,`${t('Time','Waktu')}: ${formatMonitorTime(item.timestamp)} ${monitorTimezoneLabel}`,`${t('Phone','Nomor')}: ${item.phone_number}`,`${t('Direction')}: ${item.direction}`,`Status: ${item.status}`,`${t('Command')}: ${item.command||'—'}`,`${t('Message','Pesan')}: ${item.message||'—'}`,`${t('Error')}: ${item.error||'—'}`].join('\n'),customClass:{htmlContainer:'wa-message-detail'},confirmButtonText:t('Close','Tutup')})));
       cell.appendChild(details); row.appendChild(cell); body.appendChild(row);
     }
     if (!rows.length) { const row=body.insertRow(); const cell=row.insertCell(); cell.colSpan=7; cell.className='p-4'; cell.textContent=t('No messages match these filters.','Tidak ada pesan sesuai filter.'); }
@@ -638,10 +654,13 @@
       const data = await readApiJson(response, 'Load message monitor');
       if (!response.ok) throw new Error(data.detail || 'Failed to load message monitor');
       messageRows = data.messages || [];
+      monitorTimezone = data.timezone || 'UTC';
+      monitorTimezoneLabel = data.timezone_label || monitorTimezone;
+      monitorError = '';
       lastMonitorRefresh = new Date(); renderMessages();
-      document.getElementById('messageRefreshState').textContent = `${t('Updated','Diperbarui')} ${lastMonitorRefresh.toLocaleTimeString(BSnapDates.locale())} · ${t('Filters apply to the latest 100 messages','Filter berlaku pada 100 pesan terbaru')}`;
+      renderMonitorRefreshState();
     } catch (error) {
-      document.getElementById('messageRefreshState').textContent = `${t('Refresh failed','Pembaruan gagal')}: ${error.message}${lastMonitorRefresh ? ' · '+t('Last updated','Terakhir diperbarui')+' '+lastMonitorRefresh.toLocaleTimeString(BSnapDates.locale()) : ''}`;
+      monitorError = error.message; renderMonitorRefreshState();
       throw error;
     } finally { monitorLoading = false; document.getElementById('refreshWaMessages').disabled = false; }
   }
@@ -941,7 +960,7 @@
   });
   window.addEventListener('bsnap:languagechange', () => {
     renderList();
-    updateDirtyState(); renderMessages();
+    updateDirtyState(); renderMessages(); renderMonitorRefreshState();
     if (draft) {
       Object.assign(draft, collectCommand());
       document.getElementById('editorTitleText').textContent = originalId ? 'Edit command' : 'New command';

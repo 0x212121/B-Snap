@@ -2,8 +2,8 @@
   "audit_date": "2026-11-02",
   "scope": "Source inventory and static checks; not equivalent to runtime or security coverage",
   "counts": {
-    ".py": 289,
-    ".cjs": 5,
+    ".py": 290,
+    ".cjs": 6,
     ".js": 15,
     ".html": 55
   },
@@ -902,8 +902,8 @@
     },
     {
       "path": "app/routes/wa_webhook.py",
-      "lines": 1687,
-      "sha256": "f9dcfb7b2c588d222a53a28de8ed67b2927da8fd29bd67edd61cc16e1e65bfee",
+      "lines": 1705,
+      "sha256": "e33540144d23b471aaecea935ed91291ca3bcd80040dac11ae4fb8968ea3fdc1",
       "check": "AST syntax and structural scan"
     },
     {
@@ -977,6 +977,12 @@
       "lines": 222,
       "sha256": "393f8c8ed69718e11b5040cd19f300be336a5e00beab9d9ae174db8b34cf1329",
       "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/date_timezone.test.cjs",
+      "lines": 48,
+      "sha256": "02e41c97b93bf5712e1f4260fe4721ceaac160ce82f970dde2fd3a622edf9ec7",
+      "check": "Node syntax check"
     },
     {
       "path": "app/tests/gallery_loader_harness.cjs",
@@ -1348,6 +1354,12 @@
       "path": "app/tests/test_wa_monitor.py",
       "lines": 340,
       "sha256": "88b56763513a22a47deb970947f88164b60411fcab5a64318e1bc2492c267373",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "app/tests/test_wa_monitor_dates.py",
+      "lines": 70,
+      "sha256": "69c18637ffa75fcc452e9b3cafdf430f6fc249b71b88847a7aeafe8418673852",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1725,7 +1737,7 @@
     {
       "path": "app/version.py",
       "lines": 1,
-      "sha256": "b89e932cad7c8e10ab2f469c9418daecdce50062c0c998d5a57fa0ab7778eb59",
+      "sha256": "38323023a49fcd69b1fc576dc027ebea4e539a936e03925dbc6c95fbd1bd62b3",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1790,8 +1802,8 @@
     },
     {
       "path": "static/js/date-format.js",
-      "lines": 56,
-      "sha256": "915cba43f6c051ee9375b596ca291f5454cf5e44addc77c88f423db7f38c4168",
+      "lines": 92,
+      "sha256": "0c2464d7152bd8c76fb4c75ff1176c4b6eadb870043ffb0ede72a8a87ea59642",
       "check": "Node syntax check"
     },
     {
@@ -1862,8 +1874,8 @@
     },
     {
       "path": "static/js/wa-bot-builder.js",
-      "lines": 958,
-      "sha256": "443907121342d721d1c4575eab65264b0ee06924fbd15e815bfa1452afcff47c",
+      "lines": 977,
+      "sha256": "6603a37116daf70d659b6d60c6b185279244abe9f44bdaf120cc129ec0b4aaba",
       "check": "Node syntax check"
     },
     {
@@ -2186,8 +2198,8 @@
     },
     {
       "path": "templates/wa_bot_builder.html",
-      "lines": 278,
-      "sha256": "02503bcf0a2bd99f13160b60abce152f68354cf4f073b182e1264168d352a2a5",
+      "lines": 280,
+      "sha256": "05a2eaebd8ef3082c5785e2f6dba45b30537b23e1bb210a59a9754667d12f16e",
       "check": "Jinja template compile"
     },
     {
@@ -4713,7 +4725,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 219,
+      "line": 237,
       "method": "POST",
       "path": "/api/admin/wa-bot/preview",
       "function": "preview_wa_bot_command",
@@ -4724,7 +4736,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 283,
+      "line": 301,
       "method": "POST",
       "path": "/api/admin/wa-bot/test-flow",
       "function": "test_wa_bot_flow",
@@ -4735,7 +4747,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 330,
+      "line": 348,
       "method": "POST",
       "path": "/api/admin/wa-bot/test-action",
       "function": "test_wa_bot_action",
@@ -4746,7 +4758,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 1418,
+      "line": 1436,
       "method": "POST",
       "path": "/webhook/gowa",
       "function": "gowa_webhook",
@@ -4756,7 +4768,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 1620,
+      "line": 1638,
       "method": "POST",
       "path": "/api/wa/status",
       "function": "get_wa_status",
@@ -4767,7 +4779,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 1646,
+      "line": 1664,
       "method": "GET",
       "path": "/api/wa/groups",
       "function": "get_wa_groups",
@@ -4778,7 +4790,7 @@
     },
     {
       "file": "app/routes/wa_webhook.py",
-      "line": 1672,
+      "line": 1690,
       "method": "POST",
       "path": "/api/wa/send-test",
       "function": "send_test_wa",
@@ -4871,6 +4883,6 @@
       "declared_dependencies": []
     }
   ],
-  "release_version": "2.6.3",
+  "release_version": "2.6.4",
   "hash_format": "SHA-256 of file bytes with CRLF normalized to LF"
 }

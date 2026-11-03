@@ -7,11 +7,12 @@ migration ke database aplikasi, capture kamera, atau pengiriman notifikasi nyata
 **Pembaruan 2.6.1:** seluruh temuan High yang tersisa (CA-19, CA-20, CA-27,
 CA-28) telah diperbaiki pada source dan diverifikasi secara terisolasi. Hasil
 rilis awal tetap dicatat sebagai riwayat. Bagian 12 mencatat perbaikan WebSocket
-2.6.2; bagian 13 mencatat penghentian inbox CA-22 pada 2.6.3.
+2.6.2; bagian 13 mencatat penghentian inbox CA-22 pada 2.6.3, dan bagian 14
+mencatat perbaikan timezone monitor CA-24 pada 2.6.4.
 
 ## 1. Arsitektur dan cakupan
 
-- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.3**. Minimum Python **3.11**, default image Docker
+- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.4**. Minimum Python **3.11**, default image Docker
   **Python 3.14.7**; verifikasi lokal memakai Python **3.13** dan Node **22.16.0**.
 - FastAPI menyediakan halaman Jinja2 dan API; SQLAlchemy 2 dan Alembic memakai
   PostgreSQL. Model JSONB dan trigger audit membuat schema penuh tidak kompatibel
@@ -30,8 +31,8 @@ rilis awal tetap dicatat sebagai riwayat. Bagian 12 mencatat perbaikan WebSocket
 
 [Inventaris sumber dan endpoint](comprehensive_audit_2026_11_02_inventory.json)
 mencatat file, hash, syntax/compile check, serta dependency yang dideklarasikan.
-Inventaris hasil 2.6.3 mencakup **289 file Python, 55 template, 15 JavaScript,
-5 harness CJS, dan 260 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
+Inventaris hasil 2.6.4 mencakup **290 file Python, 55 template, 15 JavaScript,
+6 harness/test CJS, dan 260 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
 belum tentu didaftarkan; tidak sama dengan jumlah URL unik yang aktif.
 
 Semua file pada inventaris menerima pemeriksaan statis. Penelusuran mendalam dan
@@ -52,7 +53,8 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 | 4 | CA-12, CA-15–16, CA-26 | Test/dependency/release consistency | Pembaruan kompatibel; tanpa deploy | Diperbaiki sebagian/seluruhnya sesuai rincian |
 | 5 | CA-19–20, CA-27–28 | High: CSRF, produksi, webhook, health group | Middleware, migration, dan kontrak integrasi | Diperbaiki pada 2.6.1; lihat bagian 11 |
 | 6 | CA-22 | Inbox persisten tidak digunakan pada jalur standar | Hapus fitur dan arsipkan data legacy | Dihapus pada 2.6.3 |
-| Berikutnya | CA-21/23/24 dan sisa CA-12/15/17 | UI/debt, test/dependency | Memerlukan desain/validasi tambahan | Backlog non-High |
+| 7 | CA-24 | Timezone monitor pesan bot | API timezone metadata, formatter, dan filter UTC | Diperbaiki pada 2.6.4 |
+| Berikutnya | CA-21/23 dan sisa CA-12/15/17 | UI/debt, test/dependency | Memerlukan desain/validasi tambahan | Backlog non-High |
 
 ## 3. Findings: Backend
 
@@ -336,19 +338,24 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 ### CA-24 — Monitor bot masih mengikuti clock browser untuk tanggal tertentu
 
 - **Layer / Severity / Status:** Frontend / Medium / confirmed source inconsistency,
-  backlog; belum diuji pada deployment.
-- **Location / Evidence:** `static/js/wa-bot-builder.js` memakai
+  diperbaiki pada source 2.6.4; deployment pengguna belum diverifikasi.
+- **Location / Evidence sebelum perbaikan:** `static/js/wa-bot-builder.js` memakai
   `new Date(item.timestamp).toLocaleString(BSnapDates.locale())` tanpa timeZone;
   detail juga menampilkan timestamp mentah.
 - **Issue / Root Cause:** locale sudah mengikuti bahasa, tetapi clock belum selalu
   memakai timezone database.
 - **Impact:** browser di timezone lain dapat menampilkan clock berbeda.
-- **Recommended Fix:** kirim timezone dan UTC offset eksplisit dari API, pakai
-  helper date bersama dengan opsi timezone, dan rerender monitor/detail saat
-  language change. Audit filter datetime-local secara terpisah.
+- **Implemented Fix:** API mengirim timezone/label dan ISO dengan offset eksplisit,
+  termasuk timestamp naive yang diperlakukan UTC. Tabel, Details, dan refresh
+  memakai BSnapDates.format dengan timezone konfigurasi, header WIB/WITA/WIT atau
+  nama IANA yang benar, serta re-render EN/ID langsung. Filter datetime-local
+  dikonversi melalui helper bersama parseLocal menjadi instant UTC; rentang
+  reversed/nonexistent ditolak, fold DST memakai bound earlier/later inklusif.
 - **Regression Risk:** reinterpretasi ISO naive atau filter mesin dapat menggeser
   rentang waktu bila diperbaiki hanya pada label.
-- **Verification:** EN–ID–EN pada browser zone berbeda, WIB/WITA/WIT dan midnight.
+- **Verification:** API isolated, Node parser/format tests, Chrome EN–ID–EN pada
+  browser Los Angeles/Jakarta dengan WIB/WITA/WIT/London, midnight, filter dan
+  Details terbuka. Light/dark/mobile diperiksa; hasil rinci pada bagian 14.
 
 ### CA-25 — Format log baru tidak dikenali dan waktu file ambigu
 
@@ -644,8 +651,9 @@ accessibility/contrast audit semua halaman, atau benchmark fan-out notifikasi.
    PostgreSQL test agar migration/trigger/schema bisa diuji rutin.
 3. Tuntaskan advisory build Moderate setelah analisis compatibility; tambahkan
    Python dependency/image scan pada pipeline yang memiliki tool sesuai.
-4. Selesaikan timezone monitor bot, raw @apply halaman lain, dan duplicate docs
-   route; periksa EN/ID, keyboard, focus, empty/error/loading states per halaman.
+4. Selesaikan raw @apply halaman lain dan duplicate docs route; periksa EN/ID,
+   keyboard, focus, empty/error/loading states per halaman. Timezone monitor bot
+   telah diperbaiki pada 2.6.4.
 5. Agregasikan group counts dan ukur performa notification delivery dengan
    dataset/jumlah browser representatif.
 
@@ -775,3 +783,29 @@ Migration baru `20261103_retire_inbox` adalah satu head setelah
 `20261102_high_security`. Apply dengan `alembic upgrade head` atau layanan migrate
 Compose sebelum menjalankan worker baru. Tidak ada deployment, perubahan `.env`,
 penghapusan data production, atau penerbitan image registry dalam pekerjaan ini.
+
+## 14. Timezone monitor bot CA-24 — rilis 2.6.4
+
+Pada 3 November 2026, monitor pesan Bot Builder diselaraskan dengan timezone
+konfigurasi B-Snap. Locale tetap EN/ID, sementara instant pesan dan input mesin
+tidak bergeser saat bahasa diganti. API tetap memberi 100 pesan terbaru secara
+default (limit maksimum 250), dan filter UI tetap bekerja pada hasil tersebut.
+Jadwal bot, pengiriman WhatsApp/email, dan schema database tidak diubah.
+
+- **149 pytest terarah lulus**, mencakup monitor API baru, existing bot monitor,
+  preview/schedule, date/log frontend, UI, SweetAlert i18n dan sinkronisasi versi.
+- **6 Node tests lulus**: WIB/WITA/WIT, Kathmandu, host timezone berbeda, parsing
+  invalid, gap/fold New York DST, fractional seconds, EN–ID–EN, date-only dan
+  backend-local timestamp. Helper baru membandingkan filter sebagai UTC instant;
+  waktu tanpa timezone konfigurasi tidak diam-diam mengikuti browser.
+- **Chrome: 8 kombinasi** browser Los Angeles/Jakarta × konfigurasi
+  Jakarta/Makassar/Jayapura/London. Timestamp dekat midnight, batas From/To sama
+  yang inklusif, range terbalik, dialog detail terbuka saat language change, dan
+  nilai input mesin tetap konsisten. Tidak ada page error; desktop light/dark dan
+  mobile 390px diperiksa pada fixture template/asset nyata dengan API mock.
+- `npm run build`, Node syntax, AST/Jinja inventory, Ruff/Black test API baru,
+  version check 2.6.4, dan whitespace check lulus. Ini bukan klaim full-suite atau
+  verifikasi integrasi GoWA/deployment nyata. Tidak ada migration baru.
+
+Artefak lokal: `tmp/wa-monitor-browser.json`, `tmp/wa-monitor-light-1440.png`,
+`tmp/wa-monitor-dark-1440.png`, dan `tmp/wa-monitor-dark-390.png`.

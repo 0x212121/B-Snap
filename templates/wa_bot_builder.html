@@ -60,6 +60,8 @@
       <button id="clearMessageFilters" type="button" class="ui-button ui-button-secondary">Clear filters</button>
     </div>
     <p id="messageRefreshState" class="mb-3 text-sm text-gray-500" role="status">Loading latest 100 messages…</p>
+    <p class="mb-2 text-xs text-gray-500"><span>Timezone:</span> <span id="messageTimezone" class="no-translate">UTC</span></p>
+    <p id="messageFilterError" class="mb-2 hidden text-sm text-red-600 dark:text-red-400" role="alert"></p>
     <div class="max-h-[68vh] overflow-auto rounded-lg border border-gray-200 dark:border-gray-700"><table class="ui-table min-w-full text-left text-sm"><thead class="sticky top-0 bg-gray-50 dark:bg-gray-900"><tr class="border-b dark:border-gray-700"><th class="p-2">Time</th><th class="p-2">Phone</th><th class="p-2">Direction</th><th class="p-2">Gateway status</th><th class="p-2">Command</th><th class="p-2">Message / error</th><th class="p-2">Details</th></tr></thead><tbody id="waMessageRows"><tr><td colspan="7" class="p-3">Loading…</td></tr></tbody></table></div>
   </section>
 </div>

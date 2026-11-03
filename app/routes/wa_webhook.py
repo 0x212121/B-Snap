@@ -46,7 +46,7 @@ from app.utils.wa_executor import run_gateway_blocking
 from app.utils.wa_bot_workflow import render_flow_template, run_api_flow
 from app.utils.wa_bot_workflow import APIFlowError, bind_command_arguments, normalize_flow
 from app.utils.healthcheck import format_uptime_duration
-from app.utils.timezone_helper import get_current_timezone
+from app.utils.timezone_helper import format_datetime_iso, get_current_timezone
 from app.utils.webhook_auth import verified_gowa_payload
 import os
 
@@ -201,9 +201,27 @@ async def put_wa_bot_commands(request: Request, db: Session = Depends(get_db), c
 def get_wa_bot_messages(limit: int = 100, db: Session = Depends(get_db), current_admin: User = Depends(admin_access_required)):
     limit = max(1, min(limit, 250))
     rows = db.query(WhatsAppMessageLog).order_by(WhatsAppMessageLog.timestamp.desc(), WhatsAppMessageLog.id.desc()).limit(limit).all()
-    return {"messages": [{"id": row.id, "timestamp": row.timestamp.isoformat() if row.timestamp else None,
-        "phone_number": row.phone_number, "direction": row.direction, "status": row.status,
-        "command": row.command, "message": row.message, "error": row.error} for row in rows]}
+    timezone_name = get_current_timezone(db)
+    timezone_label = {"Asia/Jakarta": "WIB", "Asia/Makassar": "WITA", "Asia/Jayapura": "WIT"}.get(
+        timezone_name, timezone_name
+    )
+    return {
+        "timezone": timezone_name,
+        "timezone_label": timezone_label,
+        "messages": [
+            {
+                "id": row.id,
+                "timestamp": format_datetime_iso(row.timestamp),
+                "phone_number": row.phone_number,
+                "direction": row.direction,
+                "status": row.status,
+                "command": row.command,
+                "message": row.message,
+                "error": row.error,
+            }
+            for row in rows
+        ],
+    }
 
 
 class WABotPreviewRequest(BaseModel):

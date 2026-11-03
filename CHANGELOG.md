@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.6.4] - 2026-11-03
+
+### Fixed
+
+- Fixed CA-24: WhatsApp Bot Builder's Message monitor now uses the configured B-Snap timezone for message rows, Details dialogs and refresh timestamps, with an explicit zone label and immediate EN/ID updates. The API supplies timezone metadata and timestamps with explicit offsets, treating naive database timestamps as UTC.
+- Interpret monitor From/To filters in the configured timezone and compare UTC instants instead of browser-local dates. Invalid/reversed ranges are reported; nonexistent DST clocks are rejected, and ambiguous bounds include both occurrences. Latest-100-message filtering and machine input values remain stable across language changes.
+
 ## [2.6.3] - 2026-11-03
 
 ### Removed

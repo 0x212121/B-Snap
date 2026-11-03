@@ -111,6 +111,10 @@ Untuk migration, jalankan `alembic upgrade head` pada database pengembangan atau
   - `BSnapDates.locale()` untuk formatter `Intl` / `toLocale*` yang sudah ada.
   - `BSnapDates.format(value, options)` untuk plain text. Saat menerima ISO mentah,
     berikan `{ timeZone: configuredTimezone }` secara eksplisit.
+  - `BSnapDates.parseLocal(value, { timeZone, disambiguation })` untuk input
+    `datetime-local` pada timezone konfigurasi, menghasilkan Date/UTC instant atau
+    `null` bila invalid/nonexistent. Bound DST ambigu memakai `'earlier'` (default)
+    untuk awal dan `'later'` untuk akhir rentang inklusif.
   - `BSnapDates.html(value)` atau `data-localized-date` untuk tanggal HTML yang
     ikut berubah saat bahasa diganti; gunakan style `'date'` atau
     `data-date-style="date"` untuk date-only.
