@@ -14,11 +14,11 @@ Bagian 16 mencatat konsolidasi routing/review legacy CA-23 pada 2.6.6.
 Bagian 17 menuntaskan CSS halaman lain CA-17 pada 2.6.7.
 Bagian 18 mencatat konsolidasi formatter timezone audit hapus video pada 2.6.8.
 Bagian 19 mencatat penghentian integrasi Power BI Record Checks pada 2.6.9.
-Bagian 20 menyelesaikan isolasi discovery dan fixture test CA-12 pada 2.6.10.
+Bagian 20 menyelesaikan isolasi discovery dan fixture test CA-12 pada 2.6.3.
 
 ## 1. Arsitektur dan cakupan
 
-- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.10**. Minimum Python **3.11**, default image Docker
+- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.3**. Minimum Python **3.11**, default image Docker
   **Python 3.14.7**; verifikasi lokal memakai Python **3.13** dan Node **22.16.0**.
 - FastAPI menyediakan halaman Jinja2 dan API; SQLAlchemy 2 dan Alembic memakai
   PostgreSQL. Model JSONB dan trigger audit membuat schema penuh tidak kompatibel
@@ -37,7 +37,7 @@ Bagian 20 menyelesaikan isolasi discovery dan fixture test CA-12 pada 2.6.10.
 
 [Inventaris sumber dan endpoint](comprehensive_audit_2026_11_02_inventory.json)
 mencatat file, hash, syntax/compile check, serta dependency yang dideklarasikan.
-Inventaris hasil 2.6.10 mencakup **307 file Python, 57 template, 16 JavaScript,
+Inventaris hasil 2.6.3 mencakup **307 file Python, 57 template, 16 JavaScript,
 6 harness/test CJS, dan 256 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
 belum tentu didaftarkan; tidak sama dengan jumlah URL unik yang aktif.
 
@@ -63,7 +63,7 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 | 8 | CA-21 | Query counts per grup | Satu query agregasi dan benchmark PostgreSQL | Diperbaiki pada 2.6.5 |
 | 9 | CA-23 | Routing dokumentasi dan review legacy | Canonical routes, alias, deprecation inventory | Diselesaikan pada 2.6.6 |
 | 10 | CA-17 | CSS delapan halaman aktif | Build Tailwind, selector scoped, browser QA | Diselesaikan pada 2.6.7 |
-| 11 | CA-12 | Discovery dan isolasi test suite | Diagnostik manual terpisah, fixture PostgreSQL dan transport terisolasi | Diselesaikan pada 2.6.10 |
+| 11 | CA-12 | Discovery dan isolasi test suite | Diagnostik manual terpisah, fixture PostgreSQL dan transport terisolasi | Diselesaikan pada 2.6.3 |
 | Berikutnya | Sisa CA-15 | UI/debt, test/dependency | Memerlukan desain/validasi tambahan | Backlog non-High |
 
 ## 3. Findings: Backend
@@ -461,7 +461,7 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 ### CA-12 — Test discovery/fixtures legacy tidak aman untuk full-suite run
 
 - **Layer / Severity / Status:** Cross-Layer / Medium / confirmed issue,
-  restrukturisasi discovery dan fixture diselesaikan pada 2.6.10.
+  restrukturisasi discovery dan fixture diselesaikan pada 2.6.3.
 - **Location / Evidence:** syntax error pada `test_tamper_alert.py`; beberapa skrip
   memakai `SessionLocal` langsung. `test_email_notifier.py` memiliki pemanggilan
   saat import dan transport belum sepenuhnya dimock; `test_docker_import.py`
@@ -474,14 +474,14 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 - **Recommended Fix / Implementasi:** syntax diperbaiki; mock scheduler sync,
   checkbox image_hd, context map_title, dan readiness/session fixture diperbarui
   berdasarkan kontrak sekarang. Tes baru override schema fixture secara lokal.
-  Pada 2.6.10, delapan diagnostik dipindahkan ke `scripts/diagnostics` dengan guard
+  Pada 2.6.3, delapan diagnostik dipindahkan ke `scripts/diagnostics` dengan guard
   CLI; fixture ORM memakai schema PostgreSQL unik dan rollback/savepoint. Engine
   aplikasi serta koneksi jaringan eksternal yang tidak dimock ditolak. Fixture
   HTTP tidak menjalankan lifespan produksi; venv pengguna tidak diubah.
 - **Regression Risk:** memperbaiki syntax tidak menjadikan skrip manual aman untuk CI.
 - **Verification:** AST semua Python, selected pytest, unittest terisolasi, tanpa
   database aplikasi atau scheduler nyata. Full-suite dan isolasi PostgreSQL
-  diverifikasi pada 2.6.10; hasil dan batas cakupan tercatat di bagian 20.
+  diverifikasi pada 2.6.3; hasil dan batas cakupan tercatat di bagian 20.
 
 ### CA-15 — Dependency build memiliki advisory npm
 
@@ -688,7 +688,7 @@ accessibility/contrast audit semua halaman, atau benchmark fan-out notifikasi.
 1. Terapkan migration/configuration 2.6.1 dan acceptance test pada staging untuk
    CA-19/20/27/28 yang sudah diperbaiki di source. CA-22 dihentikan pada 2.6.3;
    jalankan migration arsipnya saat menerapkan versi tersebut.
-2. Pemisahan diagnostik dan fixture PostgreSQL test telah selesai pada 2.6.10.
+2. Pemisahan diagnostik dan fixture PostgreSQL test telah selesai pada 2.6.3.
    Gunakan perintah full-suite pada Development Guide; database test harus eksplisit.
 3. Tuntaskan advisory build Moderate setelah analisis compatibility; tambahkan
    Python dependency/image scan pada pipeline yang memiliki tool sesuai.
@@ -999,7 +999,7 @@ di deployment; tidak melakukan deployment atau image registry publish otomatis.
   acceptance deployment tidak dijalankan.
 
 
-## 20. Isolasi discovery dan fixture test CA-12 - rilis 2.6.10
+## 20. Isolasi discovery dan fixture test CA-12 - rilis 2.6.3
 
 - Delapan skrip legacy (`docker_import`, `email_notifier`, `group_access`,
   `recovery_scenario`, `tamper_alert`, `tamper_alert_v2`, `migration`, `heads`)
@@ -1034,7 +1034,7 @@ di deployment; tidak melakukan deployment atau image registry publish otomatis.
   lokal: **1.103 tes lulus, 1 skip, 77 subtests lulus**; FFmpeg lokal tersedia.
 - Inventory rilis: 292 Python AST, 54 template Jinja, 15 JS dan 6 CJS Node syntax
   checks lulus; 254 deklarasi endpoint tidak berubah. Ruff fixture/regression baru,
-  Black fixture dan diagnostik, serta sinkronisasi versi 2.6.10 lulus.
+  Black fixture dan diagnostik, serta sinkronisasi versi 2.6.3 lulus.
 - Hasil ini tidak mencakup acceptance staging atau perangkat/gateway nyata. Warning
   deprecation Pydantic/Starlette/Alembic yang sudah ada tetap dilaporkan; perbaikan
   venv pengguna dan lint legacy seluruh repository bukan bagian CA-12.
@@ -1044,10 +1044,10 @@ di deployment; tidak melakukan deployment atau image registry publish otomatis.
   PostgreSQL di atas. Build dokumentasi Sphinx `-W` lulus.
 
 
-## 21. Konsolidasi rilis 2.6.10 dan perubahan lokal
+## 21. Konsolidasi rilis 2.6.3 dan perubahan lokal
 
-- Atas permintaan pengguna, entri changelog 2.6.3 sampai 2.6.10 dan perubahan
-  branding/WhatsApp yang sebelumnya Unreleased digabung menjadi satu entri 2.6.10.
+- Atas permintaan pengguna, entri changelog 2.6.3 sampai 2.6.3 dan perubahan
+  branding/WhatsApp yang sebelumnya Unreleased digabung menjadi satu entri 2.6.3.
   Entri 2.6.2 ke bawah tetap ada. Riwayat commit/migration dan bukti audit per
   versi pada bagian terdahulu dipertahankan sebagai riwayat implementasi.
 - Rilis kini menyertakan konfigurasi/upload/preview branding, logo peta independen,

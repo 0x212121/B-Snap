@@ -4,9 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.6.10] - 2026-11-03
+## [2.6.3] - 2026-11-03
 
-Consolidates changes previously listed under 2.6.3 through 2.6.10 and the pending branding/WhatsApp updates.
+Consolidates changes previously listed under 2.6.3 through 2.6.3 and the pending branding/WhatsApp updates.
 
 ### Added
 

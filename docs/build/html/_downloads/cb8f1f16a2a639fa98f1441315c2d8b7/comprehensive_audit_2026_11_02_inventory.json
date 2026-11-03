@@ -4955,6 +4955,6 @@
       "declared_dependencies": []
     }
   ],
-  "release_version": "2.6.10",
+  "release_version": "2.6.3",
   "hash_format": "SHA-256 of file bytes with CRLF normalized to LF"
 }
