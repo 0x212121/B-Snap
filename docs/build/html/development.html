@@ -24,9 +24,9 @@
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#030711" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>Development Guide | B-SNAP v2.6.9 documentation</title>
-  <meta property="og:title" content="Development Guide | B-SNAP v2.6.9 documentation" />
-  <meta name="twitter:title" content="Development Guide | B-SNAP v2.6.9 documentation" />
+  <title>Development Guide | B-SNAP v2.6.10 documentation</title>
+  <meta property="og:title" content="Development Guide | B-SNAP v2.6.10 documentation" />
+  <meta name="twitter:title" content="Development Guide | B-SNAP v2.6.10 documentation" />
   <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e72c8e07" />
   <link rel="stylesheet" type="text/css" href="_static/theme.css?v=73505e79" />
   <link rel="search" title="Search" href="search.html" />
@@ -44,7 +44,7 @@
       Skip to content
     </a><header class="sticky top-0 z-40 w-full border-b shadow-xs border-border bg-background/90 backdrop-blur"><div class="container flex items-center h-14">
     <div class="hidden mr-4 md:flex">
-      <a href="index.html" class="flex items-center mr-6"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.6.9 documentation</span>
+      <a href="index.html" class="flex items-center mr-6"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">B-SNAP v2.6.10 documentation</span>
       </a></div><button
       class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden"
       type="button" @click="showSidebar = true">
@@ -100,7 +100,7 @@
   class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky"
   :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }">
 
-    <a href="index.html" class="justify-start text-sm md:!hidden bg-background"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.6.9 documentation</span>
+    <a href="index.html" class="justify-start text-sm md:!hidden bg-background"><span class="font-bold text-clip whitespace-nowrap">B-SNAP v2.6.10 documentation</span>
     </a>
 
     <div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
@@ -142,7 +142,7 @@
      class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
   <a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground"
      href="index.html">
-    <span class="hidden md:inline">B-SNAP v2.6.9 documentation</span>
+    <span class="hidden md:inline">B-SNAP v2.6.10 documentation</span>
     <svg xmlns="http://www.w3.org/2000/svg"
          height="18"
          width="18"
@@ -221,10 +221,58 @@ starting services; <code class="docutils literal notranslate"><span class="pre">
 startup. Direct <code class="docutils literal notranslate"><span class="pre">uvicorn</span></code>/Gunicorn startup never creates tables or runs migrations.</p>
 <p>Migration integration tests require an isolated PostgreSQL test database via
 <code class="docutils literal notranslate"><span class="pre">BSNAP_TEST_DATABASE_URL</span></code>. They create and drop unique temporary schemas and
-override the global SQLite schema fixture:</p>
+use disposable schemas independently of the shared database fixture:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>app/tests/test_database_migration.py<span class="w"> </span>-o<span class="w"> </span><span class="nv">addopts</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="w"> </span>-q
 </span></code></pre></div>
 </div>
+</section>
+<section id="safe-automated-tests-ca-12">
+<h2>Safe automated tests (CA-12)<a class="headerlink" href="#safe-automated-tests-ca-12" title="Link to this heading"><span>#</span></a></h2>
+<p>Run from the repository root with the project Python environment:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">python</span> <span class="n">-m</span> <span class="n">pytest</span> <span class="p">-</span><span class="n">-collect-only</span> <span class="n">-q</span>
+</span><span id="line-2"><span class="n">python</span> <span class="n">-m</span> <span class="n">pytest</span> <span class="n">-q</span>
+</span></code></pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">pytest.ini</span></code> is the single configuration source. Test bootstrap overrides
+<code class="docutils literal notranslate"><span class="pre">DATABASE_URL</span></code> with a disabled loopback address before importing application code;
+application-engine connections and unmocked external DNS/socket connections fail.
+Loopback servers used by mocked transport tests remain available. HTTP client
+fixtures use ASGITransport without starting application lifespan, scheduler or
+capture workers. Tests requiring actual lifecycle behavior must mock their
+transports and database explicitly.</p>
+<p>Mocked/unit tests run without PostgreSQL. Database cases skip with an explicit
+reason unless the operator supplies a <strong>dedicated disposable test PostgreSQL</strong>:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="nv">$env:BSNAP_TEST_DATABASE_URL</span> <span class="p">=</span> <span class="s1">&#39;postgresql+psycopg2://bsnap_test@127.0.0.1:55432/bsnap_test&#39;</span>
+</span><span id="line-2"><span class="nv">$env:BSNAP_TEST_POSTGRES_URL</span> <span class="p">=</span> <span class="nv">$env:BSNAP_TEST_DATABASE_URL</span>
+</span><span id="line-3"><span class="n">python</span> <span class="n">-m</span> <span class="n">pytest</span> <span class="n">-q</span>
+</span></code></pre></div>
+</div>
+<p>Supply credentials through the local environment when required. Never use the
+application <code class="docutils literal notranslate"><span class="pre">DATABASE_URL</span></code> for this command. The test user must be able to create
+and drop schemas. Shared ORM tests create a unique <code class="docutils literal notranslate"><span class="pre">pytest_&lt;uuid&gt;</span></code> schema, retain
+PostgreSQL JSONB and audit triggers, and wrap each test in an outer transaction
+with session savepoints; application commits are rolled back at teardown. Migration
+and concurrency tests create their own unique schemas. All schemas are dropped
+on successful or failed test teardown. Hard termination can require removing the
+identified disposable schemas manually. Parallel runs must use separate schemas;
+do not point concurrent jobs at application data.</p>
+<p>The shared ORM fixture uses model DDL; separate migration tests exercise Alembic
+upgrade/downgrade against PostgreSQL. Passing unit tests without the explicit
+PostgreSQL URLs does not validate migrations, triggers or concurrency.</p>
+</section>
+<section id="legacy-manual-diagnostics">
+<h2>Legacy manual diagnostics<a class="headerlink" href="#legacy-manual-diagnostics" title="Link to this heading"><span>#</span></a></h2>
+<p>Eight historical scripts now live under <code class="docutils literal notranslate"><span class="pre">scripts/diagnostics/</span></code>, outside pytest’s
+test paths. Importing them does not run their old module-level operations. They
+are retained as manual legacy tools, not automated tests or current operational
+recipes. Some reference container-only paths or old APIs; inspect them first.
+They may read/modify deployment data or send notifications when explicitly run:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">python</span> <span class="n">-m</span> <span class="n">scripts</span><span class="p">.</span><span class="n">diagnostics</span><span class="p">.</span><span class="n">group_access</span> <span class="p">-</span><span class="n">-allow-live-operations</span>
+</span></code></pre></div>
+</div>
+<p>The flag is mandatory even for read-only legacy checks. Automated tests never
+invoke that flag. No real SMTP, GoWA, camera capture or production scheduler is
+required by the automated suite.</p>
 </section>
 </section>
 
@@ -238,6 +286,8 @@ override the global SQLite schema fixture:</p>
 <li><a class="reference internal" href="#frontend-tailwind-css">Frontend (Tailwind CSS)</a></li>
 <li><a class="reference internal" href="#tips">Tips</a></li>
 <li><a class="reference internal" href="#database-initialization">Database initialization</a></li>
+<li><a class="reference internal" href="#safe-automated-tests-ca-12">Safe automated tests (CA-12)</a></li>
+<li><a class="reference internal" href="#legacy-manual-diagnostics">Legacy manual diagnostics</a></li>
 </ul>
 </div>
 </aside>
@@ -254,7 +304,7 @@ override the global SQLite schema fixture:</p>
 </footer>
     </div>
 
-    <script src="_static/documentation_options.js?v=d266931d"></script>
+    <script src="_static/documentation_options.js?v=8876ccb5"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="_static/theme.js?v=582b20c5"></script>

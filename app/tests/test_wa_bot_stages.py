@@ -4,27 +4,13 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.compiler import compiles
-from sqlalchemy import event
 
 from app.utils.wa_bot_commands import CUSTOM_ACTION_ROLES, get_command_settings, save_command_settings
 from app.routes.wa_webhook import WABotHandler
 from app.utils.wa_gateway import WAGatewayService
-from app.models.audit_log import AuditLog, create_audit_log_triggers
 from app.utils.wa_bot_commands import normalize_response_media
 from app.utils.wa_bot_commands import normalize_processing_delay
 import asyncio
-
-
-# The shared test database is SQLite, while a few production models use JSONB.
-@compiles(JSONB, "sqlite")
-def _compile_jsonb_for_sqlite(type_, compiler, **kwargs):
-    return "JSON"
-
-
-# The project-wide SQLite fixture cannot create PostgreSQL-only audit triggers.
-event.remove(AuditLog.__table__, "after_create", create_audit_log_triggers)
 
 
 @pytest.fixture(autouse=True)
@@ -681,7 +667,13 @@ async def test_edit_cannot_assign_camera_to_unauthorized_group(db_session):
     group = CameraGroup(name="Allowed edit group")
     other = CameraGroup(name="Forbidden edit group")
     db_session.add_all([group, other]); db_session.flush()
-    camera = Camera(hostname="edit-group-camera", ip="192.168.1.99", group_id=group.id, username="original")
+    camera = Camera(
+        hostname="edit-group-camera",
+        ip="192.168.1.99",
+        group_id=group.id,
+        groups=[group],
+        username="original",
+    )
     entry = db_session.query(WhatsappWhitelist).filter_by(phone_number="628111111111").first()
     entry.group_id = group.id
     db_session.add(camera); db_session.flush()

@@ -2,7 +2,7 @@
   "audit_date": "2026-11-02",
   "scope": "Source inventory and static checks; not equivalent to runtime or security coverage",
   "counts": {
-    ".py": 291,
+    ".py": 292,
     ".cjs": 6,
     ".js": 15,
     ".html": 54
@@ -968,8 +968,8 @@
     },
     {
       "path": "app/tests/conftest.py",
-      "lines": 222,
-      "sha256": "393f8c8ed69718e11b5040cd19f300be336a5e00beab9d9ae174db8b34cf1329",
+      "lines": 196,
+      "sha256": "10b6ef1a9633ea221e936f3330238de52e12768680738d62714328d623aac617",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1057,12 +1057,6 @@
       "check": "AST syntax and structural scan"
     },
     {
-      "path": "app/tests/test_docker_import.py",
-      "lines": 47,
-      "sha256": "65d36237140f6a77be4fffb30276a3a48bf64a0ed5257a14285fedb787f92d4c",
-      "check": "AST syntax and structural scan"
-    },
-    {
       "path": "app/tests/test_docker_security.py",
       "lines": 124,
       "sha256": "48d0c52794534bb11b729466e37764f051f37498d0c62d46d46b3a6eb5bc8a48",
@@ -1070,14 +1064,8 @@
     },
     {
       "path": "app/tests/test_documentation_routing.py",
-      "lines": 148,
-      "sha256": "64434b5b9c096f290910e1c61076912ebf782d6331d6c4cb5acc5b29d81a2739",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_email_notifier.py",
-      "lines": 79,
-      "sha256": "8c50ff7fdaf1d9193dc4666a0bb9a42a6c7392f19a42f636930aea8541adcba5",
+      "lines": 154,
+      "sha256": "33a504ad59e92847019931ca6b86784a634c7d28cf6851eae927fd095e2771f4",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1105,21 +1093,9 @@
       "check": "AST syntax and structural scan"
     },
     {
-      "path": "app/tests/test_group_access.py",
-      "lines": 159,
-      "sha256": "65b22e1eacb27681adc56b33bb3912f5bc01ac4b9cffe3e3a0f701fca0c63d4f",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_heads.py",
-      "lines": 12,
-      "sha256": "11d282798a9fa65f829f46ca0bd56ddbeeff76c21109bba9befddd04549e1306",
-      "check": "AST syntax and structural scan"
-    },
-    {
       "path": "app/tests/test_health_group_security.py",
-      "lines": 300,
-      "sha256": "c287260ed2618b32cf6df31c2a24c3218f3dc62009796efdddb2acf206fbd293",
+      "lines": 302,
+      "sha256": "91df2cec527837111f700f8d9039ae39944a5dbb89243cb50b478fa879a6c9af",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1189,15 +1165,9 @@
       "check": "AST syntax and structural scan"
     },
     {
-      "path": "app/tests/test_migration.py",
-      "lines": 17,
-      "sha256": "68f3b5adc9273ec344fe3786f2d6d7f94231476c89898f29ff5c2759c4d40faa",
-      "check": "AST syntax and structural scan"
-    },
-    {
       "path": "app/tests/test_navigation.py",
-      "lines": 109,
-      "sha256": "95d8acac52e07a67a52997b5b91183aa5a905fa0f56a7feeb85f046a632e8b98",
+      "lines": 113,
+      "sha256": "3d8f75c7d5638903fdef78f821196004dde90338cc2fcdcd4aed56cb6497d3a4",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1228,12 +1198,6 @@
       "path": "app/tests/test_record_notifications.py",
       "lines": 116,
       "sha256": "82b63d3b6d4433be0d980fb7a71589a82f19d961101bc818e05f17cc07f6216f",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_recovery_scenario.py",
-      "lines": 135,
-      "sha256": "1499cc1b36658e733fee5f17534f77df961110732b80516c84171a796edfded7",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1280,8 +1244,8 @@
     },
     {
       "path": "app/tests/test_static_assets.py",
-      "lines": 79,
-      "sha256": "4709b282e3f7d947619420bd64eff56577febca24b0f22ae2dccc805737b7481",
+      "lines": 83,
+      "sha256": "adc5fe796b341b59944a1eefe3ad68e5b19b3b8fc9a4d7a5cd0080ddaad3b760",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1297,21 +1261,15 @@
       "check": "AST syntax and structural scan"
     },
     {
-      "path": "app/tests/test_tamper_alert.py",
-      "lines": 379,
-      "sha256": "4f1a9065cdbd380a99565be0d76fb6db5060c95df87b41694e197cc331fdae48",
-      "check": "AST syntax and structural scan"
-    },
-    {
-      "path": "app/tests/test_tamper_alert_v2.py",
-      "lines": 248,
-      "sha256": "8affe641eb0fac73a8970977916c36fc5df1cf3269d24820117a6fd9ca0a533c",
+      "path": "app/tests/test_test_safety.py",
+      "lines": 94,
+      "sha256": "4d316533e1d535f76ac96e2a8a0c5e6549721c924bf63fc3fa05fe40479a16ec",
       "check": "AST syntax and structural scan"
     },
     {
       "path": "app/tests/test_ui_system.py",
-      "lines": 473,
-      "sha256": "77c33f9c4426163afd4e3b71ced997cb158adc200d63364e3f360eb996967cee",
+      "lines": 479,
+      "sha256": "b2eb9174bb7f044eb7612b3eebc2fb01ff3594ebe2c63a44a18f307da5356076",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1334,8 +1292,8 @@
     },
     {
       "path": "app/tests/test_wa_bot_stages.py",
-      "lines": 750,
-      "sha256": "ba14f6f6e4fbf1d445e246b82b1a8a70cf72831f9a2b90ab668a1f9621a7cdb7",
+      "lines": 742,
+      "sha256": "22ae966c572b9c029ecead046e92c74b83570dcb54a99d6d50fca25c9f92e19e",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1737,7 +1695,7 @@
     {
       "path": "app/version.py",
       "lines": 1,
-      "sha256": "fd256fd3dc03719a07d9ec86d5d4df09405a0cfe8f4190521f21ec8654408090",
+      "sha256": "c3a3a1083ca25fa84d7fe196e2e81e68178dca32cba42d5209eb256f24f1e7b7",
       "check": "AST syntax and structural scan"
     },
     {
@@ -1792,6 +1750,54 @@
       "path": "scripts/check_runtime_imports.py",
       "lines": 38,
       "sha256": "ce1b57ca89420c9e8cff098ae31f15b8a47a06d31e306a398c5dd81a97038ce8",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/diagnostics/docker_import.py",
+      "lines": 69,
+      "sha256": "4850a3eaf505d6d7c042b21fca0d1be9917752968244cac29c13c5fd3ee69bf5",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/diagnostics/email_notifier.py",
+      "lines": 101,
+      "sha256": "dcbe332878414f9dffadbb1caa2f586d1224ea56479c85a6f77931c2216cdf28",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/diagnostics/group_access.py",
+      "lines": 183,
+      "sha256": "964ed4f215415a714ddbd1a8144376f08dece4530b2964da46674a623e0c8d8d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/diagnostics/heads.py",
+      "lines": 35,
+      "sha256": "e02c0aa9b90bc71dc0a91090e1dd7a1c5b00baec3d5542f941ff0dc7e8ff02b3",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/diagnostics/migration.py",
+      "lines": 40,
+      "sha256": "235322137eeceacd82eff03dba7824ab8b0a609ca13e33026e7e0368d2eb6d7c",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/diagnostics/recovery_scenario.py",
+      "lines": 159,
+      "sha256": "2bd22dcd4d8dc79c5d5ae60576cd17a545fdebcaa7b37eca73e56a3b76abb49d",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/diagnostics/tamper_alert.py",
+      "lines": 409,
+      "sha256": "76d48d2c9859cb36016696a9aced4be3778680bd64da98fdb446b049cc923903",
+      "check": "AST syntax and structural scan"
+    },
+    {
+      "path": "scripts/diagnostics/tamper_alert_v2.py",
+      "lines": 280,
+      "sha256": "3035427b748a96bc72a9b5d68a31b3df5bca5ee4aadb59537989bf19ae5c73c5",
       "check": "AST syntax and structural scan"
     },
     {
@@ -4819,6 +4825,6 @@
       "declared_dependencies": []
     }
   ],
-  "release_version": "2.6.9",
+  "release_version": "2.6.10",
   "hash_format": "SHA-256 of file bytes with CRLF normalized to LF"
 }

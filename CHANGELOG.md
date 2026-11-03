@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.6.10] - 2026-11-03
+
+### Fixed
+
+- Resolved CA-12: move eight legacy live diagnostics out of pytest discovery and require explicit command-line opt-in. Shared database tests now use a disposable PostgreSQL schema with transaction rollback instead of a global SQLite schema; preserve JSONB and append-only audit triggers. Block application-engine access and unmocked external connections, avoid application lifespan startup in HTTP fixtures, consolidate pytest configuration and add collection/isolation regressions.
+
 ## [2.6.9] - 2026-11-03
 
 ### Removed

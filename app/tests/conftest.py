@@ -1,128 +1,184 @@
-"""Pytest configuration and fixtures for B-Snap application.
-
-This module provides shared fixtures for testing the B-Snap application.
-Fixtures include database setup, test client, authentication, and utility
-functions for creating test data.
-"""
+"""Safe test defaults; PostgreSQL fixtures never use the application database."""
 
 from __future__ import annotations
 
+import ipaddress
+import logging
 import os
+import socket
+
 from collections.abc import AsyncGenerator, Generator
-from typing import Any
+from uuid import uuid4
 
 import pytest
 import pytest_asyncio
-from asgi_lifespan import LifespanManager
-from fastapi import FastAPI
-from httpx import AsyncClient
-from sqlalchemy import create_engine, event, text
-from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
 
-# Set testing environment before importing app modules
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import create_engine, event, text
+from sqlalchemy.engine import Engine, make_url
+from sqlalchemy.orm import Session
+
+# Establish isolation before any application import can load the deployment .env.
 os.environ["TESTING"] = "true"
+os.environ["ENVIRONMENT"] = "testing"
+os.environ["DATABASE_URL"] = "postgresql+psycopg2://isolated_tests@127.0.0.1:1/disabled"
 os.environ["SECRET_KEY"] = "test-secret-key-do-not-use-in-production"
 
-from app.db.database import Base, get_db
+from app.db.database import Base, engine as application_engine, get_db
 from app.main import app
 from app.models.user import User
 from app.utils.auth import get_password_hash
 
-# =============================================================================
-# Database Configuration
-# =============================================================================
 
-# Use in-memory SQLite for unit tests
-TEST_DATABASE_URL = "sqlite:///:memory:"
-
-engine = create_engine(
-    TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+def _block_application_connection(*_args: object, **_kwargs: object) -> None:
+    raise AssertionError("Tests must use an isolated fixture, not the application engine")
 
 
-# =============================================================================
-# Fixtures
-# =============================================================================
+event.listen(application_engine, "do_connect", _block_application_connection)
+
+
+@pytest.fixture(autouse=True)
+def isolated_logging() -> Generator[None, None, None]:
+    """Restore logger levels/filters after settings tests mutate global logging."""
+    loggers = [logging.getLogger()] + [
+        logger
+        for logger in logging.root.manager.loggerDict.values()
+        if isinstance(logger, logging.Logger)
+    ]
+    states = [(logger, logger.level, logger.disabled, logger.filters[:]) for logger in loggers]
+    disabled_level = logging.root.manager.disable
+    try:
+        yield
+    finally:
+        logging.disable(disabled_level)
+        for logger, level, disabled, filters in states:
+            logger.setLevel(level)
+            logger.disabled = disabled
+            logger.filters[:] = filters
+
+
+def check_host(host: str | bytes | None) -> None:
+    if isinstance(host, bytes):
+        host = host.decode("ascii")
+    if host in {None, "localhost"}:
+        return
+    try:
+        if ipaddress.ip_address(host).is_loopback:
+            return
+    except ValueError:
+        pass
+    raise AssertionError(f"External network is disabled in tests: {host}")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_test_database() -> Generator[None, None, None]:
-    """Create test database tables before running tests.
-    
-    This fixture runs once per test session and creates all tables
-    in the in-memory SQLite database.
-    """
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
+def isolated_transports() -> Generator[None, None, None]:
+    """Permit loopback test servers while blocking external network connections."""
+    connect = socket.socket.connect
+    connect_ex = socket.socket.connect_ex
+    getaddrinfo = socket.getaddrinfo
+
+    def safe_connect(sock: socket.socket, address: object) -> None:
+        if sock.family in {socket.AF_INET, socket.AF_INET6}:
+            check_host(address[0])
+        return connect(sock, address)
+
+    def safe_connect_ex(sock: socket.socket, address: object) -> int:
+        if sock.family in {socket.AF_INET, socket.AF_INET6}:
+            check_host(address[0])
+        return connect_ex(sock, address)
+
+    def safe_getaddrinfo(host: str | bytes | None, *args: object, **kwargs: object) -> list:
+        check_host(host)
+        return getaddrinfo(host, *args, **kwargs)
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(socket.socket, "connect", safe_connect)
+        patch.setattr(socket.socket, "connect_ex", safe_connect_ex)
+        patch.setattr(socket, "getaddrinfo", safe_getaddrinfo)
+        yield
 
 
-@pytest.fixture(scope="function")
-def db_session() -> Generator[Session, None, None]:
-    """Provide a database session for each test function.
-    
-    This fixture creates a new database session for each test and
-    rolls back any changes after the test completes.
-    """
-    connection = engine.connect()
-    transaction = connection.begin()
-    session = TestingSessionLocal(bind=connection)
-    
-    # Enable foreign key constraints for SQLite
-    if "sqlite" in str(connection.engine.url):
-        session.execute(text("PRAGMA foreign_keys=ON"))
-    
-    yield session
-    
-    session.close()
-    transaction.rollback()
-    connection.close()
+@pytest.fixture(scope="session")
+def setup_test_database() -> None:
+    """Compatibility hook; mocked tests do not need a global schema."""
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
+def postgres_test_engine() -> Generator[Engine, None, None]:
+    """Create and remove one uniquely named schema on an explicit test PostgreSQL."""
+    url = os.getenv("BSNAP_TEST_DATABASE_URL")
+    if not url:
+        pytest.skip("Set BSNAP_TEST_DATABASE_URL for PostgreSQL database tests")
+    if make_url(url).get_backend_name() != "postgresql":
+        pytest.fail("BSNAP_TEST_DATABASE_URL must use PostgreSQL")
+    schema = f"pytest_{uuid4().hex}"
+    control = create_engine(url)
+    test_engine = create_engine(
+        url,
+        connect_args={"options": f"-csearch_path={schema} -ctimezone=UTC"},
+    )
+    try:
+        with control.begin() as connection:
+            connection.execute(text(f'CREATE SCHEMA "{schema}"'))
+        Base.metadata.create_all(test_engine)
+        # The model hook seeds explicit group IDs; PostgreSQL sequences do not
+        # advance for explicit IDs as SQLite rowids did in the old fixture.
+        with test_engine.begin() as connection:
+            connection.execute(
+                text(
+                    "SELECT setval(pg_get_serial_sequence('camera_groups', 'id'), "
+                    "(SELECT max(id) FROM camera_groups))"
+                )
+            )
+        yield test_engine
+    finally:
+        test_engine.dispose()
+        with control.begin() as connection:
+            connection.execute(text(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE'))
+        control.dispose()
+
+
+@pytest.fixture
+def db_session(postgres_test_engine: Engine) -> Generator[Session, None, None]:
+    """Rollback all changes, including application commits, after each test."""
+    with postgres_test_engine.connect() as connection:
+        transaction = connection.begin()
+        session = Session(connection, autoflush=False, join_transaction_mode="create_savepoint")
+        try:
+            yield session
+        finally:
+            session.close()
+            transaction.rollback()
+
+
+@pytest.fixture
 def override_get_db(db_session: Session) -> Generator[None, None, None]:
-    """Override the get_db dependency to use test database.
-    
-    This fixture replaces the production database dependency with
-    the test database session.
-    """
-    def _get_test_db() -> Generator[Session, None, None]:
+    """Restore the original dependency map even when a test fails."""
+    previous = app.dependency_overrides.copy()
+
+    def test_db() -> Generator[Session, None, None]:
         yield db_session
-    
-    app.dependency_overrides[get_db] = _get_test_db
-    yield
-    del app.dependency_overrides[get_db]
+
+    app.dependency_overrides[get_db] = test_db
+    try:
+        yield
+    finally:
+        app.dependency_overrides.clear()
+        app.dependency_overrides.update(previous)
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def async_client(override_get_db: None) -> AsyncGenerator[AsyncClient, None]:
-    """Provide an async HTTP client for testing.
-    
-    This fixture creates an async HTTP client that can be used to
-    make requests to the FastAPI application during tests.
-    """
-    async with LifespanManager(app):
-        async with AsyncClient(app=app, base_url="http://test") as client:
-            yield client
+    """Use current httpx transport without starting real application services."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        yield client
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def test_user(db_session: Session) -> User:
-    """Create a test user.
-    
-    Creates a standard test user with operator role.
-    """
+    """Create a synthetic operator using fields present on the production model."""
     user = User(
-        username="testuser",
-        email="test@example.com",
-        password=get_password_hash("TestPassword123!"),
-        role="operator",
-        is_active=True,
+        username="testuser", password=get_password_hash("TestPassword123!"), role="operator"
     )
     db_session.add(user)
     db_session.commit()
@@ -130,93 +186,11 @@ def test_user(db_session: Session) -> User:
     return user
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def admin_user(db_session: Session) -> User:
-    """Create an admin test user.
-    
-    Creates a test user with admin role and full permissions.
-    """
-    user = User(
-        username="adminuser",
-        email="admin@example.com",
-        password=get_password_hash("AdminPassword123!"),
-        role="admin",
-        is_active=True,
-    )
+    """Create a synthetic administrator."""
+    user = User(username="adminuser", password=get_password_hash("AdminPassword123!"), role="admin")
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
     return user
-
-
-@pytest.fixture(scope="function")
-def auth_headers(test_user: User) -> dict[str, str]:
-    """Create authorization headers for test user.
-    
-    Returns headers with basic auth credentials for the test user.
-    Note: Adjust based on your actual authentication mechanism.
-    """
-    import base64
-    
-    credentials = base64.b64encode(
-        b"testuser:TestPassword123!"
-    ).decode("utf-8")
-    return {"Authorization": f"Basic {credentials}"}
-
-
-@pytest.fixture(scope="function")
-def admin_headers(admin_user: User) -> dict[str, str]:
-    """Create authorization headers for admin user."""
-    import base64
-    
-    credentials = base64.b64encode(
-        b"adminuser:AdminPassword123!"
-    ).decode("utf-8")
-    return {"Authorization": f"Basic {credentials}"}
-
-
-# =============================================================================
-# Utility Fixtures
-# =============================================================================
-
-
-@pytest.fixture(scope="function")
-def mock_camera_data() -> dict[str, Any]:
-    """Provide mock camera data for testing."""
-    return {
-        "name": "Test Camera",
-        "ip_address": "192.168.1.100",
-        "port": 80,
-        "username": "admin",
-        "password": "password123",
-        "onvif_url": "/onvif/device_service",
-        "rtsp_url": "rtsp://192.168.1.100:554/stream",
-        "location": "Test Location",
-        "is_active": True,
-    }
-
-
-@pytest.fixture(scope="function")
-def mock_snapshot_data() -> dict[str, Any]:
-    """Provide mock snapshot data for testing."""
-    return {
-        "camera_id": 1,
-        "filename": "test_snapshot.jpg",
-        "filepath": "/static/snapshots/test_snapshot.jpg",
-        "file_size": 1024000,
-        "timestamp": "2024-01-01T00:00:00",
-    }
-
-
-# =============================================================================
-# Markers
-# =============================================================================
-
-def pytest_configure(config: pytest.Config) -> None:
-    """Configure custom pytest markers."""
-    config.addinivalue_line("markers", "unit: Unit tests")
-    config.addinivalue_line("markers", "integration: Integration tests")
-    config.addinivalue_line("markers", "e2e: End-to-end tests")
-    config.addinivalue_line("markers", "slow: Slow tests")
-    config.addinivalue_line("markers", "camera: Tests requiring camera")
-    config.addinivalue_line("markers", "database: Tests requiring database")

@@ -8,6 +8,7 @@ import pytest
 from starlette.templating import _TemplateResponse
 from starlette.requests import Request
 
+from app.main import app
 from app.utils.template_helper import templates
 
 
@@ -88,6 +89,9 @@ def test_destination_permissions_are_preserved(role: str) -> None:
             "/docs/environment",
             "/documentation/index.html",
         }
+        # Optional admin pages retain the same role boundary.
+        if any(getattr(route, "path", None) == "/admin/branding" for route in app.routes):
+            expected.add("/admin/branding")
     parsed = NavigationParser(response.body)
     for label in ("Main navigation", "Mobile navigation"):
         assert {link["href"] for link in parsed.links[label]} == expected

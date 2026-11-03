@@ -460,6 +460,12 @@ def test_authentication_forms_keep_their_post_endpoints_and_tokens(
         token_2fa="verification-token",
         token_mfa="verification-token",
         qr_code="",
+        branding={
+            "name": "B-Snap",
+            "tagline": "",
+            "logo": "/static/icons/b-snap.png",
+            "palette": "blue",
+        },
     )
     parsed = PageParser(html)
     forms = [attrs for tag, attrs in parsed.elements if tag == "form"]

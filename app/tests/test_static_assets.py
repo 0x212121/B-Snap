@@ -65,6 +65,10 @@ def test_web_app_imports_without_generated_docs_or_deployment_env(tmp_path: Path
         DATABASE_URL="postgresql+psycopg2://image_check@127.0.0.1:1/image_check",
         SECRET_KEY="image-build-check",
         ENVIRONMENT="testing",
+        # This smoke test needs imports, not a native BLAS thread pool. Keeping
+        # child-process allocations bounded also makes full-suite runs reliable.
+        OPENBLAS_NUM_THREADS="1",
+        OMP_NUM_THREADS="1",
     )
     result = subprocess.run(
         [sys.executable, "-c", "import app.main; print('Web import succeeded')"],

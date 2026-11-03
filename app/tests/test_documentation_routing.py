@@ -52,6 +52,12 @@ def routing_client(monkeypatch):
             "current_path": context["request"].url.path,
             "timezone": "UTC",
             "version": "test",
+            "branding": {
+                "name": "B-Snap",
+                "tagline": "",
+                "logo": "/static/icons/b-snap.png",
+                "palette": "blue",
+            },
             **context,
         }
         return HTMLResponse(

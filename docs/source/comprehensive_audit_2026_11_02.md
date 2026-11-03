@@ -14,10 +14,11 @@ Bagian 16 mencatat konsolidasi routing/review legacy CA-23 pada 2.6.6.
 Bagian 17 menuntaskan CSS halaman lain CA-17 pada 2.6.7.
 Bagian 18 mencatat konsolidasi formatter timezone audit hapus video pada 2.6.8.
 Bagian 19 mencatat penghentian integrasi Power BI Record Checks pada 2.6.9.
+Bagian 20 menyelesaikan isolasi discovery dan fixture test CA-12 pada 2.6.10.
 
 ## 1. Arsitektur dan cakupan
 
-- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.9**. Minimum Python **3.11**, default image Docker
+- Baseline paket/aplikasi **2.5.2**, hasil akhir **2.6.10**. Minimum Python **3.11**, default image Docker
   **Python 3.14.7**; verifikasi lokal memakai Python **3.13** dan Node **22.16.0**.
 - FastAPI menyediakan halaman Jinja2 dan API; SQLAlchemy 2 dan Alembic memakai
   PostgreSQL. Model JSONB dan trigger audit membuat schema penuh tidak kompatibel
@@ -36,7 +37,7 @@ Bagian 19 mencatat penghentian integrasi Power BI Record Checks pada 2.6.9.
 
 [Inventaris sumber dan endpoint](comprehensive_audit_2026_11_02_inventory.json)
 mencatat file, hash, syntax/compile check, serta dependency yang dideklarasikan.
-Inventaris hasil 2.6.9 mencakup **291 file Python, 54 template, 15 JavaScript,
+Inventaris hasil 2.6.10 mencakup **292 file Python, 54 template, 15 JavaScript,
 6 harness/test CJS, dan 254 deklarasi endpoint produksi**. Jumlah endpoint mencakup router legacy yang
 belum tentu didaftarkan; tidak sama dengan jumlah URL unik yang aktif.
 
@@ -62,7 +63,8 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 | 8 | CA-21 | Query counts per grup | Satu query agregasi dan benchmark PostgreSQL | Diperbaiki pada 2.6.5 |
 | 9 | CA-23 | Routing dokumentasi dan review legacy | Canonical routes, alias, deprecation inventory | Diselesaikan pada 2.6.6 |
 | 10 | CA-17 | CSS delapan halaman aktif | Build Tailwind, selector scoped, browser QA | Diselesaikan pada 2.6.7 |
-| Berikutnya | Sisa CA-12/15 | UI/debt, test/dependency | Memerlukan desain/validasi tambahan | Backlog non-High |
+| 11 | CA-12 | Discovery dan isolasi test suite | Diagnostik manual terpisah, fixture PostgreSQL dan transport terisolasi | Diselesaikan pada 2.6.10 |
+| Berikutnya | Sisa CA-15 | UI/debt, test/dependency | Memerlukan desain/validasi tambahan | Backlog non-High |
 
 ## 3. Findings: Backend
 
@@ -458,8 +460,8 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 
 ### CA-12 — Test discovery/fixtures legacy tidak aman untuk full-suite run
 
-- **Layer / Severity / Status:** Cross-Layer / Medium / confirmed issue, sebagian
-  diperbaiki; restrukturisasi test suite masih backlog.
+- **Layer / Severity / Status:** Cross-Layer / Medium / confirmed issue,
+  restrukturisasi discovery dan fixture diselesaikan pada 2.6.10.
 - **Location / Evidence:** syntax error pada `test_tamper_alert.py`; beberapa skrip
   memakai `SessionLocal` langsung. `test_email_notifier.py` memiliki pemanggilan
   saat import dan transport belum sepenuhnya dimock; `test_docker_import.py`
@@ -472,11 +474,14 @@ ditambahkan ketika pemeriksaan lanjutan menemukan bukti tambahan.
 - **Recommended Fix / Implementasi:** syntax diperbaiki; mock scheduler sync,
   checkbox image_hd, context map_title, dan readiness/session fixture diperbarui
   berdasarkan kontrak sekarang. Tes baru override schema fixture secara lokal.
-  Jalankan hanya modul yang telah ditinjau aman; tidak mengubah venv pengguna.
+  Pada 2.6.10, delapan diagnostik dipindahkan ke `scripts/diagnostics` dengan guard
+  CLI; fixture ORM memakai schema PostgreSQL unik dan rollback/savepoint. Engine
+  aplikasi serta koneksi jaringan eksternal yang tidak dimock ditolak. Fixture
+  HTTP tidak menjalankan lifespan produksi; venv pengguna tidak diubah.
 - **Regression Risk:** memperbaiki syntax tidak menjadikan skrip manual aman untuk CI.
 - **Verification:** AST semua Python, selected pytest, unittest terisolasi, tanpa
-  database aplikasi atau scheduler nyata. Pisahkan skrip manual dan siapkan fixture
-  PostgreSQL disposable sebagai pekerjaan berikutnya.
+  database aplikasi atau scheduler nyata. Full-suite dan isolasi PostgreSQL
+  diverifikasi pada 2.6.10; hasil dan batas cakupan tercatat di bagian 20.
 
 ### CA-15 — Dependency build memiliki advisory npm
 
@@ -683,8 +688,8 @@ accessibility/contrast audit semua halaman, atau benchmark fan-out notifikasi.
 1. Terapkan migration/configuration 2.6.1 dan acceptance test pada staging untuk
    CA-19/20/27/28 yang sudah diperbaiki di source. CA-22 dihentikan pada 2.6.3;
    jalankan migration arsipnya saat menerapkan versi tersebut.
-2. Pisahkan manual diagnostic scripts dari pytest discovery dan siapkan database
-   PostgreSQL test agar migration/trigger/schema bisa diuji rutin.
+2. Pemisahan diagnostik dan fixture PostgreSQL test telah selesai pada 2.6.10.
+   Gunakan perintah full-suite pada Development Guide; database test harus eksplisit.
 3. Tuntaskan advisory build Moderate setelah analisis compatibility; tambahkan
    Python dependency/image scan pada pipeline yang memiliki tool sesuai.
 4. Raw `@apply` halaman lain telah diselesaikan pada 2.6.7; lanjutkan QA EN/ID,
@@ -992,3 +997,48 @@ di deployment; tidak melakukan deployment atau image registry publish otomatis.
   AST/Jinja/Node syntax inventory lulus: 291 Python, 54 template, 15 JS, 6 CJS,
   254 deklarasi endpoint (tepat tujuh route Power BI dihapus). Suite penuh dan
   acceptance deployment tidak dijalankan.
+
+
+## 20. Isolasi discovery dan fixture test CA-12 - rilis 2.6.10
+
+- Delapan skrip legacy (`docker_import`, `email_notifier`, `group_access`,
+  `recovery_scenario`, `tamper_alert`, `tamper_alert_v2`, `migration`, `heads`)
+  dipindahkan dari `app/tests` ke `scripts/diagnostics`. Import tidak menjalankan
+  operasi; eksekusi manual memerlukan `--allow-live-operations`. Skrip dipertahankan
+  sebagai diagnostik legacy, bukan direkomendasikan sebagai prosedur deployment.
+- `pytest.ini` menjadi satu sumber konfigurasi. Environment test diatur sebelum
+  import aplikasi, tanpa bergantung pada plugin pytest-env atau database dari .env.
+  Engine aplikasi diblokir, DNS/socket eksternal yang tidak dimock ditolak;
+  loopback server sintetis tetap dapat digunakan. State logging dipulihkan antar tes.
+- Fixture ORM global SQLite dihapus. Tes yang memerlukan `db_session` memakai
+  `BSNAP_TEST_DATABASE_URL`, schema acak `pytest_<uuid>`, tipe JSONB asli dan
+  trigger append-only audit; setiap tes dibungkus transaksi/savepoint. Sequence
+  grup disesuaikan setelah model hook menanam ID eksplisit. Commit aplikasi tidak
+  keluar dari transaksi test; schema dibuang saat teardown. Tanpa URL PostgreSQL,
+  kasus database skip dengan alasan eksplisit, bukan mencoba database aplikasi.
+- Fixture async HTTP memakai ASGITransport tanpa lifespan/worker asli. Override
+  dependency dipulihkan pada teardown. Fixture user memakai field model aktual;
+  fixture Basic Auth dan data contoh yang tidak dipakai serta tidak sesuai kontrak
+  aplikasi dihapus. Pengubahan compiler SQLite JSONB dan pelepasan trigger audit
+  global pada tes WA stages dihapus; fixture akses kamera memakai asosiasi groups.
+- Fixture template/report diselaraskan dengan konteks branding opsional tanpa
+  mengubah implementasi fitur. Perubahan branding/telepon yang sudah berada di
+  working tree sebelum CA-12 tidak termasuk commit rilis ini.
+- Regression checks mencakup import diagnostik yang inert, larangan engine aplikasi,
+  larangan koneksi eksternal, invisibilitas commit antar koneksi, JSONB dan trigger.
+  Development Guide menjelaskan mode tanpa PostgreSQL dan full PostgreSQL.
+- Validasi rilis pada checkout terpisah (hanya CA-12): **1.039 tes lulus, 3 skip,
+  60 subtests lulus**, PostgreSQL 17 disposable. Dua skip karena FFmpeg tidak ada
+  di checkout, satu kasus fixture SQLite yang memiliki pengujian konkurensi
+  PostgreSQL terpisah. Pada working tree termasuk perubahan branding/telepon
+  lokal: **1.103 tes lulus, 1 skip, 77 subtests lulus**; FFmpeg lokal tersedia.
+- Inventory rilis: 292 Python AST, 54 template Jinja, 15 JS dan 6 CJS Node syntax
+  checks lulus; 254 deklarasi endpoint tidak berubah. Ruff fixture/regression baru,
+  Black fixture dan diagnostik, serta sinkronisasi versi 2.6.10 lulus.
+- Hasil ini tidak mencakup acceptance staging atau perangkat/gateway nyata. Warning
+  deprecation Pydantic/Starlette/Alembic yang sudah ada tetap dilaporkan; perbaikan
+  venv pengguna dan lint legacy seluruh repository bukan bagian CA-12.
+- Mode default tanpa kedua URL PostgreSQL pada checkout rilis juga lulus:
+  **969 tes lulus, 73 skip, 60 subtests lulus**. Skip database eksplisit dan
+  FFmpeg tetap terlihat pada ringkasan; hasil ini tidak menggantikan validasi
+  PostgreSQL di atas. Build dokumentasi Sphinx `-W` lulus.

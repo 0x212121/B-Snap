@@ -21,6 +21,7 @@ from app.models.camera import Camera, camera_camera_groups
 from app.models.camera_daily_stats import CameraDailyStats
 from app.models.camera_group import CameraGroup
 from app.models.camera_status_change_log import CameraStatusChangeLog
+from app.models.config import Configuration
 from app.models.health import CameraHealth
 from app.models.health_check_status import HealthCheckStatus
 from app.models.nvr import NVR
@@ -55,6 +56,7 @@ def health_api(monkeypatch):
                 HealthCheckStatus,
                 ScheduledReport,
                 TaskTiming,
+                Configuration,
             )
         ]
         + [camera_camera_groups],
