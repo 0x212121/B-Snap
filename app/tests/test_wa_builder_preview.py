@@ -60,3 +60,12 @@ def test_preview_rejects_missing_required_arguments(preview):
     with pytest.raises(HTTPException) as error:
         preview(command={"required_params": ["camera"]})
     assert error.value.status_code == 422
+
+
+@pytest.mark.parametrize("action", ["snap_group", "snap_location"])
+def test_camera_batch_sample_preview_treats_response_as_image_caption(preview, action):
+    data = preview(command={"action": action, "response": "Custom caption"})
+    assert data["messages"] == [{
+        "stage": "success", "text": "Custom caption", "media_type": "image",
+        "source": "Snapshot from action result",
+    }]

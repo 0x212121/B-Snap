@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
@@ -23,6 +25,7 @@ from app.models.snapshot import Snapshot
 from app.models.whitelist import WhatsappWhitelist
 from app.routes import auth, bot_camera_media, wa_webhook
 from app.utils.wa_bot_commands import get_command_settings, save_command_settings
+from app.utils.wa_bot_workflow import APIFlowError
 
 
 @pytest.fixture
@@ -351,6 +354,108 @@ async def test_live_command_dispatch_enforces_whitelist_role(monkeypatch, role):
 def test_discovery_requires_authentication(media_client):
     media_client.client.app.dependency_overrides.pop(auth.get_current_user)
     assert get_snapshots(media_client).status_code == 401
+
+
+@pytest.fixture
+def action_client(media_client, monkeypatch):
+    """Exercise the real test-action -> API -> protected attachment path in isolation."""
+    app = media_client.client.app
+    app.include_router(wa_webhook.router)
+    media_client.user.api_tokens = [{"id": "test-id", "token": "isolated-test-token"}]
+    monkeypatch.setitem(sys.modules, "app.main", SimpleNamespace(app=app))
+    monkeypatch.setenv("TRUSTED_HOSTS", "testserver")
+    monkeypatch.setattr(wa_webhook, "get_current_timezone", lambda _db: "Asia/Makassar")
+    monkeypatch.setattr(wa_webhook, "log_audit", Mock())
+    return media_client
+
+
+def execute_action(fixture, action, argument, response=""):
+    return fixture.client.post(
+        "/api/admin/wa-bot/test-action",
+        json={
+            "command": {"action": action, "response": response},
+            "argument": argument,
+            "sender": "628123456789",
+            "api_token_id": "test-id",
+        },
+    )
+
+
+def test_live_execute_uses_public_origin_fallback(action_client, monkeypatch):
+    action_client.db.get(Configuration, "app_public_url").value = ""
+    action_client.db.commit()
+    monkeypatch.setenv("PUBLIC_ORIGIN", "https://public.example")
+    response = execute_action(action_client, "live", "Gate 1")
+    assert response.status_code == 200
+    assert "https://public.example/maps/cameras/shared/live" in response.json()["response_preview"]
+
+
+def test_live_execute_explains_missing_origin_without_generic_gateway_error(
+    action_client, monkeypatch
+):
+    action_client.db.get(Configuration, "app_public_url").value = ""
+    action_client.db.commit()
+    monkeypatch.delenv("PUBLIC_ORIGIN", raising=False)
+    response = execute_action(action_client, "live", "Gate 1")
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Configure a valid Public B-Snap URL in Configuration"
+
+
+@pytest.mark.parametrize(
+    ("action", "argument"), [("snap_group", "Site A"), ("snap_location", "North Yard")]
+)
+def test_execute_previews_custom_caption_attached_to_each_image(action_client, action, argument):
+    action_client.db.add(
+        Camera(
+            id="another",
+            hostname="Gate 4",
+            location="North Yard",
+            groups=[action_client.db.get(CameraGroup, 101)],
+        )
+    )
+    action_client.db.flush()
+    action_client.db.add(
+        Snapshot(
+            id="another-snapshot",
+            camera_id="another",
+            camera_name="Gate 4",
+            camera_ip="",
+            file_path="new.jpg",
+        )
+    )
+    action_client.db.commit()
+    response = execute_action(action_client, action, argument, "Custom caption: {{camera}}")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["response_previews"][0] == {
+        "stage": "success",
+        "text": "Custom caption: Gate 1",
+        "media_type": "image",
+        "source": "Snapshot from action result",
+    }
+    assert "Custom caption: Gate 1" in body["response_preview"]
+    assert body["response_previews"][1]["media_type"] == "image"
+    assert body["response_previews"][1]["text"] == "Custom caption: Gate 4"
+    assert body["response_previews"][2]["media_type"] == "text"
+    assert "static/snapshots" not in response.text
+
+
+@pytest.mark.parametrize("status", [401, 403, 404, 409, 422])
+def test_camera_api_errors_keep_status_and_hide_arbitrary_diagnostics(status):
+    error = APIFlowError(
+        "unsafe-secret",
+        {
+            "steps": {
+                "result": {
+                    "status_code": status,
+                    "body": {"detail": "unsafe-secret"},
+                }
+            }
+        },
+    )
+    message, actual_status = wa_webhook.WABotHandler._camera_media_api_error(error)
+    assert actual_status == status
+    assert "unsafe-secret" not in message
 
 
 @pytest.mark.asyncio

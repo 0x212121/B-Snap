@@ -18,7 +18,11 @@ hostname, camera UUID, or IP address.
 
 ## Live links
 
-Set `app_public_url` to the browser-accessible B-Snap address, enable Maps Live
+Set **Configuration → General → Public B-Snap URL** (`app_public_url`) to the
+browser-accessible B-Snap address. When empty, live links use `PUBLIC_ORIGIN` if
+configured. Missing/invalid URL settings return HTTP 409 with configuration
+instructions; token/access/not-found errors preserve their HTTP status instead
+of becoming a generic 502. Enable Maps Live
 View, and use an admin API token and whitelist admin sender. The link contains
 no camera credentials or API token. Opening it requires a logged-in B-Snap admin
 whose camera-group access is checked again. Sign into B-Snap before opening it.
@@ -61,6 +65,9 @@ notice. Transport failures use the existing media delivery failure notification.
 The response template is rendered separately for each snapshot. Use response
 type **Text**; the native action attaches the images automatically. Timestamp
 formatting uses the configured timezone, including its timezone label.
+Execute Action previews show each prepared image with its configured caption,
+alongside missing-image notices. They never send WhatsApp messages or expose
+local filesystem paths.
 
 ```text
 {{steps.result.body.camera}}

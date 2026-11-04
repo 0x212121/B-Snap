@@ -409,9 +409,9 @@ The effective total capacity is the configured pool size multiplied by the numbe
 ### app_public_url
 - **Type**: URL
 - **Default**: empty
-- **Description**: B-SNAP URL reachable by GoWA for generated report files such as the record-check 14-day trend PDF
-- **Example**: `http://b-snap:8080` or `http://172.16.1.50:8080`
-- **Used In**: `app/utils/record_check_report.py`
+- **Description**: Browser-accessible B-Snap address for bot live links. Set under Configuration → General → Public B-Snap URL. Live links fall back to `PUBLIC_ORIGIN` when this setting is empty. Use HTTP(S) without credentials, query parameters, or fragments.
+- **Example**: `https://bsnap.example.com`
+- **Used In**: `app/routes/bot_camera_media.py`, `app/routes/wa_webhook.py`
 
 ---
 

@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import os
+
 from datetime import UTC
 from pathlib import Path
 from typing import Annotated, Literal
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_
@@ -21,6 +23,7 @@ from app.models.whitelist import RoleEnum, WhatsappWhitelist
 from app.routes.auth import admin_access_required, user_access_required
 from app.utils.map_live_access import map_live_enabled
 from app.utils.phone_numbers import whatsapp_phone_variants
+from app.utils.public_url import normalize_public_url
 
 router = APIRouter(prefix="/api/bot/cameras", tags=["WhatsApp"])
 
@@ -64,17 +67,18 @@ def camera_live_link(
     if camera.status not in {"Active", "Standalone"}:
         raise HTTPException(status_code=409, detail="Camera is not available for live preview")
     config = db.query(Configuration).filter(Configuration.key == "app_public_url").first()
-    base = (config.value if config else "").strip().rstrip("/")
-    parsed = urlsplit(base)
-    if (
-        parsed.scheme not in {"https", "http"}
-        or not parsed.hostname
-        or parsed.username
-        or parsed.password
-        or parsed.query
-        or parsed.fragment
-    ):
-        raise HTTPException(status_code=409, detail="Configure a valid app_public_url first")
+    try:
+        base = normalize_public_url(
+            (config.value if config else "").strip() or os.getenv("PUBLIC_ORIGIN", "")
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=409, detail="Configure a valid Public B-Snap URL in Configuration"
+        ) from None
+    if not base:
+        raise HTTPException(
+            status_code=409, detail="Configure a valid Public B-Snap URL in Configuration"
+        )
     return {
         "camera_id": camera.id,
         "camera": camera.hostname,

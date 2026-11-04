@@ -69,6 +69,48 @@ def test_config_save_persists_live_toggle(
     assert settings_db.get(Configuration, "map_live_enabled").value == str(int(enabled))
 
 
+def test_config_public_url_validation_clear_and_omitted_field(settings_db, monkeypatch):
+    monkeypatch.setattr(config, "set_debug_mode", lambda _enabled: None)
+    app = FastAPI()
+    app.include_router(config.router)
+    app.dependency_overrides[config.get_db] = lambda: settings_db
+    app.dependency_overrides[auth.get_current_user] = lambda: SimpleNamespace(role="admin")
+    data = {
+        "healthcheck_interval_minutes": "15",
+        "snapshot_concurrent_workers": "1",
+        "max_screenshot_per_camera": "20",
+        "snapshot_batch_size": "50",
+        "snapshot_batch_delay_seconds": "5",
+        "watermark_text": "QA",
+        "map_title": "QA",
+        "timezone": "Asia/Makassar",
+    }
+    with TestClient(app) as client:
+        assert (
+            client.post(
+                "/config/save", data={**data, "app_public_url": "https://public.example/"}
+            ).status_code
+            == 200
+        )
+        assert settings_db.get(Configuration, "app_public_url").value == "https://public.example"
+        assert client.post("/config/save", data=data).status_code == 200
+        assert settings_db.get(Configuration, "app_public_url").value == "https://public.example"
+        for value in (
+            "https://user:secret@example.com",
+            "https://public.example?token=secret",
+            "javascript:invalid",
+            "http://host:invalid",
+        ):
+            response = client.post("/config/save", data={**data, "app_public_url": value})
+            assert response.status_code == 400
+            assert "secret" not in response.text
+            assert (
+                settings_db.get(Configuration, "app_public_url").value == "https://public.example"
+            )
+        assert client.post("/config/save", data={**data, "app_public_url": ""}).status_code == 200
+        assert settings_db.get(Configuration, "app_public_url").value == ""
+
+
 @pytest.mark.parametrize(
     ("role", "enabled", "expected"),
     [

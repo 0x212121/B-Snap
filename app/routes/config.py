@@ -32,6 +32,7 @@ from app.routes.auth import admin_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.auth import verify_password
 from app.utils.email_helper import send_email
+from app.utils.public_url import normalize_public_url
 from app.utils.template_helper import templates
 from app.utils.timezone_helper import clear_timezone_cache
 from app.utils.wa_monitor import parse_monitor_recipients
@@ -175,6 +176,13 @@ async def config_page(
     )
 
 
+async def _public_url_form_value(request: Request, value: str | None) -> str | None:
+    """Preserve omitted settings while allowing the URL input to be cleared."""
+    if value is None and "app_public_url" not in await request.form():
+        return None
+    return normalize_public_url(value or "")
+
+
 @router.post("/config/save")
 # Keep the existing validation order and individual error responses in this form handler.
 async def config_save(  # noqa: C901, PLR0911, PLR0912
@@ -192,6 +200,7 @@ async def config_save(  # noqa: C901, PLR0911, PLR0912
     watermark_text: Annotated[str, Form()],
     map_title: Annotated[str, Form()],
     map_live_enabled: Annotated[bool, Form()] = False,
+    app_public_url: Annotated[str | None, Form(max_length=2000)] = None,
     timezone: Annotated[str, Form()],
     debug_mode: Annotated[bool | None, Form()] = False,
     retention_snapshot_mode: Annotated[str | None, Form(pattern="^(age|count|both)$")] = None,
@@ -325,6 +334,11 @@ async def config_save(  # noqa: C901, PLR0911, PLR0912
             },
         )
 
+    try:
+        app_public_url = await _public_url_form_value(_request, app_public_url)
+    except ValueError as exc:
+        return JSONResponse(status_code=400, content={"message": str(exc)})
+
     gowa_base_url = gowa_base_url.strip().rstrip("/")
     if gowa_enabled:
         if not gowa_base_url.startswith(("http://", "https://")):
@@ -390,6 +404,7 @@ async def config_save(  # noqa: C901, PLR0911, PLR0912
         {
             key: value
             for key, value in {
+                "app_public_url": app_public_url,
                 "retention_snapshot_mode": retention_snapshot_mode,
                 "retention_snapshot_days": retention_snapshot_days,
                 "retention_video_mode": retention_video_mode,

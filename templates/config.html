@@ -60,6 +60,12 @@
     
     <div data-config-tab="general" class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
       <h2 class="ui-section-title text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-3 mb-6"> General</h2>
+      <div class="mb-6">
+        <label for="app_public_url" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Public B-Snap URL</label>
+        <input type="url" id="app_public_url" name="app_public_url" maxlength="2000" value="{{ configs.get('app_public_url', '') }}" placeholder="https://bsnap.example.com"
+          class="ui-control w-full p-2 bg-gray-50 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Browser-accessible address for bot live links. Leave blank to use PUBLIC_ORIGIN when configured.</p>
+      </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label for="healthcheck_interval_minutes" class="ui-label block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Health Check Interval (minutes)</label>

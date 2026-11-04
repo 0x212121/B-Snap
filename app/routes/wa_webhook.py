@@ -289,7 +289,7 @@ def preview_wa_bot_command(
         if stage == "response":
             response_type = command.get("response_type", "text")
             source = command.get("response_video_source" if response_type == "video" else "response_image_source")
-            if response_type == "text" and command.get("action") in {"snap", "cctv"}:
+            if response_type == "text" and command.get("action") in {"snap", "cctv", "snap_group", "snap_location"}:
                 response_type, source = "image", "Snapshot from action result"
             messages.append({"stage": "success", "text": payload.response_text if payload.response_text is not None else render(command.get("response")),
                              "media_type": response_type, "source": render(source)})
@@ -351,6 +351,22 @@ async def test_wa_bot_flow(request: Request, current_admin: User = Depends(admin
         logger.warning("WhatsApp Bot API flow test failed for admin %s: %s", current_admin.id, exc)
         detail = str(exc) or "The API flow could not be run"
         raise HTTPException(status_code=502, detail=detail[:500]) from exc
+
+
+def _camera_batch_previews(items: list[dict], action: str) -> tuple[list[dict] | None, str]:
+    """Describe prepared captions and media without exposing local snapshot paths."""
+    if action not in {"snap_group", "snap_location"}:
+        return None, ""
+    previews = [
+        {
+            "stage": "success",
+            "text": item.get("text", ""),
+            "media_type": "image" if item.get("image_path") else "text",
+            "source": "Snapshot from action result" if item.get("image_path") else "",
+        }
+        for item in items
+    ]
+    return previews, "\n\n".join(item["text"] for item in previews if item["text"])
 
 
 @router.post("/api/admin/wa-bot/test-action")
@@ -415,13 +431,28 @@ async def test_wa_bot_action(
     failed = bot.action_failed
     error = steps.get("error", {})
     code = error.get("status_code", 400) if failed else 200
-    return JSONResponse(status_code=code, content={
-        "status": "error" if failed else "success", "steps": steps,
-        "params": parameters, "detail": error.get("body", {}).get("message", "") if failed else "",
-        "response_preview": response or bot.media_caption or "",
-        "failure_previews": bot._render_action_stage_messages(command.get("failure_messages") or [], argument, sender,
-            error.get("body", {}).get("message", "")) if failed else [],
-    })
+    response_previews, prepared_response = _camera_batch_previews(bot.outbound_items, action)
+    return JSONResponse(
+        status_code=code,
+        content={
+            "status": "error" if failed else "success",
+            "steps": steps,
+            "params": parameters,
+            "detail": error.get("body", {}).get("message", "") if failed else "",
+            "response_preview": response or bot.media_caption or prepared_response,
+            "response_previews": response_previews,
+            "failure_previews": (
+                bot._render_action_stage_messages(
+                    command.get("failure_messages") or [],
+                    argument,
+                    sender,
+                    error.get("body", {}).get("message", ""),
+                )
+                if failed
+                else []
+            ),
+        },
+    )
 
 
 class WABotHandler:
@@ -1396,8 +1427,8 @@ class WABotHandler:
                 page += 1
         except (APIFlowError, ValueError, HTTPException) as exc:
             self._merge_action_context(getattr(exc, "context", {}))
-            message = "Camera media request failed. Check API token, sender access, and camera configuration."
-            self._set_action_error(message, 502)
+            message, status = self._camera_media_api_error(exc)
+            self._set_action_error(message, status)
             # Preserve prepared images and make a partial failure visible to the recipient.
             if self.outbound_items:
                 self.outbound_items.append({"text": message})
@@ -1406,6 +1437,40 @@ class WABotHandler:
         if not attached:
             self._set_action_error("No saved snapshot files are available.", 404)
         return ""
+
+    @staticmethod
+    def _camera_media_api_error(exc: Exception) -> tuple[str, int]:
+        """Expose actionable API errors without returning arbitrary upstream diagnostics."""
+        result = getattr(exc, "context", {}).get("steps", {}).get("result", {})
+        status = result.get("status_code", getattr(exc, "status_code", 502))
+        body = result.get("body", {})
+        detail = body.get("detail", "") if isinstance(body, dict) else ""
+        messages = {
+            401: "B-Snap API token is invalid or expired. Select a valid API token in the bot builder.",
+            403: "Camera media access denied. Check the token owner, whitelist role/group, and Maps Live View setting.",
+            404: "Camera or selection not found or inaccessible. Use the full camera, group, or location name.",
+            409: "Camera is unavailable or Public B-Snap URL is not configured. Check Configuration.",
+            422: "Invalid camera media parameters. Check the camera, group, or location name.",
+        }
+        allowed_details = {
+            "Configure a valid Public B-Snap URL in Configuration",
+            "Camera is not available for live preview",
+            "Maps Live View is disabled",
+            "Live View requires a whitelist admin",
+            "Sender must be on the WhatsApp whitelist",
+        }
+        message = (
+            detail
+            if isinstance(detail, str) and detail in allowed_details
+            else messages.get(status)
+        )
+        if status not in messages:
+            status = 502
+        return (
+            message
+            or "Camera media request failed. Check API token, sender access, and camera configuration.",
+            status,
+        )
 
     async def _attach_camera_snapshot_page(
         self, context: dict, action: str, *, argument: str, sender: str, template: str
@@ -1547,7 +1612,6 @@ class WABotHandler:
         if camera.hostname.lower() not in caption.lower():
             return f"{camera.hostname}\n{caption}"
         return caption
-
 
 
 @router.post("/webhook/gowa")

@@ -180,7 +180,7 @@
     form.querySelector('[data-test-response-preview]').classList.add('hidden');
     previewRequest++; scheduleConversationPreview();
   }
-  async function renderConversation(steps, responseText, outcome, actual = false) {
+  async function renderConversation(steps, responseText, outcome, actual = false, responseMessages = null) {
     const requestId = ++previewRequest;
     const command = collectCommand();
     const argument = form.querySelector('[data-test-argument]').value || (actual ? '' : (command.required_params.length ? command.required_params.map(name=>/duration|seconds/i.test(name) ? '30' : 'CAM-01').join(' ') : 'CAM-01'));
@@ -188,6 +188,9 @@
     const response = await fetch('/api/admin/wa-bot/preview', {method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({command,steps,argument,sender,outcome,response_text:responseText ?? null})});
     const data = await readApiJson(response,'Render conversation');
     if (!response.ok) throw new Error(data.detail || 'Preview failed');
+    if (Array.isArray(responseMessages)) {
+      data.messages = [...(data.messages || []).filter(item => item.stage !== 'success'), ...responseMessages];
+    }
     if (requestId!==previewRequest || !draft) return;
     const chat = form.querySelector('[data-chat-preview]'); chat.replaceChildren();
     const incoming = document.createElement('div'); incoming.className = 'wa-chat-incoming'; incoming.textContent = `${command.trigger || '/command'} ${argument}`.trim(); chat.appendChild(incoming);
@@ -908,7 +911,7 @@
       if (data.steps) {
         form.querySelector('[data-preview-context]').value = JSON.stringify(data.steps,null,2);
         form.querySelector('[data-preview-outcome]').value = response.ok ? 'success' : 'failure';
-        await renderConversation(data.steps, data.response_preview, response.ok ? 'success' : 'failure', true);
+        await renderConversation(data.steps, data.response_preview, response.ok ? 'success' : 'failure', true, data.response_previews);
       }
       if (!response.ok) throw new Error(data.detail || 'API flow test failed');
       status.textContent = 'Test succeeded. Click a variable below to add it to the response template.';
