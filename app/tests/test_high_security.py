@@ -127,6 +127,36 @@ def test_missing_secret_fails_closed_and_is_not_reflected(webhook_client, monkey
     bot.assert_not_called()
 
 
+def test_gateway_variable_alone_does_not_configure_bsnap(webhook_client, monkeypatch):
+    client, db, bot = webhook_client
+    monkeypatch.delenv("GOWA_WEBHOOK_SECRET")
+    monkeypatch.setenv("WHATSAPP_WEBHOOK_SECRET", TEST_WEBHOOK_SECRET)
+    raw = b'{"event":"ignored"}'
+    response = client.post(
+        "/webhook/gowa", content=raw, headers={"X-Hub-Signature-256": signature(raw)}
+    )
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Webhook authentication is not configured"
+    assert TEST_WEBHOOK_SECRET not in response.text
+    db.query.assert_not_called()
+    bot.assert_not_called()
+
+
+def test_bsnap_uses_its_own_secret_when_gateway_variable_is_present(webhook_client, monkeypatch):
+    client, db, bot = webhook_client
+    gateway_secret = "different-gateway-test-signing-key-32-bytes"
+    monkeypatch.setenv("WHATSAPP_WEBHOOK_SECRET", gateway_secret)
+    raw = b'{"event":"ignored"}'
+    for secret, expected_status in [(TEST_WEBHOOK_SECRET, 200), (gateway_secret, 401)]:
+        response = client.post(
+            "/webhook/gowa", content=raw, headers={"X-Hub-Signature-256": signature(raw, secret)}
+        )
+        assert response.status_code == expected_status
+        assert secret not in response.text
+    db.query.assert_not_called()
+    bot.assert_not_called()
+
+
 def test_signed_duplicate_provider_message_is_ignored_before_bot_action(
     webhook_client, monkeypatch
 ):

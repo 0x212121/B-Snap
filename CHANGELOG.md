@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Regression coverage for signed GoWA messages using E.164 and legacy whitelist numbers through bot replies, Message delivery monitor logging, and retry deduplication. Document webhook authentication failures that prevent incoming messages from reaching the monitor.
+- Clarify B-Snap/GoWA webhook secret variable names and shared Docker Compose `.env` mapping; verify that B-Snap only uses its own signing key setting.
+
 ## [2.6.3] - 2026-11-03
 
 ### Added
