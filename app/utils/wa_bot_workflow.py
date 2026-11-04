@@ -305,7 +305,8 @@ def render_flow_template(
         if not isinstance(collection, list):
             return ""
         rendered_items = []
-        for index, item in enumerate(collection[:MAX_FLOW_TEMPLATE_ITEMS]):
+        offset = context.get("_each_offsets", {}).get(match.group(1), 0)
+        for index, item in enumerate(collection[:MAX_FLOW_TEMPLATE_ITEMS], start=offset):
             item_context = {**context, "this": item, "@index": index, "@index1": index + 1}
             item_template = FLOW_LOCAL_VARIABLE_PATTERN.sub(
                 lambda variable: (

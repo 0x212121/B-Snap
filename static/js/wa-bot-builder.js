@@ -25,8 +25,8 @@
   };
   const systemActionSamples = {
     live: {result:{status_code:200,body:{camera:'CAM-M5-01',url:'https://bsnap.example/maps/cameras/camera-id/live',requires_login:true}}},
-    snap_group: {result:{status_code:200,body:{camera:'CAM-M5-01',timestamp:'2026-10-05T10:30:00Z',url:'/api/snapshots/secure/snapshot-id'}}},
-    snap_location: {result:{status_code:200,body:{camera:'CAM-M5-01',timestamp:'2026-10-05T10:30:00Z',url:'/api/snapshots/secure/snapshot-id'}}},
+    snap_group: {result:{status_code:200,body:{results:[{camera:'CAM-M5-01',timestamp:'2026-10-05T10:30:00Z',url:'/api/snapshots/secure/snapshot-id'},{camera:'CAM-M5-02',timestamp:'2026-10-05T10:31:00Z',url:'/api/snapshots/secure/snapshot-id-2'}],missing:[],page:1,has_more:false}}},
+    snap_location: {result:{status_code:200,body:{results:[{camera:'CAM-M5-01',timestamp:'2026-10-05T10:30:00Z',url:'/api/snapshots/secure/snapshot-id'},{camera:'CAM-M5-02',timestamp:'2026-10-05T10:31:00Z',url:'/api/snapshots/secure/snapshot-id-2'}],missing:[],page:1,has_more:false}}},
     cctv: {result:{status_code:200,body:[{camera:'CAM-M5-01',ip:'192.168.1.10',timestamp:'2026-10-05T10:30:00Z',filename:'snapshot.jpg',url:'/snapshot/file/snapshot.jpg',lat:'-3.12',long:'115.22'}]}},
     snap: {result:{status_code:200,body:[{camera:'CAM-M5-01',ip:'192.168.1.10',timestamp:'2026-10-05T10:30:00Z',filename:'snapshot.jpg',url:'/snapshot/file/snapshot.jpg',uptime:'2d 4h',lat:'-3.12',long:'115.22'}]}},
     ping: {ping:{status_code:200,body:{target:'camera.example',online:true,replies:['Reply from camera.example: time=12.4ms','Reply from camera.example: time=11.8ms']}}},

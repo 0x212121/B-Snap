@@ -69,6 +69,18 @@ Execute Action previews show each prepared image with its configured caption,
 alongside missing-image notices. They never send WhatsApp messages or expose
 local filesystem paths.
 
+Array-mapper templates also work: each image renders the loop against its own
+single-item `steps.result.body.results`, so other cameras do not appear in its
+caption. `@index1` numbers images across API pages. Sample previews use the same
+per-image context; direct fields such as `{{camera}}` and
+`{{steps.result.body.camera}}` remain supported.
+
+```text
+{{#each steps.result.body.results}}
+{{@index1}}. {{this.camera}} | {{this.timestamp|datetime}}
+{{/each}}
+```
+
 ```text
 {{steps.result.body.camera}}
 {{steps.result.body.timestamp|datetime}}

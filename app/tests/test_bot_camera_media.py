@@ -286,12 +286,20 @@ async def test_bot_requests_all_pages_and_attaches_each_image(monkeypatch, actio
     monkeypatch.setattr(wa_webhook, "run_api_flow", flow)
     assert (
         await bot._handle_camera_media_api(
-            action, "+628123456789", "North Yard", {"trigger": "/media"}
+            action,
+            "+628123456789",
+            "North Yard",
+            {
+                "trigger": "/media",
+                "response": "{{#each steps.result.body.results}}{{@index1}}. {{this.camera}} | {{this.timestamp|datetime}}{{/each}}",
+            },
         )
         == ""
     )
     assert attach.await_count == 2
     assert "04/11/2026 - 01:00:00 WITA" in attach.call_args.args[1]
+    assert attach.call_args_list[0].args[1].startswith("1. A |")
+    assert attach.call_args_list[1].args[1].startswith("2. B |")
     assert bot.outbound_items == [{"text": "Latest snapshot unavailable: C"}]
     params = flow.call_args.kwargs["flow"][0]["params"]
     assert params == {
@@ -404,7 +412,19 @@ def test_live_execute_explains_missing_origin_without_generic_gateway_error(
 @pytest.mark.parametrize(
     ("action", "argument"), [("snap_group", "Site A"), ("snap_location", "North Yard")]
 )
-def test_execute_previews_custom_caption_attached_to_each_image(action_client, action, argument):
+@pytest.mark.parametrize(
+    ("template", "expected"),
+    [
+        ("Custom caption: {{camera}}", ["Custom caption: Gate 1", "Custom caption: Gate 4"]),
+        (
+            "{{#each steps.result.body.results}}{{@index1}}. {{this.camera}}{{/each}}",
+            ["1. Gate 1", "2. Gate 4"],
+        ),
+    ],
+)
+def test_execute_previews_custom_caption_attached_to_each_image(
+    action_client, action, argument, template, expected
+):
     action_client.db.add(
         Camera(
             id="another",
@@ -424,18 +444,18 @@ def test_execute_previews_custom_caption_attached_to_each_image(action_client, a
         )
     )
     action_client.db.commit()
-    response = execute_action(action_client, action, argument, "Custom caption: {{camera}}")
+    response = execute_action(action_client, action, argument, template)
     assert response.status_code == 200
     body = response.json()
     assert body["response_previews"][0] == {
         "stage": "success",
-        "text": "Custom caption: Gate 1",
+        "text": expected[0],
         "media_type": "image",
         "source": "Snapshot from action result",
     }
-    assert "Custom caption: Gate 1" in body["response_preview"]
+    assert expected[0] in body["response_preview"]
     assert body["response_previews"][1]["media_type"] == "image"
-    assert body["response_previews"][1]["text"] == "Custom caption: Gate 4"
+    assert body["response_previews"][1]["text"] == expected[1]
     assert body["response_previews"][2]["media_type"] == "text"
     assert "static/snapshots" not in response.text
 
@@ -456,6 +476,33 @@ def test_camera_api_errors_keep_status_and_hide_arbitrary_diagnostics(status):
     message, actual_status = wa_webhook.WABotHandler._camera_media_api_error(error)
     assert actual_status == status
     assert "unsafe-secret" not in message
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("action", "argument"), [("snap_group", "Site A"), ("snap_location", "North Yard")]
+)
+async def test_mapper_caption_reaches_direct_bot_image_delivery(
+    action_client, monkeypatch, action, argument
+):
+    template = "{{#each steps.result.body.results}}\n{{@index1}}. {{this.camera}} | {{this.timestamp}}\n{{/each}}"
+    command = {
+        "id": "custom_batch",
+        "action": action,
+        "trigger": "/batch",
+        "enabled": True,
+        "response": template,
+    }
+    monkeypatch.setattr(wa_webhook, "get_command_settings", lambda _db: [command])
+    bot = wa_webhook.WABotHandler(action_client.db)
+    monkeypatch.setattr(bot, "_selected_api_token", lambda: "isolated-test-token")
+    await bot.handle("628123456789", f"/batch {argument}")
+    assert not bot.action_failed
+    image = next(item for item in bot.outbound_items if item.get("image_path"))
+    assert image["text"].strip() == "1. Gate 1 | 2026-11-02T00:00:00+00:00"
+    gateway = Mock()
+    wa_webhook._send_wa_message_item(gateway, "628123456789", image)
+    assert gateway.send_image_file.call_args.args[2] == image["text"]
 
 
 @pytest.mark.asyncio

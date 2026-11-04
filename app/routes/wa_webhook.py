@@ -50,6 +50,7 @@ from app.utils.video import STATIC_VIDEO_DIR
 from app.utils.wa_executor import run_gateway_blocking
 from app.utils.wa_bot_workflow import render_flow_template, run_api_flow
 from app.utils.wa_bot_workflow import APIFlowError, bind_command_arguments, normalize_flow
+from app.utils.wa_snapshot_captions import render_snapshot_caption
 from app.utils.healthcheck import format_uptime_duration
 from app.utils.timezone_helper import format_datetime_iso, get_current_timezone
 from app.utils.webhook_auth import verified_gowa_payload
@@ -287,12 +288,52 @@ def preview_wa_bot_command(
     messages = []
     for stage in ("processing_messages", "failure_messages" if error else "response"):
         if stage == "response":
+            if (
+                command.get("action") in {"snap_group", "snap_location"}
+                and payload.response_text is None
+            ):
+                rows = result_body.get("results")
+                rows = rows if isinstance(rows, list) else [result_body]
+                messages.extend(
+                    {
+                        "stage": "success",
+                        "text": render_snapshot_caption(
+                            str(command.get("response") or "")[:4000],
+                            context,
+                            item,
+                            timezone_name,
+                            index=index,
+                        ),
+                        "media_type": "image",
+                        "source": "Snapshot from action result",
+                    }
+                    for index, item in enumerate(rows[:50])
+                    if isinstance(item, dict)
+                )
+                continue
             response_type = command.get("response_type", "text")
-            source = command.get("response_video_source" if response_type == "video" else "response_image_source")
-            if response_type == "text" and command.get("action") in {"snap", "cctv", "snap_group", "snap_location"}:
+            source = command.get(
+                "response_video_source" if response_type == "video" else "response_image_source"
+            )
+            if response_type == "text" and command.get("action") in {
+                "snap",
+                "cctv",
+                "snap_group",
+                "snap_location",
+            }:
                 response_type, source = "image", "Snapshot from action result"
-            messages.append({"stage": "success", "text": payload.response_text if payload.response_text is not None else render(command.get("response")),
-                             "media_type": response_type, "source": render(source)})
+            messages.append(
+                {
+                    "stage": "success",
+                    "text": (
+                        payload.response_text
+                        if payload.response_text is not None
+                        else render(command.get("response"))
+                    ),
+                    "media_type": response_type,
+                    "source": render(source),
+                }
+            )
             continue
         items = command.get(stage) or []
         if not isinstance(items, list) or any(not isinstance(item, dict) for item in items):
@@ -1421,6 +1462,7 @@ class WABotHandler:
                     argument=argument,
                     sender=sender,
                     template=command.get("response", ""),
+                    index_offset=attached,
                 )
                 if not body["has_more"]:
                     break
@@ -1473,20 +1515,24 @@ class WABotHandler:
         )
 
     async def _attach_camera_snapshot_page(
-        self, context: dict, action: str, *, argument: str, sender: str, template: str
+        self,
+        context: dict,
+        action: str,
+        *,
+        argument: str,
+        sender: str,
+        template: str,
+        index_offset: int = 0,
     ) -> int:
         """Prepare each API-selected image and report missing files for this page."""
         body = context["steps"]["result"]["body"]
-        template = (
-            template or "{{steps.result.body.camera}}\n{{steps.result.body.timestamp|datetime}}"
-        )
-        for item in body["results"]:
-            item_context = {**context, "steps": {"result": {"status_code": 200, "body": item}}}
-            caption = render_response(
-                render_flow_template(template, item_context, get_current_timezone(self.db)),
-                **item,
-                argument=argument,
-                sender=sender,
+        for index, item in enumerate(body["results"], start=index_offset):
+            caption = render_snapshot_caption(
+                template,
+                {**context, "argument": argument, "sender": sender},
+                item,
+                get_current_timezone(self.db),
+                index=index,
             )
             await self._attach_response_image(
                 {"action": action, "response_image_source": item["url"]}, caption

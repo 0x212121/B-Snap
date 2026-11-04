@@ -69,3 +69,19 @@ def test_camera_batch_sample_preview_treats_response_as_image_caption(preview, a
         "stage": "success", "text": "Custom caption", "media_type": "image",
         "source": "Snapshot from action result",
     }]
+
+
+@pytest.mark.parametrize("action", ["snap_group", "snap_location"])
+def test_mapper_loop_preview_has_a_caption_for_each_camera(preview, action):
+    steps = {"result": {"status_code": 200, "body": {"results": [
+        {"camera": "Road 9 A", "timestamp": "2026-11-03T17:00:00Z"},
+        {"camera": "Road 9 B", "timestamp": "2026-11-03T17:01:00Z"},
+    ]}}}
+    data = preview(command={"action": action, "response":
+        "{{#each steps.result.body.results}}\n{{@index1}}. {{this.camera}} | {{this.timestamp}}\n{{/each}}"},
+        steps=steps)
+    assert [item["text"].strip() for item in data["messages"]] == [
+        "1. Road 9 A | 2026-11-03T17:00:00Z", "2. Road 9 B | 2026-11-03T17:01:00Z",
+    ]
+    assert all(item["media_type"] == "image" for item in data["messages"])
+    assert len(steps["result"]["body"]["results"]) == 2

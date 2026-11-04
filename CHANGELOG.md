@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Keep array-mapper templates (`steps.result.body.results`) available per image in group/location snapshot captions and sample previews, with continuous image numbering across API pages. Preserve existing flat-field captions.
 - Show each group/location snapshot's configured caption as an image in Bot Builder Execute Action previews. Preserve actionable camera media API error statuses instead of reporting all failures as 502; use PUBLIC_ORIGIN for live links when app_public_url is empty and expose a validated Public B-Snap URL in Configuration.
 
 ## [2.6.3] - 2026-11-03
