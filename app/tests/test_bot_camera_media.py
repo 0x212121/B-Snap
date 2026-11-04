@@ -49,6 +49,7 @@ def media_client(tmp_path, monkeypatch):
         ],
     )
     with Session(engine) as db:
+        monkeypatch.setattr(bot_camera_media, "log_audit", Mock())
         first, second = CameraGroup(id=101, name="Site A"), CameraGroup(id=102, name="Site B")
         db.add_all(
             [
@@ -192,8 +193,13 @@ def test_live_link_preserves_admin_policy_and_public_origin(media_client):
         )
 
     body = request().json()
-    assert body["url"] == "https://bsnap.example/maps/cameras/shared/live"
-    assert body["requires_login"] is True
+    assert body["url"].startswith("https://bsnap.example/public/cameras/shared/live?token=")
+    assert body["requires_login"] is False
+    assert body["expires_in"] == 300
+    assert body["expires_at"].endswith("+00:00")
+    assert request(expires_in=29).status_code == 422
+    assert request(expires_in=901).status_code == 422
+    assert request(expires_in=30).json()["expires_in"] == 30
     assert request(keyword="Gate 2").status_code == 404
     media_client.user.role = "viewer"
     assert request().status_code == 403
@@ -395,7 +401,7 @@ def test_live_execute_uses_public_origin_fallback(action_client, monkeypatch):
     monkeypatch.setenv("PUBLIC_ORIGIN", "https://public.example")
     response = execute_action(action_client, "live", "Gate 1")
     assert response.status_code == 200
-    assert "https://public.example/maps/cameras/shared/live" in response.json()["response_preview"]
+    assert "https://public.example/public/cameras/shared/live?token=" in response.json()["response_preview"]
 
 
 def test_live_execute_explains_missing_origin_without_generic_gateway_error(

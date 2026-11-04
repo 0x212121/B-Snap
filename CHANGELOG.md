@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Public, camera-scoped bot live links with signed five-minute expiry (API range 30–900 seconds), permission revocation checks, bounded stream lifetime, credential-free playback, and redacted tokens in application/message logs. Link creation retains admin and group authorization; existing Maps Live authentication is preserved.
 - API-backed WhatsApp bot actions for authenticated live links and latest snapshots per camera group/location, with token/sender access intersection, multi-image pagination, and missing-file feedback. Live View supports periodic HTTP snapshot refresh alongside ONVIF/RTSP/HLS. See [bot camera media](docs/source/bot-camera-media.md).
 
 - Regression coverage for signed GoWA messages using E.164 and legacy whitelist numbers through bot replies, Message delivery monitor logging, and retry deduplication. Document webhook authentication failures that prevent incoming messages from reaching the monitor.

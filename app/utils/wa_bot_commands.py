@@ -13,6 +13,24 @@ from app.utils.wa_bot_workflow import bind_command_arguments, normalize_flow
 from app.utils.wa_gateway import format_phone_number
 
 CONFIG_KEY = "wa_bot_command_settings"
+DEFAULT_LIVE_RESPONSE = (
+    "{{steps.result.body.camera}}\n{{steps.result.body.url}}\n"
+    "Expires: {{steps.result.body.expires_at|datetime}}"
+)
+
+
+def live_response_template(value: str) -> str:
+    """Update former generated login notices while preserving custom live responses."""
+    prefix = "{{steps.result.body.camera}}\n{{steps.result.body.url}}\n"
+    legacy = {
+        prefix + message
+        for message in (
+            "B-Snap admin login required.",
+            "Perlu login admin B-Snap.",
+            "Login B-Snap admin required.",
+        )
+    }
+    return DEFAULT_LIVE_RESPONSE if not value or value in legacy else value
 
 
 def command_schedule_cron(schedule: dict[str, Any]) -> str:
@@ -261,6 +279,8 @@ def get_command_settings(db: Session) -> list[dict[str, Any]]:
                     if not isinstance(item, dict) or not str(item.get("id", "")).startswith("custom_"):
                         continue
                     action = item.get("action", "text")
+                    if action == "live":
+                        item = {**item, "response": live_response_template(item.get("response", ""))}
                     if action not in CUSTOM_ACTION_ROLES:
                         continue
                     try:

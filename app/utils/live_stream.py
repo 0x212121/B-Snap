@@ -9,7 +9,7 @@ import threading
 
 from collections.abc import AsyncIterator, Callable
 from contextlib import suppress
-from time import monotonic
+from time import monotonic, time
 from urllib.parse import quote, urlparse, urlunparse
 
 from fastapi import HTTPException
@@ -65,7 +65,7 @@ def reserve_viewer(user_id: str) -> Callable[[], None]:
     return release
 
 
-def build_live_command(source: str) -> list[str]:
+def build_live_command(source: str, seconds: float = STREAM_SECONDS) -> list[str]:
     """Decode a configured camera source to limited-size multipart JPEG frames."""
     return [
         _ffmpeg_executable(),
@@ -77,7 +77,7 @@ def build_live_command(source: str) -> list[str]:
         "15000000",
         *_stream_input_args(source),
         "-t",
-        str(STREAM_SECONDS),
+        str(seconds),
         "-map",
         "0:v:0",
         "-an",
@@ -101,7 +101,13 @@ class LivePreview:
     """Own a process, its wall-clock watchdog, and its allocated viewer slot."""
 
     def __init__(
-        self, source: str, release: Callable[[], None], *, allowed: Callable[[], bool] | None = None
+        self,
+        source: str,
+        release: Callable[[], None],
+        *,
+        allowed: Callable[[], bool] | None = None,
+        seconds: float = STREAM_SECONDS,
+        expires_at: float | None = None,
     ) -> None:
         self.release = release
         self.allowed = allowed
@@ -111,13 +117,14 @@ class LivePreview:
         self.close_lock = threading.Lock()
         try:
             self.process = subprocess.Popen(
-                build_live_command(source),
+                build_live_command(source, seconds),
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
             )
-            self.watchdog = threading.Timer(STREAM_SECONDS, self.close)
+            remaining = seconds if expires_at is None else min(seconds, max(0, expires_at - time()))
+            self.watchdog = threading.Timer(remaining, self.close)
             self.watchdog.daemon = True
             self.watchdog.start()
         except OSError:
@@ -180,8 +187,12 @@ class LivePreview:
         """Stream frames and kill the process when the browser cancels its request."""
         try:
             next_policy_check = monotonic() + LIVE_POLICY_INTERVAL_SECONDS
+            if self.closed:
+                return
             yield first
             while chunk := await asyncio.to_thread(self.read_chunk):
+                if self.closed:
+                    break
                 if self.allowed is not None and monotonic() >= next_policy_check:
                     try:
                         permitted = await asyncio.to_thread(self.allowed)

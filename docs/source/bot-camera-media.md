@@ -23,11 +23,22 @@ browser-accessible B-Snap address. When empty, live links use `PUBLIC_ORIGIN` if
 configured. Missing/invalid URL settings return HTTP 409 with configuration
 instructions; token/access/not-found errors preserve their HTTP status instead
 of becoming a generic 502. Enable Maps Live
-View, and use an admin API token and whitelist admin sender. The link contains
-no camera credentials or API token. Opening it requires a logged-in B-Snap admin
-whose camera-group access is checked again. Sign into B-Snap before opening it.
+View, and use an admin API token and whitelist admin sender to create a link.
+The returned link is public: its recipient needs no B-Snap login. It contains a
+signed grant for one camera, with no camera credentials or API token. Anyone
+holding that link can view the selected camera until the grant expires.
 
-The viewer uses the existing bounded, authenticated Maps Live endpoint. RTSP,
+Links expire five minutes after creation. The API accepts `expires_in` between
+30 and 900 seconds; the native bot action uses 300 seconds. The API response
+includes `expires_at` in UTC and `requires_login: false`. Generate a new link
+with the command after expiry. Tampered, expired, and cross-camera grants are
+rejected before camera I/O. Deleting the issuing user/whitelist entry, removing
+its admin role or camera-group access, changing camera status, or disabling
+Maps Live View revokes access. Ongoing viewers recheck these permissions, and
+playback is bounded by the remaining grant lifetime.
+
+The public viewer shares the bounded Maps Live implementation. The original
+Maps Live endpoint still requires admin login. RTSP,
 ONVIF discovery, and HLS use FFmpeg; the link API itself does not probe cameras.
 An HTTP(S) snapshot URL instead refreshes its image every two seconds, supports
 Basic/Digest authentication, and works without an IP field. This is periodic
@@ -36,15 +47,20 @@ create saved snapshots. HTTP snapshot redirects are rejected. Multipart MJPEG
 URLs are not single-image snapshot endpoints; use an RTSP/HLS source for video.
 
 Streams retain the existing viewer capacity and three-minute duration limits;
-reopen the link to start another preview. Camera status must be Active or
+public and authenticated viewers share the issuing user's capacity limit.
+Reopen an unexpired link to start another preview. No preview can extend the
+grant's expiry, including when source resolution takes time. Camera status must be Active or
 Standalone. Missing/unreachable sources return a safe error when opened.
+Public responses disable caching and referrer forwarding. Application logs,
+audit events, and the WhatsApp message monitor do not retain the signed grant;
+reverse-proxy access logs should redact its `token` query parameter as well.
 
 Default response template:
 
 ```text
 {{steps.result.body.camera}}
 {{steps.result.body.url}}
-B-Snap admin login required.
+Expires: {{steps.result.body.expires_at|datetime}}
 ```
 
 ## Latest saved snapshots
@@ -90,7 +106,9 @@ per-image context; direct fields such as `{{camera}}` and
 
 - `GET /api/bot/cameras/live-link?keyword=CAM-GATE-01&phone_number=...`
   requires admin authentication and an admin whitelist entry. Returns `camera_id`,
-  `camera`, `url`, and `requires_login`.
+  `camera`, `url`, `requires_login: false`, `expires_in`, and `expires_at`.
+  The returned `/public/cameras/{camera_id}/live?token=...` URL needs only its
+  valid signed grant and does not accept an arbitrary camera source URL.
 - `GET /api/bot/cameras/latest-snapshots?scope=group&keyword=Site%20A&phone_number=...`
   accepts authenticated viewer/operator/admin users and whitelisted senders.
   Use `scope=location` for location filtering. `page` starts at 1; `per_page` is

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 
-from datetime import UTC
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Literal
 from urllib.parse import quote
@@ -21,8 +21,14 @@ from app.models.snapshot import Snapshot
 from app.models.user import User
 from app.models.whitelist import RoleEnum, WhatsappWhitelist
 from app.routes.auth import admin_access_required, user_access_required
+from app.utils.audit_logger import log_audit
 from app.utils.map_live_access import map_live_enabled
 from app.utils.phone_numbers import whatsapp_phone_variants
+from app.utils.public_live_token import (
+    DEFAULT_LIVE_LINK_SECONDS,
+    MAX_LIVE_LINK_SECONDS,
+    create_live_grant,
+)
 from app.utils.public_url import normalize_public_url
 
 router = APIRouter(prefix="/api/bot/cameras", tags=["WhatsApp"])
@@ -51,8 +57,9 @@ def camera_live_link(
     phone_number: Annotated[str, Query(min_length=1, max_length=100)],
     db: Annotated[Session, Depends(get_db)],
     current_admin: Annotated[User, Depends(admin_access_required)],
+    expires_in: Annotated[int, Query(ge=30, le=MAX_LIVE_LINK_SECONDS)] = DEFAULT_LIVE_LINK_SECONDS,
 ) -> dict:
-    """Return a credential-free viewer URL; opening it requires an admin session."""
+    """Issue a camera-scoped public viewer URL after checking the issuing identities."""
     query, entry = sender_camera_query(db, current_admin, phone_number)
     if entry.role != RoleEnum.admin:
         raise HTTPException(status_code=403, detail="Live View requires a whitelist admin")
@@ -79,11 +86,21 @@ def camera_live_link(
         raise HTTPException(
             status_code=409, detail="Configure a valid Public B-Snap URL in Configuration"
         )
+    token, expires = create_live_grant(camera.id, current_admin.id, entry.id, expires_in)
+    log_audit(
+        db=db,
+        user=current_admin.username,
+        action="create_public_camera_live_link",
+        target=camera.id,
+        extra={"sender_id": entry.id, "expires_at": expires},
+    )
     return {
         "camera_id": camera.id,
         "camera": camera.hostname,
-        "url": f"{base}/maps/cameras/{quote(camera.id, safe='')}/live",
-        "requires_login": True,
+        "url": f"{base}/public/cameras/{quote(camera.id, safe='')}/live?token={quote(token, safe='')}",
+        "requires_login": False,
+        "expires_in": expires_in,
+        "expires_at": datetime.fromtimestamp(expires, UTC).isoformat(),
     }
 
 

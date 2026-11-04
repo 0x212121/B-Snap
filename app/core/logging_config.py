@@ -4,6 +4,7 @@ import logging.config
 from pathlib import Path
 import os
 from datetime import datetime, timezone
+from app.utils.public_live_token import redact_live_link_tokens
 
 # pip install concurrent-log-handler
 from concurrent_log_handler import ConcurrentRotatingFileHandler  # type: ignore
@@ -37,6 +38,10 @@ class UTCFormatter(logging.Formatter):
     Uses ISO 8601 format with timezone offset.
     """
     converter = lambda *args: datetime.now(timezone.utc).timetuple()
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Keep public live bearer grants out of formatted application/access logs."""
+        return redact_live_link_tokens(super().format(record))
     
     def formatTime(self, record, datefmt=None):
         """Format timestamp in UTC using ISO 8601 format."""

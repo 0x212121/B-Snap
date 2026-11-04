@@ -32,6 +32,7 @@ from app.utils.phone_numbers import (
 from app.utils.response_helper import json_success_response, json_error_response
 from app.utils.wa_bot_commands import (
     CUSTOM_ACTION_ROLES,
+    live_response_template,
     get_command_settings,
     match_command,
     normalize_snap_stage_messages,
@@ -54,6 +55,7 @@ from app.utils.wa_snapshot_captions import render_snapshot_caption
 from app.utils.healthcheck import format_uptime_duration
 from app.utils.timezone_helper import format_datetime_iso, get_current_timezone
 from app.utils.webhook_auth import verified_gowa_payload
+from app.utils.public_live_token import redact_live_link_tokens
 import os
 
 logger = logging.getLogger("main")
@@ -96,6 +98,9 @@ def _access_error_response(message: str) -> JSONResponse:
 
 
 def _record_wa_message(db: Session, phone: str, direction: str, status: str, message: str = "", command: str = "", error: str = "", provider_message_id: str | None = None) -> None:
+    message = redact_live_link_tokens(message)
+    error = redact_live_link_tokens(error)
+    command = redact_live_link_tokens(command)
     db.add(WhatsAppMessageLog(phone_number=phone[:32], provider_message_id=provider_message_id,
                               direction=direction, status=status,
                               message=message[:4000] or None, command=command[:120] or None,
@@ -134,7 +139,7 @@ def _send_wa_progress_item(recipient: str, item: dict, sender: str, command: str
 
 def _analytics_command_text(message: str) -> str:
     """Retain arguments for analytics while redacting credential values."""
-    safe_message = message.strip()
+    safe_message = redact_live_link_tokens(message.strip())
     return re.sub(
         r"(?i)(\b(?:pass(?:word)?|token|secret|credential)\s*:\s*)[^,]+",
         r"\1[redacted]",
@@ -1451,10 +1456,7 @@ class WABotHandler:
                 self._merge_action_context(context)
                 body = context["steps"]["result"]["body"]
                 if action == "live":
-                    template = (
-                        command.get("response")
-                        or "{{steps.result.body.camera}}\n{{steps.result.body.url}}\nLogin B-Snap admin required."
-                    )
+                    template = live_response_template(command.get("response", ""))
                     return render_flow_template(template, context, get_current_timezone(self.db))
                 attached += await self._attach_camera_snapshot_page(
                     context,

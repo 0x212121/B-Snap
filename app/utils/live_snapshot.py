@@ -7,7 +7,7 @@ import io
 import threading
 
 from collections.abc import AsyncIterator, Callable
-from time import monotonic
+from time import monotonic, time
 from urllib.parse import unquote, urlsplit, urlunsplit
 
 import requests
@@ -33,6 +33,8 @@ class SnapshotPreview:
         release: Callable[[], None],
         *,
         allowed: Callable[[], bool],
+        seconds: float = STREAM_SECONDS,
+        expires_at: float | None = None,
     ) -> None:
         parsed = urlsplit(source)
         self.username = unquote(parsed.username) if parsed.username else username
@@ -40,7 +42,8 @@ class SnapshotPreview:
         self.source = urlunsplit(parsed._replace(netloc=parsed.netloc.rsplit("@", 1)[-1]))
         self.release = release
         self.allowed = allowed
-        self.deadline = monotonic() + STREAM_SECONDS
+        remaining = seconds if expires_at is None else min(seconds, max(0, expires_at - time()))
+        self.deadline = monotonic() + remaining
         self.closed = False
         self.lock = threading.Lock()
 
@@ -110,6 +113,8 @@ class SnapshotPreview:
     async def chunks(self, first: bytes) -> AsyncIterator[bytes]:
         """Refresh until disconnect, policy revocation, or the viewer deadline."""
         try:
+            if self.closed or monotonic() >= self.deadline:
+                return
             yield first
             while not self.closed and monotonic() < self.deadline:
                 await asyncio.sleep(REFRESH_SECONDS)
@@ -117,7 +122,10 @@ class SnapshotPreview:
                     break
                 if not await asyncio.to_thread(self.allowed):
                     break
-                yield await asyncio.to_thread(self.first_frame)
+                frame = await asyncio.to_thread(self.first_frame)
+                if self.closed or monotonic() >= self.deadline:
+                    break
+                yield frame
         except Exception:
             # Headers are already sent; terminate on source/policy errors.
             return

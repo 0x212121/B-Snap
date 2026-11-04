@@ -14,6 +14,7 @@ from app.models.config import Configuration
 from app.models.user import User
 from app.utils.auth_token import is_valid_web_token
 from app.utils.online_users import get_online_tracker
+from app.utils.public_live_token import PUBLIC_LIVE_PATH
 from app.utils.remember_me import (
     create_remember_token,
     get_cookie_settings,
@@ -46,6 +47,9 @@ ALLOWED_PUBLIC_PATHS = [
 
 class AuthAndSetupMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        if request.method == "GET" and PUBLIC_LIVE_PATH.fullmatch(request.url.path):
+            # This exact route validates its signed, camera-scoped grant itself.
+            return await call_next(request)
         if request.url.path == "/readyz" and request.method == "GET":
             return await call_next(request)
         if request.url.path == "/webhook/gowa" and request.method == "POST":
