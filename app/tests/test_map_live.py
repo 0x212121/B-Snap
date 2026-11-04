@@ -119,6 +119,19 @@ def test_live_access_uses_camera_memberships_and_hides_credentials(live_client) 
     assert live_client.source.call_args.kwargs["rtsp_port"] == 554
 
 
+def test_http_snapshot_source_without_ip_uses_refresh_preview(live_client, monkeypatch) -> None:
+    camera = live_client.db.get(Camera, "shared")
+    camera.snapshot_url = "https://camera.example/image.jpg"
+    camera.ip = None
+    live_client.db.commit()
+    factory = Mock(return_value=live_client.preview)
+    monkeypatch.setattr(map_live, "SnapshotPreview", factory)
+    assert live_client.client.get("/maps/cameras/shared/live").status_code == 200
+    factory.assert_called_once()
+    live_client.source.assert_not_called()
+    live_client.factory.assert_not_called()
+
+
 @pytest.mark.parametrize(
     ("camera_id", "status"), [("other", 404), ("missing", 404), ("maintenance", 409)]
 )

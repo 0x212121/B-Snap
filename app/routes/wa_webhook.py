@@ -581,13 +581,20 @@ class WABotHandler:
         self._response_command = None
         response = await self._handle_command(sender, message, is_group)
         command = self._response_command
-        if not command or self.action_failed or command.get("response_type", "text") == "text":
+        if (
+            not command
+            or self.action_failed
+            or command.get("response_type", "text") == "text"
+            or command.get("action") in {"live", "snap_group", "snap_location"}
+        ):
             return response
         caption = response or self.media_caption or ""
         success_paths = {item["path"] for item in self.media_items}
         if self.media_path:
             success_paths.add(self.media_path)
-        self.outbound_items = [item for item in self.outbound_items if item.get("image_path") not in success_paths]
+        self.outbound_items = [
+            item for item in self.outbound_items if item.get("image_path") not in success_paths
+        ]
         self.media_path = None
         self.media_items = []
         try:
@@ -630,7 +637,8 @@ class WABotHandler:
                 return ""
             self.quote_reply = bool(command.get("quote_reply", True))
             self.image_hd = (
-                command.get("action") in {"snap", "cctv"} and command.get("image_hd") is True
+                command.get("action") in {"snap", "cctv", "snap_group", "snap_location"}
+                and command.get("image_hd") is True
             )
             entry = _whitelisted_sender(self.db, sender)
             is_admin = bool(entry and entry.role == RoleEnum.admin)
@@ -990,6 +998,8 @@ class WABotHandler:
     async def _handle_n8n_action(self, action: str, sender: str, argument: str, command: dict) -> str:
         """Execute the fixed native actions represented by n8n workflow commands."""
         template = command.get("response", "")
+        if action in {"live", "snap_group", "snap_location"}:
+            return await self._handle_camera_media_api(action, sender, argument, command)
         if action in ("cctv", "snap"):
             if not argument:
                 self.action_failed = True
@@ -1331,6 +1341,97 @@ class WABotHandler:
         rendered = render_flow_template(template, context, timezone_name=timezone_name)
         return render_response(rendered, **legacy_values)
 
+    async def _handle_camera_media_api(
+        self, action: str, sender: str, argument: str, command: dict
+    ) -> str:
+        """Discover media through the internal API and reuse protected image delivery."""
+        if not argument.strip():
+            self._set_action_error("A camera, group, or location name is required.")
+            return f"Usage: {command['trigger']} <name>"
+        token = self._selected_api_token()
+        if not token:
+            self._set_action_error("Select a valid B-Snap API token in the bot builder.", 401)
+            return "Select a valid B-Snap API token in the bot builder."
+        page = 1
+        attached = 0
+        try:
+            while True:
+                params = {"keyword": argument.strip(), "phone_number": sender}
+                if action != "live":
+                    params.update(
+                        scope="group" if action == "snap_group" else "location", page=page
+                    )
+                context = await run_api_flow(
+                    flow=[
+                        {
+                            "name": "result",
+                            "path": "/api/bot/cameras/"
+                            + ("live-link" if action == "live" else "latest-snapshots"),
+                            "method": "GET",
+                            "params": params,
+                        }
+                    ],
+                    bearer_token=token,
+                    sender=sender,
+                    argument=argument,
+                    parameters=self.action_api_context.get("params", {}),
+                )
+                self._merge_action_context(context)
+                body = context["steps"]["result"]["body"]
+                if action == "live":
+                    template = (
+                        command.get("response")
+                        or "{{steps.result.body.camera}}\n{{steps.result.body.url}}\nLogin B-Snap admin required."
+                    )
+                    return render_flow_template(template, context, get_current_timezone(self.db))
+                attached += await self._attach_camera_snapshot_page(
+                    context,
+                    action,
+                    argument=argument,
+                    sender=sender,
+                    template=command.get("response", ""),
+                )
+                if not body["has_more"]:
+                    break
+                page += 1
+        except (APIFlowError, ValueError, HTTPException) as exc:
+            self._merge_action_context(getattr(exc, "context", {}))
+            message = "Camera media request failed. Check API token, sender access, and camera configuration."
+            self._set_action_error(message, 502)
+            # Preserve prepared images and make a partial failure visible to the recipient.
+            if self.outbound_items:
+                self.outbound_items.append({"text": message})
+                return ""
+            return message
+        if not attached:
+            self._set_action_error("No saved snapshot files are available.", 404)
+        return ""
+
+    async def _attach_camera_snapshot_page(
+        self, context: dict, action: str, *, argument: str, sender: str, template: str
+    ) -> int:
+        """Prepare each API-selected image and report missing files for this page."""
+        body = context["steps"]["result"]["body"]
+        template = (
+            template or "{{steps.result.body.camera}}\n{{steps.result.body.timestamp|datetime}}"
+        )
+        for item in body["results"]:
+            item_context = {**context, "steps": {"result": {"status_code": 200, "body": item}}}
+            caption = render_response(
+                render_flow_template(template, item_context, get_current_timezone(self.db)),
+                **item,
+                argument=argument,
+                sender=sender,
+            )
+            await self._attach_response_image(
+                {"action": action, "response_image_source": item["url"]}, caption
+            )
+        if body["missing"]:
+            self.outbound_items.append(
+                {"text": "Latest snapshot unavailable: " + ", ".join(body["missing"])}
+            )
+        return len(body["results"])
+
     def _require_camera_access(self, camera: Camera) -> None:
         """Reject an existing camera outside the sender's allowed group."""
         entry = _whitelisted_sender(self.db, self._sender)
@@ -1339,11 +1440,16 @@ class WABotHandler:
         if entry.group_id is not None and not any(
             group.id == entry.group_id for group in camera.groups
         ):
-            raise HTTPException(status_code=403, detail="You do not have permission to access this camera or its group.")
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to access this camera or its group.",
+            )
 
     def _find_camera(self, query: str):
         entry = _whitelisted_sender(self.db, self._sender)
-        camera_query = self.db.query(Camera).filter(Camera.status.in_(["Active", "Restricted", "Maintenance"]))
+        camera_query = self.db.query(Camera).filter(
+            Camera.status.in_(["Active", "Restricted", "Maintenance"])
+        )
         if entry and entry.group_id:
             camera_query = camera_query.filter(Camera.groups.any(id=entry.group_id))
         selector = (Camera.hostname.ilike(f"%{query}%")) | (Camera.ip == query)

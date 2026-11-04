@@ -39,6 +39,7 @@ from app.routes import (
     audit,
     audit_log,
     cameras,
+    bot_camera_media,
     camera_groups,
     config,
     docs,
@@ -300,6 +301,7 @@ app.include_router(stats.router)
 app.include_router(snapshots.router)
 app.include_router(ping.router)
 app.include_router(resolve_ip.router)
+app.include_router(bot_camera_media.router)
 app.include_router(maps.router)
 app.include_router(user_management.router)
 app.include_router(user_profile.router)

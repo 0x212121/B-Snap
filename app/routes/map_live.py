@@ -16,6 +16,7 @@ from app.models.user import User
 from app.routes.auth import admin_access_required
 from app.utils.audit_logger import log_audit
 from app.utils.camera_onvif import get_rtsp_url
+from app.utils.live_snapshot import SnapshotPreview
 from app.utils.live_stream import BOUNDARY, LivePreview, configured_rtsp_source, reserve_viewer
 from app.utils.map_live_access import live_policy_allows, map_live_enabled
 from app.utils.video import _hls_recording_url
@@ -55,10 +56,19 @@ def live_camera(
     try:
         # Camera.port is also the HTTP/ONVIF port; standard web ports are not RTSP.
         rtsp_port = 554 if camera.port in {None, 80, 443} else camera.port
+        snapshot_source = (camera.snapshot_url or "").strip()
+        http_snapshot = urlparse(snapshot_source).scheme.lower() in {
+            "http",
+            "https",
+        } and not _hls_recording_url(camera)
         source = (
-            _hls_recording_url(camera)
-            or configured_rtsp_source(camera)
-            or (get_rtsp_url(camera, rtsp_port=rtsp_port, try_acti=True) if camera.ip else None)
+            snapshot_source
+            if http_snapshot
+            else (
+                _hls_recording_url(camera)
+                or configured_rtsp_source(camera)
+                or (get_rtsp_url(camera, rtsp_port=rtsp_port, try_acti=True) if camera.ip else None)
+            )
         )
         if not source:
             raise HTTPException(status_code=502, detail="Camera live source is unavailable")
@@ -66,7 +76,17 @@ def live_camera(
         if parsed.scheme.lower() not in {"rtsp", "rtsps", "http", "https"} or not parsed.hostname:
             raise HTTPException(status_code=502, detail="Camera live source is unavailable")
         user_id = current_user.id
-        preview = LivePreview(source, release, allowed=lambda: live_policy_allows(user_id))
+        preview = (
+            SnapshotPreview(
+                source,
+                camera.username or "",
+                camera.password or "",
+                release,
+                allowed=lambda: live_policy_allows(user_id),
+            )
+            if http_snapshot
+            else LivePreview(source, release, allowed=lambda: live_policy_allows(user_id))
+        )
         first = preview.first_frame()
         log_audit(
             db=db,

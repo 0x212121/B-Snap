@@ -122,6 +122,8 @@ def normalize_command_schedules(
 def normalize_response_media(item: dict[str, Any]) -> dict[str, str]:
     """Validate explicitly configured response media for any command action."""
     response_type = item.get("response_type", "text")
+    if item.get("action") in {"live", "snap_group", "snap_location"} and response_type != "text":
+        raise ValueError("Camera media actions require Text; snapshot images are attached automatically")
     if response_type not in {"text", "image", "video"}:
         raise ValueError("Response type must be text, image, or video")
     source = str(item.get("response_video_source") or "").strip()
@@ -143,7 +145,7 @@ def normalize_image_hd(action: str, value: Any = False) -> bool:
     """Validate HD image delivery for snapshot system actions."""
     if not isinstance(value, bool):
         raise ValueError("Image HD quality must be a boolean")
-    return value if action in {"snap", "cctv"} else False
+    return value if action in {"snap", "cctv", "snap_group", "snap_location"} else False
 
 
 def normalize_processing_delay(value: Any = 0) -> int:
@@ -162,6 +164,9 @@ CUSTOM_ACTION_ROLES = {
     "ping": "user",
     "cctv": "user",
     "snap": "user",
+    "live": "admin",
+    "snap_group": "user",
+    "snap_location": "user",
     "edit": "admin",
     "token_check": "admin",
     "whitelist_add": "admin",

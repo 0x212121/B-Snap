@@ -4,7 +4,7 @@
   const editor = document.getElementById('commandEditor');
   const form = document.getElementById('commandForm');
   const tokenSelect = document.getElementById('apiTokenId');
-  const adminActions = ['edit','token_check','whitelist_add','whitelist_remove'];
+  const adminActions = ['live','edit','token_check','whitelist_add','whitelist_remove'];
   const privateOnlyActions = ['edit','token_check','whitelist_add','whitelist_remove'];
   const actionLabels = {
     text: 'Reply with text',
@@ -14,6 +14,9 @@
     ping: 'Ping host',
     cctv: 'Send latest snapshot',
     snap: 'Capture new snapshot',
+    live: 'Get live streaming link (admin)',
+    snap_group: 'Latest snapshots by camera group',
+    snap_location: 'Latest snapshots by location',
     api_flow: 'Internal B-Snap API flow',
     edit: 'Edit camera data',
     token_check: 'View token',
@@ -21,6 +24,9 @@
     whitelist_remove: 'Remove from whitelist'
   };
   const systemActionSamples = {
+    live: {result:{status_code:200,body:{camera:'CAM-M5-01',url:'https://bsnap.example/maps/cameras/camera-id/live',requires_login:true}}},
+    snap_group: {result:{status_code:200,body:{camera:'CAM-M5-01',timestamp:'2026-10-05T10:30:00Z',url:'/api/snapshots/secure/snapshot-id'}}},
+    snap_location: {result:{status_code:200,body:{camera:'CAM-M5-01',timestamp:'2026-10-05T10:30:00Z',url:'/api/snapshots/secure/snapshot-id'}}},
     cctv: {result:{status_code:200,body:[{camera:'CAM-M5-01',ip:'192.168.1.10',timestamp:'2026-10-05T10:30:00Z',filename:'snapshot.jpg',url:'/snapshot/file/snapshot.jpg',lat:'-3.12',long:'115.22'}]}},
     snap: {result:{status_code:200,body:[{camera:'CAM-M5-01',ip:'192.168.1.10',timestamp:'2026-10-05T10:30:00Z',filename:'snapshot.jpg',url:'/snapshot/file/snapshot.jpg',uptime:'2d 4h',lat:'-3.12',long:'115.22'}]}},
     ping: {ping:{status_code:200,body:{target:'camera.example',online:true,replies:['Reply from camera.example: time=12.4ms','Reply from camera.example: time=11.8ms']}}},
@@ -59,7 +65,7 @@
     for (const key of ['aliases','required_params']) result[key] = form.elements[key].value.split(',').map(value=>value.trim()).filter(Boolean);
     result.aliases = result.aliases.map(value=>value.toLowerCase());
     result.enabled = form.elements.enabled.checked; result.quote_reply = form.elements.quote_reply.checked;
-    result.image_hd = ['snap', 'cctv'].includes(result.action) && form.elements.image_hd.checked;
+    result.image_hd = ['snap', 'cctv', 'snap_group', 'snap_location'].includes(result.action) && form.elements.image_hd.checked;
     result.processing_delay_seconds = Number(form.elements.processing_delay_seconds.value);
     result.schedules = Array.from(form.querySelectorAll('[data-command-schedule]')).map(row => {
       const field = key => row.querySelector(`[name="schedule_${key}"]`);
@@ -351,7 +357,10 @@
   function setResponseTemplateVisibility(action) {
     const usesTemplate = true;
     const isSnap = action === 'snap';
-    form.querySelector('[data-image-hd-option]').classList.toggle('hidden', !['snap', 'cctv'].includes(action));
+    const nativeCameraMedia = ['live', 'snap_group', 'snap_location'].includes(action);
+    form.elements.response_type.disabled = nativeCameraMedia;
+    if (nativeCameraMedia) form.elements.response_type.value = 'text';
+    form.querySelector('[data-image-hd-option]').classList.toggle('hidden', !['snap', 'cctv', 'snap_group', 'snap_location'].includes(action));
     const isIndonesian = document.documentElement.lang === 'id';
     const isVideo = form.elements.response_type.value === 'video';
     const isImage = form.elements.response_type.value === 'image';
@@ -367,6 +376,12 @@
     form.querySelector('[data-response-panel]').classList.toggle('hidden', !usesTemplate);
     form.querySelector('[data-snap-stage-panel]').classList.remove('hidden');
     form.elements.response.required = usesTemplate && action !== 'ping' && !isVideo && !isImage;
+    if (['live', 'snap_group', 'snap_location'].includes(action) && !form.elements.response.value.trim()) {
+      draft.response = action === 'live'
+        ? '{{steps.result.body.camera}}\n{{steps.result.body.url}}\n' + t('B-Snap admin login required.', 'Perlu login admin B-Snap.')
+        : '{{steps.result.body.camera}}\n{{steps.result.body.timestamp|datetime}}';
+      form.elements.response.value = draft.response;
+    }
     if (action === 'bot_status' && !draft.response?.trim()) {
       draft.response = '{' + '{status_icon}' + '} Bot Status: {' + '{status}' + '}\n🕒 Response Time: {' + '{response_time}' + '}';
       form.elements.response.value = draft.response;
@@ -918,7 +933,7 @@
     draft.required_params = form.elements.required_params.value.split(',').map(value => value.trim()).filter(Boolean);
     draft.action = form.elements.action.value; draft.role = adminActions.includes(draft.action) ? 'admin' : 'user'; draft.chat_scope = privateOnlyActions.includes(draft.action) ? 'private' : form.elements.chat_scope.value; draft.enabled = form.elements.enabled.checked; draft.quote_reply = form.elements.quote_reply.checked;
     draft.response_type = form.elements.response_type.value;
-    draft.image_hd = ['snap', 'cctv'].includes(draft.action) && form.elements.image_hd.checked;
+    draft.image_hd = ['snap', 'cctv', 'snap_group', 'snap_location'].includes(draft.action) && form.elements.image_hd.checked;
     draft.response_video_source = form.elements.response_video_source.value.trim();
     draft.response_image_source = form.elements.response_image_source.value.trim();
     draft.processing_delay_seconds = Number(form.elements.processing_delay_seconds.value);
