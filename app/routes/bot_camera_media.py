@@ -91,8 +91,8 @@ def camera_live_link(
         db=db,
         user=current_admin.username,
         action="create_public_camera_live_link",
-        target=camera.id,
-        extra={"sender_id": entry.id, "expires_at": expires},
+        target=camera.hostname,
+        extra={"camera_id": camera.id, "sender_id": entry.id, "expires_at": expires},
     )
     return {
         "camera_id": camera.id,

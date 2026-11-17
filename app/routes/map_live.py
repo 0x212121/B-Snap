@@ -62,13 +62,15 @@ def live_camera(
         raise HTTPException(status_code=404, detail="Camera not found")
     if camera.status not in {"Active", "Standalone"}:
         raise HTTPException(status_code=409, detail="Camera is not available for live preview")
+    # Streaming outlives the request's ORM session; capture primitive values now.
+    user_id = current_user.id
     return _stream_camera(
         camera,
         request,
         db,
         actor=current_user.username,
-        viewer_id=str(current_user.id),
-        allowed=lambda: live_policy_allows(current_user.id),
+        viewer_id=str(user_id),
+        allowed=lambda: live_policy_allows(user_id),
     )
 
 
@@ -155,7 +157,8 @@ def _stream_camera(
             db=db,
             user=actor,
             action=audit_action,
-            target=camera.id,
+            target=camera.hostname,
+            extra={"camera_id": camera.id},
             ip=request.client.host if request.client else None,
             request_path=request.url.path,
             request_method="GET",

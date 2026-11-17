@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import subprocess
 import threading
@@ -23,6 +24,7 @@ MAX_USER_STREAMS = 2
 STREAM_SECONDS = 180
 FIRST_FRAME_SECONDS = 20
 BOUNDARY = "bsnap-live"
+logger = logging.getLogger(__name__)
 _lock = threading.Lock()
 _viewers: dict[str, int] = {}
 
@@ -196,9 +198,11 @@ class LivePreview:
                 if self.allowed is not None and monotonic() >= next_policy_check:
                     try:
                         permitted = await asyncio.to_thread(self.allowed)
-                    except Exception:
+                    except Exception as exc:
+                        logger.warning("Live preview policy check failed (%s)", type(exc).__name__)
                         permitted = False
                     if not permitted:
+                        logger.info("Live preview stopped: permission check denied access")
                         break
                     next_policy_check = monotonic() + LIVE_POLICY_INTERVAL_SECONDS
                 yield chunk

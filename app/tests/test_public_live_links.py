@@ -75,6 +75,8 @@ def test_public_view_needs_no_login_but_requires_a_valid_grant(public_client):
     assert 0 < public_client.factory.call_args.kwargs["seconds"] <= 30
     assert public_client.reserve.call_args.args == ("7",)
     assert public_client.audit.call_args.kwargs["action"] == "view_public_camera_live"
+    assert public_client.audit.call_args.kwargs["target"] == "shared"
+    assert public_client.audit.call_args.kwargs["extra"]["camera_id"] == "shared"
     assert public_client.token not in str(public_client.audit.call_args)
 
 

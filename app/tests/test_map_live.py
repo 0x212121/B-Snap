@@ -116,6 +116,8 @@ def test_live_access_uses_camera_memberships_and_hides_credentials(live_client) 
     assert "secret" not in response.text
     assert "secret" not in str(live_client.audit.call_args)
     assert live_client.audit.call_args.kwargs["action"] == "view_camera_live"
+    assert live_client.audit.call_args.kwargs["target"] == "shared"
+    assert live_client.audit.call_args.kwargs["extra"]["camera_id"] == "shared"
     assert live_client.source.call_args.kwargs["rtsp_port"] == 554
 
 
@@ -203,6 +205,26 @@ def test_active_stream_stops_when_policy_is_revoked(monkeypatch: pytest.MonkeyPa
     policy.assert_called_once()
     process.kill.assert_called_once()
     release.assert_called_once()
+
+
+def test_live_policy_callback_survives_request_orm_session_cleanup(
+    live_client, monkeypatch
+) -> None:
+    # Use a compatible mapped object as the user stand-in; User itself has JSONB.
+    user = live_client.db.get(Camera, "shared")
+    user.username = "test"
+    user.role = "admin"
+    user.group_id = 101
+    live_client.client.app.dependency_overrides[auth.get_current_user] = lambda: user
+    policy = Mock(return_value=True)
+    monkeypatch.setattr(map_live, "live_policy_allows", policy)
+    assert live_client.client.get("/maps/cameras/shared/live").status_code == 200
+    callback = live_client.factory.call_args.kwargs["allowed"]
+    live_client.db.expire(user, ["id"])
+    live_client.db.expunge(user)
+    assert callback() is True
+    assert callback() is True
+    policy.assert_called_with("shared")
 
 
 def test_hls_source_reuses_credentials_without_rtsp_probe(

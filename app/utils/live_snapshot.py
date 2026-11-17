@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import io
+import logging
 import threading
 
 from collections.abc import AsyncIterator, Callable
@@ -20,6 +21,7 @@ from app.utils.live_stream import BOUNDARY, FIRST_FRAME_SECONDS, STREAM_SECONDS
 
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 REFRESH_SECONDS = 2
+logger = logging.getLogger(__name__)
 
 
 class SnapshotPreview:
@@ -126,8 +128,9 @@ class SnapshotPreview:
                 if self.closed or monotonic() >= self.deadline:
                     break
                 yield frame
-        except Exception:
+        except Exception as exc:
             # Headers are already sent; terminate on source/policy errors.
+            logger.warning("HTTP live preview stopped (%s)", type(exc).__name__)
             return
         finally:
             self.close()

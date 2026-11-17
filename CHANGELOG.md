@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Show the camera hostname as the audit target when creating or viewing live links; retain the camera ID in audit details.
+- Keep Maps live previews running past the first five-second permission check by capturing the user ID before request-session cleanup. Log permission-check failures without exposing camera credentials or signed links.
+
 ## [2.6.4] - 2026-11-17
 
 ### Added

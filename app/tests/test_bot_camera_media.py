@@ -195,6 +195,8 @@ def test_live_link_preserves_admin_policy_and_public_origin(media_client):
     body = request().json()
     assert body["url"].startswith("https://bsnap.example/public/cameras/shared/live?token=")
     assert body["requires_login"] is False
+    assert bot_camera_media.log_audit.call_args.kwargs["target"] == "Gate 1"
+    assert bot_camera_media.log_audit.call_args.kwargs["extra"]["camera_id"] == "shared"
     assert body["expires_in"] == 300
     assert body["expires_at"].endswith("+00:00")
     assert request(expires_in=29).status_code == 422
@@ -401,7 +403,10 @@ def test_live_execute_uses_public_origin_fallback(action_client, monkeypatch):
     monkeypatch.setenv("PUBLIC_ORIGIN", "https://public.example")
     response = execute_action(action_client, "live", "Gate 1")
     assert response.status_code == 200
-    assert "https://public.example/public/cameras/shared/live?token=" in response.json()["response_preview"]
+    assert (
+        "https://public.example/public/cameras/shared/live?token="
+        in response.json()["response_preview"]
+    )
 
 
 def test_live_execute_explains_missing_origin_without_generic_gateway_error(

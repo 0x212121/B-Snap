@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from typing import Any
 
 from fastapi import HTTPException
@@ -14,6 +16,8 @@ from app.models.user import User
 from app.models.whitelist import RoleEnum, WhatsappWhitelist
 from app.utils.map_live_access import map_live_enabled
 from app.utils.public_live_token import verify_live_grant
+
+logger = logging.getLogger(__name__)
 
 
 def public_live_camera(db: Session, grant: dict[str, Any]) -> Camera:
@@ -40,5 +44,9 @@ def public_live_policy_allows(camera_id: str, token: str) -> bool:
         with SessionLocal() as db:
             public_live_camera(db, grant)
         return True
-    except Exception:
+    except HTTPException as exc:
+        logger.info("Public live preview stopped: %s", exc.detail)
+        return False
+    except Exception as exc:
+        logger.warning("Public live policy check failed (%s)", type(exc).__name__)
         return False
