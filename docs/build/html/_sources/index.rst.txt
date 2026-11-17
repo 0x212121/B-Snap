@@ -13,6 +13,7 @@ Welcome to B-Snap Documentation!
    architecture
    configuration
    record-mounts
+   recording-schedules
    api
    security
    audit_logging

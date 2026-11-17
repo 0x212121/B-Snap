@@ -37,6 +37,34 @@ Store the same generated value in:
 | B-Snap web workers | `GOWA_WEBHOOK_SECRET` |
 | GoWA | `WHATSAPP_WEBHOOK_SECRET`, or the applicable device-specific webhook secret |
 
+These are the variable names read by the applications inside their containers.
+Upstream GoWA reads `whatsapp_webhook_secret` through its configuration loader;
+use the uppercase environment name `WHATSAPP_WEBHOOK_SECRET`.
+B-Snap explicitly reads `GOWA_WEBHOOK_SECRET` and does not use GoWA's variable
+as a fallback. The two applications must receive the same value, but their
+environment variable names do not have to match.
+
+If both Compose projects use `GOWA_WEBHOOK_SECRET` in their host `.env` files,
+map it to GoWA's application variable in the GoWA service:
+
+```yaml
+# Fragment of the GoWA service, not the B-Snap service.
+environment:
+  WHATSAPP_WEBHOOK_SECRET: ${GOWA_WEBHOOK_SECRET:?Set GOWA_WEBHOOK_SECRET}
+```
+
+Here the left-hand name is passed into the GoWA container; `${GOWA_WEBHOOK_SECRET}`
+on the right is resolved by Compose from the host environment or its `.env` file.
+Renaming only the host `.env` key can therefore leave this mapping empty even
+though the application variable on the left is correct. A Compose `.env` used for
+interpolation is distinct from a service's `env_file`, which passes variables into
+the container. Use the existing B-Snap `env_file: .env` for its own key.
+After changing container environment settings, recreate the affected containers;
+`docker compose restart` alone does not apply those changes. A custom GoWA image,
+startup wrapper, or per-device webhook secret can change which setting is used;
+inspect that deployment's image, command and environment mapping before renaming
+working keys.
+
 The secret must have at least 32 characters. Do not reuse the B-Snap session key,
 camera encryption key, or GoWA outbound API credentials. B-Snap never returns or
 logs the signing secret. Keep TLS verification enabled when GoWA calls HTTPS.
@@ -59,6 +87,15 @@ If a relay reserializes JSON, it must preserve the original bytes/signature or b
 an explicitly trusted signer; otherwise verification correctly fails.
 
 See the [upstream signature protocol](https://github.com/aldinokemal/go-whatsapp-web-multidevice/blob/main/docs/webhook-payload.md#security).
+
+If the bot stops responding and Message delivery monitor shows no incoming messages,
+check the HTTP response to GoWA's webhook request first. A 503 response with
+`Webhook authentication is not configured` means the B-Snap worker has no valid
+`GOWA_WEBHOOK_SECRET`; a 401 response means the signature is missing or invalid.
+These requests stop before whitelist lookup and message logging. Set the matching
+signing key on both services and restart the affected workers as described above.
+Do not remove `+` from stored whitelist numbers to resolve an authentication error:
+lookups accept both E.164 (`+62...`) and legacy digit-only (`62...`) representations.
 
 ## Production settings and proxy trust
 
