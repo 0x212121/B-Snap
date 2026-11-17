@@ -1,3 +1,5 @@
 {% from 'macros/branding.html' import palettes %}
 {% set colors = palettes.get(branding.palette | default('blue'), palettes['blue']) %}
 <style>:root { --ui-primary: {{ colors.primary }}; --ui-primary-hover: {{ colors.hover }}; }</style>
+<link href="/static/css/command-center.css" rel="stylesheet">
+<script src="/static/js/theme.js"></script>

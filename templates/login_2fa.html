@@ -9,11 +9,7 @@
     {% include "_branding_theme.html" %}
     <link rel="icon" href="{{ branding.logo if branding.logo != '/static/icons/b-snap.png' else '/static/icons/favicon.ico' }}">
     <script>
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
+        BSnapTheme.init();
     </script>
 
 </head>
@@ -89,12 +85,7 @@
         setToggleIcon();
         const themeToggleBtn = document.getElementById('theme-toggle');
         themeToggleBtn.addEventListener('click', function() {
-            document.documentElement.classList.toggle('dark');
-            if (document.documentElement.classList.contains('dark')) {
-                localStorage.theme = 'dark';
-            } else {
-                localStorage.theme = 'light';
-            }
+            BSnapTheme.set(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
             setToggleIcon();
         });
     </script>

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Command Center theme with navy/slate panels, cyan actions, readable semantic statuses, shared design tokens, and a persistent desktop/mobile theme selector alongside existing Light and Dark themes.
+
 ## [2.6.4] - 2026-11-17
 
 ### Added

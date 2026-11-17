@@ -1,0 +1,9 @@
+<div class="px-3 py-2">
+  <label for="{{ theme_select_id }}" class="ui-label block text-sm">Theme</label>
+  <select id="{{ theme_select_id }}" data-theme-select class="ui-control w-full text-sm"
+          onchange="BSnapTheme.set(this.value)">
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+    <option value="command-center">Command Center</option>
+  </select>
+</div>

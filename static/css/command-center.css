@@ -1,0 +1,158 @@
+/* Opt-in only. Flat surfaces and compact rows keep camera data ahead of decoration. */
+html[data-theme="command-center"] {
+  color-scheme: dark;
+  --cc-background: #0b1220;
+  --cc-panel: #131f30;
+  --cc-recessed: #0f1929;
+  --cc-raised: #1d3045;
+  --cc-border: #30445b;
+  --cc-control-border: #647d96;
+  --cc-text: #e6edf5;
+  --cc-muted: #adbed0;
+  --cc-accent: #67e8f9;
+  --cc-accent-hover: #a5f3fc;
+  --cc-on-accent: #08212d;
+  --ui-text: var(--cc-text);
+  --ui-muted: var(--cc-muted);
+  --ui-surface: var(--cc-panel);
+  --ui-subtle: var(--cc-recessed);
+  --ui-hover: var(--cc-raised);
+  --ui-border: var(--cc-border);
+  --ui-control-border: var(--cc-control-border);
+  --ui-focus: var(--cc-accent);
+  --ui-primary: var(--cc-accent);
+  --ui-primary-hover: var(--cc-accent-hover);
+  --ui-radius: 4px;
+  --ui-control-radius: 4px;
+  --ui-info-bg: #123442;
+  --ui-info-text: #a5f3fc;
+  --ui-success-bg: #12372e;
+  --ui-success-text: #86efac;
+  --ui-warning-bg: #3b2d16;
+  --ui-warning-text: #fde68a;
+  --ui-critical-bg: #411f2b;
+  --ui-critical-text: #fda4af;
+}
+html[data-theme="command-center"].dark body {
+  background: var(--cc-background) !important;
+  color: var(--ui-text);
+}
+/* Bridge legacy Tailwind surfaces; semantic status utilities are intentionally separate. */
+html[data-theme="command-center"] :is(.bg-white, .bg-gray-800, .dark\:bg-gray-800,
+  .bg-slate-800, .dark\:bg-slate-800, .ui-card, .ui-filter-bar, .nav-more-panel) {
+  background-color: var(--ui-surface) !important;
+  border-color: var(--ui-border);
+}
+html[data-theme="command-center"] :is(.bg-gray-50, .bg-gray-100, .bg-gray-900,
+  .dark\:bg-gray-900, .dark\:bg-gray-900\/50, .bg-slate-900, .dark\:bg-slate-900) {
+  background-color: var(--ui-subtle) !important;
+}
+html[data-theme="command-center"] :is(.bg-gray-200, .bg-gray-700, .dark\:bg-gray-700) {
+  background-color: var(--ui-hover) !important;
+}
+html[data-theme="command-center"] :is([class~="border-gray-200"], [class~="border-gray-300"],
+  [class~="dark:border-gray-600"], [class~="dark:border-gray-700"], .ui-card) {
+  border-color: var(--ui-border) !important;
+}
+html[data-theme="command-center"] :is(.text-gray-900, .text-gray-800, .dark\:text-white,
+  .dark\:text-gray-100, .dark\:text-gray-200) { color: var(--ui-text) !important; }
+html[data-theme="command-center"] :is(.text-gray-400, .text-gray-500, .text-gray-600,
+  .text-gray-700, .dark\:text-gray-300, .dark\:text-gray-400, .dark\:text-gray-500) {
+  color: var(--ui-muted) !important;
+}
+html[data-theme="command-center"] :is(.ui-card, .ui-filter-bar, .nav-more-panel,
+  #account-navigation, .swal2-popup, [role="dialog"]) {
+  border-radius: var(--ui-radius);
+  box-shadow: none;
+}
+html[data-theme="command-center"] #site-header {
+  background: var(--cc-recessed) !important;
+  border-bottom-color: var(--cc-border) !important;
+}
+html[data-theme="command-center"] :is(.nav-link-active, .ui-tab-active) {
+  color: var(--cc-accent) !important;
+  background: var(--cc-raised) !important;
+  box-shadow: inset 0 -2px var(--cc-accent);
+}
+html[data-theme="command-center"] :is(.nav-link, .ui-tab):hover,
+html[data-theme="command-center"] :is(.hover\:bg-gray-100, .dark\:hover\:bg-gray-700):hover {
+  background-color: var(--cc-raised) !important;
+}
+html[data-theme="command-center"] :is(.ui-button-primary, .swal2-confirm,
+  button.bg-blue-600, a.bg-blue-600, button.bg-blue-500, a.bg-blue-500) {
+  background: var(--cc-accent) !important;
+  color: var(--cc-on-accent) !important;
+  border-color: transparent !important;
+}
+html[data-theme="command-center"] :is(.ui-button-primary, .swal2-confirm,
+  button.bg-blue-600, a.bg-blue-600, button.bg-blue-500, a.bg-blue-500):hover {
+  background: var(--cc-accent-hover) !important;
+}
+html[data-theme="command-center"] :is(a.text-blue-600, .dark\:text-blue-400,
+  .text-blue-500, .text-blue-600) { color: var(--cc-accent) !important; }
+html[data-theme="command-center"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]),
+  select, textarea, .ts-control, .ts-dropdown, .swal2-input) {
+  background-color: var(--cc-recessed) !important;
+  color: var(--ui-text) !important;
+  border-color: var(--ui-control-border) !important;
+  border-radius: var(--ui-control-radius);
+  -webkit-text-fill-color: var(--ui-text) !important;
+}
+html[data-theme="command-center"] ::placeholder { color: var(--ui-muted) !important; opacity: 1; }
+html[data-theme="command-center"].dark .swal2-popup .swal2-input {
+  background-color: var(--cc-recessed) !important;
+  color: var(--ui-text) !important;
+  border-color: var(--ui-control-border) !important;
+  -webkit-text-fill-color: var(--ui-text) !important;
+}
+html[data-theme="command-center"] .swal2-popup.ui-dialog .ui-button.ui-button-primary {
+  background-color: var(--cc-accent) !important;
+  color: var(--cc-on-accent) !important;
+}
+html[data-theme="command-center"] :is(input[type="checkbox"], input[type="radio"]) { accent-color: var(--cc-accent); }
+html[data-theme="command-center"].dark :is(.swal2-popup, .swal2-title, .swal2-html-container) {
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+}
+html[data-theme="command-center"] .swal2-popup { border: 1px solid var(--ui-border); }
+html[data-theme="command-center"].dark .swal2-cancel {
+  background: var(--ui-hover) !important;
+  color: var(--ui-text) !important;
+}
+html[data-theme="command-center"] .ts-dropdown .active { background: var(--ui-hover) !important; color: var(--ui-text) !important; }
+html[data-theme="command-center"] :is(thead, .ui-table > thead) {
+  background: var(--cc-recessed) !important;
+  color: var(--ui-muted);
+}
+html[data-theme="command-center"] :is(.ui-table, table) { font-variant-numeric: tabular-nums; }
+html[data-theme="command-center"] table tbody tr:nth-child(even) { background-color: var(--cc-recessed); }
+html[data-theme="command-center"] table tbody tr:hover { background-color: var(--cc-raised) !important; }
+html[data-theme="command-center"] .ui-page-header { margin-bottom: 16px; }
+html[data-theme="command-center"] .ui-kpi-value { font-variant-numeric: tabular-nums; }
+html[data-theme="command-center"] [class*="bg-gradient-to-"] {
+  background-image: none !important;
+  background-color: var(--cc-raised) !important;
+}
+/* Keep full touch targets. Only desktop table cells become denser. */
+@media (min-width: 1024px) {
+  html[data-theme="command-center"] .ui-table > tbody > tr > td { padding-block: 6px; height: 40px; }
+}
+html[data-theme="command-center"] :is(a[href], button, summary, select, label[for],
+  input[type="checkbox"], input[type="radio"]) { cursor: pointer; }
+html[data-theme="command-center"] :is(button, input, select, textarea):disabled {
+  cursor: not-allowed; opacity: .55;
+}
+html[data-theme="command-center"] :is(button, a, summary):active { filter: brightness(.9); }
+html[data-theme="command-center"] :focus-visible {
+  outline: 2px solid var(--cc-accent) !important;
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="command-center"] *, html[data-theme="command-center"] *::before,
+  html[data-theme="command-center"] *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

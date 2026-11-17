@@ -122,6 +122,7 @@
     "Adjust your filters or capture a new video.": "Sesuaikan filter atau rekam video baru.",
     "More": "Lainnya", "Devices": "Perangkat", "Notifications": "Notifikasi",
     "Help & developer": "Bantuan & pengembang", "Toggle theme": "Ubah tema",
+    "Theme": "Tema", "Light": "Terang", "Dark": "Gelap",
     "Toggle navigation": "Buka/tutup navigasi", "Skip to content": "Lewati ke konten",
     "Opens in a new tab": "Terbuka di tab baru",
     "Monitoring": "Pemantauan", "Administration": "Administrasi", "Dashboard": "Dasbor",
