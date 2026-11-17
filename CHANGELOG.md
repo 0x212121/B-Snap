@@ -8,14 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add timezone-aware date filtering to Snapshot Gallery and compact date range selection to Snapshot Gallery and Analytics.
-- Compact video gallery date range picker with localized calendar, timezone-aware presets, and optional start/end bounds.
-- Command Center theme with navy/slate panels, cyan actions, readable semantic statuses, shared design tokens, and a persistent desktop/mobile theme selector alongside existing Light and Dark themes.
+- Add the Command Center theme and persistent theme selection on desktop and mobile.
+- Add timezone-aware date filtering and compact date-range selection to galleries and Analytics.
+
+### Changed
+
+- Unify summary panels, dialogs, and media previews; improve keyboard navigation and localize preview timestamps.
+- Prioritize camera downtime in Analytics, make the map responsive, and use a dialog for adding email recipients.
+- Simplify identity marks, online-user controls, and decorative gradients across the interface.
 
 ### Fixed
 
-- Prevent Command Center table row colors from affecting CCTV map popups.
-- Keep date picker days aligned in seven columns on all panel widths.
+- Correct Snapshot Gallery timezone, date-picker alignment, and Command Center map popup colors.
+- Escape Trash media data, preserve localized timestamps, and distinguish unknown camera status on the map.
 
 ## [2.6.4] - 2026-11-17
 

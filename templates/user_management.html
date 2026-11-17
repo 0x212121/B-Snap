@@ -22,7 +22,7 @@
 {% endcall %}
 
   <!-- Stats -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="ui-summary-strip ui-summary-strip-four mb-6">
     {% call kpi_card("Total Users", "0", value_id="stat-total", tone="neutral") %}
   {{ ui_icons.icon_users("w-5 h-5") }}
 {% endcall %}
@@ -413,8 +413,8 @@
 
   function openAddUserModal() {
     const modalHtml = `
-    <div id="add-user-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+    <div id="add-user-modal" class="ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="ui-modal-panel w-full max-w-md">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -512,8 +512,8 @@
     if (!cameraGroups.length) await loadGroups();
     
     const modalHtml = `
-    <div id="edit-user-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+    <div id="edit-user-modal" class="ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="ui-modal-panel w-full max-w-md">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
@@ -661,8 +661,8 @@
   function openGenerateTokenModal(userId, username) {
     // Keep the existing token modal logic, just update the cell references after generation
     const modalHtml = `
-    <div id="generate-token-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+    <div id="generate-token-modal" class="ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="ui-modal-panel w-full max-w-md">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">

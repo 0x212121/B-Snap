@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 import unittest
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
@@ -23,6 +23,7 @@ from app.models.config import Configuration
 from app.models.video import Video
 from app.routes import snap_gallery, videos
 from app.utils.gallery_preview import _render_preview, snapshot_preview
+from app.utils.timezone_helper import utc_isoformat
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -42,6 +43,31 @@ def test_gallery_loader_regressions() -> None:
         text=True,
         timeout=20,
     )
+
+
+def test_trash_sort_timestamps_preserve_utc_instant() -> None:
+    """Naive database timestamps are UTC; offset-aware values are converted once."""
+    assert utc_isoformat(datetime(2026, 11, 3, 16)) == "2026-11-03T16:00:00Z"
+    assert utc_isoformat(datetime(2026, 11, 4, tzinfo=timezone(timedelta(hours=8)))) == (
+        "2026-11-03T16:00:00Z"
+    )
+    assert utc_isoformat(None) is None
+
+
+@pytest.mark.parametrize("zone", ["Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura"])
+def test_snapshot_gallery_uses_configured_timezone(zone: str) -> None:
+    """The displayed zone and date-picker clock come from the same configuration as filtering."""
+    db = Mock()
+    db.query.return_value.filter.return_value.first.return_value = SimpleNamespace(group_id=None)
+    db.query.return_value.distinct.return_value.all.return_value = []
+    request = SimpleNamespace(session={"user_id": 1})
+    with (
+        patch.object(snap_gallery, "get_current_timezone", return_value=zone),
+        patch.object(snap_gallery, "_get_filtered_snapshots", return_value=[]),
+        patch.object(snap_gallery.templates, "TemplateResponse") as response,
+    ):
+        snap_gallery.show_snapshots(request, db, "", current_operator=Mock())
+    assert response.call_args.args[1]["timezone"] == zone
 
 
 @pytest.mark.parametrize("hard_delete", [False, True])

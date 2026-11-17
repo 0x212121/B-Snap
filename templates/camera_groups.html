@@ -22,7 +22,7 @@
 {% endcall %}
 
   <!-- Stats -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="ui-summary-strip ui-summary-strip-four mb-6">
     {% call kpi_card("Total Groups", "0", value_id="stat-total", tone="neutral") %}
   {{ ui_icons.icon_circle_stack("w-5 h-5") }}
 {% endcall %}
@@ -193,11 +193,11 @@
     const modalHtml = `
     <div id="add-group-modal" class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
       <!-- Backdrop -->
-      <div class="fixed inset-0 bg-gray-950/50 backdrop-blur-sm transition-opacity opacity-0" id="add-modal-backdrop"></div>
+      <div class="ui-modal-backdrop fixed inset-0 transition-opacity opacity-0" id="add-modal-backdrop"></div>
       
       <!-- Modal Container -->
       <div class="fixed inset-0 z-10 flex items-center justify-center p-4">
-        <div class="ui-card relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 text-left shadow-2xl transition-all opacity-0 scale-95" id="add-modal-panel">
+        <div class="ui-modal-panel relative w-full max-w-md transform overflow-hidden text-left transition-all opacity-0 scale-95" id="add-modal-panel">
           
           <!-- Header -->
           <div class="bg-gray-50 dark:bg-gray-900/50 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
@@ -352,11 +352,11 @@
     const modalHtml = `
     <div id="edit-group-modal" class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
       <!-- Backdrop -->
-      <div class="fixed inset-0 bg-gray-950/50 backdrop-blur-sm transition-opacity opacity-0" id="edit-modal-backdrop"></div>
+      <div class="ui-modal-backdrop fixed inset-0 transition-opacity opacity-0" id="edit-modal-backdrop"></div>
       
       <!-- Modal Container -->
       <div class="fixed inset-0 z-10 flex items-center justify-center p-4">
-        <div class="ui-card relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 text-left shadow-2xl transition-all opacity-0 scale-95" id="edit-modal-panel">
+        <div class="ui-modal-panel relative w-full max-w-md transform overflow-hidden text-left transition-all opacity-0 scale-95" id="edit-modal-panel">
           
           <!-- Header -->
           <div class="bg-gray-50 dark:bg-gray-900/50 px-6 py-5 border-b border-gray-200 dark:border-gray-700">

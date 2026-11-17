@@ -33,6 +33,7 @@ from app.utils.timezone_helper import (
     format_datetime_standard,
     get_current_timezone,
     to_current_timezone,
+    utc_isoformat,
 )
 from app.utils.video_dates import filter_media_dates
 
@@ -361,6 +362,7 @@ def show_snapshots(request: Request, db: Session = Depends(get_db), camera: str 
         "camera_names": all_camera_names, # Use the new list of names
         "selected_camera": camera,
         "camera_exists": camera_exists, # Pass existence flag to template
+        "timezone": get_current_timezone(db),
     })
 
 
@@ -489,6 +491,7 @@ async def get_deleted_snapshots(
             "id": s.id,
             "camera": s.camera_name,
             "deleted_at": format_datetime_standard(s.deleted_at, db=db),
+            "deleted_at_iso": utc_isoformat(s.deleted_at),
             "timestamp": format_datetime_standard(s.timestamp, db=db),
             "file_path": s.file_path,
             "file_hash": s.file_hash,
@@ -721,7 +724,9 @@ async def admin_trash_page(
     current_admin: User = Depends(admin_access_required)
 ):
     """Admin Trash Management page - view and manage soft-deleted snapshots/videos."""
-    return templates.TemplateResponse("admin_trash.html", {"request": request})
+    return templates.TemplateResponse(
+        "admin_trash.html", {"request": request, "timezone": get_current_timezone(db)}
+    )
 
 
 # P2-001: Retention Hold Management Endpoints

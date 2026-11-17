@@ -64,8 +64,34 @@
       </div>
     </div>
 
-    <!-- KPI CARDS -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+    <p id="overviewStatus" class="hidden w-full text-sm" role="status" aria-live="polite"></p>
+
+    <div class="ui-card ui-card-body">
+      <h2 class="ui-section-title mb-1">Cameras with Most Downtime</h2>
+      <p class="ui-description mb-4">Ranked by monitored downtime in the selected date range. Select a camera to open its status history.</p>
+      <div class="ui-table-scroll overflow-x-auto">
+        <table class="ui-table min-w-full text-sm">
+          <thead><tr><th class="p-3 text-left">Camera</th><th class="p-3 text-right">Downtime (hours)</th><th class="p-3 text-right">Availability</th></tr></thead>
+          <tbody id="topDowntimeCamerasBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div class="ui-card ui-card-body">
+        <h2 class="ui-section-title mb-1">Camera Availability and Downtime</h2>
+        <p class="ui-description mb-4">Availability = monitored uptime ÷ (uptime + downtime). Downtime is shown in hours.</p>
+        <canvas id="chartCameraAvailability" height="140"></canvas>
+      </div>
+      <div class="ui-card ui-card-body">
+        <h2 class="ui-section-title mb-1">Offline Incidents</h2>
+        <p class="ui-description mb-4">Counts each transition into Offline status in the selected date range.</p>
+        <canvas id="chartOfflineIncidents" height="140"></canvas>
+      </div>
+    </div>
+
+    <!-- System activity shares a single panel below camera operations. -->
+    <div class="ui-summary-strip ui-summary-strip-four">
       <div class="ui-kpi ui-card ui-card-body bg-white dark:bg-gray-800 shadow rounded-xl p-5">
         <div class="text-xs text-gray-500 dark:text-gray-400">API Calls</div>
         <div class="ui-kpi-value text-3xl font-bold mt-1" id="kpiApi">–</div>
@@ -90,7 +116,6 @@
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Activity direction: 50 is stable; higher or lower values show change</div>
       </div>
     </div>
-    <p id="overviewStatus" class="hidden w-full text-sm" role="status" aria-live="polite"></p>
 
     <!-- CHARTS -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -107,32 +132,6 @@
           <h2 class="ui-section-title text-lg font-semibold text-gray-700 dark:text-gray-200">Email Notifications</h2>
         </div>
         <canvas id="chartEmail" height="140"></canvas>
-      </div>
-    </div>
-
-    <div class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
-      <h2 class="ui-section-title text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1">Cameras with Most Downtime</h2>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Ranked by monitored downtime in the selected date range. Select a camera to open its status history.</p>
-      <div class="ui-table-scroll overflow-x-auto">
-        <table class="ui-table min-w-full text-sm">
-          <thead class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-100">
-            <tr><th class="p-3 text-left">Camera</th><th class="p-3 text-right">Downtime (hours)</th><th class="p-3 text-right">Availability</th></tr>
-          </thead>
-          <tbody id="topDowntimeCamerasBody" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      <div class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
-        <h2 class="ui-section-title text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1">Camera Availability and Downtime</h2>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Availability = monitored uptime ÷ (uptime + downtime). Downtime is shown in hours.</p>
-        <canvas id="chartCameraAvailability" height="140"></canvas>
-      </div>
-      <div class="ui-card ui-card-body bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6">
-        <h2 class="ui-section-title text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1">Offline Incidents</h2>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Counts each transition into Offline status in the selected date range.</p>
-        <canvas id="chartOfflineIncidents" height="140"></canvas>
       </div>
     </div>
 

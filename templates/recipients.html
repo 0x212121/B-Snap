@@ -34,7 +34,7 @@
           class="ui-button ui-button-secondary">
           {{ icon_upload("w-5 h-5") }} Import
         </button>
-        <button onclick="toggleSection('addFormContent')" 
+        <button type="button" onclick="openAddModal(this)"
           class="ui-button ui-button-primary">
           {{ icon_plus("w-5 h-5") }} Add New
         </button>
@@ -42,7 +42,7 @@
 {% endcall %}
 
   <!-- Stats Cards -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="ui-summary-strip ui-summary-strip-three mb-6">
     {% call kpi_card("Total Recipients", "-", value_id="stat-total", tone="neutral") %}
   {{ ui_icons.icon_envelope("w-5 h-5") }}
 {% endcall %}
@@ -55,28 +55,34 @@
   {{ ui_icons.icon_map_pin("w-5 h-5") }}
 {% endcall %}
     
-    <div class="ui-card ui-card-body ui-kpi"><div class="ui-kpi-summary"><div><p class="ui-metadata">Last Updated</p><p class="ui-metadata mt-1" id="stat-updated">Just now</p></div><span class="ui-kpi-icon" aria-hidden="true">{{ ui_icons.icon_clock("w-5 h-5") }}</span></div></div>
   </div>
 
-  <!-- Add Recipient Form (Collapsible) -->
-  <div id="addSection" class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6 overflow-hidden">
-    <div id="addFormContent" class="hidden">
-      <div class="p-6">
-        <form id="addForm" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+  <!-- Add Recipient Dialog -->
+  <div id="addRecipientModal" class="ui-modal-backdrop hidden fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="addRecipientTitle" onclick="if (event.target === this) closeAddModal()">
+    <div class="ui-modal-panel w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg" aria-hidden="true">{{ icon_envelope("w-5 h-5 text-blue-600 dark:text-blue-400") }}</div>
+          <div><h2 id="addRecipientTitle" class="ui-section-title">Add Recipient</h2><p class="text-xs text-gray-500 dark:text-gray-400">Configure recipient details and locations</p></div>
+        </div>
+        <button type="button" onclick="closeAddModal()" class="ui-button ui-button-secondary ui-button-icon" aria-label="Close">{{ ui_icons.icon_x_mark("w-5 h-5") }}</button>
+      </div>
+      <form id="addForm" class="overflow-y-auto p-6 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Left Column -->
-          <div class="lg:col-span-5 space-y-4">
+          <div class="space-y-4">
             <div>
-              <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email Address <span class="text-red-500">*</span></label>
+              <label for="email" class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email Address <span class="text-red-500">*</span></label>
               <input type="email" id="email" name="email" required placeholder="recipient@example.com"
                 class="ui-control w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-4 py-2.5 transition-all">
             </div>
             <div>
-              <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nickname</label>
-              <input type="text" id="nickname" name="nickname" placeholder="John Doe"
+              <label for="nickname" class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nickname</label>
+              <input type="text" id="nickname" name="nickname" placeholder="Recipient name"
                 class="ui-control w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-4 py-2.5 transition-all">
             </div>
             <div>
-              <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Group <span class="text-red-500">*</span></label>
+              <label for="group_id" class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Group <span class="text-red-500">*</span></label>
               <select id="group_id" name="group_id" required onchange="onGroupChange(this.value, 'locations')"
                 class="ui-control w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-4 py-2.5 pr-8 transition-all appearance-none">
                 <option value="">Select Group...</option>
@@ -85,23 +91,20 @@
           </div>
           
           <!-- Right Column -->
-          <div class="lg:col-span-5">
-            <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Locations</label>
+          <div>
+            <label for="locations" class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Locations</label>
             <select id="locations" name="locations" multiple
               class="ui-control w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm px-3 py-2 min-h-[140px]">
             </select>
             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Hold Ctrl/Cmd to select multiple. Auto-filtered by group.</p>
           </div>
           
-          <!-- Action Column -->
-          <div class="lg:col-span-2 flex items-end">
-            <button type="submit"
-              class="ui-button ui-button-primary w-full">
-              {{ icon_plus("w-4 h-4") }} Add Recipient
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
+        <div class="flex flex-wrap justify-end gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+          <button type="button" onclick="closeAddModal()" class="ui-button ui-button-secondary">Cancel</button>
+          <button type="submit" class="ui-button ui-button-primary">{{ icon_plus("w-4 h-4") }} Add Recipient</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -220,7 +223,7 @@
         </div>
         <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No recipients found</h3>
         <p class="text-gray-500 dark:text-gray-400 max-w-sm">Add a new recipient to get started or adjust your search filters.</p>
-        <button onclick="toggleSection('addFormContent')" class="ui-button ui-button-secondary mt-4">
+        <button type="button" onclick="openAddModal(this)" class="ui-button ui-button-secondary mt-4">
           {{ ui_icons.icon_plus("w-5 h-5") }}
           Add your first recipient
         </button>
@@ -229,7 +232,7 @@
 
     <!-- Test Email Panel -->
     <div class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div class="px-6 py-4 border-b dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700/50 dark:to-gray-700/30">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <h3 class="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
           <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
             {{ icon_airplane("w-5 h-5 text-blue-600 dark:text-blue-400") }}
@@ -306,8 +309,8 @@
 </div>
 
 <!-- Edit Modal -->
-<div id="editModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-  <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
+<div id="editModal" class="ui-modal-backdrop hidden fixed inset-0 flex items-center justify-center z-50 p-4">
+  <div class="ui-modal-panel w-full max-w-md transform transition-all">
     <div class="px-6 py-4 border-b dark:border-gray-700 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
@@ -402,9 +405,17 @@ let lastTestEmailTime = null
 /* ===============================
 UTILS
 ================================ */
-function toggleSection(elementId) {
-  const el = document.getElementById(elementId)
-  if (el) el.classList.toggle('hidden')
+let addModalTrigger = null
+function openAddModal(trigger) {
+  addModalTrigger = trigger || document.activeElement
+  document.getElementById('addRecipientModal').classList.remove('hidden')
+  document.getElementById('email').focus()
+}
+function closeAddModal(restoreFocus = true) {
+  const modal = document.getElementById('addRecipientModal')
+  if (modal.classList.contains('hidden')) return
+  modal.classList.add('hidden')
+  if (restoreFocus && addModalTrigger?.isConnected) addModalTrigger.focus()
 }
 
 function escapeHtml(text) {
@@ -597,7 +608,6 @@ async function loadRecipients(){
     // Update stats and info
     const total = data.pagination?.total || 0
     document.getElementById("stat-total").textContent = total.toLocaleString()
-    document.getElementById("stat-updated").textContent = new Date().toLocaleTimeString(BSnapDates.locale())
     
     // Update results info text
     const resultsInfo = document.getElementById("results-info")
@@ -762,14 +772,17 @@ document.getElementById("addForm").addEventListener("submit", async (e) => {
   try {
     const res = await fetch(ADD_API, {
       method: 'POST',
+      headers: { Accept: 'application/json' },
       body: formData
     })
     
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
-      throw new Error(err.message || "Failed to add recipient")
+      throw new Error(err.detail || err.message || "Failed to add recipient")
     }
     
+    form.reset()
+    closeAddModal()
     themedSwal({
       icon: 'success',
       title: 'Success',
@@ -778,8 +791,6 @@ document.getElementById("addForm").addEventListener("submit", async (e) => {
       showConfirmButton: false
     })
     
-    form.reset()
-    document.getElementById('addFormContent').classList.add('hidden')
     loadRecipients()
     
   } catch (err) {
@@ -1278,7 +1289,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Close modal on escape key
 document.addEventListener('keydown', (e) => {
+  const addModal = document.getElementById('addRecipientModal')
+  if (e.key === 'Tab' && !addModal.classList.contains('hidden') && !Swal.isVisible()) {
+    const controls = Array.from(addModal.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'))
+      .filter(el => el.getClientRects().length)
+    if (controls.length) {
+      const first = controls[0], last = controls[controls.length - 1]
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+    }
+  }
   if (e.key === 'Escape') {
+    if (Swal.isVisible()) return
+    closeAddModal()
     closeEditModal()
   }
 })

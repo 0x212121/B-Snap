@@ -54,6 +54,7 @@ const context = vm.createContext({
   CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init.detail; } },
   Option: class { constructor(text, value, _defaultSelected, selected) { Object.assign(this, { text, value, selected }); } },
   BSnapReportCharts: { localize() {} },
+  BSnapVideoDateRange: { init() {} },
   BSnapDates: { format: value => value },
   Chart: class {
     constructor(target) { this.id = target.id; charts.add(this.id); }

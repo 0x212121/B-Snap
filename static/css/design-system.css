@@ -110,6 +110,29 @@ html.dark {
 }
 .ui-card-body.ui-card-body { padding: var(--ui-space-4); }
 .swal2-popup.ui-dialog { border: 1px solid var(--ui-border); border-radius: var(--ui-radius); }
+.ui-modal-backdrop { background: rgb(0 0 0 / .6); }
+.ui-modal-panel {
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: 0 12px 32px rgb(0 0 0 / .2);
+}
+.ui-media-trigger { display: block; width: 100%; height: 100%; cursor: pointer; }
+.ui-media-trigger:focus-visible { outline: 3px solid var(--ui-focus); outline-offset: -3px; }
+.ui-media-metadata { font-variant-numeric: tabular-nums; }
+.ui-identity-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--ui-hover);
+  color: var(--ui-text);
+  border-radius: var(--ui-control-radius);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ui-online-header { background: var(--ui-surface); color: var(--ui-text); border-bottom: 1px solid var(--ui-border); }
 .swal2-popup.ui-dialog .swal2-title { font-size: 18px; font-weight: 600; }
 .ui-dialog .swal2-actions .ui-button { display: inline-flex !important; }
 html .ui-dialog .ui-button.ui-button-primary { background-color: var(--ui-primary) !important; color: #fff !important; }
@@ -124,6 +147,27 @@ html .ui-dialog .ui-button.ui-button-secondary:hover { background-color: var(--u
 .ui-kpi-value-success { color: var(--ui-success-text); }
 .ui-kpi-value-warning { color: var(--ui-warning-text); }
 .ui-kpi-value-critical { color: var(--ui-critical-text); }
+.ui-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-border);
+}
+html .ui-summary-strip > .ui-card.ui-card {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.ui-summary-strip > :last-child:nth-child(odd) { grid-column: span 2; }
+@media (min-width: 1024px) {
+  .ui-summary-strip-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ui-summary-strip-four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ui-summary-strip-five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .ui-summary-strip > :last-child:nth-child(odd) { grid-column: auto; }
+}
 .ui-card-interactive:hover { border-color: var(--ui-control-border); }
 
 .ui-button.ui-button {
@@ -275,7 +319,10 @@ textarea.ui-control { min-height: 96px; }
 .wa-editor-body [data-array-mapper] :is(h5, label, p, [data-array-fields]) { color: var(--ui-text); }
 
 .ui-table-scroll { max-width: 100%; overflow-x: auto; }
-.ui-table.ui-table { width: 100%; color: var(--ui-text); font-size: 14px; line-height: 20px; border-collapse: collapse; }
+.ui-table.ui-table { width: 100%; color: var(--ui-text); font-size: 14px; line-height: 20px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.ui-sort-button { cursor: pointer; min-height: 32px; color: inherit; font: inherit; text-align: inherit; }
+.ui-sort-button:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ui-sort-button:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 2px; }
 .ui-table > thead { background-color: var(--ui-subtle); color: var(--ui-muted); }
 .ui-table > thead > tr > th {
   height: var(--ui-control-height);

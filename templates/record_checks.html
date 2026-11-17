@@ -28,7 +28,7 @@
 </nav>
 
 <section id="record-panel-status" class="record-checks-panel" role="tabpanel" aria-labelledby="record-tab-status">
-<div class="record-checks-summary grid grid-cols-2 gap-2 sm:grid-cols-5">
+<div class="record-checks-summary ui-summary-strip ui-summary-strip-five">
   {% call kpi_card("Healthy", "0", value_id="sum-healthy", tone="success") %}
   {{ ui_icons.icon_check_circle("w-5 h-5") }}
 {% endcall %}
@@ -41,7 +41,7 @@
   {% call kpi_card("Long Dead", "0", value_id="sum-long-dead", tone="critical") %}
   {{ ui_icons.icon_no_symbol("w-5 h-5") }}
 {% endcall %}
-  {% call kpi_card("Unknown", "0", value_id="sum-unknown", tone="warning") %}
+  {% call kpi_card("Unknown", "0", value_id="sum-unknown", tone="neutral") %}
   {{ ui_icons.icon_warning("w-5 h-5") }}
 {% endcall %}
 </div>
@@ -227,17 +227,6 @@
   .record-checks-panel[hidden] { display: none; }
   .record-checks-workspace .ui-page-header { margin-bottom: 12px; }
   .record-checks-summary { margin-bottom: 12px; }
-  .record-checks-summary .ui-kpi { padding: 12px; }
-  .record-checks-summary .ui-kpi-summary > div {
-    display: flex;
-    flex: 1;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 4px 8px;
-  }
-  .record-checks-summary .ui-kpi-value { margin-top: 0; font-size: 24px; }
-  .record-checks-summary .ui-kpi-icon { display: none; }
   .record-checks-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .record-checks-section-header { padding: 8px 12px; }
   .record-checks-sources { max-height: 240px; overflow-y: auto; }
@@ -362,7 +351,7 @@ function formatAge(seconds) {
 function statusBadge(status) {
   const tone = {
     healthy: 'success', stale: 'warning', long_dead: 'critical',
-    missing: 'critical', unknown: 'warning', success: 'success', fail: 'critical',
+    missing: 'critical', unknown: 'neutral', success: 'success', fail: 'critical',
   }[status] || 'neutral';
   return `<span class="ui-badge ui-badge-${tone}">${escapeHtml(status || '-')}</span>`;
 }

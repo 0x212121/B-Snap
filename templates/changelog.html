@@ -20,7 +20,7 @@
 {% endcall %}
 
 <!-- Stats Cards -->
-<div id="stats-section" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div id="stats-section" class="ui-summary-strip ui-summary-strip-four mb-6">
   {% call kpi_card("Total Versions", "-", value_id="stat-versions", tone="neutral") %}
   {{ ui_icons.icon_circle_stack("w-5 h-5") }}
 {% endcall %}

@@ -28,7 +28,7 @@
 {% endcall %}
 
 <!-- Stats Cards -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+<div class="ui-summary-strip ui-summary-strip-five mb-6">
   {% call kpi_card("Total Entries", "-", value_id="stat-total", tone="neutral") %}
   {{ ui_icons.icon_users("w-5 h-5") }}
 {% endcall %}
@@ -165,8 +165,8 @@
 
   function showImportModal() {
     const modalHtml = `
-    <div id="import-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+    <div id="import-modal" class="ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="ui-modal-panel w-full max-w-md">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
@@ -545,8 +545,8 @@
     }
     if (document.getElementById('add-modal')) return;
     const modalHtml = `
-    <div id="add-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+    <div id="add-modal" class="ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="ui-modal-panel w-full max-w-md">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -683,8 +683,8 @@
     }
     
     const modalHtml = `
-    <div id="edit-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+    <div id="edit-modal" class="ui-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="ui-modal-panel w-full max-w-md">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">

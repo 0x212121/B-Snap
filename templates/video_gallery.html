@@ -79,8 +79,8 @@
 </div>
 
 <!-- Video Modal - Fix Playback -->
-<div id="modal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target === this) hideModal()">
-  <div class="ui-card bg-white dark:bg-slate-800 rounded-xl max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-gray-200 dark:border-slate-700 w-full" onclick="event.stopPropagation()">
+<div id="modal" class="ui-modal-backdrop hidden fixed inset-0 z-50 items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="modal-info" onclick="if(event.target === this) hideModal()">
+  <div class="ui-modal-panel max-w-5xl max-h-[90vh] flex flex-col overflow-hidden w-full" onclick="event.stopPropagation()">
     <div class="relative bg-black flex items-center justify-center min-h-[200px]">
       <!-- Hapus autoplay attribute, gunakan JS saja -->
       <video id="modal-video" class="w-full max-h-[70vh] object-contain" controls playsinline></video>
@@ -88,6 +88,7 @@
     <div class="p-4 flex items-center justify-between border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
       <div>
         <h3 id="modal-info" class="font-semibold text-gray-900 dark:text-white"></h3>
+        <p id="modal-time" class="text-sm text-gray-500 dark:text-slate-400 mt-0.5"></p>
       </div>
       <div class="flex flex-wrap gap-2">
         <!-- CRIT-001: Download uses secure API endpoint with download=true -->
@@ -276,7 +277,9 @@
    */
 // Ganti fungsi showModal dan hideModal dengan versi fix:
 
+let videoModalTrigger = null;
 function showModal(videoUrl, cameraName, timestamp) {
+    videoModalTrigger = document.activeElement;
     const modal = document.getElementById("modal");
     const video = document.getElementById("modal-video");
     const info = document.getElementById("modal-info");
@@ -313,7 +316,10 @@ function showModal(videoUrl, cameraName, timestamp) {
     };
     
     // 6. Set info dan download
-    info.textContent = `${cameraName} • ${timestamp}`;
+    info.textContent = cameraName;
+    const timeLabel = document.getElementById('modal-time');
+    timeLabel.dataset.localizedDate = timestamp;
+    timeLabel.textContent = BSnapDates.format(timestamp);
     // CRIT-001: Download akan ditangani oleh event handler, bukan href langsung
     downloadBtn.onclick = handleVideoDownload;
     
@@ -321,6 +327,7 @@ function showModal(videoUrl, cameraName, timestamp) {
     modal.classList.remove("hidden");
     modal.classList.add("flex");
     document.body.style.overflow = "hidden";
+    modal.querySelector('button').focus();
 }
 
 // CRIT-001: Handle video download dengan secure API endpoint
@@ -359,6 +366,7 @@ function handleVideoDownload(e) {
 
 function hideModal() {
     const modal = document.getElementById("modal");
+    if (modal.classList.contains('hidden')) return;
     const video = document.getElementById("modal-video");
     
     // Pause dan cleanup yang proper
@@ -371,10 +379,14 @@ function hideModal() {
     modal.classList.add("hidden");
     modal.classList.remove("flex");
     document.body.style.overflow = "";
+    if (videoModalTrigger?.isConnected) videoModalTrigger.focus();
 }
 // Keyboard shortcut
   document.addEventListener("keydown", (e) => {
+    const modal = document.getElementById('modal');
+    if (modal.classList.contains('hidden') || Swal.isVisible()) return;
     if (e.key === "Escape") hideModal();
+    else window.BSnapDialogFocus(e, modal);
   });
 
   // Expose globals

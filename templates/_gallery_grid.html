@@ -3,16 +3,17 @@
 {% from "macros/ui.html" import empty_state %}
 <!-- _gallery_grid.html - Pure Tailwind -->
 {% for image in images %}
-<div data-card class="ui-card group bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/20 transition-all duration-300 hover:-translate-y-1" data-id="{{ image.id }}" data-camera="{{ image.camera }}">
+<div data-card class="ui-card bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden" data-id="{{ image.id }}" data-camera="{{ image.camera }}">
   <!-- Image: No Overlay -->
-  <div class="relative aspect-[16/10] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-700 dark:to-slate-800 overflow-hidden">
+  <div class="relative aspect-[16/10] bg-gray-100 dark:bg-slate-800 overflow-hidden">
+    <button type="button" class="ui-media-trigger" aria-label="View snapshot" onclick='showModal({{ image.detail_url | tojson }}, {{ image.camera | tojson }}, {{ image.time | tojson }})'>
     <img 
       src="{{ image.url }}" 
       alt="{{ image.camera }}" 
-      class="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-105"
+      class="w-full h-full object-cover"
       loading="lazy" decoding="async"
-      onclick='showModal({{ image.detail_url | tojson }}, {{ image.camera | tojson }}, {{ image.time | tojson }})'
     >
+    </button>
   </div>
 
   <!-- Content: Status Badges di sini (No Overlay) -->
@@ -38,30 +39,30 @@
     <h3 class="font-bold text-gray-900 dark:text-white truncate text-lg" title="{{ image.camera }}">{{ image.camera }}</h3>
 
     <!-- Meta Grid -->
-    <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-600 dark:text-slate-400 pt-2 border-t border-gray-100 dark:border-slate-700">
+    <div class="ui-media-metadata grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-600 dark:text-slate-400 pt-2 border-t border-gray-100 dark:border-slate-700">
       <div class="flex items-center gap-2 truncate" title="IP: {{ image.ip }}">
         <svg class="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg>
-        <span class="truncate">{{ image.ip }}</span>
+        <span class="sr-only">IP Address:</span><span class="truncate">{{ image.ip }}</span>
       </div>
       
       <div class="flex items-center gap-2">
         <svg class="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
-        <span>{{ format_file_size((image.file_size or 0) * 1024) }}</span>
+        <span class="sr-only">File size:</span><span>{{ format_file_size((image.file_size or 0) * 1024) }}</span>
       </div>
       
       <div class="flex items-center gap-2 col-span-2">
         <svg class="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <span class="truncate" data-localized-date="{{ image.time }}">{{ image.time }}</span>
+        <span class="sr-only">Captured:</span><span data-localized-date="{{ image.time }}">{{ image.time }}</span>
       </div>
       
       <div class="flex items-center gap-2">
         <svg class="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-        <span>{{ image.resolution }}</span>
+        <span class="sr-only">Resolution:</span><span>{{ image.resolution }}</span>
       </div>
       
       <div class="flex items-center gap-2 truncate" title="Group: {{ image.group }}">
         <svg class="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-        <span class="truncate">{{ image.group }}</span>
+        <span class="sr-only">Group:</span><span class="truncate">{{ image.group }}</span>
       </div>
     </div>
 

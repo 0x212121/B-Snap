@@ -34,6 +34,15 @@ def clear_timezone_cache():
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
+
+def utc_isoformat(value: datetime | None) -> str | None:
+    """Return a UTC machine timestamp, treating naive database values as UTC."""
+    if value is None:
+        return None
+    if value.tzinfo is None or value.utcoffset() is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
 def to_current_timezone(dt: datetime, db: Session) -> datetime:
     if not dt:
         return None

@@ -31,7 +31,7 @@
 {% endcall %}
 
 <!-- Stats Cards -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+<div class="ui-summary-strip ui-summary-strip-five mb-6">
   {% call kpi_card("Total NVRs", "0", value_id="stat-total", tone="neutral") %}
   {{ ui_icons.icon_server("w-5 h-5") }}
 {% endcall %}
@@ -143,8 +143,8 @@
 </div>
 
 <!-- Modal Add/Edit NVR -->
-<div id="nvrModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-  <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-auto max-h-[90vh] flex flex-col transform transition-all duration-200 opacity-0 -translate-y-4" id="modalContent">
+<div id="nvrModal" class="ui-modal-backdrop fixed inset-0 hidden items-center justify-center z-50 p-4">
+  <div class="ui-modal-panel w-full max-w-md mx-auto max-h-[90vh] flex flex-col transform transition-all duration-200 opacity-0 -translate-y-4" id="modalContent">
     <!-- Header -->
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
       <div class="flex items-center gap-3">

@@ -23,7 +23,7 @@ from app.schemas.video import VideoRecordRequest
 from app.utils.audit_logger import log_audit
 from app.utils.media_access import require_camera_group_access, restrict_media_query
 from app.utils.recording_lease import require_recording_available
-from app.utils.timezone_helper import format_datetime_standard, get_current_timezone
+from app.utils.timezone_helper import format_datetime_standard, get_current_timezone, utc_isoformat
 from app.utils.video import record_video_and_save_db
 from app.utils.video_dates import filter_video_dates
 
@@ -585,6 +585,7 @@ async def get_deleted_videos(
             "id": v.id,
             "camera": v.camera_name,
             "deleted_at": format_datetime_standard(v.deleted_at, db=db),
+            "deleted_at_iso": utc_isoformat(v.deleted_at),
             "timestamp": format_datetime_standard(v.timestamp, db=db),
             "file_path": v.file_path,
             "duration": v.duration,

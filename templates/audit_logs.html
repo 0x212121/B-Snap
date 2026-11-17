@@ -58,7 +58,7 @@
 </div>
 
 <!-- Summary Cards -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+<div class="ui-summary-strip ui-summary-strip-five mb-6">
   {% call kpi_card("Total Logs", "-", value_id="stat-total", tone="neutral") %}
   {{ ui_icons.icon_clip_check("w-5 h-5") }}
 {% endcall %}
@@ -262,8 +262,8 @@
 </div>
 
 <!-- Audit Info Modal -->
-<div id="auditInfoModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-  <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-auto">
+<div id="auditInfoModal" class="ui-modal-backdrop fixed inset-0 hidden items-center justify-center z-50 p-4">
+  <div class="ui-modal-panel w-full max-w-lg mx-auto">
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
       <div class="flex items-center gap-3">
         <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -308,8 +308,8 @@
 </div>
 
 <!-- Detail Modal -->
-<div id="detailModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-[100] p-4">
-  <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
+<div id="detailModal" class="ui-modal-backdrop fixed inset-0 hidden items-center justify-center z-[100] p-4">
+  <div class="ui-modal-panel w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
       <h3 class="text-lg font-bold text-gray-900 dark:text-white">Audit Entry Detail</h3>
       <button onclick="hideDetailModal()" class="ui-button ui-button-ghost ui-button-icon" aria-label="Close">{{ ui_icons.icon_x_mark("w-5 h-5") }}</button>
@@ -321,8 +321,8 @@
 </div>
 
 <!-- Archive History Modal -->
-<div id="archiveHistoryModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-  <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl mx-auto max-h-[80vh] flex flex-col">
+<div id="archiveHistoryModal" class="ui-modal-backdrop fixed inset-0 hidden items-center justify-center z-50 p-4">
+  <div class="ui-modal-panel w-full max-w-3xl mx-auto max-h-[80vh] flex flex-col">
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
       <div class="flex items-center gap-3">
         <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -380,8 +380,8 @@
 </div>
 
 <!-- Archive Logs Modal -->
-<div id="archiveLogsModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-[60] p-4">
-  <div class="ui-card bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl mx-auto max-h-[90vh] flex flex-col">
+<div id="archiveLogsModal" class="ui-modal-backdrop fixed inset-0 hidden items-center justify-center z-[60] p-4">
+  <div class="ui-modal-panel w-full max-w-6xl mx-auto max-h-[90vh] flex flex-col">
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
       <div>
         <h3 class="text-lg font-bold text-gray-900 dark:text-white">Archived Audit Logs</h3>
@@ -646,7 +646,7 @@
         <td class="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300 font-mono text-xs">${BSnapDates.html(timestamp)}</td>
         <td class="px-4 py-3 whitespace-nowrap">
           <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+            <div class="ui-identity-mark w-7 h-7">
               ${user.charAt(0).toUpperCase()}
             </div>
             <span class="text-gray-900 dark:text-white font-medium">${user}</span>
@@ -878,7 +878,7 @@
           <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">User</p>
             <div class="flex items-center gap-2 mt-1">
-              <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+              <div class="ui-identity-mark w-6 h-6">
                 ${(logEntry.user || 'A').charAt(0).toUpperCase()}
               </div>
               <p class="font-medium text-gray-900 dark:text-white">${logEntry.user || 'anonymous'}</p>

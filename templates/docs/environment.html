@@ -147,20 +147,20 @@
     {% endfor %}
 
     <!-- Quick Reference Card -->
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-6 text-white">
+    <div class="ui-card ui-card-body p-6">
       <h2 class="ui-section-title text-xl font-bold mb-4">Quick Reference</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <h3 class="font-semibold mb-2">Critical (Must Change)</h3>
-          <ul class="space-y-1 text-sm text-blue-100">
-            <li><code class="bg-white/20 px-1.5 py-0.5 rounded">SECRET_KEY</code> - Session security</li>
-            <li><code class="bg-white/20 px-1.5 py-0.5 rounded">ENCRYPTION_KEY</code> - Camera password encryption</li>
-            <li><code class="bg-white/20 px-1.5 py-0.5 rounded">DATABASE_URL</code> - Database connection</li>
+          <ul class="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+            <li><code class="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">SECRET_KEY</code> - Session security</li>
+            <li><code class="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">ENCRYPTION_KEY</code> - Camera password encryption</li>
+            <li><code class="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">DATABASE_URL</code> - Database connection</li>
           </ul>
         </div>
         <div>
           <h3 class="font-semibold mb-2">Production Checklist</h3>
-          <ul class="space-y-1 text-sm text-blue-100">
+          <ul class="space-y-1 text-sm text-gray-700 dark:text-gray-300">
             <li>✓ Set ENVIRONMENT=production</li>
             <li>✓ Change DEBUG=false</li>
             <li>✓ Configure trusted proxy peer IPs/CIDRs in TRUSTED_PROXY_HOSTS</li>

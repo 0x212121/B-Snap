@@ -313,8 +313,8 @@
 </div>
 
 <!-- Generate Key Modal -->
-<div id="generateKeyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-  <div class="ui-card bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4 transform transition-all">
+<div id="generateKeyModal" class="ui-modal-backdrop hidden fixed inset-0 z-50 flex items-center justify-center">
+  <div class="ui-modal-panel w-full max-w-md mx-4 transform transition-all">
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Generate API Key</h3>
       <button onclick="closeGenerateKeyModal()" class="ui-button ui-button-ghost ui-button-icon" aria-label="Close">{{ ui_icons.icon_x_mark("w-5 h-5") }}</button>

@@ -26,7 +26,7 @@
 {% endcall %}
 
 <!-- Stats Cards -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="ui-summary-strip ui-summary-strip-four mb-6">
 {% call kpi_card("Camera Online", "-", value_id="camera-online-count", tone="success") %}
   {{ icon_video_camera("w-5 h-5") }}
 {% endcall %}
@@ -128,26 +128,26 @@
     <table id="healthCheckTable" class="ui-table min-w-full text-sm text-left">
       <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300">
         <tr>
-          <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortAndRenderTable('hostname')">
-            Hostname <span id="hostname-arrow" class="text-sm"></span>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap" data-health-sort="hostname" aria-sort="none">
+            <button type="button" class="ui-sort-button" onclick="sortAndRenderTable('hostname')">Hostname <span id="hostname-arrow" class="text-sm" aria-hidden="true"></span></button>
           </th>
-          <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortAndRenderTable('ip')">
-            IP <span id="ip-arrow" class="text-sm"></span>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap" data-health-sort="ip" aria-sort="none">
+            <button type="button" class="ui-sort-button" onclick="sortAndRenderTable('ip')">IP <span id="ip-arrow" class="text-sm" aria-hidden="true"></span></button>
           </th>
-          <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortAndRenderTable('type')">
-            Type <span id="type-arrow" class="text-sm"></span>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap" data-health-sort="type" aria-sort="none">
+            <button type="button" class="ui-sort-button" onclick="sortAndRenderTable('type')">Type <span id="type-arrow" class="text-sm" aria-hidden="true"></span></button>
           </th>
-          <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortAndRenderTable('dev_status')">
-            Device Status <span id="device-arrow" class="text-sm"></span>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap" data-health-sort="dev_status" aria-sort="none">
+            <button type="button" class="ui-sort-button" onclick="sortAndRenderTable('dev_status')">Device Status <span id="device-arrow" class="text-sm" aria-hidden="true"></span></button>
           </th>
-          <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortAndRenderTable('latency')">
-            Latency (ms) <span id="latency-arrow" class="text-sm"></span>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap" data-health-sort="latency" aria-sort="none">
+            <button type="button" class="ui-sort-button" onclick="sortAndRenderTable('latency')">Latency (ms) <span id="latency-arrow" class="text-sm" aria-hidden="true"></span></button>
           </th>
-          <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortAndRenderTable('checked')">
-            Last Checked <span id="checked-arrow" class="text-sm"></span>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap" data-health-sort="checked" aria-sort="none">
+            <button type="button" class="ui-sort-button" onclick="sortAndRenderTable('checked')">Last Checked <span id="checked-arrow" class="text-sm" aria-hidden="true"></span></button>
           </th>
-          <th class="px-4 py-3.5 font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition" onclick="sortAndRenderTable('status')">
-            Status / Since <span id="status-arrow" class="text-sm"></span>
+          <th class="px-4 py-3.5 font-semibold whitespace-nowrap" data-health-sort="status" aria-sort="none">
+            <button type="button" class="ui-sort-button" onclick="sortAndRenderTable('status')">Status / Since <span id="status-arrow" class="text-sm" aria-hidden="true"></span></button>
           </th>
           <th class="px-4 py-3.5 font-semibold whitespace-nowrap text-center">Actions</th>
         </tr>
@@ -178,12 +178,11 @@
 </div>
 
 <!-- Snapshot Modal -->
-<div id="snapshotModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
-  <div class="ui-card ui-card-body relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-4xl max-h-[80vh]">
+<div id="snapshotModal" class="ui-modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="snapshot-camera" onclick="if (event.target === this) hideSnapshotModal()">
+  <div class="ui-modal-panel relative p-4 max-w-4xl max-h-[90vh] w-full overflow-y-auto">
     <div class="relative">
-      <img id="snapshotImg" src="" class="rounded w-full object-contain max-h-[70vh]" />
-      <div id="snapshotInfo" class="absolute top-0 right-0 bg-black bg-opacity-60 text-white text-sm px-3 py-1 rounded shadow">
-      </div>
+      <img id="snapshotImg" src="" alt="Camera snapshot" class="rounded w-full object-contain max-h-[70vh]" />
+      <div id="snapshotInfo" class="mt-3"><h2 id="snapshot-camera" class="ui-section-title"></h2><p id="snapshot-time" class="ui-description" data-localized-date=""></p></div>
     </div>
     <div class="flex justify-end mt-2 space-x-4">
       <a id="download-btn" href="#" download class="ui-button ui-button-primary">{{ icon_download("w-5 h-5") }} Download</a>
@@ -193,8 +192,7 @@
 </div>
 
 <script>
-  let serverTimezone = {{ (server_timezone or "Asia/Makassar") | tojson }};
-  let serverTimezoneLabel = {{ (server_timezone_label or "WITA") | tojson }};
+  let serverTimezone = {{ (server_timezone or "UTC") | tojson }};
 </script>
 
 <script>
@@ -233,25 +231,18 @@
   }
   
   function formatReadableDate(isoString) {
-    if (!isoString) return "-";
+    if (!isoString || isoString === '-') return "-";
     const date = new Date(isoString);
+    if (Number.isNaN(date.getTime())) return isoString;
     try {
-      const formatted = new Intl.DateTimeFormat(BSnapDates.locale(), {
-        timeZone: serverTimezone,
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false
-      }).format(date);
-      
-      const cleaned = formatted.replace(" at ", ", ");
-      return cleaned + " " + serverTimezoneLabel;
+      const localNames = { 'Asia/Jakarta': 'WIB', 'Asia/Makassar': 'WITA', 'Asia/Jayapura': 'WIT' };
+      const zoneLabel = localNames[serverTimezone] || new Intl.DateTimeFormat('en-US', {
+        timeZone: serverTimezone, timeZoneName: 'short'
+      }).formatToParts(date).find(part => part.type === 'timeZoneName')?.value || serverTimezone;
+      return `${BSnapDates.format(isoString, { timeZone: serverTimezone })} ${zoneLabel}`;
     } catch (err) {
       console.warn("Invalid timezone fallback:", serverTimezone, err);
-      return date.toLocaleString(BSnapDates.locale());
+      return BSnapDates.format(isoString, { timeZone: 'UTC' }) + ' UTC';
     }
   }
   
@@ -281,16 +272,19 @@
     
     const rowsHtml = data.map(device => {
       const checkedAt = device.checked || "-";
+      const statusValue = device.status || 'Unknown';
       let statusDisplay;
-      if (device.status_changed_at) {
-        statusDisplay = `${device.status} since ${formatDuration(device.status_changed_at)}`;
+      if (statusValue === 'Unknown') {
+        statusDisplay = statusValue;
+      } else if (device.status_changed_at) {
+        statusDisplay = `${statusValue} since ${formatDuration(device.status_changed_at)}`;
       } else {
-        statusDisplay = `${device.status} since ${formatDuration(device.last_online)}`;
+        statusDisplay = `${statusValue} since ${formatDuration(device.last_online)}`;
       }
       const latency = device.latency !== null ? `<span class="${device.latency <= 50 ? 'text-green-500' : 'text-yellow-500'}">${escapeHtml(device.latency)} ms</span>` : '-';
-      const statusClass = device.status?.includes('Online') ? 'ui-badge-success' :
-      device.status?.includes('Offline') ? 'ui-badge-critical' :
-      device.status?.includes('High Latency') ? 'ui-badge-warning' : 'ui-badge-neutral';
+      const statusClass = statusValue.includes('High Latency') ? 'ui-badge-warning' :
+      statusValue.includes('Offline') ? 'ui-badge-critical' :
+      statusValue.includes('Online') ? 'ui-badge-success' : 'ui-badge-neutral';
       
       const pingButton = `<button onclick='triggerHealth(this, ${escapeHtml(JSON.stringify(device.id))}, ${escapeHtml(JSON.stringify(device.type.toLowerCase()))})' class="ui-button ui-button-secondary ui-button-icon" title="Ping Device" aria-label="Ping Device">
         {{ icon_arrow_path("w-5 h-5") }}
@@ -310,7 +304,7 @@
         <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 font-mono">${escapeHtml(device.ip)}</td>
         <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
           <span class="ui-badge ui-badge-neutral">
-            ${device.type}
+            ${escapeHtml(device.type)}
           </span>
         </td>
         <td class="px-4 py-3.5 whitespace-nowrap text-sm"><span class="ui-badge ${device.dev_status === 'Active' ? 'ui-badge-success' : device.dev_status === 'Maintenance' ? 'ui-badge-warning' : 'ui-badge-neutral'}">${escapeHtml(device.dev_status)}</span></td>
@@ -338,7 +332,7 @@
     return fullDataset.filter(device => {
       const matchesSearch = device.hostname.toLowerCase().includes(searchInput) || device.ip.toLowerCase().includes(searchInput);
       const matchesType = typeFilter === 'All' || device.type === typeFilter;
-      const matchesStatus = statusFilter === 'All' || device.status === statusFilter;
+      const matchesStatus = statusFilter === 'All' || (device.status || 'Unknown') === statusFilter;
       return matchesSearch && matchesType && matchesStatus;
     });
   }
@@ -371,6 +365,10 @@
       sortState.direction = 'asc';
     }
     currentPage = 1;
+    document.querySelectorAll('#healthCheckTable th[data-health-sort]').forEach(header => {
+      header.setAttribute('aria-sort', header.dataset.healthSort === column
+        ? (sortState.direction === 'asc' ? 'ascending' : 'descending') : 'none');
+    });
     filterAndRenderTable();
   }
   
@@ -484,7 +482,6 @@
       
       const data = await response.json();
       serverTimezone = data.server_timezone || serverTimezone;
-      serverTimezoneLabel = data.server_timezone_label || serverTimezoneLabel;
       fullDataset = data.statuses;       
       
       document.getElementById('camera-online-count').textContent = data.camera_online_count;
@@ -672,7 +669,9 @@
     });
   }
   
-  function viewSnapshot(cameraId, cameraName) { 
+  let snapshotTrigger = null;
+  function viewSnapshot(cameraId, cameraName) {
+    snapshotTrigger = document.activeElement;
     fetch(`/snapshot/latest/${encodeURIComponent(cameraId)}/info`, { headers: { Accept: 'application/json' } })
     .then(res => {
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -681,13 +680,16 @@
     .then(data => {
       if (data.url) {
         const snapshotImg = document.getElementById('snapshotImg');
-        const snapshotInfo = document.getElementById('snapshotInfo');
+        const snapshotTime = document.getElementById('snapshot-time');
         const downloadBtn = document.getElementById("download-btn");
         
         snapshotImg.src = data.url;
         const displayName = cameraName || data.camera;
-        snapshotInfo.textContent = `${displayName} • ${data.timestamp}`;
+        document.getElementById('snapshot-camera').textContent = displayName;
+        snapshotTime.dataset.localizedDate = data.timestamp;
+        snapshotTime.textContent = BSnapDates.format(data.timestamp);
         document.getElementById('snapshotModal').classList.remove('hidden');
+        document.querySelector('#snapshotModal button').focus();
         
         const filename = `snapshot_${displayName}_${data.timestamp.replace(/[\s:]/g, '-')}.jpg`;
         downloadBtn.href = data.url;
@@ -703,7 +705,10 @@
   }
   
   function hideSnapshotModal() {
-    document.getElementById('snapshotModal').classList.add('hidden');
+    const modal = document.getElementById('snapshotModal');
+    if (modal.classList.contains('hidden')) return;
+    modal.classList.add('hidden');
+    if (snapshotTrigger?.isConnected) snapshotTrigger.focus();
   }
   
   function showAlertModal(message) {
@@ -712,9 +717,11 @@
   
   
   document.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('snapshotModal');
+    if (modal.classList.contains('hidden') || Swal.isVisible()) return;
     if (e.key === 'Escape') {
       hideSnapshotModal();
-    }
+    } else window.BSnapDialogFocus(e, modal);
   });
   
   window.addEventListener('bsnap:languagechange', filterAndRenderTable);
