@@ -15,6 +15,8 @@
     "The camera recording lease was lost; recording stopped.": "Kunci sesi rekaman kamera hilang; rekaman dihentikan.",
     "Scheduled": "Terjadwal",
     "From date": "Dari tanggal", "To date": "Sampai tanggal",
+    "Date range": "Rentang tanggal", "Select date range": "Pilih rentang tanggal",
+    "Today": "Hari ini", "Last 7 days": "7 hari terakhir", "Last 30 days": "30 hari terakhir",
     "Start date must not be after end date": "Tanggal mulai tidak boleh melewati tanggal akhir",
     "Recording paused: free disk reserve reached.": "Rekaman dijeda: cadangan ruang disk tercapai.",
     "Recording capacity: {cameras} cameras. Free disk: {free} MiB; reserve: {reserve} MiB.": "Kapasitas rekaman: {cameras} kamera. Ruang kosong: {free} MiB; cadangan: {reserve} MiB.",

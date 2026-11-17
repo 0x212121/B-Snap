@@ -50,8 +50,7 @@
           </select>
         </div>
 
-        <label class="ui-label"><span>From date</span><input id="videoDateFrom" type="date" value="{{ selected_date_from | default('') }}" class="ui-control mt-1 w-full"></label>
-        <label class="ui-label"><span>To date</span><input id="videoDateTo" type="date" value="{{ selected_date_to | default('') }}" class="ui-control mt-1 w-full"></label>
+        {% with range_from_id='videoDateFrom', range_to_id='videoDateTo' %}{% include '_date_range_picker.html' %}{% endwith %}
         <span class="text-xs text-gray-500 dark:text-gray-400"><span>Timezone:</span> <span class="no-translate">{{ timezone }}</span></span>
         <!-- Clear Button -->
         <button id="clearFilterBtn" class="ui-button ui-button-secondary">
@@ -106,6 +105,7 @@
 {% endblock %}
 
 {% block scripts %}
+{% include '_date_range_assets.html' %}
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 <script src="/static/js/gallery-loader.js"></script>
@@ -132,6 +132,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     initTomSelect();
     setupEventListeners();
+    BSnapVideoDateRange.init();
     const initialCount = document.querySelectorAll("[data-video-card]").length;
     VideoState.offset = initialCount;
     VideoState.hasMore = initialCount === 12;
@@ -200,6 +201,7 @@
       VideoState.tomSelect.clear(true);
       document.getElementById('videoDateFrom').value = '';
       document.getElementById('videoDateTo').value = '';
+      BSnapVideoDateRange.sync();
       VideoState.currentFilter = { camera: "", q: "", date_from: "", date_to: "" };
       resetAndLoad();
     });

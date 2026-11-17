@@ -1,0 +1,28 @@
+.video-date-range summary { list-style: none; white-space: nowrap; }
+.video-date-range summary::-webkit-details-marker { display: none; }
+.video-date-panel {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 40;
+  width: min(340px, calc(100vw - 32px)); padding: 12px;
+  background: var(--ui-surface); color: var(--ui-text);
+  border: 1px solid var(--ui-border); border-radius: var(--ui-radius);
+  box-shadow: 0 8px 24px rgb(0 0 0 / .18);
+}
+.video-date-presets { display: flex; flex-wrap: wrap; gap: 4px; }
+.video-date-presets .ui-button { padding-inline: 8px; font-size: 12px; }
+.video-date-bounds { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.video-date-bounds label { min-width: 0; }
+.video-date-bounds input { min-width: 0; padding-inline: 6px; font-size: 12px; }
+.video-date-panel .flatpickr-calendar { width: 100%; box-shadow: none; background: var(--ui-surface); }
+.video-date-panel .flatpickr-innerContainer, .video-date-panel .flatpickr-rContainer,
+.video-date-panel .flatpickr-days, .video-date-panel .dayContainer { width: 100%; min-width: 0; max-width: none; }
+/* Keep dates aligned with the seven weekday headings at every panel width. */
+.video-date-panel .dayContainer { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.video-date-panel .flatpickr-day { width: 100%; max-width: none; }
+.video-date-panel .flatpickr-day, .video-date-panel .flatpickr-current-month,
+.video-date-panel .flatpickr-weekday, .video-date-panel .flatpickr-month { color: var(--ui-text); fill: var(--ui-text); }
+.video-date-panel .flatpickr-day.prevMonthDay, .video-date-panel .flatpickr-day.nextMonthDay { color: var(--ui-muted); }
+.video-date-panel .flatpickr-day:hover, .video-date-panel .flatpickr-day.inRange { background: var(--ui-hover); border-color: var(--ui-hover); color: var(--ui-text); box-shadow: none; }
+.video-date-panel .flatpickr-day.selected, .video-date-panel .flatpickr-day.startRange,
+.video-date-panel .flatpickr-day.endRange { background: var(--ui-primary); border-color: var(--ui-primary); color: #fff; }
+html[data-theme="command-center"] .video-date-panel .flatpickr-day:is(.selected, .startRange, .endRange) { color: var(--cc-on-accent); }
+@media (max-width: 640px) { .video-date-panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); max-height: 90dvh; overflow-y: auto; } }

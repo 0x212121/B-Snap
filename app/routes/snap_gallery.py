@@ -2,7 +2,7 @@ import logging
 import os
 import re
 
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta, timezone
 from typing import Annotated, Any, Dict, List, Optional
 from uuid import uuid4
 from zoneinfo import ZoneInfo
@@ -34,6 +34,7 @@ from app.utils.timezone_helper import (
     get_current_timezone,
     to_current_timezone,
 )
+from app.utils.video_dates import filter_media_dates
 
 router = APIRouter(tags=["Snapshots"])
 
@@ -47,7 +48,8 @@ logger = logging.getLogger(__name__)
 
 def _get_filtered_snapshots(db: Session, group_id: Optional[int], camera_filter: Optional[str] = None, search_query: Optional[str] = None,
                             tampered_only: bool = False, offset: int = 0, limit: int = 15, 
-                            include_deleted: bool = False) -> List[Dict[str, Any]]:
+                            include_deleted: bool = False, date_from: date | None = None,
+                            date_to: date | None = None) -> List[Dict[str, Any]]:
     """
     Helper function to query and filter snapshots from the database.
     This function now correctly fetches all snapshots, even if the camera has been deleted.
@@ -79,6 +81,11 @@ def _get_filtered_snapshots(db: Session, group_id: Optional[int], camera_filter:
 
     if tampered_only:
         snapshot_query = snapshot_query.filter(Snapshot.is_tampered == True)
+
+    if date_from or date_to:
+        snapshot_query = filter_media_dates(
+            snapshot_query, Snapshot.timestamp, date_from, date_to, get_current_timezone(db)
+        )
 
     # Lazy load snapshots
     snapshots = snapshot_query.order_by(Snapshot.timestamp.desc(), Snapshot.id.desc()).offset(offset).limit(limit).all()
@@ -367,6 +374,8 @@ async def get_gallery_data(
     current_operator: User = Depends(operator_access_required),
     offset: int = Query(0),
     limit: int = Query(15),
+    date_from: Annotated[date | None, Query()] = None,
+    date_to: Annotated[date | None, Query()] = None,
 ):
     # FIX: Always get fresh group_id from database to handle group changes without relogin
     user = db.query(User).filter(User.id == request.session.get("user_id")).first()
@@ -383,7 +392,9 @@ async def get_gallery_data(
         search_query=q,
         tampered_only=tampered,
         offset=offset,
-        limit=limit
+        limit=limit,
+        date_from=date_from,
+        date_to=date_to,
     )
 
     camera_exists = False

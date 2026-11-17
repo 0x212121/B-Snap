@@ -55,9 +55,9 @@ html[data-theme="command-center"] :is([class~="border-gray-200"], [class~="borde
   border-color: var(--ui-border) !important;
 }
 html[data-theme="command-center"] :is(.text-gray-900, .text-gray-800, .dark\:text-white,
-  .dark\:text-gray-100, .dark\:text-gray-200) { color: var(--ui-text) !important; }
+  .dark\:text-gray-100, .dark\:text-gray-200):not(.leaflet-popup-content *) { color: var(--ui-text) !important; }
 html[data-theme="command-center"] :is(.text-gray-400, .text-gray-500, .text-gray-600,
-  .text-gray-700, .dark\:text-gray-300, .dark\:text-gray-400, .dark\:text-gray-500) {
+  .text-gray-700, .dark\:text-gray-300, .dark\:text-gray-400, .dark\:text-gray-500):not(.leaflet-popup-content *) {
   color: var(--ui-muted) !important;
 }
 html[data-theme="command-center"] :is(.ui-card, .ui-filter-bar, .nav-more-panel,
@@ -125,8 +125,8 @@ html[data-theme="command-center"] :is(thead, .ui-table > thead) {
   color: var(--ui-muted);
 }
 html[data-theme="command-center"] :is(.ui-table, table) { font-variant-numeric: tabular-nums; }
-html[data-theme="command-center"] table tbody tr:nth-child(even) { background-color: var(--cc-recessed); }
-html[data-theme="command-center"] table tbody tr:hover { background-color: var(--cc-raised) !important; }
+html[data-theme="command-center"] table tbody tr:not(.leaflet-popup-content tr):nth-child(even) { background-color: var(--cc-recessed); }
+html[data-theme="command-center"] table tbody tr:not(.leaflet-popup-content tr):hover { background-color: var(--cc-raised) !important; }
 html[data-theme="command-center"] .ui-page-header { margin-bottom: 16px; }
 html[data-theme="command-center"] .ui-kpi-value { font-variant-numeric: tabular-nums; }
 html[data-theme="command-center"] [class*="bg-gradient-to-"] {

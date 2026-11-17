@@ -1,0 +1,15 @@
+<details id="videoDateRange" class="video-date-range relative" data-from-id="{{ range_from_id }}" data-to-id="{{ range_to_id }}">
+  <summary class="ui-button ui-button-secondary" aria-label="Date range"><span id="videoDateRangeLabel" class="no-translate"></span><span aria-hidden="true">▾</span></summary>
+  <div class="video-date-panel" aria-label="Date range">
+    <div class="video-date-presets">
+      <button type="button" class="ui-button ui-button-secondary" data-days="1">Today</button>
+      <button type="button" class="ui-button ui-button-secondary" data-days="7">Last 7 days</button>
+      <button type="button" class="ui-button ui-button-secondary" data-days="30">Last 30 days</button>
+    </div>
+    <div id="videoRangeCalendar"></div>
+    <div class="video-date-bounds">
+      <label class="ui-label"><span>From date</span><input id="{{ range_from_id }}" type="date" value="{{ selected_date_from | default('') }}" class="ui-control w-full"></label>
+      <label class="ui-label"><span>To date</span><input id="{{ range_to_id }}" type="date" value="{{ selected_date_to | default('') }}" class="ui-control w-full"></label>
+    </div>
+  </div>
+</details>

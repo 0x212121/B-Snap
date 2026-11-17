@@ -51,16 +51,7 @@
 
     <!-- FILTER BAR -->
     <div class="ui-filter-bar ui-card ui-card-body bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 flex flex-wrap items-end gap-4">
-      <div>
-        <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
-        <input aria-label="Start Date" type="date" id="startDate"
-          class="ui-control border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100">
-      </div>
-      <div>
-        <label class="ui-label block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
-        <input aria-label="End Date" type="date" id="endDate"
-          class="ui-control border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md px-3 py-2 text-sm text-gray-800 dark:text-gray-100">
-      </div>
+      {% with range_from_id='startDate', range_to_id='endDate' %}{% include '_date_range_picker.html' %}{% endwith %}
       <div class="flex gap-2 ml-auto">
         <button id="applyFilter"
           class="ui-button ui-button-primary">
@@ -333,6 +324,7 @@
 
 </div>
 
+{% include '_date_range_assets.html' %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="/static/js/theme-charts.js"></script>
 <script src="{{ url_for('static', path='js/report-charts.js') }}"></script>
@@ -373,6 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const pageParams = new URLSearchParams(window.location.search);
     document.getElementById('startDate').value = pageParams.get('start_date') || fmtServerTZ(prior);
     document.getElementById('endDate').value = pageParams.get('end_date') || fmtServerTZ(today);
+    BSnapVideoDateRange.init();
   }
 
   async function getJSON(url, signal) {

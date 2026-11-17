@@ -72,6 +72,8 @@
           </select>
         </div>
 
+        {% with range_from_id='videoDateFrom', range_to_id='videoDateTo' %}{% include '_date_range_picker.html' %}{% endwith %}
+        <span class="text-xs text-gray-500 dark:text-gray-400"><span>Timezone:</span> <span class="no-translate">{{ timezone }}</span></span>
         <!-- Clear Button -->
         <button id="clearFilterBtn" class="ui-button ui-button-secondary">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -147,6 +149,7 @@
 {% endblock %}
 
 {% block scripts %}
+{% include '_date_range_assets.html' %}
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 <script src="/static/js/gallery-loader.js"></script>
@@ -160,7 +163,7 @@
     offset: 0,
     limit: 15,
     currentPage: 0,
-    currentFilter: { camera: {{ selected_camera | tojson }}, q: "", tampered: false },
+    currentFilter: { camera: {{ selected_camera | tojson }}, q: "", tampered: false, date_from: "", date_to: "" },
     observer: null,
     lastRequestId: 0
   };
@@ -168,6 +171,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     initTomSelect();
     setupEventListeners();
+    BSnapVideoDateRange.init();
     setupInfiniteScroll();
     resetAndLoad();
   });
@@ -198,11 +202,26 @@
       resetAndLoad();
     });
 
+    ['videoDateFrom', 'videoDateTo'].forEach(id => document.getElementById(id).addEventListener('change', () => {
+      const start = document.getElementById('videoDateFrom').value;
+      const end = document.getElementById('videoDateTo').value;
+      if (start && end && start > end) {
+        Toast.error(window.BSnapI18n?.t('Start date must not be after end date') || 'Start date must not be after end date');
+        return;
+      }
+      GalleryState.currentFilter.date_from = start;
+      GalleryState.currentFilter.date_to = end;
+      resetAndLoad();
+    }));
+
     document.getElementById("clearFilterBtn").addEventListener("click", () => {
       document.getElementById("searchInput").value = "";
       document.getElementById("filterTampered").checked = false;
       GalleryState.tomSelect.clear(true);
-      GalleryState.currentFilter = { camera: "", q: "", tampered: false };
+      document.getElementById('videoDateFrom').value = '';
+      document.getElementById('videoDateTo').value = '';
+      BSnapVideoDateRange.sync();
+      GalleryState.currentFilter = { camera: "", q: "", tampered: false, date_from: "", date_to: "" };
       resetAndLoad();
     });
 
@@ -239,6 +258,8 @@
         if (GalleryState.currentFilter.camera) params.set('camera', GalleryState.currentFilter.camera);
         if (GalleryState.currentFilter.q) params.set('q', GalleryState.currentFilter.q);
         if (GalleryState.currentFilter.tampered) params.set('tampered', 'true');
+        if (GalleryState.currentFilter.date_from) params.set('date_from', GalleryState.currentFilter.date_from);
+        if (GalleryState.currentFilter.date_to) params.set('date_to', GalleryState.currentFilter.date_to);
         return params;
       }
     });
