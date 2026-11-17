@@ -258,7 +258,7 @@
     </div>
 
     <!-- Form -->
-    <form id="cameraForm" class="p-6 overflow-y-auto flex-grow space-y-4">
+    <form id="cameraForm" novalidate class="p-6 overflow-y-auto flex-grow space-y-4">
       <input type="hidden" id="cameraId" name="id">
       
       <!-- Basic Info Tab -->
@@ -335,6 +335,11 @@
           <textarea id="note" name="note" rows="2" 
             class="ui-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition resize-none"></textarea>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Optional notes about this camera</p>
+        </div>
+
+        <div class="ui-card space-y-1 rounded-lg bg-gray-50 p-3 dark:bg-gray-700/50">
+          {{ toggle_switch("Skip Scheduled Snapshots", id="skip_scheduled_snapshot", name="skip_scheduled_snapshot", value="true") }}
+          <p class="text-xs text-gray-500 dark:text-gray-400">Exclude this camera from scheduled snapshots. Manual snapshots remain available.</p>
         </div>
 
         <div class="ui-card space-y-1 rounded-lg bg-gray-50 p-3 dark:bg-gray-700/50">
@@ -803,6 +808,7 @@
         setFieldValue('location', cam.location || '');
         setFieldValue('status', cam.status);
         setFieldValue('is_flipped', cam.is_flipped);
+        setFieldValue('skip_scheduled_snapshot', cam.skip_scheduled_snapshot);
         setFieldValue('note', cam.note || '');
         setFieldValue('snapshot_url', cam.snapshot_url || '');
         setFieldValue('safety_classification', cam.safety_classification || 'standard');
@@ -822,8 +828,15 @@
       modalElement.classList.add('hidden');
     };
     
+    function prepareCameraForm() {
+      modalForm.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), textarea')
+        .forEach(field => { field.value = field.value.trim(); });
+      return modalForm.reportValidity();
+    }
+
     async function handleAddCamera(event) {
       event.preventDefault();
+      if (!prepareCameraForm()) return;
       const result = await apiPost('/cameras/add_camera', new FormData(modalForm));
       if (result.ok) {
         hideCameraModal();
@@ -833,6 +846,7 @@
     
     async function handleEditCamera(event) {
       event.preventDefault();
+      if (!prepareCameraForm()) return;
       const cameraId = document.getElementById('cameraId').value;
       const result = await apiPost(`/cameras/edit_camera/${cameraId}`, new FormData(modalForm));
       if (result.ok) {

@@ -37,6 +37,7 @@ class Camera(Base):
     location = Column(String)
     status = Column(String)
     is_flipped = Column(Boolean, default=False, server_default=expression.false())
+    skip_scheduled_snapshot = Column(Boolean, nullable=False, default=False, server_default=expression.false())
     note = Column(String, nullable=True)
     snapshot_url = Column(String(255), nullable=True)
 

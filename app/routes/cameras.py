@@ -159,6 +159,11 @@ async def manage_data(
     })
 
 
+def _trim_camera_form_value(value: Optional[str]) -> Optional[str]:
+    """Remove surrounding whitespace from a camera form value."""
+    return value.strip() if value is not None else None
+
+
 @router.post("/cameras/add_camera", response_class=JSONResponse)
 async def add_camera_submit(
     request: Request,
@@ -175,11 +180,23 @@ async def add_camera_submit(
     group_name: list[str] = Form(default=[]),
     status: str = Form(...),
     is_flipped: Optional[str] = Form(None),
+    skip_scheduled_snapshot: bool = Form(False),
     note: Optional[str] = Form(...),
     snapshot_url: Optional[str] = Form(...),
     safety_classification: Optional[str] = Form('standard'),  # P2-002
 ):
     """Handles the form submission to add a new camera."""
+    name, ip, username = name.strip(), ip.strip(), username.strip()
+    password = _trim_camera_form_value(password)
+    latitude, longitude = _trim_camera_form_value(latitude), _trim_camera_form_value(longitude)
+    asset_no, location = _trim_camera_form_value(asset_no), _trim_camera_form_value(location)
+    status, is_flipped = status.strip(), _trim_camera_form_value(is_flipped)
+    note, snapshot_url = _trim_camera_form_value(note), _trim_camera_form_value(snapshot_url)
+    safety_classification = _trim_camera_form_value(safety_classification)
+    if isinstance(port, str):
+        port = port.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Camera hostname is required.")
     logger.info("Attempting to add new camera with hostname: %s", name)
     try:
         # Validate group_name is provided
@@ -206,7 +223,8 @@ async def add_camera_submit(
         new_cam = DBCamera(
             hostname=name, ip=ip, port=port_val, username=username, password=password,
             latitude=lat, longitude=lon, asset_no=asset_no, location=location,
-            status=status, is_flipped=is_flipped, note=note, snapshot_url=snapshot_url,
+            status=status, is_flipped=is_flipped, skip_scheduled_snapshot=skip_scheduled_snapshot,
+            note=note, snapshot_url=snapshot_url,
             safety_classification=safety_classification
         )
         new_cam.groups = groups
@@ -298,12 +316,24 @@ async def edit_camera_submit(
     location: Optional[str] = Form(None),
     group_name: list[str] = Form(default=[]),
     is_flipped: Optional[str] = Form(None),
+    skip_scheduled_snapshot: bool = Form(False),
     status: str = Form(...),
     note: Optional[str] = Form(...),
     snapshot_url: Optional[str] = Form(...),
     safety_classification: Optional[str] = Form(None),  # P2-002
 ):
     """Handles the form submission to edit an existing camera."""
+    name, ip, username = name.strip(), ip.strip(), username.strip()
+    password = _trim_camera_form_value(password)
+    latitude, longitude = _trim_camera_form_value(latitude), _trim_camera_form_value(longitude)
+    asset_no, location = _trim_camera_form_value(asset_no), _trim_camera_form_value(location)
+    status, is_flipped = status.strip(), _trim_camera_form_value(is_flipped)
+    note, snapshot_url = _trim_camera_form_value(note), _trim_camera_form_value(snapshot_url)
+    safety_classification = _trim_camera_form_value(safety_classification)
+    if isinstance(port, str):
+        port = port.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Camera hostname is required.")
     logger.info("Attempting to edit camera with ID: %s", camera_id)
     cam = db.query(DBCamera).filter(DBCamera.id == camera_id).first()
     if not cam:
@@ -316,7 +346,8 @@ async def edit_camera_submit(
         "hostname": cam.hostname, "ip": cam.ip, "port": cam.port, "username": cam.username,
         "latitude": cam.latitude, "longitude": cam.longitude, "asset_no": cam.asset_no,
         "location": cam.location, "group_id": cam.group_id, "group_ids": [g.id for g in cam.groups], "status": cam.status,
-        "is_flipped": cam.is_flipped, "note": cam.note, "snapshot_url": cam.snapshot_url,
+        "is_flipped": cam.is_flipped, "skip_scheduled_snapshot": cam.skip_scheduled_snapshot,
+        "note": cam.note, "snapshot_url": cam.snapshot_url,
         "safety_classification": cam.safety_classification,
     }
 
@@ -340,6 +371,7 @@ async def edit_camera_submit(
         cam.latitude, cam.longitude, cam.asset_no = lat, lon, asset_no
         cam.location, cam.status = location, status
         cam.is_flipped = (is_flipped is not None)
+        cam.skip_scheduled_snapshot = skip_scheduled_snapshot
         cam.note = note
         cam.snapshot_url = snapshot_url
         if safety_classification:
@@ -364,7 +396,8 @@ async def edit_camera_submit(
             "hostname": cam.hostname, "ip": cam.ip, "port": cam.port, "username": cam.username,
             "latitude": cam.latitude, "longitude": cam.longitude, "asset_no": cam.asset_no,
             "location": cam.location, "group_id": cam.group_id, "group_ids": [g.id for g in cam.groups], "status": cam.status,
-            "is_flipped": cam.is_flipped, "note": cam.note, "snapshot_url": cam.snapshot_url,
+            "is_flipped": cam.is_flipped, "skip_scheduled_snapshot": cam.skip_scheduled_snapshot,
+        "note": cam.note, "snapshot_url": cam.snapshot_url,
             "safety_classification": cam.safety_classification,
         }
         
@@ -439,6 +472,7 @@ async def get_camera_details(
         "location": camera.location,
         "status": camera.status,
         "is_flipped": camera.is_flipped,
+        "skip_scheduled_snapshot": camera.skip_scheduled_snapshot,
         "group": {"name": camera.group.name} if camera.group else None,
         "camera_groups": [{"id": group.id, "name": group.name} for group in camera.groups],
         "camera_group_ids": [group.id for group in camera.groups],

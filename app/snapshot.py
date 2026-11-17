@@ -11,6 +11,9 @@ logger = logging.getLogger("snapshot")
 def load_active_cameras():
     db = SessionLocal()
     try:
-        return db.query(Camera).filter(Camera.status.in_(["Active", "Restricted"])).all()
+        return db.query(Camera).filter(
+            Camera.status.in_(["Active", "Restricted"]),
+            Camera.skip_scheduled_snapshot.is_(False),
+        ).all()
     finally:
         db.close()
