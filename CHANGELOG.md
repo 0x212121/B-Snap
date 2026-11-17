@@ -4,22 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.6.4] - 2026-11-17
 
 ### Added
 
 - Allow individual cameras to be excluded from scheduled snapshots without changing their status or manual capture.
-
 - Public, camera-scoped bot live links with signed five-minute expiry (API range 30–900 seconds), permission revocation checks, bounded stream lifetime, credential-free playback, and redacted tokens in application/message logs. Link creation retains admin and group authorization; existing Maps Live authentication is preserved.
 - API-backed WhatsApp bot actions for authenticated live links and latest snapshots per camera group/location, with token/sender access intersection, multi-image pagination, and missing-file feedback. Live View supports periodic HTTP snapshot refresh alongside ONVIF/RTSP/HLS. See [bot camera media](docs/source/bot-camera-media.md).
-
 - Regression coverage for signed GoWA messages using E.164 and legacy whitelist numbers through bot replies, Message delivery monitor logging, and retry deduplication. Document webhook authentication failures that prevent incoming messages from reaching the monitor.
 - Clarify B-Snap/GoWA webhook secret variable names and shared Docker Compose `.env` mapping; verify that B-Snap only uses its own signing key setting.
 
 ### Fixed
 
 - Trim surrounding whitespace from camera form inputs when adding or editing a camera.
-
 - Keep array-mapper templates (`steps.result.body.results`) available per image in group/location snapshot captions and sample previews, with continuous image numbering across API pages. Preserve existing flat-field captions.
 - Show each group/location snapshot's configured caption as an image in Bot Builder Execute Action previews. Preserve actionable camera media API error statuses instead of reporting all failures as 502; use PUBLIC_ORIGIN for live links when app_public_url is empty and expose a validated Public B-Snap URL in Configuration.
 
